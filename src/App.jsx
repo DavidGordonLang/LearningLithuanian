@@ -1,11 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-// Lithuanian Trainer (client-only)
-// Clean rebuild: RAG sort, XLSX import (UMD), tabs, search, details toggle,
-// CRUD, export, clear + ElevenLabs TTS with monthly usage counter.
-// NOTE: "Slow" option removed per user request.
+/**
+ * Lithuanian Trainer — client-only
+ * - Responsive header + wrapped buttons (icon-only on phones)
+ * - Compact cards for mobile
+ * - Tabs, search, details toggle
+ * - RAG sort (🔴 🟠 🟢)
+ * - XLSX import (UMD loader), JSON export
+ * - Add/Edit/Delete
+ * - ElevenLabs TTS (HTTP) + monthly play counter
+ * - Browser SpeechSynthesis fallback
+ * - "Slow" option removed per request
+ */
 
-// -------------------- Helpers & Constants --------------------
+// -------------------- Constants --------------------
 const COLS = [
   "English",
   "Lithuanian",
@@ -23,6 +31,7 @@ const LSK_ELEVEN_KEY = "lt_eleven_key";
 const LSK_ELEVEN_VOICE = "lt_eleven_voice"; // {id,name}
 const LSK_USAGE = "lt_eleven_usage_v1"; // {month:"YYYY-MM", requests:number}
 
+// -------------------- Local storage helpers --------------------
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadData = () => {
   try {
@@ -35,7 +44,7 @@ const loadData = () => {
   }
 };
 
-const monthKey = () => new Date().toISOString().slice(0, 7); // YYYY-MM
+const monthKey = () => new Date().toISOString().slice(0, 7); // "YYYY-MM"
 const loadUsage = () => {
   try {
     const u = JSON.parse(localStorage.getItem(LSK_USAGE) || "null");
@@ -47,21 +56,21 @@ const loadUsage = () => {
 };
 const saveUsage = (u) => localStorage.setItem(LSK_USAGE, JSON.stringify(u));
 
-// Normalize any incoming RAG to the three circle emojis
+// -------------------- Utils --------------------
 function normalizeRag(icon = "") {
   const s = String(icon).trim();
   const low = s.toLowerCase();
   if (["🔴", "🟥", "red"].includes(s) || low === "red") return "🔴";
-  if (["🟠", "🟧", "🟨", "🟡"].includes(s) || ["amber", "orange", "yellow"].includes(low)) return "🟠";
+  if (["🟠", "🟧", "🟨", "🟡"].includes(s) || ["amber", "orange", "yellow"].includes(low))
+    return "🟠";
   if (["🟢", "🟩", "green"].includes(s) || low === "green") return "🟢";
   return ""; // unknown/empty
 }
-
-function classNames(...xs) {
+function cn(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-// -------------------- XLSX (UMD loader) --------------------
+// -------------------- XLSX (UMD) --------------------
 async function loadXLSX() {
   if (window.XLSX) return window.XLSX;
   const urls = [
@@ -146,7 +155,8 @@ function useVoices() {
     }
     refresh();
     window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
-    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+    return () =>
+      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
   }, []);
   return voices;
 }
@@ -174,30 +184,33 @@ async function fetchElevenVoicesHTTP(key) {
 }
 
 async function speakElevenLabsHTTP(text, voiceId, key) {
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
-    method: "POST",
-    headers: {
-      "xi-api-key": key,
-      "Content-Type": "application/json",
-      Accept: "audio/mpeg",
-    },
-    body: JSON.stringify({
-      text,
-      model_id: "eleven_multilingual_v2",
-      voice_settings: {
-        stability: 0.4,
-        similarity_boost: 0.7,
-        style: 0.2,
-        use_speaker_boost: true,
+  const res = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
+    {
+      method: "POST",
+      headers: {
+        "xi-api-key": key,
+        "Content-Type": "application/json",
+        Accept: "audio/mpeg",
       },
-    }),
-  });
+      body: JSON.stringify({
+        text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.4,
+          similarity_boost: 0.7,
+          style: 0.2,
+          use_speaker_boost: true,
+        },
+      }),
+    }
+  );
   if (!res.ok) throw new Error("TTS failed: " + res.status + " " + res.statusText);
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
 
-// -------------------- Main --------------------
+// -------------------- App --------------------
 export default function App() {
   const fileRef = useRef(null);
 
@@ -209,8 +222,12 @@ export default function App() {
   const [ragPriority, setRagPriority] = useState("");
 
   // TTS provider settings
-  const [ttsProvider, setTtsProvider] = useState(() => localStorage.getItem(LSK_TTS_PROVIDER) || "browser");
-  const [elevenKey, setElevenKey] = useState(() => localStorage.getItem(LSK_ELEVEN_KEY) || "");
+  const [ttsProvider, setTtsProvider] = useState(
+    () => localStorage.getItem(LSK_TTS_PROVIDER) || "browser"
+  );
+  const [elevenKey, setElevenKey] = useState(
+    () => localStorage.getItem(LSK_ELEVEN_KEY) || ""
+  );
   const [elevenVoices, setElevenVoices] = useState([]); // {id,name}
   const [elevenVoiceId, setElevenVoiceId] = useState(() => {
     try {
@@ -265,28 +282,26 @@ export default function App() {
     [voices, voiceName]
   );
 
+  // Persist things
   useEffect(() => saveData(rows), [rows]);
-
-  // persist TTS settings & usage
-  useEffect(() => {
-    localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider);
-  }, [ttsProvider]);
+  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
   useEffect(() => {
     if (elevenKey) localStorage.setItem(LSK_ELEVEN_KEY, elevenKey);
   }, [elevenKey]);
   useEffect(() => {
-    localStorage.setItem(LSK_ELEVEN_VOICE, JSON.stringify({ id: elevenVoiceId, name: elevenVoiceName }));
+    localStorage.setItem(
+      LSK_ELEVEN_VOICE,
+      JSON.stringify({ id: elevenVoiceId, name: elevenVoiceName })
+    );
   }, [elevenVoiceId, elevenVoiceName]);
-  useEffect(() => {
-    saveUsage(usage);
-  }, [usage]);
+  useEffect(() => saveUsage(usage), [usage]);
 
   // keep the Add form's Sheet in sync with the active tab
   useEffect(() => {
     setDraft((d) => ({ ...d, Sheet: tab }));
   }, [tab]);
 
-  // Search + tab filtering
+  // Filtering
   const filtered = useMemo(() => {
     return rows
       .filter((r) => r.Sheet === tab)
@@ -299,16 +314,19 @@ export default function App() {
       );
   }, [rows, tab, q]);
 
-  // Group by RAG and optionally bring one group to the top
+  // RAG grouping + priority
   const groups = useMemo(() => {
     const buckets = { "🔴": [], "🟠": [], "🟢": [], "": [] };
     for (const r of filtered) buckets[normalizeRag(r["RAG Icon"]) || ""].push(r);
-    const order = ["🔴", "🟠", "🟢", ""]; // default order
-    const keys = ragPriority && order.includes(ragPriority) ? [ragPriority, ...order.filter((x) => x !== ragPriority)] : order;
+    const order = ["🔴", "🟠", "🟢", ""];
+    const keys =
+      ragPriority && order.includes(ragPriority)
+        ? [ragPriority, ...order.filter((x) => x !== ragPriority)]
+        : order;
     return keys.map((k) => ({ key: k, items: buckets[k] }));
   }, [filtered, ragPriority]);
 
-  // Map filtered rows to global index for proper edit/delete
+  // For edit/delete indices
   const filteredWithIndex = useMemo(() => {
     const indices = [];
     rows.forEach((r, i) => {
@@ -319,7 +337,7 @@ export default function App() {
     return indices.map((i) => ({ idx: i, row: rows[i] }));
   }, [rows, tab, q]);
 
-  // -------------------- Voice helpers (instance-aware) --------------------
+  // Voice play
   const playText = async (text) => {
     try {
       if (ttsProvider === "elevenlabs" && elevenKey && elevenVoiceId) {
@@ -332,7 +350,6 @@ export default function App() {
         audio.onended = () => URL.revokeObjectURL(url);
         await audio.play();
       } else {
-        // Browser speech synthesis (normal speed only)
         speakBrowser(text, voice, 1);
       }
     } catch (e) {
@@ -341,7 +358,7 @@ export default function App() {
     }
   };
 
-  // -------------------- CRUD --------------------
+  // CRUD
   function addRow() {
     if (!draft.English || !draft.Lithuanian) {
       alert("English & Lithuanian are required");
@@ -349,7 +366,15 @@ export default function App() {
     }
     const row = { ...draft, "RAG Icon": normalizeRag(draft["RAG Icon"]) };
     setRows((prev) => [row, ...prev]);
-    setDraft({ ...draft, English: "", Lithuanian: "", Phonetic: "", Category: "", Usage: "", Notes: "" });
+    setDraft({
+      ...draft,
+      English: "",
+      Lithuanian: "",
+      Phonetic: "",
+      Category: "",
+      Usage: "",
+      Notes: "",
+    });
   }
 
   function startEdit(globalIdx) {
@@ -395,7 +420,7 @@ export default function App() {
   function clearAll() {
     if (!confirmClear) {
       setConfirmClear(true);
-      setTimeout(() => setConfirmClear(false), 3500);
+      setTimeout(() => setConfirmClear(false), 3000);
       return;
     }
     localStorage.removeItem(LS_KEY);
@@ -409,52 +434,97 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-zinc-950/80 backdrop-blur border-b border-zinc-800">
-        <div className="max-w-xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">LT</div>
-          <div className="flex-1">
-            <div className="text-lg font-semibold">Lithuanian Trainer</div>
-            <div className="text-xs text-zinc-400">Tap to play. Long-press to savor.</div>
-          </div>
-          {/* Browser voice selector (fallback/local) */}
-          <select
-            className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
-            value={voiceName}
-            onChange={(e) => setVoiceName(e.target.value)}
-            disabled={ttsProvider === "elevenlabs"}
-            title={ttsProvider === "elevenlabs" ? "Using ElevenLabs voice" : "Browser voice"}
-          >
-            <option value="">Auto voice</option>
-            {voices.map((v) => (
-              <option key={v.name} value={v.name}>
-                {v.name} ({v.lang})
-              </option>
-            ))}
-          </select>
-
-          {/* Usage pill (only for ElevenLabs) */}
-          {ttsProvider === "elevenlabs" && (
-            <div
-              className="ml-2 text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300"
-              title="Monthly usage (resets each calendar month)"
-            >
-              {(usage.requests || 0)} plays
+        <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-2 min-w-[180px]">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">
+              LT
             </div>
-          )}
+            <div className="leading-tight">
+              <div className="text-lg font-semibold">Lithuanian Trainer</div>
+              <div className="text-xs text-zinc-400">Tap to play. Long-press to savor.</div>
+            </div>
+          </div>
 
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={onImportFile} className="hidden" />
-          <button onClick={() => fileRef.current?.click()} className="ml-2 bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">Import .xlsx</button>
-          <button onClick={() => exportJson(rows)} className="ml-2 bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">Export JSON</button>
-          <button onClick={clearAll} className="ml-2 bg-zinc-900 border border-red-600 text-red-400 rounded-md text-xs px-2 py-1">
-            {confirmClear ? "Click again to confirm" : "Clear data"}
-          </button>
-          <button onClick={() => setSettingsOpen(true)} className="ml-2 bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">Settings</button>
+          {/* Voice + usage */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1 flex-1 sm:flex-none"
+              value={voiceName}
+              onChange={(e) => setVoiceName(e.target.value)}
+              disabled={ttsProvider === "elevenlabs"}
+              title={ttsProvider === "elevenlabs" ? "Using ElevenLabs voice" : "Browser voice"}
+            >
+              <option value="">Auto voice</option>
+              {voices.map((v) => (
+                <option key={v.name} value={v.name}>
+                  {v.name} ({v.lang})
+                </option>
+              ))}
+            </select>
+
+            {ttsProvider === "elevenlabs" && (
+              <div
+                className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300"
+                title="Monthly usage (resets each calendar month)"
+              >
+                {(usage.requests || 0)} plays
+              </div>
+            )}
+          </div>
+
+          {/* Buttons (wrap, icon-only on phones) */}
+          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w-full sm:w-auto pt-2 sm:pt-0">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={onImportFile}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+            >
+              <span className="hidden sm:inline">Import .xlsx</span>
+              <span className="sm:hidden">📥 XLSX</span>
+            </button>
+            <button
+              onClick={() => exportJson(rows)}
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+            >
+              <span className="hidden sm:inline">Export JSON</span>
+              <span className="sm:hidden">📤 JSON</span>
+            </button>
+            <button
+              onClick={clearAll}
+              className="bg-zinc-900 border border-red-600 text-red-400 rounded-md text-xs px-2 py-1"
+            >
+              {confirmClear ? (
+                "Tap again"
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Clear data</span>
+                  <span className="sm:hidden">🗑</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+            >
+              <span className="hidden sm:inline">Settings</span>
+              <span className="sm:hidden">⚙️</span>
+            </button>
+          </div>
         </div>
-        <div className="max-w-xl mx-auto px-4 pb-3 flex items-center gap-2">
+
+        {/* Search + RAG sort */}
+        <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 flex-wrap">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search…"
-            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+            className="flex-1 min-w-[180px] bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
           />
           <div className="text-xs text-zinc-300">Sort RAG first:</div>
           <div className="flex items-center gap-1">
@@ -462,9 +532,11 @@ export default function App() {
               <button
                 key={i}
                 onClick={() => setRagPriority(x)}
-                className={classNames(
+                className={cn(
                   "px-2 py-1 rounded-md text-xs border",
-                  ragPriority === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                  ragPriority === x
+                    ? "bg-emerald-600 border-emerald-600"
+                    : "bg-zinc-900 border-zinc-700"
                 )}
                 title={x ? `Show ${x} first` : "No priority"}
               >
@@ -476,12 +548,12 @@ export default function App() {
       </div>
 
       {/* Tabs */}
-      <div className="max-w-xl mx-auto px-4 py-2 sticky top-[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
+      <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sticky top-[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
         {["Phrases", "Questions", "Words"].map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={classNames(
+            className={cn(
               "mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border",
               tab === t ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
             )}
@@ -492,11 +564,13 @@ export default function App() {
       </div>
 
       {/* Groups & List */}
-      <div className="max-w-xl mx-auto px-4 pb-28">
+      <div className="max-w-xl mx-auto px-3 sm:px-4 pb-28">
         {groups.map(({ key, items }) => (
-          <div key={key || "none"} className="mb-6">
+          <div key={key || "none"} className="mb-5 sm:mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">{key || "⬤"}</span>
+              <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
+                {key || "⬤"}
+              </span>
               <div className="text-sm text-zinc-400">{items.length} item(s)</div>
             </div>
             <div className="space-y-2">
@@ -504,22 +578,29 @@ export default function App() {
                 const idx = rows.indexOf(r);
                 const isEditing = editIdx === idx;
                 return (
-                  <div key={`${r.English}-${idx}`} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+                  <div
+                    key={`${r.English}-${idx}`}
+                    className="bg-zinc-900 border border-zinc-800 rounded-2xl p-2 sm:p-3"
+                  >
                     {!isEditing ? (
                       <div className="flex items-start gap-2">
                         <button
                           onClick={() => playText(r.Lithuanian)}
                           className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition flex items-center justify-center font-semibold"
+                          aria-label="Play"
+                          title="Play"
                         >
                           ►
                         </button>
-                        <div className="flex-1">
-                          <div className="text-sm text-zinc-400">{r.English}</div>
-                          <div className="text-lg leading-tight font-medium">{r.Lithuanian}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-zinc-400 truncate">{r.English}</div>
+                          <div className="text-lg leading-tight font-medium break-words">
+                            {r.Lithuanian}
+                          </div>
                           <div className="mt-1">
                             <button
                               onClick={() => toggleExpanded(idx)}
-                              className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
+                              className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
                             >
                               {expanded.has(idx) ? "Hide details" : "Show details"}
                             </button>
@@ -538,34 +619,109 @@ export default function App() {
                             </>
                           )}
                         </div>
-                        <div className="flex flex-col gap-1 ml-2">
-                          <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">Edit</button>
-                          <button onClick={() => remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">Delete</button>
+                        <div className="flex gap-1 ml-2">
+                          <button
+                            onClick={() => startEdit(idx)}
+                            className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => remove(idx)}
+                            className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md"
+                          >
+                            Del
+                          </button>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <div className="grid grid-cols-2 gap-2">
-                          <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft.English} onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })} />
-                          <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft.Lithuanian} onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })} />
-                          <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft.Phonetic} onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })} />
-                          <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft.Category} onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })} />
-                          <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft.Usage} onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })} />
-                          <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft.Notes} onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })} />
-                          <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft["RAG Icon"]} onChange={(e) => setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })}>
+                          <input
+                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft.English}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, English: e.target.value })
+                            }
+                          />
+                          <input
+                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft.Lithuanian}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, Lithuanian: e.target.value })
+                            }
+                          />
+                          <input
+                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft.Phonetic}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, Phonetic: e.target.value })
+                            }
+                          />
+                          <input
+                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft.Category}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, Category: e.target.value })
+                            }
+                          />
+                          <input
+                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft.Usage}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, Usage: e.target.value })
+                            }
+                          />
+                          <input
+                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft.Notes}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, Notes: e.target.value })
+                            }
+                          />
+                          <select
+                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft["RAG Icon"]}
+                            onChange={(e) =>
+                              setEditDraft({
+                                ...editDraft,
+                                "RAG Icon": normalizeRag(e.target.value),
+                              })
+                            }
+                          >
                             {"🔴 🟠 🟢".split(" ").map((x) => (
-                              <option key={x} value={x}>{x}</option>
+                              <option key={x} value={x}>
+                                {x}
+                              </option>
                             ))}
                           </select>
-                          <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={editDraft.Sheet} onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}>
+                          <select
+                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                            value={editDraft.Sheet}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, Sheet: e.target.value })
+                            }
+                          >
                             {["Phrases", "Questions", "Words"].map((s) => (
-                              <option key={s} value={s}>{s}</option>
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">Save</button>
-                          <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">Cancel</button>
+                          <button
+                            onClick={() => saveEdit(idx)}
+                            className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
                     )}
@@ -579,27 +735,76 @@ export default function App() {
 
       {/* Add form */}
       <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
-        <div className="max-w-xl mx-auto px-4 py-3">
+        <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <details>
             <summary className="cursor-pointer text-sm text-zinc-300">+ Add entry</summary>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="English" value={draft.English} onChange={(e) => setDraft({ ...draft, English: e.target.value })} />
-              <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Lithuanian" value={draft.Lithuanian} onChange={(e) => setDraft({ ...draft, Lithuanian: e.target.value })} />
-              <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Phonetic" value={draft.Phonetic} onChange={(e) => setDraft({ ...draft, Phonetic: e.target.value })} />
-              <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Category" value={draft.Category} onChange={(e) => setDraft({ ...draft, Category: e.target.value })} />
-              <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Usage" value={draft.Usage} onChange={(e) => setDraft({ ...draft, Usage: e.target.value })} />
-              <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Notes" value={draft.Notes} onChange={(e) => setDraft({ ...draft, Notes: e.target.value })} />
-              <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft["RAG Icon"]} onChange={(e) => setDraft({ ...draft, "RAG Icon": normalizeRag(e.target.value) })}>
+              <input
+                className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                placeholder="English"
+                value={draft.English}
+                onChange={(e) => setDraft({ ...draft, English: e.target.value })}
+              />
+              <input
+                className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                placeholder="Lithuanian"
+                value={draft.Lithuanian}
+                onChange={(e) => setDraft({ ...draft, Lithuanian: e.target.value })}
+              />
+              <input
+                className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                placeholder="Phonetic"
+                value={draft.Phonetic}
+                onChange={(e) => setDraft({ ...draft, Phonetic: e.target.value })}
+              />
+              <input
+                className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                placeholder="Category"
+                value={draft.Category}
+                onChange={(e) => setDraft({ ...draft, Category: e.target.value })}
+              />
+              <input
+                className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                placeholder="Usage"
+                value={draft.Usage}
+                onChange={(e) => setDraft({ ...draft, Usage: e.target.value })}
+              />
+              <input
+                className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                placeholder="Notes"
+                value={draft.Notes}
+                onChange={(e) => setDraft({ ...draft, Notes: e.target.value })}
+              />
+              <select
+                className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                value={draft["RAG Icon"]}
+                onChange={(e) =>
+                  setDraft({ ...draft, "RAG Icon": normalizeRag(e.target.value) })
+                }
+              >
                 {"🔴 🟠 🟢".split(" ").map((x) => (
-                  <option key={x} value={x}>{x}</option>
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
                 ))}
               </select>
-              <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft.Sheet} onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}>
+              <select
+                className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                value={draft.Sheet}
+                onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}
+              >
                 {["Phrases", "Questions", "Words"].map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
-              <button onClick={addRow} className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold">Add</button>
+              <button
+                onClick={addRow}
+                className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold"
+              >
+                Add
+              </button>
             </div>
           </details>
         </div>
@@ -617,10 +822,22 @@ export default function App() {
                 <div className="text-xs mb-1">Voice provider</div>
                 <div className="flex gap-3">
                   <label className="flex items-center gap-2">
-                    <input type="radio" name="ttsprov" checked={ttsProvider === "browser"} onChange={() => setTtsProvider("browser")} /> Browser (fallback)
+                    <input
+                      type="radio"
+                      name="ttsprov"
+                      checked={ttsProvider === "browser"}
+                      onChange={() => setTtsProvider("browser")}
+                    />{" "}
+                    Browser (fallback)
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="radio" name="ttsprov" checked={ttsProvider === "elevenlabs"} onChange={() => setTtsProvider("elevenlabs")} /> ElevenLabs
+                    <input
+                      type="radio"
+                      name="ttsprov"
+                      checked={ttsProvider === "elevenlabs"}
+                      onChange={() => setTtsProvider("elevenlabs")}
+                    />{" "}
+                    ElevenLabs
                   </label>
                 </div>
               </div>
@@ -644,7 +861,7 @@ export default function App() {
                         className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                         value={elevenVoiceId}
                         onChange={(e) => {
-                          const v = elevenVoices.find((v) => v.id === e.target.value);
+                          const v = elevenVoices.find((vv) => vv.id === e.target.value);
                           setElevenVoiceId(e.target.value);
                           setElevenVoiceName(v?.name || "");
                         }}
@@ -675,25 +892,43 @@ export default function App() {
                       Fetch voices
                     </button>
                   </div>
-                  <div className="text-xs text-zinc-400">
-                    Tip: pick a multilingual/lt-friendly voice. We use model <code>eleven_multilingual_v2</code>.
-                  </div>
 
                   {/* Usage box */}
                   <div className="mt-3 p-3 rounded-md border border-zinc-700 bg-zinc-950">
                     <div className="font-medium mb-1">Monthly usage</div>
-                    <div className="text-xs text-zinc-300">{usage.requests || 0} plays this month</div>
-                    <div className="text-[11px] text-zinc-500">Resets automatically each calendar month.</div>
+                    <div className="text-xs text-zinc-300">
+                      {usage.requests || 0} plays this month
+                    </div>
+                    <div className="text-[11px] text-zinc-500">
+                      Resets automatically each calendar month.
+                    </div>
                     <div className="mt-2 flex gap-2">
-                      <button className="bg-zinc-800 px-2 py-1 rounded-md text-xs" onClick={() => window.open("https://elevenlabs.io/subscription", "_blank")}>Manage plan</button>
-                      <button className="bg-zinc-800 px-2 py-1 rounded-md text-xs" onClick={() => setUsage({ month: monthKey(), requests: 0 })}>Reset now</button>
+                      <button
+                        className="bg-zinc-800 px-2 py-1 rounded-md text-xs"
+                        onClick={() =>
+                          window.open("https://elevenlabs.io/subscription", "_blank")
+                        }
+                      >
+                        Manage plan
+                      </button>
+                      <button
+                        className="bg-zinc-800 px-2 py-1 rounded-md text-xs"
+                        onClick={() => setUsage({ month: monthKey(), requests: 0 })}
+                      >
+                        Reset now
+                      </button>
                     </div>
                   </div>
                 </div>
               )}
 
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setSettingsOpen(false)} className="bg-emerald-600 px-3 py-2 rounded-md">Close</button>
+                <button
+                  onClick={() => setSettingsOpen(false)}
+                  className="bg-emerald-600 px-3 py-2 rounded-md"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
