@@ -2,18 +2,32 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Lithuanian Trainer — client-only
- * - Responsive header + wrapped buttons (icon-only on phones)
- * - Compact cards for mobile
+ * - Mobile-friendly header & cards
  * - Tabs, search, details toggle
  * - RAG sort (🔴 🟠 🟢)
  * - XLSX import (UMD loader), JSON export
  * - Add/Edit/Delete
- * - ElevenLabs TTS (HTTP) + monthly play counter
- * - Browser SpeechSynthesis fallback
- * - "Slow" option removed per request
+ * - TTS providers: Browser, ElevenLabs, Azure
+ * - ElevenLabs monthly play counter
+ * - Direction toggle: EN→LT / LT→EN
+ * - "Slow" option removed
  */
 
 // -------------------- Constants --------------------
+const LS_KEY = "lt_phrasebook_v2";
+
+const LSK_TTS_PROVIDER = "lt_tts_provider"; // 'browser' | 'elevenlabs' | 'azure'
+
+// ElevenLabs
+const LSK_ELEVEN_KEY = "lt_eleven_key";
+const LSK_ELEVEN_VOICE = "lt_eleven_voice"; // {id,name}
+const LSK_USAGE = "lt_eleven_usage_v1"; // {month:"YYYY-MM", requests:number}
+
+// Azure
+const LSK_AZURE_KEY = "lt_azure_key";
+const LSK_AZURE_REGION = "lt_azure_region";
+const LSK_AZURE_VOICE = "lt_azure_voice"; // {shortName}
+
 const COLS = [
   "English",
   "Lithuanian",
@@ -24,12 +38,6 @@ const COLS = [
   "RAG Icon",
   "Sheet",
 ];
-
-const LS_KEY = "lt_phrasebook_v2";
-const LSK_TTS_PROVIDER = "lt_tts_provider"; // 'browser' | 'elevenlabs'
-const LSK_ELEVEN_KEY = "lt_eleven_key";
-const LSK_ELEVEN_VOICE = "lt_eleven_voice"; // {id,name}
-const LSK_USAGE = "lt_eleven_usage_v1"; // {month:"YYYY-MM", requests:number}
 
 // -------------------- Local storage helpers --------------------
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
@@ -138,7 +146,7 @@ function exportJson(rows) {
   URL.revokeObjectURL(url);
 }
 
-// -------------------- Voice (browser + ElevenLabs) --------------------
+// -------------------- Voice (browser + ElevenLabs + Azure) --------------------
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -174,6 +182,7 @@ function speakBrowser(text, voice, rate = 1) {
   window.speechSynthesis.speak(u);
 }
 
+// ElevenLabs
 async function fetchElevenVoicesHTTP(key) {
   const res = await fetch("https://api.elevenlabs.io/v1/voices", {
     headers: { "xi-api-key": key },
@@ -182,7 +191,6 @@ async function fetchElevenVoicesHTTP(key) {
   const data = await res.json();
   return (data.voices || []).map((v) => ({ id: v.voice_id, name: v.name }));
 }
-
 async function speakElevenLabsHTTP(text, voiceId, key) {
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
@@ -205,7 +213,42 @@ async function speakElevenLabsHTTP(text, voiceId, key) {
       }),
     }
   );
-  if (!res.ok) throw new Error("TTS failed: " + res.status + " " + res.statusText);
+  if (!res.ok) throw new Error("ElevenLabs TTS failed: " + res.status + " " + res.statusText);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+// Azure
+async function fetchAzureVoicesHTTP(key, region) {
+  // https://{region}.tts.speech.microsoft.com/cognitiveservices/voices/list
+  const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+  const res = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": key } });
+  if (!res.ok) throw new Error("Failed to fetch Azure voices");
+  const data = await res.json();
+  return data.map((v) => ({
+    shortName: v.ShortName, // e.g. "lt-LT-OnaNeural" (if available)
+    locale: v.Locale,       // e.g. "lt-LT"
+    displayName: v.LocalName || v.FriendlyName || v.ShortName,
+  }));
+}
+async function speakAzureHTTP(text, shortName, key, region) {
+  // https://{region}.tts.speech.microsoft.com/cognitiveservices/v1
+  const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+  // Use LT SSML language tag; if your chosen voice is multilingual, feel free to keep lt-LT here.
+  const ssml =
+    `<speak version="1.0" xml:lang="lt-LT">
+       <voice name="${shortName}">${text}</voice>
+     </speak>`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": key,
+      "Content-Type": "application/ssml+xml",
+      "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+    },
+    body: ssml,
+  });
+  if (!res.ok) throw new Error("Azure TTS failed: " + res.status + " " + res.statusText);
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
@@ -217,14 +260,18 @@ export default function App() {
   const [rows, setRows] = useState(loadData());
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
+
+  const [direction, setDirection] = useState("EN2LT"); // "EN2LT" | "LT2EN"
   const [voiceName, setVoiceName] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
   const [ragPriority, setRagPriority] = useState("");
 
-  // TTS provider settings
+  // TTS provider selector
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "browser"
   );
+
+  // ElevenLabs state
   const [elevenKey, setElevenKey] = useState(
     () => localStorage.getItem(LSK_ELEVEN_KEY) || ""
   );
@@ -245,10 +292,21 @@ export default function App() {
       return "";
     }
   });
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  // usage stats
   const [usage, setUsage] = useState(loadUsage());
+
+  // Azure state
+  const [azureKey, setAzureKey] = useState(() => localStorage.getItem(LSK_AZURE_KEY) || "");
+  const [azureRegion, setAzureRegion] = useState(() => localStorage.getItem(LSK_AZURE_REGION) || "");
+  const [azureVoices, setAzureVoices] = useState([]); // {shortName, locale, displayName}
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [draft, setDraft] = useState({
     English: "",
@@ -285,6 +343,7 @@ export default function App() {
   // Persist things
   useEffect(() => saveData(rows), [rows]);
   useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
+  // ElevenLabs
   useEffect(() => {
     if (elevenKey) localStorage.setItem(LSK_ELEVEN_KEY, elevenKey);
   }, [elevenKey]);
@@ -295,6 +354,12 @@ export default function App() {
     );
   }, [elevenVoiceId, elevenVoiceName]);
   useEffect(() => saveUsage(usage), [usage]);
+  // Azure
+  useEffect(() => { if (azureKey) localStorage.setItem(LSK_AZURE_KEY, azureKey); }, [azureKey]);
+  useEffect(() => { if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion); }, [azureRegion]);
+  useEffect(() => {
+    localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
+  }, [azureVoiceShortName]);
 
   // keep the Add form's Sheet in sync with the active tab
   useEffect(() => {
@@ -326,7 +391,7 @@ export default function App() {
     return keys.map((k) => ({ key: k, items: buckets[k] }));
   }, [filtered, ragPriority]);
 
-  // For edit/delete indices
+  // Map filtered rows to global index
   const filteredWithIndex = useMemo(() => {
     const indices = [];
     rows.forEach((r, i) => {
@@ -337,7 +402,7 @@ export default function App() {
     return indices.map((i) => ({ idx: i, row: rows[i] }));
   }, [rows, tab, q]);
 
-  // Voice play
+  // Voice play — picks target text based on direction
   const playText = async (text) => {
     try {
       if (ttsProvider === "elevenlabs" && elevenKey && elevenVoiceId) {
@@ -346,6 +411,11 @@ export default function App() {
           return { ...base, requests: (base.requests || 0) + 1 };
         });
         const url = await speakElevenLabsHTTP(text, elevenVoiceId, elevenKey);
+        const audio = new Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        await audio.play();
+      } else if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
+        const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion);
         const audio = new Audio(url);
         audio.onended = () => URL.revokeObjectURL(url);
         await audio.play();
@@ -451,11 +521,17 @@ export default function App() {
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1 flex-1 sm:flex-none"
               value={voiceName}
               onChange={(e) => setVoiceName(e.target.value)}
-              disabled={ttsProvider === "elevenlabs"}
-              title={ttsProvider === "elevenlabs" ? "Using ElevenLabs voice" : "Browser voice"}
+              disabled={ttsProvider !== "browser"}
+              title={
+                ttsProvider === "elevenlabs"
+                  ? "Using ElevenLabs voice"
+                  : ttsProvider === "azure"
+                  ? "Using Azure voice"
+                  : "Browser voice"
+              }
             >
               <option value="">Auto voice</option>
-              {voices.map((v) => (
+              {useVoices().map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name} ({v.lang})
                 </option>
@@ -472,7 +548,7 @@ export default function App() {
             )}
           </div>
 
-          {/* Buttons (wrap, icon-only on phones) */}
+          {/* Buttons */}
           <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w-full sm:w-auto pt-2 sm:pt-0">
             <input
               ref={fileRef}
@@ -518,7 +594,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Search + RAG sort */}
+        {/* Search + Mode + RAG sort */}
         <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 flex-wrap">
           <input
             value={q}
@@ -526,6 +602,24 @@ export default function App() {
             placeholder="Search…"
             className="flex-1 min-w-[180px] bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
           />
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-zinc-300">Mode:</span>
+            {["EN2LT", "LT2EN"].map((m) => (
+              <button
+                key={m}
+                onClick={() => setDirection(m)}
+                className={cn(
+                  "px-2 py-1 rounded-md text-xs border",
+                  direction === m
+                    ? "bg-emerald-600 border-emerald-600"
+                    : "bg-zinc-900 border-zinc-700"
+                )}
+                title={m === "EN2LT" ? "English → Lithuanian" : "Lithuanian → English"}
+              >
+                {m === "EN2LT" ? "EN→LT" : "LT→EN"}
+              </button>
+            ))}
+          </div>
           <div className="text-xs text-zinc-300">Sort RAG first:</div>
           <div className="flex items-center gap-1">
             {["", "🔴", "🟠", "🟢"].map((x, i) => (
@@ -577,6 +671,9 @@ export default function App() {
               {items.map((r) => {
                 const idx = rows.indexOf(r);
                 const isEditing = editIdx === idx;
+                const primary = direction === "EN2LT" ? r.Lithuanian : r.English;
+                const secondary = direction === "EN2LT" ? r.English : r.Lithuanian;
+
                 return (
                   <div
                     key={`${r.English}-${idx}`}
@@ -585,7 +682,7 @@ export default function App() {
                     {!isEditing ? (
                       <div className="flex items-start gap-2">
                         <button
-                          onClick={() => playText(r.Lithuanian)}
+                          onClick={() => playText(primary)}
                           className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition flex items-center justify-center font-semibold"
                           aria-label="Play"
                           title="Play"
@@ -593,9 +690,9 @@ export default function App() {
                           ►
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm text-zinc-400 truncate">{r.English}</div>
+                          <div className="text-sm text-zinc-400 truncate">{secondary}</div>
                           <div className="text-lg leading-tight font-medium break-words">
-                            {r.Lithuanian}
+                            {primary}
                           </div>
                           <div className="mt-1">
                             <button
@@ -818,9 +915,10 @@ export default function App() {
           <div className="w-[92%] max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
             <div className="text-lg font-semibold mb-2">Settings</div>
             <div className="space-y-3 text-sm">
+              {/* Provider */}
               <div>
                 <div className="text-xs mb-1">Voice provider</div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <label className="flex items-center gap-2">
                     <input
                       type="radio"
@@ -839,9 +937,19 @@ export default function App() {
                     />{" "}
                     ElevenLabs
                   </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="ttsprov"
+                      checked={ttsProvider === "azure"}
+                      onChange={() => setTtsProvider("azure")}
+                    />{" "}
+                    Azure Speech
+                  </label>
                 </div>
               </div>
 
+              {/* ElevenLabs config */}
               {ttsProvider === "elevenlabs" && (
                 <div className="space-y-2">
                   <div>
@@ -918,6 +1026,67 @@ export default function App() {
                         Reset now
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Azure config */}
+              {ttsProvider === "azure" && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="text-xs mb-1">Subscription Key</div>
+                      <input
+                        type="password"
+                        value={azureKey}
+                        onChange={(e) => setAzureKey(e.target.value)}
+                        placeholder="Azure key"
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs mb-1">Region</div>
+                      <input
+                        value={azureRegion}
+                        onChange={(e) => setAzureRegion(e.target.value)}
+                        placeholder="e.g. westeurope"
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <div className="text-xs mb-1">Voice</div>
+                      <select
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                        value={azureVoiceShortName}
+                        onChange={(e) => setAzureVoiceShortName(e.target.value)}
+                      >
+                        <option value="">— choose —</option>
+                        {azureVoices.map((v) => (
+                          <option key={v.shortName} value={v.shortName}>
+                            {v.displayName} ({v.shortName})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const vs = await fetchAzureVoicesHTTP(azureKey, azureRegion);
+                          setAzureVoices(vs);
+                          if (!azureVoiceShortName && vs.length) {
+                            setAzureVoiceShortName(vs[0].shortName);
+                          }
+                        } catch (e) {
+                          alert(e.message);
+                        }
+                      }}
+                      className="bg-zinc-800 px-3 py-2 rounded-md"
+                    >
+                      Fetch voices
+                    </button>
                   </div>
                 </div>
               )}
