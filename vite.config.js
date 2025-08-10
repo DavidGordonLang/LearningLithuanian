@@ -7,21 +7,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest: {
-        name: 'Lithuanian Trainer',
-        short_name: 'LT Trainer',
-        description: 'Tap to play Lithuanian. Long-press to savor.',
-        start_url: '/',
-        scope: '/',
-        display: 'standalone',
-        background_color: '#0b0b0b',
-        theme_color: '#111827',
-        icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-        ]
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}']
       }
+      // We’re serving the manifest from /public, so we don’t need to
+      // duplicate it here. If you preferred, you could put the manifest
+      // object here instead.
     })
   ]
 })
