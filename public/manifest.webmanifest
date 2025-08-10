@@ -1,0 +1,15 @@
+{
+  "name": "Lithuanian Trainer",
+  "short_name": "LT Trainer",
+  "start_url": ".",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#10b981",
+  "description": "Practice Lithuanian with audio and quick reference.",
+  "icons": [
+    { "src": "/public/icons/LL 192.png",          "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/public/icons/ll 512.png",          "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/public/icons/LL maskable 512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
