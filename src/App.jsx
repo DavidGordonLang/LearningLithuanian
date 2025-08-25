@@ -21,9 +21,6 @@ const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice";   // {shortName}
 const LSK_STATS = "lt_gamestats_v1";
 
-/* columns only used when building/adding rows */
-const COLS = ["English","Lithuanian","Phonetic","Category","Usage","Notes","RAG Icon","Sheet"];
-
 /* -------------------- BASIC HELPERS -------------------- */
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadData = () => {
@@ -270,6 +267,9 @@ export default function App(){
   const [confirmClear,setConfirmClear]=useState(false);
   const [ragPriority,setRagPriority]=useState("");
 
+  // Settings modal (missing before — added now)
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   /* voices */
   const voices=useVoices();
   const voice = useMemo(
@@ -287,8 +287,6 @@ export default function App(){
   useEffect(()=>{ if(azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion); },[azureRegion]);
   useEffect(()=>{ localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({shortName:azureVoiceShortName})); },[azureVoiceShortName]);
   useEffect(()=>saveStats(stats),[stats]);
-
-  /* keep Add form's Sheet aligned (when you use it) */
 
   /* filtering & grouping */
   const filtered = useMemo(()=>{
@@ -309,7 +307,7 @@ export default function App(){
     return keys.map(k=>({key:k, items:buckets[k]}));
   },[filtered,ragPriority]);
 
-  /* helpers to choose text based on direction */
+  /* text by mode */
   const primaryOf = (r)=> direction==="EN2LT" ? r.Lithuanian : r.English;
   const secondaryOf = (r)=> direction==="EN2LT" ? r.English : r.Lithuanian;
 
@@ -317,7 +315,6 @@ export default function App(){
   async function playText(text, {slow=false}={}){
     try{
       if(ttsProvider==="elevenlabs" && elevenKey && elevenVoiceId){
-        // no official slow param: play normal
         setUsage(u=>({ ...((u.month===monthKey())?u:{month:monthKey(),requests:0}), requests:(u.requests||0)+1 }));
         const url=await speakElevenLabsHTTP(text, elevenVoiceId, elevenKey);
         const audio=new Audio(url); audio.onended=()=>URL.revokeObjectURL(url); await audio.play();
@@ -330,8 +327,8 @@ export default function App(){
       }
     }catch(e){ console.error(e); alert("Voice error: "+(e?.message||e)); }
   }
+  const longPressRef = useRef(null);
   function attachPressHandlers(text){
-    // returns props for a button to support long-press slow play
     return {
       onMouseDown: ()=>{ longPressRef.current = setTimeout(()=>{ playText(text,{slow:true}); longPressRef.current="played"; }, 500); },
       onMouseUp: ()=>{ if(longPressRef.current && longPressRef.current!=="played"){ clearTimeout(longPressRef.current); playText(text,{slow:false}); } longPressRef.current=null; },
@@ -341,7 +338,7 @@ export default function App(){
     };
   }
 
-  /* -------------------- CRUD (only Edit/Delete inline kept) -------------------- */
+  /* -------------------- CRUD (Edit/Delete only) -------------------- */
   const [editIdx,setEditIdx]=useState(null);
   const [editDraft,setEditDraft]=useState(null);
   function startEdit(i){ setEditIdx(i); setEditDraft({...rows[i]}); }
@@ -374,30 +371,23 @@ export default function App(){
   }
 
   /* -------------------- QUIZ (multiple-choice) -------------------- */
+  function shuffle(a){ const arr=[...a]; for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
   function pickQuizSet(){
-    // 1) due items first
-    const due = rows
-      .map((r,idx)=>({r,idx}))
-      .filter(({r})=> (r.due && r.due<=now()));
-    // 2) then by RAG priority
+    const due = rows.map((r,idx)=>({r,idx})).filter(({r})=> (r.due && r.due<=now()));
     const byRag = (emoji)=> rows.map((r,idx)=>({r,idx})).filter(x=>normalizeRag(x.r["RAG Icon"])===emoji);
-
     const pool = [...due, ...byRag("🔴"), ...byRag("🟠"), ...byRag("🟢")];
-    const uniq = [];
-    const seen=new Set();
-    for(const x of pool){ if(!seen.has(x.idx)){ uniq.push(x); seen.add(x.idx); } }
-    const pick = uniq.slice(0,10);  // up to 10 questions
-    // Build choices
+    const uniq = []; const seen=new Set();
+    for (const x of pool){ if(!seen.has(x.idx)){ uniq.push(x); seen.add(x.idx); } }
+    const pick = uniq.slice(0,10);
     const items = pick.map(({r,idx})=>{
-      // distractors from same sheet or category
       const same = rows.filter((x,i)=> i!==idx && (x.Sheet===r.Sheet || (x.Category && x.Category===r.Category)));
       const shuffled = shuffle(same).slice(0,3);
       const correctText = primaryOf(r);
       const wrongs = shuffled.map(x=>primaryOf(x)).filter(t=>t && t!==correctText);
       const choices = shuffle([{text:correctText, isCorrect:true}, ...wrongs.slice(0,3).map(t=>({text:t,isCorrect:false}))]);
-      const prompt = secondaryOf(r); // show translation prompt
+      const prompt = secondaryOf(r);
       return { rowIdx:idx, choices, prompt };
-    }).filter(x=> x.choices.length>=2); // ensure at least 2 options
+    }).filter(x=> x.choices.length>=2);
     return items;
   }
   function startQuiz(){
@@ -409,9 +399,7 @@ export default function App(){
     const current = quizItems[quizCursor];
     const idx = current.rowIdx;
     setRows(prev=>{
-      const copy=[...prev];
-      schedule(isCorrect ? "correct":"wrong", copy[idx]);
-      return copy;
+      const copy=[...prev]; schedule(isCorrect ? "correct":"wrong", copy[idx]); return copy;
     });
     setStats(prev=>{
       const s=rolloverIfNeeded({...prev});
@@ -423,12 +411,10 @@ export default function App(){
       return {...s};
     });
     if(isCorrect || !quizFirstTry){
-      // next
       const next = quizCursor+1;
       if(next>=quizItems.length){ setQuizOpen(false); }
       else { setQuizCursor(next); setQuizFirstTry(true); }
     } else {
-      // allow another try on same question
       setQuizFirstTry(false);
     }
   }
@@ -449,7 +435,6 @@ export default function App(){
 
           {/* Voice + XP/Streak */}
           <div className="flex items-center gap-2">
-            {/* Browser voice selector (disabled when using cloud provider) */}
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
               value={voiceName}
@@ -458,10 +443,9 @@ export default function App(){
               title={ttsProvider==="browser" ? "Browser voice" : "Using cloud voice"}
             >
               <option value="">Auto voice</option>
-              {voices.map(v=><option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
+              {useVoices().map(v=><option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
             </select>
 
-            {/* Stats pills */}
             <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">XP {stats.xp}</div>
             <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">🔥 {stats.streak}</div>
 
@@ -597,8 +581,6 @@ export default function App(){
         ))}
       </div>
 
-      {/* Add form anchor is your existing bottom sheet; omitted here for brevity */}
-
       {/* QUIZ MODAL */}
       {quizOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
@@ -633,6 +615,7 @@ export default function App(){
           azureRegion={azureRegion} setAzureRegion={setAzureRegion}
           azureVoiceShortName={azureVoiceShortName} setAzureVoiceShortName={setAzureVoiceShortName}
           azureVoices={azureVoices} setAzureVoices={setAzureVoices}
+          startQuiz={startQuiz}
         />
       )}
     </div>
@@ -644,7 +627,8 @@ function SettingsModal(props){
   const {
     close, ttsProvider,setTtsProvider,
     elevenKey,setElevenKey, elevenVoiceId,setElevenVoiceId, elevenVoiceName,setElevenVoiceName, elevenVoices,setElevenVoices,
-    azureKey,setAzureKey, azureRegion,setAzureRegion, azureVoiceShortName,setAzureVoiceShortName, azureVoices,setAzureVoices
+    azureKey,setAzureKey, azureRegion,setAzureRegion, azureVoiceShortName,setAzureVoiceShortName, azureVoices,setAzureVoices,
+    startQuiz
   } = props;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -698,14 +682,12 @@ function SettingsModal(props){
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button onClick={close} className="bg-emerald-600 px-3 py-2 rounded-md">Close</button>
+          <div className="flex justify-between gap-2 pt-2">
+            <button onClick={startQuiz} className="bg-emerald-600 px-3 py-2 rounded-md">Start Quiz</button>
+            <button onClick={close} className="bg-zinc-800 px-3 py-2 rounded-md">Close</button>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-/* -------------------- SMALL UTILS -------------------- */
-function shuffle(a){ const arr=[...a]; for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
