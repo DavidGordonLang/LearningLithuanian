@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * Lithuanian Trainer — Quiz + audio + daily streak
- * - Quiz draws from ALL tabs
- * - Tap plays at 100%, long‑press at 60% (Azure+browser; ElevenLabs = normal)
- * - Quit Quiz no longer resets streak (streak advances/resets only on daily rollover)
+ * Lithuanian Trainer — Quiz+Audio+Streaks (v3)
+ * - Tap audio ≈ 85%, Long-press ≈ 65% (Azure/Browser). ElevenLabs = normal (API limitation).
+ * - Streak increments once per calendar day when a 10-question quiz is completed.
+ * - Quiz pulls from ALL tabs, with RAG mix: 40% 🔴, 50% 🟠, 10% 🟢 (fallback if bucket-low).
+ * - Recent-history filter reduces repeats across sessions.
+ * - Finish screen with score + streak feedback.
  */
 
 const LS_KEY = "lt_phrasebook_v2";
@@ -15,13 +17,16 @@ const LSK_USAGE = "lt_eleven_usage_v1";     // {month:"YYYY-MM", requests:number
 const LSK_AZURE_KEY = "lt_azure_key";
 const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice";   // {shortName}
-const LSK_STATS = "lt_gamestats_v1";
+const LSK_RECENT = "lt_quiz_recent_v1";     // string[] of ids
+const LSK_STATS = "lt_gamestats_v2";        // {streak,lastCompletedDay,...}
 
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadData = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)||"[]"); } catch { return []; } };
 const monthKey = () => new Date().toISOString().slice(0,7);
 const loadUsage = () => { try { const u=JSON.parse(localStorage.getItem(LSK_USAGE)||"null"); return (!u||u.month!==monthKey())?{month:monthKey(),requests:0}:u; } catch { return {month:monthKey(),requests:0}; } };
 const saveUsage = (u)=>localStorage.setItem(LSK_USAGE, JSON.stringify(u));
+const todayDays = ()=>Math.floor(Date.now()/86400000);
+const now = ()=>Date.now();
 
 function normalizeRag(icon=""){ const s=String(icon).trim(); const low=s.toLowerCase();
   if(["🔴","🟥","red"].includes(s)||low==="red") return "🔴";
@@ -30,8 +35,6 @@ function normalizeRag(icon=""){ const s=String(icon).trim(); const low=s.toLower
   return "";
 }
 const cn=(...xs)=>xs.filter(Boolean).join(" ");
-const todayDays = ()=>Math.floor(Date.now()/86400000);
-const now = ()=>Date.now();
 
 /* XLSX (UMD) */
 async function loadXLSX(){
@@ -96,13 +99,13 @@ function speakBrowser(text, voice, rate=1){
   const u=new SpeechSynthesisUtterance(text); if(voice) u.voice=voice; u.lang=voice?.lang||"lt-LT"; u.rate=rate;
   window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
 }
-// ElevenLabs (no rate control)
+// ElevenLabs (no client rate control)
 async function fetchElevenVoicesHTTP(key){ const r=await fetch("https://api.elevenlabs.io/v1/voices",{headers:{"xi-api-key":key}}); if(!r.ok) throw new Error("Failed to fetch voices"); const d=await r.json(); return (d.voices||[]).map(v=>({id:v.voice_id,name:v.name})); }
 async function speakElevenLabsHTTP(text, voiceId, key){
   const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,{method:"POST",headers:{"xi-api-key":key,"Content-Type":"application/json",Accept:"audio/mpeg"},body:JSON.stringify({text,model_id:"eleven_multilingual_v2",voice_settings:{stability:0.4, similarity_boost:0.7, style:0.2, use_speaker_boost:true}})}); 
   if(!r.ok) throw new Error("ElevenLabs TTS failed: "+r.status+" "+r.statusText); const b=await r.blob(); return URL.createObjectURL(b);
 }
-// Azure
+// Azure (+SSML rate)
 async function fetchAzureVoicesHTTP(key,region){ const url=`https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`; const r=await fetch(url,{headers:{"Ocp-Apim-Subscription-Key":key}}); if(!r.ok) throw new Error("Failed to fetch Azure voices"); const d=await r.json(); return d.map(v=>({shortName:v.ShortName, locale:v.Locale, displayName:v.LocalName||v.FriendlyName||v.ShortName})); }
 function escapeXml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;"); }
 async function speakAzureHTTP(text, shortName, key, region, ratePercent="100%"){
@@ -111,21 +114,6 @@ async function speakAzureHTTP(text, shortName, key, region, ratePercent="100%"){
   const r=await fetch(url,{method:"POST",headers:{"Ocp-Apim-Subscription-Key":key,"Content-Type":"application/ssml+xml","X-Microsoft-OutputFormat":"audio-24khz-48kbitrate-mono-mp3"},body:ssml});
   if(!r.ok) throw new Error("Azure TTS failed: "+r.status+" "+r.statusText); const b=await r.blob(); return URL.createObjectURL(b);
 }
-
-/* Game stats (daily streak) */
-const defaultStats=()=>({xp:0,dailyGoal:100,lastDay:todayDays(),streak:0,dailyXP:0,combo:0,badges:{}});
-function loadStats(){ try{ const s=JSON.parse(localStorage.getItem(LSK_STATS)||"null"); return s?rolloverIfNeeded(s):defaultStats(); }catch{ return defaultStats(); } }
-function saveStats(s){ localStorage.setItem(LSK_STATS, JSON.stringify(s)); }
-function rolloverIfNeeded(s){
-  const d=todayDays();
-  if(s.lastDay!==d){
-    // Advance or reset based on yesterday’s completion
-    s.streak = s.dailyXP>=s.dailyGoal ? (s.streak||0)+1 : 0;
-    s.dailyXP=0; s.combo=0; s.lastDay=d;
-  }
-  return s;
-}
-function addXP(s,amount){ s.xp+=amount; s.dailyXP+=amount; s.combo=Math.min(10,(s.combo||0)+1); }
 
 /* Spaced repetition */
 function ensureSR(row){ if(row.ease==null) row.ease=2.5; if(row.intervalDays==null) row.intervalDays=0; if(row.due==null) row.due=0; if(row.correctStreak==null) row.correctStreak=0; return row; }
@@ -136,6 +124,15 @@ function schedule(result,row){ ensureSR(row); const td=todayDays();
   if(row.correctStreak>=3 && row["RAG Icon"]==="🟠") row["RAG Icon"]="🟢";
   if(result==="wrong" && row["RAG Icon"]==="🟢") row["RAG Icon"]="🟠";
 }
+
+/* Stats / streaks */
+const defaultStats=()=>({streak:0,lastCompletedDay:null,xp:0,combo:0});
+function loadStats(){ try{ return JSON.parse(localStorage.getItem(LSK_STATS)||"null")||defaultStats(); }catch{ return defaultStats(); } }
+function saveStats(s){ localStorage.setItem(LSK_STATS, JSON.stringify(s)); }
+
+/* Recent history */
+function loadRecent(){ try{ return JSON.parse(localStorage.getItem(LSK_RECENT)||"[]"); }catch{ return []; } }
+function saveRecent(arr){ localStorage.setItem(LSK_RECENT, JSON.stringify(arr.slice(-80))); } // keep last 80 ids
 
 /* Main */
 export default function App(){
@@ -168,11 +165,12 @@ export default function App(){
   const [quizOpen,setQuizOpen]=useState(false);
   const [quizItems,setQuizItems]=useState([]); // [{rowIdx, choices:[{text,isCorrect}], prompt}]
   const [quizCursor,setQuizCursor]=useState(0);
-  const [quizFirstTry,setQuizFirstTry]=useState(true);
   const [selectedIdx,setSelectedIdx]=useState(null);
   const [correctIdx,setCorrectIdx]=useState(null);
   const [answered,setAnswered]=useState(false);
   const [wasCorrect,setWasCorrect]=useState(false);
+  const [score,setScore]=useState(0);
+  const [finishOpen,setFinishOpen]=useState(false);
 
   const [confirmClear,setConfirmClear]=useState(false);
   const [ragPriority,setRagPriority]=useState("");
@@ -217,11 +215,11 @@ export default function App(){
         const url=await speakElevenLabsHTTP(text, elevenVoiceId, elevenKey);
         const a=new Audio(url); a.onended=()=>URL.revokeObjectURL(url); await a.play();
       }else if(ttsProvider==="azure" && azureKey && azureRegion && azureVoiceShortName){
-        const rate = slow ? "60%" : "100%";           // speed
+        const rate = slow ? "65%" : "85%";
         const url=await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, rate);
         const a=new Audio(url); a.onended=()=>URL.revokeObjectURL(url); await a.play();
       }else{
-        const rate = slow ? 0.6 : 1.0;               // speed
+        const rate = slow ? 0.65 : 0.85;
         speakBrowser(text, voice, rate);
       }
     }catch(e){ console.error(e); alert("Voice error: "+(e?.message||e)); }
@@ -254,71 +252,112 @@ export default function App(){
     localStorage.removeItem(LS_KEY); setRows([]); setQ(""); setTab("Phrases"); setConfirmClear(false);
   }
 
-  /* Quiz (ALL tabs) */
+  /* Quiz helpers */
+  const [recent,setRecent]=useState(loadRecent());
+  useEffect(()=>saveRecent(recent),[recent]);
+
   function shuffle(a){ const arr=[...a]; for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+  function idOf(r){ return `${(r.English||"").trim()}|${(r.Lithuanian||"").trim()}|${r.Sheet||""}`; }
+
   function pickQuizSet(){
     const all = rows.filter(r => r.English && r.Lithuanian);
-    const due = all.map((r,idx)=>({r,idx})).filter(({r})=>r.due && r.due<=now());
-    const byRag = (e)=> all.map((r,idx)=>({r,idx})).filter(x=>normalizeRag(x.r["RAG Icon"])===e);
-    const pool=[...due, ...byRag("🔴"), ...byRag("🟠"), ...byRag("🟢")];
-    const uniq=[]; const seen=new Set(); for(const x of pool){ if(!seen.has(x.idx)){ uniq.push(x); seen.add(x.idx);} }
-    const pick=uniq.slice(0,10);
-    const items=pick.map(({r,idx})=>{
-      const same=all.filter((x,i)=>i!==idx && (x.Sheet===r.Sheet || (x.Category && x.Category===r.Category)));
-      const wrongs=shuffle(same).slice(0,3).map(x=>primaryOf(x)).filter(Boolean);
-      const correct=primaryOf(r);
-      const choices=shuffle([{text:correct,isCorrect:true}, ...wrongs.slice(0,3).map(t=>({text:t,isCorrect:false}))]);
-      return { rowIdx: idx, prompt: secondaryOf(r), choices };
+    // Split by RAG
+    const reds   = shuffle(all.filter(r=>normalizeRag(r["RAG Icon"])==="🔴" && !recent.includes(idOf(r))));
+    const ambers = shuffle(all.filter(r=>normalizeRag(r["RAG Icon"])==="🟠" && !recent.includes(idOf(r))));
+    const greens = shuffle(all.filter(r=>normalizeRag(r["RAG Icon"])==="🟢" && !recent.includes(idOf(r))));
+    // Targets: 4 red, 5 amber, 1 green
+    let pick = [];
+    const take = (src,n)=>{ const got=src.splice(0,n); pick.push(...got); };
+    take(reds,4); take(ambers,5); take(greens,1);
+    // Fallback if we’re short
+    if(pick.length<10){
+      const leftovers = shuffle(all.filter(r=>!recent.includes(idOf(r)) && !pick.includes(r)));
+      pick.push(...leftovers.slice(0, 10-pick.length));
+    }
+    // If still short (everything was in recent), fall back to full pool
+    if(pick.length<10){
+      const leftovers2 = shuffle(all.filter(r=>!pick.includes(r)));
+      pick.push(...leftovers2.slice(0, 10-pick.length));
+    }
+    pick = pick.slice(0,10);
+
+    // Build items
+    const items = pick.map((r)=>{
+      const sameCat = all.filter(x=>x!==r && (x.Sheet===r.Sheet || (x.Category && x.Category===r.Category)));
+      const wrongsPool = sameCat.length ? sameCat : all.filter(x=>x!==r);
+      const wrongs = shuffle(wrongsPool).slice(0,3).map(x=>primaryOf(x)).filter(Boolean);
+      const correct = primaryOf(r);
+      const choices = shuffle([{text:correct,isCorrect:true}, ...wrongs.slice(0,3).map(t=>({text:t,isCorrect:false}))]);
+      return { rowIdx: rows.indexOf(r), prompt: secondaryOf(r), choices, id: idOf(r) };
     }).filter(x=>x.choices.length>=2);
+
     return items;
   }
+
   function startQuiz(){
     const items=pickQuizSet();
     if(!items.length){ alert("Nothing to review. Add items or import data."); return; }
-    setQuizItems(items); setQuizCursor(0); setQuizFirstTry(true);
+    setQuizItems(items); setQuizCursor(0);
     setSelectedIdx(null); setCorrectIdx(null); setAnswered(false); setWasCorrect(false);
+    setScore(0); setFinishOpen(false);
     setQuizOpen(true);
   }
+
   function answerChoice(i){
     if(answered) return;
     const item=quizItems[quizCursor];
     const idxCorrect = item.choices.findIndex(c=>c.isCorrect);
     const isCorrect = i===idxCorrect;
-    setSelectedIdx(i); setCorrectIdx(idxCorrect); setAnswered(true); setWasCorrect(isCorrect);
 
+    setSelectedIdx(i); setCorrectIdx(idxCorrect); setAnswered(true); setWasCorrect(isCorrect);
+    if(isCorrect) setScore(s=>s+1);
+
+    // schedule + update row
     const rowIdx=item.rowIdx;
     setRows(prev=>{ const copy=[...prev]; schedule(isCorrect?"correct":"wrong", copy[rowIdx]); return copy; });
 
-    setStats(prev=>{
-      const s=rolloverIfNeeded({...prev});
-      const base = isCorrect ? (quizFirstTry?10:5) : 0;
-      const comboBoost = Math.min(5, Math.floor((s.combo||0)/3));
-      addXP(s, base + comboBoost);
-      if(!isCorrect) s.combo=0;
-      return {...s};
-    });
-
+    // Play the correct answer (normal speed)
     const row = rows[rowIdx];
     const correctText = primaryOf(row);
     playText(correctText, { slow:false });
   }
+
   function nextQuestion(){
     const next=quizCursor+1;
-    if(next>=quizItems.length){ setQuizOpen(false); return; }
+    if(next>=quizItems.length){
+      // Finish quiz
+      setQuizOpen(false);
+      setFinishOpen(true);
+
+      // Streak: increment once per day on completion of a 10Q quiz
+      setStats(prev=>{
+        const d=todayDays();
+        if(prev.lastCompletedDay!==d){
+          return { ...prev, streak:(prev.streak||0)+1, lastCompletedDay:d };
+        }
+        return prev;
+      });
+
+      // Update recent history
+      setRecent(prev=>{
+        const ids = quizItems.map(it=>it.id);
+        return [...prev, ...ids].slice(-80);
+      });
+
+      return;
+    }
     setQuizCursor(next);
-    setQuizFirstTry(true);
     setSelectedIdx(null); setCorrectIdx(null); setAnswered(false); setWasCorrect(false);
   }
+
   function quitQuiz(){
-    if(confirm("Quit quiz? You won’t add to your streak until you complete enough questions today.")){
-      // Do NOT touch streak here; daily rollover handles it.
+    if(confirm("Quit quiz? You won’t add to your streak until you complete a full set today.")){
       setQuizOpen(false);
     }
   }
 
   /* Add form */
   const [draft,setDraft]=useState({English:"",Lithuanian:"",Phonetic:"",Category:"",Usage:"",Notes:"","RAG Icon":"🟠",Sheet:"Phrases"});
-
   function addRow(){
     if(!draft.English || !draft.Lithuanian){ alert("English & Lithuanian are required"); return; }
     const row={...draft,"RAG Icon":normalizeRag(draft["RAG Icon"])};
@@ -336,16 +375,15 @@ export default function App(){
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">LT</div>
             <div className="leading-tight">
               <div className="text-lg font-semibold">Lithuanian Trainer</div>
-              <div className="text-xs text-zinc-400">Tap to play. Long‑press to savor.</div>
+              <div className="text-xs text-zinc-400">Tap to play (85%) • Long‑press (65%).</div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <select className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1" value={voiceName} onChange={(e)=>setVoiceName(e.target.value)} disabled={ttsProvider!=="browser"} title={ttsProvider==="browser"?"Browser voice":"Using cloud voice"}>
+            <select className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1" value={voiceName} onChange={(e)=>setVoiceName(e.target.value)} disabled={ttsProvider!=="browser"} title={ttsProvider==="browser"?"Browser voice (rate control)":"Cloud voice"}>
               <option value="">Auto voice</option>
               {useVoices().map(v=><option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
             </select>
-            <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">XP {stats.xp}</div>
             <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">🔥 {stats.streak}</div>
             {ttsProvider==="elevenlabs" && <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">{usage.requests||0} plays</div>}
           </div>
@@ -383,8 +421,8 @@ export default function App(){
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sticky top=[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
+      {/* Tabs (for browsing only) */}
+      <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sticky top-[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
         {["Phrases","Questions","Words"].map(t=>(
           <button key={t} onClick={()=>setTab(t)} className={cn("mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border", tab===t?"bg-emerald-600 border-emerald-600":"bg-zinc-900 border-zinc-800")}>{t}</button>
         ))}
@@ -410,7 +448,7 @@ export default function App(){
                     <div key={`${r.English}-${idx}`} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
                       {!isEditing ? (
                         <div className="flex items-start gap-2">
-                          <button {...attachPressHandlers(primary)} className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition flex items-center justify-center font-semibold" title="Tap: play • Long‑press: slow">►</button>
+                          <button {...attachPressHandlers(primary)} className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition flex items-center justify-center font-semibold" title="Tap: play (85%) • Long‑press: 65%">►</button>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm text-zinc-400 truncate">{secondary}</div>
                             <div className="text-lg leading-tight font-medium break-words">{primary}</div>
@@ -479,7 +517,6 @@ export default function App(){
               <div className="flex-1 mr-2">
                 <div className="flex justify-between text-[11px] text-zinc-400 mb-1">
                   <span>Question {quizCursor+1}/{quizItems.length}</span>
-                  <span>XP {stats.dailyXP}/{stats.dailyGoal}</span>
                 </div>
                 <div className="h-1.5 bg-zinc-800 rounded">
                   <div className="h-1.5 bg-emerald-500 rounded" style={{width: `${((quizCursor)/Math.max(1,quizItems.length))*100}%`}} />
@@ -499,7 +536,7 @@ export default function App(){
                   <div className="text-lg font-medium mb-2 break-words">{item.prompt}</div>
                   <button
                     className="mb-3 text-xs px-3 py-1 rounded-md border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
-                    onClick={()=> playText(row.Lithuanian, {slow:false})}
+                    onClick={()=> playText(rows[item.rowIdx].Lithuanian, {slow:false})}
                     title="Hear Lithuanian"
                   >
                     🔊 Hear Lithuanian
@@ -522,7 +559,7 @@ export default function App(){
                 return (
                   <button
                     key={i}
-                    onClick={()=>answerChoice(i)}
+                    onClick={()=>{ if(!answered) { /* first click */ } answerChoice(i); }}
                     disabled={answered}
                     className={`${base} ${state}`}
                   >
@@ -545,7 +582,7 @@ export default function App(){
 
               {answered ? (
                 <button className="text-sm px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500" onClick={nextQuestion}>
-                  Next Question →
+                  {quizCursor+1>=quizItems.length ? "Finish" : "Next Question →"}
                 </button>
               ) : (
                 <button className="text-sm px-3 py-1 rounded-md bg-zinc-800 opacity-60 cursor-not-allowed">
@@ -553,6 +590,24 @@ export default function App(){
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FINISH MODAL */}
+      {finishOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
+            <div className="text-2xl font-semibold mb-1">👏 Well done!</div>
+            <div className="text-sm text-zinc-300 mb-4">You scored <span className="font-semibold">{score}</span> / 10</div>
+            <div className="text-xs text-zinc-400 mb-4">
+              {stats.lastCompletedDay === todayDays()
+                ? "Streak updated for today. Keep it going tomorrow."
+                : "Streak will update the next time you complete a set."}
+            </div>
+            <button className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500" onClick={()=>setFinishOpen(false)}>
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -577,7 +632,7 @@ export default function App(){
         </div>
       </div>
 
-      {/* Settings */}
+      {/* Settings (unchanged from previous) */}
       {settingsOpen && (
         <SettingsModal
           close={()=>setSettingsOpen(false)}
