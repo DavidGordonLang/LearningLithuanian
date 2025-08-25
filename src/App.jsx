@@ -667,15 +667,78 @@ export default function App() {
               </span>
               <div className="text-sm text-zinc-400">{items.length} item(s)</div>
             </div>
-            <div className="space-y-2">
-              {items.map((r) => {
-                const idx = rows.indexOf(r);
-                const isEditing = editIdx === idx;
-                const primary = direction === "EN2LT" ? r.Lithuanian : r.English;
-                const secondary = direction === "EN2LT" ? r.English : r.Lithuanian;
-
-                return (
-                  <div
+            <<div className="space-y-2">
+  <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
+    <label className="col-span-2">
+      English
+      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft.English}
+        onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })}
+      />
+    </label>
+    <label className="col-span-2">
+      Lithuanian
+      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft.Lithuanian}
+        onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })}
+      />
+    </label>
+    <label>
+      Phonetic
+      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft.Phonetic}
+        onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })}
+      />
+    </label>
+    <label>
+      Category
+      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft.Category}
+        onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })}
+      />
+    </label>
+    <label className="col-span-2">
+      Usage
+      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft.Usage}
+        onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })}
+      />
+    </label>
+    <label className="col-span-2">
+      Notes
+      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft.Notes}
+        onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })}
+      />
+    </label>
+    <label>
+      RAG
+      <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft["RAG Icon"]}
+        onChange={(e) => setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })}
+      >
+        {"🔴 🟠 🟢".split(" ").map((x) => (
+          <option key={x} value={x}>{x}</option>
+        ))}
+      </select>
+    </label>
+    <label>
+      Sheet
+      <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+        value={editDraft.Sheet}
+        onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}
+      >
+        {["Phrases", "Questions", "Words"].map((s) => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
+    </label>
+  </div>
+  <div className="flex gap-2">
+    <button onClick={() => saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">Save</button>
+    <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">Cancel</button>
+  </div>
+</div>
                     key={`${r.English}-${idx}`}
                     className="bg-zinc-900 border border-zinc-800 rounded-2xl p-2 sm:p-3"
                   >
