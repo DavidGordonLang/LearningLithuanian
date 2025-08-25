@@ -8,11 +8,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - TTS providers: Browser, ElevenLabs, Azure (tap = normal, long-press = slow)
  * - ElevenLabs monthly usage counter
  * - Quiz: multiple choice, audio before choice, feedback, weighted RAG sampling, daily streak
- * - Direction toggle EN→LT / LT→EN (list view)
+ * - Direction toggle EN→LT / LT→EN (list view)  ✅ play button respects mode
  * - XP/Level system (50 XP per correct; 2500 XP per level)
  * - Starter packs modal on first run (EN→LT / LT→EN / Both)
- * - NEW: Numbers tab supported everywhere
- * - NEW: Starter packs can be loaded later from Settings (merge, not overwrite)
+ * - Numbers tab supported everywhere
+ * - Starter packs can be loaded later from Settings (merge, not overwrite)
+ * - ✅ UI strings for subtitle, RAG label, and tab labels localize with the mode
  */
 
 // -------------------- Keys & constants --------------------
@@ -45,8 +46,32 @@ const XP_PER_LEVEL = 2500;
 // Onboarding (starter packs modal)
 const LSK_ONBOARDED = "lt_onboarded_v1";
 
-// Supported sheets/tabs
-const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
+// Internal sheet keys (do not change these — used in data)
+const SHEET_KEYS = ["Phrases", "Questions", "Words", "Numbers"];
+
+// -------------------- UI strings (localized by mode) --------------------
+const STR = {
+  en: {
+    subtitle: "Tap to play. Long-press to savour.",
+    ragSort: "Sort RAG first",
+    tabs: {
+      Phrases: "Phrases",
+      Questions: "Questions",
+      Words: "Words",
+      Numbers: "Numbers",
+    },
+  },
+  lt: {
+    subtitle: "Bakstelėkite – leisti. Ilgai palaikykite – lėtai.",
+    ragSort: "Rikiuoti RAG pirmiau",
+    tabs: {
+      Phrases: "Frazės",
+      Questions: "Klausimai",
+      Words: "Žodžiai",
+      Numbers: "Skaičiai",
+    },
+  },
+};
 
 // -------------------- Local storage helpers --------------------
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
@@ -137,8 +162,8 @@ function pickDistractors(pool, correct, key, n = 3) {
   for (const r of shuffle(others)) {
     const v = r[key];
     if (seen.has(v)) continue;
-    seen.add(v);
     uniqueByKey.push(r);
+    seen.add(v);
     if (uniqueByKey.length >= n) break;
   }
   return uniqueByKey;
@@ -208,7 +233,7 @@ async function importXlsx(file) {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   const merged = [];
-  const tabs = new Set(SHEETS);
+  const tabs = new Set(SHEET_KEYS);
 
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
@@ -354,6 +379,11 @@ export default function App() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [ragPriority, setRagPriority] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Which language to show for UI strings
+  const uiLang = direction === "EN2LT" ? "en" : "lt";
+  const t = (k) => k.split(".").reduce((o, p) => (o ? o[p] : undefined), STR[uiLang]) ?? k;
+  const tabLabel = (key) => STR[uiLang]?.tabs?.[key] ?? key;
 
   // Starter packs modal (open on first run if no data)
   const [starterOpen, setStarterOpen] = useState(() => {
@@ -822,7 +852,7 @@ export default function App() {
             </div>
             <div className="leading-tight">
               <div className="text-lg font-semibold">Lithuanian Trainer</div>
-              <div className="text-xs text-zinc-400">Tap to play. Long-press to savor.</div>
+              <div className="text-xs text-zinc-400">{t("subtitle")}</div>
             </div>
           </div>
 
@@ -904,7 +934,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div className="text-xs text-zinc-300">Sort RAG first:</div>
+          <div className="text-xs text-zinc-300">{t("ragSort")}:</div>
           <div className="flex items-center gap-1">
             {["", "🔴", "🟠", "🟢"].map((x, i) => (
               <button
@@ -946,16 +976,16 @@ export default function App() {
 
       {/* Tabs */}
       <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sticky top-[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
-        {SHEETS.map((t) => (
+        {SHEET_KEYS.map((key) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={key}
+            onClick={() => setTab(key)}
             className={cn(
               "mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border",
-              tab === t ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
+              tab === key ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
             )}
           >
-            {t}
+            {tabLabel(key)}
           </button>
         ))}
       </div>
@@ -977,6 +1007,7 @@ export default function App() {
                   const isEditing = editIdx === idx;
                   const primary = direction === "EN2LT" ? r.Lithuanian : r.English;
                   const secondary = direction === "EN2LT" ? r.English : r.Lithuanian;
+                  const speakText = direction === "EN2LT" ? r.Lithuanian : r.English;
 
                   return (
                     <div key={`${r.English}-${idx}`} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
@@ -986,7 +1017,7 @@ export default function App() {
                           <button
                             className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition flex items-center justify-center font-semibold"
                             title="Tap = play, long-press = slow"
-                            {...pressHandlers(r.Lithuanian)}
+                            {...pressHandlers(speakText)}
                           >
                             ►
                           </button>
@@ -1088,8 +1119,8 @@ export default function App() {
                                 value={editDraft.Sheet}
                                 onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}
                               >
-                                {SHEETS.map((s) => (
-                                  <option key={s} value={s}>{s}</option>
+                                {SHEET_KEYS.map((s) => (
+                                  <option key={s} value={s}>{tabLabel(s)}</option>
                                 ))}
                               </select>
                             </label>
@@ -1121,7 +1152,7 @@ export default function App() {
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
               {(() => {
                 const item = quizQs[quizIdx];
-                const questionText = item.English; // show English prompt
+                const questionText = item.English; // English prompt for now
                 const correctLt = item.Lithuanian;
 
                 return (
@@ -1214,7 +1245,7 @@ export default function App() {
                   {"🔴 🟠 🟢".split(" ").map((x) => (<option key={x} value={x}>{x}</option>))}
                 </select>
                 <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft.Sheet} onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}>
-                  {SHEETS.map((s) => (<option key={s} value={s}>{s}</option>))}
+                  {SHEET_KEYS.map((s) => (<option key={s} value={s}>{tabLabel(s)}</option>))}
                 </select>
                 <button onClick={addRow} className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold">Add</button>
               </div>
@@ -1225,7 +1256,7 @@ export default function App() {
 
       <div className="h-24" />
 
-      {/* Settings Modal */}
+      {/* Settings Modal (includes on-demand starter loaders) */}
       {settingsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-[92%] max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
@@ -1386,6 +1417,17 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              <div className="p-3 rounded-md border border-zinc-700 bg-zinc-950">
+                <div className="font-medium mb-1">Starter packs</div>
+                <div className="text-xs text-zinc-400 mb-2">Merge more starter data into your library (won’t overwrite existing rows):</div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => loadStarter("enlt")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">Load EN→LT</button>
+                  <button onClick={() => loadStarter("lten")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">Load LT→EN</button>
+                  <button onClick={() => loadStarter("both")} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">Load Both</button>
+                  <button onClick={() => setStarterOpen(true)} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">Open chooser</button>
+                </div>
+              </div>
 
               <div className="flex justify-end gap-2 pt-1">
                 <button onClick={() => setSettingsOpen(false)} className="bg-emerald-600 px-3 py-2 rounded-md">Close</button>
