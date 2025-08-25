@@ -21,9 +21,6 @@ const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice";   // {shortName}
 const LSK_STATS = "lt_gamestats_v1";
 
-/* columns only used when building/adding rows */
-const COLS = ["English","Lithuanian","Phonetic","Category","Usage","Notes","RAG Icon","Sheet"];
-
 /* -------------------- BASIC HELPERS -------------------- */
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadData = () => {
@@ -34,9 +31,9 @@ const loadData = () => {
 const monthKey = () => new Date().toISOString().slice(0,7);
 const loadUsage = () => {
   try { const u = JSON.parse(localStorage.getItem(LSK_USAGE)||"null"); 
-        if (!u || u.month!==monthKey()) return {month:monthKey(),requests:0}; 
+        if (!u || u.month!==monthKey()) return { month: monthKey(), requests: 0 }; 
         return u;
-  } catch { return {month:monthKey(),requests:0}; }
+  } catch { return { month: monthKey(), requests: 0 }; }
 };
 const saveUsage = (u)=>localStorage.setItem(LSK_USAGE, JSON.stringify(u));
 
@@ -127,7 +124,7 @@ function useVoices() {
 }
 function speakBrowser(text, voice, rate=1){
   if(!window.speechSynthesis){ alert("Speech synthesis not supported."); return; }
-  const u=new SpeechSynthesisUtterance(text);
+  const u = new SpeechSynthesisUtterance(text);
   if(voice) u.voice=voice; u.lang=voice?.lang||"lt-LT"; u.rate=rate;
   window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
 }
@@ -238,7 +235,7 @@ function schedule(result, row){
 /* -------------------- MAIN APP -------------------- */
 export default function App(){
   const fileRef = useRef(null);
-  const longPressRef = useRef(null);
+  const longPressRef = useRef(null); // <-- single declaration here
 
   const [rows, setRows] = useState(loadData().map(ensureSR));
   const [tab, setTab] = useState("Phrases");
@@ -270,7 +267,7 @@ export default function App(){
   const [confirmClear,setConfirmClear]=useState(false);
   const [ragPriority,setRagPriority]=useState("");
 
-  // 👇 MISSING BEFORE — this caused the blank screen
+  // Settings modal
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   /* voices */
@@ -310,7 +307,7 @@ export default function App(){
     return keys.map(k=>({key:k, items:buckets[k]}));
   },[filtered,ragPriority]);
 
-  /* helpers to choose text based on direction */
+  /* text by mode */
   const primaryOf = (r)=> direction==="EN2LT" ? r.Lithuanian : r.English;
   const secondaryOf = (r)=> direction==="EN2LT" ? r.English : r.Lithuanian;
 
@@ -330,7 +327,6 @@ export default function App(){
       }
     }catch(e){ console.error(e); alert("Voice error: "+(e?.message||e)); }
   }
-  const longPressRef = useRef(null);
   function attachPressHandlers(text){
     return {
       onMouseDown: ()=>{ longPressRef.current = setTimeout(()=>{ playText(text,{slow:true}); longPressRef.current="played"; }, 500); },
@@ -341,7 +337,7 @@ export default function App(){
     };
   }
 
-  /* -------------------- CRUD (Edit/Delete inline) -------------------- */
+  /* -------------------- EDIT/DELETE -------------------- */
   const [editIdx,setEditIdx]=useState(null);
   const [editDraft,setEditDraft]=useState(null);
   function startEdit(i){ setEditIdx(i); setEditDraft({...rows[i]}); }
@@ -374,6 +370,7 @@ export default function App(){
   }
 
   /* -------------------- QUIZ (multiple-choice) -------------------- */
+  function shuffle(a){ const arr=[...a]; for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
   function pickQuizSet(){
     const due = rows.map((r,idx)=>({r,idx})).filter(({r})=> (r.due && r.due<=now()));
     const byRag = (emoji)=> rows.map((r,idx)=>({r,idx})).filter(x=>normalizeRag(x.r["RAG Icon"])===emoji);
@@ -401,9 +398,7 @@ export default function App(){
     const current = quizItems[quizCursor];
     const idx = current.rowIdx;
     setRows(prev=>{
-      const copy=[...prev];
-      schedule(isCorrect ? "correct":"wrong", copy[idx]);
-      return copy;
+      const copy=[...prev]; schedule(isCorrect ? "correct":"wrong", copy[idx]); return copy;
     });
     setStats(prev=>{
       const s=rolloverIfNeeded({...prev});
@@ -449,8 +444,10 @@ export default function App(){
               <option value="">Auto voice</option>
               {useVoices().map(v=><option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
             </select>
+
             <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">XP {stats.xp}</div>
             <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">🔥 {stats.streak}</div>
+
             {ttsProvider==="elevenlabs" && (
               <div className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300">{usage.requests||0} plays</div>
             )}
@@ -604,7 +601,7 @@ export default function App(){
         </div>
       )}
 
-      {/* SETTINGS MODAL */}
+      {/* SETTINGS (provider + keys/voices) */}
       {settingsOpen && (
         <SettingsModal
           close={()=>setSettingsOpen(false)}
@@ -617,6 +614,7 @@ export default function App(){
           azureRegion={azureRegion} setAzureRegion={setAzureRegion}
           azureVoiceShortName={azureVoiceShortName} setAzureVoiceShortName={setAzureVoiceShortName}
           azureVoices={azureVoices} setAzureVoices={setAzureVoices}
+          startQuiz={startQuiz}
         />
       )}
     </div>
@@ -628,7 +626,8 @@ function SettingsModal(props){
   const {
     close, ttsProvider,setTtsProvider,
     elevenKey,setElevenKey, elevenVoiceId,setElevenVoiceId, elevenVoiceName,setElevenVoiceName, elevenVoices,setElevenVoices,
-    azureKey,setAzureKey, azureRegion,setAzureRegion, azureVoiceShortName,setAzureVoiceShortName, azureVoices,setAzureVoices
+    azureKey,setAzureKey, azureRegion,setAzureRegion, azureVoiceShortName,setAzureVoiceShortName, azureVoices,setAzureVoices,
+    startQuiz
   } = props;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -682,14 +681,12 @@ function SettingsModal(props){
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button onClick={close} className="bg-emerald-600 px-3 py-2 rounded-md">Close</button>
+          <div className="flex justify-between gap-2 pt-2">
+            <button onClick={startQuiz} className="bg-emerald-600 px-3 py-2 rounded-md">Start Quiz</button>
+            <button onClick={close} className="bg-zinc-800 px-3 py-2 rounded-md">Close</button>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-/* -------------------- SMALL UTILS -------------------- */
-function shuffle(a){ const arr=[...a]; for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
