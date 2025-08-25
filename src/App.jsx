@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * Lithuanian Trainer — full app
  * - List view with tabs, search, details toggle
  * - RAG sort (🔴 🟠 🟢), add/edit/delete
- * - XLSX import (UMD loader), JSON export (now MERGES + DE-DUPES)
+ * - XLSX import (UMD loader), JSON export (MERGES + DE-DUPES)
  * - TTS providers: Browser, ElevenLabs, Azure (tap = normal, long-press = slow)
  * - ElevenLabs monthly usage counter
  * - Quiz: multiple choice, audio before choice, feedback, weighted RAG sampling, daily streak
@@ -12,6 +12,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - XP/Level system (50 XP per correct; 2500 XP per level)
  * - Starter packs modal on first run (EN→LT / LT→EN / Both)
  * - NEW: Numbers tab supported everywhere
+ * - NEW: Starter packs can be loaded later from Settings (merge, not overwrite)
  */
 
 // -------------------- Keys & constants --------------------
@@ -525,7 +526,7 @@ export default function App() {
     return indices.map((i) => ({ idx: i, row: rows[i] }));
   }, [rows, tab, q]);
 
-  // -------------------- Starter packs (first run) --------------------
+  // -------------------- Starter packs (first run + on demand) --------------------
   async function fetchStarter(path, sourceName) {
     const res = await fetch(path);
     if (!res.ok) throw new Error("Failed to fetch starter: " + path);
@@ -551,6 +552,7 @@ export default function App() {
       setRows((prev) => mergeRows(prev, incoming));
       localStorage.setItem(LSK_ONBOARDED, "1");
       setStarterOpen(false);
+      alert(`${label} merged successfully.`);
     } catch (e) {
       alert(e.message || String(e));
     }
@@ -1228,7 +1230,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-[92%] max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
             <div className="text-lg font-semibold mb-2">Settings</div>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-4 text-sm">
               {/* Provider */}
               <div>
                 <div className="text-xs mb-1">Voice provider</div>
@@ -1242,6 +1244,18 @@ export default function App() {
                   <label className="flex items-center gap-2">
                     <input type="radio" name="ttsprov" checked={ttsProvider === "azure"} onChange={() => setTtsProvider("azure")} /> Azure Speech
                   </label>
+                </div>
+              </div>
+
+              {/* Starter packs on-demand */}
+              <div className="p-3 rounded-md border border-zinc-700 bg-zinc-950">
+                <div className="font-medium mb-1">Starter packs</div>
+                <div className="text-xs text-zinc-400 mb-2">Merge more starter data into your library (won’t overwrite existing rows):</div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => loadStarter("enlt")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">Load EN→LT</button>
+                  <button onClick={() => loadStarter("lten")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">Load LT→EN</button>
+                  <button onClick={() => loadStarter("both")} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">Load Both</button>
+                  <button onClick={() => setStarterOpen(true)} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">Open chooser</button>
                 </div>
               </div>
 
@@ -1373,7 +1387,7 @@ export default function App() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-1">
                 <button onClick={() => setSettingsOpen(false)} className="bg-emerald-600 px-3 py-2 rounded-md">Close</button>
               </div>
             </div>
@@ -1414,7 +1428,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Starter packs modal (first run) */}
+      {/* Starter packs modal (first run and on-demand) */}
       {starterOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-[92%] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
