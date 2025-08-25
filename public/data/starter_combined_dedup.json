@@ -1,0 +1,5862 @@
+[
+  {
+    "English": "Hello!",
+    "Lithuanian": "Labas!",
+    "Phonetic": "LAH-bahs",
+    "Category": "Phrase",
+    "Usage": "Greeting",
+    "Notes": "Informal hello",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Good morning",
+    "Lithuanian": "Labas rytas",
+    "Phonetic": "LAH-bahs REE-tahs",
+    "Category": "Phrase",
+    "Usage": "Greeting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Good evening",
+    "Lithuanian": "Labas vakaras",
+    "Phonetic": "LAH-bahs VAH-kah-rahs",
+    "Category": "Phrase",
+    "Usage": "Greeting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Good night",
+    "Lithuanian": "Labanakt",
+    "Phonetic": "lah-BAH-nakt",
+    "Category": "Phrase",
+    "Usage": "Farewell",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Please",
+    "Lithuanian": "Prašau",
+    "Phonetic": "prah-SHAU",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Thank you",
+    "Lithuanian": "Ačiū",
+    "Phonetic": "AH-choo",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Thanks a lot",
+    "Lithuanian": "Labai ačiū",
+    "Phonetic": "lah-BAI AH-choo",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "You're welcome",
+    "Lithuanian": "Nėra už ką",
+    "Phonetic": "NEH-rah oozh KAH",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "Literally: there is nothing (to thank) for",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Sorry",
+    "Lithuanian": "Atsiprašau",
+    "Phonetic": "aht-see-prah-SHAU",
+    "Category": "Phrase",
+    "Usage": "Apology",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Excuse me",
+    "Lithuanian": "Atsiprašau",
+    "Phonetic": "aht-see-prah-SHAU",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "Also 'sorry'",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Yes",
+    "Lithuanian": "Taip",
+    "Phonetic": "TAIP",
+    "Category": "Word",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "No",
+    "Lithuanian": "Ne",
+    "Phonetic": "NEH",
+    "Category": "Word",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Maybe",
+    "Lithuanian": "Gal",
+    "Phonetic": "GAHL",
+    "Category": "Word",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I don't understand",
+    "Lithuanian": "Aš nesuprantu",
+    "Phonetic": "ahsh neh-soo-PRAHN-too",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I understand",
+    "Lithuanian": "Aš suprantu",
+    "Phonetic": "ahsh soo-PRAHN-too",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I don't know",
+    "Lithuanian": "Aš nežinau",
+    "Phonetic": "ahsh neh-zhi-NAU",
+    "Category": "Phrase",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Could you repeat?",
+    "Lithuanian": "Gal galite pakartoti?",
+    "Phonetic": "gahl GAH-lee-teh pah-kar-TOH-tee",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Slower, please",
+    "Lithuanian": "Lėčiau, prašau",
+    "Phonetic": "leh-CHAU, prah-SHAU",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "What does this mean?",
+    "Lithuanian": "Ką tai reiškia?",
+    "Phonetic": "kah tai RAI-shkyah",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "How are you?",
+    "Lithuanian": "Kaip sekasi?",
+    "Phonetic": "kaipe SEH-kah-see",
+    "Category": "Phrase",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I'm fine, thanks",
+    "Lithuanian": "Gerai, ačiū",
+    "Phonetic": "geh-RAI, AH-choo",
+    "Category": "Phrase",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Nice to meet you",
+    "Lithuanian": "Malonu susipažinti",
+    "Phonetic": "mah-LOH-noo soo-see-pah-ZHIN-tee",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "My name is David",
+    "Lithuanian": "Mano vardas Deividas",
+    "Phonetic": "MAH-no VAR-dahs DEI-vee-dahs",
+    "Category": "Phrase",
+    "Usage": "Intro",
+    "Notes": "Replace name as needed",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I am from the UK",
+    "Lithuanian": "Aš esu iš Jungtinės Karalystės",
+    "Phonetic": "ahsh eh-SU ish yoong-TEE-nes kah-rah-LIS-tes",
+    "Category": "Phrase",
+    "Usage": "Intro",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I live in Scotland",
+    "Lithuanian": "Aš gyvenu Škotijoje",
+    "Phonetic": "ahsh ghee-veh-NOO SHKOH-tee-oh-yeh",
+    "Category": "Phrase",
+    "Usage": "Intro",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Do you speak English?",
+    "Lithuanian": "Ar kalbate angliškai?",
+    "Phonetic": "ar KAHL-bah-teh AHNG-lee-shkai",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I speak a little Lithuanian",
+    "Lithuanian": "Aš truputį kalbu lietuviškai",
+    "Phonetic": "ahsh troo-POO-tee KAHL-boo lyeh-too-VEE-shkai",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Can we speak slower?",
+    "Lithuanian": "Ar galime kalbėti lėčiau?",
+    "Phonetic": "ar GAH-lee-meh kahl-BEH-tee leh-CHAU",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Where is the toilet?",
+    "Lithuanian": "Kur yra tualetas?",
+    "Phonetic": "koor ee-RAH too-ah-LEH-tas",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "How much is this?",
+    "Lithuanian": "Kiek tai kainuoja?",
+    "Phonetic": "kiek tai kai-NOO-ya",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I would like this",
+    "Lithuanian": "Aš norėčiau šito",
+    "Phonetic": "ahsh no-REH-chiau SHEE-to",
+    "Category": "Phrase",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Water, please",
+    "Lithuanian": "Vandens, prašau",
+    "Phonetic": "vahn-DENS, prah-SHAU",
+    "Category": "Phrase",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Coffee with milk",
+    "Lithuanian": "Kava su pienu",
+    "Phonetic": "kah-VAH soo PYEH-noo",
+    "Category": "Phrase",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Beer, please",
+    "Lithuanian": "Alaus, prašau",
+    "Phonetic": "ah-LAUS, prah-SHAU",
+    "Category": "Phrase",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Cheers!",
+    "Lithuanian": "Į sveikatą!",
+    "Phonetic": "ee svei-KAH-tah",
+    "Category": "Phrase",
+    "Usage": "Social",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Where are you from?",
+    "Lithuanian": "Iš kur tu",
+    "Phonetic": "ish KOOR too",
+    "Category": "Question",
+    "Usage": "Small talk — informal (tu)",
+    "Notes": "tu (informal), jūs (formal/plural)",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Where are you from?",
+    "Lithuanian": "jūs?",
+    "Phonetic": "yoos",
+    "Category": "Question",
+    "Usage": "Small talk — formal/plural (jūs)",
+    "Notes": "tu (informal), jūs (formal/plural)",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "See you!",
+    "Lithuanian": "Iki!",
+    "Phonetic": "ee-KEE",
+    "Category": "Phrase",
+    "Usage": "Farewell",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Goodbye",
+    "Lithuanian": "Viso gero",
+    "Phonetic": "VEE-so GEH-ro",
+    "Category": "Phrase",
+    "Usage": "Farewell",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Help!",
+    "Lithuanian": "Padėkit!",
+    "Phonetic": "pah-DEH-kit",
+    "Category": "Phrase",
+    "Usage": "Emergency",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Call an ambulance!",
+    "Lithuanian": "Iškvieskite greitąją!",
+    "Phonetic": "ish-kvyes-KEE-teh GREI-tah-yah",
+    "Category": "Phrase",
+    "Usage": "Emergency",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I need help",
+    "Lithuanian": "Man reikia pagalbos",
+    "Phonetic": "mahn RAI-kee-ah pah-GAHL-bos",
+    "Category": "Phrase",
+    "Usage": "Emergency",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Where is the pharmacy?",
+    "Lithuanian": "Kur yra vaistinė?",
+    "Phonetic": "koor ee-RAH VAI-stee-neh",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I’m learning Lithuanian",
+    "Lithuanian": "Aš mokausi lietuvių kalbos",
+    "Phonetic": "ahsh moh-KAU-see lyeh-TOO-vyoo kahl-BOHS",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Can I pay by card?",
+    "Lithuanian": "Ar galiu mokėti kortele?",
+    "Phonetic": "ar gah-LIU moh-KEH-tee kor-teh-LEH",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Do you have…?",
+    "Lithuanian": "Ar turite...?",
+    "Phonetic": "ar TOO-ree-teh",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I like it",
+    "Lithuanian": "Man patinka",
+    "Phonetic": "mahn pah-TIN-kah",
+    "Category": "Phrase",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "I don’t like it",
+    "Lithuanian": "Man nepatinka",
+    "Phonetic": "mahn neh-pah-TIN-kah",
+    "Category": "Phrase",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "What’s your name?",
+    "Lithuanian": "Koks tavo vardas?",
+    "Phonetic": "koks TAH-vo VAR-das",
+    "Category": "Question",
+    "Usage": "Intro",
+    "Notes": "informal/formal",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What’s your name?",
+    "Lithuanian": "Koks jūsų vardas?",
+    "Phonetic": "koks YOO-soo VAR-das",
+    "Category": "Question",
+    "Usage": "Intro — formal/plural (jūs)",
+    "Notes": "informal/formal",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "How old are you?",
+    "Lithuanian": "Kiek tau metų?",
+    "Phonetic": "kiek tau MEH-too",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "How old are you?",
+    "Lithuanian": "Kiek jums metų?",
+    "Phonetic": "kiek yooms MEH-too",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where do you live?",
+    "Lithuanian": "Kur gyveni?",
+    "Phonetic": "koor ghi-VEH-nee",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where do you live?",
+    "Lithuanian": "Kur gyvenate?",
+    "Phonetic": "koor ghi-veh-NAH-teh",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What do you do (for work)?",
+    "Lithuanian": "Kuo tu užsiimi?",
+    "Phonetic": "koo-ah too oozh-SEE-mee",
+    "Category": "Question",
+    "Usage": "Small talk — informal (tu)",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What do you do (for work)?",
+    "Lithuanian": "Kuo jūs užsiimate?",
+    "Phonetic": "koo-ah yoos oozh-SEE-mah-teh",
+    "Category": "Question",
+    "Usage": "Small talk — formal/plural (jūs)",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you have children?",
+    "Lithuanian": "Ar turi vaikų?",
+    "Phonetic": "ar TOO-ree vai-KOO",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you have children?",
+    "Lithuanian": "Ar turite vaikų?",
+    "Phonetic": "ar TOO-ree-teh vai-KOO",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you have pets?",
+    "Lithuanian": "Ar turi augintinių?",
+    "Phonetic": "ar TOO-ree ow-gheen-TEE-nyoo",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you have pets?",
+    "Lithuanian": "Ar turite augintinių?",
+    "Phonetic": "ar TOO-ree-teh ow-gheen-TEE-nyoo",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you like Lithuania?",
+    "Lithuanian": "Ar tau patinka Lietuva?",
+    "Phonetic": "ar tau pah-TIN-kah lyeh-too-VA",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you like Lithuania?",
+    "Lithuanian": "Ar jums patinka Lietuva?",
+    "Phonetic": "ar yooms pah-TIN-kah lyeh-too-VA",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Which city are you from?",
+    "Lithuanian": "Iš kurio miesto esi?",
+    "Phonetic": "ish koo-REE-oh MYEHS-to eh-SEE",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Which city are you from?",
+    "Lithuanian": "Iš kurio miesto esate?",
+    "Phonetic": "eh-SAH-teh",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "How much does it cost?",
+    "Lithuanian": "Kiek tai kainuoja?",
+    "Phonetic": "kiek tai kai-NOO-ya",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Can you help me?",
+    "Lithuanian": "Ar galite man padėti?",
+    "Phonetic": "ar GAH-lee-teh mahn pah-DYEH-tee",
+    "Category": "Question",
+    "Usage": "Help",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where can I buy a ticket?",
+    "Lithuanian": "Kur galiu nusipirkti bilietą?",
+    "Phonetic": "koor gah-LIU noo-see-PEERK-tee bee-lya-TAH",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What time is it?",
+    "Lithuanian": "Keliolika valandų? -> Kiek dabar valanda?",
+    "Phonetic": "kiek dah-BAR vah-lahn-DA",
+    "Category": "Question",
+    "Usage": "Time",
+    "Notes": "Common: 'Kiek dabar valanda?'",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where is…?",
+    "Lithuanian": "Kur yra…?",
+    "Phonetic": "koor ee-RAH",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "When does it start?",
+    "Lithuanian": "Kada prasideda?",
+    "Phonetic": "kah-DA prah-SEE-deh-dah",
+    "Category": "Question",
+    "Usage": "Plans",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "When does it finish?",
+    "Lithuanian": "Kada baigiasi?",
+    "Phonetic": "kah-DA BAI-gyah-see",
+    "Category": "Question",
+    "Usage": "Plans",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Can I sit here?",
+    "Lithuanian": "Ar galiu čia atsisėsti?",
+    "Phonetic": "ar gah-LIU chya aht-see-SAES-tee",
+    "Category": "Question",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you speak English?",
+    "Lithuanian": "Ar kalbate angliškai?",
+    "Phonetic": "ar KAHL-bah-teh AHNG-lee-shkai",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where can we eat?",
+    "Lithuanian": "Kur galime pavalgyti?",
+    "Phonetic": "koor GAH-lee-meh pah-VAHL-ghy-tee",
+    "Category": "Question",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Which bus goes to…?",
+    "Lithuanian": "Kuris autobusas važiuoja į…?",
+    "Phonetic": "KOO-rees ow-toh-BOO-sas vah-ZHOO-ya ee…",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "How long does it take?",
+    "Lithuanian": "Kiek užtrunka?",
+    "Phonetic": "kiek oozh-TRUN-kah",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Is this seat free?",
+    "Lithuanian": "Ar ši vieta laisva?",
+    "Phonetic": "ar shi vya-TA LAI-svah",
+    "Category": "Question",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Can I have the bill?",
+    "Lithuanian": "Ar galiu sąskaitą?",
+    "Phonetic": "ar gah-LIU SAUS-kai-tau",
+    "Category": "Question",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you take card?",
+    "Lithuanian": "Ar priimate korteles?",
+    "Phonetic": "ar PREE-ee-mah-teh kor-teh-LEHS",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you have vegetarian options?",
+    "Lithuanian": "Ar turite vegetariškų patiekalų?",
+    "Phonetic": "ar TOO-ree-teh veh-gheh-TAH-ree-shkoo pah-tyeh-kah-LOO",
+    "Category": "Question",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where can I find a pharmacy?",
+    "Lithuanian": "Kur rasiu vaistinę?",
+    "Phonetic": "koor RAH-syou VAI-stee-neh",
+    "Category": "Question",
+    "Usage": "Health",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Is there a supermarket nearby?",
+    "Lithuanian": "Ar netoliese yra prekybos centras?",
+    "Phonetic": "ar neh-toh-LYEH-seh ee-RAH preh-KEE-bos TSEN-tras",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What is your phone number?",
+    "Lithuanian": "Koks tavo",
+    "Phonetic": "koks TAH-vo",
+    "Category": "Question",
+    "Usage": "Contact",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What is your phone number?",
+    "Lithuanian": "jūsų telefono numeris?",
+    "Phonetic": "YOO-soo teh-leh-FOH-noo NOO-meh-rees",
+    "Category": "Question",
+    "Usage": "Contact — formal/plural (jūs)",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Can we meet tomorrow?",
+    "Lithuanian": "Ar galime susitikti rytoj?",
+    "Phonetic": "ar GAH-lee-meh soo-see-TIK-tee ree-TOI",
+    "Category": "Question",
+    "Usage": "Plans",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where can I charge my phone?",
+    "Lithuanian": "Kur galiu įkrauti telefoną?",
+    "Phonetic": "koor gah-LIU ee-KRAU-tee teh-leh-FOH-nah",
+    "Category": "Question",
+    "Usage": "Practical",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Where is the station?",
+    "Lithuanian": "Kur yra stotis?",
+    "Phonetic": "koor ee-RAH stoh-TIS",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Which way is the centre?",
+    "Lithuanian": "Kur yra centras?",
+    "Phonetic": "koor ee-RAH TSEN-tras",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What time do you open?",
+    "Lithuanian": "Kelintą valandą atidarote?",
+    "Phonetic": "keh-LIN-tau vah-lahn-DAU ah-tee-dah-ROH-teh",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Can I try it on?",
+    "Lithuanian": "Ar galiu pasimatuoti?",
+    "Phonetic": "ar gah-LIU pah-see-mah-TUO-tee",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you have a size M?",
+    "Lithuanian": "Ar turite M dydį?",
+    "Phonetic": "ar TOO-ree-teh EM DEE-dee",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Can you recommend…?",
+    "Lithuanian": "Ar galite rekomenduoti…?",
+    "Phonetic": "ar GAH-lee-teh reh-koh-men-DUO-tee",
+    "Category": "Question",
+    "Usage": "General",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Which one is better?",
+    "Lithuanian": "Kurį geriau?",
+    "Phonetic": "koo-REE ghe-REI-oo",
+    "Category": "Question",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "What do you think?",
+    "Lithuanian": "Ką manote?",
+    "Phonetic": "kah MAH-no-teh",
+    "Category": "Question",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Do you agree?",
+    "Lithuanian": "Ar sutinkate?",
+    "Phonetic": "ar soo-TIN-kah-teh",
+    "Category": "Question",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Could you write it down?",
+    "Lithuanian": "Ar galėtumėte užrašyti?",
+    "Phonetic": "ar gah-LEH-too-meh-teh oo-zhrah-SHEE-tee",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "man",
+    "Lithuanian": "vyras",
+    "Phonetic": "VEE-ras",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "woman",
+    "Lithuanian": "moteris",
+    "Phonetic": "MOH-teh-rees",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "boy",
+    "Lithuanian": "berniukas",
+    "Phonetic": "ber-NYOO-kas",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "girl",
+    "Lithuanian": "mergaitė",
+    "Phonetic": "mer-GAI-teh",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "friend",
+    "Lithuanian": "draugas",
+    "Phonetic": "DRAU-gas",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "m/f",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "friend",
+    "Lithuanian": "draugė",
+    "Phonetic": "DRAU-geh",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "m/f",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "family",
+    "Lithuanian": "šeima",
+    "Phonetic": "shei-MAH",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "name",
+    "Lithuanian": "vardas",
+    "Phonetic": "VAR-das",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "country",
+    "Lithuanian": "šalis",
+    "Phonetic": "sha-LIS",
+    "Category": "Word",
+    "Usage": "Places",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "city",
+    "Lithuanian": "miestas",
+    "Phonetic": "MYEHS-tas",
+    "Category": "Word",
+    "Usage": "Places",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "street",
+    "Lithuanian": "gatvė",
+    "Phonetic": "GAHT-veh",
+    "Category": "Word",
+    "Usage": "Places",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "house",
+    "Lithuanian": "namas",
+    "Phonetic": "NAH-mas",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "flat",
+    "Lithuanian": "butas",
+    "Phonetic": "BOO-tas",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "room",
+    "Lithuanian": "kambarys",
+    "Phonetic": "kam-bah-REES",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "kitchen",
+    "Lithuanian": "virtuvė",
+    "Phonetic": "veer-TOO-veh",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bathroom",
+    "Lithuanian": "vonia",
+    "Phonetic": "VOH-nyah",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bed",
+    "Lithuanian": "lova",
+    "Phonetic": "LOH-vah",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "table",
+    "Lithuanian": "stalas",
+    "Phonetic": "STAH-las",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "chair",
+    "Lithuanian": "kėdė",
+    "Phonetic": "keh-DEH",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "door",
+    "Lithuanian": "durys",
+    "Phonetic": "DOO-rees",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "window",
+    "Lithuanian": "langas",
+    "Phonetic": "LAHN-gas",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "left",
+    "Lithuanian": "kairė",
+    "Phonetic": "kai-REH",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "right",
+    "Lithuanian": "dešinė",
+    "Phonetic": "deh-shee-NEH",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "straight",
+    "Lithuanian": "tiesiai",
+    "Phonetic": "TYEH-syai",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "back",
+    "Lithuanian": "atgal",
+    "Phonetic": "aht-GAHL",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "near",
+    "Lithuanian": "šalia",
+    "Phonetic": "SHAH-lyah",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "far",
+    "Lithuanian": "toli",
+    "Phonetic": "TOH-lee",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "today",
+    "Lithuanian": "šiandien",
+    "Phonetic": "SHYAN-dyen",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "tomorrow",
+    "Lithuanian": "rytoj",
+    "Phonetic": "REE-toi",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "yesterday",
+    "Lithuanian": "vakar",
+    "Phonetic": "VAH-kar",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "morning",
+    "Lithuanian": "rytas",
+    "Phonetic": "REE-tas",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "evening",
+    "Lithuanian": "vakaras",
+    "Phonetic": "VAH-kah-ras",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "night",
+    "Lithuanian": "naktis",
+    "Phonetic": "nahk-TIS",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "hour",
+    "Lithuanian": "valanda",
+    "Phonetic": "vah-lahn-DA",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "minute",
+    "Lithuanian": "minutė",
+    "Phonetic": "mee-NOO-teh",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "food",
+    "Lithuanian": "maistas",
+    "Phonetic": "MAI-stas",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "drink",
+    "Lithuanian": "gėrimas",
+    "Phonetic": "GEH-ree-mahs",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "water",
+    "Lithuanian": "vanduo",
+    "Phonetic": "vahn-DUO",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "coffee",
+    "Lithuanian": "kava",
+    "Phonetic": "kah-VAH",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "tea",
+    "Lithuanian": "arbata",
+    "Phonetic": "ar-bah-TA",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "beer",
+    "Lithuanian": "alus",
+    "Phonetic": "ah-LOOS",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "wine",
+    "Lithuanian": "vynas",
+    "Phonetic": "VEE-nas",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bread",
+    "Lithuanian": "duona",
+    "Phonetic": "DUO-nah",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "butter",
+    "Lithuanian": "sviestas",
+    "Phonetic": "SVYEHS-tas",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "cheese",
+    "Lithuanian": "sūris",
+    "Phonetic": "SOO-rees",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "milk",
+    "Lithuanian": "pienas",
+    "Phonetic": "PYEH-nas",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "salt",
+    "Lithuanian": "druska",
+    "Phonetic": "druhs-KAH",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "sugar",
+    "Lithuanian": "cukrus",
+    "Phonetic": "TSOOK-roos",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "meat",
+    "Lithuanian": "mėsa",
+    "Phonetic": "MEH-sah",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "chicken",
+    "Lithuanian": "vištiena",
+    "Phonetic": "vish-TYEH-nah",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "fish",
+    "Lithuanian": "žuvis",
+    "Phonetic": "zhoo-VEES",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vegetable",
+    "Lithuanian": "daržovė",
+    "Phonetic": "dar-ZHOH-veh",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "fruit",
+    "Lithuanian": "vaisius",
+    "Phonetic": "VAI-syoos",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "money",
+    "Lithuanian": "pinigai",
+    "Phonetic": "PEE-nee-gai",
+    "Category": "Word",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "shop",
+    "Lithuanian": "parduotuvė",
+    "Phonetic": "par-dwoh-TOO-veh",
+    "Category": "Word",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "price",
+    "Lithuanian": "kaina",
+    "Phonetic": "KAI-nah",
+    "Category": "Word",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "ticket",
+    "Lithuanian": "bilietas",
+    "Phonetic": "BEE-lyeh-tas",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bus",
+    "Lithuanian": "autobusas",
+    "Phonetic": "ow-toh-BOO-sas",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "train",
+    "Lithuanian": "traukinys",
+    "Phonetic": "trou-kee-NEES",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "car",
+    "Lithuanian": "automobilis",
+    "Phonetic": "ow-toh-mo-BEE-lees",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "airport",
+    "Lithuanian": "oro uostas",
+    "Phonetic": "OH-ro oo-OHS-tas",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "station",
+    "Lithuanian": "stotis",
+    "Phonetic": "stoh-TIS",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "work",
+    "Lithuanian": "darbas",
+    "Phonetic": "DAR-bahs",
+    "Category": "Word",
+    "Usage": "Daily life",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "job",
+    "Lithuanian": "darbas",
+    "Phonetic": "DAR-bahs",
+    "Category": "Word",
+    "Usage": "Daily life",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "office",
+    "Lithuanian": "biuras",
+    "Phonetic": "BYOO-ras",
+    "Category": "Word",
+    "Usage": "Daily life",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "phone",
+    "Lithuanian": "telefonas",
+    "Phonetic": "teh-leh-FOH-nas",
+    "Category": "Word",
+    "Usage": "Tech",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "computer",
+    "Lithuanian": "kompiuteris",
+    "Phonetic": "kohm-PYOO-teh-rees",
+    "Category": "Word",
+    "Usage": "Tech",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "password",
+    "Lithuanian": "slaptažodis",
+    "Phonetic": "slahp-TAH-zhoh-dis",
+    "Category": "Word",
+    "Usage": "Tech",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "love",
+    "Lithuanian": "meilė",
+    "Phonetic": "MAI-leh",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "like",
+    "Lithuanian": "patinka",
+    "Phonetic": "pah-TIN-kah",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "happy",
+    "Lithuanian": "laimingas",
+    "Phonetic": "lai-MEEN-gas",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "happy",
+    "Lithuanian": "laiminga",
+    "Phonetic": "lai-MEEN-gah",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "tired",
+    "Lithuanian": "pavargęs",
+    "Phonetic": "pah-VAHR-ges",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "tired",
+    "Lithuanian": "pavargusi",
+    "Phonetic": "pah-VAHR-goo-see",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "hungry",
+    "Lithuanian": "alkanas",
+    "Phonetic": "AHL-kah-nas",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "hungry",
+    "Lithuanian": "alkana",
+    "Phonetic": "AHL-kah-nah",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "thirsty",
+    "Lithuanian": "ištroškęs",
+    "Phonetic": "eesh-TROHSH-kyes",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "thirsty",
+    "Lithuanian": "ištroškusi",
+    "Phonetic": "eesh-TROHSH-koo-see",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "beautiful",
+    "Lithuanian": "gražus",
+    "Phonetic": "grah-ZHOOS",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "beautiful",
+    "Lithuanian": "graži",
+    "Phonetic": "grah-ZHEE",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "big",
+    "Lithuanian": "didelis",
+    "Phonetic": "DEE-deh-lees",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "big",
+    "Lithuanian": "didelė",
+    "Phonetic": "DEE-deh-leh",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "small",
+    "Lithuanian": "mažas",
+    "Phonetic": "MAH-zhas",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "small",
+    "Lithuanian": "maža",
+    "Phonetic": "MAH-zhah",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "good",
+    "Lithuanian": "geras",
+    "Phonetic": "GEH-ras",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "good",
+    "Lithuanian": "gera",
+    "Phonetic": "GEH-rah",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bad",
+    "Lithuanian": "blogas",
+    "Phonetic": "BLOH-gas",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bad",
+    "Lithuanian": "bloga",
+    "Phonetic": "BLOH-gah",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "hot",
+    "Lithuanian": "karštas",
+    "Phonetic": "KAR-shtas",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "hot",
+    "Lithuanian": "karšta",
+    "Phonetic": "KAR-shta",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "cold",
+    "Lithuanian": "šaltas",
+    "Phonetic": "SHAHL-tas",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "cold",
+    "Lithuanian": "šalta",
+    "Phonetic": "SHAHL-tah",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "new",
+    "Lithuanian": "naujas",
+    "Phonetic": "NAU-yas",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "new",
+    "Lithuanian": "nauja",
+    "Phonetic": "NAU-yah",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "old",
+    "Lithuanian": "senas",
+    "Phonetic": "SEH-nas",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "old",
+    "Lithuanian": "sena",
+    "Phonetic": "SEH-nah",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "0",
+    "Lithuanian": "nulis",
+    "Phonetic": "NOO-lees",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "1",
+    "Lithuanian": "vienas",
+    "Phonetic": "VYEH-nas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "2",
+    "Lithuanian": "du",
+    "Phonetic": "DOO",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "3",
+    "Lithuanian": "trys",
+    "Phonetic": "TREES",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "4",
+    "Lithuanian": "keturi",
+    "Phonetic": "keh-too-REE",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "5",
+    "Lithuanian": "penki",
+    "Phonetic": "pen-KEE",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "6",
+    "Lithuanian": "šeši",
+    "Phonetic": "sheh-SHEE",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "7",
+    "Lithuanian": "septyni",
+    "Phonetic": "sep-TEE-nee",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "8",
+    "Lithuanian": "aštuoni",
+    "Phonetic": "ash-TWOH-nee",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "9",
+    "Lithuanian": "devyni",
+    "Phonetic": "deh-VEE-nee",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "10",
+    "Lithuanian": "dešimt",
+    "Phonetic": "DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "11",
+    "Lithuanian": "vienuolika",
+    "Phonetic": "vyeh-NWOH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "12",
+    "Lithuanian": "dvylika",
+    "Phonetic": "DVEH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "13",
+    "Lithuanian": "trylika",
+    "Phonetic": "TREE-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "14",
+    "Lithuanian": "keturiolika",
+    "Phonetic": "keh-too-ree-OH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "15",
+    "Lithuanian": "penkiolika",
+    "Phonetic": "pen-kyOH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "16",
+    "Lithuanian": "šešiolika",
+    "Phonetic": "sheh-shyOH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "17",
+    "Lithuanian": "septyniolika",
+    "Phonetic": "sep-tee-NYOH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "18",
+    "Lithuanian": "aštuoniolika",
+    "Phonetic": "ash-twoh-NYOH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "19",
+    "Lithuanian": "devyniolika",
+    "Phonetic": "deh-vee-NYOH-lee-kah",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "20",
+    "Lithuanian": "dvidešimt",
+    "Phonetic": "dvee-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "21",
+    "Lithuanian": "dvidešimt vienas",
+    "Phonetic": "dvidešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "22",
+    "Lithuanian": "dvidešimt du",
+    "Phonetic": "dvidešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "23",
+    "Lithuanian": "dvidešimt trys",
+    "Phonetic": "dvidešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "24",
+    "Lithuanian": "dvidešimt keturi",
+    "Phonetic": "dvidešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "25",
+    "Lithuanian": "dvidešimt penki",
+    "Phonetic": "dvidešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "26",
+    "Lithuanian": "dvidešimt šeši",
+    "Phonetic": "dvidešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "27",
+    "Lithuanian": "dvidešimt septyni",
+    "Phonetic": "dvidešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "28",
+    "Lithuanian": "dvidešimt aštuoni",
+    "Phonetic": "dvidešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "29",
+    "Lithuanian": "dvidešimt devyni",
+    "Phonetic": "dvidešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "30",
+    "Lithuanian": "trisdešimt",
+    "Phonetic": "trees-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "31",
+    "Lithuanian": "trisdešimt vienas",
+    "Phonetic": "trisdešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "32",
+    "Lithuanian": "trisdešimt du",
+    "Phonetic": "trisdešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "33",
+    "Lithuanian": "trisdešimt trys",
+    "Phonetic": "trisdešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "34",
+    "Lithuanian": "trisdešimt keturi",
+    "Phonetic": "trisdešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "35",
+    "Lithuanian": "trisdešimt penki",
+    "Phonetic": "trisdešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "36",
+    "Lithuanian": "trisdešimt šeši",
+    "Phonetic": "trisdešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "37",
+    "Lithuanian": "trisdešimt septyni",
+    "Phonetic": "trisdešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "38",
+    "Lithuanian": "trisdešimt aštuoni",
+    "Phonetic": "trisdešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "39",
+    "Lithuanian": "trisdešimt devyni",
+    "Phonetic": "trisdešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "40",
+    "Lithuanian": "keturiasdešimt",
+    "Phonetic": "keh-too-ree-ahs-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "41",
+    "Lithuanian": "keturiasdešimt vienas",
+    "Phonetic": "keturiasdešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "42",
+    "Lithuanian": "keturiasdešimt du",
+    "Phonetic": "keturiasdešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "43",
+    "Lithuanian": "keturiasdešimt trys",
+    "Phonetic": "keturiasdešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "44",
+    "Lithuanian": "keturiasdešimt keturi",
+    "Phonetic": "keturiasdešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "45",
+    "Lithuanian": "keturiasdešimt penki",
+    "Phonetic": "keturiasdešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "46",
+    "Lithuanian": "keturiasdešimt šeši",
+    "Phonetic": "keturiasdešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "47",
+    "Lithuanian": "keturiasdešimt septyni",
+    "Phonetic": "keturiasdešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "48",
+    "Lithuanian": "keturiasdešimt aštuoni",
+    "Phonetic": "keturiasdešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "49",
+    "Lithuanian": "keturiasdešimt devyni",
+    "Phonetic": "keturiasdešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "50",
+    "Lithuanian": "penkiasdešimt",
+    "Phonetic": "pen-kyahs-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "51",
+    "Lithuanian": "penkiasdešimt vienas",
+    "Phonetic": "penkiasdešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "52",
+    "Lithuanian": "penkiasdešimt du",
+    "Phonetic": "penkiasdešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "53",
+    "Lithuanian": "penkiasdešimt trys",
+    "Phonetic": "penkiasdešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "54",
+    "Lithuanian": "penkiasdešimt keturi",
+    "Phonetic": "penkiasdešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "55",
+    "Lithuanian": "penkiasdešimt penki",
+    "Phonetic": "penkiasdešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "56",
+    "Lithuanian": "penkiasdešimt šeši",
+    "Phonetic": "penkiasdešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "57",
+    "Lithuanian": "penkiasdešimt septyni",
+    "Phonetic": "penkiasdešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "58",
+    "Lithuanian": "penkiasdešimt aštuoni",
+    "Phonetic": "penkiasdešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "59",
+    "Lithuanian": "penkiasdešimt devyni",
+    "Phonetic": "penkiasdešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "60",
+    "Lithuanian": "šešiasdešimt",
+    "Phonetic": "sheh-shyahs-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "61",
+    "Lithuanian": "šešiasdešimt vienas",
+    "Phonetic": "šešiasdešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "62",
+    "Lithuanian": "šešiasdešimt du",
+    "Phonetic": "šešiasdešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "63",
+    "Lithuanian": "šešiasdešimt trys",
+    "Phonetic": "šešiasdešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "64",
+    "Lithuanian": "šešiasdešimt keturi",
+    "Phonetic": "šešiasdešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "65",
+    "Lithuanian": "šešiasdešimt penki",
+    "Phonetic": "šešiasdešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "66",
+    "Lithuanian": "šešiasdešimt šeši",
+    "Phonetic": "šešiasdešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "67",
+    "Lithuanian": "šešiasdešimt septyni",
+    "Phonetic": "šešiasdešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "68",
+    "Lithuanian": "šešiasdešimt aštuoni",
+    "Phonetic": "šešiasdešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "69",
+    "Lithuanian": "šešiasdešimt devyni",
+    "Phonetic": "šešiasdešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "70",
+    "Lithuanian": "septyniasdešimt",
+    "Phonetic": "sep-tee-nyahs-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "71",
+    "Lithuanian": "septyniasdešimt vienas",
+    "Phonetic": "septyniasdešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "72",
+    "Lithuanian": "septyniasdešimt du",
+    "Phonetic": "septyniasdešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "73",
+    "Lithuanian": "septyniasdešimt trys",
+    "Phonetic": "septyniasdešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "74",
+    "Lithuanian": "septyniasdešimt keturi",
+    "Phonetic": "septyniasdešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "75",
+    "Lithuanian": "septyniasdešimt penki",
+    "Phonetic": "septyniasdešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "76",
+    "Lithuanian": "septyniasdešimt šeši",
+    "Phonetic": "septyniasdešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "77",
+    "Lithuanian": "septyniasdešimt septyni",
+    "Phonetic": "septyniasdešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "78",
+    "Lithuanian": "septyniasdešimt aštuoni",
+    "Phonetic": "septyniasdešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "79",
+    "Lithuanian": "septyniasdešimt devyni",
+    "Phonetic": "septyniasdešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "80",
+    "Lithuanian": "aštuoniasdešimt",
+    "Phonetic": "ash-twoh-nyahs-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "81",
+    "Lithuanian": "aštuoniasdešimt vienas",
+    "Phonetic": "aštuoniasdešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "82",
+    "Lithuanian": "aštuoniasdešimt du",
+    "Phonetic": "aštuoniasdešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "83",
+    "Lithuanian": "aštuoniasdešimt trys",
+    "Phonetic": "aštuoniasdešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "84",
+    "Lithuanian": "aštuoniasdešimt keturi",
+    "Phonetic": "aštuoniasdešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "85",
+    "Lithuanian": "aštuoniasdešimt penki",
+    "Phonetic": "aštuoniasdešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "86",
+    "Lithuanian": "aštuoniasdešimt šeši",
+    "Phonetic": "aštuoniasdešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "87",
+    "Lithuanian": "aštuoniasdešimt septyni",
+    "Phonetic": "aštuoniasdešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "88",
+    "Lithuanian": "aštuoniasdešimt aštuoni",
+    "Phonetic": "aštuoniasdešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "89",
+    "Lithuanian": "aštuoniasdešimt devyni",
+    "Phonetic": "aštuoniasdešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "90",
+    "Lithuanian": "devyniasdešimt",
+    "Phonetic": "deh-vee-nyahs-DEH-shimt",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "91",
+    "Lithuanian": "devyniasdešimt vienas",
+    "Phonetic": "devyniasdešimt vienas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "92",
+    "Lithuanian": "devyniasdešimt du",
+    "Phonetic": "devyniasdešimt du",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "93",
+    "Lithuanian": "devyniasdešimt trys",
+    "Phonetic": "devyniasdešimt trys",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "94",
+    "Lithuanian": "devyniasdešimt keturi",
+    "Phonetic": "devyniasdešimt keturi",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "95",
+    "Lithuanian": "devyniasdešimt penki",
+    "Phonetic": "devyniasdešimt penki",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "96",
+    "Lithuanian": "devyniasdešimt šeši",
+    "Phonetic": "devyniasdešimt šeši",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "97",
+    "Lithuanian": "devyniasdešimt septyni",
+    "Phonetic": "devyniasdešimt septyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "98",
+    "Lithuanian": "devyniasdešimt aštuoni",
+    "Phonetic": "devyniasdešimt aštuoni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "99",
+    "Lithuanian": "devyniasdešimt devyni",
+    "Phonetic": "devyniasdešimt devyni",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "100",
+    "Lithuanian": "šimtas",
+    "Phonetic": "SHIM-tas",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "Labas!",
+    "Lithuanian": "Hello!",
+    "Phonetic": "HELLO!",
+    "Category": "Phrase",
+    "Usage": "Greeting",
+    "Notes": "Informal hello",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Labas rytas",
+    "Lithuanian": "Good morning",
+    "Phonetic": "GOOD MORNING",
+    "Category": "Phrase",
+    "Usage": "Greeting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Labas vakaras",
+    "Lithuanian": "Good evening",
+    "Phonetic": "GOOD EVENING",
+    "Category": "Phrase",
+    "Usage": "Greeting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Labanakt",
+    "Lithuanian": "Good night",
+    "Phonetic": "GOOD NIGHT",
+    "Category": "Phrase",
+    "Usage": "Farewell",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Prašau",
+    "Lithuanian": "Please",
+    "Phonetic": "PLĪZ",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Ačiū",
+    "Lithuanian": "Thank you",
+    "Phonetic": "THANK YOU",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Labai ačiū",
+    "Lithuanian": "Thanks a lot",
+    "Phonetic": "THANKS A LOT",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Nėra už ką",
+    "Lithuanian": "You're welcome",
+    "Phonetic": "YOU'RE VELKOME",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "Literally: there is nothing (to thank) for",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Atsiprašau",
+    "Lithuanian": "Sorry",
+    "Phonetic": "SORI",
+    "Category": "Phrase",
+    "Usage": "Apology",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Atsiprašau",
+    "Lithuanian": "Excuse me",
+    "Phonetic": "EKSKUSE ME",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "Also 'sorry'",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Taip",
+    "Lithuanian": "Yes",
+    "Phonetic": "JES",
+    "Category": "Word",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Ne",
+    "Lithuanian": "No",
+    "Phonetic": "NOU",
+    "Category": "Word",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Gal",
+    "Lithuanian": "Maybe",
+    "Phonetic": "MEIBI",
+    "Category": "Word",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš nesuprantu",
+    "Lithuanian": "I don't understand",
+    "Phonetic": "I DON'T UNDERSTAND",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš suprantu",
+    "Lithuanian": "I understand",
+    "Phonetic": "I UNDERSTAND",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš nežinau",
+    "Lithuanian": "I don't know",
+    "Phonetic": "I DON'T KNOV",
+    "Category": "Phrase",
+    "Usage": "Basic",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Gal galite pakartoti?",
+    "Lithuanian": "Could you repeat?",
+    "Phonetic": "KOULD YOU REPEAT?",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Lėčiau, prašau",
+    "Lithuanian": "Slower, please",
+    "Phonetic": "SLOVER, PLEASE",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Ką tai reiškia?",
+    "Lithuanian": "What does this mean?",
+    "Phonetic": "VHAT DOES THIS MEAN?",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Kaip sekasi?",
+    "Lithuanian": "How are you?",
+    "Phonetic": "HOV ARE YOU?",
+    "Category": "Phrase",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Gerai, ačiū",
+    "Lithuanian": "I'm fine, thanks",
+    "Phonetic": "I'M FINE, THANKS",
+    "Category": "Phrase",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Malonu susipažinti",
+    "Lithuanian": "Nice to meet you",
+    "Phonetic": "NIKE TO MEET YOU",
+    "Category": "Phrase",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Mano vardas Deividas",
+    "Lithuanian": "My name is David",
+    "Phonetic": "MY NAME IS DAVID",
+    "Category": "Phrase",
+    "Usage": "Intro",
+    "Notes": "Replace name as needed",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš esu iš Jungtinės Karalystės",
+    "Lithuanian": "I am from the UK",
+    "Phonetic": "I AM FROM THE UK",
+    "Category": "Phrase",
+    "Usage": "Intro",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš gyvenu Škotijoje",
+    "Lithuanian": "I live in Scotland",
+    "Phonetic": "I LIVE IN SKOTLAND",
+    "Category": "Phrase",
+    "Usage": "Intro",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Ar kalbate angliškai?",
+    "Lithuanian": "Do you speak English?",
+    "Phonetic": "DO YOU SPEAK ENGLISH?",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš truputį kalbu lietuviškai",
+    "Lithuanian": "I speak a little Lithuanian",
+    "Phonetic": "I SPEAK A LITTLE LITHUANIAN",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Ar galime kalbėti lėčiau?",
+    "Lithuanian": "Can we speak slower?",
+    "Phonetic": "KAN VE SPEAK SLOVER?",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Kur yra tualetas?",
+    "Lithuanian": "Where is the toilet?",
+    "Phonetic": "VHERE IS THE TOILET?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Kiek tai kainuoja?",
+    "Lithuanian": "How much is this?",
+    "Phonetic": "HOV MUKH IS THIS?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš norėčiau šito",
+    "Lithuanian": "I would like this",
+    "Phonetic": "I VOULD LIKE THIS",
+    "Category": "Phrase",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Vandens, prašau",
+    "Lithuanian": "Water, please",
+    "Phonetic": "VATER, PLEASE",
+    "Category": "Phrase",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Kava su pienu",
+    "Lithuanian": "Coffee with milk",
+    "Phonetic": "KOFFEE VITH MILK",
+    "Category": "Phrase",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Alaus, prašau",
+    "Lithuanian": "Beer, please",
+    "Phonetic": "BEER, PLEASE",
+    "Category": "Phrase",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Į sveikatą!",
+    "Lithuanian": "Cheers!",
+    "Phonetic": "KHEERS!",
+    "Category": "Phrase",
+    "Usage": "Social",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Iš kur tu",
+    "Lithuanian": "Where are you from?",
+    "Phonetic": "VHERE ARE YOU FROM?",
+    "Category": "Question",
+    "Usage": "Small talk — informal (tu)",
+    "Notes": "tu (informal), jūs (formal/plural)",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "jūs?",
+    "Lithuanian": "Where are you from?",
+    "Phonetic": "VHERE ARE YOU FROM?",
+    "Category": "Question",
+    "Usage": "Small talk — formal/plural (jūs)",
+    "Notes": "tu (informal), jūs (formal/plural)",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Iki!",
+    "Lithuanian": "See you!",
+    "Phonetic": "SEE YOU!",
+    "Category": "Phrase",
+    "Usage": "Farewell",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Viso gero",
+    "Lithuanian": "Goodbye",
+    "Phonetic": "GOODBYE",
+    "Category": "Phrase",
+    "Usage": "Farewell",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Padėkit!",
+    "Lithuanian": "Help!",
+    "Phonetic": "HELP!",
+    "Category": "Phrase",
+    "Usage": "Emergency",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Iškvieskite greitąją!",
+    "Lithuanian": "Call an ambulance!",
+    "Phonetic": "KALL AN AMBULANKE!",
+    "Category": "Phrase",
+    "Usage": "Emergency",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Man reikia pagalbos",
+    "Lithuanian": "I need help",
+    "Phonetic": "I NEED HELP",
+    "Category": "Phrase",
+    "Usage": "Emergency",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Kur yra vaistinė?",
+    "Lithuanian": "Where is the pharmacy?",
+    "Phonetic": "VHERE IS THE PHARMAKY?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Aš mokausi lietuvių kalbos",
+    "Lithuanian": "I’m learning Lithuanian",
+    "Phonetic": "I’M LEARNING LITHUANIAN",
+    "Category": "Phrase",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Ar galiu mokėti kortele?",
+    "Lithuanian": "Can I pay by card?",
+    "Phonetic": "KAN I PAY BY KARD?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Ar turite...?",
+    "Lithuanian": "Do you have…?",
+    "Phonetic": "DO YOU HAVE…?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Man patinka",
+    "Lithuanian": "I like it",
+    "Phonetic": "I LIKE IT",
+    "Category": "Phrase",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Man nepatinka",
+    "Lithuanian": "I don’t like it",
+    "Phonetic": "I DON’T LIKE IT",
+    "Category": "Phrase",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Phrases"
+  },
+  {
+    "English": "Koks tavo vardas?",
+    "Lithuanian": "What’s your name?",
+    "Phonetic": "VHAT’S YOUR NAME?",
+    "Category": "Question",
+    "Usage": "Intro",
+    "Notes": "informal/formal",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Koks jūsų vardas?",
+    "Lithuanian": "What’s your name?",
+    "Phonetic": "VHAT’S YOUR NAME?",
+    "Category": "Question",
+    "Usage": "Intro — formal/plural (jūs)",
+    "Notes": "informal/formal",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kiek tau metų?",
+    "Lithuanian": "How old are you?",
+    "Phonetic": "HOV OLD ARE YOU?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kiek jums metų?",
+    "Lithuanian": "How old are you?",
+    "Phonetic": "HOV OLD ARE YOU?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur gyveni?",
+    "Lithuanian": "Where do you live?",
+    "Phonetic": "VHERE DO YOU LIVE?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur gyvenate?",
+    "Lithuanian": "Where do you live?",
+    "Phonetic": "VHERE DO YOU LIVE?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kuo tu užsiimi?",
+    "Lithuanian": "What do you do (for work)?",
+    "Phonetic": "VHAT DO YOU DO (FOR VORK)?",
+    "Category": "Question",
+    "Usage": "Small talk — informal (tu)",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kuo jūs užsiimate?",
+    "Lithuanian": "What do you do (for work)?",
+    "Phonetic": "VHAT DO YOU DO (FOR VORK)?",
+    "Category": "Question",
+    "Usage": "Small talk — formal/plural (jūs)",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar turi vaikų?",
+    "Lithuanian": "Do you have children?",
+    "Phonetic": "DO YOU HAVE KHILDREN?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar turite vaikų?",
+    "Lithuanian": "Do you have children?",
+    "Phonetic": "DO YOU HAVE KHILDREN?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar turi augintinių?",
+    "Lithuanian": "Do you have pets?",
+    "Phonetic": "DO YOU HAVE PETS?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar turite augintinių?",
+    "Lithuanian": "Do you have pets?",
+    "Phonetic": "DO YOU HAVE PETS?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar tau patinka Lietuva?",
+    "Lithuanian": "Do you like Lithuania?",
+    "Phonetic": "DO YOU LIKE LITHUANIA?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar jums patinka Lietuva?",
+    "Lithuanian": "Do you like Lithuania?",
+    "Phonetic": "DO YOU LIKE LITHUANIA?",
+    "Category": "Question",
+    "Usage": "Small talk",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Iš kurio miesto esi?",
+    "Lithuanian": "Which city are you from?",
+    "Phonetic": "VHIKH KITY ARE YOU FROM?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Iš kurio miesto esate?",
+    "Lithuanian": "Which city are you from?",
+    "Phonetic": "VHIKH KITY ARE YOU FROM?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kiek tai kainuoja?",
+    "Lithuanian": "How much does it cost?",
+    "Phonetic": "HOV MUKH DOES IT KOST?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar galite man padėti?",
+    "Lithuanian": "Can you help me?",
+    "Phonetic": "KAN YOU HELP ME?",
+    "Category": "Question",
+    "Usage": "Help",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur galiu nusipirkti bilietą?",
+    "Lithuanian": "Where can I buy a ticket?",
+    "Phonetic": "VHERE KAN I BUY A TIKKET?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Keliolika valandų? -> Kiek dabar valanda?",
+    "Lithuanian": "What time is it?",
+    "Phonetic": "VHAT TIME IS IT?",
+    "Category": "Question",
+    "Usage": "Time",
+    "Notes": "Common: 'Kiek dabar valanda?'",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur yra…?",
+    "Lithuanian": "Where is…?",
+    "Phonetic": "VHERE IS…?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kada prasideda?",
+    "Lithuanian": "When does it start?",
+    "Phonetic": "VHEN DOES IT START?",
+    "Category": "Question",
+    "Usage": "Plans",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kada baigiasi?",
+    "Lithuanian": "When does it finish?",
+    "Phonetic": "VHEN DOES IT FINISH?",
+    "Category": "Question",
+    "Usage": "Plans",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar galiu čia atsisėsti?",
+    "Lithuanian": "Can I sit here?",
+    "Phonetic": "KAN I SIT HERE?",
+    "Category": "Question",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar kalbate angliškai?",
+    "Lithuanian": "Do you speak English?",
+    "Phonetic": "DO YOU SPEAK ENGLISH?",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur galime pavalgyti?",
+    "Lithuanian": "Where can we eat?",
+    "Phonetic": "VHERE KAN VE EAT?",
+    "Category": "Question",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kuris autobusas važiuoja į…?",
+    "Lithuanian": "Which bus goes to…?",
+    "Phonetic": "VHIKH BUS GOES TO…?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kiek užtrunka?",
+    "Lithuanian": "How long does it take?",
+    "Phonetic": "HOV LONG DOES IT TAKE?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar ši vieta laisva?",
+    "Lithuanian": "Is this seat free?",
+    "Phonetic": "IS THIS SEAT FREE?",
+    "Category": "Question",
+    "Usage": "Polite",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar galiu sąskaitą?",
+    "Lithuanian": "Can I have the bill?",
+    "Phonetic": "KAN I HAVE THE BILL?",
+    "Category": "Question",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar priimate korteles?",
+    "Lithuanian": "Do you take card?",
+    "Phonetic": "DO YOU TAKE KARD?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar turite vegetariškų patiekalų?",
+    "Lithuanian": "Do you have vegetarian options?",
+    "Phonetic": "DO YOU HAVE VEGETARIAN OPTIONS?",
+    "Category": "Question",
+    "Usage": "Food & Drink",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur rasiu vaistinę?",
+    "Lithuanian": "Where can I find a pharmacy?",
+    "Phonetic": "VHERE KAN I FIND A PHARMAKY?",
+    "Category": "Question",
+    "Usage": "Health",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar netoliese yra prekybos centras?",
+    "Lithuanian": "Is there a supermarket nearby?",
+    "Phonetic": "IS THERE A SUPERMARKET NEARBY?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Koks tavo",
+    "Lithuanian": "What is your phone number?",
+    "Phonetic": "VHAT IS YOUR PHONE NUMBER?",
+    "Category": "Question",
+    "Usage": "Contact",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "jūsų telefono numeris?",
+    "Lithuanian": "What is your phone number?",
+    "Phonetic": "VHAT IS YOUR PHONE NUMBER?",
+    "Category": "Question",
+    "Usage": "Contact — formal/plural (jūs)",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar galime susitikti rytoj?",
+    "Lithuanian": "Can we meet tomorrow?",
+    "Phonetic": "KAN VE MEET TOMORROV?",
+    "Category": "Question",
+    "Usage": "Plans",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur galiu įkrauti telefoną?",
+    "Lithuanian": "Where can I charge my phone?",
+    "Phonetic": "VHERE KAN I KHARGE MY PHONE?",
+    "Category": "Question",
+    "Usage": "Practical",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur yra stotis?",
+    "Lithuanian": "Where is the station?",
+    "Phonetic": "VHERE IS THE STATION?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kur yra centras?",
+    "Lithuanian": "Which way is the centre?",
+    "Phonetic": "VHIKH VAY IS THE KENTRE?",
+    "Category": "Question",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kelintą valandą atidarote?",
+    "Lithuanian": "What time do you open?",
+    "Phonetic": "VHAT TIME DO YOU OPEN?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar galiu pasimatuoti?",
+    "Lithuanian": "Can I try it on?",
+    "Phonetic": "KAN I TRY IT ON?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar turite M dydį?",
+    "Lithuanian": "Do you have a size M?",
+    "Phonetic": "DO YOU HAVE A SIZE M?",
+    "Category": "Question",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar galite rekomenduoti…?",
+    "Lithuanian": "Can you recommend…?",
+    "Phonetic": "KAN YOU REKOMMEND…?",
+    "Category": "Question",
+    "Usage": "General",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Kurį geriau?",
+    "Lithuanian": "Which one is better?",
+    "Phonetic": "VHIKH ONE IS BETTER?",
+    "Category": "Question",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ką manote?",
+    "Lithuanian": "What do you think?",
+    "Phonetic": "VHAT DO YOU THINK?",
+    "Category": "Question",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar sutinkate?",
+    "Lithuanian": "Do you agree?",
+    "Phonetic": "DO YOU AGREE?",
+    "Category": "Question",
+    "Usage": "Opinion",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "Ar galėtumėte užrašyti?",
+    "Lithuanian": "Could you write it down?",
+    "Phonetic": "KOULD YOU VRITE IT DOVN?",
+    "Category": "Question",
+    "Usage": "Learning",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Questions"
+  },
+  {
+    "English": "vyras",
+    "Lithuanian": "man",
+    "Phonetic": "MAN",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "moteris",
+    "Lithuanian": "woman",
+    "Phonetic": "VOMAN",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "berniukas",
+    "Lithuanian": "boy",
+    "Phonetic": "BOY",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "mergaitė",
+    "Lithuanian": "girl",
+    "Phonetic": "GIRL",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "draugas",
+    "Lithuanian": "friend",
+    "Phonetic": "FRIEND",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "m/f",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "draugė",
+    "Lithuanian": "friend",
+    "Phonetic": "FRIEND",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "m/f",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "šeima",
+    "Lithuanian": "family",
+    "Phonetic": "FAMILY",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vardas",
+    "Lithuanian": "name",
+    "Phonetic": "NAME",
+    "Category": "Word",
+    "Usage": "People",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "šalis",
+    "Lithuanian": "country",
+    "Phonetic": "KOUNTRY",
+    "Category": "Word",
+    "Usage": "Places",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "miestas",
+    "Lithuanian": "city",
+    "Phonetic": "KITY",
+    "Category": "Word",
+    "Usage": "Places",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "gatvė",
+    "Lithuanian": "street",
+    "Phonetic": "STREET",
+    "Category": "Word",
+    "Usage": "Places",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "namas",
+    "Lithuanian": "house",
+    "Phonetic": "HOUSE",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "butas",
+    "Lithuanian": "flat",
+    "Phonetic": "FLAT",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "kambarys",
+    "Lithuanian": "room",
+    "Phonetic": "ROOM",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "virtuvė",
+    "Lithuanian": "kitchen",
+    "Phonetic": "KITKHEN",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vonia",
+    "Lithuanian": "bathroom",
+    "Phonetic": "BATHROOM",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "lova",
+    "Lithuanian": "bed",
+    "Phonetic": "BED",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "stalas",
+    "Lithuanian": "table",
+    "Phonetic": "TABLE",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "kėdė",
+    "Lithuanian": "chair",
+    "Phonetic": "KHAIR",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "durys",
+    "Lithuanian": "door",
+    "Phonetic": "DOOR",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "langas",
+    "Lithuanian": "window",
+    "Phonetic": "VINDOV",
+    "Category": "Word",
+    "Usage": "Home",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "kairė",
+    "Lithuanian": "left",
+    "Phonetic": "LEFT",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "dešinė",
+    "Lithuanian": "right",
+    "Phonetic": "RAIT",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "tiesiai",
+    "Lithuanian": "straight",
+    "Phonetic": "STREIT",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "atgal",
+    "Lithuanian": "back",
+    "Phonetic": "BAKK",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "šalia",
+    "Lithuanian": "near",
+    "Phonetic": "NEAR",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "toli",
+    "Lithuanian": "far",
+    "Phonetic": "FAR",
+    "Category": "Word",
+    "Usage": "Directions",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "šiandien",
+    "Lithuanian": "today",
+    "Phonetic": "TODAY",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "rytoj",
+    "Lithuanian": "tomorrow",
+    "Phonetic": "TOMORROV",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vakar",
+    "Lithuanian": "yesterday",
+    "Phonetic": "YESTERDAY",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "rytas",
+    "Lithuanian": "morning",
+    "Phonetic": "MÓRNING",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vakaras",
+    "Lithuanian": "evening",
+    "Phonetic": "ÝVNING",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "naktis",
+    "Lithuanian": "night",
+    "Phonetic": "NAIT",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "valanda",
+    "Lithuanian": "hour",
+    "Phonetic": "HOUR",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "minutė",
+    "Lithuanian": "minute",
+    "Phonetic": "MINUTE",
+    "Category": "Word",
+    "Usage": "Time",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "maistas",
+    "Lithuanian": "food",
+    "Phonetic": "FOOD",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "gėrimas",
+    "Lithuanian": "drink",
+    "Phonetic": "DRINK",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vanduo",
+    "Lithuanian": "water",
+    "Phonetic": "VÓTER",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "kava",
+    "Lithuanian": "coffee",
+    "Phonetic": "KOFĪ",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "arbata",
+    "Lithuanian": "tea",
+    "Phonetic": "TĪ",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "alus",
+    "Lithuanian": "beer",
+    "Phonetic": "BĪR",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vynas",
+    "Lithuanian": "wine",
+    "Phonetic": "VINE",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "duona",
+    "Lithuanian": "bread",
+    "Phonetic": "BREAD",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "sviestas",
+    "Lithuanian": "butter",
+    "Phonetic": "BUTTER",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "sūris",
+    "Lithuanian": "cheese",
+    "Phonetic": "KHEESE",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "pienas",
+    "Lithuanian": "milk",
+    "Phonetic": "MILK",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "druska",
+    "Lithuanian": "salt",
+    "Phonetic": "SALT",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "cukrus",
+    "Lithuanian": "sugar",
+    "Phonetic": "SUGAR",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "mėsa",
+    "Lithuanian": "meat",
+    "Phonetic": "MEAT",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vištiena",
+    "Lithuanian": "chicken",
+    "Phonetic": "KHIKKEN",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "žuvis",
+    "Lithuanian": "fish",
+    "Phonetic": "FISH",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "daržovė",
+    "Lithuanian": "vegetable",
+    "Phonetic": "VEGETABLE",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "vaisius",
+    "Lithuanian": "fruit",
+    "Phonetic": "FRUIT",
+    "Category": "Word",
+    "Usage": "Food",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "pinigai",
+    "Lithuanian": "money",
+    "Phonetic": "MONEY",
+    "Category": "Word",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "parduotuvė",
+    "Lithuanian": "shop",
+    "Phonetic": "ŠOP",
+    "Category": "Word",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "kaina",
+    "Lithuanian": "price",
+    "Phonetic": "PRAJS",
+    "Category": "Word",
+    "Usage": "Shopping",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bilietas",
+    "Lithuanian": "ticket",
+    "Phonetic": "TIKIT",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "autobusas",
+    "Lithuanian": "bus",
+    "Phonetic": "BAS",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "traukinys",
+    "Lithuanian": "train",
+    "Phonetic": "TREIN",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "automobilis",
+    "Lithuanian": "car",
+    "Phonetic": "KAR",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "oro uostas",
+    "Lithuanian": "airport",
+    "Phonetic": "ÉRPORT",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "stotis",
+    "Lithuanian": "station",
+    "Phonetic": "STEIŠON",
+    "Category": "Word",
+    "Usage": "Travel",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "darbas",
+    "Lithuanian": "work",
+    "Phonetic": "VÉRK",
+    "Category": "Word",
+    "Usage": "Daily life",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "darbas",
+    "Lithuanian": "job",
+    "Phonetic": "JOB",
+    "Category": "Word",
+    "Usage": "Daily life",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "biuras",
+    "Lithuanian": "office",
+    "Phonetic": "OFFIKE",
+    "Category": "Word",
+    "Usage": "Daily life",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "telefonas",
+    "Lithuanian": "phone",
+    "Phonetic": "FOUN",
+    "Category": "Word",
+    "Usage": "Tech",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "kompiuteris",
+    "Lithuanian": "computer",
+    "Phonetic": "KOMPUTER",
+    "Category": "Word",
+    "Usage": "Tech",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "slaptažodis",
+    "Lithuanian": "password",
+    "Phonetic": "PASSVORD",
+    "Category": "Word",
+    "Usage": "Tech",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "meilė",
+    "Lithuanian": "love",
+    "Phonetic": "LOVE",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "patinka",
+    "Lithuanian": "like",
+    "Phonetic": "LIKE",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "laimingas",
+    "Lithuanian": "happy",
+    "Phonetic": "HAPPY",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "laiminga",
+    "Lithuanian": "happy",
+    "Phonetic": "HAPPY",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "pavargęs",
+    "Lithuanian": "tired",
+    "Phonetic": "TIRED",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "pavargusi",
+    "Lithuanian": "tired",
+    "Phonetic": "TIRED",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "alkanas",
+    "Lithuanian": "hungry",
+    "Phonetic": "HUNGRY",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "alkana",
+    "Lithuanian": "hungry",
+    "Phonetic": "HUNGRY",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "ištroškęs",
+    "Lithuanian": "thirsty",
+    "Phonetic": "THIRSTY",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "ištroškusi",
+    "Lithuanian": "thirsty",
+    "Phonetic": "THIRSTY",
+    "Category": "Word",
+    "Usage": "Feelings",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "gražus",
+    "Lithuanian": "beautiful",
+    "Phonetic": "BEAUTIFUL",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "graži",
+    "Lithuanian": "beautiful",
+    "Phonetic": "BEAUTIFUL",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "didelis",
+    "Lithuanian": "big",
+    "Phonetic": "BIG",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "didelė",
+    "Lithuanian": "big",
+    "Phonetic": "BIG",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "mažas",
+    "Lithuanian": "small",
+    "Phonetic": "SMALL",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "maža",
+    "Lithuanian": "small",
+    "Phonetic": "SMALL",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "geras",
+    "Lithuanian": "good",
+    "Phonetic": "GUD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "gera",
+    "Lithuanian": "good",
+    "Phonetic": "GUD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "blogas",
+    "Lithuanian": "bad",
+    "Phonetic": "BAD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "bloga",
+    "Lithuanian": "bad",
+    "Phonetic": "BAD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "karštas",
+    "Lithuanian": "hot",
+    "Phonetic": "HOT",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "karšta",
+    "Lithuanian": "hot",
+    "Phonetic": "HOT",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "šaltas",
+    "Lithuanian": "cold",
+    "Phonetic": "KOLD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "šalta",
+    "Lithuanian": "cold",
+    "Phonetic": "KOLD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "naujas",
+    "Lithuanian": "new",
+    "Phonetic": "NEV",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "nauja",
+    "Lithuanian": "new",
+    "Phonetic": "NEV",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "senas",
+    "Lithuanian": "old",
+    "Phonetic": "OLD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "sena",
+    "Lithuanian": "old",
+    "Phonetic": "OLD",
+    "Category": "Word",
+    "Usage": "Description",
+    "Notes": "masc./fem.",
+    "RAG Icon": "🔴",
+    "Sheet": "Words"
+  },
+  {
+    "English": "nulis",
+    "Lithuanian": "zero",
+    "Phonetic": "ZERO",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "vienas",
+    "Lithuanian": "one",
+    "Phonetic": "UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "du",
+    "Lithuanian": "two",
+    "Phonetic": "TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trys",
+    "Lithuanian": "three",
+    "Phonetic": "TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturi",
+    "Lithuanian": "four",
+    "Phonetic": "FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penki",
+    "Lithuanian": "five",
+    "Phonetic": "FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šeši",
+    "Lithuanian": "six",
+    "Phonetic": "SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyni",
+    "Lithuanian": "seven",
+    "Phonetic": "SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoni",
+    "Lithuanian": "eight",
+    "Phonetic": "EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyni",
+    "Lithuanian": "nine",
+    "Phonetic": "NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dešimt",
+    "Lithuanian": "ten",
+    "Phonetic": "TEN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "vienuolika",
+    "Lithuanian": "eleven",
+    "Phonetic": "ILEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvylika",
+    "Lithuanian": "twelve",
+    "Phonetic": "TUELV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trylika",
+    "Lithuanian": "thirteen",
+    "Phonetic": "TERTĪN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiolika",
+    "Lithuanian": "fourteen",
+    "Phonetic": "FORTEEN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiolika",
+    "Lithuanian": "fifteen",
+    "Phonetic": "FIFTĪN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiolika",
+    "Lithuanian": "sixteen",
+    "Phonetic": "SIKSTEEN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniolika",
+    "Lithuanian": "seventeen",
+    "Phonetic": "SEVNTEEN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniolika",
+    "Lithuanian": "eighteen",
+    "Phonetic": "EITEEN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniolika",
+    "Lithuanian": "nineteen",
+    "Phonetic": "NAINTEEN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt",
+    "Lithuanian": "twenty",
+    "Phonetic": "TUENTI",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt vienas",
+    "Lithuanian": "twenty one",
+    "Phonetic": "TUENTI UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt du",
+    "Lithuanian": "twenty two",
+    "Phonetic": "TUENTI TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt trys",
+    "Lithuanian": "twenty three",
+    "Phonetic": "TUENTI TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt keturi",
+    "Lithuanian": "twenty four",
+    "Phonetic": "TUENTI FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt penki",
+    "Lithuanian": "twenty five",
+    "Phonetic": "TUENTI FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt šeši",
+    "Lithuanian": "twenty six",
+    "Phonetic": "TUENTI SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt septyni",
+    "Lithuanian": "twenty seven",
+    "Phonetic": "TUENTI SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt aštuoni",
+    "Lithuanian": "twenty eight",
+    "Phonetic": "TUENTI EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "dvidešimt devyni",
+    "Lithuanian": "twenty nine",
+    "Phonetic": "TUENTI NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt",
+    "Lithuanian": "thirty",
+    "Phonetic": "ΘERTI",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt vienas",
+    "Lithuanian": "thirty one",
+    "Phonetic": "ΘERTI UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt du",
+    "Lithuanian": "thirty two",
+    "Phonetic": "ΘERTI TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt trys",
+    "Lithuanian": "thirty three",
+    "Phonetic": "ΘERTI TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt keturi",
+    "Lithuanian": "thirty four",
+    "Phonetic": "ΘERTI FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt penki",
+    "Lithuanian": "thirty five",
+    "Phonetic": "ΘERTI FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt šeši",
+    "Lithuanian": "thirty six",
+    "Phonetic": "ΘERTI SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt septyni",
+    "Lithuanian": "thirty seven",
+    "Phonetic": "ΘERTI SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt aštuoni",
+    "Lithuanian": "thirty eight",
+    "Phonetic": "ΘERTI EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "trisdešimt devyni",
+    "Lithuanian": "thirty nine",
+    "Phonetic": "ΘERTI NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt",
+    "Lithuanian": "forty",
+    "Phonetic": "FÓRTI",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt vienas",
+    "Lithuanian": "forty one",
+    "Phonetic": "FÓRTI UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt du",
+    "Lithuanian": "forty two",
+    "Phonetic": "FÓRTI TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt trys",
+    "Lithuanian": "forty three",
+    "Phonetic": "FÓRTI TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt keturi",
+    "Lithuanian": "forty four",
+    "Phonetic": "FÓRTI FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt penki",
+    "Lithuanian": "forty five",
+    "Phonetic": "FÓRTI FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt šeši",
+    "Lithuanian": "forty six",
+    "Phonetic": "FÓRTI SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt septyni",
+    "Lithuanian": "forty seven",
+    "Phonetic": "FÓRTI SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt aštuoni",
+    "Lithuanian": "forty eight",
+    "Phonetic": "FÓRTI EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "keturiasdešimt devyni",
+    "Lithuanian": "forty nine",
+    "Phonetic": "FÓRTI NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt",
+    "Lithuanian": "fifty",
+    "Phonetic": "FIFTI",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt vienas",
+    "Lithuanian": "fifty one",
+    "Phonetic": "FIFTI UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt du",
+    "Lithuanian": "fifty two",
+    "Phonetic": "FIFTI TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt trys",
+    "Lithuanian": "fifty three",
+    "Phonetic": "FIFTI TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt keturi",
+    "Lithuanian": "fifty four",
+    "Phonetic": "FIFTI FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt penki",
+    "Lithuanian": "fifty five",
+    "Phonetic": "FIFTI FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt šeši",
+    "Lithuanian": "fifty six",
+    "Phonetic": "FIFTI SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt septyni",
+    "Lithuanian": "fifty seven",
+    "Phonetic": "FIFTI SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt aštuoni",
+    "Lithuanian": "fifty eight",
+    "Phonetic": "FIFTI EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "penkiasdešimt devyni",
+    "Lithuanian": "fifty nine",
+    "Phonetic": "FIFTI NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt",
+    "Lithuanian": "sixty",
+    "Phonetic": "SIKSTY",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt vienas",
+    "Lithuanian": "sixty one",
+    "Phonetic": "SIKSTY UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt du",
+    "Lithuanian": "sixty two",
+    "Phonetic": "SIKSTY TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt trys",
+    "Lithuanian": "sixty three",
+    "Phonetic": "SIKSTY TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt keturi",
+    "Lithuanian": "sixty four",
+    "Phonetic": "SIKSTY FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt penki",
+    "Lithuanian": "sixty five",
+    "Phonetic": "SIKSTY FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt šeši",
+    "Lithuanian": "sixty six",
+    "Phonetic": "SIKSTY SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt septyni",
+    "Lithuanian": "sixty seven",
+    "Phonetic": "SIKSTY SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt aštuoni",
+    "Lithuanian": "sixty eight",
+    "Phonetic": "SIKSTY EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šešiasdešimt devyni",
+    "Lithuanian": "sixty nine",
+    "Phonetic": "SIKSTY NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt",
+    "Lithuanian": "seventy",
+    "Phonetic": "SEVNTY",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt vienas",
+    "Lithuanian": "seventy one",
+    "Phonetic": "SEVNTY UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt du",
+    "Lithuanian": "seventy two",
+    "Phonetic": "SEVNTY TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt trys",
+    "Lithuanian": "seventy three",
+    "Phonetic": "SEVNTY TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt keturi",
+    "Lithuanian": "seventy four",
+    "Phonetic": "SEVNTY FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt penki",
+    "Lithuanian": "seventy five",
+    "Phonetic": "SEVNTY FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt šeši",
+    "Lithuanian": "seventy six",
+    "Phonetic": "SEVNTY SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt septyni",
+    "Lithuanian": "seventy seven",
+    "Phonetic": "SEVNTY SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt aštuoni",
+    "Lithuanian": "seventy eight",
+    "Phonetic": "SEVNTY EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "septyniasdešimt devyni",
+    "Lithuanian": "seventy nine",
+    "Phonetic": "SEVNTY NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt",
+    "Lithuanian": "eighty",
+    "Phonetic": "EITY",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt vienas",
+    "Lithuanian": "eighty one",
+    "Phonetic": "EITY UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt du",
+    "Lithuanian": "eighty two",
+    "Phonetic": "EITY TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt trys",
+    "Lithuanian": "eighty three",
+    "Phonetic": "EITY TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt keturi",
+    "Lithuanian": "eighty four",
+    "Phonetic": "EITY FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt penki",
+    "Lithuanian": "eighty five",
+    "Phonetic": "EITY FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt šeši",
+    "Lithuanian": "eighty six",
+    "Phonetic": "EITY SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt septyni",
+    "Lithuanian": "eighty seven",
+    "Phonetic": "EITY SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt aštuoni",
+    "Lithuanian": "eighty eight",
+    "Phonetic": "EITY EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "aštuoniasdešimt devyni",
+    "Lithuanian": "eighty nine",
+    "Phonetic": "EITY NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt",
+    "Lithuanian": "ninety",
+    "Phonetic": "NAINTY",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt vienas",
+    "Lithuanian": "ninety one",
+    "Phonetic": "NAINTY UAN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt du",
+    "Lithuanian": "ninety two",
+    "Phonetic": "NAINTY TŪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt trys",
+    "Lithuanian": "ninety three",
+    "Phonetic": "NAINTY TRĪ",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt keturi",
+    "Lithuanian": "ninety four",
+    "Phonetic": "NAINTY FOR",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt penki",
+    "Lithuanian": "ninety five",
+    "Phonetic": "NAINTY FAIV",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt šeši",
+    "Lithuanian": "ninety six",
+    "Phonetic": "NAINTY SIKS",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt septyni",
+    "Lithuanian": "ninety seven",
+    "Phonetic": "NAINTY SEVN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt aštuoni",
+    "Lithuanian": "ninety eight",
+    "Phonetic": "NAINTY EIT",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "devyniasdešimt devyni",
+    "Lithuanian": "ninety nine",
+    "Phonetic": "NAINTY NAIN",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  },
+  {
+    "English": "šimtas",
+    "Lithuanian": "one hundred",
+    "Phonetic": "UAN HUNDRED",
+    "Category": "Number",
+    "Usage": "Basics / Counting",
+    "Notes": "nan",
+    "RAG Icon": "🔴",
+    "Sheet": "Numbers"
+  }
+]
