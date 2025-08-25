@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - ElevenLabs monthly usage counter
  * - Quiz: multiple choice, audio before choice, feedback, weighted RAG sampling, daily streak
  * - Direction toggle EN→LT / LT→EN (list view)
+ * - NEW: XP/Level system (50 XP per correct; 2500 XP per level)
  */
 
 // -------------------- Keys & constants --------------------
@@ -32,6 +33,11 @@ const LSK_AZURE_KEY = "lt_azure_key";
 const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice"; // {shortName}
 const LSK_STREAK = "lt_quiz_streak_v1"; // {streak:number, lastDate:"YYYY-MM-DD"}
+
+// XP / Level
+const LSK_XP = "lt_quiz_xp_v1"; // number
+const XP_PER_CORRECT = 50;
+const XP_PER_LEVEL = 2500;
 
 // -------------------- Local storage helpers --------------------
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
@@ -69,6 +75,17 @@ const loadStreak = () => {
   }
 };
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
+
+// XP helpers
+const loadXp = () => {
+  try {
+    const v = Number(localStorage.getItem(LSK_XP) || "0");
+    return Number.isFinite(v) ? v : 0;
+  } catch {
+    return 0;
+  }
+};
+const saveXp = (xp) => localStorage.setItem(LSK_XP, String(xp));
 
 function daysBetween(d1, d2) {
   const a = new Date(d1 + "T00:00:00");
@@ -116,6 +133,25 @@ function pickDistractors(pool, correct, key, n = 3) {
     if (uniqueByKey.length >= n) break;
   }
   return uniqueByKey;
+}
+
+// Level / badge utils
+function xpToLevel(xp) {
+  return 1 + Math.floor(xp / XP_PER_LEVEL);
+}
+function levelBadge(level) {
+  if (level >= 1000) return "🔱";
+  if (level >= 500) return "🧠";
+  if (level >= 200) return "🚀";
+  if (level >= 100) return "🌟";
+  if (level >= 50) return "👑";
+  if (level >= 20) return "🏆";
+  if (level >= 10) return "🥇";
+  if (level >= 5) return "🥈";
+  return "🥉";
+}
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 // -------------------- XLSX (UMD loader) --------------------
@@ -300,7 +336,7 @@ export default function App() {
 
   // TTS provider selector
   const [ttsProvider, setTtsProvider] = useState(
-    () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure" // default to Azure for you
+    () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure" // default to Azure
   );
 
   // ElevenLabs
@@ -340,6 +376,17 @@ export default function App() {
 
   // Streak
   const [streak, setStreak] = useState(loadStreak());
+
+  // XP / Level (persistent)
+  const [xp, setXp] = useState(loadXp());
+  const level = xpToLevel(xp);
+  const levelBaseXp = (level - 1) * XP_PER_LEVEL;
+  const xpIntoLevel = xp - levelBaseXp;
+  const progressPct = Math.max(0, Math.min(100, (xpIntoLevel / XP_PER_LEVEL) * 100));
+
+  // Track per-quiz XP gain + starting level (to show level-up on congrats)
+  const [quizSessionXp, setQuizSessionXp] = useState(0);
+  const [quizStartLevel, setQuizStartLevel] = useState(level);
 
   // Form/edit/expand
   const [draft, setDraft] = useState({
@@ -393,6 +440,9 @@ export default function App() {
     localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
   }, [azureVoiceShortName]);
   useEffect(() => saveStreak(streak), [streak]);
+
+  // persist XP
+  useEffect(() => saveXp(xp), [xp]);
 
   // keep the Add form's Sheet synced with active tab
   useEffect(() => {
@@ -491,7 +541,6 @@ export default function App() {
 
     const start = (e) => {
       e.preventDefault(); // avoid ghost click/mouse after touch
-      // start a one‑shot timer for long‑press
       timer = setTimeout(() => {
         timer = null;                // mark as consumed
         playText(text, { slow: true });
@@ -499,13 +548,11 @@ export default function App() {
     };
 
     const end = () => {
-      // If timer still pending, long‑press didn't fire → play normal
       if (timer) {
         clearTimeout(timer);
         timer = null;
         playText(text, { slow: false });
       }
-      // If timer was null, slow already played, so do nothing.
     };
 
     const cancel = () => {
@@ -623,10 +670,12 @@ export default function App() {
     setQuizScore(0);
     setQuizAnswered(false);
     setQuizChoice(null);
+    setQuizSessionXp(0);
+    setQuizStartLevel(xpToLevel(xp));
 
     // build first options
     const first = pool[0];
-    const keyAns = "Lithuanian"; // answer side is always Lithuanian for choices (so you can hear them)
+    const keyAns = "Lithuanian"; // answer side is always Lithuanian for choices
     const distractors = pickDistractors(pool, first, keyAns, 3);
     const opts = shuffle([first[keyAns], ...distractors.map(d => d[keyAns])]);
     setQuizOptions(opts);
@@ -674,7 +723,11 @@ export default function App() {
 
     setQuizChoice(option);
     setQuizAnswered(true);
-    if (ok) setQuizScore((s) => s + 1);
+    if (ok) {
+      setQuizScore((s) => s + 1);
+      setXp((xpPrev) => xpPrev + XP_PER_CORRECT);
+      setQuizSessionXp((g) => g + XP_PER_CORRECT);
+    }
 
     // Play correct audio after answer
     await playText(correct, { slow: false });
@@ -750,7 +803,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Search + Mode + RAG sort */}
+        {/* Search + Mode + RAG sort + Streak + Level */}
         <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 flex-wrap">
           <input
             value={q}
@@ -790,8 +843,26 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div className="ml-auto text-xs text-zinc-400">
-            🔥 Streak: <span className="font-semibold">{streak.streak}</span>
+
+          {/* Right side stats */}
+          <div className="ml-auto flex items-center gap-3">
+            <div className="text-xs text-zinc-400 whitespace-nowrap">
+              🔥 Streak: <span className="font-semibold">{streak.streak}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs">
+                {levelBadge(level)} <span className="font-semibold">Lv {numberWithCommas(level)}</span>
+              </span>
+              <div className="w-28 h-2 rounded bg-zinc-800 overflow-hidden">
+                <div
+                  className="h-2 bg-emerald-600"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <span className="text-[11px] text-zinc-400">
+                {numberWithCommas(xpIntoLevel)} / {numberWithCommas(XP_PER_LEVEL)} XP
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -1029,7 +1100,7 @@ export default function App() {
                     {quizAnswered && (
                       <div className="mt-3 flex items-center justify-between">
                         <div className="text-sm text-zinc-300">
-                          {quizChoice === correctLt ? "Correct!" : "Not quite."}
+                          {quizChoice === correctLt ? "Correct! (+50 XP)" : "Not quite."}
                         </div>
                         <button
                           onClick={afterAnswerAdvance}
@@ -1240,8 +1311,16 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-[92%] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
             <div className="text-2xl font-semibold mb-1">Nice work! 🎉</div>
-            <div className="text-zinc-300 mb-4">You scored {quizScore} / {quizQs.length}.</div>
-            <div className="text-sm text-zinc-400 mb-4">🔥 Daily streak: <span className="font-semibold text-emerald-400">{streak.streak}</span></div>
+            <div className="text-zinc-300 mb-1">You scored {quizScore} / {quizQs.length}.</div>
+            <div className="text-sm text-emerald-400 mb-2">+{quizSessionXp} XP</div>
+            {xpToLevel(xp) > quizStartLevel && (
+              <div className="text-sm mb-2">
+                Level Up! {levelBadge(xpToLevel(xp))} Now <span className="font-semibold">Lv {numberWithCommas(xpToLevel(xp))}</span>
+              </div>
+            )}
+            <div className="text-sm text-zinc-400 mb-4">
+              🔥 Daily streak: <span className="font-semibold text-emerald-400">{streak.streak}</span>
+            </div>
             <div className="flex justify-center gap-2">
               <button
                 onClick={() => { setQuizShowCongrats(false); setQuizOn(false); }}
