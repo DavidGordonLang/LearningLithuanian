@@ -4,12 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * Lithuanian Trainer — full app
  * - List view with tabs, search, details toggle
  * - RAG sort (🔴 🟠 🟢), add/edit/delete
- * - XLSX import (UMD loader), JSON export
- * - TTS providers: Browser, ElevenLabs, Azure (tap = normal, long‑press = slow)
+ * - XLSX import (UMD loader), JSON export (now MERGES + DE-DUPES)
+ * - TTS providers: Browser, ElevenLabs, Azure (tap = normal, long-press = slow)
  * - ElevenLabs monthly usage counter
  * - Quiz: multiple choice, audio before choice, feedback, weighted RAG sampling, daily streak
  * - Direction toggle EN→LT / LT→EN (list view)
- * - NEW: XP/Level system (50 XP per correct; 2500 XP per level)
+ * - XP/Level system (50 XP per correct; 2500 XP per level)
+ * - Starter packs modal on first run (EN→LT / LT→EN / Both)
+ * - NEW: Numbers tab supported everywhere
  */
 
 // -------------------- Keys & constants --------------------
@@ -38,6 +40,12 @@ const LSK_STREAK = "lt_quiz_streak_v1"; // {streak:number, lastDate:"YYYY-MM-DD"
 const LSK_XP = "lt_quiz_xp_v1"; // number
 const XP_PER_CORRECT = 50;
 const XP_PER_LEVEL = 2500;
+
+// Onboarding (starter packs modal)
+const LSK_ONBOARDED = "lt_onboarded_v1";
+
+// Supported sheets/tabs
+const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
 
 // -------------------- Local storage helpers --------------------
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
@@ -134,24 +142,36 @@ function pickDistractors(pool, correct, key, n = 3) {
   }
   return uniqueByKey;
 }
-
-// Level / badge utils
-function xpToLevel(xp) {
-  return 1 + Math.floor(xp / XP_PER_LEVEL);
-}
-function levelBadge(level) {
-  if (level >= 1000) return "🔱";
-  if (level >= 500) return "🧠";
-  if (level >= 200) return "🚀";
-  if (level >= 100) return "🌟";
-  if (level >= 50) return "👑";
-  if (level >= 20) return "🏆";
-  if (level >= 10) return "🥇";
-  if (level >= 5) return "🥈";
-  return "🥉";
-}
 function numberWithCommas(x) {
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return (x ?? 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// ---- Merge & de-dupe helpers (Sheet + English + Lithuanian) ----
+function normKey(s = "") {
+  return String(s).normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+}
+function rowKey(r) {
+  return `${(r.Sheet || "").trim()}||${normKey(r.English)}||${normKey(r.Lithuanian)}`;
+}
+function mergeRows(existing, incoming) {
+  const map = new Map(existing.map((r) => [rowKey(r), r]));
+  for (const r of incoming) {
+    const k = rowKey(r);
+    if (!map.has(k)) {
+      map.set(k, { ...r, "RAG Icon": normalizeRag(r["RAG Icon"]) });
+    } else {
+      const cur = map.get(k);
+      // Merge policy: keep current fields, fill blanks from incoming, normalize RAG
+      map.set(k, {
+        ...cur,
+        ...r,
+        English: cur.English || r.English,
+        Lithuanian: cur.Lithuanian || r.Lithuanian,
+        "RAG Icon": normalizeRag(r["RAG Icon"] || cur["RAG Icon"]),
+      });
+    }
+  }
+  return Array.from(map.values());
 }
 
 // -------------------- XLSX (UMD loader) --------------------
@@ -187,7 +207,7 @@ async function importXlsx(file) {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   const merged = [];
-  const tabs = new Set(["Phrases", "Questions", "Words"]);
+  const tabs = new Set(SHEETS);
 
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
@@ -334,6 +354,17 @@ export default function App() {
   const [ragPriority, setRagPriority] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Starter packs modal (open on first run if no data)
+  const [starterOpen, setStarterOpen] = useState(() => {
+    try {
+      const hasData = (loadData() || []).length > 0;
+      const seen = !!localStorage.getItem(LSK_ONBOARDED);
+      return !hasData && !seen;
+    } catch {
+      return true;
+    }
+  });
+
   // TTS provider selector
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure" // default to Azure
@@ -379,10 +410,21 @@ export default function App() {
 
   // XP / Level (persistent)
   const [xp, setXp] = useState(loadXp());
-  const level = xpToLevel(xp);
+  const level = 1 + Math.floor(xp / XP_PER_LEVEL);
   const levelBaseXp = (level - 1) * XP_PER_LEVEL;
   const xpIntoLevel = xp - levelBaseXp;
   const progressPct = Math.max(0, Math.min(100, (xpIntoLevel / XP_PER_LEVEL) * 100));
+  const levelBadge = (lvl) => {
+    if (lvl >= 1000) return "🔱";
+    if (lvl >= 500) return "🧠";
+    if (lvl >= 200) return "🚀";
+    if (lvl >= 100) return "🌟";
+    if (lvl >= 50) return "👑";
+    if (lvl >= 20) return "🏆";
+    if (lvl >= 10) return "🥇";
+    if (lvl >= 5) return "🥈";
+    return "🥉";
+  };
 
   // Track per-quiz XP gain + starting level (to show level-up on congrats)
   const [quizSessionXp, setQuizSessionXp] = useState(0);
@@ -440,9 +482,7 @@ export default function App() {
     localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
   }, [azureVoiceShortName]);
   useEffect(() => saveStreak(streak), [streak]);
-
-  // persist XP
-  useEffect(() => saveXp(xp), [xp]);
+  useEffect(() => saveXp(xp), [xp]); // persist XP
 
   // keep the Add form's Sheet synced with active tab
   useEffect(() => {
@@ -484,6 +524,37 @@ export default function App() {
     });
     return indices.map((i) => ({ idx: i, row: rows[i] }));
   }, [rows, tab, q]);
+
+  // -------------------- Starter packs (first run) --------------------
+  async function fetchStarter(path, sourceName) {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error("Failed to fetch starter: " + path);
+    const arr = await res.json();
+    return arr.map((r) => ({ ...r, Source: sourceName })); // optional tagging
+  }
+
+  async function loadStarter(choice) {
+    const map = {
+      enlt: "/data/starter_en_to_lt.json",
+      lten: "/data/starter_lt_to_en.json",
+      both: "/data/starter_combined_dedup.json",
+    };
+    const path = map[choice];
+    const label =
+      choice === "both"
+        ? "Starter (Both)"
+        : choice === "enlt"
+        ? "Starter (EN→LT)"
+        : "Starter (LT→EN)";
+    try {
+      const incoming = await fetchStarter(path, label);
+      setRows((prev) => mergeRows(prev, incoming));
+      localStorage.setItem(LSK_ONBOARDED, "1");
+      setStarterOpen(false);
+    } catch (e) {
+      alert(e.message || String(e));
+    }
+  }
 
   // -------------------- Audio helpers --------------------
   async function playText(text, { slow = false } = {}) {
@@ -535,7 +606,7 @@ export default function App() {
     }
   }
 
-  // Pointer-only long‑press handlers to avoid duplicate (touch+mouse) firing
+  // Pointer-only long-press handlers to avoid duplicate (touch+mouse) firing
   function pressHandlers(text) {
     let timer = null;
 
@@ -613,9 +684,13 @@ export default function App() {
         alert("No rows found in workbook.");
         return;
       }
-      setRows(newRows);
+      // Tag with source filename (optional, handy later)
+      const tagged = newRows.map((r) => ({ ...r, Source: f.name || "Import" }));
+      // MERGE (do not overwrite)
+      setRows((prev) => mergeRows(prev, tagged));
       setTab("Phrases");
       setQ("");
+      alert(`Imported ${newRows.length} rows (merged; duplicates skipped).`);
     } catch (err) {
       console.error(err);
       alert("Failed to import .xlsx (see console)");
@@ -671,7 +746,7 @@ export default function App() {
     setQuizAnswered(false);
     setQuizChoice(null);
     setQuizSessionXp(0);
-    setQuizStartLevel(xpToLevel(xp));
+    setQuizStartLevel(1 + Math.floor(xp / XP_PER_LEVEL));
 
     // build first options
     const first = pool[0];
@@ -745,7 +820,7 @@ export default function App() {
             </div>
             <div className="leading-tight">
               <div className="text-lg font-semibold">Lithuanian Trainer</div>
-              <div className="text-xs text-zinc-400">Tap to play. Long‑press to savor.</div>
+              <div className="text-xs text-zinc-400">Tap to play. Long-press to savor.</div>
             </div>
           </div>
 
@@ -869,7 +944,7 @@ export default function App() {
 
       {/* Tabs */}
       <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sticky top-[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
-        {["Phrases", "Questions", "Words"].map((t) => (
+        {SHEETS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -908,7 +983,7 @@ export default function App() {
                           {/* Play button (tap = normal, hold = slow) */}
                           <button
                             className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition flex items-center justify-center font-semibold"
-                            title="Tap = play, long‑press = slow"
+                            title="Tap = play, long-press = slow"
                             {...pressHandlers(r.Lithuanian)}
                           >
                             ►
@@ -1011,7 +1086,7 @@ export default function App() {
                                 value={editDraft.Sheet}
                                 onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}
                               >
-                                {["Phrases", "Questions", "Words"].map((s) => (
+                                {SHEETS.map((s) => (
                                   <option key={s} value={s}>{s}</option>
                                 ))}
                               </select>
@@ -1055,7 +1130,7 @@ export default function App() {
                       {/* hear Lithuanian for the prompt (correct answer) */}
                       <button
                         className="w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center font-semibold"
-                        title="Tap = play, long‑press = slow"
+                        title="Tap = play, long-press = slow"
                         {...pressHandlers(correctLt)}
                       >
                         ►
@@ -1087,7 +1162,7 @@ export default function App() {
                             {/* preview audio for this option */}
                             <span
                               className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center"
-                              title="Tap = play, long‑press = slow"
+                              title="Tap = play, long-press = slow"
                               {...pressHandlers(opt)}
                             >
                               🔊
@@ -1137,7 +1212,7 @@ export default function App() {
                   {"🔴 🟠 🟢".split(" ").map((x) => (<option key={x} value={x}>{x}</option>))}
                 </select>
                 <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft.Sheet} onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}>
-                  {["Phrases", "Questions", "Words"].map((s) => (<option key={s} value={s}>{s}</option>))}
+                  {SHEETS.map((s) => (<option key={s} value={s}>{s}</option>))}
                 </select>
                 <button onClick={addRow} className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold">Add</button>
               </div>
@@ -1313,9 +1388,9 @@ export default function App() {
             <div className="text-2xl font-semibold mb-1">Nice work! 🎉</div>
             <div className="text-zinc-300 mb-1">You scored {quizScore} / {quizQs.length}.</div>
             <div className="text-sm text-emerald-400 mb-2">+{quizSessionXp} XP</div>
-            {xpToLevel(xp) > quizStartLevel && (
+            {1 + Math.floor(xp / XP_PER_LEVEL) > quizStartLevel && (
               <div className="text-sm mb-2">
-                Level Up! {levelBadge(xpToLevel(xp))} Now <span className="font-semibold">Lv {numberWithCommas(xpToLevel(xp))}</span>
+                Level Up! {levelBadge(1 + Math.floor(xp / XP_PER_LEVEL))} Now <span className="font-semibold">Lv {numberWithCommas(1 + Math.floor(xp / XP_PER_LEVEL))}</span>
               </div>
             )}
             <div className="text-sm text-zinc-400 mb-4">
@@ -1335,6 +1410,35 @@ export default function App() {
                 Retry
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Starter packs modal (first run) */}
+      {starterOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-[92%] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
+            <div className="text-xl font-semibold mb-2">Load starter pack?</div>
+            <div className="text-sm text-zinc-300 mb-4">
+              Choose a starter deck to merge into your library (you can import more later).
+            </div>
+            <div className="grid grid-cols-1 gap-2 mb-3">
+              <button onClick={() => loadStarter("enlt")} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-md font-semibold">
+                EN→LT Starter
+              </button>
+              <button onClick={() => loadStarter("lten")} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-md font-semibold">
+                LT→EN Starter
+              </button>
+              <button onClick={() => loadStarter("both")} className="bg-zinc-800 px-4 py-2 rounded-md">
+                Both (combined)
+              </button>
+            </div>
+            <button
+              onClick={() => { localStorage.setItem(LSK_ONBOARDED, "1"); setStarterOpen(false); }}
+              className="text-sm text-zinc-400 underline"
+            >
+              Skip for now
+            </button>
           </div>
         </div>
       )}
