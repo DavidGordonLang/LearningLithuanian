@@ -218,7 +218,7 @@ function speakBrowser(text, voice, rate = 1) {
   if (voice) u.voice = voice;
   u.lang = voice?.lang || "lt-LT";
   u.rate = rate; // 1.0 normal, 0.6 slow
-  window.speechSynthesis.cancel();
+  window.speechSynthesis.cancel(); // stop any current browser TTS
   window.speechSynthesis.speak(u);
 }
 
@@ -376,6 +376,9 @@ export default function App() {
     [voices, voiceName]
   );
 
+  // SINGLE audio element for Azure/Eleven so they don't overlap
+  const audioRef = useRef(null);
+
   // Persist data/settings
   useEffect(() => saveData(rows), [rows]);
   useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
@@ -441,18 +444,40 @@ export default function App() {
           return { ...base, requests: (base.requests || 0) + 1 };
         });
         const url = await speakElevenLabsHTTP(text, elevenVoiceId, elevenKey);
+
+        if (audioRef.current) {
+          try { audioRef.current.pause(); } catch {}
+          audioRef.current = null;
+        }
+
         const a = new Audio(url);
-        a.onended = () => URL.revokeObjectURL(url);
+        audioRef.current = a;
+        a.onended = () => {
+          URL.revokeObjectURL(url);
+          if (audioRef.current === a) audioRef.current = null;
+        };
         await a.play();
+
       } else if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
         const delta = slow ? "-40%" : "0%"; // slow ≈ 60%
         const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, delta);
+
+        if (audioRef.current) {
+          try { audioRef.current.pause(); } catch {}
+          audioRef.current = null;
+        }
+
         const a = new Audio(url);
-        a.onended = () => URL.revokeObjectURL(url);
+        audioRef.current = a;
+        a.onended = () => {
+          URL.revokeObjectURL(url);
+          if (audioRef.current === a) audioRef.current = null;
+        };
         await a.play();
+
       } else {
         const rate = slow ? 0.6 : 1.0;
-        speakBrowser(text, voice, rate);
+        speakBrowser(text, voice, rate); // browser TTS cancels itself
       }
     } catch (e) {
       console.error(e);
@@ -460,30 +485,41 @@ export default function App() {
     }
   }
 
-  // create long‑press handlers (no shared ref → no duplicate symbol issues)
+  // Pointer-only long‑press handlers to avoid duplicate (touch+mouse) firing
   function pressHandlers(text) {
     let timer = null;
-    let firedSlow = false;
-    const start = () => {
-      firedSlow = false;
+
+    const start = (e) => {
+      e.preventDefault(); // avoid ghost click/mouse after touch
+      // start a one‑shot timer for long‑press
       timer = setTimeout(() => {
-        firedSlow = true;
+        timer = null;                // mark as consumed
         playText(text, { slow: true });
       }, 550); // hold ~0.55s for slow
     };
+
     const end = () => {
+      // If timer still pending, long‑press didn't fire → play normal
       if (timer) {
         clearTimeout(timer);
         timer = null;
-        if (!firedSlow) playText(text, { slow: false });
+        playText(text, { slow: false });
+      }
+      // If timer was null, slow already played, so do nothing.
+    };
+
+    const cancel = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
       }
     };
+
     return {
       onPointerDown: start,
       onPointerUp: end,
-      onPointerLeave: end,
-      onTouchStart: (e) => { e.stopPropagation(); start(); },
-      onTouchEnd: (e) => { e.stopPropagation(); end(); },
+      onPointerLeave: cancel,
+      onPointerCancel: cancel,
     };
   }
 
@@ -676,7 +712,7 @@ export default function App() {
               }
             >
               <option value="">Auto voice</option>
-              {useVoices().map((v) => (
+              {voices.map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name} ({v.lang})
                 </option>
