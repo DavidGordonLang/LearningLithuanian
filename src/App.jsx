@@ -10,7 +10,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - TTS providers: Browser, ElevenLabs, Azure
  * - ElevenLabs monthly play counter
  * - Direction toggle: EN→LT / LT→EN
- * - "Slow" option removed
  */
 
 // -------------------- Constants --------------------
@@ -27,17 +26,6 @@ const LSK_USAGE = "lt_eleven_usage_v1"; // {month:"YYYY-MM", requests:number}
 const LSK_AZURE_KEY = "lt_azure_key";
 const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice"; // {shortName}
-
-const COLS = [
-  "English",
-  "Lithuanian",
-  "Phonetic",
-  "Category",
-  "Usage",
-  "Notes",
-  "RAG Icon",
-  "Sheet",
-];
 
 // -------------------- Local storage helpers --------------------
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
@@ -220,25 +208,20 @@ async function speakElevenLabsHTTP(text, voiceId, key) {
 
 // Azure
 async function fetchAzureVoicesHTTP(key, region) {
-  // https://{region}.tts.speech.microsoft.com/cognitiveservices/voices/list
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
   const res = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": key } });
   if (!res.ok) throw new Error("Failed to fetch Azure voices");
   const data = await res.json();
   return data.map((v) => ({
-    shortName: v.ShortName, // e.g. "lt-LT-OnaNeural" (if available)
-    locale: v.Locale,       // e.g. "lt-LT"
+    shortName: v.ShortName, // e.g. "lt-LT-OnaNeural"
+    locale: v.Locale,
     displayName: v.LocalName || v.FriendlyName || v.ShortName,
   }));
 }
 async function speakAzureHTTP(text, shortName, key, region) {
-  // https://{region}.tts.speech.microsoft.com/cognitiveservices/v1
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
-  // Use LT SSML language tag; if your chosen voice is multilingual, feel free to keep lt-LT here.
   const ssml =
-    `<speak version="1.0" xml:lang="lt-LT">
-       <voice name="${shortName}">${text}</voice>
-     </speak>`;
+    `<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}">${text}</voice></speak>`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -366,32 +349,7 @@ export default function App() {
     setDraft((d) => ({ ...d, Sheet: tab }));
   }, [tab]);
 
-  // Filtering
-  const filtered = useMemo(() => {
-    return rows
-      .filter((r) => r.Sheet === tab)
-      .filter((r) =>
-        !q
-          ? true
-          : `${r.English} ${r.Lithuanian} ${r.Phonetic} ${r.Category} ${r.Usage} ${r.Notes}`
-              .toLowerCase()
-              .includes(q.toLowerCase())
-      );
-  }, [rows, tab, q]);
-
-  // RAG grouping + priority
-  const groups = useMemo(() => {
-    const buckets = { "🔴": [], "🟠": [], "🟢": [], "": [] };
-    for (const r of filtered) buckets[normalizeRag(r["RAG Icon"]) || ""].push(r);
-    const order = ["🔴", "🟠", "🟢", ""];
-    const keys =
-      ragPriority && order.includes(ragPriority)
-        ? [ragPriority, ...order.filter((x) => x !== ragPriority)]
-        : order;
-    return keys.map((k) => ({ key: k, items: buckets[k] }));
-  }, [filtered, ragPriority]);
-
-  // Map filtered rows to global index
+  // Filtering (by tab + search)
   const filteredWithIndex = useMemo(() => {
     const indices = [];
     rows.forEach((r, i) => {
@@ -401,6 +359,21 @@ export default function App() {
     });
     return indices.map((i) => ({ idx: i, row: rows[i] }));
   }, [rows, tab, q]);
+
+  // RAG grouping + priority; keep global indices
+  const groups = useMemo(() => {
+    const buckets = { "🔴": [], "🟠": [], "🟢": [], "": [] };
+    for (const item of filteredWithIndex) {
+      const k = normalizeRag(item.row["RAG Icon"]) || "";
+      buckets[k].push(item);
+    }
+    const order = ["🔴", "🟠", "🟢", ""];
+    const keys =
+      ragPriority && order.includes(ragPriority)
+        ? [ragPriority, ...order.filter((x) => x !== ragPriority)]
+        : order;
+    return keys.map((k) => ({ key: k, items: buckets[k] }));
+  }, [filteredWithIndex, ragPriority]);
 
   // Voice play — picks target text based on direction
   const playText = async (text) => {
@@ -531,7 +504,7 @@ export default function App() {
               }
             >
               <option value="">Auto voice</option>
-              {useVoices().map((v) => (
+              {voices.map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name} ({v.lang})
                 </option>
@@ -667,79 +640,16 @@ export default function App() {
               </span>
               <div className="text-sm text-zinc-400">{items.length} item(s)</div>
             </div>
-            <<div className="space-y-2">
-  <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
-    <label className="col-span-2">
-      English
-      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft.English}
-        onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })}
-      />
-    </label>
-    <label className="col-span-2">
-      Lithuanian
-      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft.Lithuanian}
-        onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })}
-      />
-    </label>
-    <label>
-      Phonetic
-      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft.Phonetic}
-        onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })}
-      />
-    </label>
-    <label>
-      Category
-      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft.Category}
-        onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })}
-      />
-    </label>
-    <label className="col-span-2">
-      Usage
-      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft.Usage}
-        onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })}
-      />
-    </label>
-    <label className="col-span-2">
-      Notes
-      <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft.Notes}
-        onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })}
-      />
-    </label>
-    <label>
-      RAG
-      <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft["RAG Icon"]}
-        onChange={(e) => setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })}
-      >
-        {"🔴 🟠 🟢".split(" ").map((x) => (
-          <option key={x} value={x}>{x}</option>
-        ))}
-      </select>
-    </label>
-    <label>
-      Sheet
-      <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
-        value={editDraft.Sheet}
-        onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}
-      >
-        {["Phrases", "Questions", "Words"].map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
-    </label>
-  </div>
-  <div className="flex gap-2">
-    <button onClick={() => saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">Save</button>
-    <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">Cancel</button>
-  </div>
-</div>
-                    key={`${r.English}-${idx}`}
+
+            <div className="space-y-2">
+              {items.map(({ idx, row }) => {
+                const isEditing = editIdx === idx;
+                const primary = direction === "EN2LT" ? row.Lithuanian : row.English;
+                const secondary = direction === "EN2LT" ? row.English : row.Lithuanian;
+
+                return (
+                  <div
+                    key={`${row.English}-${idx}`}
                     className="bg-zinc-900 border border-zinc-800 rounded-2xl p-2 sm:p-3"
                   >
                     {!isEditing ? (
@@ -752,6 +662,7 @@ export default function App() {
                         >
                           ►
                         </button>
+
                         <div className="flex-1 min-w-0">
                           <div className="text-sm text-zinc-400 truncate">{secondary}</div>
                           <div className="text-lg leading-tight font-medium break-words">
@@ -767,18 +678,19 @@ export default function App() {
                           </div>
                           {expanded.has(idx) && (
                             <>
-                              {r.Phonetic && (
-                                <div className="text-xs text-zinc-400 mt-1">{r.Phonetic}</div>
+                              {row.Phonetic && (
+                                <div className="text-xs text-zinc-400 mt-1">{row.Phonetic}</div>
                               )}
-                              {(r.Usage || r.Notes) && (
+                              {(row.Usage || row.Notes) && (
                                 <div className="text-xs text-zinc-500 mt-1">
-                                  {r.Usage && <div className="mb-0.5">{r.Usage}</div>}
-                                  {r.Notes && <div className="opacity-80">{r.Notes}</div>}
+                                  {row.Usage && <div className="mb-0.5">{row.Usage}</div>}
+                                  {row.Notes && <div className="opacity-80">{row.Notes}</div>}
                                 </div>
                               )}
                             </>
                           )}
                         </div>
+
                         <div className="flex gap-1 ml-2">
                           <button
                             onClick={() => startEdit(idx)}
@@ -796,78 +708,102 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft.English}
-                            onChange={(e) =>
-                              setEditDraft({ ...editDraft, English: e.target.value })
-                            }
-                          />
-                          <input
-                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft.Lithuanian}
-                            onChange={(e) =>
-                              setEditDraft({ ...editDraft, Lithuanian: e.target.value })
-                            }
-                          />
-                          <input
-                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft.Phonetic}
-                            onChange={(e) =>
-                              setEditDraft({ ...editDraft, Phonetic: e.target.value })
-                            }
-                          />
-                          <input
-                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft.Category}
-                            onChange={(e) =>
-                              setEditDraft({ ...editDraft, Category: e.target.value })
-                            }
-                          />
-                          <input
-                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft.Usage}
-                            onChange={(e) =>
-                              setEditDraft({ ...editDraft, Usage: e.target.value })
-                            }
-                          />
-                          <input
-                            className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft.Notes}
-                            onChange={(e) =>
-                              setEditDraft({ ...editDraft, Notes: e.target.value })
-                            }
-                          />
-                          <select
-                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft["RAG Icon"]}
-                            onChange={(e) =>
-                              setEditDraft({
-                                ...editDraft,
-                                "RAG Icon": normalizeRag(e.target.value),
-                              })
-                            }
-                          >
-                            {"🔴 🟠 🟢".split(" ").map((x) => (
-                              <option key={x} value={x}>
-                                {x}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                            value={editDraft.Sheet}
-                            onChange={(e) =>
-                              setEditDraft({ ...editDraft, Sheet: e.target.value })
-                            }
-                          >
-                            {["Phrases", "Questions", "Words"].map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
+                          <label className="col-span-2">
+                            English
+                            <input
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft.English}
+                              onChange={(e) =>
+                                setEditDraft({ ...editDraft, English: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className="col-span-2">
+                            Lithuanian
+                            <input
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft.Lithuanian}
+                              onChange={(e) =>
+                                setEditDraft({ ...editDraft, Lithuanian: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Phonetic
+                            <input
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft.Phonetic}
+                              onChange={(e) =>
+                                setEditDraft({ ...editDraft, Phonetic: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Category
+                            <input
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft.Category}
+                              onChange={(e) =>
+                                setEditDraft({ ...editDraft, Category: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className="col-span-2">
+                            Usage
+                            <input
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft.Usage}
+                              onChange={(e) =>
+                                setEditDraft({ ...editDraft, Usage: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className="col-span-2">
+                            Notes
+                            <input
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft.Notes}
+                              onChange={(e) =>
+                                setEditDraft({ ...editDraft, Notes: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label>
+                            RAG
+                            <select
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft["RAG Icon"]}
+                              onChange={(e) =>
+                                setEditDraft({
+                                  ...editDraft,
+                                  "RAG Icon": normalizeRag(e.target.value),
+                                })
+                              }
+                            >
+                              {"🔴 🟠 🟢".split(" ").map((x) => (
+                                <option key={x} value={x}>
+                                  {x}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            Sheet
+                            <select
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                              value={editDraft.Sheet}
+                              onChange={(e) =>
+                                setEditDraft({ ...editDraft, Sheet: e.target.value })
+                              }
+                            >
+                              {["Phrases", "Questions", "Words"].map((s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
                         </div>
                         <div className="flex gap-2">
                           <button
