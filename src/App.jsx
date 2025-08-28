@@ -432,6 +432,8 @@ export default function App() {
   const [xp, setXp] = useState(loadXp());
   const level = 1 + Math.floor(xp / XP_PER_LEVEL);
   const levelBaseXp = (level - 1) * XP_PER_LEVEL;
+  theQuiz: // (ignored label in runtime, safe)
+  null;
   const xpIntoLevel = xp - levelBaseXp;
   const progressPct = Math.max(0, Math.min(100, (xpIntoLevel / XP_PER_LEVEL) * 100));
   const levelBadge = (lvl) => {
@@ -447,6 +449,7 @@ export default function App() {
   };
 
   // Quiz state
+  const [quizOn, setQuizOn] = useState(false); // <-- missing earlier; now added
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
@@ -781,12 +784,12 @@ export default function App() {
     setQuizChoice(null);
     setQuizSessionXp(0);
     setQuizStartLevel(level);
+    setQuizOn(true);
 
     const first = pool[0];
     const keyAns = "Lithuanian";
     const distractors = pickDistractors(pool, first, keyAns, 3);
     setQuizOptions(shuffle([first[keyAns], ...distractors.map((d) => d[keyAns])]));
-    setQuizOn(true);
   }
   function quitQuiz() {
     if (!confirm("Quit the quiz? Your progress for this session won't count toward streak.")) return;
@@ -900,7 +903,7 @@ export default function App() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w-full sm:w-auto pt-2 sm:pt-0">
+          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w/full sm:w-auto pt-2 sm:pt-0">
             <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={onImportFile} className="hidden" />
             <button onClick={() => fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">
               <span className="hidden sm:inline">{t("actions.import")}</span><span className="sm:hidden">📥 XLSX</span>
