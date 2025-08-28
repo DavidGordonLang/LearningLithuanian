@@ -216,9 +216,15 @@ function speakBrowser(text,voice,rate=1){
   window.speechSynthesis.speak(u);
 }
 function escapeXml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");}
+function langFromAzureShortName(shortName){
+  // e.g. "lt-LT-OnaNeural" or "en-GB-SoniaNeural" -> "lt-LT" / "en-GB"
+  const m = shortName?.match(/^[a-z]{2}-[A-Z]{2}/);
+  return m ? m[0] : "lt-LT";
+}
 async function speakAzureHTTP(text,shortName,key,region,rateDelta="0%"){
   const url=`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
-  const ssml=`<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(text)}</prosody></voice></speak>`;
+  const lang = langFromAzureShortName(shortName);
+  const ssml=`<speak version="1.0" xml:lang="${lang}"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(text)}</prosody></voice></speak>`;
   const res=await fetch(url,{method:"POST",headers:{"Ocp-Apim-Subscription-Key":key,"Content-Type":"application/ssml+xml","X-Microsoft-OutputFormat":"audio-24khz-48kbitrate-mono-mp3"},body:ssml});
   if(!res.ok) throw new Error("Azure TTS failed: "+res.status+" "+res.statusText);
   const blob=await res.blob();
@@ -649,10 +655,10 @@ export default function App(){
 
         {/* Controls row */}
         <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 flex-wrap">
-          {/* Search with clear X */}
+          {/* Search with clear X — type="text" to avoid native ✕ */}
           <div className="relative flex-1 min-w-[180px]">
             <input
-              type="search"
+              type="text"
               value={q}
               onChange={(e)=>setQ(e.target.value)}
               placeholder={t("searchPlaceholder")}
@@ -1131,3 +1137,4 @@ export default function App(){
     </div>
   );
 }
+```0
