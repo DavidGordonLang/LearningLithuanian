@@ -9,6 +9,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - Quiz: 50% 🔴, 40% 🟠, 10% 🟢; RAG promotions/demotions
  * - XP/Levels/Badges, daily streak
  * - Tabs: Phrases, Questions, Words, Numbers
+ * - NEW: RAG-colored play buttons; long-press no-select; search clear ✕; global search across all tabs with tab match badges
  */
 
 // -------------------- Keys & constants --------------------
@@ -55,6 +56,7 @@ const STR = {
     startersHint: "Merge more starter data into your library (won’t overwrite existing rows):",
     starters: { loadENLT: "Load EN→LT", loadLTEN: "Load LT→EN", loadBoth: "Load Both", openChooser: "Open chooser" },
     azure: { key: "Subscription Key", region: "Region (e.g. westeurope)", voice: "Voice", fetch: "Fetch voices" },
+    searchAllNote: "Showing results across all tabs",
   },
   lt: {
     title: "Anglų kalbos treniruoklis",
@@ -81,6 +83,7 @@ const STR = {
     startersHint: "Sujunkite pradinių duomenų rinkinį su biblioteka (neperrašys esamų įrašų):",
     starters: { loadENLT: "Įkelti EN→LT", loadLTEN: "Įkelti LT→EN", loadBoth: "Įkelti abu", openChooser: "Atidaryti pasirinkimą" },
     azure: { key: "Prenumeratos raktas", region: "Regionas (pvz., westeurope)", voice: "Balsas", fetch: "Gauti balsus" },
+    searchAllNote: "Rodomi rezultatai iš visų kortelių",
   },
 };
 
@@ -101,6 +104,24 @@ function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=(Ma
 function sample(arr,n){if(n<=0||!arr.length)return[];if(n>=arr.length)return shuffle(arr);const idxs=new Set();while(idxs.size<n)idxs.add((Math.random()*arr.length)|0);return[...idxs].map(i=>arr[i]);}
 function pickDistractors(pool,correct,key,n=3){const others=pool.filter(r=>r!==correct&&r[key]);const uniqueByKey=[];const seen=new Set();for(const r of shuffle(others)){const v=r[key];if(seen.has(v))continue;seen.add(v);uniqueByKey.push(r);if(uniqueByKey.length>=n)break;}return uniqueByKey;}
 function numberWithCommas(x){return (x??0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");}
+
+// RAG → button color classes
+function ragBtnClass(rag){
+  switch(rag){
+    case "🔴": return "bg-red-600 hover:bg-red-500 active:bg-red-700";
+    case "🟠": return "bg-amber-500 hover:bg-amber-400 active:bg-amber-600";
+    case "🟢": return "bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700";
+    default:   return "bg-zinc-700";
+  }
+}
+
+// No-select (stop highlight/copy callout on long-press)
+const noSelectStyle = {
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  WebkitTouchCallout: "none",
+  touchAction: "manipulation",
+};
 
 // Merge & keying
 function normKey(s=""){return String(s).normalize("NFC").trim().toLowerCase().replace(/\s+/g," ");}
@@ -279,15 +300,42 @@ export default function App(){
   const [expanded,setExpanded]=useState(new Set());
   useEffect(()=>{setDraft(d=>({...d,Sheet:tab}));},[tab]);
 
-  // filtering
-  const filtered=useMemo(()=>rows.filter(r=>r.Sheet===tab).filter(r=>!q?true:`${r.English} ${r.Lithuanian} ${r.Phonetic} ${r.Category} ${r.Usage} ${r.Notes}`.toLowerCase().includes(q.toLowerCase())),[rows,tab,q]);
-  const groups=useMemo(()=>{
+  // ---------- Search (now global across all tabs) ----------
+  const searchActive = q.trim().length>0;
+  const qLower = q.trim().toLowerCase();
+  const matchesQuery = (r) =>
+    !searchActive
+      ? true
+      : (`${r.English} ${r.Lithuanian} ${r.Phonetic} ${r.Category} ${r.Usage} ${r.Notes}`.toLowerCase().includes(qLower));
+
+  // Per-tab counts while searching (for tab badges)
+  const searchCounts = useMemo(()=>{
+    if(!searchActive) return {};
+    const counts={};
+    for(const key of SHEET_KEYS){
+      counts[key] = rows.filter(r=>r.Sheet===key && matchesQuery(r)).length;
+    }
+    return counts;
+  },[rows, qLower, searchActive]);
+
+  // Normal (non-search) filtered + grouped (by RAG) for active tab
+  const filteredForActiveTab = useMemo(()=>rows.filter(r=>r.Sheet===tab).filter(matchesQuery),[rows,tab,qLower,searchActive]);
+  const groups = useMemo(()=>{
     const buckets={"🔴":[],"🟠":[],"🟢":[],"":[]};
-    for(const r of filtered) buckets[normalizeRag(r["RAG Icon"])||""].push(r);
+    for (const r of filteredForActiveTab) buckets[normalizeRag(r["RAG Icon"])||""].push(r);
     const order=["🔴","🟠","🟢",""];
     const keys=ragPriority&&order.includes(ragPriority)?[ragPriority,...order.filter(x=>x!==ragPriority)]:order;
     return keys.map(k=>({key:k,items:buckets[k]}));
-  },[filtered,ragPriority]);
+  },[filteredForActiveTab,ragPriority]);
+
+  // Cross-tab results when searching
+  const searchBySheet = useMemo(()=>{
+    if(!searchActive) return [];
+    return SHEET_KEYS.map(k=>({
+      key: k,
+      items: rows.filter(r=>r.Sheet===k && matchesQuery(r))
+    })).filter(sec=>sec.items.length>0);
+  },[rows, qLower, searchActive]);
 
   // Starter packs
   async function fetchStarter(path,sourceName){ const res=await fetch(path); if(!res.ok) throw new Error("Failed to fetch starter: "+path); const arr=await res.json(); return arr.map(r=>({...r,Source:sourceName})); }
@@ -320,7 +368,11 @@ export default function App(){
     const start=(e)=>{e.preventDefault(); timer=setTimeout(()=>{timer=null; playText(text,{slow:true});},550);};
     const end=()=>{if(timer){clearTimeout(timer); timer=null; playText(text,{slow:false});}};
     const cancel=()=>{if(timer){clearTimeout(timer); timer=null;}};
-    return { onPointerDown:start, onPointerUp:end, onPointerLeave:cancel, onPointerCancel:cancel, title:t("tooltips.tapHold") };
+    return {
+      onPointerDown:start, onPointerUp:end, onPointerLeave:cancel, onPointerCancel:cancel,
+      title:t("tooltips.tapHold"),
+      onContextMenu:(e)=>e.preventDefault(),
+    };
   }
 
   // CRUD
@@ -523,6 +575,31 @@ export default function App(){
     await playText(correctText,{slow:false});
   }
 
+  // -------------------- Render helpers --------------------
+  const PlayButton = ({text, ragIcon, className=""}) => (
+    <button
+      className={cn("shrink-0 w-10 h-10 rounded-xl transition flex items-center justify-center font-semibold select-none", ragBtnClass(normalizeRag(ragIcon)), className)}
+      style={noSelectStyle}
+      onContextMenu={(e)=>e.preventDefault()}
+      draggable={false}
+      {...pressHandlers(text)}
+    >
+      ►
+    </button>
+  );
+
+  const TinyAudioButton = ({text}) => (
+    <button
+      className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center select-none"
+      style={noSelectStyle}
+      onContextMenu={(e)=>e.preventDefault()}
+      draggable={false}
+      {...pressHandlers(text)}
+    >
+      🔊
+    </button>
+  );
+
   // -------------------- Render --------------------
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -572,8 +649,26 @@ export default function App(){
 
         {/* Controls row */}
         <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 flex-wrap">
-          <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder={t("searchPlaceholder")}
-                 className="flex-1 min-w-[180px] bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"/>
+          {/* Search with clear X */}
+          <div className="relative flex-1 min-w-[180px]">
+            <input
+              type="search"
+              value={q}
+              onChange={(e)=>setQ(e.target.value)}
+              placeholder={t("searchPlaceholder")}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-md pl-3 pr-8 py-2 text-sm outline-none"
+            />
+            {q && (
+              <button
+                aria-label={uiLang==="lt"?"Išvalyti paiešką":"Clear search"}
+                onClick={()=>setQ("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-sm"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-1">
             <span className="text-xs text-zinc-300">{t("mode")}</span>
             {["EN2LT","LT2EN"].map(m=>(
@@ -605,110 +700,227 @@ export default function App(){
             </div>
           </div>
         </div>
+
+        {searchActive && (
+          <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 text-[11px] text-zinc-400">
+            {STR[uiLang].searchAllNote}
+          </div>
+        )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs (show match badges while searching) */}
       <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sticky top-[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
-        {SHEET_KEYS.map(key=>(
-          <button key={key} onClick={()=>setTab(key)} className={cn("mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border", tab===key?"bg-emerald-600 border-emerald-600":"bg-zinc-900 border-zinc-800")}>
-            {tabLabel(key)}
-          </button>
-        ))}
+        {SHEET_KEYS.map(key=>{
+          const count = searchActive ? (searchCounts[key]||0) : 0;
+          const highlight = searchActive && count>0;
+          return (
+            <button
+              key={key}
+              onClick={()=>setTab(key)}
+              className={cn(
+                "mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border relative",
+                tab===key ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800",
+                highlight ? "ring-1 ring-emerald-500" : ""
+              )}
+            >
+              {tabLabel(key)}{searchActive ? ` (${count})` : ""}
+            </button>
+          );
+        })}
       </div>
 
-      {/* List view */}
+      {/* List / Results */}
       {!quizOn && (
         <div className="max-w-xl mx-auto px-3 sm:px-4 pb-28">
-          {groups.map(({key,items})=>(
-            <div key={key||"none"} className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">{key||"⬤"}</span>
-                <div className="text-sm text-zinc-400">{items.length} item(s)</div>
-              </div>
-              <div className="space-y-2">
-                {items.map(r=>{
-                  const idx=rows.indexOf(r);
-                  const isEditing=editIdx===idx;
-                  const primary=direction==="EN2LT"?r.Lithuanian:r.English;
-                  const secondary=direction==="EN2LT"?r.English:r.Lithuanian;
-                  const speakText=direction==="EN2LT"?r.Lithuanian:r.English;
+          {!searchActive ? (
+            // Normal view: active tab, grouped by RAG
+            groups.map(({key,items})=>(
+              <div key={key||"none"} className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">{key||"⬤"}</span>
+                  <div className="text-sm text-zinc-400">{items.length} item(s)</div>
+                </div>
+                <div className="space-y-2">
+                  {items.map(r=>{
+                    const idx=rows.indexOf(r);
+                    const isEditing=editIdx===idx;
+                    const primary=direction==="EN2LT"?r.Lithuanian:r.English;
+                    const secondary=direction==="EN2LT"?r.English:r.Lithuanian;
+                    const speakText=direction==="EN2LT"?r.Lithuanian:r.English;
+                    const rag = normalizeRag(r["RAG Icon"]) || "🟠";
 
-                  return (
-                    <div key={`${r.English}-${idx}`} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
-                      {!isEditing ? (
-                        <div className="flex items-start gap-2">
-                          <button className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition flex items-center justify-center font-semibold" {...pressHandlers(speakText)}>►</button>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm text-zinc-400 truncate">{secondary}</div>
-                            <div className="text-lg leading-tight font-medium break-words">{primary}</div>
-                            <div className="mt-1">
-                              <button onClick={()=>{
-                                  setExpanded(prev=>{const n=new Set(prev); n.has(idx)?n.delete(idx):n.add(idx); return n;});
-                                }} className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800">
-                                {STR[uiLang].details[expanded.has(idx)?"hide":"show"]}
-                              </button>
+                    return (
+                      <div key={`${r.English}-${idx}`} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+                        {!isEditing ? (
+                          <div className="flex items-start gap-2">
+                            <PlayButton text={speakText} ragIcon={rag} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm text-zinc-400 truncate">{secondary}</div>
+                              <div className="text-lg leading-tight font-medium break-words">{primary}</div>
+                              <div className="mt-1">
+                                <button onClick={()=>{
+                                    setExpanded(prev=>{const n=new Set(prev); n.has(idx)?n.delete(idx):n.add(idx); return n;});
+                                  }} className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800">
+                                  {STR[uiLang].details[expanded.has(idx)?"hide":"show"]}
+                                </button>
+                              </div>
+                              {expanded.has(idx)&&(
+                                <>
+                                  {r.Phonetic && <div className="text-xs text-zinc-400 mt-1">{r.Phonetic}</div>}
+                                  {(r.Usage||r.Notes)&&(
+                                    <div className="text-xs text-zinc-500 mt-1">
+                                      {r.Usage && <div className="mb-0.5"><span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>{r.Usage}</div>}
+                                      {r.Notes && <div className="opacity-80"><span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>{r.Notes}</div>}
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
-                            {expanded.has(idx)&&(
-                              <>
-                                {r.Phonetic && <div className="text-xs text-zinc-400 mt-1">{r.Phonetic}</div>}
-                                {(r.Usage||r.Notes)&&(
-                                  <div className="text-xs text-zinc-500 mt-1">
-                                    {r.Usage && <div className="mb-0.5"><span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>{r.Usage}</div>}
-                                    {r.Notes && <div className="opacity-80"><span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>{r.Notes}</div>}
-                                  </div>
-                                )}
-                              </>
-                            )}
+                            <div className="flex flex-col gap-1 ml-2">
+                              <button onClick={()=>startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].labels.edit}</button>
+                              <button onClick={()=>remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">{STR[uiLang].labels.delete}</button>
+                            </div>
                           </div>
-                          <div className="flex flex-col gap-1 ml-2">
-                            <button onClick={()=>startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].labels.edit}</button>
-                            <button onClick={()=>remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">{STR[uiLang].labels.delete}</button>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
+                              <label className="col-span-2">{STR[uiLang].labels.english}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.English} onChange={(e)=>setEditDraft({...editDraft,English:e.target.value})}/>
+                              </label>
+                              <label className="col-span-2">{STR[uiLang].labels.lithuanian}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Lithuanian} onChange={(e)=>setEditDraft({...editDraft,Lithuanian:e.target.value})}/>
+                              </label>
+                              <label>{STR[uiLang].labels.phonetic}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Phonetic} onChange={(e)=>setEditDraft({...editDraft,Phonetic:e.target.value})}/>
+                              </label>
+                              <label>{STR[uiLang].labels.category}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Category} onChange={(e)=>setEditDraft({...editDraft,Category:e.target.value})}/>
+                              </label>
+                              <label className="col-span-2">{STR[uiLang].labels.usage}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Usage} onChange={(e)=>setEditDraft({...editDraft,Usage:e.target.value})}/>
+                              </label>
+                              <label className="col-span-2">{STR[uiLang].labels.notes}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Notes} onChange={(e)=>setEditDraft({...editDraft,Notes:e.target.value})}/>
+                              </label>
+                              <label>{STR[uiLang].labels.rag}
+                                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft["RAG Icon"]} onChange={(e)=>setEditDraft({...editDraft,"RAG Icon":normalizeRag(e.target.value)})}>
+                                  {"🔴 🟠 🟢".split(" ").map(x=>(<option key={x} value={x}>{x}</option>))}
+                                </select>
+                              </label>
+                              <label>{STR[uiLang].labels.sheet}
+                                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Sheet} onChange={(e)=>setEditDraft({...editDraft,Sheet:e.target.value})}>
+                                  {SHEET_KEYS.map(s=>(<option key={s} value={s}>{tabLabel(s)}</option>))}
+                                </select>
+                              </label>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={()=>saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">{STR[uiLang].labels.save}</button>
+                              <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">{STR[uiLang].labels.cancel}</button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
-                            <label className="col-span-2">{STR[uiLang].labels.english}
-                              <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.English} onChange={(e)=>setEditDraft({...editDraft,English:e.target.value})}/>
-                            </label>
-                            <label className="col-span-2">{STR[uiLang].labels.lithuanian}
-                              <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Lithuanian} onChange={(e)=>setEditDraft({...editDraft,Lithuanian:e.target.value})}/>
-                            </label>
-                            <label>{STR[uiLang].labels.phonetic}
-                              <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Phonetic} onChange={(e)=>setEditDraft({...editDraft,Phonetic:e.target.value})}/>
-                            </label>
-                            <label>{STR[uiLang].labels.category}
-                              <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Category} onChange={(e)=>setEditDraft({...editDraft,Category:e.target.value})}/>
-                            </label>
-                            <label className="col-span-2">{STR[uiLang].labels.usage}
-                              <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Usage} onChange={(e)=>setEditDraft({...editDraft,Usage:e.target.value})}/>
-                            </label>
-                            <label className="col-span-2">{STR[uiLang].labels.notes}
-                              <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Notes} onChange={(e)=>setEditDraft({...editDraft,Notes:e.target.value})}/>
-                            </label>
-                            <label>{STR[uiLang].labels.rag}
-                              <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft["RAG Icon"]} onChange={(e)=>setEditDraft({...editDraft,"RAG Icon":normalizeRag(e.target.value)})}>
-                                {"🔴 🟠 🟢".split(" ").map(x=>(<option key={x} value={x}>{x}</option>))}
-                              </select>
-                            </label>
-                            <label>{STR[uiLang].labels.sheet}
-                              <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Sheet} onChange={(e)=>setEditDraft({...editDraft,Sheet:e.target.value})}>
-                                {SHEET_KEYS.map(s=>(<option key={s} value={s}>{tabLabel(s)}</option>))}
-                              </select>
-                            </label>
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={()=>saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">{STR[uiLang].labels.save}</button>
-                            <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">{STR[uiLang].labels.cancel}</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            // Search results across ALL tabs, grouped by Sheet
+            searchBySheet.map(({key, items})=>(
+              <div key={key} className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
+                    {tabLabel(key)}
+                  </span>
+                  <div className="text-sm text-zinc-400">{items.length} item(s)</div>
+                </div>
+                <div className="space-y-2">
+                  {items.map(r=>{
+                    const idx=rows.indexOf(r);
+                    const isEditing=editIdx===idx;
+                    const primary=direction==="EN2LT"?r.Lithuanian:r.English;
+                    const secondary=direction==="EN2LT"?r.English:r.Lithuanian;
+                    const speakText=direction==="EN2LT"?r.Lithuanian:r.English;
+                    const rag = normalizeRag(r["RAG Icon"]) || "🟠";
+
+                    return (
+                      <div key={`${r.English}-${idx}`} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+                        {!isEditing ? (
+                          <div className="flex items-start gap-2">
+                            <PlayButton text={speakText} ragIcon={rag} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm text-zinc-400 truncate">{secondary}</div>
+                              <div className="text-lg leading-tight font-medium break-words">{primary}</div>
+                              <div className="mt-1">
+                                <button onClick={()=>{
+                                    setExpanded(prev=>{const n=new Set(prev); n.has(idx)?n.delete(idx):n.add(idx); return n;});
+                                  }} className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800">
+                                  {STR[uiLang].details[expanded.has(idx)?"hide":"show"]}
+                                </button>
+                              </div>
+                              {expanded.has(idx)&&(
+                                <>
+                                  {r.Phonetic && <div className="text-xs text-zinc-400 mt-1">{r.Phonetic}</div>}
+                                  {(r.Usage||r.Notes)&&(
+                                    <div className="text-xs text-zinc-500 mt-1">
+                                      {r.Usage && <div className="mb-0.5"><span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>{r.Usage}</div>}
+                                      {r.Notes && <div className="opacity-80"><span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>{r.Notes}</div>}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1 ml-2">
+                              <button onClick={()=>startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].labels.edit}</button>
+                              <button onClick={()=>remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">{STR[uiLang].labels.delete}</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
+                              <label className="col-span-2">{STR[uiLang].labels.english}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.English} onChange={(e)=>setEditDraft({...editDraft,English:e.target.value})}/>
+                              </label>
+                              <label className="col-span-2">{STR[uiLang].labels.lithuanian}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Lithuanian} onChange={(e)=>setEditDraft({...editDraft,Lithuanian:e.target.value})}/>
+                              </label>
+                              <label>{STR[uiLang].labels.phonetic}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Phonetic} onChange={(e)=>setEditDraft({...editDraft,Phonetic:e.target.value})}/>
+                              </label>
+                              <label>{STR[uiLang].labels.category}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Category} onChange={(e)=>setEditDraft({...editDraft,Category:e.target.value})}/>
+                              </label>
+                              <label className="col-span-2">{STR[uiLang].labels.usage}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Usage} onChange={(e)=>setEditDraft({...editDraft,Usage:e.target.value})}/>
+                              </label>
+                              <label className="col-span-2">{STR[uiLang].labels.notes}
+                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Notes} onChange={(e)=>setEditDraft({...editDraft,Notes:e.target.value})}/>
+                              </label>
+                              <label>{STR[uiLang].labels.rag}
+                                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft["RAG Icon"]} onChange={(e)=>setEditDraft({...editDraft,"RAG Icon":normalizeRag(e.target.value)})}>
+                                  {"🔴 🟠 🟢".split(" ").map(x=>(<option key={x} value={x}>{x}</option>))}
+                                </select>
+                              </label>
+                              <label>{STR[uiLang].labels.sheet}
+                                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Sheet} onChange={(e)=>setEditDraft({...editDraft,Sheet:e.target.value})}>
+                                  {SHEET_KEYS.map(s=>(<option key={s} value={s}>{tabLabel(s)}</option>))}
+                                </select>
+                              </label>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={()=>saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">{STR[uiLang].labels.save}</button>
+                              <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">{STR[uiLang].labels.cancel}</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -723,11 +935,12 @@ export default function App(){
           {quizQs.length>0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
               {(()=>{const item=quizQs[quizIdx]; const questionText=item.English; const correctLt=item.Lithuanian;
+                const rag = normalizeRag(item["RAG Icon"]) || "🟠";
                 return (<>
                   <div className="text-sm text-zinc-400 mb-1">{t("quiz.promptLabel")}</div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="text-lg font-medium flex-1">{questionText}</div>
-                    <button className="w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center font-semibold" {...pressHandlers(correctLt)}>►</button>
+                    <PlayButton text={correctLt} ragIcon={rag} />
                   </div>
                   <div className="text-sm text-zinc-400 mb-1">{t("quiz.chooseLt")}</div>
                   <div className="space-y-2">
@@ -738,7 +951,7 @@ export default function App(){
                       return (
                         <button key={opt} className={`${base} ${color}`} onClick={()=>!quizAnswered&&answerQuiz(opt)}>
                           <span className="flex-1">{opt}</span>
-                          <span className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center" {...pressHandlers(opt)}>🔊</span>
+                          <TinyAudioButton text={opt}/>
                         </button>
                       );
                     })}
