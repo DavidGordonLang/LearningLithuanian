@@ -17,7 +17,7 @@ body {
 }
 
 /* ------------------------------------------------------------------
-   Hide native clear/cancel buttons so we only show our custom "✕"
+   Hide native clear/cancel buttons so we only show our custom "X"
    Covers WebKit (iOS/Safari), Chromium, and old Edge/IE variants.
 -------------------------------------------------------------------*/
 input::-ms-clear,
@@ -39,8 +39,7 @@ input::-webkit-clear-button {
   display: none;
 }
 
-/* Optional: remove blue tap highlight on mobile buttons for a cleaner feel */
+/* Optional: remove blue/gray tap highlight on mobile buttons */
 button, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
-```0
