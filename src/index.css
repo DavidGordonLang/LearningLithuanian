@@ -15,3 +15,32 @@ body {
 :root {
   --safe-bottom: env(safe-area-inset-bottom);
 }
+
+/* ------------------------------------------------------------------
+   Hide native clear/cancel buttons so we only show our custom "✕"
+   Covers WebKit (iOS/Safari), Chromium, and old Edge/IE variants.
+-------------------------------------------------------------------*/
+input::-ms-clear,
+input::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+}
+
+/* Some WebKit builds expose a generic clear button even on type="text" */
+input::-webkit-clear-button {
+  display: none;
+}
+
+/* Optional: remove blue tap highlight on mobile buttons for a cleaner feel */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+```0
