@@ -447,9 +447,7 @@ export default function App() {
   };
 
   // Quiz state
-  const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
-  theQuiz:  // label just to anchor line numbers if needed
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
   const [quizAnswered, setQuizAnswered] = useState(false);
@@ -1163,7 +1161,7 @@ export default function App() {
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-2">{/* same edit form as above omitted for brevity in search view */}</div>
+                          <div className="space-y-2">{/* edit form omitted in search list for brevity */}</div>
                         )}
                       </div>
                     );
@@ -1381,3 +1379,4 @@ export default function App() {
     </div>
   );
 }
+```0
