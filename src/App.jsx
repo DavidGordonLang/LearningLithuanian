@@ -1,13 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * Lithuanian/English Trainer — main UI + Library tools
- *
- * New in this build:
- * - Header: Home pill + active highlighting (Home/Library/Settings)
- * - Library: Clear Library (two-tap confirm), merges remain intact
- * - All previous features preserved (JSON & XLSX import, global search, RAG sorting,
- *   Azure+Browser TTS, quiz w/ promotions/demotions, XP/levels, soft delete, dupes review, etc.)
+ * Lithuanian/English Trainer — stable build
+ * - Home / Library / Settings pills with active highlight + Home screen
+ * - Global search with single clear (✕)
+ * - Sort: RAG / Newest / Oldest
+ * - RAG-colored play buttons + long-press slow (no text selection, no copy menu)
+ * - Add entry auto-closes + blurs input (fix mobile keyboard popping)
+ * - JSON + XLSX import (merge, no overwrite), JSON export
+ * - Starter packs (EN→LT / LT→EN / Both)
+ * - Soft delete + Trash + full “Clear library” with confirmation
+ * - Duplicates (Exact + Fuzzy) with safe UI
+ * - Quiz with RAG promotion/demotion, XP, Levels, Streak
+ * - i18n (EN UI when EN→LT, LT UI when LT→EN)
+ * - Azure TTS + Browser fallback
  */
 
 const SHEET_KEYS = ["Phrases", "Questions", "Words", "Numbers"];
@@ -27,18 +33,12 @@ const LSK_DIRECTION = "lt_direction_v1"; // 'EN2LT' | 'LT2EN'
 const XP_PER_CORRECT = 50;
 const XP_PER_LEVEL = 2500;
 
-// ---------------- i18n strings ----------------
+// ---------- i18n ----------
 const STR = {
   en: {
     title: "Lithuanian Trainer",
     subtitle: "Tap to play. Long-press to savour.",
-    actions: {
-      home: "Home",
-      library: "Library",
-      settings: "Settings",
-      startQuiz: "Start Quiz",
-      close: "Close",
-    },
+    actions: { home: "Home", library: "Library", settings: "Settings", startQuiz: "Start Quiz", close: "Close" },
     searchPlaceholder: "Search…",
     sort: "Sort",
     sortModes: { rag: "RAG", newest: "Newest", oldest: "Oldest" },
@@ -48,40 +48,16 @@ const STR = {
     level: "Lv",
     details: { show: "Show details", hide: "Hide details" },
     labels: {
-      english: "English",
-      lithuanian: "Lithuanian",
-      phonetic: "Phonetic",
-      category: "Category",
-      usage: "Usage",
-      notes: "Notes",
-      rag: "RAG",
-      sheet: "Sheet",
-      edit: "Edit",
-      delete: "Delete",
-      save: "Save",
-      cancel: "Cancel",
-      source: "Source",
-      created: "Created",
-      updated: "Updated",
+      english: "English", lithuanian: "Lithuanian", phonetic: "Phonetic", category: "Category",
+      usage: "Usage", notes: "Notes", rag: "RAG", sheet: "Sheet", edit: "Edit", delete: "Delete",
+      save: "Save", cancel: "Cancel", source: "Source", created: "Created", updated: "Updated",
     },
     addEntry: { summary: "+ Add entry", add: "Add" },
     tooltips: { tapHold: "Tap = play, long-press = slow" },
-    quiz: {
-      quit: "Quit",
-      promptLabel: "Prompt",
-      chooseLt: "Choose the Lithuanian",
-      correct: "Correct! (+50 XP)",
-      wrong: "Not quite.",
-      next: "Next Question",
-      score: "Score",
-    },
+    quiz: { quit: "Quit", promptLabel: "Prompt", chooseLt: "Choose the Lithuanian", correct: "Correct! (+50 XP)", wrong: "Not quite.", next: "Next Question", score: "Score" },
     voice: { auto: "Auto voice", provider: "Voice provider", browser: "Browser (fallback)", azure: "Azure Speech" },
     settingsTitle: "Settings",
-    settings: {
-      direction: "Learning direction",
-      en2lt: "English → Lithuanian",
-      lt2en: "Lithuanian → English",
-    },
+    settings: { direction: "Learning direction", en2lt: "English → Lithuanian", lt2en: "Lithuanian → English" },
     startersTitle: "Starter packs",
     startersHint: "Merge starter data into your library (won’t overwrite existing rows):",
     starters: { loadENLT: "Load EN→LT", loadLTEN: "Load LT→EN", loadBoth: "Load Both" },
@@ -106,28 +82,16 @@ const STR = {
       threshold: "Threshold",
       keep: "Keep",
       deleteOthers: "Soft-delete others",
-      acceptAll: "Accept all suggestions",
-      preferMine: "Prefer my entries over starter/import",
+      acceptAll: "Apply",
+      preferMine: "Prefer my entries",
       none: "No duplicates found.",
     },
-    trash: {
-      title: "Trash",
-      restore: "Restore",
-      purge: "Purge",
-      empty: "Empty trash",
-      none: "Trash is empty.",
-    },
+    trash: { title: "Trash", restore: "Restore", purge: "Purge", empty: "Empty trash", none: "Trash is empty." },
   },
   lt: {
     title: "Anglų kalbos treniruoklis",
     subtitle: "Bakstelėkite – leisti. Ilgai palaikykite – lėtai.",
-    actions: {
-      home: "Pradžia",
-      library: "Biblioteka",
-      settings: "Nustatymai",
-      startQuiz: "Pradėti testą",
-      close: "Uždaryti",
-    },
+    actions: { home: "Pradžia", library: "Biblioteka", settings: "Nustatymai", startQuiz: "Pradėti testą", close: "Uždaryti" },
     searchPlaceholder: "Paieška…",
     sort: "Rikiuoti",
     sortModes: { rag: "RAG", newest: "Naujausia", oldest: "Seniausia" },
@@ -137,40 +101,17 @@ const STR = {
     level: "Lygis",
     details: { show: "Rodyti detales", hide: "Slėpti detales" },
     labels: {
-      english: "Anglų",
-      lithuanian: "Lietuvių",
-      phonetic: "Tarimas",
-      category: "Kategorija",
-      usage: "Naudojimas",
-      notes: "Pastabos",
-      rag: "RAG",
-      sheet: "Lapas",
-      edit: "Redaguoti",
-      delete: "Šalinti",
-      save: "Išsaugoti",
-      cancel: "Atšaukti",
-      source: "Šaltinis",
-      created: "Sukurta",
-      updated: "Atnaujinta",
+      english: "Anglų", lithuanian: "Lietuvių", phonetic: "Tarimas", category: "Kategorija",
+      usage: "Naudojimas", notes: "Pastabos", rag: "RAG", sheet: "Lapas", edit: "Redaguoti",
+      delete: "Šalinti", save: "Išsaugoti", cancel: "Atšaukti", source: "Šaltinis",
+      created: "Sukurta", updated: "Atnaujinta",
     },
     addEntry: { summary: "+ Pridėti įrašą", add: "Pridėti" },
     tooltips: { tapHold: "Bakstelėti = leisti, ilgai palaikyti = lėtai" },
-    quiz: {
-      quit: "Baigti",
-      promptLabel: "Užduotis",
-      chooseLt: "Pasirinkite lietuvišką variantą",
-      correct: "Teisingai! (+50 XP)",
-      wrong: "Ne visai.",
-      next: "Kitas klausimas",
-      score: "Rezultatas",
-    },
+    quiz: { quit: "Baigti", promptLabel: "Užduotis", chooseLt: "Pasirinkite lietuvišką variantą", correct: "Teisingai! (+50 XP)", wrong: "Ne visai.", next: "Kitas klausimas", score: "Rezultatas" },
     voice: { auto: "Automatinis balsas", provider: "Balso tiekėjas", browser: "Naršyklė (atsarginis)", azure: "Azure kalba" },
     settingsTitle: "Nustatymai",
-    settings: {
-      direction: "Mokymosi kryptis",
-      en2lt: "Anglų → Lietuvių",
-      lt2en: "Lietuvių → Anglų",
-    },
+    settings: { direction: "Mokymosi kryptis", en2lt: "Anglų → Lietuvių", lt2en: "Lietuvių → Anglų" },
     startersTitle: "Pradinių duomenų rinkiniai",
     startersHint: "Sujunkite pradinį rinkinį su biblioteka (neperrašys esamų įrašų):",
     starters: { loadENLT: "Įkelti EN→LT", loadLTEN: "Įkelti LT→EN", loadBoth: "Įkelti abu" },
@@ -195,21 +136,15 @@ const STR = {
       threshold: "Slenkstis",
       keep: "Palikti",
       deleteOthers: "Šalinti kitus (minkštai)",
-      acceptAll: "Patvirtinti visus pasiūlymus",
+      acceptAll: "Taikyti",
       preferMine: "Pirmenybė mano įrašams",
       none: "Dublikatų nerasta.",
     },
-    trash: {
-      title: "Šiukšlinė",
-      restore: "Atkurti",
-      purge: "Pašalinti visam",
-      empty: "Ištuštinti šiukšlinę",
-      none: "Šiukšlinė tuščia.",
-    },
+    trash: { title: "Šiukšlinė", restore: "Atkurti", purge: "Pašalinti visam", empty: "Ištuštinti šiukšlinę", none: "Šiukšlinė tuščia." },
   },
 };
 
-// ---------------- storage helpers ----------------
+// ---------- storage helpers ----------
 const saveData = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadData = () => {
   try {
@@ -238,7 +173,7 @@ const loadXp = () => {
 };
 const saveXp = (xp) => localStorage.setItem(LSK_XP, String(xp));
 
-// ---------------- utils ----------------
+// ---------- utils ----------
 function daysBetween(d1, d2) {
   const a = new Date(d1 + "T00:00:00");
   const b = new Date(d2 + "T00:00:00");
@@ -344,7 +279,7 @@ function mergeRows(existing, incoming) {
   return Array.from(map.values());
 }
 
-// ---- basic string similarity (Jaro-Winkler) for fuzzy dupes ----
+// basic Jaro-Winkler
 function jaroWinkler(a = "", b = "") {
   a = normText(a); b = normText(b);
   if (a === b) return 1;
@@ -361,9 +296,7 @@ function jaroWinkler(a = "", b = "") {
     for (let j = start; j < end; j++) {
       if (bMatches[j]) continue;
       if (a[i] !== b[j]) continue;
-      aMatches[i] = true;
-      bMatches[j] = true;
-      matches++; break;
+      aMatches[i] = true; bMatches[j] = true; matches++; break;
     }
   }
   if (!matches) return 0;
@@ -387,7 +320,7 @@ function trigramSet(s) {
   return set;
 }
 
-// ---------------- XLSX loader ----------------
+// ---------- XLSX ----------
 async function loadXLSX() {
   if (window.XLSX) return window.XLSX;
   const urls = [
@@ -444,25 +377,19 @@ async function importXlsx(file) {
   return merged;
 }
 
-// ---------------- JSON import/export ----------------
+// ---------- JSON import/export ----------
 function exportJson(rows) {
   const live = rows.filter((r) => !r.deleted);
   const blob = new Blob([JSON.stringify(live, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = "lt-phrasebook.json";
-  a.click();
+  a.href = url; a.download = "lt-phrasebook.json"; a.click();
   URL.revokeObjectURL(url);
 }
 async function importJsonFile(file) {
   const text = await file.text();
   let data;
-  try {
-    data = JSON.parse(text);
-  } catch (e) {
-    throw new Error("Invalid JSON file.");
-  }
+  try { data = JSON.parse(text); } catch { throw new Error("Invalid JSON file."); }
   const arr = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : null;
   if (!arr) throw new Error("JSON must be an array of rows or an object with a 'rows' array.");
 
@@ -488,7 +415,7 @@ async function importJsonFile(file) {
   return cleaned;
 }
 
-// ---------------- Voice ----------------
+// ---------- Voice ----------
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -529,8 +456,7 @@ function langFromAzureShortName(shortName) {
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const lang = langFromAzureShortName(shortName);
-  const ssml =
-    `<speak version="1.0" xml:lang="${lang}"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(text)}</prosody></voice></speak>`;
+  const ssml = `<speak version="1.0" xml:lang="${lang}"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(text)}</prosody></voice></speak>`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -553,7 +479,7 @@ function blurIfInputFocused() {
   }
 }
 
-// ---------------- App ----------------
+// ---------- App ----------
 export default function App() {
   const fileRefXlsx = useRef(null);
   const fileRefJson = useRef(null);
@@ -585,21 +511,19 @@ export default function App() {
   const [ragPriority, setRagPriority] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "rag"); // 'rag' | 'newest' | 'oldest'
+  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "rag");
 
   const uiLang = direction === "EN2LT" ? "en" : "lt";
   const t = (k) => k.split(".").reduce((o, p) => (o ? o[p] : undefined), STR[uiLang]) ?? k;
   const tabLabel = (key) => STR[uiLang]?.tabs?.[key] ?? key;
 
-  // TTS provider
+  // TTS
   const [ttsProvider, setTtsProvider] = useState(() => localStorage.getItem(LSK_TTS_PROVIDER) || "azure");
-  // Azure
   const [azureKey, setAzureKey] = useState(() => localStorage.getItem(LSK_AZURE_KEY) || "");
   const [azureRegion, setAzureRegion] = useState(() => localStorage.getItem(LSK_AZURE_REGION) || "");
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || ""; }
-    catch { return ""; }
+    try { return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || ""; } catch { return ""; }
   });
 
   // Streak / XP / Level
@@ -621,7 +545,7 @@ export default function App() {
     return "🥉";
   };
 
-  // Quiz state
+  // Quiz
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
@@ -717,7 +641,7 @@ export default function App() {
     })).filter((sec) => sec.items.length > 0);
   }, [cleanRows, qLower, searchActive]);
 
-  // ---- starters ----
+  // starters
   async function fetchStarter(path, sourceName) {
     const res = await fetch(path);
     if (!res.ok) throw new Error("Failed to fetch starter: " + path);
@@ -745,12 +669,10 @@ export default function App() {
       localStorage.setItem(LSK_ONBOARDED, "1");
       setStarterOpen(false);
       alert(label + " merged successfully.");
-    } catch (e) {
-      alert(e.message || String(e));
-    }
+    } catch (e) { alert(e.message || String(e)); }
   }
 
-  // ---- audio ----
+  // audio
   async function playText(text, { slow = false } = {}) {
     try {
       if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
@@ -759,19 +681,13 @@ export default function App() {
         if (audioRef.current) { try { audioRef.current.pause(); } catch {} audioRef.current = null; }
         const a = new Audio(url);
         audioRef.current = a;
-        a.onended = () => {
-          URL.revokeObjectURL(url);
-          if (audioRef.current === a) audioRef.current = null;
-        };
+        a.onended = () => { URL.revokeObjectURL(url); if (audioRef.current === a) audioRef.current = null; };
         await a.play();
       } else {
         const rate = slow ? 0.6 : 1.0;
         speakBrowser(text, voice, rate);
       }
-    } catch (e) {
-      console.error(e);
-      alert("Voice error: " + (e?.message || e));
-    }
+    } catch (e) { console.error(e); alert("Voice error: " + (e?.message || e)); }
   }
   function pressHandlers(text) {
     let timer = null;
@@ -790,18 +706,14 @@ export default function App() {
     };
   }
 
-  // ---- CRUD (soft delete) ----
+  // CRUD (soft delete)
   function addRow() {
     if (!draft.English || !draft.Lithuanian) {
       alert(uiLang === "lt" ? "Būtina užpildyti Anglų ir Lietuvių laukus" : "English & Lithuanian are required");
       return;
     }
     const now = new Date().toISOString();
-    const row = {
-      ...draft,
-      "RAG Icon": normalizeRag(draft["RAG Icon"]),
-      createdAt: now, updatedAt: now, deleted: false, Source: draft.Source || "Manual",
-    };
+    const row = { ...draft, "RAG Icon": normalizeRag(draft["RAG Icon"]), createdAt: now, updatedAt: now, deleted: false, Source: draft.Source || "Manual" };
     setRows((prev) => [row, ...prev]);
     setDraft({ ...draft, English: "", Lithuanian: "", Phonetic: "", Category: "", Usage: "", Notes: "" });
     blurIfInputFocused();
@@ -828,9 +740,8 @@ export default function App() {
       setRows((prev) => mergeRows(prev, newRows));
       setTab("Phrases"); setQ("");
       alert((uiLang === "lt" ? "Importuota: " : "Imported ") + newRows.length + (uiLang === "lt" ? " įrašų (sujungta; dublikatai praleisti)." : " rows (merged; duplicates skipped)."));
-    } catch (err) {
-      console.error(err); alert(uiLang === "lt" ? "Nepavyko importuoti .xlsx (žiūrėkite konsolę)" : "Failed to import .xlsx (see console)");
-    } finally { e.target.value = ""; }
+    } catch (err) { console.error(err); alert(uiLang === "lt" ? "Nepavyko importuoti .xlsx (žiūrėkite konsolę)" : "Failed to import .xlsx (see console)"); }
+    finally { e.target.value = ""; }
   }
   async function onImportJson(e) {
     const f = e.target.files?.[0];
@@ -841,23 +752,20 @@ export default function App() {
       setRows((prev) => mergeRows(prev, newRows));
       setTab("Phrases"); setQ("");
       alert((uiLang === "lt" ? "Importuota: " : "Imported ") + newRows.length + (uiLang === "lt" ? " įrašų (sujungta; dublikatai praleisti)." : " rows (merged; duplicates skipped)."));
-    } catch (err) {
-      console.error(err);
-      alert((uiLang === "lt" ? "Nepavyko importuoti JSON: " : "Failed to import JSON: ") + (err?.message || String(err)));
-    } finally { e.target.value = ""; }
+    } catch (err) { console.error(err); alert((uiLang === "lt" ? "Nepavyko importuoti JSON: " : "Failed to import JSON: ") + (err?.message || String(err))); }
+    finally { e.target.value = ""; }
   }
   function hardPurgeByIndex(idx) {
     setRows((prev) => prev.filter((_, i) => i !== idx));
   }
   function clearLibrary() {
-    // Full clear with confirmation handled in UI; this does the actual wipe.
     localStorage.removeItem(LS_KEY);
     setRows([]);
     setQ("");
     setTab("Phrases");
   }
 
-  // ---- per-row stats + RAG rules ----
+  // per-row stats + RAG rules
   function ensureStats(r) {
     const s = r.__stats || {};
     return {
@@ -893,13 +801,11 @@ export default function App() {
     return { ...row, "RAG Icon": newRag, __stats: ns, updatedAt: new Date().toISOString() };
   }
 
-  // ---- quiz ----
+  // quiz
   function computeQuizPool(allRows, targetSize = 10) {
     const withPairs = allRows.filter((r) => !r.deleted && r.English && r.Lithuanian);
     const red = withPairs.filter((r) => normalizeRag(r["RAG Icon"]) === "🔴");
-    const amb = withPairs.filter((r) => {
-      const n = normalizeRag(r["RAG Icon"]); return n === "🟠" || n === "";
-    });
+    const amb = withPairs.filter((r) => { const n = normalizeRag(r["RAG Icon"]); return n === "🟠" || n === ""; });
     const grn = withPairs.filter((r) => normalizeRag(r["RAG Icon"]) === "🟢");
 
     const wantR = Math.floor(targetSize * 0.5);
@@ -970,7 +876,7 @@ export default function App() {
     await playText(correctText, { slow: false });
   }
 
-  // small UI atoms
+  // UI atoms
   const PlayButton = ({ text, ragIcon, className = "" }) => (
     <button
       className={cn("shrink-0 w-10 h-10 rounded-xl transition flex items-center justify-center font-semibold select-none",
@@ -978,20 +884,20 @@ export default function App() {
       style={noSelectStyle} onContextMenu={(e) => e.preventDefault()} draggable={false} {...pressHandlers(text)}
     >►</button>
   );
-
   const TinyAudioButton = ({ text }) => (
     <button className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center select-none"
       style={noSelectStyle} onContextMenu={(e) => e.preventDefault()} draggable={false} {...pressHandlers(text)}
     >🔊</button>
   );
 
-  // ---- Duplicate Review (inline screen) ----
+  // Duplicates (safe, fully rendered)
   function DuplicateReview() {
     const [tabKind, setTabKind] = useState("exact"); // 'exact' | 'fuzzy'
     const [threshold, setThreshold] = useState(0.92);
 
-    const liveRows = cleanRows; // non-deleted
+    const liveRows = cleanRows;
 
+    // exact groups
     const exactGroups = useMemo(() => {
       const map = new Map();
       liveRows.forEach((r, i) => {
@@ -1001,12 +907,14 @@ export default function App() {
         map.get(key).push({ r, i });
       });
       const groups = Array.from(map.values()).filter(g => g.length > 1);
+      // prefer user's entries over starters, then most filled, then newest
       return groups.map(group => {
         const suggested = [...group].sort((a, b) => {
           const aMine = (a.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
           const bMine = (b.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
           if (aMine !== bMine) return aMine - bMine;
-          const aFilled = filledScore(a.r), bFilled = filledScore(b.r);
+          const aFilled = (a.r.Phonetic ? 1 : 0) + (a.r.Category ? 1 : 0) + (a.r.Usage ? 1 : 0) + (a.r.Notes ? 1 : 0);
+          const bFilled = (b.r.Phonetic ? 1 : 0) + (b.r.Category ? 1 : 0) + (b.r.Usage ? 1 : 0) + (b.r.Notes ? 1 : 0);
           if (aFilled !== bFilled) return bFilled - aFilled;
           const at = new Date(a.r.updatedAt || 0).getTime();
           const bt = new Date(b.r.updatedAt || 0).getTime();
@@ -1016,18 +924,27 @@ export default function App() {
       });
     }, [liveRows]);
 
-    function filledScore(r) {
-      let s = 0;
-      if (r.Phonetic) s++;
-      if (r.Category) s++;
-      if (r.Usage) s++;
-      if (r.Notes) s++;
-      return s;
+    const [keepExact, setKeepExact] = useState(() => {
+      const obj = {};
+      exactGroups.forEach((g, idx) => { obj[idx] = g.keepIndex; });
+      return obj;
+    });
+
+    function applyExact() {
+      const toSoftDelete = new Set();
+      exactGroups.forEach((g, gi) => {
+        const keepIdx = keepExact[gi];
+        g.group.forEach(({ i }) => { if (i !== keepIdx) toSoftDelete.add(i); });
+      });
+      if (!toSoftDelete.size) { alert(STR[uiLang].dupes.none); return; }
+      setRows(prev => prev.map((r, idx) => toSoftDelete.has(idx) ? { ...r, deleted: true, deletedAt: new Date().toISOString() } : r));
+      alert(uiLang === "lt" ? "Pritaikyta: dublikatai perkelti į šiukšlinę." : "Applied: duplicates moved to Trash.");
     }
 
+    // fuzzy pairs
     const fuzzyPairs = useMemo(() => {
       const N = liveRows.length;
-      if (N > 6000) return [];
+      if (N === 0 || N > 6000) return [];
       const triIndexEN = new Map();
       const triIndexLT = new Map();
       const trisetEN = [], trisetLT = [];
@@ -1038,14 +955,8 @@ export default function App() {
         normEN.push(ne); normLT.push(nl);
         const se = trigramSet(ne), sl = trigramSet(nl);
         trisetEN.push(se); trisetLT.push(sl);
-        for (const tri of se) {
-          if (!triIndexEN.has(tri)) triIndexEN.set(tri, []);
-          triIndexEN.get(tri).push(i);
-        }
-        for (const tri of sl) {
-          if (!triIndexLT.has(tri)) triIndexLT.set(tri, []);
-          triIndexLT.get(tri).push(i);
-        }
+        for (const tri of se) { if (!triIndexEN.has(tri)) triIndexEN.set(tri, []); triIndexEN.get(tri).push(i); }
+        for (const tri of sl) { if (!triIndexLT.has(tri)) triIndexLT.set(tri, []); triIndexLT.get(tri).push(i); }
       }
       const seen = new Set();
       const pairs = [];
@@ -1086,53 +997,20 @@ export default function App() {
       return fuzzyPairs.filter(p => (p.sEN >= threshold && p.sLT >= threshold) || Math.max(p.sEN, p.sLT) >= Math.min(0.97, threshold + 0.03));
     }, [fuzzyPairs, threshold]);
 
-    const [keepForExact, setKeepForExact] = useState(() => {
-      const obj = {};
-      exactGroups.forEach((g, idx) => { obj[idx] = g.keepIndex; });
-      return obj;
-    });
-    const [keepForFuzzy, setKeepForFuzzy] = useState({});
+    const [keepFuzzy, setKeepFuzzy] = useState({}); // key "i|j" -> index to keep
 
-    function applyExact() {
-      const toSoftDelete = new Set();
-      exactGroups.forEach((g, gi) => {
-        const keepIdx = keepForExact[gi];
-        g.group.forEach(({ i }) => { if (i !== keepIdx) toSoftDelete.add(i); });
-      });
-      if (!toSoftDelete.size) return;
-      setRows(prev => prev.map((r, idx) => toSoftDelete.has(idx) ? { ...r, deleted: true, deletedAt: new Date().toISOString() } : r));
-      alert(uiLang === "lt" ? "Pritaikyta: dublikatai perkelti į šiukšlinę." : "Applied: duplicates moved to Trash.");
-    }
     function applyFuzzy() {
       const toSoftDelete = new Set();
-      for (const key of Object.keys(keepForFuzzy)) {
+      for (const key of Object.keys(keepFuzzy)) {
         const [iStr, jStr] = key.split("|");
         const i = Number(iStr), j = Number(jStr);
-        const keep = keepForFuzzy[key];
+        const keep = keepFuzzy[key];
         if (keep === i) toSoftDelete.add(j);
         else if (keep === j) toSoftDelete.add(i);
       }
-      if (!toSoftDelete.size) return;
+      if (!toSoftDelete.size) { alert(STR[uiLang].dupes.none); return; }
       setRows(prev => prev.map((r, idx) => toSoftDelete.has(idx) ? { ...r, deleted: true, deletedAt: new Date().toISOString() } : r));
       alert(uiLang === "lt" ? "Pritaikyta: panašūs įrašai perkelti į šiukšlinę." : "Applied: close matches moved to Trash.");
-    }
-    function preferMine() {
-      const obj = {};
-      exactGroups.forEach((g, gi) => {
-        const best = [...g.group].sort((a, b) => {
-          const aMine = (a.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
-          const bMine = (b.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
-          if (aMine !== bMine) return aMine - bMine;
-          const aFilled = (a.r.Phonetic ? 1 : 0) + (a.r.Category ? 1 : 0) + (a.r.Usage ? 1 : 0) + (a.r.Notes ? 1 : 0);
-          const bFilled = (b.r.Phonetic ? 1 : 0) + (b.r.Category ? 1 : 0) + (b.r.Usage ? 1 : 0) + (b.r.Notes ? 1 : 0);
-          if (aFilled !== bFilled) return bFilled - aFilled;
-          const at = new Date(a.r.updatedAt || 0).getTime();
-          const bt = new Date(b.r.updatedAt || 0).getTime();
-          return bt - at;
-        })[0];
-        obj[gi] = best.i;
-      });
-      setKeepForExact(obj);
     }
 
     return (
@@ -1152,64 +1030,99 @@ export default function App() {
         </div>
 
         {tabKind === "exact" ? (
-          <>
-            <div className="mb-2 flex items-center gap-2">
-              <button onClick={preferMine} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{STR[uiLang].dupes.preferMine}</button>
-              <button onClick={applyExact} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">{STR[uiLang].dupes.acceptAll}</button>
-            </div>
-            {/* Exact groups */}
-            {/* ...same as previous build, omitted for brevity — left intact below */}
-            {/* BEGIN exact groups */}
-            {(() => {
-              const exactGroups = (() => {
-                const map = new Map();
-                cleanRows.forEach((r, i) => {
-                  const key = dupeKey(r);
-                  if (!key) return;
-                  if (!map.has(key)) map.set(key, []);
-                  map.get(key).push({ r, i });
-                });
-                return Array.from(map.values()).filter(g => g.length > 1).map(group => {
-                  const suggested = [...group].sort((a, b) => {
-                    const aMine = (a.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
-                    const bMine = (b.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
-                    if (aMine !== bMine) return aMine - bMine;
-                    const aFilled = (a.r.Phonetic ? 1 : 0) + (a.r.Category ? 1 : 0) + (a.r.Usage ? 1 : 0) + (a.r.Notes ? 1 : 0);
-                    const bFilled = (b.r.Phonetic ? 1 : 0) + (b.r.Category ? 1 : 0) + (b.r.Usage ? 1 : 0) + (b.r.Notes ? 1 : 0);
-                    if (aFilled !== bFilled) return bFilled - aFilled;
-                    const at = new Date(a.r.updatedAt || 0).getTime();
-                    const bt = new Date(b.r.updatedAt || 0).getTime();
-                    return bt - at;
-                  })[0];
-                  return { group, keepIndex: suggested.i };
-                });
-              })();
-              const [keepForExact, setKeepForExact] = [null, null]; // no-op here; handled above
-              return exactGroups.length === 0 ? (
-                <div className="text-sm text-zinc-400">{STR[uiLang].dupes.none}</div>
-              ) : null;
-            })()}
-            {/* END exact groups (rendering handled earlier in previous build); keeping UI concise */}
-          </>
+          exactGroups.length === 0 ? (
+            <div className="text-sm text-zinc-400">{STR[uiLang].dupes.none}</div>
+          ) : (
+            <>
+              <div className="mb-2 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const obj = {};
+                    exactGroups.forEach((g, gi) => {
+                      const best = [...g.group].sort((a, b) => {
+                        const aMine = (a.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
+                        const bMine = (b.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
+                        if (aMine !== bMine) return aMine - bMine;
+                        const aFilled = (a.r.Phonetic ? 1 : 0) + (a.r.Category ? 1 : 0) + (a.r.Usage ? 1 : 0) + (a.r.Notes ? 1 : 0);
+                        const bFilled = (b.r.Phonetic ? 1 : 0) + (b.r.Category ? 1 : 0) + (b.r.Usage ? 1 : 0) + (b.r.Notes ? 1 : 0);
+                        if (aFilled !== bFilled) return bFilled - aFilled;
+                        const at = new Date(a.r.updatedAt || 0).toISOString();
+                        const bt = new Date(b.r.updatedAt || 0).toISOString();
+                        return bt.localeCompare(at);
+                      })[0];
+                      obj[gi] = best.i;
+                    });
+                    setKeepExact(obj);
+                  }}
+                  className="bg-zinc-800 px-2 py-1 rounded-md text-xs"
+                >
+                  {STR[uiLang].dupes.preferMine}
+                </button>
+                <button onClick={applyExact} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">{STR[uiLang].dupes.acceptAll}</button>
+              </div>
+              <div className="space-y-3">
+                {exactGroups.map((g, gi) => (
+                  <div key={gi} className="bg-zinc-900 border border-zinc-800 rounded-xl p-2">
+                    <div className="text-xs text-zinc-400 mb-1">{g.group[0].r.English} · {g.group[0].r.Lithuanian}</div>
+                    {g.group.map(({ r, i }) => (
+                      <label key={i} className="flex items-center gap-2 text-xs bg-zinc-950 border border-zinc-800 rounded-lg p-2 mb-1">
+                        <input
+                          type="radio"
+                          name={`keep-${gi}`}
+                          checked={keepExact[gi] === i}
+                          onChange={() => setKeepExact((prev) => ({ ...prev, [gi]: i }))}
+                        />
+                        <div className="flex-1">
+                          <div className="text-zinc-300">{r.Source || "—"} · {r.Sheet} · {r.Category || "—"}</div>
+                          <div className="text-zinc-500">{new Date(r.updatedAt || r.createdAt || Date.now()).toLocaleString()}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
+          )
         ) : (
-          <>
-            {/* Fuzzy list rendered in previous build; to avoid huge response, the logic above applies via applyFuzzy() */}
-            {(() => {
-              // Show a simple hint if no fuzzy pairs after threshold
-              const N = cleanRows.length;
-              return N ? null : <div className="text-sm text-zinc-400">{STR[uiLang].dupes.none}</div>;
-            })()}
-          </>
+          filteredFuzzy.length === 0 ? (
+            <div className="text-sm text-zinc-400">{STR[uiLang].dupes.none}</div>
+          ) : (
+            <>
+              <div className="mb-2">
+                <button onClick={applyFuzzy} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">{STR[uiLang].dupes.acceptAll}</button>
+              </div>
+              <div className="space-y-3">
+                {filteredFuzzy.slice(0, 200).map((p, idx) => {
+                  const A = rows[p.i], B = rows[p.j];
+                  const key = p.i + "|" + p.j;
+                  const keep = keepFuzzy[key];
+                  return (
+                    <div key={key} className="bg-zinc-900 border border-zinc-800 rounded-xl p-2">
+                      <div className="text-[11px] text-zinc-400 mb-1">EN {p.sEN.toFixed(2)} · LT {p.sLT.toFixed(2)}</div>
+                      {[{ r: A, i: p.i }, { r: B, i: p.j }].map(({ r, i }) => (
+                        <label key={i} className="flex items-center gap-2 text-xs bg-zinc-950 border border-zinc-800 rounded-lg p-2 mb-1">
+                          <input type="radio" name={`f${key}`} checked={keep === i} onChange={() => setKeepFuzzy((prev) => ({ ...prev, [key]: i }))} />
+                          <div className="flex-1">
+                            <div className="text-zinc-300">{r.English} · {r.Lithuanian}</div>
+                            <div className="text-zinc-500">{r.Source || "—"} · {r.Sheet}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )
         )}
       </div>
     );
   }
 
-  // ---- Library screen (inline) ----
+  // Library
   function LibraryScreen() {
     const [confirmClear, setConfirmClear] = useState(false);
     const trash = rows.map((r, idx) => ({ r, idx })).filter(x => !!x.r.deleted);
-
     return (
       <div className="max-w-xl mx-auto px-3 sm:px-4 py-3">
         <div className="mb-2">
@@ -1242,10 +1155,8 @@ export default function App() {
                     alert(uiLang === "lt" ? "Biblioteka išvalyta." : "Library cleared.");
                   }
                 }}
-                className={cn(
-                  "px-2 py-1 rounded-md text-xs border",
-                  confirmClear ? "bg-red-600 border-red-600 text-white" : "bg-zinc-900 border-zinc-700 text-zinc-200"
-                )}
+                className={cn("px-2 py-1 rounded-md text-xs border",
+                  confirmClear ? "bg-red-600 border-red-600 text-white" : "bg-zinc-900 border-zinc-700 text-zinc-200")}
                 title={STR[uiLang].library.clear}
               >
                 {confirmClear ? STR[uiLang].library.confirmClear : STR[uiLang].library.clear}
@@ -1275,7 +1186,7 @@ export default function App() {
                     <div key={idx} className="flex items-start justify-between gap-2 bg-zinc-950 border border-zinc-800 rounded-lg p-2">
                       <div className="text-xs">
                         <div className="text-zinc-300"><span className="font-medium">{r.English}</span> · <span className="font-medium">{r.Lithuanian}</span></div>
-                        <div className="text-zinc-400">{r.Sheet} · {r.Category || "—"} · {new Date(r.updatedAt).toLocaleDateString()}</div>
+                        <div className="text-zinc-400">{r.Sheet} · {r.Category || "—"} · {new Date(r.updatedAt || r.createdAt || Date.now()).toLocaleDateString()}</div>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => setRows(prev => prev.map((x, i) => i === idx ? { ...x, deleted: false } : x))} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].trash.restore}</button>
@@ -1285,10 +1196,7 @@ export default function App() {
                   ))}
                 </div>
                 <div className="mt-2">
-                  <button onClick={() => {
-                    const kept = rows.filter(r => !r.deleted);
-                    setRows(kept);
-                  }} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].trash.empty}</button>
+                  <button onClick={() => { const kept = rows.filter(r => !r.deleted); setRows(kept); }} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].trash.empty}</button>
                 </div>
               </>
             )}
@@ -1298,7 +1206,97 @@ export default function App() {
     );
   }
 
-  // ---------------- render ----------------
+  // ------ List Card ------
+  function ListCard({ r }) {
+    const idx = rows.indexOf(r);
+    const isEditing = editIdx === idx;
+    const primary = direction === "EN2LT" ? r.Lithuanian : r.English;
+    const secondary = direction === "EN2LT" ? r.English : r.Lithuanian;
+
+    return (
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+        {!isEditing ? (
+          <div className="flex items-start gap-2">
+            <PlayButton text={r.Lithuanian} ragIcon={r["RAG Icon"]} />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-zinc-400 truncate">{secondary}</div>
+              <div className="text-lg leading-tight font-medium break-words">{primary}</div>
+              <div className="mt-1">
+                <button
+                  onClick={() => setExpanded((prev) => { const n = new Set(prev); n.has(idx) ? n.delete(idx) : n.add(idx); return n; })}
+                  className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
+                >
+                  {expanded.has(idx) ? STR[uiLang].details.hide : STR[uiLang].details.show}
+                </button>
+              </div>
+              {expanded.has(idx) && (
+                <>
+                  {r.Phonetic && <div className="text-xs text-zinc-400 mt-1">{r.Phonetic}</div>}
+                  {(r.Usage || r.Notes) && (
+                    <div className="text-xs text-zinc-500 mt-1">
+                      {r.Usage && <div className="mb-0.5"><span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>{r.Usage}</div>}
+                      {r.Notes && <div className="opacity-80"><span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>{r.Notes}</div>}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="flex flex-col gap-1 ml-2">
+              <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].labels.edit}</button>
+              <button onClick={() => softRemove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">{STR[uiLang].labels.delete}</button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
+              <label className="col-span-2">
+                {STR[uiLang].labels.english}
+                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.English} onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })} />
+              </label>
+              <label className="col-span-2">
+                {STR[uiLang].labels.lithuanian}
+                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Lithuanian} onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })} />
+              </label>
+              <label>
+                {STR[uiLang].labels.phonetic}
+                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Phonetic} onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })} />
+              </label>
+              <label>
+                {STR[uiLang].labels.category}
+                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Category} onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })} />
+              </label>
+              <label className="col-span-2">
+                {STR[uiLang].labels.usage}
+                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Usage} onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })} />
+              </label>
+              <label className="col-span-2">
+                {STR[uiLang].labels.notes}
+                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Notes} onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })} />
+              </label>
+              <label>
+                {STR[uiLang].labels.rag}
+                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft["RAG Icon"]} onChange={(e) => setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })}>
+                  {"🔴 🟠 🟢".split(" ").map((x) => (<option key={x} value={x}>{x}</option>))}
+                </select>
+              </label>
+              <label>
+                {STR[uiLang].labels.sheet}
+                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Sheet} onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}>
+                  {SHEET_KEYS.map((s) => (<option key={s} value={s}>{tabLabel(s)}</option>))}
+                </select>
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">{STR[uiLang].labels.save}</button>
+              <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">{STR[uiLang].labels.cancel}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // render
   const navIsHome = screen === "home";
   const navIsLibrary = screen === "library" || screen === "dupes";
   const navIsSettings = settingsOpen;
@@ -1326,7 +1324,7 @@ export default function App() {
               title={ttsProvider === "azure" ? "Azure" : "Browser"}
             >
               <option value="">{t("voice.auto")}</option>
-              {useVoices().map((v) => (
+              {voices.map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name} ({v.lang})
                 </option>
@@ -1334,36 +1332,19 @@ export default function App() {
             </select>
           </div>
 
-          {/* Actions (now with Home + active highlighting) */}
+          {/* Actions */}
           <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w-full sm:w-auto pt-2 sm:pt-0">
-            <button
-              onClick={() => { setScreen("home"); setSettingsOpen(false); }}
-              className={cn("rounded-md text-xs px-2 py-1 border", navIsHome ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")}
-            >
-              {t("actions.home")}
-            </button>
-            <button
-              onClick={() => { setScreen("library"); setSettingsOpen(false); }}
-              className={cn("rounded-md text-xs px-2 py-1 border", navIsLibrary ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")}
-            >
-              {t("actions.library")}
-            </button>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className={cn("rounded-md text-xs px-2 py-1 border", navIsSettings ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")}
-            >
-              {t("actions.settings")}
-            </button>
-            <button onClick={startQuiz} className="bg-emerald-600 hover:bg-emerald-500 rounded-md text-xs px-3 py-1 font-semibold">
-              {t("actions.startQuiz")}
-            </button>
+            <button onClick={() => { setScreen("home"); setSettingsOpen(false); }} className={cn("rounded-md text-xs px-2 py-1 border", navIsHome ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")}>{t("actions.home")}</button>
+            <button onClick={() => { setScreen("library"); setSettingsOpen(false); }} className={cn("rounded-md text-xs px-2 py-1 border", navIsLibrary ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")}>{t("actions.library")}</button>
+            <button onClick={() => setSettingsOpen(true)} className={cn("rounded-md text-xs px-2 py-1 border", navIsSettings ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")}>{t("actions.settings")}</button>
+            <button onClick={startQuiz} className="bg-emerald-600 hover:bg-emerald-500 rounded-md text-xs px-3 py-1 font-semibold">{t("actions.startQuiz")}</button>
           </div>
         </div>
 
         {/* Controls (only on Home) */}
         {screen === "home" && (
           <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 flex-wrap">
-            {/* Search with custom X */}
+            {/* Search with single custom ✕ */}
             <div className="relative flex-1 min-w-[180px]">
               <input
                 type="text"
@@ -1373,33 +1354,19 @@ export default function App() {
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-md pl-3 pr-8 py-2 text-sm outline-none"
               />
               {q && (
-                <button
-                  aria-label={uiLang === "lt" ? "Išvalyti paiešką" : "Clear search"}
-                  onClick={() => setQ("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-sm"
-                >✕</button>
+                <button aria-label={uiLang === "lt" ? "Išvalyti paiešką" : "Clear search"} onClick={() => setQ("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-sm">✕</button>
               )}
             </div>
 
             {/* Sort chip */}
             <div className="relative">
-              <button
-                onClick={() => setSortOpen((o) => !o)}
-                className="px-2 py-1 rounded-md text-xs border bg-zinc-900 border-zinc-700"
-              >
+              <button onClick={() => setSortOpen((o) => !o)} className="px-2 py-1 rounded-md text-xs border bg-zinc-900 border-zinc-700">
                 {t("sort")}: {t(`sortModes.${sortMode}`)}
               </button>
               {sortOpen && (
                 <div className="absolute z-20 mt-1 bg-zinc-900 border border-zinc-700 rounded-md text-xs shadow-lg">
                   {["rag", "newest", "oldest"].map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => { setSortMode(m); setSortOpen(false); }}
-                      className={cn(
-                        "block px-3 py-1 text-left w-full hover:bg-zinc-800",
-                        sortMode === m ? "text-emerald-400" : "text-zinc-200"
-                      )}
-                    >
+                    <button key={m} onClick={() => { setSortMode(m); setSortOpen(false); }} className={cn("block px-3 py-1 text-left w-full hover:bg-zinc-800", sortMode === m ? "text-emerald-400" : "text-zinc-200")}>
                       {t(`sortModes.${m}`)}
                     </button>
                   ))}
@@ -1413,12 +1380,7 @@ export default function App() {
                 <div className="text-xs text-zinc-300">RAG</div>
                 <div className="flex items-center gap-1">
                   {["", "🔴", "🟠", "🟢"].map((x, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setRagPriority(x)}
-                      className={cn("px-2 py-1 rounded-md text-xs border", ragPriority === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")}
-                      title={x ? "Show " + x + " first" : uiLang === "lt" ? "Be prioriteto" : "No priority"}
-                    >
+                    <button key={i} onClick={() => setRagPriority(x)} className={cn("px-2 py-1 rounded-md text-xs border", ragPriority === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700")} title={x ? "Show " + x + " first" : uiLang === "lt" ? "Be prioriteto" : "No priority"}>
                       {x || STR[uiLang].filter.all}
                     </button>
                   ))}
@@ -1452,16 +1414,9 @@ export default function App() {
               const count = searchActive ? searchCounts[key] || 0 : 0;
               const highlight = searchActive && count > 0;
               return (
-                <button
-                  key={key}
-                  onClick={() => setTab(key)}
-                  className={cn(
-                    "mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border",
-                    tab === key ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800",
-                    highlight ? "ring-1 ring-emerald-500" : ""
-                  )}
-                >
-                  {tabLabel(key)}{searchActive ? " (" + String(count) + ")" : ""}
+                <button key={key} onClick={() => setTab(key)} className={cn("mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border",
+                  tab === key ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800", highlight ? "ring-1 ring-emerald-500" : "")}>
+                  {tabLabel(key)}{searchActive ? ` (${count})` : ""}
                 </button>
               );
             })}
@@ -1478,34 +1433,27 @@ export default function App() {
                         <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">{key || "⬤"}</span>
                         <div className="text-sm text-zinc-400">{items.length} item(s)</div>
                       </div>
-                      <div className="space-y-2">
-                        {items.map((r, i) => <ListCard key={rowKey(r) + "-" + i} r={r} />)}
-                      </div>
+                      <div className="space-y-2">{items.map((r, i) => <ListCard key={rowKey(r) + "-" + i} r={r} />)}</div>
                     </div>
                   ))
                 ) : (
-                  <div className="space-y-2">
-                    {sortedFlat.map((r, i) => <ListCard key={rowKey(r) + "-" + i} r={r} />)}
-                  </div>
+                  <div className="space-y-2">{sortedFlat.map((r, i) => <ListCard key={rowKey(r) + "-" + i} r={r} />)}</div>
                 )
               ) : (
-                // search across sheets
                 searchBySheet.map(({ key, items }) => (
                   <div key={key} className="mb-6">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">{tabLabel(key)}</span>
                       <div className="text-sm text-zinc-400">{items.length} item(s)</div>
                     </div>
-                    <div className="space-y-2">
-                      {items.map((r, i) => <ListCard key={rowKey(r) + "-" + i} r={r} />)}
-                    </div>
+                    <div className="space-y-2">{items.map((r, i) => <ListCard key={rowKey(r) + "-" + i} r={r} />)}</div>
                   </div>
                 ))
               )}
             </div>
           )}
 
-          {/* Quiz view */}
+          {/* Quiz */}
           {quizOn && (
             <div className="max-w-xl mx-auto px-3 sm:px-4 pb-28">
               <div className="mt-3 mb-2 flex items-center justify-between">
@@ -1594,7 +1542,6 @@ export default function App() {
       )}
 
       {screen === "library" && <LibraryScreen />}
-
       {screen === "dupes" && <DuplicateReview />}
 
       <div className="h-24" />
@@ -1648,9 +1595,7 @@ export default function App() {
                       <div className="text-xs mb-1">{uiLang === "lt" ? "Balsas" : "Voice"}</div>
                       <select className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2" value={azureVoiceShortName} onChange={(e) => setAzureVoiceShortName(e.target.value)}>
                         <option value="">- choose -</option>
-                        {azureVoices.map((v) => (
-                          <option key={v.shortName} value={v.shortName}>{v.displayName} ({v.shortName})</option>
-                        ))}
+                        {azureVoices.map((v) => (<option key={v.shortName} value={v.shortName}>{v.displayName} ({v.shortName})</option>))}
                       </select>
                     </div>
                     <button
@@ -1681,7 +1626,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Congrats modal */}
+      {/* Congrats */}
       {quizShowCongrats && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-[92%] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
@@ -1709,9 +1654,7 @@ export default function App() {
           <div className="w-[92%] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
             <div className="text-xl font-semibold mb-2">{uiLang === "lt" ? "Įkelti pradinį rinkinį?" : "Load starter pack?"}</div>
             <div className="text-sm text-zinc-300 mb-4">
-              {uiLang === "lt"
-                ? "Pasirinkite rinkinį – duomenys bus sujungti su biblioteka (galėsite pridėti daugiau vėliau)."
-                : "Choose a starter deck to merge into your library (you can import more later)."}
+              {uiLang === "lt" ? "Pasirinkite rinkinį – duomenys bus sujungti su biblioteka (galėsite pridėti daugiau vėliau)." : "Choose a starter deck to merge into your library (you can import more later)."}
             </div>
             <div className="grid grid-cols-1 gap-2 mb-3">
               <button onClick={() => loadStarter("enlt")} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-md font-semibold">EN→LT Starter</button>
