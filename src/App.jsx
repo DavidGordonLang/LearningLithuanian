@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - XP/Levels/Badges, daily streak
  * - Tabs: Phrases, Questions, Words, Numbers
  * - RAG-colored play buttons; long-press no-select; global search with tab badges
+ * - FIX: Auto-close Add panel after adding; blur inputs to prevent mobile keyboard popping on play
  */
 
 const COLS = ["English", "Lithuanian", "Phonetic", "Category", "Usage", "Notes", "RAG Icon", "Sheet"];
@@ -32,14 +33,7 @@ const STR = {
   en: {
     title: "Lithuanian Trainer",
     subtitle: "Tap to play. Long-press to savour.",
-    actions: {
-      import: "Import .xlsx",
-      export: "Export JSON",
-      clear: "Clear data",
-      settings: "Settings",
-      startQuiz: "Start Quiz",
-      close: "Close",
-    },
+    actions: { import: "Import .xlsx", export: "Export JSON", clear: "Clear data", settings: "Settings", startQuiz: "Start Quiz", close: "Close" },
     searchPlaceholder: "Search…",
     mode: "Mode:",
     ragSort: "Sort RAG first",
@@ -64,15 +58,7 @@ const STR = {
     },
     addEntry: { summary: "+ Add entry", add: "Add" },
     tooltips: { tapHold: "Tap = play, long-press = slow" },
-    quiz: {
-      quit: "Quit",
-      promptLabel: "Prompt",
-      chooseLt: "Choose the Lithuanian",
-      correct: "Correct! (+50 XP)",
-      wrong: "Not quite.",
-      next: "Next Question",
-      score: "Score",
-    },
+    quiz: { quit: "Quit", promptLabel: "Prompt", chooseLt: "Choose the Lithuanian", correct: "Correct! (+50 XP)", wrong: "Not quite.", next: "Next Question", score: "Score" },
     voice: { auto: "Auto voice", provider: "Voice provider", browser: "Browser (fallback)", azure: "Azure Speech" },
     settingsTitle: "Settings",
     startersTitle: "Starter packs",
@@ -84,14 +70,7 @@ const STR = {
   lt: {
     title: "Anglų kalbos treniruoklis",
     subtitle: "Bakstelėkite – leisti. Ilgai palaikykite – lėtai.",
-    actions: {
-      import: "Importuoti .xlsx",
-      export: "Eksportuoti JSON",
-      clear: "Išvalyti duomenis",
-      settings: "Nustatymai",
-      startQuiz: "Pradėti testą",
-      close: "Uždaryti",
-    },
+    actions: { import: "Importuoti .xlsx", export: "Eksportuoti JSON", clear: "Išvalyti duomenis", settings: "Nustatymai", startQuiz: "Pradėti testą", close: "Uždaryti" },
     searchPlaceholder: "Paieška…",
     mode: "Režimas:",
     ragSort: "Rikiuoti RAG pirmiau",
@@ -116,15 +95,7 @@ const STR = {
     },
     addEntry: { summary: "+ Pridėti įrašą", add: "Pridėti" },
     tooltips: { tapHold: "Bakstelėti = leisti, ilgai palaikyti = lėtai" },
-    quiz: {
-      quit: "Baigti",
-      promptLabel: "Užduotis",
-      chooseLt: "Pasirinkite lietuvišką variantą",
-      correct: "Teisingai! (+50 XP)",
-      wrong: "Ne visai.",
-      next: "Kitas klausimas",
-      score: "Rezultatas",
-    },
+    quiz: { quit: "Baigti", promptLabel: "Užduotis", chooseLt: "Pasirinkite lietuvišką variantą", correct: "Teisingai! (+50 XP)", wrong: "Ne visai.", next: "Kitas klausimas", score: "Rezultatas" },
     voice: { auto: "Automatinis balsas", provider: "Balso tiekėjas", browser: "Naršyklė (atsarginis)", azure: "Azure kalba" },
     settingsTitle: "Nustatymai",
     startersTitle: "Pradinių duomenų rinkiniai",
@@ -368,10 +339,9 @@ function langFromAzureShortName(shortName) {
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const lang = langFromAzureShortName(shortName);
-  const ssml =
-    `<speak version="1.0" xml:lang="${lang}">` +
-    `<voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(text)}</prosody></voice>` +
-    `</speak>`;
+  const ssml = `<speak version="1.0" xml:lang="${lang}"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
+    text
+  )}</prosody></voice></speak>`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -386,9 +356,24 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
+// Small helper: blur focused input/textarea/contentEditable (prevents mobile keyboard)
+function blurIfInputFocused() {
+  const el = document.activeElement;
+  if (!el) return;
+  const tag = (el.tagName || "").toUpperCase();
+  const isEditable = el.isContentEditable;
+  if (isEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+    try {
+      el.blur();
+    } catch {}
+  }
+}
+
 // ---------------- App ----------------
 export default function App() {
   const fileRef = useRef(null);
+  const addDetailsRef = useRef(null);          // <details> ref
+  const [addOpen, setAddOpen] = useState(false); // controlled state for Add panel
 
   const [rows, setRows] = useState(loadData());
   const [tab, setTab] = useState("Phrases");
@@ -432,8 +417,6 @@ export default function App() {
   const [xp, setXp] = useState(loadXp());
   const level = 1 + Math.floor(xp / XP_PER_LEVEL);
   const levelBaseXp = (level - 1) * XP_PER_LEVEL;
-  theQuiz: // (ignored label in runtime, safe)
-  null;
   const xpIntoLevel = xp - levelBaseXp;
   const progressPct = Math.max(0, Math.min(100, (xpIntoLevel / XP_PER_LEVEL) * 100));
   const levelBadge = (lvl) => {
@@ -449,7 +432,7 @@ export default function App() {
   };
 
   // Quiz state
-  const [quizOn, setQuizOn] = useState(false); // <-- missing earlier; now added
+  const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
@@ -471,9 +454,15 @@ export default function App() {
 
   useEffect(() => saveData(rows), [rows]);
   useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
-  useEffect(() => { if (azureKey) localStorage.setItem(LSK_AZURE_KEY, azureKey); }, [azureKey]);
-  useEffect(() => { if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion); }, [azureRegion]);
-  useEffect(() => { localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName })); }, [azureVoiceShortName]);
+  useEffect(() => {
+    if (azureKey) localStorage.setItem(LSK_AZURE_KEY, azureKey);
+  }, [azureKey]);
+  useEffect(() => {
+    if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion);
+  }, [azureRegion]);
+  useEffect(() => {
+    localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
+  }, [azureVoiceShortName]);
   useEffect(() => saveStreak(streak), [streak]);
   useEffect(() => saveXp(xp), [xp]);
 
@@ -490,7 +479,9 @@ export default function App() {
   const [editIdx, setEditIdx] = useState(null);
   const [editDraft, setEditDraft] = useState(draft);
   const [expanded, setExpanded] = useState(new Set());
-  useEffect(() => { setDraft((d) => ({ ...d, Sheet: tab })); }, [tab]);
+  useEffect(() => {
+    setDraft((d) => ({ ...d, Sheet: tab }));
+  }, [tab]);
 
   // ---- search (global) ----
   const searchActive = q.trim().length > 0;
@@ -509,7 +500,10 @@ export default function App() {
     return counts;
   }, [rows, qLower, searchActive]);
 
-  const filteredForActiveTab = useMemo(() => rows.filter((r) => r.Sheet === tab).filter(matchesQuery), [rows, tab, qLower, searchActive]);
+  const filteredForActiveTab = useMemo(
+    () => rows.filter((r) => r.Sheet === tab).filter(matchesQuery),
+    [rows, tab, qLower, searchActive]
+  );
   const groups = useMemo(() => {
     const buckets = { "🔴": [], "🟠": [], "🟢": [], "": [] };
     for (const r of filteredForActiveTab) buckets[normalizeRag(r["RAG Icon"]) || ""].push(r);
@@ -539,10 +533,9 @@ export default function App() {
       lten: "/data/starter_lt_to_en.json",
       both: "/data/starter_combined_dedup.json",
     };
-    const path = map[choice];
     const label = choice === "both" ? "Starter (Both)" : choice === "enlt" ? "Starter (EN→LT)" : "Starter (LT→EN)";
     try {
-      const incoming = await fetchStarter(path, label);
+      const incoming = await fetchStarter(map[choice], label);
       setRows((prev) => mergeRows(prev, incoming));
       localStorage.setItem(LSK_ONBOARDED, "1");
       setStarterOpen(false);
@@ -559,7 +552,9 @@ export default function App() {
         const delta = slow ? "-40%" : "0%";
         const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, delta);
         if (audioRef.current) {
-          try { audioRef.current.pause(); } catch {}
+          try {
+            audioRef.current.pause();
+          } catch {}
           audioRef.current = null;
         }
         const a = new Audio(url);
@@ -582,6 +577,8 @@ export default function App() {
     let timer = null;
     const start = (e) => {
       e.preventDefault();
+      // Hide mobile keyboard if any input is focused
+      blurIfInputFocused();
       timer = window.setTimeout(() => {
         timer = null;
         playText(text, { slow: true });
@@ -618,7 +615,14 @@ export default function App() {
     }
     const row = { ...draft, "RAG Icon": normalizeRag(draft["RAG Icon"]) };
     setRows((prev) => [row, ...prev]);
+    // Clear inputs
     setDraft({ ...draft, English: "", Lithuanian: "", Phonetic: "", Category: "", Usage: "", Notes: "" });
+    // Close the Add panel & blur focused input to dismiss keyboard
+    try {
+      blurIfInputFocused();
+      setAddOpen(false);
+      if (addDetailsRef.current) addDetailsRef.current.open = false;
+    } catch {}
   }
   function startEdit(globalIdx) {
     setEditIdx(globalIdx);
@@ -629,7 +633,9 @@ export default function App() {
     setRows((prev) => prev.map((r, i) => (i === globalIdx ? clean : r)));
     setEditIdx(null);
   }
-  function cancelEdit() { setEditIdx(null); }
+  function cancelEdit() {
+    setEditIdx(null);
+  }
   function remove(globalIdx) {
     if (!confirm("Delete this entry?")) return;
     setRows((prev) => prev.filter((_, i) => i !== globalIdx));
@@ -903,19 +909,22 @@ export default function App() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w/full sm:w-auto pt-2 sm:pt-0">
+          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w-full sm:w-auto pt-2 sm:pt-0">
             <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={onImportFile} className="hidden" />
             <button onClick={() => fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">
-              <span className="hidden sm:inline">{t("actions.import")}</span><span className="sm:hidden">📥 XLSX</span>
+              <span className="hidden sm:inline">{t("actions.import")}</span>
+              <span className="sm:hidden">📥 XLSX</span>
             </button>
             <button onClick={() => exportJson(rows)} className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">
-              <span className="hidden sm:inline">{t("actions.export")}</span><span className="sm:hidden">📤 JSON</span>
+              <span className="hidden sm:inline">{t("actions.export")}</span>
+              <span className="sm:hidden">📤 JSON</span>
             </button>
             <button onClick={clearAll} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md text-xs px-2 py-1">
               {confirmClear ? (uiLang === "lt" ? "Paspauskite dar kartą" : "Tap again") : (<><span className="hidden sm:inline">{t("actions.clear")}</span><span className="sm:hidden">🗑</span></>)}
             </button>
             <button onClick={() => setSettingsOpen(true)} className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">
-              <span className="hidden sm:inline">{t("actions.settings")}</span><span className="sm:hidden">⚙️</span>
+              <span className="hidden sm:inline">{t("actions.settings")}</span>
+              <span className="sm:hidden">⚙️</span>
             </button>
             <button onClick={startQuiz} className="bg-emerald-600 hover:bg-emerald-500 rounded-md text-xs px-3 py-1 font-semibold">
               {t("actions.startQuiz")}
@@ -974,36 +983,45 @@ export default function App() {
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            <div className="text-xs text-zinc-400 whitespace-nowrap">🔥 {t("streak")}: <span className="font-semibold">{streak.streak}</span></div>
+            <div className="text-xs text-zinc-400 whitespace-nowrap">
+              🔥 {t("streak")}: <span className="font-semibold">{streak.streak}</span>
+            </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs">{levelBadge(level)} <span className="font-semibold">{t("level")} {numberWithCommas(level)}</span></span>
+              <span className="text-xs">
+                {levelBadge(level)} <span className="font-semibold">{t("level")} {numberWithCommas(level)}</span>
+              </span>
               <div className="w-28 h-2 rounded bg-zinc-800 overflow-hidden">
                 <div className="h-2 bg-emerald-600" style={{ width: progressPct + "%" }} />
               </div>
-              <span className="text-[11px] text-zinc-400">{numberWithCommas(xpIntoLevel)} / {numberWithCommas(XP_PER_LEVEL)} XP</span>
+              <span className="text-[11px] text-zinc-400">
+                {numberWithCommas(xpIntoLevel)} / {numberWithCommas(XP_PER_LEVEL)} XP
+              </span>
             </div>
           </div>
         </div>
 
         {searchActive && (
-          <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 text-[11px] text-zinc-400">
-            {STR[uiLang].searchAllNote}
-          </div>
+          <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 text-[11px] text-zinc-400">{STR[uiLang].searchAllNote}</div>
         )}
       </div>
 
       {/* Tabs */}
       <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sticky top-[78px] bg-zinc-950/90 backdrop-blur z-10 border-b border-zinc-900">
         {SHEET_KEYS.map((key) => {
-          const count = searchActive ? (searchCounts[key] || 0) : 0;
+          const count = searchActive ? searchCounts[key] || 0 : 0;
           const highlight = searchActive && count > 0;
           return (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={cn("mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border", tab === key ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800", highlight ? "ring-1 ring-emerald-500" : "")}
+              className={cn(
+                "mr-2 mb-2 px-3 py-1.5 rounded-full text-sm border",
+                tab === key ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800",
+                highlight ? "ring-1 ring-emerald-500" : ""
+              )}
             >
-              {tabLabel(key)}{searchActive ? " (" + String(count) + ")" : ""}
+              {tabLabel(key)}
+              {searchActive ? " (" + String(count) + ")" : ""}
             </button>
           );
         })}
@@ -1038,7 +1056,13 @@ export default function App() {
                               <div className="text-lg leading-tight font-medium break-words">{primary}</div>
                               <div className="mt-1">
                                 <button
-                                  onClick={() => setExpanded((prev) => { const n = new Set(prev); n.has(idx) ? n.delete(idx) : n.add(idx); return n; })}
+                                  onClick={() =>
+                                    setExpanded((prev) => {
+                                      const n = new Set(prev);
+                                      n.has(idx) ? n.delete(idx) : n.add(idx);
+                                      return n;
+                                    })
+                                  }
                                   className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
                                 >
                                   {STR[uiLang].details[expanded.has(idx) ? "hide" : "show"]}
@@ -1049,16 +1073,30 @@ export default function App() {
                                   {r.Phonetic && <div className="text-xs text-zinc-400 mt-1">{r.Phonetic}</div>}
                                   {(r.Usage || r.Notes) && (
                                     <div className="text-xs text-zinc-500 mt-1">
-                                      {r.Usage && <div className="mb-0.5"><span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>{r.Usage}</div>}
-                                      {r.Notes && <div className="opacity-80"><span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>{r.Notes}</div>}
+                                      {r.Usage && (
+                                        <div className="mb-0.5">
+                                          <span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>
+                                          {r.Usage}
+                                        </div>
+                                      )}
+                                      {r.Notes && (
+                                        <div className="opacity-80">
+                                          <span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>
+                                          {r.Notes}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </>
                               )}
                             </div>
                             <div className="flex flex-col gap-1 ml-2">
-                              <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].labels.edit}</button>
-                              <button onClick={() => remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">{STR[uiLang].labels.delete}</button>
+                              <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">
+                                {STR[uiLang].labels.edit}
+                              </button>
+                              <button onClick={() => remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">
+                                {STR[uiLang].labels.delete}
+                              </button>
                             </div>
                           </div>
                         ) : (
@@ -1066,44 +1104,88 @@ export default function App() {
                             <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
                               <label className="col-span-2">
                                 {STR[uiLang].labels.english}
-                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.English} onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })} />
+                                <input
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft.English}
+                                  onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })}
+                                />
                               </label>
                               <label className="col-span-2">
                                 {STR[uiLang].labels.lithuanian}
-                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Lithuanian} onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })} />
+                                <input
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft.Lithuanian}
+                                  onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })}
+                                />
                               </label>
                               <label>
                                 {STR[uiLang].labels.phonetic}
-                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Phonetic} onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })} />
+                                <input
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft.Phonetic}
+                                  onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })}
+                                />
                               </label>
                               <label>
                                 {STR[uiLang].labels.category}
-                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Category} onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })} />
+                                <input
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft.Category}
+                                  onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })}
+                                />
                               </label>
                               <label className="col-span-2">
                                 {STR[uiLang].labels.usage}
-                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Usage} onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })} />
+                                <input
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft.Usage}
+                                  onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })}
+                                />
                               </label>
                               <label className="col-span-2">
                                 {STR[uiLang].labels.notes}
-                                <input className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Notes} onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })} />
+                                <input
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft.Notes}
+                                  onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })}
+                                />
                               </label>
                               <label>
                                 {STR[uiLang].labels.rag}
-                                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft["RAG Icon"]} onChange={(e) => setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })}>
-                                  {"🔴 🟠 🟢".split(" ").map((x) => (<option key={x} value={x}>{x}</option>))}
+                                <select
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft["RAG Icon"]}
+                                  onChange={(e) => setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })}
+                                >
+                                  {"🔴 🟠 🟢".split(" ").map((x) => (
+                                    <option key={x} value={x}>
+                                      {x}
+                                    </option>
+                                  ))}
                                 </select>
                               </label>
                               <label>
                                 {STR[uiLang].labels.sheet}
-                                <select className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white" value={editDraft.Sheet} onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}>
-                                  {SHEET_KEYS.map((s) => (<option key={s} value={s}>{tabLabel(s)}</option>))}
+                                <select
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                  value={editDraft.Sheet}
+                                  onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}
+                                >
+                                  {SHEET_KEYS.map((s) => (
+                                    <option key={s} value={s}>
+                                      {tabLabel(s)}
+                                    </option>
+                                  ))}
                                 </select>
                               </label>
                             </div>
                             <div className="flex gap-2">
-                              <button onClick={() => saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">{STR[uiLang].labels.save}</button>
-                              <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">{STR[uiLang].labels.cancel}</button>
+                              <button onClick={() => saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">
+                                {STR[uiLang].labels.save}
+                              </button>
+                              <button onClick={cancelEdit} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+                                {STR[uiLang].labels.cancel}
+                              </button>
                             </div>
                           </div>
                         )}
@@ -1140,7 +1222,13 @@ export default function App() {
                               <div className="text-lg leading-tight font-medium break-words">{primary}</div>
                               <div className="mt-1">
                                 <button
-                                  onClick={() => setExpanded((prev) => { const n = new Set(prev); n.has(idx) ? n.delete(idx) : n.add(idx); return n; })}
+                                  onClick={() =>
+                                    setExpanded((prev) => {
+                                      const n = new Set(prev);
+                                      n.has(idx) ? n.delete(idx) : n.add(idx);
+                                      return n;
+                                    })
+                                  }
                                   className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800"
                                 >
                                   {STR[uiLang].details[expanded.has(idx) ? "hide" : "show"]}
@@ -1151,20 +1239,34 @@ export default function App() {
                                   {r.Phonetic && <div className="text-xs text-zinc-400 mt-1">{r.Phonetic}</div>}
                                   {(r.Usage || r.Notes) && (
                                     <div className="text-xs text-zinc-500 mt-1">
-                                      {r.Usage && <div className="mb-0.5"><span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>{r.Usage}</div>}
-                                      {r.Notes && <div className="opacity-80"><span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>{r.Notes}</div>}
+                                      {r.Usage && (
+                                        <div className="mb-0.5">
+                                          <span className="text-zinc-400">{STR[uiLang].labels.usage}: </span>
+                                          {r.Usage}
+                                        </div>
+                                      )}
+                                      {r.Notes && (
+                                        <div className="opacity-80">
+                                          <span className="text-zinc-400">{STR[uiLang].labels.notes}: </span>
+                                          {r.Notes}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </>
                               )}
                             </div>
                             <div className="flex flex-col gap-1 ml-2">
-                              <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">{STR[uiLang].labels.edit}</button>
-                              <button onClick={() => remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">{STR[uiLang].labels.delete}</button>
+                              <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">
+                                {STR[uiLang].labels.edit}
+                              </button>
+                              <button onClick={() => remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">
+                                {STR[uiLang].labels.delete}
+                              </button>
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-2">{/* edit form omitted in search list for brevity */}</div>
+                          <div className="space-y-2">{/* edit form intentionally omitted in search list */}</div>
                         )}
                       </div>
                     );
@@ -1231,7 +1333,9 @@ export default function App() {
               })()}
             </div>
           )}
-          <div className="mt-3 text-sm text-zinc-400">{t("quiz.score")}: {quizScore} / {quizQs.length}</div>
+          <div className="mt-3 text-sm text-zinc-400">
+            {t("quiz.score")}: {quizScore} / {quizQs.length}
+          </div>
         </div>
       )}
 
@@ -1239,22 +1343,77 @@ export default function App() {
       {!quizOn && (
         <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
           <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
-            <details>
+            <details
+              ref={addDetailsRef}
+              open={addOpen}
+              onToggle={() => setAddOpen(!!addDetailsRef.current?.open)}
+            >
               <summary className="cursor-pointer text-sm text-zinc-300">{t("addEntry.summary")}</summary>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder={t("labels.english")} value={draft.English} onChange={(e) => setDraft({ ...draft, English: e.target.value })} />
-                <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder={t("labels.lithuanian")} value={draft.Lithuanian} onChange={(e) => setDraft({ ...draft, Lithuanian: e.target.value })} />
-                <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder={t("labels.phonetic")} value={draft.Phonetic} onChange={(e) => setDraft({ ...draft, Phonetic: e.target.value })} />
-                <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder={t("labels.category")} value={draft.Category} onChange={(e) => setDraft({ ...draft, Category: e.target.value })} />
-                <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder={t("labels.usage")} value={draft.Usage} onChange={(e) => setDraft({ ...draft, Usage: e.target.value })} />
-                <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder={t("labels.notes")} value={draft.Notes} onChange={(e) => setDraft({ ...draft, Notes: e.target.value })} />
-                <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft["RAG Icon"]} onChange={(e) => setDraft({ ...draft, "RAG Icon": normalizeRag(e.target.value) })}>
-                  {"🔴 🟠 🟢".split(" ").map((x) => (<option key={x} value={x}>{x}</option>))}
+                <input
+                  className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  placeholder={t("labels.english")}
+                  value={draft.English}
+                  onChange={(e) => setDraft({ ...draft, English: e.target.value })}
+                />
+                <input
+                  className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  placeholder={t("labels.lithuanian")}
+                  value={draft.Lithuanian}
+                  onChange={(e) => setDraft({ ...draft, Lithuanian: e.target.value })}
+                />
+                <input
+                  className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  placeholder={t("labels.phonetic")}
+                  value={draft.Phonetic}
+                  onChange={(e) => setDraft({ ...draft, Phonetic: e.target.value })}
+                />
+                <input
+                  className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  placeholder={t("labels.category")}
+                  value={draft.Category}
+                  onChange={(e) => setDraft({ ...draft, Category: e.target.value })}
+                />
+                <input
+                  className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  placeholder={t("labels.usage")}
+                  value={draft.Usage}
+                  onChange={(e) => setDraft({ ...draft, Usage: e.target.value })}
+                />
+                <input
+                  className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  placeholder={t("labels.notes")}
+                  value={draft.Notes}
+                  onChange={(e) => setDraft({ ...draft, Notes: e.target.value })}
+                />
+                <select
+                  className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  value={draft["RAG Icon"]}
+                  onChange={(e) => setDraft({ ...draft, "RAG Icon": normalizeRag(e.target.value) })}
+                >
+                  {"🔴 🟠 🟢".split(" ").map((x) => (
+                    <option key={x} value={x}>
+                      {x}
+                    </option>
+                  ))}
                 </select>
-                <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft.Sheet} onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}>
-                  {SHEET_KEYS.map((s) => (<option key={s} value={s}>{tabLabel(s)}</option>))}
+                <select
+                  className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                  value={draft.Sheet}
+                  onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}
+                >
+                  {SHEET_KEYS.map((s) => (
+                    <option key={s} value={s}>
+                      {tabLabel(s)}
+                    </option>
+                  ))}
                 </select>
-                <button onClick={addRow} className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold">{t("addEntry.add")}</button>
+                <button
+                  onClick={addRow}
+                  className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold"
+                >
+                  {t("addEntry.add")}
+                </button>
               </div>
             </details>
           </div>
@@ -1272,8 +1431,12 @@ export default function App() {
               <div>
                 <div className="text-xs mb-1">{t("voice.provider")}</div>
                 <div className="flex flex-wrap gap-3">
-                  <label className="flex items-center gap-2"><input type="radio" name="ttsprov" checked={ttsProvider === "browser"} onChange={() => setTtsProvider("browser")} /> {t("voice.browser")}</label>
-                  <label className="flex items-center gap-2"><input type="radio" name="ttsprov" checked={ttsProvider === "azure"} onChange={() => setTtsProvider("azure")} /> {t("voice.azure")}</label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="ttsprov" checked={ttsProvider === "browser"} onChange={() => setTtsProvider("browser")} /> {t("voice.browser")}
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="ttsprov" checked={ttsProvider === "azure"} onChange={() => setTtsProvider("azure")} /> {t("voice.azure")}
+                  </label>
                 </div>
               </div>
 
@@ -1282,20 +1445,39 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <div className="text-xs mb-1">{t("azure.key")}</div>
-                      <input type="password" value={azureKey} onChange={(e) => setAzureKey(e.target.value)} placeholder="Azure key" className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2" />
+                      <input
+                        type="password"
+                        value={azureKey}
+                        onChange={(e) => setAzureKey(e.target.value)}
+                        placeholder="Azure key"
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                      />
                     </div>
                     <div>
                       <div className="text-xs mb-1">{t("azure.region")}</div>
-                      <input value={azureRegion} onChange={(e) => setAzureRegion(e.target.value)} placeholder="westeurope" className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2" />
+                      <input
+                        value={azureRegion}
+                        onChange={(e) => setAzureRegion(e.target.value)}
+                        placeholder="westeurope"
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                      />
                     </div>
                   </div>
 
                   <div className="flex items-end gap-2">
                     <div className="flex-1">
                       <div className="text-xs mb-1">{t("azure.voice")}</div>
-                      <select className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2" value={azureVoiceShortName} onChange={(e) => setAzureVoiceShortName(e.target.value)}>
+                      <select
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                        value={azureVoiceShortName}
+                        onChange={(e) => setAzureVoiceShortName(e.target.value)}
+                      >
                         <option value="">- choose -</option>
-                        {azureVoices.map((v) => (<option key={v.shortName} value={v.shortName}>{v.displayName} ({v.shortName})</option>))}
+                        {azureVoices.map((v) => (
+                          <option key={v.shortName} value={v.shortName}>
+                            {v.displayName} ({v.shortName})
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <button
@@ -1305,7 +1487,11 @@ export default function App() {
                           const res = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": azureKey } });
                           if (!res.ok) throw new Error("Failed to fetch Azure voices");
                           const data = await res.json();
-                          const vs = data.map((v) => ({ shortName: v.ShortName, locale: v.Locale, displayName: v.LocalName || v.FriendlyName || v.ShortName }));
+                          const vs = data.map((v) => ({
+                            shortName: v.ShortName,
+                            locale: v.Locale,
+                            displayName: v.LocalName || v.FriendlyName || v.ShortName,
+                          }));
                           setAzureVoices(vs);
                           if (!azureVoiceShortName && vs.length) setAzureVoiceShortName(vs[0].shortName);
                         } catch (e) {
@@ -1324,15 +1510,25 @@ export default function App() {
                 <div className="font-medium mb-1">{t("startersTitle")}</div>
                 <div className="text-xs text-zinc-400 mb-2">{t("startersHint")}</div>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => loadStarter("enlt")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">{t("starters.loadENLT")}</button>
-                  <button onClick={() => loadStarter("lten")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">{t("starters.loadLTEN")}</button>
-                  <button onClick={() => loadStarter("both")} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{t("starters.loadBoth")}</button>
-                  <button onClick={() => setStarterOpen(true)} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{t("starters.openChooser")}</button>
+                  <button onClick={() => loadStarter("enlt")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">
+                    {t("starters.loadENLT")}
+                  </button>
+                  <button onClick={() => loadStarter("lten")} className="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded-md text-xs font-semibold">
+                    {t("starters.loadLTEN")}
+                  </button>
+                  <button onClick={() => loadStarter("both")} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">
+                    {t("starters.loadBoth")}
+                  </button>
+                  <button onClick={() => setStarterOpen(true)} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">
+                    {t("starters.openChooser")}
+                  </button>
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-1">
-                <button onClick={() => setSettingsOpen(false)} className="bg-emerald-600 px-3 py-2 rounded-md">{t("actions.close")}</button>
+                <button onClick={() => setSettingsOpen(false)} className="bg-emerald-600 px-3 py-2 rounded-md">
+                  {t("actions.close")}
+                </button>
               </div>
             </div>
           </div>
@@ -1344,17 +1540,26 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-[92%] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
             <div className="text-2xl font-semibold mb-1">Nice work! 🎉</div>
-            <div className="text-zinc-300 mb-1">{(uiLang === "lt" ? "Jūsų rezultatas" : "You scored") + " " + String(quizScore) + " / " + String(quizQs.length) + "."}</div>
+            <div className="text-zinc-300 mb-1">
+              {(uiLang === "lt" ? "Jūsų rezultatas" : "You scored") + " " + String(quizScore) + " / " + String(quizQs.length) + "."}
+            </div>
             <div className="text-sm text-emerald-400 mb-2">+{quizSessionXp} XP</div>
             {1 + Math.floor(xp / XP_PER_LEVEL) > quizStartLevel && (
               <div className="text-sm mb-2">
-                {(uiLang === "lt" ? "Lygiu aukštyn! " : "Level Up! ") + levelBadge(1 + Math.floor(xp / XP_PER_LEVEL))} {uiLang === "lt" ? "Dabar" : "Now"} <span className="font-semibold">{STR[uiLang].level} {numberWithCommas(1 + Math.floor(xp / XP_PER_LEVEL))}</span>
+                {(uiLang === "lt" ? "Lygiu aukštyn! " : "Level Up! ") + levelBadge(1 + Math.floor(xp / XP_PER_LEVEL))}{" "}
+                {uiLang === "lt" ? "Dabar" : "Now"} <span className="font-semibold">{STR[uiLang].level} {numberWithCommas(1 + Math.floor(xp / XP_PER_LEVEL))}</span>
               </div>
             )}
-            <div className="text-sm text-zinc-400 mb-4">🔥 {t("streak")}: <span className="font-semibold text-emerald-400">{streak.streak}</span></div>
+            <div className="text-sm text-zinc-400 mb-4">
+              🔥 {t("streak")}: <span className="font-semibold text-emerald-400">{streak.streak}</span>
+            </div>
             <div className="flex justify-center gap-2">
-              <button onClick={() => { setQuizShowCongrats(false); setQuizOn(false); }} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-md font-semibold">{uiLang === "lt" ? "Baigti" : "Done"}</button>
-              <button onClick={() => { setQuizShowCongrats(false); startQuiz(); }} className="bg-zinc-800 px-4 py-2 rounded-md">{uiLang === "lt" ? "Bandyti dar kartą" : "Retry"}</button>
+              <button onClick={() => { setQuizShowCongrats(false); setQuizOn(false); }} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-md font-semibold">
+                {uiLang === "lt" ? "Baigti" : "Done"}
+              </button>
+              <button onClick={() => { setQuizShowCongrats(false); startQuiz(); }} className="bg-zinc-800 px-4 py-2 rounded-md">
+                {uiLang === "lt" ? "Bandyti dar kartą" : "Retry"}
+              </button>
             </div>
           </div>
         </div>
@@ -1375,7 +1580,15 @@ export default function App() {
               <button onClick={() => loadStarter("lten")} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-md font-semibold">LT→EN Starter</button>
               <button onClick={() => loadStarter("both")} className="bg-zinc-800 px-4 py-2 rounded-md">{uiLang === "lt" ? "Abu kartu" : "Both (combined)"}</button>
             </div>
-            <button onClick={() => { localStorage.setItem(LSK_ONBOARDED, "1"); setStarterOpen(false); }} className="text-sm text-zinc-400 underline">{uiLang === "lt" ? "Praleisti" : "Skip for now"}</button>
+            <button
+              onClick={() => {
+                localStorage.setItem(LSK_ONBOARDED, "1");
+                setStarterOpen(false);
+              }}
+              className="text-sm text-zinc-400 underline"
+            >
+              {uiLang === "lt" ? "Praleisti" : "Skip for now"}
+            </button>
           </div>
         </div>
       )}
