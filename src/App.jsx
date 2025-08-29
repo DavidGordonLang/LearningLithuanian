@@ -4,11 +4,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * Lithuanian/English Trainer — streamlined main UI + Library tools
  *
  * New in this build:
+ * - Import JSON (Library) — merges with existing data, validates/normalizes
  * - Sort chip: RAG | Newest | Oldest (persists to LS)
  * - createdAt/updatedAt on rows (backfilled), newest/oldest sorting
  * - EN↔LT learning direction moved to Settings
  * - Soft delete (trash) instead of hard delete
- * - Library screen: Import/Export/Starters/Trash/Review Duplicates
+ * - Library screen: Import .xlsx, Import JSON, Export JSON, Starters, Review Duplicates, Trash
  * - Duplicate Review: Exact + Fuzzy, adjustable threshold, safe soft-delete
  * - Keeps: i18n UI, global search (across tabs), RAG-coloured play, Azure+Browser TTS,
  *          quiz w/ promotions/demotions, XP/levels, Add panel auto-close + keyboard blur
@@ -92,6 +93,7 @@ const STR = {
     library: {
       title: "Library",
       import: "Import .xlsx",
+      importJson: "Import JSON",
       export: "Export JSON",
       starters: "Load starter pack",
       dupes: "Review duplicates",
@@ -179,6 +181,7 @@ const STR = {
     library: {
       title: "Biblioteka",
       import: "Importuoti .xlsx",
+      importJson: "Importuoti JSON",
       export: "Eksportuoti JSON",
       starters: "Įkelti pradinį rinkinį",
       dupes: "Peržiūrėti dublikatus",
@@ -312,7 +315,6 @@ function rowKey(r) {
   return `${(r.Sheet || "").trim()}||${normText(r.English)}||${normText(r.Lithuanian)}`;
 }
 function dupeKey(r) {
-  // sheet-agnostic key for duplicate detection
   return `${normText(r.English)}||${normText(r.Lithuanian)}`;
 }
 function mergeRows(existing, incoming) {
@@ -377,7 +379,6 @@ function jaroWinkler(a = "", b = "") {
   }
   const m = matches;
   const jaro = (m / aLen + m / bLen + (m - transpositions / 2) / m) / 3;
-  // Winkler prefix scale
   let prefix = 0;
   for (; prefix < 4 && a[prefix] === b[prefix]; prefix++);
   return jaro + Math.min(0.1, 1 / Math.max(aLen, bLen)) * prefix * (1 - jaro);
@@ -435,7 +436,7 @@ async function importXlsx(file) {
         Notes: r.Notes ?? r.notes ?? "",
         "RAG Icon": normalizeRag(r["RAG Icon"] ?? r.RAG ?? r.rag ?? ""),
         Sheet: tabs.has(name) ? name : r.Sheet || "Phrases",
-        Source: file.name || "Import",
+        Source: file.name || "Import (.xlsx)",
         createdAt: now,
         updatedAt: now,
         deleted: false,
@@ -445,14 +446,51 @@ async function importXlsx(file) {
   }
   return merged;
 }
+
+// ---------------- JSON import/export ----------------
 function exportJson(rows) {
-  const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+  // Export only non-deleted live rows for cleaner migration
+  const live = rows.filter((r) => !r.deleted);
+  const blob = new Blob([JSON.stringify(live, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = "lt-phrasebook.json";
   a.click();
   URL.revokeObjectURL(url);
+}
+async function importJsonFile(file) {
+  const text = await file.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error("Invalid JSON file.");
+  }
+  // Allow either an array of rows or an object with {rows:[...]}
+  const arr = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : null;
+  if (!arr) throw new Error("JSON must be an array of rows or an object with a 'rows' array.");
+
+  const tabs = new Set(SHEET_KEYS);
+  const now = new Date().toISOString();
+  const cleaned = arr
+    .filter((r) => r && (r.English || r.Lithuanian))
+    .map((r) => ({
+      English: String(r.English ?? "").trim(),
+      Lithuanian: String(r.Lithuanian ?? "").trim(),
+      Phonetic: String(r.Phonetic ?? "").trim(),
+      Category: String(r.Category ?? "").trim(),
+      Usage: String(r.Usage ?? "").trim(),
+      Notes: String(r.Notes ?? "").trim(),
+      "RAG Icon": normalizeRag(r["RAG Icon"] ?? r.RAG ?? r.rag ?? ""),
+      Sheet: tabs.has(r.Sheet) ? r.Sheet : "Phrases",
+      Source: r.Source || file.name || "Import (JSON)",
+      deleted: !!r.deleted && r.deleted === true ? true : false,
+      createdAt: r.createdAt || now,
+      updatedAt: now,
+      __stats: r.__stats ? { ...r.__stats } : undefined,
+    }));
+  return cleaned;
 }
 
 // ---------------- Voice ----------------
@@ -522,7 +560,8 @@ function blurIfInputFocused() {
 
 // ---------------- App ----------------
 export default function App() {
-  const fileRef = useRef(null);
+  const fileRefXlsx = useRef(null);
+  const fileRefJson = useRef(null);
   const addDetailsRef = useRef(null);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -533,7 +572,6 @@ export default function App() {
   const [rows, setRows] = useState(() => {
     const initial = loadData();
     const now = new Date().toISOString();
-    // backfill timestamps & deleted flag
     const patched = initial.map((r) => ({
       ...r,
       "RAG Icon": normalizeRag(r["RAG Icon"]),
@@ -771,7 +809,6 @@ export default function App() {
     };
     setRows((prev) => [row, ...prev]);
     setDraft({ ...draft, English: "", Lithuanian: "", Phonetic: "", Category: "", Usage: "", Notes: "" });
-    // close add panel + blur keyboard
     blurIfInputFocused();
     setAddOpen(false);
     if (addDetailsRef.current) addDetailsRef.current.open = false;
@@ -787,7 +824,7 @@ export default function App() {
     if (!confirm(uiLang === "lt" ? "Pašalinti šį įrašą? (bus perkelta į šiukšlinę)" : "Delete this entry? (moves to Trash)")) return;
     setRows((prev) => prev.map((r, i) => (i === globalIdx ? { ...r, deleted: true, deletedAt: new Date().toISOString() } : r)));
   }
-  async function onImportFile(e) {
+  async function onImportXlsx(e) {
     const f = e.target.files?.[0];
     if (!f) return;
     try {
@@ -798,6 +835,20 @@ export default function App() {
       alert((uiLang === "lt" ? "Importuota: " : "Imported ") + newRows.length + (uiLang === "lt" ? " įrašų (sujungta; dublikatai praleisti)." : " rows (merged; duplicates skipped)."));
     } catch (err) {
       console.error(err); alert(uiLang === "lt" ? "Nepavyko importuoti .xlsx (žiūrėkite konsolę)" : "Failed to import .xlsx (see console)");
+    } finally { e.target.value = ""; }
+  }
+  async function onImportJson(e) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      const newRows = await importJsonFile(f);
+      if (!newRows.length) { alert(uiLang === "lt" ? "JSON faile nerasta įrašų." : "No rows found in JSON."); return; }
+      setRows((prev) => mergeRows(prev, newRows));
+      setTab("Phrases"); setQ("");
+      alert((uiLang === "lt" ? "Importuota: " : "Imported ") + newRows.length + (uiLang === "lt" ? " įrašų (sujungta; dublikatai praleisti)." : " rows (merged; duplicates skipped)."));
+    } catch (err) {
+      console.error(err);
+      alert((uiLang === "lt" ? "Nepavyko importuoti JSON: " : "Failed to import JSON: ") + (err?.message || String(err)));
     } finally { e.target.value = ""; }
   }
   function hardPurgeByIndex(idx) {
@@ -1049,7 +1100,6 @@ export default function App() {
 
     const liveRows = cleanRows; // non-deleted
 
-    // exact groups
     const exactGroups = useMemo(() => {
       const map = new Map();
       liveRows.forEach((r, i) => {
@@ -1059,12 +1109,11 @@ export default function App() {
         map.get(key).push({ r, i });
       });
       const groups = Array.from(map.values()).filter(g => g.length > 1);
-      // default keeper heuristic
       return groups.map(group => {
         const suggested = [...group].sort((a, b) => {
           const aMine = (a.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
           const bMine = (b.r.Source || "").toLowerCase().includes("starter") ? 1 : 0;
-          if (aMine !== bMine) return aMine - bMine; // prefer non-starter (0)
+          if (aMine !== bMine) return aMine - bMine;
           const aFilled = filledScore(a.r), bFilled = filledScore(b.r);
           if (aFilled !== bFilled) return bFilled - aFilled;
           const at = new Date(a.r.updatedAt || 0).getTime();
@@ -1084,10 +1133,9 @@ export default function App() {
       return s;
     }
 
-    // fuzzy pairs (reduce candidates via trigrams/length)
     const fuzzyPairs = useMemo(() => {
       const N = liveRows.length;
-      if (N > 6000) return []; // safety
+      if (N > 6000) return [];
       const triIndexEN = new Map();
       const triIndexLT = new Map();
       const trisetEN = [], trisetLT = [];
@@ -1110,7 +1158,6 @@ export default function App() {
       const seen = new Set();
       const pairs = [];
       for (let i = 0; i < N; i++) {
-        // candidate set by sharing >=2 trigrams in EN or LT
         const cand = new Set();
         let hits = new Map();
         for (const tri of trisetEN[i]) {
@@ -1126,12 +1173,11 @@ export default function App() {
         for (const [j, h] of hits) if (h >= 2) cand.add(j);
 
         for (const j of cand) {
-          if (j <= i) continue; // avoid dup
+          if (j <= i) continue;
           const key = i + "|" + j;
           if (seen.has(key)) continue;
           seen.add(key);
 
-          // quick length filter
           const e1 = normEN[i], e2 = normEN[j], l1 = normLT[i], l2 = normLT[j];
           if (Math.abs(e1.length - e2.length) > 5 && Math.abs(l1.length - l2.length) > 5) continue;
 
@@ -1140,7 +1186,6 @@ export default function App() {
           pairs.push({ i, j, sEN, sLT });
         }
       }
-      // rank by max(sEN, sLT)
       pairs.sort((a, b) => Math.max(b.sEN, b.sLT) - Math.max(a.sEN, a.sLT));
       return pairs;
     }, [liveRows]);
@@ -1149,13 +1194,12 @@ export default function App() {
       return fuzzyPairs.filter(p => (p.sEN >= threshold && p.sLT >= threshold) || Math.max(p.sEN, p.sLT) >= Math.min(0.97, threshold + 0.03));
     }, [fuzzyPairs, threshold]);
 
-    // selection state
     const [keepForExact, setKeepForExact] = useState(() => {
       const obj = {};
       exactGroups.forEach((g, idx) => { obj[idx] = g.keepIndex; });
       return obj;
     });
-    const [keepForFuzzy, setKeepForFuzzy] = useState({}); // key: "i|j" -> keepIndex
+    const [keepForFuzzy, setKeepForFuzzy] = useState({});
 
     function applyExact() {
       const toSoftDelete = new Set();
@@ -1181,7 +1225,6 @@ export default function App() {
       alert(uiLang === "lt" ? "Pritaikyta: panašūs įrašai perkelti į šiukšlinę." : "Applied: close matches moved to Trash.");
     }
     function preferMine() {
-      // Adjust exact keepers: prefer non-starter, then more fields, then newer
       const obj = {};
       exactGroups.forEach((g, gi) => {
         const best = [...g.group].sort((a, b) => {
@@ -1331,8 +1374,12 @@ export default function App() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
             <div className="text-sm font-medium mb-2">{uiLang === "lt" ? "Duomenys" : "Data"}</div>
             <div className="flex flex-wrap gap-2">
-              <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={onImportFile} className="hidden" />
-              <button onClick={() => fileRef.current?.click()} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{t("library.import")}</button>
+              <input ref={fileRefXlsx} type="file" accept=".xlsx,.xls" onChange={onImportXlsx} className="hidden" />
+              <button onClick={() => fileRefXlsx.current?.click()} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{t("library.import")}</button>
+
+              <input ref={fileRefJson} type="file" accept=".json,application/json" onChange={onImportJson} className="hidden" />
+              <button onClick={() => fileRefJson.current?.click()} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{t("library.importJson")}</button>
+
               <button onClick={() => exportJson(rows)} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{t("library.export")}</button>
               <button onClick={() => setScreen("dupes")} className="bg-zinc-800 px-2 py-1 rounded-md text-xs">{t("library.dupes")}</button>
             </div>
@@ -1415,7 +1462,7 @@ export default function App() {
             </select>
           </div>
 
-          {/* Actions (kept minimal on main header) */}
+          {/* Actions */}
           <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap w-full sm:w-auto pt-2 sm:pt-0">
             <button onClick={() => setScreen("library")} className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">{t("actions.library")}</button>
             <button onClick={() => setSettingsOpen(true)} className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1">{t("actions.settings")}</button>
@@ -1470,7 +1517,7 @@ export default function App() {
               )}
             </div>
 
-            {/* RAG priority stays (applies to RAG mode only) */}
+            {/* RAG priority (RAG mode only) */}
             {sortMode === "rag" && (
               <>
                 <div className="text-xs text-zinc-300">RAG</div>
@@ -1766,7 +1813,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Starter chooser (unchanged behavior) */}
+      {/* Starter chooser */}
       {starterOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-[92%] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-center">
