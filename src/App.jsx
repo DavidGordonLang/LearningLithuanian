@@ -2,21 +2,20 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Lithuanian Trainer — App.jsx
+ * (duplicate finder layout fixed for mobile; pairs stack vertically)
  *
- * Highlights:
- * - Home / Library / Settings header pills (+ Start Quiz)
- * - JSON & XLSX import (append + merge), export, Clear Library
- * - Starter Packs (EN→LT, LT→EN, Numbers) importable any time
- * - Duplicate Finder (Library): Exact + Close matches (Levenshtein)
- *   • Select items to archive (soft delete), restore archive, empty archive
- * - Tabs: Phrases / Questions / Words / Numbers (full-width)
- * - Search with single clear ×
- * - Sort: RAG / Newest / Oldest; when RAG, show priority chips All/🔴/🟠/🟢
- * - RAG-colored play buttons
- * - TTS: Azure (primary) + Browser (fallback). Long-press = slow. Single audio channel.
- * - Quiz (50% 🔴 / 40% 🟠 / 10% 🟢), promotions/demotions
- * - XP & Level (50 XP per correct, 2500 per level), Daily streak
- * - LocalStorage migrations so previous data/keys aren’t lost
+ * Features kept:
+ * - Home/Library/Settings pills (+ Start Quiz)
+ * - JSON & XLSX import (append/merge), export, Clear Library
+ * - Starter packs (EN→LT, LT→EN, Numbers)
+ * - Duplicate Finder: Exact + Close (Levenshtein), archive/restore
+ * - Tabs (Phrases/Questions/Words/Numbers), search with single ×
+ * - Sort: RAG/Newest/Oldest + RAG priority chips
+ * - RAG-colored play buttons; long-press = slow; single audio channel
+ * - Azure TTS (primary) + Browser fallback
+ * - Quiz (50% 🔴 / 40% 🟠 / 10% 🟢) with RAG promotions/demotions
+ * - XP/Level (50 per correct, 2500/level), daily streak
+ * - LocalStorage migrations
  */
 
 const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
@@ -25,7 +24,7 @@ const LSK_SETTINGS = "lt_settings_v1";
 const LSK_STREAK = "lt_quiz_streak_v1";
 const LSK_XP = "lt_xp_v1";
 
-// Old keys to migrate
+// old keys (migrate)
 const OLD_LSK_ROWS = "lt_phrasebook_v2";
 const OLD_LSK_TTS_PROVIDER = "lt_tts_provider";
 const OLD_LSK_AZURE_KEY = "lt_azure_key";
@@ -33,14 +32,14 @@ const OLD_LSK_AZURE_REGION = "lt_azure_region";
 const OLD_LSK_AZURE_VOICE = "lt_azure_voice";
 
 const defaultSettings = {
-  ttsProvider: "azure", // 'azure' | 'browser'
+  ttsProvider: "azure",
   azureKey: "",
   azureRegion: "",
   azureVoiceShortName: "",
   browserVoiceName: "",
-  mode: "EN2LT", // EN2LT | LT2EN
-  sort: "RAG",   // RAG | NEW | OLD
-  ragPriority: "", // "" | "🔴" | "🟠" | "🟢"
+  mode: "EN2LT",
+  sort: "RAG",
+  ragPriority: "",
 };
 
 const STARTER_MAP = {
@@ -83,7 +82,7 @@ function weightedPick(pool, n) {
   return a.slice(0, n);
 }
 
-/* -------------------- Text utils for fuzzy matching -------------------- */
+// fuzzy helpers
 function stripDiacritics(s) {
   return s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 }
@@ -93,7 +92,6 @@ function normalizeText(s) {
     .replace(/\s+/g, " ")
     .trim();
 }
-// Levenshtein (iterative DP, memory O(min(m,n)))
 function levenshtein(a, b) {
   const m = a.length,
     n = b.length;
@@ -122,7 +120,7 @@ function similarity(a, b) {
   return 1 - d / Math.max(A.length, B.length);
 }
 
-/* -------------------- XLSX UMD (optional) -------------------- */
+// XLSX loader
 async function loadXLSX() {
   if (window.XLSX) return window.XLSX;
   const urls = [
@@ -150,7 +148,7 @@ async function loadXLSX() {
   throw lastErr || new Error("Failed to load XLSX");
 }
 
-/* -------------------- Voices -------------------- */
+// voices
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -186,7 +184,7 @@ function speakBrowser(text, voice, rate = 1) {
   window.speechSynthesis.speak(u);
 }
 
-/* -------------------- Azure TTS -------------------- */
+// Azure TTS
 function escapeXml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -216,20 +214,17 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
-/* -------------------- Main -------------------- */
 export default function App() {
   const fileRefJson = useRef(null);
   const fileRefXlsx = useRef(null);
   const addDetailsRef = useRef(null);
-  const audioRef = useRef(null); // single audio channel
+  const audioRef = useRef(null);
 
-  // UI
   const [page, setPage] = useState("home");
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
 
-  // Data (with migration)
   const [rows, setRows] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_ROWS);
@@ -244,7 +239,6 @@ export default function App() {
     return [];
   });
 
-  // Settings (with migration)
   const [settings, setSettings] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_SETTINGS);
@@ -267,7 +261,6 @@ export default function App() {
     }
   });
 
-  // Streak & XP
   const [streak, setStreak] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(LSK_STREAK)) || { streak: 0, lastDate: "" };
@@ -283,10 +276,7 @@ export default function App() {
     }
   });
 
-  // Azure voices list
   const [azureVoices, setAzureVoices] = useState([]);
-
-  // Browser voices
   const voices = useVoices();
   const browserVoice = useMemo(
     () =>
@@ -296,16 +286,14 @@ export default function App() {
     [voices, settings.browserVoiceName]
   );
 
-  // persist
   useEffect(() => localStorage.setItem(LSK_ROWS, JSON.stringify(rows)), [rows]);
   useEffect(() => localStorage.setItem(LSK_SETTINGS, JSON.stringify(settings)), [settings]);
   useEffect(() => localStorage.setItem(LSK_STREAK, JSON.stringify(streak)), [streak]);
   useEffect(() => localStorage.setItem(LSK_XP, JSON.stringify(xp)), [xp]);
 
   const sortLabel = settings.sort === "RAG" ? "RAG" : settings.sort === "NEW" ? "Newest" : "Oldest";
-  const clearSearch = () => setQ("");
 
-  /* -------------------- Audio -------------------- */
+  // audio
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
@@ -349,7 +337,6 @@ export default function App() {
     }
   }
 
-  // pointer-only long-press (prevents selection & context menu)
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -378,7 +365,7 @@ export default function App() {
     };
   }
 
-  /* -------------------- CRUD -------------------- */
+  // CRUD
   const [draft, setDraft] = useState({
     English: "",
     Lithuanian: "",
@@ -420,7 +407,6 @@ export default function App() {
     if (addDetailsRef.current) addDetailsRef.current.open = false;
     document.activeElement?.blur?.();
   }
-
   function startEdit(i) {
     setEditIdx(i);
     setEditDraft({ ...rows[i] });
@@ -440,7 +426,7 @@ export default function App() {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  /* -------------------- Import / Export / Clear / Starters -------------------- */
+  // import/export/clear/starters
   function exportJson(current = rows) {
     const blob = new Blob([JSON.stringify(current, null, 2)], {
       type: "application/json",
@@ -452,7 +438,6 @@ export default function App() {
     a.click();
     URL.revokeObjectURL(url);
   }
-
   function mergeRows(incoming) {
     setRows((prev) => {
       const map = new Map();
@@ -464,7 +449,6 @@ export default function App() {
       return Array.from(map.values());
     });
   }
-
   async function importJsonFile(file) {
     try {
       const text = await file.text();
@@ -486,7 +470,6 @@ export default function App() {
           updatedAt: Date.now(),
         }))
         .filter((r) => r.English || r.Lithuanian);
-
       mergeRows(prepared);
       alert(`Imported ${prepared.length} item(s).`);
     } catch (e) {
@@ -494,7 +477,6 @@ export default function App() {
       alert("Import failed: " + e.message);
     }
   }
-
   async function importXlsxFile(file) {
     try {
       const XLSX = await loadXLSX();
@@ -530,7 +512,6 @@ export default function App() {
       alert("XLSX import failed: " + e.message);
     }
   }
-
   async function importStarter(which) {
     try {
       const url = STARTER_MAP[which];
@@ -554,14 +535,12 @@ export default function App() {
           updatedAt: Date.now(),
         }))
         .filter((r) => r.English || r.Lithuanian);
-
       mergeRows(prepared);
       alert(`Installed ${prepared.length} item(s) from starter pack.`);
     } catch (e) {
       alert(e.message);
     }
   }
-
   function clearAll() {
     if (!confirm("Clear the entire library? This cannot be undone.")) return;
     setRows([]);
@@ -569,7 +548,7 @@ export default function App() {
     setTab("Phrases");
   }
 
-  /* -------------------- Filter + Sort (exclude archived) -------------------- */
+  // filter/sort
   const filteredByTab = useMemo(() => {
     const arr = rows.filter((r) => !r.__archived && r.Sheet === tab);
     let out = arr;
@@ -581,7 +560,6 @@ export default function App() {
           .includes(qq)
       );
     }
-
     if (settings.sort === "NEW") {
       out = [...out].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     } else if (settings.sort === "OLD") {
@@ -598,7 +576,7 @@ export default function App() {
     return out;
   }, [rows, tab, q, settings.sort, settings.ragPriority]);
 
-  /* -------------------- Quiz -------------------- */
+  // quiz
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
@@ -635,13 +613,11 @@ export default function App() {
     setQuizOn(true);
     setPage("home");
   }
-
   function buildQuizOptions(item, pool = rows.filter((r) => !r.__archived)) {
     const correct = item.Lithuanian;
     const others = shuffle(pool.filter((r) => r !== item && r.Lithuanian)).slice(0, 3);
     setQuizOptions(shuffle([correct, ...others.map((o) => o.Lithuanian)]));
   }
-
   function finishQuizAndStreak() {
     const today = todayKey();
     setStreak((s) => {
@@ -656,7 +632,6 @@ export default function App() {
       return { streak: newStreak, lastDate: today };
     });
   }
-
   function updateRagAfterAnswer(item, correct) {
     setRows((prev) =>
       prev.map((r) => {
@@ -696,7 +671,6 @@ export default function App() {
       })
     );
   }
-
   async function answerQuiz(opt) {
     if (quizAnswered) return;
     const item = quizQs[quizIdx];
@@ -722,7 +696,7 @@ export default function App() {
     buildQuizOptions(quizQs[next]);
   }
 
-  /* -------------------- Duplicate Finder (Library) -------------------- */
+  // Duplicate finder
   const [dupeScan, setDupeScan] = useState(null);
   const [selectedArchive, setSelectedArchive] = useState(new Set());
   const [showArchived, setShowArchived] = useState(false);
@@ -730,7 +704,7 @@ export default function App() {
   function scanDuplicates() {
     const active = rows.map((r, idx) => ({ r, idx })).filter((x) => !x.r.__archived);
 
-    // Exact groups by rowKey
+    // exact
     const map = new Map();
     active.forEach(({ r, idx }) => {
       const k = rowKey(r);
@@ -740,7 +714,7 @@ export default function App() {
     });
     const exactGroups = Array.from(map.values()).filter((g) => g.length > 1);
 
-    // Close matches (same Sheet; high similarity in EN or LT)
+    // close
     const CLOSE_THRESHOLD = 0.88;
     const closePairs = [];
     const bySheet = new Map();
@@ -761,11 +735,9 @@ export default function App() {
         }
       }
     }
-
     setDupeScan({ exactGroups, closePairs });
     setSelectedArchive(new Set());
   }
-
   function toggleArchiveSelection(idx) {
     setSelectedArchive((set) => {
       const n = new Set(set);
@@ -774,19 +746,16 @@ export default function App() {
       return n;
     });
   }
-
   function selectOlderInGroups() {
     if (!dupeScan) return;
     const next = new Set(selectedArchive);
     dupeScan.exactGroups.forEach((group) => {
-      // keep newest by createdAt; select others
       const objs = group.map((i) => ({ i, t: rows[i].createdAt || 0 }));
       objs.sort((a, b) => b.t - a.t);
       for (let k = 1; k < objs.length; k++) next.add(objs[k].i);
     });
     setSelectedArchive(next);
   }
-
   function archiveSelected() {
     if (!selectedArchive.size) {
       alert("No items selected.");
@@ -798,17 +767,14 @@ export default function App() {
     setSelectedArchive(new Set());
     alert("Selected items archived.");
   }
-
   function restoreArchived(i) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, __archived: false, updatedAt: Date.now() } : r)));
   }
-
   function emptyArchive() {
     if (!confirm("Permanently delete all archived items?")) return;
     setRows((prev) => prev.filter((r) => !r.__archived));
   }
 
-  /* -------------------- Render helpers -------------------- */
   const ragBtnClass = (rag) =>
     rag === "🔴"
       ? "bg-red-600 hover:bg-red-500"
@@ -816,7 +782,6 @@ export default function App() {
       ? "bg-amber-500 hover:bg-amber-400"
       : "bg-emerald-600 hover:bg-emerald-500";
 
-  /* -------------------- UI -------------------- */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
@@ -831,7 +796,7 @@ export default function App() {
               <div className="text-xs text-zinc-400">Tap to play. Long-press to savour.</div>
             </div>
 
-            {/* Browser voice selector (enabled when browser provider) */}
+            {/* Browser voice selector (enabled on browser provider) */}
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
               value={settings.browserVoiceName}
@@ -929,7 +894,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Centered Streak/Level + RAG priority row */}
+          {/* Centered streak/level + RAG chips */}
           <div className="mt-2 flex flex-col items-stretch gap-2">
             <div className="w-full">
               <div className="flex justify-center items-center gap-4 mb-1 text-xs text-zinc-400">
@@ -979,7 +944,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tabs — full width */}
+        {/* Tabs */}
         {page === "home" && (
           <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2">
             <div className="grid grid-cols-4 gap-2">
@@ -1244,7 +1209,7 @@ export default function App() {
 
               {dupeScan && (
                 <div className="mt-3 space-y-4">
-                  {/* Exact groups */}
+                  {/* Exact groups (unchanged) */}
                   <div className="bg-zinc-950 border border-zinc-800 rounded-md p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-medium">
@@ -1264,14 +1229,15 @@ export default function App() {
                           {group.map((i) => {
                             const r = rows[i];
                             return (
-                              <label key={i} className="flex items-center gap-2 text-sm">
+                              <label key={i} className="flex items-start gap-2 text-sm break-words">
                                 <input
                                   type="checkbox"
                                   checked={selectedArchive.has(i)}
                                   onChange={() => toggleArchiveSelection(i)}
                                 />
-                                <span className="truncate">
-                                  <b>{r.English}</b> — {r.Lithuanian} <span className="text-zinc-500">[{r.Sheet}]</span>
+                                <span className="whitespace-normal">
+                                  <b>{r.English}</b> — {r.Lithuanian}{" "}
+                                  <span className="text-zinc-500">[{r.Sheet}]</span>
                                 </span>
                               </label>
                             );
@@ -1281,34 +1247,37 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Close matches */}
+                  {/* Close matches — MOBILE-FRIENDLY: stack vertically, wrap text.
+                      On sm+ screens, show as 2-column grid. */}
                   <div className="bg-zinc-950 border border-zinc-800 rounded-md p-3">
                     <div className="font-medium mb-2">Close matches: {dupeScan.closePairs.length} pair(s)</div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {dupeScan.closePairs.map((p, idx) => {
                         const a = rows[p.a], b = rows[p.b];
                         return (
                           <div key={idx} className="border border-zinc-800 rounded-md p-2">
-                            <div className="text-xs text-zinc-400 mb-1">Similarity: {(p.sim * 100).toFixed(0)}%</div>
-                            <div className="flex items-center gap-3">
-                              <label className="flex items-center gap-2 text-sm flex-1">
+                            <div className="text-xs text-zinc-400 mb-2">Similarity: {(p.sim * 100).toFixed(0)}%</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <label className="flex items-start gap-2 text-sm break-words">
                                 <input
                                   type="checkbox"
                                   checked={selectedArchive.has(p.a)}
                                   onChange={() => toggleArchiveSelection(p.a)}
                                 />
-                                <span className="truncate">
-                                  <b>{a.English}</b> — {a.Lithuanian} <span className="text-zinc-500">[{a.Sheet}]</span>
+                                <span className="whitespace-normal">
+                                  <b>{a.English}</b> — {a.Lithuanian}{" "}
+                                  <span className="text-zinc-500">[{a.Sheet}]</span>
                                 </span>
                               </label>
-                              <label className="flex items-center gap-2 text-sm flex-1">
+                              <label className="flex items-start gap-2 text-sm break-words">
                                 <input
                                   type="checkbox"
                                   checked={selectedArchive.has(p.b)}
                                   onChange={() => toggleArchiveSelection(p.b)}
                                 />
-                                <span className="truncate">
-                                  <b>{b.English}</b> — {b.Lithuanian} <span className="text-zinc-500">[{b.Sheet}]</span>
+                                <span className="whitespace-normal">
+                                  <b>{b.English}</b> — {b.Lithuanian}{" "}
+                                  <span className="text-zinc-500">[{b.Sheet}]</span>
                                 </span>
                               </label>
                             </div>
