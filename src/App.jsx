@@ -2,29 +2,19 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Lithuanian Trainer — App.jsx
- * (duplicate finder layout fixed for mobile; pairs stack vertically)
- *
- * Features kept:
- * - Home/Library/Settings pills (+ Start Quiz)
- * - JSON & XLSX import (append/merge), export, Clear Library
- * - Starter packs (EN→LT, LT→EN, Numbers)
- * - Duplicate Finder: Exact + Close (Levenshtein), archive/restore
- * - Tabs (Phrases/Questions/Words/Numbers), search with single ×
- * - Sort: RAG/Newest/Oldest + RAG priority chips
- * - RAG-colored play buttons; long-press = slow; single audio channel
- * - Azure TTS (primary) + Browser fallback
- * - Quiz (50% 🔴 / 40% 🟠 / 10% 🟢) with RAG promotions/demotions
- * - XP/Level (50 per correct, 2500/level), daily streak
- * - LocalStorage migrations
+ * - Duplicate Finder now shows Usage & Notes on each item (exact + close)
+ * - Mobile-friendly layout preserved (no horizontal scroll)
  */
 
 const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
+
+// Storage keys (new)
 const LSK_ROWS = "lt_phrasebook_v3";
 const LSK_SETTINGS = "lt_settings_v1";
 const LSK_STREAK = "lt_quiz_streak_v1";
 const LSK_XP = "lt_xp_v1";
 
-// old keys (migrate)
+// Old keys (for migration)
 const OLD_LSK_ROWS = "lt_phrasebook_v2";
 const OLD_LSK_TTS_PROVIDER = "lt_tts_provider";
 const OLD_LSK_AZURE_KEY = "lt_azure_key";
@@ -32,14 +22,14 @@ const OLD_LSK_AZURE_REGION = "lt_azure_region";
 const OLD_LSK_AZURE_VOICE = "lt_azure_voice";
 
 const defaultSettings = {
-  ttsProvider: "azure",
+  ttsProvider: "azure", // "azure" | "browser"
   azureKey: "",
   azureRegion: "",
   azureVoiceShortName: "",
   browserVoiceName: "",
-  mode: "EN2LT",
-  sort: "RAG",
-  ragPriority: "",
+  mode: "EN2LT", // EN2LT | LT2EN
+  sort: "RAG", // RAG | NEW | OLD
+  ragPriority: "", // "", "🔴", "🟠", "🟢"
 };
 
 const STARTER_MAP = {
@@ -48,26 +38,31 @@ const STARTER_MAP = {
   NUMBERS: "/data/Starter_Numbers_v1.json",
 };
 
+// ---------- utils ----------
 function normalizeRag(icon = "") {
   const s = String(icon).trim();
   const low = s.toLowerCase();
   if (["🔴", "🟥", "red"].includes(s) || low === "red") return "🔴";
-  if (["🟠", "🟧", "🟨", "🟡"].includes(s) || ["amber", "orange", "yellow"].includes(low))
+  if (
+    ["🟠", "🟧", "🟨", "🟡"].includes(s) ||
+    ["amber", "orange", "yellow"].includes(low)
+  )
     return "🟠";
   if (["🟢", "🟩", "green"].includes(s) || low === "green") return "🟢";
   return "🟠";
 }
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 const todayKey = () => new Date().toISOString().slice(0, 10);
+const rowKey = (r) =>
+  `${(r.English || "").trim().toLowerCase()}|${(r.Lithuanian || "")
+    .trim()
+    .toLowerCase()}|${(r.Sheet || "").trim().toLowerCase()}`;
+
 const levelForXp = (xp) => Math.max(1, Math.floor(xp / 2500) + 1);
 const levelProgress = (xp) => {
   const base = (levelForXp(xp) - 1) * 2500;
   return Math.max(0, Math.min(1, (xp - base) / 2500));
 };
-const rowKey = (r) =>
-  `${(r.English || "").trim().toLowerCase()}|${(r.Lithuanian || "")
-    .trim()
-    .toLowerCase()}|${(r.Sheet || "").trim().toLowerCase()}`;
 
 function shuffle(arr) {
   const a = [...arr];
@@ -82,7 +77,7 @@ function weightedPick(pool, n) {
   return a.slice(0, n);
 }
 
-// fuzzy helpers
+// Fuzzy helpers (for duplicate scan)
 function stripDiacritics(s) {
   return s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 }
@@ -120,7 +115,7 @@ function similarity(a, b) {
   return 1 - d / Math.max(A.length, B.length);
 }
 
-// XLSX loader
+// XLSX UMD loader
 async function loadXLSX() {
   if (window.XLSX) return window.XLSX;
   const urls = [
@@ -148,7 +143,7 @@ async function loadXLSX() {
   throw lastErr || new Error("Failed to load XLSX");
 }
 
-// voices
+// Browser voices
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -196,10 +191,10 @@ function escapeXml(s) {
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const ssml = `<speak version="1.0" xml:lang="lt-LT">
-  <voice name="${shortName}">
-    <prosody rate="${rateDelta}">${escapeXml(text)}</prosody>
-  </voice>
-</speak>`;
+    <voice name="${shortName}">
+      <prosody rate="${rateDelta}">${escapeXml(text)}</prosody>
+    </voice>
+  </speak>`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -225,6 +220,7 @@ export default function App() {
   const [q, setQ] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
 
+  // rows
   const [rows, setRows] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_ROWS);
@@ -239,6 +235,7 @@ export default function App() {
     return [];
   });
 
+  // settings (with migration)
   const [settings, setSettings] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_SETTINGS);
@@ -261,9 +258,13 @@ export default function App() {
     }
   });
 
+  // streak / xp
   const [streak, setStreak] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(LSK_STREAK)) || { streak: 0, lastDate: "" };
+      return JSON.parse(localStorage.getItem(LSK_STREAK)) || {
+        streak: 0,
+        lastDate: "",
+      };
     } catch {
       return { streak: 0, lastDate: "" };
     }
@@ -276,6 +277,7 @@ export default function App() {
     }
   });
 
+  // voices
   const [azureVoices, setAzureVoices] = useState([]);
   const voices = useVoices();
   const browserVoice = useMemo(
@@ -286,14 +288,19 @@ export default function App() {
     [voices, settings.browserVoiceName]
   );
 
+  // persist
   useEffect(() => localStorage.setItem(LSK_ROWS, JSON.stringify(rows)), [rows]);
-  useEffect(() => localStorage.setItem(LSK_SETTINGS, JSON.stringify(settings)), [settings]);
+  useEffect(
+    () => localStorage.setItem(LSK_SETTINGS, JSON.stringify(settings)),
+    [settings]
+  );
   useEffect(() => localStorage.setItem(LSK_STREAK, JSON.stringify(streak)), [streak]);
   useEffect(() => localStorage.setItem(LSK_XP, JSON.stringify(xp)), [xp]);
 
-  const sortLabel = settings.sort === "RAG" ? "RAG" : settings.sort === "NEW" ? "Newest" : "Oldest";
+  const sortLabel =
+    settings.sort === "RAG" ? "RAG" : settings.sort === "NEW" ? "Newest" : "Oldest";
 
-  // audio
+  // audio (single channel)
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
@@ -570,7 +577,8 @@ export default function App() {
       const weight = (icon) =>
         (priority && icon !== priority ? 10 : 0) + (order[icon] ?? 99);
       out = [...out].sort(
-        (a, b) => weight(normalizeRag(a["RAG Icon"])) - weight(normalizeRag(b["RAG Icon"]))
+        (a, b) =>
+          weight(normalizeRag(a["RAG Icon"])) - weight(normalizeRag(b["RAG Icon"]))
       );
     }
     return out;
@@ -615,7 +623,10 @@ export default function App() {
   }
   function buildQuizOptions(item, pool = rows.filter((r) => !r.__archived)) {
     const correct = item.Lithuanian;
-    const others = shuffle(pool.filter((r) => r !== item && r.Lithuanian)).slice(0, 3);
+    const others = shuffle(pool.filter((r) => r !== item && r.Lithuanian)).slice(
+      0,
+      3
+    );
     setQuizOptions(shuffle([correct, ...others.map((o) => o.Lithuanian)]));
   }
   function finishQuizAndStreak() {
@@ -702,7 +713,9 @@ export default function App() {
   const [showArchived, setShowArchived] = useState(false);
 
   function scanDuplicates() {
-    const active = rows.map((r, idx) => ({ r, idx })).filter((x) => !x.r.__archived);
+    const active = rows
+      .map((r, idx) => ({ r, idx }))
+      .filter((x) => !x.r.__archived);
 
     // exact
     const map = new Map();
@@ -731,7 +744,8 @@ export default function App() {
           const sEN = similarity(A.English, B.English);
           const sLT = similarity(A.Lithuanian, B.Lithuanian);
           const sim = Math.max(sEN, sLT);
-          if (sim >= CLOSE_THRESHOLD) closePairs.push({ a: arr[i].idx, b: arr[j].idx, sim });
+          if (sim >= CLOSE_THRESHOLD)
+            closePairs.push({ a: arr[i].idx, b: arr[j].idx, sim });
         }
       }
     }
@@ -762,13 +776,21 @@ export default function App() {
       return;
     }
     setRows((prev) =>
-      prev.map((r, i) => (selectedArchive.has(i) ? { ...r, __archived: true, updatedAt: Date.now() } : r))
+      prev.map((r, i) =>
+        selectedArchive.has(i)
+          ? { ...r, __archived: true, updatedAt: Date.now() }
+          : r
+      )
     );
     setSelectedArchive(new Set());
     alert("Selected items archived.");
   }
   function restoreArchived(i) {
-    setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, __archived: false, updatedAt: Date.now() } : r)));
+    setRows((prev) =>
+      prev.map((r, idx) =>
+        idx === i ? { ...r, __archived: false, updatedAt: Date.now() } : r
+      )
+    );
   }
   function emptyArchive() {
     if (!confirm("Permanently delete all archived items?")) return;
@@ -793,10 +815,12 @@ export default function App() {
             </div>
             <div className="leading-tight flex-1">
               <div className="text-lg font-semibold">Lithuanian Trainer</div>
-              <div className="text-xs text-zinc-400">Tap to play. Long-press to savour.</div>
+              <div className="text-xs text-zinc-400">
+                Tap to play. Long-press to savour.
+              </div>
             </div>
 
-            {/* Browser voice selector (enabled on browser provider) */}
+            {/* Browser voice selector (only when provider=browser) */}
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
               value={settings.browserVoiceName}
@@ -804,7 +828,11 @@ export default function App() {
                 setSettings((s) => ({ ...s, browserVoiceName: e.target.value }))
               }
               disabled={settings.ttsProvider !== "browser"}
-              title={settings.ttsProvider === "azure" ? "Using Azure" : "Browser voice"}
+              title={
+                settings.ttsProvider === "azure"
+                  ? "Using Azure"
+                  : "Browser voice"
+              }
             >
               <option value="">Auto voice</option>
               {useVoices().map((v) => (
@@ -815,7 +843,7 @@ export default function App() {
             </select>
           </div>
 
-          {/* Pills */}
+          {/* Nav pills */}
           <div className="mt-2 flex items-center gap-2 overflow-x-auto">
             {[
               { id: "home", label: "Home" },
@@ -827,7 +855,9 @@ export default function App() {
                 onClick={() => setPage(p.id)}
                 className={cn(
                   "px-3 py-1.5 rounded-lg border",
-                  page === p.id ? "bg-zinc-800 border-zinc-600" : "bg-zinc-900 border-zinc-700"
+                  page === p.id
+                    ? "bg-zinc-800 border-zinc-600"
+                    : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {p.label}
@@ -894,11 +924,13 @@ export default function App() {
             </div>
           </div>
 
-          {/* Centered streak/level + RAG chips */}
+          {/* Streak/level bar + RAG chips */}
           <div className="mt-2 flex flex-col items-stretch gap-2">
             <div className="w-full">
               <div className="flex justify-center items-center gap-4 mb-1 text-xs text-zinc-400">
-                <div>🔥 Streak: <span className="text-zinc-200">{streak.streak}</span></div>
+                <div>
+                  🔥 Streak: <span className="text-zinc-200">{streak.streak}</span>
+                </div>
                 <div className="flex items-center gap-1">
                   <span>🥇</span>
                   <span>Lv {levelForXp(xp)}</span>
@@ -923,7 +955,9 @@ export default function App() {
                 ].map((x) => (
                   <button
                     key={x.id || "all"}
-                    onClick={() => setSettings((s) => ({ ...s, ragPriority: x.id }))}
+                    onClick={() =>
+                      setSettings((s) => ({ ...s, ragPriority: x.id }))
+                    }
                     className={cn(
                       "px-2 py-1 rounded-md text-xs border w-full flex items-center justify-center gap-2",
                       settings.ragPriority === x.id
@@ -935,7 +969,12 @@ export default function App() {
                     {x.label ? (
                       x.label
                     ) : (
-                      <span className={cn("inline-block w-2.5 h-2.5 rounded-full", x.color)} />
+                      <span
+                        className={cn(
+                          "inline-block w-2.5 h-2.5 rounded-full",
+                          x.color
+                        )}
+                      />
                     )}
                   </button>
                 ))}
@@ -954,7 +993,9 @@ export default function App() {
                   onClick={() => setTab(s)}
                   className={cn(
                     "w-full px-3 py-1.5 rounded-full text-sm border",
-                    tab === s ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
+                    tab === s
+                      ? "bg-emerald-600 border-emerald-600"
+                      : "bg-zinc-900 border-zinc-800"
                   )}
                 >
                   {s}
@@ -965,22 +1006,30 @@ export default function App() {
         )}
       </div>
 
-      {/* Home */}
+      {/* Home list */}
       {page === "home" && (
         <div className="max-w-xl mx-auto px-3 sm:px-4 pb-28">
           {filteredByTab.map((r, i) => {
             const idx = rows.indexOf(r);
             const isEditing = editIdx === idx;
-            const speakText = settings.mode === "EN2LT" ? r.Lithuanian : r.English;
+            const speakText =
+              settings.mode === "EN2LT" ? r.Lithuanian : r.English;
 
             return (
-              <div key={`${rowKey(r)}-${i}`} className="mt-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+              <div
+                key={`${rowKey(r)}-${i}`}
+                className="mt-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-3"
+              >
                 {!isEditing ? (
                   <div className="flex items-start gap-3">
                     <button
                       className={cn(
                         "shrink-0 w-10 h-10 rounded-xl transition flex items-center justify-center font-semibold select-none",
-                        ragBtnClass(normalizeRag(r["RAG Icon"]))
+                        normalizeRag(r["RAG Icon"]) === "🔴"
+                          ? "bg-red-600 hover:bg-red-500"
+                          : normalizeRag(r["RAG Icon"]) === "🟠"
+                          ? "bg-amber-500 hover:bg-amber-400"
+                          : "bg-emerald-600 hover:bg-emerald-500"
                       )}
                       style={{ touchAction: "manipulation" }}
                       onContextMenu={(e) => e.preventDefault()}
@@ -1003,23 +1052,45 @@ export default function App() {
                         </summary>
                         <div className="text-xs text-zinc-400 mt-2 space-y-1">
                           {r.Phonetic && (
-                            <div><span className="text-zinc-500">Phonetic: </span>{r.Phonetic}</div>
+                            <div>
+                              <span className="text-zinc-500">Phonetic: </span>
+                              {r.Phonetic}
+                            </div>
                           )}
                           {r.Category && (
-                            <div><span className="text-zinc-500">Category: </span>{r.Category}</div>
+                            <div>
+                              <span className="text-zinc-500">Category: </span>
+                              {r.Category}
+                            </div>
                           )}
                           {r.Usage && (
-                            <div><span className="text-zinc-500">Usage: </span>{r.Usage}</div>
+                            <div>
+                              <span className="text-zinc-500">Usage: </span>
+                              {r.Usage}
+                            </div>
                           )}
                           {r.Notes && (
-                            <div><span className="text-zinc-500">Notes: </span>{r.Notes}</div>
+                            <div>
+                              <span className="text-zinc-500">Notes: </span>
+                              {r.Notes}
+                            </div>
                           )}
                         </div>
                       </details>
                     </div>
                     <div className="flex flex-col gap-1 ml-2">
-                      <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">Edit</button>
-                      <button onClick={() => remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">Delete</button>
+                      <button
+                        onClick={() => startEdit(idx)}
+                        className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => remove(idx)}
+                        className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1030,7 +1101,9 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.English}
-                          onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })}
+                          onChange={(e) =>
+                            setEditDraft({ ...editDraft, English: e.target.value })
+                          }
                         />
                       </label>
                       <label className="col-span-2">
@@ -1038,7 +1111,12 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Lithuanian}
-                          onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })}
+                          onChange={(e) =>
+                            setEditDraft({
+                              ...editDraft,
+                              Lithuanian: e.target.value,
+                            })
+                          }
                         />
                       </label>
                       <label>
@@ -1046,7 +1124,9 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Phonetic}
-                          onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })}
+                          onChange={(e) =>
+                            setEditDraft({ ...editDraft, Phonetic: e.target.value })
+                          }
                         />
                       </label>
                       <label>
@@ -1054,7 +1134,9 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Category}
-                          onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })}
+                          onChange={(e) =>
+                            setEditDraft({ ...editDraft, Category: e.target.value })
+                          }
                         />
                       </label>
                       <label className="col-span-2">
@@ -1062,7 +1144,9 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Usage}
-                          onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })}
+                          onChange={(e) =>
+                            setEditDraft({ ...editDraft, Usage: e.target.value })
+                          }
                         />
                       </label>
                       <label className="col-span-2">
@@ -1070,7 +1154,9 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Notes}
-                          onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })}
+                          onChange={(e) =>
+                            setEditDraft({ ...editDraft, Notes: e.target.value })
+                          }
                         />
                       </label>
                       <label>
@@ -1079,11 +1165,16 @@ export default function App() {
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft["RAG Icon"]}
                           onChange={(e) =>
-                            setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })
+                            setEditDraft({
+                              ...editDraft,
+                              "RAG Icon": normalizeRag(e.target.value),
+                            })
                           }
                         >
                           {["🔴", "🟠", "🟢"].map((x) => (
-                            <option key={x} value={x}>{x}</option>
+                            <option key={x} value={x}>
+                              {x}
+                            </option>
                           ))}
                         </select>
                       </label>
@@ -1092,17 +1183,34 @@ export default function App() {
                         <select
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Sheet}
-                          onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}
+                          onChange={(e) =>
+                            setEditDraft({ ...editDraft, Sheet: e.target.value })
+                          }
                         >
                           {SHEETS.map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
                           ))}
                         </select>
                       </label>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => saveEdit(idx)} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">Save</button>
-                      <button onClick={() => { setEditIdx(null); setEditDraft(null); }} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">Cancel</button>
+                      <button
+                        onClick={() => saveEdit(idx)}
+                        className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditIdx(null);
+                          setEditDraft(null);
+                        }}
+                        className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1114,21 +1222,91 @@ export default function App() {
           <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
             <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
               <details ref={addDetailsRef}>
-                <summary className="cursor-pointer text-sm text-zinc-300">+ Add entry</summary>
+                <summary className="cursor-pointer text-sm text-zinc-300">
+                  + Add entry
+                </summary>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="English" value={draft.English} onChange={(e) => setDraft({ ...draft, English: e.target.value })} />
-                  <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Lithuanian" value={draft.Lithuanian} onChange={(e) => setDraft({ ...draft, Lithuanian: e.target.value })} />
-                  <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Phonetic" value={draft.Phonetic} onChange={(e) => setDraft({ ...draft, Phonetic: e.target.value })} />
-                  <input className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Category" value={draft.Category} onChange={(e) => setDraft({ ...draft, Category: e.target.value })} />
-                  <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Usage" value={draft.Usage} onChange={(e) => setDraft({ ...draft, Usage: e.target.value })} />
-                  <input className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" placeholder="Notes" value={draft.Notes} onChange={(e) => setDraft({ ...draft, Notes: e.target.value })} />
-                  <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft["RAG Icon"]} onChange={(e) => setDraft({ ...draft, "RAG Icon": normalizeRag(e.target.value) })}>
-                    {["🔴", "🟠", "🟢"].map((x) => (<option key={x} value={x}>{x}</option>))}
+                  <input
+                    className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    placeholder="English"
+                    value={draft.English}
+                    onChange={(e) =>
+                      setDraft({ ...draft, English: e.target.value })
+                    }
+                  />
+                  <input
+                    className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    placeholder="Lithuanian"
+                    value={draft.Lithuanian}
+                    onChange={(e) =>
+                      setDraft({ ...draft, Lithuanian: e.target.value })
+                    }
+                  />
+                  <input
+                    className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    placeholder="Phonetic"
+                    value={draft.Phonetic}
+                    onChange={(e) =>
+                      setDraft({ ...draft, Phonetic: e.target.value })
+                    }
+                  />
+                  <input
+                    className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    placeholder="Category"
+                    value={draft.Category}
+                    onChange={(e) =>
+                      setDraft({ ...draft, Category: e.target.value })
+                    }
+                  />
+                  <input
+                    className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    placeholder="Usage"
+                    value={draft.Usage}
+                    onChange={(e) =>
+                      setDraft({ ...draft, Usage: e.target.value })
+                    }
+                  />
+                  <input
+                    className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    placeholder="Notes"
+                    value={draft.Notes}
+                    onChange={(e) =>
+                      setDraft({ ...draft, Notes: e.target.value })
+                    }
+                  />
+                  <select
+                    className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    value={draft["RAG Icon"]}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        "RAG Icon": normalizeRag(e.target.value),
+                      })
+                    }
+                  >
+                    {["🔴", "🟠", "🟢"].map((x) => (
+                      <option key={x} value={x}>
+                        {x}
+                      </option>
+                    ))}
                   </select>
-                  <select className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm" value={draft.Sheet} onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}>
-                    {SHEETS.map((s) => (<option key={s} value={s}>{s}</option>))}
+                  <select
+                    className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
+                    value={draft.Sheet}
+                    onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}
+                  >
+                    {SHEETS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
-                  <button onClick={addRow} className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold">Add</button>
+                  <button
+                    onClick={addRow}
+                    className="col-span-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-md px-3 py-2 text-sm font-semibold"
+                  >
+                    Add
+                  </button>
                 </div>
               </details>
             </div>
@@ -1142,7 +1320,8 @@ export default function App() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
             <div className="text-lg font-semibold mb-2">Library</div>
             <div className="text-sm text-zinc-400 mb-2">
-              Import data (JSON or Excel). New rows are appended and duplicates are merged.
+              Import data (JSON or Excel). New rows are appended and duplicates
+              are merged.
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -1155,7 +1334,10 @@ export default function App() {
                 }}
                 className="hidden"
               />
-              <button onClick={() => fileRefJson.current?.click()} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+              <button
+                onClick={() => fileRefJson.current?.click()}
+                className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+              >
                 Import JSON
               </button>
 
@@ -1169,15 +1351,24 @@ export default function App() {
                 }}
                 className="hidden"
               />
-              <button onClick={() => fileRefXlsx.current?.click()} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+              <button
+                onClick={() => fileRefXlsx.current?.click()}
+                className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+              >
                 Import .xlsx
               </button>
 
-              <button onClick={() => exportJson(rows)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+              <button
+                onClick={() => exportJson(rows)}
+                className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+              >
                 Export JSON
               </button>
 
-              <button onClick={clearAll} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md text-sm px-3 py-2">
+              <button
+                onClick={clearAll}
+                className="bg-zinc-900 border border-red-600 text-red-400 rounded-md text-sm px-3 py-2"
+              >
                 Clear Library
               </button>
             </div>
@@ -1186,13 +1377,22 @@ export default function App() {
             <div className="mt-3 pt-3 border-t border-zinc-800">
               <div className="text-sm font-medium mb-2">Starter packs</div>
               <div className="flex flex-wrap gap-2">
-                <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={() => importStarter("EN2LT")}>
+                <button
+                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                  onClick={() => importStarter("EN2LT")}
+                >
                   Install EN→LT starter
                 </button>
-                <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={() => importStarter("LT2EN")}>
+                <button
+                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                  onClick={() => importStarter("LT2EN")}
+                >
                   Install LT→EN starter
                 </button>
-                <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={() => importStarter("NUMBERS")}>
+                <button
+                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                  onClick={() => importStarter("NUMBERS")}
+                >
                   Install Numbers pack
                 </button>
               </div>
@@ -1202,14 +1402,17 @@ export default function App() {
             <div className="mt-4 pt-4 border-t border-zinc-800">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium">Duplicate finder</div>
-                <button onClick={scanDuplicates} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+                <button
+                  onClick={scanDuplicates}
+                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                >
                   Scan duplicates
                 </button>
               </div>
 
               {dupeScan && (
                 <div className="mt-3 space-y-4">
-                  {/* Exact groups (unchanged) */}
+                  {/* Exact duplicates */}
                   <div className="bg-zinc-950 border border-zinc-800 rounded-md p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-medium">
@@ -1224,21 +1427,53 @@ export default function App() {
                     </div>
                     <div className="space-y-3">
                       {dupeScan.exactGroups.map((group, gi) => (
-                        <div key={gi} className="border border-zinc-800 rounded-md p-2">
-                          <div className="text-xs text-zinc-400 mb-1">Group {gi + 1}</div>
+                        <div
+                          key={gi}
+                          className="border border-zinc-800 rounded-md p-2"
+                        >
+                          <div className="text-xs text-zinc-400 mb-1">
+                            Group {gi + 1}
+                          </div>
                           {group.map((i) => {
                             const r = rows[i];
                             return (
-                              <label key={i} className="flex items-start gap-2 text-sm break-words">
+                              <label
+                                key={i}
+                                className="flex items-start gap-2 text-sm"
+                              >
                                 <input
                                   type="checkbox"
                                   checked={selectedArchive.has(i)}
                                   onChange={() => toggleArchiveSelection(i)}
                                 />
-                                <span className="whitespace-normal">
-                                  <b>{r.English}</b> — {r.Lithuanian}{" "}
-                                  <span className="text-zinc-500">[{r.Sheet}]</span>
-                                </span>
+                                <div className="min-w-0">
+                                  <div className="whitespace-normal">
+                                    <b>{r.English}</b> — {r.Lithuanian}{" "}
+                                    <span className="text-zinc-500">
+                                      [{r.Sheet}]
+                                    </span>
+                                  </div>
+                                  {(r.Usage || r.Notes) && (
+                                    <div className="mt-1 text-xs text-zinc-400 space-y-0.5">
+                                      {r.Usage && (
+                                        <div>
+                                          <span className="text-zinc-500">
+                                            Usage:{" "}
+                                          </span>
+                                          {r.Usage}
+                                        </div>
+                                      )}
+                                      {r.Notes && (
+                                        <div>
+                                          <span className="text-zinc-500">
+                                            Notes:{" "}
+                                          </span>
+                                          {r.Notes}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </label>
                             );
                           })}
@@ -1247,38 +1482,96 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Close matches — MOBILE-FRIENDLY: stack vertically, wrap text.
-                      On sm+ screens, show as 2-column grid. */}
+                  {/* Close matches (pairs stacked on mobile, grid on sm+) */}
                   <div className="bg-zinc-950 border border-zinc-800 rounded-md p-3">
-                    <div className="font-medium mb-2">Close matches: {dupeScan.closePairs.length} pair(s)</div>
+                    <div className="font-medium mb-2">
+                      Close matches: {dupeScan.closePairs.length} pair(s)
+                    </div>
                     <div className="space-y-3">
                       {dupeScan.closePairs.map((p, idx) => {
-                        const a = rows[p.a], b = rows[p.b];
+                        const a = rows[p.a],
+                          b = rows[p.b];
                         return (
-                          <div key={idx} className="border border-zinc-800 rounded-md p-2">
-                            <div className="text-xs text-zinc-400 mb-2">Similarity: {(p.sim * 100).toFixed(0)}%</div>
+                          <div
+                            key={idx}
+                            className="border border-zinc-800 rounded-md p-2"
+                          >
+                            <div className="text-xs text-zinc-400 mb-2">
+                              Similarity: {(p.sim * 100).toFixed(0)}%
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <label className="flex items-start gap-2 text-sm break-words">
+                              {/* A */}
+                              <label className="flex items-start gap-2 text-sm">
                                 <input
                                   type="checkbox"
                                   checked={selectedArchive.has(p.a)}
                                   onChange={() => toggleArchiveSelection(p.a)}
                                 />
-                                <span className="whitespace-normal">
-                                  <b>{a.English}</b> — {a.Lithuanian}{" "}
-                                  <span className="text-zinc-500">[{a.Sheet}]</span>
-                                </span>
+                                <div className="min-w-0">
+                                  <div className="whitespace-normal">
+                                    <b>{a.English}</b> — {a.Lithuanian}{" "}
+                                    <span className="text-zinc-500">
+                                      [{a.Sheet}]
+                                    </span>
+                                  </div>
+                                  {(a.Usage || a.Notes) && (
+                                    <div className="mt-1 text-xs text-zinc-400 space-y-0.5">
+                                      {a.Usage && (
+                                        <div>
+                                          <span className="text-zinc-500">
+                                            Usage:{" "}
+                                          </span>
+                                          {a.Usage}
+                                        </div>
+                                      )}
+                                      {a.Notes && (
+                                        <div>
+                                          <span className="text-zinc-500">
+                                            Notes:{" "}
+                                          </span>
+                                          {a.Notes}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </label>
-                              <label className="flex items-start gap-2 text-sm break-words">
+
+                              {/* B */}
+                              <label className="flex items-start gap-2 text-sm">
                                 <input
                                   type="checkbox"
                                   checked={selectedArchive.has(p.b)}
                                   onChange={() => toggleArchiveSelection(p.b)}
                                 />
-                                <span className="whitespace-normal">
-                                  <b>{b.English}</b> — {b.Lithuanian}{" "}
-                                  <span className="text-zinc-500">[{b.Sheet}]</span>
-                                </span>
+                                <div className="min-w-0">
+                                  <div className="whitespace-normal">
+                                    <b>{b.English}</b> — {b.Lithuanian}{" "}
+                                    <span className="text-zinc-500">
+                                      [{b.Sheet}]
+                                    </span>
+                                  </div>
+                                  {(b.Usage || b.Notes) && (
+                                    <div className="mt-1 text-xs text-zinc-400 space-y-0.5">
+                                      {b.Usage && (
+                                        <div>
+                                          <span className="text-zinc-500">
+                                            Usage:{" "}
+                                          </span>
+                                          {b.Usage}
+                                        </div>
+                                      )}
+                                      {b.Notes && (
+                                        <div>
+                                          <span className="text-zinc-500">
+                                            Notes:{" "}
+                                          </span>
+                                          {b.Notes}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </label>
                             </div>
                           </div>
@@ -1291,7 +1584,10 @@ export default function App() {
                     <div className="text-xs text-zinc-400">
                       Selected: {selectedArchive.size}
                     </div>
-                    <button onClick={archiveSelected} className="bg-amber-600 hover:bg-amber-500 px-3 py-2 rounded-md text-sm">
+                    <button
+                      onClick={archiveSelected}
+                      className="bg-amber-600 hover:bg-amber-500 px-3 py-2 rounded-md text-sm"
+                    >
                       Archive selected
                     </button>
                   </div>
@@ -1306,16 +1602,20 @@ export default function App() {
                     checked={showArchived}
                     onChange={(e) => setShowArchived(e.target.checked)}
                   />
-                  Show archived items
                 </label>
+                <span className="text-sm ml-2">Show archived items</span>
 
                 {showArchived && (
                   <div className="mt-2 space-y-2">
                     {rows.map((r, i) =>
                       r.__archived ? (
-                        <div key={i} className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md p-2">
+                        <div
+                          key={i}
+                          className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md p-2"
+                        >
                           <div className="text-sm truncate">
-                            <b>{r.English}</b> — {r.Lithuanian} <span className="text-zinc-500">[{r.Sheet}]</span>
+                            <b>{r.English}</b> — {r.Lithuanian}{" "}
+                            <span className="text-zinc-500">[{r.Sheet}]</span>
                           </div>
                           <button
                             onClick={() => restoreArchived(i)}
@@ -1326,7 +1626,10 @@ export default function App() {
                         </div>
                       ) : null
                     )}
-                    <button onClick={emptyArchive} className="bg-red-700 hover:bg-red-600 px-3 py-2 rounded-md text-sm">
+                    <button
+                      onClick={emptyArchive}
+                      className="bg-red-700 hover:bg-red-600 px-3 py-2 rounded-md text-sm"
+                    >
                       Empty archive
                     </button>
                   </div>
@@ -1334,9 +1637,15 @@ export default function App() {
               </div>
 
               <div className="mt-3 text-xs text-zinc-400">
-                Total items: <span className="text-zinc-200">{rows.length}</span> • Active:{" "}
-                <span className="text-zinc-200">{rows.filter((r) => !r.__archived).length}</span> • Archived:{" "}
-                <span className="text-zinc-200">{rows.filter((r) => r.__archived).length}</span>
+                Total items:{" "}
+                <span className="text-zinc-200">{rows.length}</span> • Active:{" "}
+                <span className="text-zinc-200">
+                  {rows.filter((r) => !r.__archived).length}
+                </span>{" "}
+                • Archived:{" "}
+                <span className="text-zinc-200">
+                  {rows.filter((r) => r.__archived).length}
+                </span>
               </div>
             </div>
           </div>
@@ -1362,7 +1671,9 @@ export default function App() {
                     onClick={() => setSettings((s) => ({ ...s, mode: m.id }))}
                     className={cn(
                       "px-2 py-1 rounded-md text-xs border",
-                      settings.mode === m.id ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                      settings.mode === m.id
+                        ? "bg-emerald-600 border-emerald-600"
+                        : "bg-zinc-900 border-zinc-700"
                     )}
                   >
                     {m.label}
@@ -1380,7 +1691,9 @@ export default function App() {
                     type="radio"
                     name="ttsprov"
                     checked={settings.ttsProvider === "browser"}
-                    onChange={() => setSettings((s) => ({ ...s, ttsProvider: "browser" }))}
+                    onChange={() =>
+                      setSettings((s) => ({ ...s, ttsProvider: "browser" }))
+                    }
                   />
                   Browser (fallback)
                 </label>
@@ -1389,7 +1702,9 @@ export default function App() {
                     type="radio"
                     name="ttsprov"
                     checked={settings.ttsProvider === "azure"}
-                    onChange={() => setSettings((s) => ({ ...s, ttsProvider: "azure" }))}
+                    onChange={() =>
+                      setSettings((s) => ({ ...s, ttsProvider: "azure" }))
+                    }
                   />
                   Azure Speech
                 </label>
@@ -1405,7 +1720,9 @@ export default function App() {
                     <input
                       type="password"
                       value={settings.azureKey}
-                      onChange={(e) => setSettings((s) => ({ ...s, azureKey: e.target.value }))}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, azureKey: e.target.value }))
+                      }
                       placeholder="Azure key"
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                     />
@@ -1414,7 +1731,12 @@ export default function App() {
                     <div className="text-xs mb-1">Region</div>
                     <input
                       value={settings.azureRegion}
-                      onChange={(e) => setSettings((s) => ({ ...s, azureRegion: e.target.value }))}
+                      onChange={(e) =>
+                        setSettings((s) => ({
+                          ...s,
+                          azureRegion: e.target.value,
+                        }))
+                      }
                       placeholder="e.g. westeurope"
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                     />
@@ -1427,7 +1749,12 @@ export default function App() {
                     <select
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                       value={settings.azureVoiceShortName}
-                      onChange={(e) => setSettings((s) => ({ ...s, azureVoiceShortName: e.target.value }))}
+                      onChange={(e) =>
+                        setSettings((s) => ({
+                          ...s,
+                          azureVoiceShortName: e.target.value,
+                        }))
+                      }
                     >
                       <option value="">— choose —</option>
                       {azureVoices.map((v) => (
@@ -1446,14 +1773,21 @@ export default function App() {
                         }
                         const url = `https://${settings.azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
                         const res = await fetch(url, {
-                          headers: { "Ocp-Apim-Subscription-Key": settings.azureKey },
+                          headers: {
+                            "Ocp-Apim-Subscription-Key": settings.azureKey,
+                          },
                         });
                         if (!res.ok) throw new Error("Failed to fetch Azure voices");
                         const data = await res.json();
                         setAzureVoices(data || []);
-                        const lt = data.find((v) => (v.Locale || "").toLowerCase() === "lt-lt");
+                        const lt = data.find(
+                          (v) => (v.Locale || "").toLowerCase() === "lt-lt"
+                        );
                         if (lt && !settings.azureVoiceShortName) {
-                          setSettings((s) => ({ ...s, azureVoiceShortName: lt.ShortName }));
+                          setSettings((s) => ({
+                            ...s,
+                            azureVoiceShortName: lt.ShortName,
+                          }));
                         }
                       } catch (e) {
                         alert(e.message);
@@ -1475,8 +1809,15 @@ export default function App() {
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="w-[92%] max-w-xl bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm text-zinc-400">Question {quizIdx + 1} / {quizQs.length}</div>
-              <button onClick={() => setQuizOn(false)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">Quit</button>
+              <div className="text-sm text-zinc-400">
+                Question {quizIdx + 1} / {quizQs.length}
+              </div>
+              <button
+                onClick={() => setQuizOn(false)}
+                className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
+              >
+                Quit
+              </button>
             </div>
 
             {quizQs.length > 0 && (
@@ -1489,11 +1830,17 @@ export default function App() {
                     <>
                       <div className="text-sm text-zinc-400 mb-1">Prompt</div>
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="text-lg font-medium flex-1">{questionText}</div>
+                        <div className="text-lg font-medium flex-1">
+                          {questionText}
+                        </div>
                         <button
                           className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center font-semibold select-none",
-                            ragBtnClass(normalizeRag(item["RAG Icon"]))
+                            normalizeRag(item["RAG Icon"]) === "🔴"
+                              ? "bg-red-600 hover:bg-red-500"
+                              : normalizeRag(item["RAG Icon"]) === "🟠"
+                              ? "bg-amber-500 hover:bg-amber-400"
+                              : "bg-emerald-600 hover:bg-emerald-500"
                           )}
                           style={{ touchAction: "manipulation" }}
                           onContextMenu={(e) => e.preventDefault()}
@@ -1504,13 +1851,16 @@ export default function App() {
                         </button>
                       </div>
 
-                      <div className="text-sm text-zinc-400 mb-1">Choose the Lithuanian</div>
+                      <div className="text-sm text-zinc-400 mb-1">
+                        Choose the Lithuanian
+                      </div>
                       <div className="space-y-2">
                         {quizOptions.map((opt) => {
                           const isSelected = quizChoice === opt;
                           const isCorrect = opt === correctLt;
                           const show = quizAnswered;
-                          const base = "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
+                          const base =
+                            "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
                           const color = !show
                             ? "bg-zinc-900 border-zinc-700"
                             : isCorrect
@@ -1519,7 +1869,11 @@ export default function App() {
                             ? "bg-red-900/40 border-red-600"
                             : "bg-zinc-900 border-zinc-700";
                           return (
-                            <button key={opt} className={`${base} ${color}`} onClick={() => !quizAnswered && answerQuiz(opt)}>
+                            <button
+                              key={opt}
+                              className={`${base} ${color}`}
+                              onClick={() => !quizAnswered && answerQuiz(opt)}
+                            >
                               <span className="flex-1">{opt}</span>
                               <span
                                 className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center select-none"
@@ -1540,7 +1894,10 @@ export default function App() {
                           <div className="text-sm text-zinc-300">
                             {quizChoice === correctLt ? "Correct!" : "Not quite."}
                           </div>
-                          <button onClick={nextQuiz} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">
+                          <button
+                            onClick={nextQuiz}
+                            className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
+                          >
                             Next Question
                           </button>
                         </div>
