@@ -6,7 +6,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - JSON & XLSX import (append + dedupe), export, clear-all with confirm
  * - Tabs: Phrases / Questions / Words / Numbers
  * - Search with single clear ×
- * - Sort: RAG / Newest / Oldest  +  RAG priority chips (All / 🔴 / 🟠 / 🟢)
+ * - Sort: RAG / Newest / Oldest
+ *   - When Sort=RAG: full-width priority chips (All / red / amber / green)
  * - TTS: Azure (primary) + Browser (fallback). Long-press = slow.
  * - RAG-colored play buttons
  * - Quiz (50% 🔴 / 40% 🟠 / 10% 🟢) + promote/demote rules
@@ -15,14 +16,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - Single audio channel + pointer-only press to prevent double audio
  */
 
-/* -------------------- Constants & LS keys -------------------- */
 const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
 const LSK_ROWS = "lt_phrasebook_v3";
 const LSK_SETTINGS = "lt_settings_v1";
 const LSK_STREAK = "lt_quiz_streak_v1";
 const LSK_XP = "lt_xp_v1";
 
-// Old keys we migrate from
+// Old keys (migrate once)
 const OLD_LSK_ROWS = "lt_phrasebook_v2";
 const OLD_LSK_TTS_PROVIDER = "lt_tts_provider";
 const OLD_LSK_AZURE_KEY = "lt_azure_key";
@@ -40,7 +40,6 @@ const defaultSettings = {
   ragPriority: "", // "" | "🔴" | "🟠" | "🟢"
 };
 
-/* -------------------- Helpers -------------------- */
 function normalizeRag(icon = "") {
   const s = String(icon).trim();
   const low = s.toLowerCase();
@@ -434,7 +433,7 @@ export default function App() {
           const ex = map.get(k);
           if (!ex || (r.updatedAt || 0) > (ex.updatedAt || 0)) map.set(k, r);
         });
-        return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).reverse();
       });
       alert(`Imported ${prepared.length} item(s).`);
     } catch (e) {
@@ -760,39 +759,51 @@ export default function App() {
             </div>
           </div>
 
-          {/* XP + streak + RAG priority (when Sort=RAG) */}
-          <div className="mt-2 text-xs text-zinc-400 flex items-center gap-3 flex-wrap">
-            <div>
-              🔥 Streak: <span className="text-zinc-200">{streak.streak}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>🥇</span>
-              <span>Lv {levelForXp(xp)}</span>
-              <div className="w-28 h-2 bg-zinc-800 rounded-full overflow-hidden">
+          {/* Centered Streak/Level (full width) + full-width RAG priority row */}
+          <div className="mt-2 flex flex-col items-stretch gap-2">
+            <div className="w-full">
+              <div className="flex justify-center items-center gap-4 mb-1 text-xs text-zinc-400">
+                <div>
+                  🔥 Streak: <span className="text-zinc-200">{streak.streak}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>🥇</span>
+                  <span>Lv {levelForXp(xp)}</span>
+                  <span className="text-zinc-500">{xp} XP</span>
+                </div>
+              </div>
+              <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   className="h-2 bg-emerald-600"
                   style={{ width: `${Math.round(levelProgress(xp) * 100)}%` }}
                 />
               </div>
-              <span className="text-zinc-500">{xp} XP</span>
             </div>
 
             {settings.sort === "RAG" && (
-              <div className="ml-auto flex items-center gap-1">
-                <span className="hidden sm:inline text-zinc-400 mr-1">Priority:</span>
-                {["", "🔴", "🟠", "🟢"].map((x, i) => (
+              <div className="grid grid-cols-4 gap-2 w-full">
+                {[
+                  { id: "", label: "All" },
+                  { id: "🔴", color: "bg-red-500" },
+                  { id: "🟠", color: "bg-amber-400" },
+                  { id: "🟢", color: "bg-emerald-500" },
+                ].map((x) => (
                   <button
-                    key={i}
-                    onClick={() => setSettings((s) => ({ ...s, ragPriority: x }))}
+                    key={x.id || "all"}
+                    onClick={() => setSettings((s) => ({ ...s, ragPriority: x.id }))}
                     className={cn(
-                      "px-2 py-1 rounded-md text-xs border",
-                      settings.ragPriority === x
+                      "px-2 py-1 rounded-md text-xs border w-full flex items-center justify-center gap-2",
+                      settings.ragPriority === x.id
                         ? "bg-emerald-600 border-emerald-600"
                         : "bg-zinc-900 border-zinc-700"
                     )}
-                    title={x ? `Show ${x} first` : "No priority"}
+                    title={x.id ? `Show ${x.id} first` : "No priority"}
                   >
-                    {x || "All"}
+                    {x.label ? (
+                      x.label
+                    ) : (
+                      <span className={cn("inline-block w-2.5 h-2.5 rounded-full", x.color)} />
+                    )}
                   </button>
                 ))}
               </div>
@@ -800,23 +811,25 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — full width, equal columns */}
         {page === "home" && (
-          <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2 flex items-center gap-2 overflow-x-auto">
-            {SHEETS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setTab(s)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-sm border",
-                  tab === s
-                    ? "bg-emerald-600 border-emerald-600"
-                    : "bg-zinc-900 border-zinc-800"
-                )}
-              >
-                {s}
-              </button>
-            ))}
+          <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2">
+            <div className="grid grid-cols-4 gap-2">
+              {SHEETS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setTab(s)}
+                  className={cn(
+                    "w-full px-3 py-1.5 rounded-full text-sm border",
+                    tab === s
+                      ? "bg-emerald-600 border-emerald-600"
+                      : "bg-zinc-900 border-zinc-800"
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
