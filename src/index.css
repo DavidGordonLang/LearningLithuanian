@@ -16,30 +16,11 @@ body {
   --safe-bottom: env(safe-area-inset-bottom);
 }
 
-/* ------------------------------------------------------------------
-   Hide native clear/cancel buttons so we only show our custom "X"
-   Covers WebKit (iOS/Safari), Chromium, and old Edge/IE variants.
--------------------------------------------------------------------*/
-input::-ms-clear,
-input::-ms-reveal {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-input[type="search"]::-webkit-search-cancel-button,
-input[type="search"]::-webkit-search-decoration,
-input[type="search"]::-webkit-search-results-button,
-input[type="search"]::-webkit-search-results-decoration {
-  display: none;
-}
-
-/* Some WebKit builds expose a generic clear button even on type="text" */
-input::-webkit-clear-button {
-  display: none;
-}
-
-/* Optional: remove blue/gray tap highlight on mobile buttons */
-button, [role="button"] {
+/* Disable selection/callout/highlight on pressable audio buttons */
+[data-press] {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
