@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react"
 
 /**
  * Lithuanian Trainer — App.jsx
@@ -36,8 +36,7 @@ const LSK_DIR = "lt_direction_v1";
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
   LT2EN: "/data/starter_lt_to_en.json",
-  // NOTE: Numbers are embedded in these starter files (and optionally a combined file).
-  // We no longer fetch /data/starter_numbers.json.
+  // Numbers live inside the starter files (and optional combined file)
   COMBINED_OPTIONAL: "/data/starter_combined_dedup.json",
 };
 
@@ -193,7 +192,7 @@ const loadRows = () => {
   }
 };
 
-// *** FIX: robust XP load/save to avoid NaN propagation ***
+// Robust XP load/save (prevents NaN propagation)
 const loadXP = () => {
   try {
     const raw = localStorage.getItem(LSK_XP);
@@ -348,12 +347,10 @@ export default function App() {
 
   const [xp, setXp] = useState(loadXP());
   useEffect(() => saveXP(xp), [xp]);
-  // *** FIX: heal any bad persisted XP once on mount ***
   useEffect(() => {
     if (!Number.isFinite(xp)) setXp(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // *** FIX: compute level/progress from finite XP only ***
   const level = Math.floor((Number.isFinite(xp) ? xp : 0) / LEVEL_STEP) + 1;
   const levelProgress = (Number.isFinite(xp) ? xp : 0) % LEVEL_STEP;
 
@@ -564,29 +561,21 @@ export default function App() {
     }
   }
 
-  // NEW: install only Numbers by extracting from available starter files
+  // Numbers from starter files only
   async function installNumbersOnly() {
-    const urls = [
-      STARTERS.COMBINED_OPTIONAL, // optional combined file first (if present)
-      STARTERS.EN2LT,
-      STARTERS.LT2EN,
-    ].filter(Boolean);
-
+    const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(Boolean);
     let found = [];
     for (const url of urls) {
       try {
         const res = await fetch(url);
-        if (!res.ok) continue; // skip missing files
+        if (!res.ok) continue;
         const data = await res.json();
         if (Array.isArray(data)) {
           const nums = data.filter((r) => String(r.Sheet) === "Numbers");
           found = found.concat(nums);
         }
-      } catch {
-        // ignore individual fetch errors; we’ll try the next file
-      }
+      } catch {}
     }
-
     if (!found.length) {
       alert("No Numbers entries found in starter files.");
       return;
@@ -634,9 +623,8 @@ export default function App() {
         }
       }
     }
-    setDiapeResults({ exact, close }); // typo fixed below!
+    setDiapeResults({ exact, close }); // keep typo wrapper
   }
-  // FIX the typo in setDiapeResults
   function setDiapeResults(v) { setDupeResults(v); }
 
   // quiz
@@ -741,7 +729,6 @@ export default function App() {
     const correct = option === item.Lithuanian;
     setQuizChoice(option);
     setQuizAnswered(true);
-    // *** FIX: guard XP increment against NaN ***
     if (correct) setXp((x) => (Number.isFinite(x) ? x : 0) + XP_PER_CORRECT);
     await playText(item.Lithuanian, { slow: false });
     setRows((prev) =>
@@ -949,33 +936,17 @@ export default function App() {
     return (
       <div className="sticky top-0 z-10 bg-zinc-950/80 backdrop-blur border-b border-zinc-800">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">
-                LT
-              </div>
-              <div className="leading-tight min-w-0">
-                <div className="text-xl font-semibold truncate">
-                  {T.appTitle1} <span className="hidden sm:inline">{T.appTitle2}</span>
-                </div>
-                <div className="text-xs text-zinc-400">{T.subtitle}</div>
-              </div>
+          {/* Brand row — full width title + subtitle (no truncation) */}
+          <div className="flex items-start gap-2 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">
+              LT
             </div>
-
-            <select
-              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
-              value={ttsProvider === "browser" ? browserVoiceName : ""}
-              onChange={(e) => setBrowserVoiceName(e.target.value)}
-              disabled={ttsProvider !== "browser"}
-              title={ttsProvider === "azure" ? "Using Azure" : T.browserVoice}
-            >
-              <option value="">{ttsProvider === "azure" ? "Auto voice" : "Auto voice"}</option>
-              {voices.map((v) => (
-                <option key={v.name} value={v.name}>
-                  {v.name} ({v.lang})
-                </option>
-              ))}
-            </select>
+            <div className="leading-tight min-w-0">
+              <div className="text-xl font-semibold">
+                {T.appTitle1} <span className="hidden sm:inline">{T.appTitle2}</span>
+              </div>
+              <div className="text-xs text-zinc-400">{T.subtitle}</div>
+            </div>
           </div>
 
           {/* nav */}
@@ -1208,6 +1179,7 @@ export default function App() {
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-20">
         <div className="mt-4 bg-zinc-900 border border-zinc-700 rounded-2xl p-4 space-y-4">
           <div className="text-lg font-semibold">{T.settings}</div>
+
           <div>
             <div className="text-xs mb-1">{T.direction}</div>
             <div className="flex gap-2">
@@ -1250,6 +1222,27 @@ export default function App() {
             </div>
           </div>
 
+          {/* Browser voice selection (moved here from header) */}
+          {ttsProvider === "browser" && (
+            <div className="space-y-2">
+              <div className="text-xs mb-1">{T.voice}</div>
+              <select
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                value={browserVoiceName}
+                onChange={(e) => setBrowserVoiceName(e.target.value)}
+                title={T.browserVoice}
+              >
+                <option value="">{/* Auto voice fallback */}Auto voice</option>
+                {voices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Azure settings (unchanged) */}
           {ttsProvider === "azure" && (
             <div className="space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
