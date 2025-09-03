@@ -2,12 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Lithuanian Trainer — App.jsx
- * Fixes:
- * - Full UI i18n toggle: when mode = LT→EN, the entire UI shows Lithuanian labels.
- * - Newest/Oldest sort works even for legacy rows (one-time migration sets createdAt).
- * - Keeps all recent features: single-channel audio (no double play), RAG play colors,
- *   JSON/XLSX import, starters, duplicate finder with Usage/Notes, archive, search clear X,
- *   centered streak/level, RAG sort + priority chips, quiz logic, etc.
+ * Fixes in this version:
+ * - Normalize saved sort values ("Newest"/"Oldest"/localized) -> NEW/OLD/RAG so sorting works.
+ * - Responsive header & controls: nav pills and Start Quiz wrap; search/sort row wraps; long LT strings no longer clip.
+ * - Keeps all features from previous build (audio, import/export, starters, dupes, archive, quiz, i18n, etc.).
  */
 
 const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
@@ -37,6 +35,7 @@ const defaultSettings = {
   ragPriority: "", // "", "🔴", "🟠", "🟢"
 };
 
+// Map for starters
 const STARTER_MAP = {
   EN2LT: "/data/Starter_EN_to_LT_v3.json",
   LT2EN: "/data/Starter_LT_to_EN_v3.json",
@@ -217,7 +216,7 @@ const STRINGS = {
 };
 
 // -------------- utils --------------
-function normalizeRag(icon = "") {
+const normalizeRag = (icon = "") => {
   const s = String(icon).trim();
   const low = s.toLowerCase();
   if (["🔴", "🟥", "red"].includes(s) || low === "red") return "🔴";
@@ -225,7 +224,16 @@ function normalizeRag(icon = "") {
     return "🟠";
   if (["🟢", "🟩", "green"].includes(s) || low === "green") return "🟢";
   return "🟠";
+};
+
+// NEW: normalize any legacy/translated sort value
+function normalizeSortKey(v) {
+  const s = String(v || "").toLowerCase();
+  if (["new", "newest", "naujausi"].includes(s)) return "NEW";
+  if (["old", "oldest", "seniausi"].includes(s)) return "OLD";
+  return "RAG";
 }
+
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const rowKey = (r) =>
@@ -247,21 +255,16 @@ function shuffle(arr) {
   }
   return a;
 }
-function weightedPick(pool, n) {
-  const a = shuffle(pool);
-  return a.slice(0, n);
-}
+const weightedPick = (pool, n) => shuffle(pool).slice(0, n);
 
 // Fuzzy helpers (for duplicate scan)
-function stripDiacritics(s) {
-  return s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
-}
-function normalizeText(s) {
-  return stripDiacritics(String(s || "").toLowerCase())
+const stripDiacritics = (s) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+const normalizeText = (s) =>
+  stripDiacritics(String(s || "").toLowerCase())
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
+
 function levenshtein(a, b) {
   const m = a.length,
     n = b.length;
@@ -282,13 +285,13 @@ function levenshtein(a, b) {
   }
   return prev[n];
 }
-function similarity(a, b) {
+const similarity = (a, b) => {
   const A = normalizeText(a),
     B = normalizeText(b);
   if (!A && !B) return 1;
   const d = levenshtein(A, B);
   return 1 - d / Math.max(A.length, B.length);
-}
+};
 
 // XLSX UMD loader
 async function loadXLSX() {
@@ -410,22 +413,26 @@ export default function App() {
     return [];
   });
 
-  // settings (with migration)
+  // settings (with migration + sort normalization)
   const [settings, setSettings] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_SETTINGS);
-      if (raw) return { ...defaultSettings, ...JSON.parse(raw) };
-      const s = { ...defaultSettings };
+      const parsed = raw ? JSON.parse(raw) : {};
+      const s = { ...defaultSettings, ...parsed };
+      // migrate legacy keys
       const tp = localStorage.getItem(OLD_LSK_TTS_PROVIDER);
-      if (tp) s.ttsProvider = tp;
+      if (tp && !parsed.ttsProvider) s.ttsProvider = tp;
       const ak = localStorage.getItem(OLD_LSK_AZURE_KEY);
-      if (ak) s.azureKey = ak;
+      if (ak && !parsed.azureKey) s.azureKey = ak;
       const ar = localStorage.getItem(OLD_LSK_AZURE_REGION);
-      if (ar) s.azureRegion = ar;
+      if (ar && !parsed.azureRegion) s.azureRegion = ar;
       try {
         const av = JSON.parse(localStorage.getItem(OLD_LSK_AZURE_VOICE) || "null");
-        if (av?.shortName) s.azureVoiceShortName = av.shortName;
+        if (av?.shortName && !parsed.azureVoiceShortName)
+          s.azureVoiceShortName = av.shortName;
       } catch {}
+      // normalize sort to NEW/OLD/RAG
+      s.sort = normalizeSortKey(s.sort);
       localStorage.setItem(LSK_SETTINGS, JSON.stringify(s));
       return s;
     } catch {
@@ -474,7 +481,6 @@ export default function App() {
     if (!rows.length) return;
     const missing = rows.some((r) => !r.createdAt);
     if (!missing) return;
-    // Assign increasing timestamps so current order is preserved as OLD->NEW left to right
     const now = Date.now();
     const updated = rows.map((r, i) => ({
       ...r,
@@ -488,7 +494,12 @@ export default function App() {
   const uiLang = settings.mode === "LT2EN" ? "LT" : "EN";
   const T = STRINGS[uiLang];
 
-  const sortLabel = settings.sort === "RAG" ? T.sortRAG : settings.sort === "NEW" ? T.sortNew : T.sortOld;
+  const sortLabel =
+    normalizeSortKey(settings.sort) === "RAG"
+      ? T.sortRAG
+      : normalizeSortKey(settings.sort) === "NEW"
+      ? T.sortNew
+      : T.sortOld;
 
   // audio (single channel)
   async function playText(text, { slow = false } = {}) {
@@ -758,9 +769,10 @@ export default function App() {
           .includes(qq)
       );
     }
-    if (settings.sort === "NEW") {
+    const key = normalizeSortKey(settings.sort);
+    if (key === "NEW") {
       out = [...out].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    } else if (settings.sort === "OLD") {
+    } else if (key === "OLD") {
       out = [...out].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     } else {
       const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
@@ -1001,8 +1013,8 @@ export default function App() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">
               LT
             </div>
-            <div className="leading-tight flex-1">
-              <div className="text-lg font-semibold">{T.appTitle}</div>
+            <div className="leading-tight flex-1 min-w-0">
+              <div className="text-lg font-semibold truncate">{T.appTitle}</div>
               <div className="text-xs text-zinc-400">{T.tagline}</div>
             </div>
 
@@ -1029,8 +1041,8 @@ export default function App() {
             </select>
           </div>
 
-          {/* Nav pills */}
-          <div className="mt-2 flex items-center gap-2 overflow-x-auto">
+          {/* Nav pills (wrap on small screens) */}
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
             {[
               { id: "home", label: T.home },
               { id: "library", label: T.library },
@@ -1051,15 +1063,15 @@ export default function App() {
             ))}
             <button
               onClick={startQuiz}
-              className="ml-auto bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-1.5 font-semibold"
+              className="ml-auto bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-1.5 font-semibold shrink-0"
             >
               {T.startQuiz}
             </button>
           </div>
 
-          {/* Search + Sort */}
-          <div className="mt-2 flex items-center gap-2">
-            <div className="relative flex-1">
+          {/* Search + Sort (wrap) */}
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <div className="relative grow basis-[320px]">
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -1077,7 +1089,7 @@ export default function App() {
               )}
             </div>
 
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setSortOpen((v) => !v)}
                 className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-2"
@@ -1099,7 +1111,7 @@ export default function App() {
                       }}
                       className={cn(
                         "w-full text-left px-3 py-2 text-sm hover:bg-zinc-800",
-                        settings.sort === opt.id && "bg-zinc-800"
+                        normalizeSortKey(settings.sort) === opt.id && "bg-zinc-800"
                       )}
                     >
                       {opt.label}
@@ -1135,7 +1147,7 @@ export default function App() {
               </div>
             </div>
 
-            {settings.sort === "RAG" && (
+            {normalizeSortKey(settings.sort) === "RAG" && (
               <div className="grid grid-cols-4 gap-2 w-full">
                 {[
                   { id: "", label: T.all },
@@ -1236,7 +1248,6 @@ export default function App() {
 
                       <details className="mt-2">
                         <summary className="cursor-pointer text-[11px] px-2 py-0.5 inline-block rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800">
-                          { /* toggle text via CSS won't localize; use details[open] trick below with two spans */ }
                           <span className="details-closed">{T.showDetails}</span>
                           <span className="details-open hidden">{T.hideDetails}</span>
                         </summary>
@@ -1819,7 +1830,7 @@ export default function App() {
             {/* Direction */}
             <div className="mb-3">
               <div className="text-xs mb-1 text-zinc-400">{T.direction}</div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {[
                   { id: "EN2LT", label: T.en2lt },
                   { id: "LT2EN", label: T.lt2en },
@@ -1901,8 +1912,8 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
+                <div className="flex items-end gap-2 flex-wrap">
+                  <div className="flex-1 min-w-[240px]">
                     <div className="text-xs mb-1">{T.voice}</div>
                     <select
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
@@ -1931,21 +1942,16 @@ export default function App() {
                         }
                         const url = `https://${settings.azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
                         const res = await fetch(url, {
-                          headers: {
-                            "Ocp-Apim-Subscription-Key": settings.azureKey,
-                          },
+                          headers: { "Ocp-Apim-Subscription-Key": settings.azureKey },
                         });
                         if (!res.ok) throw new Error("Failed to fetch Azure voices");
                         const data = await res.json();
                         setAzureVoices(data || []);
-                        const lt = data.find(
+                        const lt = (data || []).find(
                           (v) => (v.Locale || "").toLowerCase() === "lt-lt"
                         );
                         if (lt && !settings.azureVoiceShortName) {
-                          setSettings((s) => ({
-                            ...s,
-                            azureVoiceShortName: lt.ShortName,
-                          }));
+                          setSettings((s) => ({ ...s, azureVoiceShortName: lt.ShortName }));
                         }
                       } catch (e) {
                         alert(e.message);
@@ -1974,7 +1980,7 @@ export default function App() {
                 onClick={() => setQuizOn(false)}
                 className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
               >
-                {T.quit}
+                {STRINGS[uiLang].quit}
               </button>
             </div>
 
@@ -1986,11 +1992,9 @@ export default function App() {
                   const correctLt = item.Lithuanian;
                   return (
                     <>
-                      <div className="text-sm text-zinc-400 mb-1">{T.prompt}</div>
+                      <div className="text-sm text-zinc-400 mb-1">{STRINGS[uiLang].prompt}</div>
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="text-lg font-medium flex-1">
-                          {questionText}
-                        </div>
+                        <div className="text-lg font-medium flex-1">{questionText}</div>
                         <button
                           className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center font-semibold select-none",
@@ -2008,7 +2012,7 @@ export default function App() {
                         </button>
                       </div>
 
-                      <div className="text-sm text-zinc-400 mb-1">{T.chooseLt}</div>
+                      <div className="text-sm text-zinc-400 mb-1">{STRINGS[uiLang].chooseLt}</div>
                       <div className="space-y-2">
                         {quizOptions.map((opt) => {
                           const isSelected = quizChoice === opt;
@@ -2046,13 +2050,13 @@ export default function App() {
                       {quizAnswered && (
                         <div className="mt-3 flex items-center justify-between">
                           <div className="text-sm text-zinc-300">
-                            {quizChoice === correctLt ? T.correct : T.notQuite}
+                            {quizChoice === correctLt ? STRINGS[uiLang].correct : STRINGS[uiLang].notQuite}
                           </div>
                           <button
                             onClick={nextQuiz}
                             className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
                           >
-                            {T.nextQuestion}
+                            {STRINGS[uiLang].nextQuestion}
                           </button>
                         </div>
                       )}
