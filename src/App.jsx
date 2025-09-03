@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * Lithuanian Trainer — App.jsx (polished header + reliable sort select)
- * - Tidy header on mobile (no weird wrapping, no big gaps)
- * - Sort control is a native <select> (no popover overlap)
- * - Newest/Oldest sorting deterministic (unique createdAt on import)
- * - Keeps: i18n, quiz with RAG rules, JSON/XLSX import, starters, dupe finder + archive,
- *          Azure + browser TTS, RAG priority chips, tabs, add/edit/delete, search.
+ * Lithuanian Trainer — App.jsx
+ * Header polish:
+ * - "Home / Library / Settings" are now a full-width 3-column grid
+ * - "Start Quiz" sits on its own full-width row below
+ * Other features unchanged (JSON/XLSX import, starters, dupe finder, archive,
+ * Azure + browser TTS, quiz with RAG rules, i18n, deterministic sorting).
  */
 
 const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
@@ -83,7 +83,8 @@ const STRINGS = {
     notQuite: "Not quite.",
     nextQuestion: "Next Question",
     libTitle: "Library",
-    libDesc: "Import data (JSON or Excel). New rows append; duplicates can be archived.",
+    libDesc:
+      "Import data (JSON or Excel). New rows append; duplicates can be archived.",
     importJson: "Import JSON",
     importXlsx: "Import .xlsx",
     exportJson: "Export JSON",
@@ -166,7 +167,8 @@ const STRINGS = {
     notQuite: "Ne visai.",
     nextQuestion: "Kitas klausimas",
     libTitle: "Biblioteka",
-    libDesc: "Importuokite duomenis (JSON arba Excel). Naujos eilutės pridedamos; dublikatus galima archyvuoti.",
+    libDesc:
+      "Importuokite duomenis (JSON arba Excel). Naujos eilutės pridedamos; dublikatus galima archyvuoti.",
     importJson: "Importuoti JSON",
     importXlsx: "Importuoti .xlsx",
     exportJson: "Eksportuoti JSON",
@@ -989,19 +991,19 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* HEADER */}
       <div className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur border-b border-zinc-800">
-        <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
-          {/* Brand block (full width on mobile) */}
+        <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
+          {/* Brand block */}
           <div className="flex items-start gap-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">
               LT
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xl font-semibold leading-snug">{T.appTitle}</div>
+              <div className="text-xl font-semibold leading-snug truncate">{T.appTitle}</div>
               <div className="text-xs text-zinc-400">{T.tagline}</div>
             </div>
           </div>
 
-          {/* Voice select (stacks below title on mobile; right-aligned on sm+) */}
+          {/* Voice select */}
           <div className="mt-2 flex sm:justify-end">
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1 w-full sm:w-auto"
@@ -1011,7 +1013,7 @@ export default function App() {
               title={settings.ttsProvider === "azure" ? "Using Azure" : "Browser voice"}
             >
               <option value="">{uiLang === "LT" ? "Automatinis balsas" : "Auto voice"}</option>
-              {voices.map((v) => (
+              {useVoices().map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name} ({v.lang})
                 </option>
@@ -1019,8 +1021,8 @@ export default function App() {
             </select>
           </div>
 
-          {/* Nav + Start Quiz */}
-          <div className="mt-2 flex items-center gap-2 flex-wrap">
+          {/* FULL-WIDTH NAV (3 columns) */}
+          <div className="mt-2 grid grid-cols-3 gap-2">
             {[
               { id: "home", label: T.home },
               { id: "library", label: T.library },
@@ -1030,22 +1032,26 @@ export default function App() {
                 key={p.id}
                 onClick={() => setPage(p.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg border",
+                  "w-full px-3 py-1.5 rounded-lg border text-center",
                   page === p.id ? "bg-zinc-800 border-zinc-600" : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {p.label}
               </button>
             ))}
+          </div>
+
+          {/* FULL-WIDTH QUIZ BUTTON */}
+          <div className="mt-2">
             <button
               onClick={startQuiz}
-              className="w-full sm:w-auto ml-auto bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-1.5 font-semibold text-center"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-2 font-semibold text-center"
             >
               {T.startQuiz}
             </button>
           </div>
 
-          {/* Search + Sort select (select is reliable on mobile) */}
+          {/* Search + Sort */}
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
             <div className="relative">
               <input
@@ -1072,7 +1078,11 @@ export default function App() {
                 value={normalizeSortKey(settings.sort)}
                 onChange={(e) => setSettings((s) => ({ ...s, sort: e.target.value }))}
               >
-                {sortOptions.map((opt) => (
+                {[
+                  { id: "RAG", label: T.sortRAG },
+                  { id: "NEW", label: T.sortNew },
+                  { id: "OLD", label: T.sortOld },
+                ].map((opt) => (
                   <option key={opt.id} value={opt.id}>
                     {opt.label}
                   </option>
@@ -1158,7 +1168,7 @@ export default function App() {
 
       {/* HOME LIST */}
       {page === "home" && (
-        <div className="max-w-xl mx-auto px-3 sm:px-4 pb-28">
+        <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto px-3 sm:px-4 pb-28">
           {filteredByTab.map((r, i) => {
             const idx = rows.indexOf(r);
             const isEditing = editIdx === idx;
@@ -1333,7 +1343,7 @@ export default function App() {
 
           {/* Add form */}
           <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
-            <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
+            <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
               <details ref={addDetailsRef}>
                 <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
                 <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1388,7 +1398,7 @@ export default function App() {
                     onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}
                   >
                     {SHEETS.map((s) => (
-                      <option key={s} value={s}>{T.tabs[s]}</option>
+                      <option key={s} value={s}>{STRINGS[uiLang].tabs[s]}</option>
                     ))}
                   </select>
                   <button
@@ -1406,7 +1416,7 @@ export default function App() {
 
       {/* LIBRARY */}
       {page === "library" && (
-        <div className="max-w-xl mx-auto px-3 sm:px-4 py-4 space-y-3">
+        <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto px-3 sm:px-4 py-4 space-y-3">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
             <div className="text-lg font-semibold mb-2">{T.libTitle}</div>
             <div className="text-sm text-zinc-400 mb-2">{T.libDesc}</div>
@@ -1636,7 +1646,7 @@ export default function App() {
 
       {/* SETTINGS */}
       {page === "settings" && (
-        <div className="max-w-xl mx-auto px-3 sm:px-4 py-4 space-y-3">
+        <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto px-3 sm:px-4 py-4 space-y-3">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
             <div className="text-lg font-semibold mb-2">{T.settings}</div>
 
@@ -1766,7 +1776,7 @@ export default function App() {
       {/* QUIZ MODAL */}
       {quizOn && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="w-[92%] max-w-xl bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
+          <div className="w-[92%] max-w-xl md:max-w-2xl lg:max-w-3xl bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm text-zinc-400">
                 {uiLang === "LT" ? "Klausimas" : "Question"} {quizIdx + 1} / {quizQs.length}
