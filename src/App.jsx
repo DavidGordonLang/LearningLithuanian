@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * Lithuanian Trainer — App.jsx
- * - Fix: header wraps cleanly on small screens; long LT labels don’t clip.
- * - Fix: Newest/Oldest sorting works (unique createdAt on import + normalized key).
- * - Keeps: i18n, quiz/RAG logic, import/export (JSON/XLSX), starters, duplicate finder, archive, Azure+browser TTS.
+ * Lithuanian Trainer — App.jsx (polished header + reliable sort select)
+ * - Tidy header on mobile (no weird wrapping, no big gaps)
+ * - Sort control is a native <select> (no popover overlap)
+ * - Newest/Oldest sorting deterministic (unique createdAt on import)
+ * - Keeps: i18n, quiz with RAG rules, JSON/XLSX import, starters, dupe finder + archive,
+ *          Azure + browser TTS, RAG priority chips, tabs, add/edit/delete, search.
  */
 
 const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
@@ -15,7 +17,7 @@ const LSK_SETTINGS = "lt_settings_v1";
 const LSK_STREAK = "lt_quiz_streak_v1";
 const LSK_XP = "lt_xp_v1";
 
-// Old keys (migration)
+// Legacy keys (migration)
 const OLD_LSK_ROWS = "lt_phrasebook_v2";
 const OLD_LSK_TTS_PROVIDER = "lt_tts_provider";
 const OLD_LSK_AZURE_KEY = "lt_azure_key";
@@ -29,7 +31,7 @@ const defaultSettings = {
   azureRegion: "",
   azureVoiceShortName: "",
   browserVoiceName: "",
-  mode: "EN2LT", // EN2LT | LT2EN   (LT2EN => UI in Lithuanian)
+  mode: "EN2LT", // EN2LT | LT2EN
   sort: "RAG", // RAG | NEW | OLD
   ragPriority: "", // "", "🔴", "🟠", "🟢"
 };
@@ -81,7 +83,7 @@ const STRINGS = {
     notQuite: "Not quite.",
     nextQuestion: "Next Question",
     libTitle: "Library",
-    libDesc: "Import data (JSON or Excel). New rows append and duplicates are merged/archivable.",
+    libDesc: "Import data (JSON or Excel). New rows append; duplicates can be archived.",
     importJson: "Import JSON",
     importXlsx: "Import .xlsx",
     exportJson: "Export JSON",
@@ -164,7 +166,7 @@ const STRINGS = {
     notQuite: "Ne visai.",
     nextQuestion: "Kitas klausimas",
     libTitle: "Biblioteka",
-    libDesc: "Importuokite duomenis (JSON arba Excel). Naujos eilutės pridedamos, dublikatai sujungiami/archyvuojami.",
+    libDesc: "Importuokite duomenis (JSON arba Excel). Naujos eilutės pridedamos; dublikatus galima archyvuoti.",
     importJson: "Importuoti JSON",
     importXlsx: "Importuoti .xlsx",
     exportJson: "Eksportuoti JSON",
@@ -216,13 +218,10 @@ const normalizeRag = (icon = "") => {
   const s = String(icon).trim();
   const low = s.toLowerCase();
   if (["🔴", "🟥", "red"].includes(s) || low === "red") return "🔴";
-  if (["🟠", "🟧", "🟨", "🟡"].includes(s) || ["amber", "orange", "yellow"].includes(low))
-    return "🟠";
+  if (["🟠", "🟧", "🟨", "🟡"].includes(s) || ["amber", "orange", "yellow"].includes(low)) return "🟠";
   if (["🟢", "🟩", "green"].includes(s) || low === "green") return "🟢";
   return "🟠";
 };
-
-// Normalize any old / localized sort values to NEW/OLD/RAG
 function normalizeSortKey(v) {
   const s = String(v || "").toLowerCase();
   if (["new", "newest", "naujausi"].includes(s)) return "NEW";
@@ -242,17 +241,72 @@ const levelProgress = (xp) => {
   return Math.max(0, Math.min(1, (xp - base) / 2500));
 };
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+// Browser voices
+function useVoices() {
+  const [voices, setVoices] = useState([]);
+  useEffect(() => {
+    const refresh = () => {
+      const vs = window.speechSynthesis?.getVoices?.() || [];
+      setVoices(
+        [...vs].sort((a, b) => {
+          const aLt = (a.lang || "").toLowerCase().startsWith("lt");
+          const bLt = (b.lang || "").toLowerCase().startsWith("lt");
+          if (aLt && !bLt) return -1;
+          if (bLt && !aLt) return 1;
+          return a.name.localeCompare(b.name);
+        })
+      );
+    };
+    refresh();
+    window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
+    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+  }, []);
+  return voices;
 }
-const weightedPick = (pool, n) => shuffle(pool).slice(0, n);
+function speakBrowser(text, voice, rate = 1) {
+  if (!window.speechSynthesis) {
+    alert("Speech synthesis not supported.");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  if (voice) u.voice = voice;
+  u.lang = voice?.lang || "lt-LT";
+  u.rate = rate;
+  window.speechSynthesis.speak(u);
+}
 
-// Fuzzy helpers (dupes)
+// Azure TTS
+function escapeXml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
+  const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+  const ssml = `<speak version="1.0" xml:lang="lt-LT">
+    <voice name="${shortName}">
+      <prosody rate="${rateDelta}">${escapeXml(text)}</prosody>
+    </voice>
+  </speak>`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": key,
+      "Content-Type": "application/ssml+xml",
+      "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+    },
+    body: ssml,
+  });
+  if (!res.ok) throw new Error("Azure TTS failed");
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+// Fuzzy (dupes)
 const stripDiacritics = (s) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 const normalizeText = (s) =>
   stripDiacritics(String(s || "").toLowerCase())
@@ -313,73 +367,6 @@ async function loadXLSX() {
   throw lastErr || new Error("Failed to load XLSX");
 }
 
-// Browser speech
-function useVoices() {
-  const [voices, setVoices] = useState([]);
-  useEffect(() => {
-    const refresh = () => {
-      const vs = window.speechSynthesis?.getVoices?.() || [];
-      setVoices(
-        [...vs].sort((a, b) => {
-          const aLt = (a.lang || "").toLowerCase().startsWith("lt");
-          const bLt = (b.lang || "").toLowerCase().startsWith("lt");
-          if (aLt && !bLt) return -1;
-          if (bLt && !aLt) return 1;
-          return a.name.localeCompare(b.name);
-        })
-      );
-    };
-    refresh();
-    window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
-    return () =>
-      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
-  }, []);
-  return voices;
-}
-function speakBrowser(text, voice, rate = 1) {
-  if (!window.speechSynthesis) {
-    alert("Speech synthesis not supported.");
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  if (voice) u.voice = voice;
-  u.lang = voice?.lang || "lt-LT";
-  u.rate = rate;
-  window.speechSynthesis.speak(u);
-}
-
-// Azure TTS
-function escapeXml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
-  const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
-  const ssml = `<speak version="1.0" xml:lang="lt-LT">
-    <voice name="${shortName}">
-      <prosody rate="${rateDelta}">${escapeXml(text)}</prosody>
-    </voice>
-  </speak>`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Ocp-Apim-Subscription-Key": key,
-      "Content-Type": "application/ssml+xml",
-      "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
-    },
-    body: ssml,
-  });
-  if (!res.ok) throw new Error("Azure TTS failed");
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
-}
-
-// ---------- App ----------
 export default function App() {
   const fileRefJson = useRef(null);
   const fileRefXlsx = useRef(null);
@@ -389,9 +376,8 @@ export default function App() {
   const [page, setPage] = useState("home");
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
-  const [sortOpen, setSortOpen] = useState(false);
 
-  // Rows + migration
+  // Data
   const [rows, setRows] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_ROWS);
@@ -406,7 +392,7 @@ export default function App() {
     return [];
   });
 
-  // Settings (normalize sort + migrate old keys)
+  // Settings (normalize sort + migrate old)
   const [settings, setSettings] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_SETTINGS);
@@ -420,8 +406,7 @@ export default function App() {
       if (ar && !parsed.azureRegion) s.azureRegion = ar;
       try {
         const av = JSON.parse(localStorage.getItem(OLD_LSK_AZURE_VOICE) || "null");
-        if (av?.shortName && !parsed.azureVoiceShortName)
-          s.azureVoiceShortName = av.shortName;
+        if (av?.shortName && !parsed.azureVoiceShortName) s.azureVoiceShortName = av.shortName;
       } catch {}
       s.sort = normalizeSortKey(s.sort);
       localStorage.setItem(LSK_SETTINGS, JSON.stringify(s));
@@ -448,15 +433,12 @@ export default function App() {
   });
 
   // Voices
-  const [azureVoices, setAzureVoices] = useState([]);
   const voices = useVoices();
-  const browserVoice = useMemo(
-    () =>
-      voices.find((v) => v.name === settings.browserVoiceName) ||
-      voices.find((v) => (v.lang || "").toLowerCase().startsWith("lt")) ||
-      voices[0],
-    [voices, settings.browserVoiceName]
-  );
+  const [azureVoices, setAzureVoices] = useState([]);
+  const browserVoice =
+    voices.find((v) => v.name === settings.browserVoiceName) ||
+    voices.find((v) => (v.lang || "").toLowerCase().startsWith("lt")) ||
+    voices[0];
 
   // Persist
   useEffect(() => localStorage.setItem(LSK_ROWS, JSON.stringify(rows)), [rows]);
@@ -464,7 +446,7 @@ export default function App() {
   useEffect(() => localStorage.setItem(LSK_STREAK, JSON.stringify(streak)), [streak]);
   useEffect(() => localStorage.setItem(LSK_XP, JSON.stringify(xp)), [xp]);
 
-  // One-time migration: ensure createdAt/updatedAt present
+  // Ensure timestamps exist (for sort)
   useEffect(() => {
     if (!rows.length) return;
     const needs = rows.some((r) => !r.createdAt);
@@ -473,12 +455,12 @@ export default function App() {
     let t = base;
     const updated = rows.map((r) => {
       const newR = { ...r };
-      if (!newR.createdAt) newR.createdAt = t -= 1000;
+      if (!newR.createdAt) newR.createdAt = (t -= 1000);
       if (!newR.updatedAt) newR.updatedAt = newR.createdAt;
       return newR;
     });
     setRows(updated);
-  }, []); // once
+  }, []); // one-time
 
   // Language/UI
   const uiLang = settings.mode === "LT2EN" ? "LT" : "EN";
@@ -490,7 +472,7 @@ export default function App() {
       ? T.sortNew
       : T.sortOld;
 
-  // Audio (ensure single channel)
+  // Audio
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
@@ -562,7 +544,7 @@ export default function App() {
     };
   }
 
-  // CRUD
+  // CRUD helpers
   const [draft, setDraft] = useState({
     English: "",
     Lithuanian: "",
@@ -623,7 +605,7 @@ export default function App() {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // Import/export/clear/starters
+  // Import / Export / Starters
   function exportJson(current = rows) {
     const blob = new Blob([JSON.stringify(current, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -644,23 +626,12 @@ export default function App() {
       return Array.from(map.values());
     });
   }
-  function uniquifyCreatedAt(arr) {
-    // assign descending unique createdAt for any rows that lack it or collide
-    const base = Date.now();
-    let t = base;
-    return arr.map((r, idx) => {
-      const out = { ...r };
-      if (!out.createdAt) out.createdAt = t -= 1000;
-      return out;
-    });
-  }
   async function importJsonFile(file) {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
       if (!Array.isArray(data)) throw new Error("JSON must be an array of rows.");
-      const base = Date.now();
-      let t = base;
+      let t = Date.now();
       const prepared = data
         .map((r) => ({
           English: r.English || "",
@@ -684,7 +655,7 @@ export default function App() {
       alert(T.importFail(e.message));
     }
   }
-  async function importXlsxFile(file) {
+  async function loadXlsx(file) {
     try {
       const XLSX = await loadXLSX();
       const buf = await file.arrayBuffer();
@@ -772,14 +743,14 @@ export default function App() {
     if (key === "NEW") {
       out = [...out].sort((a, b) => {
         const ca = a.createdAt || 0, cb = b.createdAt || 0;
-        if (cb !== ca) return cb - ca; // newest first
+        if (cb !== ca) return cb - ca;
         const ua = a.updatedAt || 0, ub = b.updatedAt || 0;
         return ub - ua;
       });
     } else if (key === "OLD") {
       out = [...out].sort((a, b) => {
         const ca = a.createdAt || 0, cb = b.createdAt || 0;
-        if (cb !== ca) return ca - cb; // oldest first
+        if (cb !== ca) return ca - cb;
         const ua = a.updatedAt || 0, ub = b.updatedAt || 0;
         return ua - ub;
       });
@@ -788,8 +759,7 @@ export default function App() {
       const priority = settings.ragPriority || "";
       const weight = (icon) => (priority && icon !== priority ? 10 : 0) + (order[icon] ?? 99);
       out = [...out].sort(
-        (a, b) =>
-          weight(normalizeRag(a["RAG Icon"])) - weight(normalizeRag(b["RAG Icon"]))
+        (a, b) => weight(normalizeRag(a["RAG Icon"])) - weight(normalizeRag(b["RAG Icon"]))
       );
     }
     return out;
@@ -803,6 +773,16 @@ export default function App() {
   const [quizChoice, setQuizChoice] = useState(null);
   const [quizOptions, setQuizOptions] = useState([]);
   const [quizScore, setQuizScore] = useState(0);
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const weightedPick = (pool, n) => shuffle(pool).slice(0, n);
 
   function startQuiz() {
     if (rows.filter((r) => !r.__archived).length < 4) {
@@ -994,48 +974,44 @@ export default function App() {
     );
   }
   function emptyArchive() {
-    if (
-      !confirm(uiLang === "LT" ? "Negrįžtamai ištrinti visus archyvuotus įrašus?" : "Permanently delete all archived items?")
-    )
-      return;
+    if (!confirm(uiLang === "LT" ? "Negrįžtamai ištrinti visus archyvuotus įrašus?" : "Permanently delete all archived items?")) return;
     setRows((prev) => prev.filter((r) => !r.__archived));
   }
 
-  const ragBtnClass = (rag) =>
-    rag === "🔴"
-      ? "bg-red-600 hover:bg-red-500"
-      : rag === "🟠"
-      ? "bg-amber-500 hover:bg-amber-400"
-      : "bg-emerald-600 hover:bg-emerald-500";
+  const sortOptions = [
+    { id: "RAG", label: T.sortRAG },
+    { id: "NEW", label: T.sortNew },
+    { id: "OLD", label: T.sortOld },
+  ];
 
+  // ---------- RENDER ----------
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Header */}
+      {/* HEADER */}
       <div className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur border-b border-zinc-800">
         <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
-          {/* Top row: app title + voice */}
-          <div className="flex items-start sm:items-center gap-2">
+          {/* Brand block (full width on mobile) */}
+          <div className="flex items-start gap-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">
               LT
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xl font-semibold leading-snug break-words">
-                {T.appTitle}
-              </div>
-              <div className="text-xs text-zinc-400 break-words">{T.tagline}</div>
+              <div className="text-xl font-semibold leading-snug">{T.appTitle}</div>
+              <div className="text-xs text-zinc-400">{T.tagline}</div>
             </div>
-            {/* Browser voice selector (enabled only for browser provider) */}
+          </div>
+
+          {/* Voice select (stacks below title on mobile; right-aligned on sm+) */}
+          <div className="mt-2 flex sm:justify-end">
             <select
-              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1 w-full sm:w-auto"
               value={settings.browserVoiceName}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, browserVoiceName: e.target.value }))
-              }
+              onChange={(e) => setSettings((s) => ({ ...s, browserVoiceName: e.target.value }))}
               disabled={settings.ttsProvider !== "browser"}
               title={settings.ttsProvider === "azure" ? "Using Azure" : "Browser voice"}
             >
               <option value="">{uiLang === "LT" ? "Automatinis balsas" : "Auto voice"}</option>
-              {useVoices().map((v) => (
+              {voices.map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name} ({v.lang})
                 </option>
@@ -1043,7 +1019,7 @@ export default function App() {
             </select>
           </div>
 
-          {/* Nav + Start Quiz: wraps nicely, quiz goes full-width on small screens */}
+          {/* Nav + Start Quiz */}
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             {[
               { id: "home", label: T.home },
@@ -1069,9 +1045,9 @@ export default function App() {
             </button>
           </div>
 
-          {/* Search + Sort (wrap) */}
-          <div className="mt-2 flex items-center gap-2 flex-wrap">
-            <div className="relative grow basis-[320px]">
+          {/* Search + Sort select (select is reliable on mobile) */}
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+            <div className="relative">
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -1089,42 +1065,25 @@ export default function App() {
               )}
             </div>
 
-            <div className="relative shrink-0">
-              <button
-                onClick={() => setSortOpen((v) => !v)}
+            <label className="flex items-center gap-2 justify-between sm:justify-end">
+              <span className="text-xs text-zinc-400">{T.sort}:</span>
+              <select
                 className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-2"
+                value={normalizeSortKey(settings.sort)}
+                onChange={(e) => setSettings((s) => ({ ...s, sort: e.target.value }))}
               >
-                {T.sort}: {sortLabel}
-              </button>
-              {sortOpen && (
-                <div className="absolute right-0 mt-1 z-50 min-w-[160px] bg-zinc-900 border border-zinc-700 rounded-md shadow-lg overflow-hidden">
-                  {[
-                    { id: "RAG", label: T.sortRAG },
-                    { id: "NEW", label: T.sortNew },
-                    { id: "OLD", label: T.sortOld },
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => {
-                        setSettings((s) => ({ ...s, sort: opt.id }));
-                        setSortOpen(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-3 py-2 text-sm hover:bg-zinc-800",
-                        normalizeSortKey(settings.sort) === opt.id && "bg-zinc-800"
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                {sortOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {/* Streak / Level + RAG priority chips */}
           <div className="mt-2 flex flex-col items-stretch gap-2">
-            <div className="w-full">
+            <div>
               <div className="flex justify-center items-center gap-4 mb-1 text-xs text-zinc-400">
                 <div>
                   🔥 {T.streak}: <span className="text-zinc-200">{streak.streak}</span>
@@ -1176,32 +1135,28 @@ export default function App() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Tabs */}
-        {page === "home" && (
-          <div className="max-w-xl mx-auto px-3 sm:px-4 pb-2">
-            <div className="grid grid-cols-4 gap-2">
+          {/* Tabs */}
+          {page === "home" && (
+            <div className="mt-2 grid grid-cols-4 gap-2">
               {SHEETS.map((s) => (
                 <button
                   key={s}
                   onClick={() => setTab(s)}
                   className={cn(
                     "w-full px-3 py-1.5 rounded-full text-sm border",
-                    tab === s
-                      ? "bg-emerald-600 border-emerald-600"
-                      : "bg-zinc-900 border-zinc-800"
+                    tab === s ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
                   )}
                 >
                   {T.tabs[s]}
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Home list */}
+      {/* HOME LIST */}
       {page === "home" && (
         <div className="max-w-xl mx-auto px-3 sm:px-4 pb-28">
           {filteredByTab.map((r, i) => {
@@ -1449,7 +1404,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Library */}
+      {/* LIBRARY */}
       {page === "library" && (
         <div className="max-w-xl mx-auto px-3 sm:px-4 py-4 space-y-3">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
@@ -1476,7 +1431,7 @@ export default function App() {
                 accept=".xlsx,.xls"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) importXlsxFile(f).finally(() => (e.target.value = ""));
+                  if (f) loadXlsx(f).finally(() => (e.target.value = ""));
                 }}
                 className="hidden"
               />
@@ -1679,7 +1634,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Settings */}
+      {/* SETTINGS */}
       {page === "settings" && (
         <div className="max-w-xl mx-auto px-3 sm:px-4 py-4 space-y-3">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
@@ -1808,7 +1763,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Quiz modal */}
+      {/* QUIZ MODAL */}
       {quizOn && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="w-[92%] max-w-xl bg-zinc-900 border border-zinc-700 rounded-2xl p-4">
@@ -1901,7 +1856,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Tiny CSS so details summary toggles text */}
+      {/* Tiny CSS for summary toggles */}
       <style>{`
         details > summary .details-open { display: none; }
         details[open] > summary .details-closed { display: none; }
