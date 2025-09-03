@@ -2,10 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Lithuanian Trainer — App.jsx
- * Fixes in this version:
- * - Normalize saved sort values ("Newest"/"Oldest"/localized) -> NEW/OLD/RAG so sorting works.
- * - Responsive header & controls: nav pills and Start Quiz wrap; search/sort row wraps; long LT strings no longer clip.
- * - Keeps all features from previous build (audio, import/export, starters, dupes, archive, quiz, i18n, etc.).
+ * - Fix: header wraps cleanly on small screens; long LT labels don’t clip.
+ * - Fix: Newest/Oldest sorting works (unique createdAt on import + normalized key).
+ * - Keeps: i18n, quiz/RAG logic, import/export (JSON/XLSX), starters, duplicate finder, archive, Azure+browser TTS.
  */
 
 const SHEETS = ["Phrases", "Questions", "Words", "Numbers"];
@@ -35,14 +34,14 @@ const defaultSettings = {
   ragPriority: "", // "", "🔴", "🟠", "🟢"
 };
 
-// Map for starters
+// Starters
 const STARTER_MAP = {
   EN2LT: "/data/Starter_EN_to_LT_v3.json",
   LT2EN: "/data/Starter_LT_to_EN_v3.json",
   NUMBERS: "/data/Starter_Numbers_v1.json",
 };
 
-// ---------------- i18n ----------------
+// ---------- i18n ----------
 const STRINGS = {
   EN: {
     appTitle: "Lithuanian Trainer",
@@ -82,7 +81,7 @@ const STRINGS = {
     notQuite: "Not quite.",
     nextQuestion: "Next Question",
     libTitle: "Library",
-    libDesc: "Import data (JSON or Excel). New rows are appended and duplicates are merged.",
+    libDesc: "Import data (JSON or Excel). New rows append and duplicates are merged/archivable.",
     importJson: "Import JSON",
     importXlsx: "Import .xlsx",
     exportJson: "Export JSON",
@@ -113,7 +112,6 @@ const STRINGS = {
     region: "Region",
     voice: "Voice",
     fetchVoices: "Fetch voices",
-    // Alerts
     needMore: "Add more entries first (need at least 4).",
     noPool: "No quiz candidates found.",
     enterRegionKey: "Enter region and key first.",
@@ -166,8 +164,7 @@ const STRINGS = {
     notQuite: "Ne visai.",
     nextQuestion: "Kitas klausimas",
     libTitle: "Biblioteka",
-    libDesc:
-      "Importuokite duomenis (JSON arba Excel). Naujos eilutės pridedamos, o dublikatai sujungiami.",
+    libDesc: "Importuokite duomenis (JSON arba Excel). Naujos eilutės pridedamos, dublikatai sujungiami/archyvuojami.",
     importJson: "Importuoti JSON",
     importXlsx: "Importuoti .xlsx",
     exportJson: "Eksportuoti JSON",
@@ -198,7 +195,6 @@ const STRINGS = {
     region: "Regionas",
     voice: "Balsas",
     fetchVoices: "Gauti balsus",
-    // Alerts
     needMore: "Pirmiausia pridėkite daugiau įrašų (reikia bent 4).",
     noPool: "Nėra kandidatų viktorinai.",
     enterRegionKey: "Pirmiausia įveskite regioną ir raktą.",
@@ -215,7 +211,7 @@ const STRINGS = {
   },
 };
 
-// -------------- utils --------------
+// ---------- utils ----------
 const normalizeRag = (icon = "") => {
   const s = String(icon).trim();
   const low = s.toLowerCase();
@@ -226,14 +222,13 @@ const normalizeRag = (icon = "") => {
   return "🟠";
 };
 
-// NEW: normalize any legacy/translated sort value
+// Normalize any old / localized sort values to NEW/OLD/RAG
 function normalizeSortKey(v) {
   const s = String(v || "").toLowerCase();
   if (["new", "newest", "naujausi"].includes(s)) return "NEW";
   if (["old", "oldest", "seniausi"].includes(s)) return "OLD";
   return "RAG";
 }
-
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const rowKey = (r) =>
@@ -257,17 +252,15 @@ function shuffle(arr) {
 }
 const weightedPick = (pool, n) => shuffle(pool).slice(0, n);
 
-// Fuzzy helpers (for duplicate scan)
+// Fuzzy helpers (dupes)
 const stripDiacritics = (s) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 const normalizeText = (s) =>
   stripDiacritics(String(s || "").toLowerCase())
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-
 function levenshtein(a, b) {
-  const m = a.length,
-    n = b.length;
+  const m = a.length, n = b.length;
   if (m === 0) return n;
   if (n === 0) return m;
   if (m < n) return levenshtein(b, a);
@@ -286,14 +279,13 @@ function levenshtein(a, b) {
   return prev[n];
 }
 const similarity = (a, b) => {
-  const A = normalizeText(a),
-    B = normalizeText(b);
+  const A = normalizeText(a), B = normalizeText(b);
   if (!A && !B) return 1;
   const d = levenshtein(A, B);
   return 1 - d / Math.max(A.length, B.length);
 };
 
-// XLSX UMD loader
+// XLSX loader
 async function loadXLSX() {
   if (window.XLSX) return window.XLSX;
   const urls = [
@@ -321,7 +313,7 @@ async function loadXLSX() {
   throw lastErr || new Error("Failed to load XLSX");
 }
 
-// Browser voices
+// Browser speech
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -387,6 +379,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
+// ---------- App ----------
 export default function App() {
   const fileRefJson = useRef(null);
   const fileRefXlsx = useRef(null);
@@ -398,7 +391,7 @@ export default function App() {
   const [q, setQ] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
 
-  // rows + migration
+  // Rows + migration
   const [rows, setRows] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_ROWS);
@@ -413,13 +406,12 @@ export default function App() {
     return [];
   });
 
-  // settings (with migration + sort normalization)
+  // Settings (normalize sort + migrate old keys)
   const [settings, setSettings] = useState(() => {
     try {
       const raw = localStorage.getItem(LSK_SETTINGS);
       const parsed = raw ? JSON.parse(raw) : {};
       const s = { ...defaultSettings, ...parsed };
-      // migrate legacy keys
       const tp = localStorage.getItem(OLD_LSK_TTS_PROVIDER);
       if (tp && !parsed.ttsProvider) s.ttsProvider = tp;
       const ak = localStorage.getItem(OLD_LSK_AZURE_KEY);
@@ -431,7 +423,6 @@ export default function App() {
         if (av?.shortName && !parsed.azureVoiceShortName)
           s.azureVoiceShortName = av.shortName;
       } catch {}
-      // normalize sort to NEW/OLD/RAG
       s.sort = normalizeSortKey(s.sort);
       localStorage.setItem(LSK_SETTINGS, JSON.stringify(s));
       return s;
@@ -440,13 +431,10 @@ export default function App() {
     }
   });
 
-  // streak / xp
+  // Streak / XP
   const [streak, setStreak] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(LSK_STREAK)) || {
-        streak: 0,
-        lastDate: "",
-      };
+      return JSON.parse(localStorage.getItem(LSK_STREAK)) || { streak: 0, lastDate: "" };
     } catch {
       return { streak: 0, lastDate: "" };
     }
@@ -459,7 +447,7 @@ export default function App() {
     }
   });
 
-  // voices
+  // Voices
   const [azureVoices, setAzureVoices] = useState([]);
   const voices = useVoices();
   const browserVoice = useMemo(
@@ -476,24 +464,25 @@ export default function App() {
   useEffect(() => localStorage.setItem(LSK_STREAK, JSON.stringify(streak)), [streak]);
   useEffect(() => localStorage.setItem(LSK_XP, JSON.stringify(xp)), [xp]);
 
-  // One-time migration: ensure createdAt exists (preserve current order visually)
+  // One-time migration: ensure createdAt/updatedAt present
   useEffect(() => {
     if (!rows.length) return;
-    const missing = rows.some((r) => !r.createdAt);
-    if (!missing) return;
-    const now = Date.now();
-    const updated = rows.map((r, i) => ({
-      ...r,
-      createdAt: r.createdAt || now - (rows.length - i) * 1000, // 1s apart
-      updatedAt: r.updatedAt || now - (rows.length - i) * 1000,
-    }));
+    const needs = rows.some((r) => !r.createdAt);
+    if (!needs) return;
+    const base = Date.now();
+    let t = base;
+    const updated = rows.map((r) => {
+      const newR = { ...r };
+      if (!newR.createdAt) newR.createdAt = t -= 1000;
+      if (!newR.updatedAt) newR.updatedAt = newR.createdAt;
+      return newR;
+    });
     setRows(updated);
-  }, []); // run once
+  }, []); // once
 
-  // i18n lang based on mode
+  // Language/UI
   const uiLang = settings.mode === "LT2EN" ? "LT" : "EN";
   const T = STRINGS[uiLang];
-
   const sortLabel =
     normalizeSortKey(settings.sort) === "RAG"
       ? T.sortRAG
@@ -501,7 +490,7 @@ export default function App() {
       ? T.sortNew
       : T.sortOld;
 
-  // audio (single channel)
+  // Audio (ensure single channel)
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
@@ -544,7 +533,6 @@ export default function App() {
       alert((T.voiceError || "Voice error: ") + (e?.message || e));
     }
   }
-
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -635,11 +623,9 @@ export default function App() {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // import/export/clear/starters
+  // Import/export/clear/starters
   function exportJson(current = rows) {
-    const blob = new Blob([JSON.stringify(current, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob([JSON.stringify(current, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -658,11 +644,23 @@ export default function App() {
       return Array.from(map.values());
     });
   }
+  function uniquifyCreatedAt(arr) {
+    // assign descending unique createdAt for any rows that lack it or collide
+    const base = Date.now();
+    let t = base;
+    return arr.map((r, idx) => {
+      const out = { ...r };
+      if (!out.createdAt) out.createdAt = t -= 1000;
+      return out;
+    });
+  }
   async function importJsonFile(file) {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
       if (!Array.isArray(data)) throw new Error("JSON must be an array of rows.");
+      const base = Date.now();
+      let t = base;
       const prepared = data
         .map((r) => ({
           English: r.English || "",
@@ -675,8 +673,8 @@ export default function App() {
           Sheet: SHEETS.includes(r.Sheet) ? r.Sheet : "Phrases",
           __stats: r.__stats || { rc: 0, ac: 0, ai: 0, gi: 0 },
           __archived: !!r.__archived,
-          createdAt: r.createdAt || Date.now(),
-          updatedAt: Date.now(),
+          createdAt: r.createdAt || (t -= 1000),
+          updatedAt: r.updatedAt || r.createdAt || Date.now(),
         }))
         .filter((r) => r.English || r.Lithuanian);
       mergeRows(prepared);
@@ -692,7 +690,7 @@ export default function App() {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const merged = [];
-      const tabs = new Set(SHEETS);
+      let t = Date.now();
       for (const name of wb.SheetNames) {
         const ws = wb.Sheets[name];
         if (!ws) continue;
@@ -706,9 +704,9 @@ export default function App() {
             Usage: r.Usage ?? r.usage ?? "",
             Notes: r.Notes ?? r.notes ?? "",
             "RAG Icon": normalizeRag(r["RAG Icon"] ?? r.RAG ?? r.rag ?? "🟠"),
-            Sheet: tabs.has(name) ? name : SHEETS.includes(r.Sheet) ? r.Sheet : "Phrases",
+            Sheet: SHEETS.includes(name) ? name : SHEETS.includes(r.Sheet) ? r.Sheet : "Phrases",
             __stats: { rc: 0, ac: 0, ai: 0, gi: 0 },
-            createdAt: Date.now(),
+            createdAt: (t -= 1000),
             updatedAt: Date.now(),
           };
           if (row.English || row.Lithuanian) merged.push(row);
@@ -728,6 +726,7 @@ export default function App() {
       if (!res.ok) throw new Error(`Starter not found at ${url}`);
       const data = await res.json();
       if (!Array.isArray(data)) throw new Error("Starter JSON invalid.");
+      let t = Date.now();
       const prepared = data
         .map((r) => ({
           English: r.English || "",
@@ -740,7 +739,7 @@ export default function App() {
           Sheet: SHEETS.includes(r.Sheet) ? r.Sheet : "Phrases",
           __stats: r.__stats || { rc: 0, ac: 0, ai: 0, gi: 0 },
           __archived: !!r.__archived,
-          createdAt: r.createdAt || Date.now(),
+          createdAt: r.createdAt || (t -= 1000),
           updatedAt: Date.now(),
         }))
         .filter((r) => r.English || r.Lithuanian);
@@ -757,7 +756,7 @@ export default function App() {
     setTab("Phrases");
   }
 
-  // filter/sort
+  // Filter + Sort
   const filteredByTab = useMemo(() => {
     const arr = rows.filter((r) => !r.__archived && r.Sheet === tab);
     let out = arr;
@@ -771,14 +770,23 @@ export default function App() {
     }
     const key = normalizeSortKey(settings.sort);
     if (key === "NEW") {
-      out = [...out].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      out = [...out].sort((a, b) => {
+        const ca = a.createdAt || 0, cb = b.createdAt || 0;
+        if (cb !== ca) return cb - ca; // newest first
+        const ua = a.updatedAt || 0, ub = b.updatedAt || 0;
+        return ub - ua;
+      });
     } else if (key === "OLD") {
-      out = [...out].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      out = [...out].sort((a, b) => {
+        const ca = a.createdAt || 0, cb = b.createdAt || 0;
+        if (cb !== ca) return ca - cb; // oldest first
+        const ua = a.updatedAt || 0, ub = b.updatedAt || 0;
+        return ua - ub;
+      });
     } else {
       const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
       const priority = settings.ragPriority || "";
-      const weight = (icon) =>
-        (priority && icon !== priority ? 10 : 0) + (order[icon] ?? 99);
+      const weight = (icon) => (priority && icon !== priority ? 10 : 0) + (order[icon] ?? 99);
       out = [...out].sort(
         (a, b) =>
           weight(normalizeRag(a["RAG Icon"])) - weight(normalizeRag(b["RAG Icon"]))
@@ -787,7 +795,7 @@ export default function App() {
     return out;
   }, [rows, tab, q, settings.sort, settings.ragPriority]);
 
-  // quiz
+  // Quiz
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
@@ -913,11 +921,9 @@ export default function App() {
   const [showArchived, setShowArchived] = useState(false);
 
   function scanDuplicates() {
-    const active = rows
-      .map((r, idx) => ({ r, idx }))
-      .filter((x) => !x.r.__archived);
+    const active = rows.map((r, idx) => ({ r, idx })).filter((x) => !x.r.__archived);
 
-    // exact
+    // exact groups
     const map = new Map();
     active.forEach(({ r, idx }) => {
       const k = rowKey(r);
@@ -927,7 +933,7 @@ export default function App() {
     });
     const exactGroups = Array.from(map.values()).filter((g) => g.length > 1);
 
-    // close
+    // close matches
     const CLOSE_THRESHOLD = 0.88;
     const closePairs = [];
     const bySheet = new Map();
@@ -944,8 +950,7 @@ export default function App() {
           const sEN = similarity(A.English, B.English);
           const sLT = similarity(A.Lithuanian, B.Lithuanian);
           const sim = Math.max(sEN, sLT);
-          if (sim >= CLOSE_THRESHOLD)
-            closePairs.push({ a: arr[i].idx, b: arr[j].idx, sim });
+          if (sim >= CLOSE_THRESHOLD) closePairs.push({ a: arr[i].idx, b: arr[j].idx, sim });
         }
       }
     }
@@ -977,9 +982,7 @@ export default function App() {
     }
     setRows((prev) =>
       prev.map((r, i) =>
-        selectedArchive.has(i)
-          ? { ...r, __archived: true, updatedAt: Date.now() }
-          : r
+        selectedArchive.has(i) ? { ...r, __archived: true, updatedAt: Date.now() } : r
       )
     );
     setSelectedArchive(new Set());
@@ -987,13 +990,14 @@ export default function App() {
   }
   function restoreArchived(i) {
     setRows((prev) =>
-      prev.map((r, idx) =>
-        idx === i ? { ...r, __archived: false, updatedAt: Date.now() } : r
-      )
+      prev.map((r, idx) => (idx === i ? { ...r, __archived: false, updatedAt: Date.now() } : r))
     );
   }
   function emptyArchive() {
-    if (!confirm(uiLang === "LT" ? "Negrįžtamai ištrinti visus archyvuotus įrašus?" : "Permanently delete all archived items?")) return;
+    if (
+      !confirm(uiLang === "LT" ? "Negrįžtamai ištrinti visus archyvuotus įrašus?" : "Permanently delete all archived items?")
+    )
+      return;
     setRows((prev) => prev.filter((r) => !r.__archived));
   }
 
@@ -1009,16 +1013,18 @@ export default function App() {
       {/* Header */}
       <div className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur border-b border-zinc-800">
         <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
-          <div className="flex items-center gap-2">
+          {/* Top row: app title + voice */}
+          <div className="flex items-start sm:items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-lime-500 flex items-center justify-center font-bold text-zinc-900">
               LT
             </div>
-            <div className="leading-tight flex-1 min-w-0">
-              <div className="text-lg font-semibold truncate">{T.appTitle}</div>
-              <div className="text-xs text-zinc-400">{T.tagline}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xl font-semibold leading-snug break-words">
+                {T.appTitle}
+              </div>
+              <div className="text-xs text-zinc-400 break-words">{T.tagline}</div>
             </div>
-
-            {/* Browser voice selector (only when provider=browser) */}
+            {/* Browser voice selector (enabled only for browser provider) */}
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
               value={settings.browserVoiceName}
@@ -1026,11 +1032,7 @@ export default function App() {
                 setSettings((s) => ({ ...s, browserVoiceName: e.target.value }))
               }
               disabled={settings.ttsProvider !== "browser"}
-              title={
-                settings.ttsProvider === "azure"
-                  ? "Using Azure"
-                  : "Browser voice"
-              }
+              title={settings.ttsProvider === "azure" ? "Using Azure" : "Browser voice"}
             >
               <option value="">{uiLang === "LT" ? "Automatinis balsas" : "Auto voice"}</option>
               {useVoices().map((v) => (
@@ -1041,7 +1043,7 @@ export default function App() {
             </select>
           </div>
 
-          {/* Nav pills (wrap on small screens) */}
+          {/* Nav + Start Quiz: wraps nicely, quiz goes full-width on small screens */}
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             {[
               { id: "home", label: T.home },
@@ -1053,9 +1055,7 @@ export default function App() {
                 onClick={() => setPage(p.id)}
                 className={cn(
                   "px-3 py-1.5 rounded-lg border",
-                  page === p.id
-                    ? "bg-zinc-800 border-zinc-600"
-                    : "bg-zinc-900 border-zinc-700"
+                  page === p.id ? "bg-zinc-800 border-zinc-600" : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {p.label}
@@ -1063,7 +1063,7 @@ export default function App() {
             ))}
             <button
               onClick={startQuiz}
-              className="ml-auto bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-1.5 font-semibold shrink-0"
+              className="w-full sm:w-auto ml-auto bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-1.5 font-semibold text-center"
             >
               {T.startQuiz}
             </button>
@@ -1122,7 +1122,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Streak/level bar + RAG chips */}
+          {/* Streak / Level + RAG priority chips */}
           <div className="mt-2 flex flex-col items-stretch gap-2">
             <div className="w-full">
               <div className="flex justify-center items-center gap-4 mb-1 text-xs text-zinc-400">
@@ -1157,9 +1157,7 @@ export default function App() {
                 ].map((x) => (
                   <button
                     key={x.id || "all"}
-                    onClick={() =>
-                      setSettings((s) => ({ ...s, ragPriority: x.id }))
-                    }
+                    onClick={() => setSettings((s) => ({ ...s, ragPriority: x.id }))}
                     className={cn(
                       "px-2 py-1 rounded-md text-xs border w-full flex items-center justify-center gap-2",
                       settings.ragPriority === x.id
@@ -1171,12 +1169,7 @@ export default function App() {
                     {x.label ? (
                       x.label
                     ) : (
-                      <span
-                        className={cn(
-                          "inline-block w-2.5 h-2.5 rounded-full",
-                          x.color
-                        )}
-                      />
+                      <span className={cn("inline-block w-2.5 h-2.5 rounded-full", x.color)} />
                     )}
                   </button>
                 ))}
@@ -1217,10 +1210,7 @@ export default function App() {
             const speakText = settings.mode === "EN2LT" ? r.Lithuanian : r.English;
 
             return (
-              <div
-                key={`${rowKey(r)}-${i}`}
-                className="mt-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-3"
-              >
+              <div key={`${rowKey(r)}-${i}`} className="mt-3 bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
                 {!isEditing ? (
                   <div className="flex items-start gap-3">
                     <button
@@ -1239,7 +1229,7 @@ export default function App() {
                       ►
                     </button>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm text-zinc-400 truncate">
+                      <div className="text-sm text-zinc-400 break-words">
                         {settings.mode === "EN2LT" ? r.English : r.Lithuanian}
                       </div>
                       <div className="text-lg leading-tight font-medium break-words">
@@ -1280,16 +1270,10 @@ export default function App() {
                       </details>
                     </div>
                     <div className="flex flex-col gap-1 ml-2">
-                      <button
-                        onClick={() => startEdit(idx)}
-                        className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
-                      >
+                      <button onClick={() => startEdit(idx)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">
                         {T.edit}
                       </button>
-                      <button
-                        onClick={() => remove(idx)}
-                        className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md"
-                      >
+                      <button onClick={() => remove(idx)} className="text-xs bg-zinc-800 text-red-400 px-2 py-1 rounded-md">
                         {T.del}
                       </button>
                     </div>
@@ -1302,9 +1286,7 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.English}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, English: e.target.value })
-                          }
+                          onChange={(e) => setEditDraft({ ...editDraft, English: e.target.value })}
                         />
                       </label>
                       <label className="col-span-2">
@@ -1312,12 +1294,7 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Lithuanian}
-                          onChange={(e) =>
-                            setEditDraft({
-                              ...editDraft,
-                              Lithuanian: e.target.value,
-                            })
-                          }
+                          onChange={(e) => setEditDraft({ ...editDraft, Lithuanian: e.target.value })}
                         />
                       </label>
                       <label>
@@ -1325,9 +1302,7 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Phonetic}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, Phonetic: e.target.value })
-                          }
+                          onChange={(e) => setEditDraft({ ...editDraft, Phonetic: e.target.value })}
                         />
                       </label>
                       <label>
@@ -1335,9 +1310,7 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Category}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, Category: e.target.value })
-                          }
+                          onChange={(e) => setEditDraft({ ...editDraft, Category: e.target.value })}
                         />
                       </label>
                       <label className="col-span-2">
@@ -1345,9 +1318,7 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Usage}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, Usage: e.target.value })
-                          }
+                          onChange={(e) => setEditDraft({ ...editDraft, Usage: e.target.value })}
                         />
                       </label>
                       <label className="col-span-2">
@@ -1355,9 +1326,7 @@ export default function App() {
                         <input
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Notes}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, Notes: e.target.value })
-                          }
+                          onChange={(e) => setEditDraft({ ...editDraft, Notes: e.target.value })}
                         />
                       </label>
                       <label>
@@ -1366,16 +1335,11 @@ export default function App() {
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft["RAG Icon"]}
                           onChange={(e) =>
-                            setEditDraft({
-                              ...editDraft,
-                              "RAG Icon": normalizeRag(e.target.value),
-                            })
+                            setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })
                           }
                         >
                           {["🔴", "🟠", "🟢"].map((x) => (
-                            <option key={x} value={x}>
-                              {x}
-                            </option>
+                            <option key={x} value={x}>{x}</option>
                           ))}
                         </select>
                       </label>
@@ -1384,14 +1348,10 @@ export default function App() {
                         <select
                           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
                           value={editDraft.Sheet}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, Sheet: e.target.value })
-                          }
+                          onChange={(e) => setEditDraft({ ...editDraft, Sheet: e.target.value })}
                         >
                           {SHEETS.map((s) => (
-                            <option key={s} value={s}>
-                              {T.tabs[s]}
-                            </option>
+                            <option key={s} value={s}>{T.tabs[s]}</option>
                           ))}
                         </select>
                       </label>
@@ -1404,10 +1364,7 @@ export default function App() {
                         {uiLang === "LT" ? "Išsaugoti" : "Save"}
                       </button>
                       <button
-                        onClick={() => {
-                          setEditIdx(null);
-                          setEditDraft(null);
-                        }}
+                        onClick={() => { setEditIdx(null); setEditDraft(null); }}
                         className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
                       >
                         {uiLang === "LT" ? "Atšaukti" : "Cancel"}
@@ -1423,72 +1380,51 @@ export default function App() {
           <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
             <div className="max-w-xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
               <details ref={addDetailsRef}>
-                <summary className="cursor-pointer text-sm text-zinc-300">
-                  {T.addEntry}
-                </summary>
+                <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <input
                     className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
                     placeholder={T.english}
                     value={draft.English}
-                    onChange={(e) =>
-                      setDraft({ ...draft, English: e.target.value })
-                    }
+                    onChange={(e) => setDraft({ ...draft, English: e.target.value })}
                   />
                   <input
                     className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
                     placeholder={T.lithuanian}
                     value={draft.Lithuanian}
-                    onChange={(e) =>
-                      setDraft({ ...draft, Lithuanian: e.target.value })
-                    }
+                    onChange={(e) => setDraft({ ...draft, Lithuanian: e.target.value })}
                   />
                   <input
                     className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
                     placeholder={T.phonetic}
                     value={draft.Phonetic}
-                    onChange={(e) =>
-                      setDraft({ ...draft, Phonetic: e.target.value })
-                    }
+                    onChange={(e) => setDraft({ ...draft, Phonetic: e.target.value })}
                   />
                   <input
                     className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
                     placeholder={T.category}
                     value={draft.Category}
-                    onChange={(e) =>
-                      setDraft({ ...draft, Category: e.target.value })
-                    }
+                    onChange={(e) => setDraft({ ...draft, Category: e.target.value })}
                   />
                   <input
                     className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
                     placeholder={T.usage}
                     value={draft.Usage}
-                    onChange={(e) =>
-                      setDraft({ ...draft, Usage: e.target.value })
-                    }
+                    onChange={(e) => setDraft({ ...draft, Usage: e.target.value })}
                   />
                   <input
                     className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
                     placeholder={T.notes}
                     value={draft.Notes}
-                    onChange={(e) =>
-                      setDraft({ ...draft, Notes: e.target.value })
-                    }
+                    onChange={(e) => setDraft({ ...draft, Notes: e.target.value })}
                   />
                   <select
                     className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm"
                     value={draft["RAG Icon"]}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        "RAG Icon": normalizeRag(e.target.value),
-                      })
-                    }
+                    onChange={(e) => setDraft({ ...draft, "RAG Icon": normalizeRag(e.target.value) })}
                   >
                     {["🔴", "🟠", "🟢"].map((x) => (
-                      <option key={x} value={x}>
-                        {x}
-                      </option>
+                      <option key={x} value={x}>{x}</option>
                     ))}
                   </select>
                   <select
@@ -1497,9 +1433,7 @@ export default function App() {
                     onChange={(e) => setDraft({ ...draft, Sheet: e.target.value })}
                   >
                     {SHEETS.map((s) => (
-                      <option key={s} value={s}>
-                        {T.tabs[s]}
-                      </option>
+                      <option key={s} value={s}>{T.tabs[s]}</option>
                     ))}
                   </select>
                   <button
@@ -1532,10 +1466,7 @@ export default function App() {
                 }}
                 className="hidden"
               />
-              <button
-                onClick={() => fileRefJson.current?.click()}
-                className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-              >
+              <button onClick={() => fileRefJson.current?.click()} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
                 {T.importJson}
               </button>
 
@@ -1549,24 +1480,15 @@ export default function App() {
                 }}
                 className="hidden"
               />
-              <button
-                onClick={() => fileRefXlsx.current?.click()}
-                className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-              >
+              <button onClick={() => fileRefXlsx.current?.click()} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
                 {T.importXlsx}
               </button>
 
-              <button
-                onClick={() => exportJson(rows)}
-                className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-              >
+              <button onClick={() => exportJson(rows)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
                 {T.exportJson}
               </button>
 
-              <button
-                onClick={clearAll}
-                className="bg-zinc-900 border border-red-600 text-red-400 rounded-md text-sm px-3 py-2"
-              >
+              <button onClick={clearAll} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md text-sm px-3 py-2">
                 {T.clearLibrary}
               </button>
             </div>
@@ -1575,22 +1497,13 @@ export default function App() {
             <div className="mt-3 pt-3 border-t border-zinc-800">
               <div className="text-sm font-medium mb-2">{T.starters}</div>
               <div className="flex flex-wrap gap-2">
-                <button
-                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-                  onClick={() => importStarter("EN2LT")}
-                >
+                <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={() => importStarter("EN2LT")}>
                   {T.installEN2LT}
                 </button>
-                <button
-                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-                  onClick={() => importStarter("LT2EN")}
-                >
+                <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={() => importStarter("LT2EN")}>
                   {T.installLT2EN}
                 </button>
-                <button
-                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-                  onClick={() => importStarter("NUMBERS")}
-                >
+                <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={() => importStarter("NUMBERS")}>
                   {T.installNUM}
                 </button>
               </div>
@@ -1600,10 +1513,7 @@ export default function App() {
             <div className="mt-4 pt-4 border-t border-zinc-800">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium">{T.dupeFinder}</div>
-                <button
-                  onClick={scanDuplicates}
-                  className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-                >
+                <button onClick={scanDuplicates} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
                   {T.scanDupes}
                 </button>
               </div>
@@ -1616,32 +1526,23 @@ export default function App() {
                       <div className="font-medium">
                         {T.exactDupes}: {dupeScan.exactGroups.length} group(s)
                       </div>
-                      <button
-                        onClick={selectOlderInGroups}
-                        className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
-                      >
+                      <button onClick={selectOlderInGroups} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">
                         {T.selectOlder}
                       </button>
                     </div>
                     <div className="space-y-3">
                       {dupeScan.exactGroups.map((group, gi) => (
                         <div key={gi} className="border border-zinc-800 rounded-md p-2">
-                          <div className="text-xs text-zinc-400 mb-1">
-                            Group {gi + 1}
-                          </div>
+                          <div className="text-xs text-zinc-400 mb-1">Group {gi + 1}</div>
                           {group.map((i) => {
                             const r = rows[i];
                             return (
                               <label key={i} className="flex items-start gap-2 text-sm">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedArchive.has(i)}
-                                  onChange={() => toggleArchiveSelection(i)}
-                                />
+                                <input type="checkbox" checked={selectedArchive.has(i)} onChange={() => toggleArchiveSelection(i)} />
                                 <div className="min-w-0">
                                   <div className="whitespace-normal">
                                     <b>{r.English}</b> — {r.Lithuanian}{" "}
-                                    <span className="text-zinc-500">[{T.tabs[r.Sheet]}]</span>
+                                    <span className="text-zinc-500">[{STRINGS[uiLang].tabs[r.Sheet]}]</span>
                                   </div>
                                   {(r.Usage || r.Notes) && (
                                     <div className="mt-1 text-xs text-zinc-400 space-y-0.5">
@@ -1682,62 +1583,40 @@ export default function App() {
                               Similarity: {(p.sim * 100).toFixed(0)}%
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {/* A */}
                               <label className="flex items-start gap-2 text-sm">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedArchive.has(p.a)}
-                                  onChange={() => toggleArchiveSelection(p.a)}
-                                />
+                                <input type="checkbox" checked={selectedArchive.has(p.a)} onChange={() => toggleArchiveSelection(p.a)} />
                                 <div className="min-w-0">
                                   <div className="whitespace-normal">
                                     <b>{a.English}</b> — {a.Lithuanian}{" "}
-                                    <span className="text-zinc-500">[{T.tabs[a.Sheet]}]</span>
+                                    <span className="text-zinc-500">[{STRINGS[uiLang].tabs[a.Sheet]}]</span>
                                   </div>
                                   {(a.Usage || a.Notes) && (
                                     <div className="mt-1 text-xs text-zinc-400 space-y-0.5">
                                       {a.Usage && (
-                                        <div>
-                                          <span className="text-zinc-500">{T.usage}: </span>
-                                          {a.Usage}
-                                        </div>
+                                        <div><span className="text-zinc-500">{T.usage}: </span>{a.Usage}</div>
                                       )}
                                       {a.Notes && (
-                                        <div>
-                                          <span className="text-zinc-500">{T.notes}: </span>
-                                          {a.Notes}
-                                        </div>
+                                        <div><span className="text-zinc-500">{T.notes}: </span>{a.Notes}</div>
                                       )}
                                     </div>
                                   )}
                                 </div>
                               </label>
 
-                              {/* B */}
                               <label className="flex items-start gap-2 text-sm">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedArchive.has(p.b)}
-                                  onChange={() => toggleArchiveSelection(p.b)}
-                                />
+                                <input type="checkbox" checked={selectedArchive.has(p.b)} onChange={() => toggleArchiveSelection(p.b)} />
                                 <div className="min-w-0">
                                   <div className="whitespace-normal">
                                     <b>{b.English}</b> — {b.Lithuanian}{" "}
-                                    <span className="text-zinc-500">[{T.tabs[b.Sheet]}]</span>
+                                    <span className="text-zinc-500">[{STRINGS[uiLang].tabs[b.Sheet]}]</span>
                                   </div>
                                   {(b.Usage || b.Notes) && (
                                     <div className="mt-1 text-xs text-zinc-400 space-y-0.5">
                                       {b.Usage && (
-                                        <div>
-                                          <span className="text-zinc-500">{T.usage}: </span>
-                                          {b.Usage}
-                                        </div>
+                                        <div><span className="text-zinc-500">{T.usage}: </span>{b.Usage}</div>
                                       )}
                                       {b.Notes && (
-                                        <div>
-                                          <span className="text-zinc-500">{T.notes}: </span>
-                                          {b.Notes}
-                                        </div>
+                                        <div><span className="text-zinc-500">{T.notes}: </span>{b.Notes}</div>
                                       )}
                                     </div>
                                   )}
@@ -1754,10 +1633,7 @@ export default function App() {
                     <div className="text-xs text-zinc-400">
                       {uiLang === "LT" ? "Pažymėta" : "Selected"}: {selectedArchive.size}
                     </div>
-                    <button
-                      onClick={archiveSelected}
-                      className="bg-amber-600 hover:bg-amber-500 px-3 py-2 rounded-md text-sm"
-                    >
+                    <button onClick={archiveSelected} className="bg-amber-600 hover:bg-amber-500 px-3 py-2 rounded-md text-sm">
                       {T.archiveSelected}
                     </button>
                   </div>
@@ -1767,11 +1643,7 @@ export default function App() {
               {/* Archive controls */}
               <div className="mt-4">
                 <label className="text-sm flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={showArchived}
-                    onChange={(e) => setShowArchived(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
                 </label>
                 <span className="text-sm ml-2">{T.showArchived}</span>
 
@@ -1779,27 +1651,18 @@ export default function App() {
                   <div className="mt-2 space-y-2">
                     {rows.map((r, i) =>
                       r.__archived ? (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md p-2"
-                        >
+                        <div key={i} className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md p-2">
                           <div className="text-sm truncate">
                             <b>{r.English}</b> — {r.Lithuanian}{" "}
-                            <span className="text-zinc-500">[{T.tabs[r.Sheet]}]</span>
+                            <span className="text-zinc-500">[{STRINGS[uiLang].tabs[r.Sheet]}]</span>
                           </div>
-                          <button
-                            onClick={() => restoreArchived(i)}
-                            className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
-                          >
+                          <button onClick={() => restoreArchived(i)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">
                             {T.restore}
                           </button>
                         </div>
                       ) : null
                     )}
-                    <button
-                      onClick={emptyArchive}
-                      className="bg-red-700 hover:bg-red-600 px-3 py-2 rounded-md text-sm"
-                    >
+                    <button onClick={emptyArchive} className="bg-red-700 hover:bg-red-600 px-3 py-2 rounded-md text-sm">
                       {T.emptyArchive}
                     </button>
                   </div>
@@ -1808,13 +1671,8 @@ export default function App() {
 
               <div className="mt-3 text-xs text-zinc-400">
                 {T.total}: <span className="text-zinc-200">{rows.length}</span> • {T.active}:{" "}
-                <span className="text-zinc-200">
-                  {rows.filter((r) => !r.__archived).length}
-                </span>{" "}
-                • {T.archived}:{" "}
-                <span className="text-zinc-200">
-                  {rows.filter((r) => r.__archived).length}
-                </span>
+                <span className="text-zinc-200">{rows.filter((r) => !r.__archived).length}</span> • {T.archived}:{" "}
+                <span className="text-zinc-200">{rows.filter((r) => r.__archived).length}</span>
               </div>
             </div>
           </div>
@@ -1840,9 +1698,7 @@ export default function App() {
                     onClick={() => setSettings((s) => ({ ...s, mode: m.id }))}
                     className={cn(
                       "px-2 py-1 rounded-md text-xs border",
-                      settings.mode === m.id
-                        ? "bg-emerald-600 border-emerald-600"
-                        : "bg-zinc-900 border-zinc-700"
+                      settings.mode === m.id ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
                     )}
                   >
                     {m.label}
@@ -1860,9 +1716,7 @@ export default function App() {
                     type="radio"
                     name="ttsprov"
                     checked={settings.ttsProvider === "browser"}
-                    onChange={() =>
-                      setSettings((s) => ({ ...s, ttsProvider: "browser" }))
-                    }
+                    onChange={() => setSettings((s) => ({ ...s, ttsProvider: "browser" }))}
                   />
                   {T.browserFallback}
                 </label>
@@ -1871,16 +1725,14 @@ export default function App() {
                     type="radio"
                     name="ttsprov"
                     checked={settings.ttsProvider === "azure"}
-                    onChange={() =>
-                      setSettings((s) => ({ ...s, ttsProvider: "azure" }))
-                    }
+                    onChange={() => setSettings((s) => ({ ...s, ttsProvider: "azure" }))}
                   />
                   {T.azureSpeech}
                 </label>
               </div>
             </div>
 
-            {/* Azure config + voice picker */}
+            {/* Azure section */}
             {settings.ttsProvider === "azure" && (
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
@@ -1889,9 +1741,7 @@ export default function App() {
                     <input
                       type="password"
                       value={settings.azureKey}
-                      onChange={(e) =>
-                        setSettings((s) => ({ ...s, azureKey: e.target.value }))
-                      }
+                      onChange={(e) => setSettings((s) => ({ ...s, azureKey: e.target.value }))}
                       placeholder={uiLang === "LT" ? "Azure raktas" : "Azure key"}
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                     />
@@ -1900,12 +1750,7 @@ export default function App() {
                     <div className="text-xs mb-1">{T.region}</div>
                     <input
                       value={settings.azureRegion}
-                      onChange={(e) =>
-                        setSettings((s) => ({
-                          ...s,
-                          azureRegion: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setSettings((s) => ({ ...s, azureRegion: e.target.value }))}
                       placeholder={uiLang === "LT" ? "pvz., westeurope" : "e.g. westeurope"}
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                     />
@@ -1918,12 +1763,7 @@ export default function App() {
                     <select
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                       value={settings.azureVoiceShortName}
-                      onChange={(e) =>
-                        setSettings((s) => ({
-                          ...s,
-                          azureVoiceShortName: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setSettings((s) => ({ ...s, azureVoiceShortName: e.target.value }))}
                     >
                       <option value="">{uiLang === "LT" ? "— pasirinkite —" : "— choose —"}</option>
                       {azureVoices.map((v) => (
@@ -1976,10 +1816,7 @@ export default function App() {
               <div className="text-sm text-zinc-400">
                 {uiLang === "LT" ? "Klausimas" : "Question"} {quizIdx + 1} / {quizQs.length}
               </div>
-              <button
-                onClick={() => setQuizOn(false)}
-                className="text-xs bg-zinc-800 px-2 py-1 rounded-md"
-              >
+              <button onClick={() => setQuizOn(false)} className="text-xs bg-zinc-800 px-2 py-1 rounded-md">
                 {STRINGS[uiLang].quit}
               </button>
             </div>
@@ -1994,7 +1831,7 @@ export default function App() {
                     <>
                       <div className="text-sm text-zinc-400 mb-1">{STRINGS[uiLang].prompt}</div>
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="text-lg font-medium flex-1">{questionText}</div>
+                        <div className="text-lg font-medium flex-1 break-words">{questionText}</div>
                         <button
                           className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center font-semibold select-none",
@@ -2018,8 +1855,7 @@ export default function App() {
                           const isSelected = quizChoice === opt;
                           const isCorrect = opt === correctLt;
                           const show = quizAnswered;
-                          const base =
-                            "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
+                          const base = "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
                           const color = !show
                             ? "bg-zinc-900 border-zinc-700"
                             : isCorrect
@@ -2028,12 +1864,8 @@ export default function App() {
                             ? "bg-red-900/40 border-red-600"
                             : "bg-zinc-900 border-zinc-700";
                           return (
-                            <button
-                              key={opt}
-                              className={`${base} ${color}`}
-                              onClick={() => !quizAnswered && answerQuiz(opt)}
-                            >
-                              <span className="flex-1">{opt}</span>
+                            <button key={opt} className={`${base} ${color}`} onClick={() => !quizAnswered && answerQuiz(opt)}>
+                              <span className="flex-1 break-words">{opt}</span>
                               <span
                                 className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center select-none"
                                 style={{ touchAction: "manipulation" }}
@@ -2069,7 +1901,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Small CSS tweak so details summary swaps text */}
+      {/* Tiny CSS so details summary toggles text */}
       <style>{`
         details > summary .details-open { display: none; }
         details[open] > summary .details-closed { display: none; }
