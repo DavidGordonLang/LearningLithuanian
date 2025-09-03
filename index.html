@@ -2,30 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Lithuanian Trainer</title>
 
-    <!-- PWA manifest and theme color -->
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#10b981" />
 
-    <!-- iOS: full-screen and icon -->
+    <!-- iOS -->
     <link rel="apple-touch-icon" href="/icons/192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- Tailwind via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      :root{ --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
+      html, body, #root { height: 100%; }
+    </style>
   </head>
   <body class="bg-zinc-950 text-zinc-100">
     <div id="root"></div>
+
+    <!-- Your app -->
     <script type="module" src="/src/main.jsx"></script>
+    <!-- PWA bootstrap (install banner + SW register) -->
+    <script type="module" src="/src/pwa.js"></script>
   </body>
 </html>
-
