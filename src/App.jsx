@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
+import Header from "./components/Header";
+
 
 /**
  * Lithuanian Trainer — App.jsx
@@ -1457,7 +1459,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header />
+      <Header 
+  T={T} 
+  page={page} 
+  setPage={setPage} 
+  startQuiz={startQuiz} 
+  cn={cn} 
+/>
       {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
       {/* Quiz modal */}
       {quizOn && (
