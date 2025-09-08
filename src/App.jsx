@@ -1117,6 +1117,26 @@ export default function App() {
             <button onClick={() => fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
               {T.importJSON}
             </button>
+            <button
+              onClick={() => {
+                try {
+                  const blob = new Blob([JSON.stringify(rows, null, 2)], {
+                    type: "application/json",
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "lithuanian_trainer_export.json";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch (e) {
+                  alert("Export failed: " + e.message);
+                }
+              }}
+              className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            >
+              Export JSON
+            </button>
             <button onClick={clearLibrary} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2">
               {T.clearAll}
             </button>
