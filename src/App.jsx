@@ -1438,7 +1438,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header />
-      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : HomeView()}
+      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
       {/* Quiz modal */}
       {quizOn && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
