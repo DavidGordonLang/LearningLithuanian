@@ -607,8 +607,7 @@ export default function App() {
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a],
-            B = list[b];
+          const A = list[a], B = list[b];
           const s = (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
@@ -798,41 +797,85 @@ export default function App() {
               {T.scan}
             </button>
           </div>
-          <div className="mt-3">
-            <div className="text-sm text-zinc-400 mb-2">{T.closeMatches}: {dupeResults.close.length} pair(s)</div>
-            <div className="space-y-3">
-              {dupeResults.close.map(([i, j, s]) => {
-                const A = rows[i], B = rows[j];
-                return (
-                  <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-                    <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
-                        <div key={ridx} className="border border-zinc-800 rounded-md p-2">
-                          <div className="font-medium">
-                            {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
-                          </div>
-                          {(row.Usage || row.Notes) && (
-                            <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                              {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
-                              {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
-                            </div>
-                          )}
-                          <div className="mt-2">
-                            <button
-                              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                              onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
-                            >
-                              {T.delete}
-                            </button>
-                          </div>
+
+          {/* Exact duplicates */}
+          <div className="text-sm text-zinc-400 mb-2">
+            {T.exactGroups}: {dupeResults.exact.length} group(s)
+          </div>
+          <div className="space-y-3 mb-6">
+            {dupeResults.exact.map((group, gi) => (
+              <div key={gi} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {group.map((ridx) => {
+                    const row = rows[ridx];
+                    return (
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian}{" "}
+                          <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
                         </div>
-                      ))}
-                    </div>
+                        {(row.Usage || row.Notes) && (
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && (
+                              <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>
+                            )}
+                            {row.Notes && (
+                              <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button
+                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
+                          >
+                            {T.delete}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Close matches */}
+          <div className="text-sm text-zinc-400 mb-2">
+            {T.closeMatches}: {dupeResults.close.length} pair(s)
+          </div>
+          <div className="space-y-3">
+            {dupeResults.close.map(([i, j, s]) => {
+              const A = rows[i], B = rows[j];
+              return (
+                <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                  <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                        </div>
+                        {(row.Usage || row.Notes) && (
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
+                            {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button
+                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
+                          >
+                            {T.delete}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -949,10 +992,17 @@ export default function App() {
                   </select>
                 </div>
                 <button
+                  disabled={!azureRegion || !azureKey}
                   onClick={async () => {
+                    if (!azureRegion || !azureKey) {
+                      alert("Enter Azure region and key first.");
+                      return;
+                    }
                     try {
                       const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-                      const res = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": azureKey } });
+                      const res = await fetch(url, {
+                        headers: { "Ocp-Apim-Subscription-Key": azureKey },
+                      });
                       if (!res.ok) throw new Error("Failed to fetch Azure voices");
                       const data = await res.json();
                       const vs = data.map((v) => ({
@@ -966,7 +1016,7 @@ export default function App() {
                       alert(e.message);
                     }
                   }}
-                  className="bg-zinc-800 px-3 py-2 rounded-md"
+                  className={`bg-zinc-800 px-3 py-2 rounded-md ${(!azureRegion || !azureKey) ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {T.fetchVoices}
                 </button>
