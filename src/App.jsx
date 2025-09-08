@@ -15,17 +15,6 @@ import AddForm from "./components/AddForm";
  * - Full UI language swap (EN→LT / LT→EN)
  */
 
-const COLS = [
-  "English",
-  "Lithuanian",
-  "Phonetic",
-  "Category",
-  "Usage",
-  "Notes",
-  "RAG Icon",
-  "Sheet",
-];
-
 const LS_KEY = "lt_phrasebook_v3";
 const LSK_TTS_PROVIDER = "lt_tts_provider";
 const LSK_AZURE_KEY = "lt_azure_key";
@@ -39,7 +28,6 @@ const LSK_DIR = "lt_direction_v1";
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
   LT2EN: "/data/starter_lt_to_en.json",
-  // Numbers live inside the starter files (and optional combined file)
   COMBINED_OPTIONAL: "/data/starter_combined_dedup.json",
 };
 
@@ -183,7 +171,7 @@ const STR = {
   },
 };
 
-// LS helpers
+// ---- LocalStorage helpers
 const saveRows = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadRows = () => {
   try {
@@ -195,7 +183,7 @@ const loadRows = () => {
   }
 };
 
-// Robust XP load/save (prevents NaN propagation)
+// Robust XP load/save
 const loadXP = () => {
   try {
     const raw = localStorage.getItem(LSK_XP);
@@ -205,8 +193,7 @@ const loadXP = () => {
     return 0;
   }
 };
-const saveXP = (xp) =>
-  localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
+const saveXP = (xp) => localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const loadStreak = () => {
@@ -220,7 +207,7 @@ const loadStreak = () => {
 };
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
 
-// --- utils (moved here so no utils import is required) ---
+// ---- Utils (inlined)
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -228,15 +215,11 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (
-    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
-    ["amber", "orange", "yellow"].includes(s)
-  )
+  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s))
     return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
-
 function daysBetween(d1, d2) {
   const a = new Date(d1 + "T00:00:00"),
     b = new Date(d2 + "T00:00:00");
@@ -281,7 +264,7 @@ function sim2(a = "", b = "") {
   return (2 * inter) / (g1.length + g2.length);
 }
 
-// voices
+// ---- Voices / TTS
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -291,8 +274,7 @@ function useVoices() {
     };
     refresh();
     window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
-    return () =>
-      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
   }, []);
   return voices;
 }
@@ -350,13 +332,9 @@ export default function App() {
   const [rows, setRows] = useState(loadRows());
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
-  const [sortMode, setSortMode] = useState(
-    () => localStorage.getItem(LSK_SORT) || "RAG"
-  );
+  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
-  const [direction, setDirection] = useState(
-    () => localStorage.getItem(LSK_DIR) || "EN2LT"
-  );
+  const [direction, setDirection] = useState(() => localStorage.getItem(LSK_DIR) || "EN2LT");
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
 
@@ -364,7 +342,6 @@ export default function App() {
   useEffect(() => saveXP(xp), [xp]);
   useEffect(() => {
     if (!Number.isFinite(xp)) setXp(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const level = Math.floor((Number.isFinite(xp) ? xp : 0) / LEVEL_STEP) + 1;
   const levelProgress = (Number.isFinite(xp) ? xp : 0) % LEVEL_STEP;
@@ -377,17 +354,12 @@ export default function App() {
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
   useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
-  const [azureKey, setAzureKey] = useState(
-    () => localStorage.getItem(LSK_AZURE_KEY) || ""
-  );
-  const [azureRegion, setAzureRegion] = useState(
-    () => localStorage.getItem(LSK_AZURE_REGION) || ""
-  );
+  const [azureKey, setAzureKey] = useState(() => localStorage.getItem(LSK_AZURE_KEY) || "");
+  const [azureRegion, setAzureRegion] = useState(() => localStorage.getItem(LSK_AZURE_REGION) || "");
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
-        ?.shortName || "";
+      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || "";
     } catch {
       return "";
     }
@@ -399,10 +371,7 @@ export default function App() {
     if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion);
   }, [azureRegion]);
   useEffect(() => {
-    localStorage.setItem(
-      LSK_AZURE_VOICE,
-      JSON.stringify({ shortName: azureVoiceShortName })
-    );
+    localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
   }, [azureVoiceShortName]);
 
   const voices = useVoices();
@@ -445,13 +414,7 @@ export default function App() {
       }
       if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
         const delta = slow ? "-40%" : "0%";
-        const url = await speakAzureHTTP(
-          text,
-          azureVoiceShortName,
-          azureKey,
-          azureRegion,
-          delta
-        );
+        const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, delta);
         const a = new Audio(url);
         audioRef.current = a;
         a.onended = () => {
@@ -523,8 +486,7 @@ export default function App() {
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...byQ].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
-        (order[normalizeRag(b["RAG Icon"])] ?? 1)
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
   }, [rows, tab, q, sortMode]);
 
@@ -547,10 +509,7 @@ export default function App() {
     setEditDraft({ ...rows[i] });
   }
   function saveEdit(i) {
-    const clean = {
-      ...editDraft,
-      "RAG Icon": normalizeRag(editDraft["RAG Icon"]),
-    };
+    const clean = { ...editDraft, "RAG Icon": normalizeRag(editDraft["RAG Icon"]) };
     setRows((prev) => prev.map((r, idx) => (idx === i ? clean : r)));
     setEditIdx(null);
   }
@@ -570,17 +529,11 @@ export default function App() {
         Usage: String(r.Usage || "").trim(),
         Notes: String(r.Notes || "").trim(),
         "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-          ? r.Sheet
-          : "Phrases",
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
         _id: r._id || genId(),
         _ts: r._ts || nowTs(),
         _qstat:
-          r._qstat || {
-            red: { ok: 0, bad: 0 },
-            amb: { ok: 0, bad: 0 },
-            grn: { ok: 0, bad: 0 },
-          },
+          r._qstat || { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
       }))
       .filter((r) => r.English || r.Lithuanian);
     setRows((prev) => [...cleaned, ...prev]);
@@ -598,7 +551,6 @@ export default function App() {
     }
   }
 
-  // Numbers from starter files only
   async function installNumbersOnly() {
     const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(Boolean);
     let found = [];
@@ -636,6 +588,7 @@ export default function App() {
     setRows([]);
   }
 
+  // Duplicate finder
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
   function scanDupes() {
     const map = new Map();
@@ -656,17 +609,12 @@ export default function App() {
         for (let b = a + 1; b < list.length; b++) {
           const A = list[a],
             B = list[b];
-          const s =
-            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) /
-            2;
+          const s = (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
       }
     }
-    setDiapeResults({ exact, close }); // keep typo wrapper
-  }
-  function setDiapeResults(v) {
-    setDupeResults(v);
+    setDupeResults({ exact, close });
   }
 
   // quiz
@@ -703,10 +651,9 @@ export default function App() {
     setQuizChoice(null);
     const first = pool[0];
     const correctLt = first.Lithuanian;
-    const distractors = sample(
-      pool.filter((r) => r !== first && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
+    const distractors = sample(pool.filter((r) => r !== first && r.Lithuanian), 3).map(
+      (r) => r.Lithuanian
+    );
     setQuizOptions(shuffle([correctLt, ...distractors]));
     setQuizOn(true);
   }
@@ -715,10 +662,7 @@ export default function App() {
     if (nextIdx >= quizQs.length) {
       const today = todayKey();
       if (streak.lastDate !== today) {
-        const inc =
-          streak.lastDate && daysBetween(streak.lastDate, today) === 1
-            ? streak.streak + 1
-            : 1;
+        const inc = streak.lastDate && daysBetween(streak.lastDate, today) === 1 ? streak.streak + 1 : 1;
         setStreak({ streak: inc, lastDate: today });
       }
       setQuizOn(false);
@@ -729,20 +673,15 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    const distractors = sample(
-      quizQs.filter((r) => r !== item && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
+    const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
+      (r) => r.Lithuanian
+    );
     setQuizOptions(shuffle([correctLt, ...distractors]));
   }
   function bumpRagAfterAnswer(item, correct) {
     const rag = normalizeRag(item["RAG Icon"]);
     const st =
-      (item._qstat ||= {
-        red: { ok: 0, bad: 0 },
-        amb: { ok: 0, bad: 0 },
-        grn: { ok: 0, bad: 0 },
-      });
+      (item._qstat ||= { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } });
     if (rag === "🔴") {
       if (correct) {
         st.red.ok = (st.red.ok || 0) + 1;
@@ -802,22 +741,13 @@ export default function App() {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button
-            onClick={() => fetchStarter("EN2LT")}
-            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          >
+          <button onClick={() => fetchStarter("EN2LT")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
             {T.installEN}
           </button>
-          <button
-            onClick={() => fetchStarter("LT2EN")}
-            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          >
+          <button onClick={() => fetchStarter("LT2EN")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
             {T.installLT}
           </button>
-          <button
-            onClick={installNumbersOnly}
-            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          >
+          <button onClick={installNumbersOnly} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
             {T.installNums}
           </button>
 
@@ -833,18 +763,13 @@ export default function App() {
                 e.target.value = "";
               }}
             />
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-            >
+            <button onClick={() => fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
               {T.importJSON}
             </button>
             <button
               onClick={() => {
                 try {
-                  const blob = new Blob([JSON.stringify(rows, null, 2)], {
-                    type: "application/json",
-                  });
+                  const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
@@ -859,10 +784,7 @@ export default function App() {
             >
               Export JSON
             </button>
-            <button
-              onClick={clearLibrary}
-              className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
-            >
+            <button onClick={clearLibrary} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2">
               {T.clearAll}
             </button>
           </div>
@@ -877,69 +799,35 @@ export default function App() {
             </button>
           </div>
           <div className="mt-3">
-            <div className="text-sm text-zinc-400 mb-2">
-              {T.closeMatches}: {dupeResults.close.length} pair(s)
-            </div>
+            <div className="text-sm text-zinc-400 mb-2">{T.closeMatches}: {dupeResults.close.length} pair(s)</div>
             <div className="space-y-3">
               {dupeResults.close.map(([i, j, s]) => {
-                const A = rows[i],
-                  B = rows[j];
+                const A = rows[i], B = rows[j];
                 return (
-                  <div
-                    key={`${i}-${j}`}
-                    className="bg-zinc-900 border border-zinc-800 rounded-xl p-3"
-                  >
-                    <div className="text-xs text-zinc-400 mb-2">
-                      {T.similarity}: {(s * 100).toFixed(0)}%
-                    </div>
+                  <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                    <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[{ row: A, idx: i }, { row: B, idx: j }].map(
-                        ({ row, idx: ridx }) => (
-                          <div
-                            key={ridx}
-                            className="border border-zinc-800 rounded-md p-2"
-                          >
-                            <div className="font-medium">
-                              {row.English} — {row.Lithuanian}{" "}
-                              <span className="text-xs text-zinc-400">
-                                [{row.Sheet}]
-                              </span>
-                            </div>
-                            {(row.Usage || row.Notes) && (
-                              <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                                {row.Usage && (
-                                  <div>
-                                    <span className="text-zinc-500">
-                                      {T.usage}:{" "}
-                                    </span>
-                                    {row.Usage}
-                                  </div>
-                                )}
-                                {row.Notes && (
-                                  <div>
-                                    <span className="text-zinc-500">
-                                      {T.notes}:{" "}
-                                    </span>
-                                    {row.Notes}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            <div className="mt-2">
-                              <button
-                                className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                                onClick={() =>
-                                  setRows((prev) =>
-                                    prev.filter((_, ii) => ii !== ridx)
-                                  )
-                                }
-                              >
-                                {T.delete}
-                              </button>
-                            </div>
+                      {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
+                        <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                          <div className="font-medium">
+                            {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
                           </div>
-                        )
-                      )}
+                          {(row.Usage || row.Notes) && (
+                            <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                              {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
+                              {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
+                            </div>
+                          )}
+                          <div className="mt-2">
+                            <button
+                              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                              onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
+                            >
+                              {T.delete}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
@@ -966,9 +854,7 @@ export default function App() {
                   onClick={() => setDirection(d)}
                   className={cn(
                     "px-3 py-1.5 rounded-md text-sm border",
-                    direction === d
-                      ? "bg-emerald-600 border-emerald-600"
-                      : "bg-zinc-900 border-zinc-700"
+                    direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
                   )}
                 >
                   {d === "EN2LT" ? T.en2lt : T.lt2en}
@@ -1066,9 +952,7 @@ export default function App() {
                   onClick={async () => {
                     try {
                       const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-                      const res = await fetch(url, {
-                        headers: { "Ocp-Apim-Subscription-Key": azureKey },
-                      });
+                      const res = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": azureKey } });
                       if (!res.ok) throw new Error("Failed to fetch Azure voices");
                       const data = await res.json();
                       const vs = data.map((v) => ({
@@ -1077,8 +961,7 @@ export default function App() {
                         displayName: v.LocalName || v.FriendlyName || v.ShortName,
                       }));
                       setAzureVoices(vs);
-                      if (!azureVoiceShortName && vs.length)
-                        setAzureVoiceShortName(vs[0].shortName);
+                      if (!azureVoiceShortName && vs.length) setAzureVoiceShortName(vs[0].shortName);
                     } catch (e) {
                       alert(e.message);
                     }
@@ -1133,21 +1016,12 @@ export default function App() {
 
         {/* Streak + Level */}
         <div className="mt-2 flex items-center gap-3">
-          <div className="text-xs text-zinc-400">
-            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
-          </div>
-          <div className="text-xs text-zinc-400">
-            🥇 {T.level} <span className="font-semibold">{level}</span>
-          </div>
+          <div className="text-xs text-zinc-400">🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span></div>
+          <div className="text-xs text-zinc-400">🥇 {T.level} <span className="font-semibold">{level}</span></div>
           <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-            <div
-              className="h-full bg-emerald-600"
-              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
-            />
+            <div className="h-full bg-emerald-600" style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }} />
           </div>
-          <div className="text-xs text-zinc-400">
-            {levelProgress} / {LEVEL_STEP} XP
-          </div>
+          <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
         </div>
 
         {/* Tabs */}
@@ -1158,18 +1032,10 @@ export default function App() {
               onClick={() => setTab(t)}
               className={cn(
                 "px-3 py-1.5 rounded-full text-sm border",
-                tab === t
-                  ? "bg-emerald-600 border-emerald-600"
-                  : "bg-zinc-900 border-zinc-800"
+                tab === t ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
               )}
             >
-              {t === "Phrases"
-                ? T.phrases
-                : t === "Questions"
-                ? T.questions
-                : t === "Words"
-                ? T.words
-                : T.numbers}
+              {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
             </button>
           ))}
         </div>
@@ -1183,9 +1049,7 @@ export default function App() {
                 onClick={() => setRagChip(x)}
                 className={cn(
                   "px-2 py-1 rounded-md text-xs border",
-                  ragChip === x
-                    ? "bg-emerald-600 border-emerald-600"
-                    : "bg-zinc-900 border-zinc-700"
+                  ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {x}
@@ -1203,9 +1067,7 @@ export default function App() {
                   <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
                     {k}
                   </span>
-                  <div className="text-sm text-zinc-400">
-                    {ragBuckets[k].length} item(s)
-                  </div>
+                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
                 </div>
                 <div className="space-y-2">
                   {ragBuckets[k].map((r) => {
@@ -1273,9 +1135,7 @@ export default function App() {
         <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
           <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
             <details>
-              <summary className="cursor-pointer text-sm text-zinc-300">
-                {T.addEntry}
-              </summary>
+              <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
               <AddForm
                 tab={tab}
                 setRows={setRows}
@@ -1294,13 +1154,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
-      {page === "library" ? (
-        <LibraryView />
-      ) : page === "settings" ? (
-        <SettingsView />
-      ) : (
-        <HomeView />
-      )}
+      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
       {/* Quiz modal */}
       {quizOn && (
@@ -1360,10 +1214,7 @@ export default function App() {
                       })}
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <button
-                        onClick={() => setQuizOn(false)}
-                        className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-                      >
+                      <button onClick={() => setQuizOn(false)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
                         Close
                       </button>
                       {quizAnswered ? (
