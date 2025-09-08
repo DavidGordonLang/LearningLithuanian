@@ -408,9 +408,6 @@ export default function App() {
   // audio instance
   const audioRef = useRef(null);
 
-  // 🔧 keep search focus stable on mobile by using a ref
-  const searchRef = useRef(null);
-
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
@@ -1235,7 +1232,7 @@ export default function App() {
                 onChange={(e) => setBrowserVoiceName(e.target.value)}
                 title={T.browserVoice}
               >
-                <option value="">Auto voice</option>
+                <option value="">{/* Auto voice fallback */}Auto voice</option>
                 {voices.map((v) => (
                   <option key={v.name} value={v.name}>
                     {v.name} ({v.lang})
@@ -1323,22 +1320,15 @@ export default function App() {
         <div className="flex items-center gap-2 mt-3">
           <div className="relative flex-1">
             <input
-              ref={searchRef}
-              defaultValue={q}
-              onInput={(e) => setQ(e.currentTarget.value)}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
               placeholder={T.search}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
             />
             {q && (
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                onClick={() => {
-                  setQ("");
-                  if (searchRef.current) {
-                    searchRef.current.value = "";
-                    searchRef.current.focus();
-                  }
-                }}
+                onClick={() => setQ("")}
                 aria-label="Clear"
               >
                 ×
