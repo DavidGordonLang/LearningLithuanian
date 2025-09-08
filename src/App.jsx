@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
+import { cn, nowTs, genId, normalizeRag, daysBetween, shuffle, sample, sim2 } from "./utils";
 
 
 /**
@@ -222,46 +223,6 @@ const loadStreak = () => {
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
 
 // utils
-const nowTs = () => Date.now();
-const genId = () => Math.random().toString(36).slice(2);
-const cn = (...xs) => xs.filter(Boolean).join(" ");
-function normalizeRag(icon = "") {
-  const s = String(icon).trim().toLowerCase();
-  if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s))
-    return "🟠";
-  if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
-  return "🟠";
-}
-function daysBetween(d1, d2) {
-  const a = new Date(d1 + "T00:00:00"), b = new Date(d2 + "T00:00:00");
-  return Math.round((b - a) / 86400000);
-}
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-function sample(arr, n) {
-  if (!arr.length || n <= 0) return [];
-  if (n >= arr.length) return shuffle(arr);
-  const idxs = new Set();
-  while (idxs.size < n) idxs.add((Math.random() * arr.length) | 0);
-  return [...idxs].map((i) => arr[i]);
-}
-function sim2(a = "", b = "") {
-  const s1 = (a + "").toLowerCase().trim();
-  const s2 = (b + "").toLowerCase().trim();
-  if (!s1 || !s2) return 0;
-  if (s1 === s2) return 1;
-  const grams = (s) => {
-    const g = [];
-    for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
-    return g;
-  };
   const g1 = grams(s1), g2 = grams(s2);
   const map = new Map();
   g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
