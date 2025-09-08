@@ -223,18 +223,6 @@ const loadStreak = () => {
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
 
 // utils
-  const g1 = grams(s1), g2 = grams(s2);
-  const map = new Map();
-  g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
-  let inter = 0;
-  g2.forEach((x) => {
-    if (map.get(x)) {
-      inter++;
-      map.set(x, map.get(x) - 1);
-    }
-  });
-  return (2 * inter) / (g1.length + g2.length);
-}
 
 // voices
 function useVoices() {
