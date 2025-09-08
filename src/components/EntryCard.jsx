@@ -2,284 +2,237 @@ import React from "react";
 
 /**
  * EntryCard.jsx
- * - Shows one vocabulary row
- * - View mode: compact header + expandable details
- * - Edit mode: inline form, Save / Cancel / Delete
- * - Uses pressHandlers from parent for TTS (tap = normal, long-press = slow)
+ * Receives all handlers/state from App to keep this component dumb.
+ *
+ * Props:
+ * - r, idx
+ * - rows, setRows
+ * - editIdx, setEditIdx, editDraft, setEditDraft
+ * - expanded (Set), setExpanded
+ * - T, direction
+ * - startEdit(idx), saveEdit(idx), remove(idx)
+ * - normalizeRag, pressHandlers, cn
  */
-export default function EntryCard({
-  r,
-  idx,
-  rows,
-  setRows,
-  editIdx,
-  setEditIdx,
-  editDraft,
-  setEditDraft,
-  expanded,
-  setExpanded,
-  T,
-  direction,
-  startEdit,
-  saveEdit,
-  remove,
-  normalizeRag,
-  pressHandlers,
-  cn,
-}) {
+export default function EntryCard(props) {
+  const {
+    r,
+    idx,
+    rows,
+    setRows,
+    editIdx,
+    setEditIdx,
+    editDraft,
+    setEditDraft,
+    expanded,
+    setExpanded,
+    T,
+    direction,
+    startEdit,
+    saveEdit,
+    remove,
+    normalizeRag,
+    pressHandlers,
+    cn,
+  } = props;
+
+  const keyId = r._id || String(idx);
+  const isExpanded = expanded.has(keyId);
   const isEditing = editIdx === idx;
-  const isExpanded = expanded.has(idx);
+
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(keyId)) next.delete(keyId);
+      else next.add(keyId);
+      return next;
+    });
+  };
+
+  const setField = (k) => (e) => setEditDraft((d) => ({ ...d, [k]: e.target.value }));
+
+  const headerLangA = direction === "LT2EN" ? r.Lithuanian : r.English;
+  const headerLangB = direction === "LT2EN" ? r.English : r.Lithuanian;
+
   const rag = normalizeRag(r["RAG Icon"]);
 
-  // UI helpers
-  const ragClasses =
-    rag === "🔴"
-      ? "bg-red-600"
-      : rag === "🟢"
-      ? "bg-green-600"
-      : "bg-amber-500";
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+      {/* Header row */}
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-zinc-800">
+          {rag}
+        </span>
 
-  const displayLeft = direction === "EN2LT" ? r.English : r.Lithuanian;
-  const displayRight = direction === "EN2LT" ? r.Lithuanian : r.English;
+        <div className="flex-1 min-w-0">
+          <div className="font-medium truncate">{headerLangA || <span className="text-zinc-500">—</span>}</div>
+          <div className="text-sm text-zinc-400 truncate">{headerLangB || <span className="text-zinc-600">—</span>}</div>
+        </div>
 
-  const speakTarget =
-    (direction === "EN2LT" ? r.Lithuanian : r.English) || r.Lithuanian || r.English || "";
-
-  function toggleExpanded() {
-    setExpanded((prev) => {
-      const s = new Set(prev);
-      if (s.has(idx)) s.delete(idx);
-      else s.add(idx);
-      return s;
-    });
-  }
-
-  // ----- EDIT MODE -----
-  if (isEditing) {
-    const onChange = (field) => (e) =>
-      setEditDraft({ ...editDraft, [field]: e.target.value });
-
-    return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-        <div className="flex items-center gap-2 mb-3">
-          <span
-            className={cn(
-              "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs",
-              ragClasses
-            )}
-            title={T.ragLabel}
+        {/* Play Lithuanian */}
+        {r.Lithuanian ? (
+          <button
+            className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center font-semibold"
+            title="Tap = play, long-press = slow"
+            {...pressHandlers(r.Lithuanian)}
           >
-            {normalizeRag(editDraft["RAG Icon"])}
-          </span>
-          <div className="text-xs text-zinc-400">
-            {T.sheet}: <span className="text-zinc-200">{r.Sheet}</span>
+            ►
+          </button>
+        ) : null}
+      </div>
+
+      {/* Details / edit */}
+      {!isEditing ? (
+        <>
+          {(r.Phonetic || r.Category || r.Usage || r.Notes) && (
+            <div className={cn("mt-2 text-sm", isExpanded ? "" : "line-clamp-2")}>
+              {r.Phonetic && (
+                <div className="text-zinc-300">
+                  <span className="text-zinc-500">{T.phonetic}: </span>
+                  {r.Phonetic}
+                </div>
+              )}
+              {r.Category && (
+                <div className="text-zinc-300">
+                  <span className="text-zinc-500">{T.category}: </span>
+                  {r.Category}
+                </div>
+              )}
+              {r.Usage && (
+                <div className="text-zinc-300">
+                  <span className="text-zinc-500">{T.usage}: </span>
+                  {r.Usage}
+                </div>
+              )}
+              {r.Notes && (
+                <div className="text-zinc-300">
+                  <span className="text-zinc-500">{T.notes}: </span>
+                  {r.Notes}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={toggleExpanded}
+              className="text-xs bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded-md"
+            >
+              {isExpanded ? T.hideDetails : T.showDetails}
+            </button>
+            <div className="flex-1" />
+            <button
+              onClick={() => startEdit(idx)}
+              className="text-xs bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded-md"
+            >
+              {T.edit}
+            </button>
+            <button
+              onClick={() => remove(idx)}
+              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md text-red-200"
+            >
+              {T.delete}
+            </button>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+        </>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <div className="text-xs mb-1">{T.english}</div>
+              <input
+                value={editDraft.English}
+                onChange={setField("English")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+              />
+            </div>
+            <div>
+              <div className="text-xs mb-1">{T.lithuanian}</div>
+              <input
+                value={editDraft.Lithuanian}
+                onChange={setField("Lithuanian")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+              />
+            </div>
+            <div>
+              <div className="text-xs mb-1">{T.phonetic}</div>
+              <input
+                value={editDraft.Phonetic}
+                onChange={setField("Phonetic")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+              />
+            </div>
+            <div>
+              <div className="text-xs mb-1">{T.category}</div>
+              <input
+                value={editDraft.Category}
+                onChange={setField("Category")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <div className="text-xs mb-1">{T.usage}</div>
+              <input
+                value={editDraft.Usage}
+                onChange={setField("Usage")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <div className="text-xs mb-1">{T.notes}</div>
+              <textarea
+                value={editDraft.Notes}
+                onChange={setField("Notes")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[80px]"
+              />
+            </div>
+            <div>
+              <div className="text-xs mb-1">{T.ragLabel}</div>
+              <select
+                value={editDraft["RAG Icon"]}
+                onChange={setField("RAG Icon")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+              >
+                <option value="🔴">🔴 Red</option>
+                <option value="🟠">🟠 Amber</option>
+                <option value="🟢">🟢 Green</option>
+              </select>
+            </div>
+            <div>
+              <div className="text-xs mb-1">{T.sheet}</div>
+              <select
+                value={editDraft.Sheet}
+                onChange={setField("Sheet")}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+              >
+                {["Phrases", "Questions", "Words", "Numbers"].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
               onClick={() => saveEdit(idx)}
-              className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold"
+              className="text-sm bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md font-semibold"
             >
               {T.save}
             </button>
             <button
               onClick={() => setEditIdx(null)}
-              className="px-3 py-1.5 rounded-md bg-zinc-800 text-sm"
+              className="text-sm bg-zinc-800 px-3 py-2 rounded-md"
             >
               {T.cancel}
             </button>
+            <div className="flex-1" />
             <button
               onClick={() => remove(idx)}
-              className="px-3 py-1.5 rounded-md bg-red-800/40 border border-red-600 text-red-200 text-sm"
+              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md text-red-200"
             >
               {T.delete}
             </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="text-xs">
-            <div className="mb-1 text-zinc-400">{T.english}</div>
-            <input
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft.English}
-              onChange={onChange("English")}
-              placeholder={T.english}
-            />
-          </label>
-          <label className="text-xs">
-            <div className="mb-1 text-zinc-400">{T.lithuanian}</div>
-            <input
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft.Lithuanian}
-              onChange={onChange("Lithuanian")}
-              placeholder={T.lithuanian}
-            />
-          </label>
-
-          <label className="text-xs">
-            <div className="mb-1 text-zinc-400">{T.phonetic}</div>
-            <input
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft.Phonetic}
-              onChange={onChange("Phonetic")}
-              placeholder={T.phonetic}
-            />
-          </label>
-          <label className="text-xs">
-            <div className="mb-1 text-zinc-400">{T.category}</div>
-            <input
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft.Category}
-              onChange={onChange("Category")}
-              placeholder={T.category}
-            />
-          </label>
-
-          <label className="text-xs sm:col-span-2">
-            <div className="mb-1 text-zinc-400">{T.usage}</div>
-            <textarea
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft.Usage}
-              onChange={onChange("Usage")}
-              placeholder={T.usage}
-              rows={2}
-            />
-          </label>
-
-          <label className="text-xs sm:col-span-2">
-            <div className="mb-1 text-zinc-400">{T.notes}</div>
-            <textarea
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft.Notes}
-              onChange={onChange("Notes")}
-              placeholder={T.notes}
-              rows={2}
-            />
-          </label>
-
-          <label className="text-xs">
-            <div className="mb-1 text-zinc-400">{T.ragLabel}</div>
-            <select
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft["RAG Icon"]}
-              onChange={(e) =>
-                setEditDraft({ ...editDraft, "RAG Icon": normalizeRag(e.target.value) })
-              }
-            >
-              <option value="🔴">🔴</option>
-              <option value="🟠">🟠</option>
-              <option value="🟢">🟢</option>
-            </select>
-          </label>
-
-          <label className="text-xs">
-            <div className="mb-1 text-zinc-400">{T.sheet}</div>
-            <select
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={editDraft.Sheet}
-              onChange={(e) =>
-                setEditDraft({ ...editDraft, Sheet: e.target.value })
-              }
-            >
-              {["Phrases", "Questions", "Words", "Numbers"].map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
-    );
-  }
-
-  // ----- VIEW MODE -----
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-      {/* Header row */}
-      <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs",
-            ragClasses
-          )}
-          title={T.ragLabel}
-        >
-          {rag}
-        </span>
-
-        <div className="flex-1">
-          <div className="font-medium">
-            {displayLeft || <span className="text-zinc-500">—</span>}
-          </div>
-          <div className="text-sm text-zinc-300">
-            {displayRight || <span className="text-zinc-600">—</span>}
-          </div>
-        </div>
-
-        {/* TTS button (tap = normal, long-press = slow) */}
-        <button
-          className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center font-semibold text-zinc-900"
-          title="Tap = play, long-press = slow"
-          {...pressHandlers(speakTarget)}
-        >
-          ►
-        </button>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              startEdit(idx);
-            }}
-            className="px-3 py-1.5 rounded-md bg-zinc-800 text-sm"
-          >
-            {T.edit}
-          </button>
-          <button
-            onClick={() => remove(idx)}
-            className="px-3 py-1.5 rounded-md bg-red-800/40 border border-red-600 text-red-200 text-sm"
-          >
-            {T.delete}
-          </button>
-          <button
-            onClick={toggleExpanded}
-            className="px-3 py-1.5 rounded-md bg-zinc-800 text-sm"
-          >
-            {isExpanded ? T.hideDetails : T.showDetails}
-          </button>
-        </div>
-      </div>
-
-      {/* Details */}
-      {isExpanded && (
-        <div className="mt-3 text-sm text-zinc-300 space-y-2">
-          {!!r.Phonetic && (
-            <div>
-              <span className="text-zinc-500">{T.phonetic}: </span>
-              {r.Phonetic}
-            </div>
-          )}
-          {!!r.Category && (
-            <div>
-              <span className="text-zinc-500">{T.category}: </span>
-              {r.Category}
-            </div>
-          )}
-          {!!r.Usage && (
-            <div>
-              <span className="text-zinc-500">{T.usage}: </span>
-              {r.Usage}
-            </div>
-          )}
-          {!!r.Notes && (
-            <div>
-              <span className="text-zinc-500">{T.notes}: </span>
-              {r.Notes}
-            </div>
-          )}
-          <div className="text-xs text-zinc-500">
-            {T.sheet}: <span className="text-zinc-300">{r.Sheet}</span>
           </div>
         </div>
       )}
