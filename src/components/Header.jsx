@@ -2,71 +2,77 @@ import React from "react";
 
 /**
  * Header.jsx
- * - App title + tagline
- * - Navigation: Home / Library / Settings
- * - Start Quiz button
- * - Mobile: page switcher select
+ * Props:
+ * - T                (strings)
+ * - page             ("home" | "library" | "settings")
+ * - setPage          (fn)
+ * - startQuiz        (fn)
+ * - cn               (className combiner)
  */
 export default function Header({ T, page, setPage, startQuiz, cn }) {
-  const NavButton = ({ id, label }) => (
+  const NavBtn = ({ id, label }) => (
     <button
       onClick={() => setPage(id)}
-      className={cn(
-        "px-3 py-1.5 rounded-md text-sm border",
-        page === id
-          ? "bg-zinc-800 border-zinc-700 text-white"
-          : "bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white"
-      )}
       aria-current={page === id ? "page" : undefined}
+      className={cn(
+        "px-3 py-1.5 rounded-md text-sm border transition",
+        page === id
+          ? "bg-emerald-600 border-emerald-600 text-white"
+          : "bg-zinc-900 border-zinc-700 hover:border-zinc-600"
+      )}
     >
       {label}
     </button>
   );
 
   return (
-    <header className="sticky top-0 z-40 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
+    <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3">
+        {/* Top row: title + nav + quiz */}
         <div className="flex items-center gap-3">
           {/* Title */}
-          <div className="flex items-baseline gap-2 mr-auto">
-            <span className="text-xl font-bold">{T.appTitle1}</span>
-            <span className="text-xl font-bold text-emerald-500">
-              {T.appTitle2}
-            </span>
-            <span className="hidden sm:inline text-xs text-zinc-400 ml-2">
+          <div className="mr-auto">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+                {T.appTitle1} <span className="text-emerald-500">{T.appTitle2}</span>
+              </h1>
+            </div>
+            <div className="hidden sm:block text-xs text-zinc-400">
               {T.subtitle}
-            </span>
+            </div>
           </div>
 
-          {/* Desktop nav */}
-          <nav className="hidden sm:flex items-center gap-2">
-            <NavButton id="home" label={T.navHome} />
-            <NavButton id="library" label={T.navLibrary} />
-            <NavButton id="settings" label={T.navSettings} />
+          {/* Nav */}
+          <nav className="flex items-center gap-2">
+            <NavBtn id="home" label={T.navHome} />
+            <NavBtn id="library" label={T.navLibrary} />
+            <NavBtn id="settings" label={T.navSettings} />
           </nav>
 
-          {/* Start Quiz */}
-          <button
-            className="shrink-0 px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold"
-            onClick={startQuiz}
-          >
-            {T.startQuiz}
-          </button>
-
-          {/* Mobile nav */}
-          <div className="sm:hidden">
-            <select
-              aria-label="Navigate"
-              className="bg-zinc-900 border border-zinc-700 rounded-md text-sm px-2 py-2 ml-2"
-              value={page}
-              onChange={(e) => setPage(e.target.value)}
+          {/* Start Quiz (only show on Home) */}
+          {page === "home" && (
+            <button
+              onClick={startQuiz}
+              className="hidden sm:inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold px-3 py-2 rounded-md"
+              title={T.startQuiz}
             >
-              <option value="home">{T.navHome}</option>
-              <option value="library">{T.navLibrary}</option>
-              <option value="settings">{T.navSettings}</option>
-            </select>
-          </div>
+              🎯 {T.startQuiz}
+            </button>
+          )}
         </div>
+
+        {/* Mobile quiz button (under nav) */}
+        {page === "home" && (
+          <div className="mt-2 sm:hidden">
+            <button
+              onClick={startQuiz}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold px-3 py-2 rounded-md"
+              title={T.startQuiz}
+            >
+              🎯 {T.startQuiz}
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );
