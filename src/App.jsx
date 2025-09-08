@@ -1,9 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
-import { cn, nowTs, genId, normalizeRag, daysBetween, shuffle, sample, sim2 } from "./utils";
-
 
 /**
  * Lithuanian Trainer — App.jsx
@@ -222,7 +220,66 @@ const loadStreak = () => {
 };
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
 
-// utils
+// --- utils (moved here so no utils import is required) ---
+const nowTs = () => Date.now();
+const genId = () => Math.random().toString(36).slice(2);
+const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+function normalizeRag(icon = "") {
+  const s = String(icon).trim().toLowerCase();
+  if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
+    return "🟠";
+  if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
+  return "🟠";
+}
+
+function daysBetween(d1, d2) {
+  const a = new Date(d1 + "T00:00:00"),
+    b = new Date(d2 + "T00:00:00");
+  return Math.round((b - a) / 86400000);
+}
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function sample(arr, n) {
+  if (!arr.length || n <= 0) return [];
+  if (n >= arr.length) return shuffle(arr);
+  const idxs = new Set();
+  while (idxs.size < n) idxs.add((Math.random() * arr.length) | 0);
+  return [...idxs].map((i) => arr[i]);
+}
+function sim2(a = "", b = "") {
+  const s1 = (a + "").toLowerCase().trim();
+  const s2 = (b + "").toLowerCase().trim();
+  if (!s1 || !s2) return 0;
+  if (s1 === s2) return 1;
+  const grams = (s) => {
+    const g = [];
+    for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
+    return g;
+  };
+  const g1 = grams(s1),
+    g2 = grams(s2);
+  const map = new Map();
+  g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
+  let inter = 0;
+  g2.forEach((x) => {
+    if (map.get(x)) {
+      inter++;
+      map.set(x, map.get(x) - 1);
+    }
+  });
+  return (2 * inter) / (g1.length + g2.length);
+}
 
 // voices
 function useVoices() {
@@ -234,7 +291,8 @@ function useVoices() {
     };
     refresh();
     window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
-    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+    return () =>
+      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
   }, []);
   return voices;
 }
@@ -292,9 +350,13 @@ export default function App() {
   const [rows, setRows] = useState(loadRows());
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
-  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
+  const [sortMode, setSortMode] = useState(
+    () => localStorage.getItem(LSK_SORT) || "RAG"
+  );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
-  const [direction, setDirection] = useState(() => localStorage.getItem(LSK_DIR) || "EN2LT");
+  const [direction, setDirection] = useState(
+    () => localStorage.getItem(LSK_DIR) || "EN2LT"
+  );
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
 
@@ -315,14 +377,17 @@ export default function App() {
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
   useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
-  const [azureKey, setAzureKey] = useState(() => localStorage.getItem(LSK_AZURE_KEY) || "");
+  const [azureKey, setAzureKey] = useState(
+    () => localStorage.getItem(LSK_AZURE_KEY) || ""
+  );
   const [azureRegion, setAzureRegion] = useState(
     () => localStorage.getItem(LSK_AZURE_REGION) || ""
   );
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || "";
+      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
+        ?.shortName || "";
     } catch {
       return "";
     }
@@ -334,7 +399,10 @@ export default function App() {
     if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion);
   }, [azureRegion]);
   useEffect(() => {
-    localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
+    localStorage.setItem(
+      LSK_AZURE_VOICE,
+      JSON.stringify({ shortName: azureVoiceShortName })
+    );
   }, [azureVoiceShortName]);
 
   const voices = useVoices();
@@ -377,11 +445,19 @@ export default function App() {
       }
       if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
         const delta = slow ? "-40%" : "0%";
-        const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, delta);
+        const url = await speakAzureHTTP(
+          text,
+          azureVoiceShortName,
+          azureKey,
+          azureRegion,
+          delta
+        );
         const a = new Audio(url);
         audioRef.current = a;
         a.onended = () => {
-          try { URL.revokeObjectURL(url); } catch {}
+          try {
+            URL.revokeObjectURL(url);
+          } catch {}
           if (audioRef.current === a) audioRef.current = null;
         };
         await a.play();
@@ -447,7 +523,8 @@ export default function App() {
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...byQ].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
+        (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
   }, [rows, tab, q, sortMode]);
 
@@ -470,7 +547,10 @@ export default function App() {
     setEditDraft({ ...rows[i] });
   }
   function saveEdit(i) {
-    const clean = { ...editDraft, "RAG Icon": normalizeRag(editDraft["RAG Icon"]) };
+    const clean = {
+      ...editDraft,
+      "RAG Icon": normalizeRag(editDraft["RAG Icon"]),
+    };
     setRows((prev) => prev.map((r, idx) => (idx === i ? clean : r)));
     setEditIdx(null);
   }
@@ -496,7 +576,11 @@ export default function App() {
         _id: r._id || genId(),
         _ts: r._ts || nowTs(),
         _qstat:
-          r._qstat || { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
+          r._qstat || {
+            red: { ok: 0, bad: 0 },
+            amb: { ok: 0, bad: 0 },
+            grn: { ok: 0, bad: 0 },
+          },
       }))
       .filter((r) => r.English || r.Lithuanian);
     setRows((prev) => [...cleaned, ...prev]);
@@ -570,15 +654,20 @@ export default function App() {
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a], B = list[b];
-          const s = (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
+          const A = list[a],
+            B = list[b];
+          const s =
+            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) /
+            2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
       }
     }
     setDiapeResults({ exact, close }); // keep typo wrapper
   }
-  function setDiapeResults(v) { setDupeResults(v); }
+  function setDiapeResults(v) {
+    setDupeResults(v);
+  }
 
   // quiz
   const [quizOn, setQuizOn] = useState(false);
@@ -614,7 +703,10 @@ export default function App() {
     setQuizChoice(null);
     const first = pool[0];
     const correctLt = first.Lithuanian;
-    const distractors = sample(pool.filter((r) => r !== first && r.Lithuanian), 3).map((r) => r.Lithuanian);
+    const distractors = sample(
+      pool.filter((r) => r !== first && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
     setQuizOptions(shuffle([correctLt, ...distractors]));
     setQuizOn(true);
   }
@@ -624,7 +716,9 @@ export default function App() {
       const today = todayKey();
       if (streak.lastDate !== today) {
         const inc =
-          streak.lastDate && daysBetween(streak.lastDate, today) === 1 ? streak.streak + 1 : 1;
+          streak.lastDate && daysBetween(streak.lastDate, today) === 1
+            ? streak.streak + 1
+            : 1;
         setStreak({ streak: inc, lastDate: today });
       }
       setQuizOn(false);
@@ -635,13 +729,20 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map((r) => r.Lithuanian);
+    const distractors = sample(
+      quizQs.filter((r) => r !== item && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
     setQuizOptions(shuffle([correctLt, ...distractors]));
   }
   function bumpRagAfterAnswer(item, correct) {
     const rag = normalizeRag(item["RAG Icon"]);
     const st =
-      (item._qstat ||= { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } });
+      (item._qstat ||= {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      });
     if (rag === "🔴") {
       if (correct) {
         st.red.ok = (st.red.ok || 0) + 1;
@@ -696,40 +797,27 @@ export default function App() {
     );
   }
 
-  // components
-  function PlayButton({ text, rag }) {
-    const color =
-      rag === "🔴"
-        ? "bg-red-600 hover:bg-red-500"
-        : rag === "🟢"
-        ? "bg-green-600 hover:bg-green-500"
-        : "bg-amber-500 hover:bg-amber-400";
-    return (
-      <button
-        className={cn(
-          "shrink-0 w-10 h-10 rounded-xl transition flex items-center justify-center font-semibold text-zinc-900",
-          color
-        )}
-        title="Tap = play, long-press = slow"
-        {...pressHandlers(text)}
-      >
-        ►
-      </button>
-    );
-  }
-
   function LibraryView() {
     const fileRef = useRef(null);
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button onClick={() => fetchStarter("EN2LT")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+          <button
+            onClick={() => fetchStarter("EN2LT")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          >
             {T.installEN}
           </button>
-          <button onClick={() => fetchStarter("LT2EN")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+          <button
+            onClick={() => fetchStarter("LT2EN")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          >
             {T.installLT}
           </button>
-          <button onClick={installNumbersOnly} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+          <button
+            onClick={installNumbersOnly}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          >
             {T.installNums}
           </button>
 
@@ -745,7 +833,10 @@ export default function App() {
                 e.target.value = "";
               }}
             />
-            <button onClick={() => fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            >
               {T.importJSON}
             </button>
             <button
@@ -768,7 +859,10 @@ export default function App() {
             >
               Export JSON
             </button>
-            <button onClick={clearLibrary} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2">
+            <button
+              onClick={clearLibrary}
+              className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
+            >
               {T.clearAll}
             </button>
           </div>
@@ -788,32 +882,64 @@ export default function App() {
             </div>
             <div className="space-y-3">
               {dupeResults.close.map(([i, j, s]) => {
-                const A = rows[i], B = rows[j];
+                const A = rows[i],
+                  B = rows[j];
                 return (
-                  <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-                    <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
+                  <div
+                    key={`${i}-${j}`}
+                    className="bg-zinc-900 border border-zinc-800 rounded-xl p-3"
+                  >
+                    <div className="text-xs text-zinc-400 mb-2">
+                      {T.similarity}: {(s * 100).toFixed(0)}%
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
-                        <div key={ridx} className="border border-zinc-800 rounded-md p-2">
-                          <div className="font-medium">
-                            {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
-                          </div>
-                          {(row.Usage || row.Notes) && (
-                            <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                              {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
-                              {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
+                      {[{ row: A, idx: i }, { row: B, idx: j }].map(
+                        ({ row, idx: ridx }) => (
+                          <div
+                            key={ridx}
+                            className="border border-zinc-800 rounded-md p-2"
+                          >
+                            <div className="font-medium">
+                              {row.English} — {row.Lithuanian}{" "}
+                              <span className="text-xs text-zinc-400">
+                                [{row.Sheet}]
+                              </span>
                             </div>
-                          )}
-                          <div className="mt-2">
-                            <button
-                              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                              onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
-                            >
-                              {T.delete}
-                            </button>
+                            {(row.Usage || row.Notes) && (
+                              <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                                {row.Usage && (
+                                  <div>
+                                    <span className="text-zinc-500">
+                                      {T.usage}:{" "}
+                                    </span>
+                                    {row.Usage}
+                                  </div>
+                                )}
+                                {row.Notes && (
+                                  <div>
+                                    <span className="text-zinc-500">
+                                      {T.notes}:{" "}
+                                    </span>
+                                    {row.Notes}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <div className="mt-2">
+                              <button
+                                className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                                onClick={() =>
+                                  setRows((prev) =>
+                                    prev.filter((_, ii) => ii !== ridx)
+                                  )
+                                }
+                              >
+                                {T.delete}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      )}
                     </div>
                   </div>
                 );
@@ -840,7 +966,9 @@ export default function App() {
                   onClick={() => setDirection(d)}
                   className={cn(
                     "px-3 py-1.5 rounded-md text-sm border",
-                    direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                    direction === d
+                      ? "bg-emerald-600 border-emerald-600"
+                      : "bg-zinc-900 border-zinc-700"
                   )}
                 >
                   {d === "EN2LT" ? T.en2lt : T.lt2en}
@@ -873,7 +1001,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Browser voice selection (moved here from header) */}
+          {/* Browser voice selection */}
           {ttsProvider === "browser" && (
             <div className="space-y-2">
               <div className="text-xs mb-1">{T.voice}</div>
@@ -883,7 +1011,7 @@ export default function App() {
                 onChange={(e) => setBrowserVoiceName(e.target.value)}
                 title={T.browserVoice}
               >
-                <option value="">{/* Auto voice fallback */}Auto voice</option>
+                <option value="">Auto voice</option>
                 {voices.map((v) => (
                   <option key={v.name} value={v.name}>
                     {v.name} ({v.lang})
@@ -893,7 +1021,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Azure settings (unchanged) */}
+          {/* Azure settings */}
           {ttsProvider === "azure" && (
             <div className="space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -938,7 +1066,9 @@ export default function App() {
                   onClick={async () => {
                     try {
                       const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-                      const res = await fetch(url, { headers: { "Ocp-Apim-Subscription-Key": azureKey } });
+                      const res = await fetch(url, {
+                        headers: { "Ocp-Apim-Subscription-Key": azureKey },
+                      });
                       if (!res.ok) throw new Error("Failed to fetch Azure voices");
                       const data = await res.json();
                       const vs = data.map((v) => ({
@@ -947,7 +1077,8 @@ export default function App() {
                         displayName: v.LocalName || v.FriendlyName || v.ShortName,
                       }));
                       setAzureVoices(vs);
-                      if (!azureVoiceShortName && vs.length) setAzureVoiceShortName(vs[0].shortName);
+                      if (!azureVoiceShortName && vs.length)
+                        setAzureVoiceShortName(vs[0].shortName);
                     } catch (e) {
                       alert(e.message);
                     }
@@ -1002,12 +1133,21 @@ export default function App() {
 
         {/* Streak + Level */}
         <div className="mt-2 flex items-center gap-3">
-          <div className="text-xs text-zinc-400">🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span></div>
-          <div className="text-xs text-zinc-400">🥇 {T.level} <span className="font-semibold">{level}</span></div>
-          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-            <div className="h-full bg-emerald-600" style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }} />
+          <div className="text-xs text-zinc-400">
+            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
           </div>
-          <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
+          <div className="text-xs text-zinc-400">
+            🥇 {T.level} <span className="font-semibold">{level}</span>
+          </div>
+          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
+            <div
+              className="h-full bg-emerald-600"
+              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
+            />
+          </div>
+          <div className="text-xs text-zinc-400">
+            {levelProgress} / {LEVEL_STEP} XP
+          </div>
         </div>
 
         {/* Tabs */}
@@ -1018,10 +1158,18 @@ export default function App() {
               onClick={() => setTab(t)}
               className={cn(
                 "px-3 py-1.5 rounded-full text-sm border",
-                tab === t ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
+                tab === t
+                  ? "bg-emerald-600 border-emerald-600"
+                  : "bg-zinc-900 border-zinc-800"
               )}
             >
-              {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
+              {t === "Phrases"
+                ? T.phrases
+                : t === "Questions"
+                ? T.questions
+                : t === "Words"
+                ? T.words
+                : T.numbers}
             </button>
           ))}
         </div>
@@ -1035,7 +1183,9 @@ export default function App() {
                 onClick={() => setRagChip(x)}
                 className={cn(
                   "px-2 py-1 rounded-md text-xs border",
-                  ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                  ragChip === x
+                    ? "bg-emerald-600 border-emerald-600"
+                    : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {x}
@@ -1053,12 +1203,36 @@ export default function App() {
                   <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
                     {k}
                   </span>
-                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
+                  <div className="text-sm text-zinc-400">
+                    {ragBuckets[k].length} item(s)
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {ragBuckets[k].map((r) => {
                     const idx = rows.indexOf(r);
-                    return <EntryCard key={r._id || idx} r={r} idx={idx} />;
+                    return (
+                      <EntryCard
+                        key={r._id || idx}
+                        r={r}
+                        idx={idx}
+                        rows={rows}
+                        setRows={setRows}
+                        editIdx={editIdx}
+                        setEditIdx={setEditIdx}
+                        editDraft={editDraft}
+                        setEditDraft={setEditDraft}
+                        expanded={expanded}
+                        setExpanded={setExpanded}
+                        T={T}
+                        direction={direction}
+                        startEdit={startEdit}
+                        saveEdit={saveEdit}
+                        remove={remove}
+                        normalizeRag={normalizeRag}
+                        pressHandlers={pressHandlers}
+                        cn={cn}
+                      />
+                    );
                   })}
                 </div>
               </div>
@@ -1068,7 +1242,29 @@ export default function App() {
           <div className="mt-4 space-y-2">
             {chipFiltered.map((r) => {
               const idx = rows.indexOf(r);
-              return <EntryCard key={r._id || idx} r={r} idx={idx} />;
+              return (
+                <EntryCard
+                  key={r._id || idx}
+                  r={r}
+                  idx={idx}
+                  rows={rows}
+                  setRows={setRows}
+                  editIdx={editIdx}
+                  setEditIdx={setEditIdx}
+                  editDraft={editDraft}
+                  setEditDraft={setEditDraft}
+                  expanded={expanded}
+                  setExpanded={setExpanded}
+                  T={T}
+                  direction={direction}
+                  startEdit={startEdit}
+                  saveEdit={saveEdit}
+                  remove={remove}
+                  normalizeRag={normalizeRag}
+                  pressHandlers={pressHandlers}
+                  cn={cn}
+                />
+              );
             })}
           </div>
         )}
@@ -1077,16 +1273,17 @@ export default function App() {
         <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
           <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
             <details>
-              <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
-              <AddForm 
-  tab={tab} 
-  setRows={setRows} 
-  T={T} 
-  genId={genId} 
-  nowTs={nowTs} 
-  normalizeRag={normalizeRag} 
-/>
-
+              <summary className="cursor-pointer text-sm text-zinc-300">
+                {T.addEntry}
+              </summary>
+              <AddForm
+                tab={tab}
+                setRows={setRows}
+                T={T}
+                genId={genId}
+                nowTs={nowTs}
+                normalizeRag={normalizeRag}
+              />
             </details>
           </div>
         </div>
@@ -1096,91 +1293,93 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header 
-  T={T} 
-  page={page} 
-  setPage={setPage} 
-  startQuiz={startQuiz} 
-  cn={cn} 
-/>
-      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
+      <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
+      {page === "library" ? (
+        <LibraryView />
+      ) : page === "settings" ? (
+        <SettingsView />
+      ) : (
+        <HomeView />
+      )}
+
       {/* Quiz modal */}
       {quizOn && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-            {quizQs.length > 0 && (() => {
-              const item = quizQs[quizIdx];
-              const questionText = item.English;
-              const correctLt = item.Lithuanian;
-              return (
-                <>
-                  <div className="text-sm text-zinc-400 mb-1">
-                    {T.prompt} {quizIdx + 1} / {quizQs.length}
-                  </div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="text-lg font-medium flex-1">{questionText}</div>
-                    <button
-                      className="w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center font-semibold"
-                      title="Tap = play, long-press = slow"
-                      {...pressHandlers(correctLt)}
-                    >
-                      ►
-                    </button>
-                  </div>
-                  <div className="text-sm text-zinc-400 mb-1">{T.chooseLT}</div>
-                  <div className="space-y-2">
-                    {quizOptions.map((opt) => {
-                      const isSelected = quizChoice === opt;
-                      const isCorrect = opt === correctLt;
-                      const showColors = quizAnswered;
-                      const base =
-                        "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
-                      const color = !showColors
-                        ? "bg-zinc-900 border-zinc-700"
-                        : isCorrect
-                        ? "bg-emerald-700/40 border-emerald-600"
-                        : isSelected
-                        ? "bg-red-900/40 border-red-600"
-                        : "bg-zinc-900 border-zinc-700";
-                      return (
-                        <button
-                          key={opt}
-                          className={`${base} ${color}`}
-                          onClick={() => !quizAnswered && answerQuiz(opt)}
-                        >
-                          <span className="flex-1">{opt}</span>
-                          <span
-                            className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center"
-                            title="Tap = play, long-press = slow"
-                            {...pressHandlers(opt)}
-                          >
-                            🔊
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <button
-                      onClick={() => setQuizOn(false)}
-                      className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-                    >
-                      Close
-                    </button>
-                    {quizAnswered ? (
+            {quizQs.length > 0 &&
+              (() => {
+                const item = quizQs[quizIdx];
+                const questionText = item.English;
+                const correctLt = item.Lithuanian;
+                return (
+                  <>
+                    <div className="text-sm text-zinc-400 mb-1">
+                      {T.prompt} {quizIdx + 1} / {quizQs.length}
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="text-lg font-medium flex-1">{questionText}</div>
                       <button
-                        onClick={afterAnswerAdvance}
-                        className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
+                        className="w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center font-semibold"
+                        title="Tap = play, long-press = slow"
+                        {...pressHandlers(correctLt)}
                       >
-                        {T.nextQuestion}
+                        ►
                       </button>
-                    ) : (
-                      <div className="text-sm text-zinc-400">&nbsp;</div>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
+                    </div>
+                    <div className="text-sm text-zinc-400 mb-1">{T.chooseLT}</div>
+                    <div className="space-y-2">
+                      {quizOptions.map((opt) => {
+                        const isSelected = quizChoice === opt;
+                        const isCorrect = opt === correctLt;
+                        const showColors = quizAnswered;
+                        const base =
+                          "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
+                        const color = !showColors
+                          ? "bg-zinc-900 border-zinc-700"
+                          : isCorrect
+                          ? "bg-emerald-700/40 border-emerald-600"
+                          : isSelected
+                          ? "bg-red-900/40 border-red-600"
+                          : "bg-zinc-900 border-zinc-700";
+                        return (
+                          <button
+                            key={opt}
+                            className={`${base} ${color}`}
+                            onClick={() => !quizAnswered && answerQuiz(opt)}
+                          >
+                            <span className="flex-1">{opt}</span>
+                            <span
+                              className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center"
+                              title="Tap = play, long-press = slow"
+                              {...pressHandlers(opt)}
+                            >
+                              🔊
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <button
+                        onClick={() => setQuizOn(false)}
+                        className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                      >
+                        Close
+                      </button>
+                      {quizAnswered ? (
+                        <button
+                          onClick={afterAnswerAdvance}
+                          className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
+                        >
+                          {T.nextQuestion}
+                        </button>
+                      ) : (
+                        <div className="text-sm text-zinc-400">&nbsp;</div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
           </div>
         </div>
       )}
