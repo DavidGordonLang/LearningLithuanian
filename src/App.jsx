@@ -6,7 +6,7 @@ import AddForm from "./components/AddForm";
 /**
  * Lithuanian Trainer — App.jsx
  * - Tabs: Phrases / Questions / Words / Numbers
- * - Search + clear
+ * - Search + clear (sticky focus on mobile)
  * - Sort: RAG (default), Newest, Oldest
  * - RAG chips (mobile) and tri-column RAG grid (wide screens)
  * - TTS: Azure primary + Browser fallback (no double-play, long-press = slow)
@@ -222,7 +222,10 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s))
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
     return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
@@ -339,6 +342,10 @@ export default function App() {
   const [rows, setRows] = useState(loadRows());
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
+  // --- Sticky search focus (Android-friendly)
+  const searchRef = useRef(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
   const [direction, setDirection] = useState(() => localStorage.getItem(LSK_DIR) || "EN2LT");
@@ -497,6 +504,13 @@ export default function App() {
     );
   }, [rows, tab, q, sortMode]);
 
+  // --- Keep Android keyboard from collapsing between renders
+  useEffect(() => {
+    if (searchFocused && searchRef.current && document.activeElement !== searchRef.current) {
+      searchRef.current.focus({ preventScroll: true });
+    }
+  }, [searchFocused, q, sortMode, tab, width, filtered.length]);
+
   const ragBuckets = useMemo(() => {
     const buckets = { "🔴": [], "🟠": [], "🟢": [] };
     for (const r of filtered) buckets[normalizeRag(r["RAG Icon"])].push(r);
@@ -614,7 +628,8 @@ export default function App() {
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a], B = list[b];
+          const A = list[a],
+            B = list[b];
           const s = (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
@@ -657,9 +672,10 @@ export default function App() {
     setQuizChoice(null);
     const first = pool[0];
     const correctLt = first.Lithuanian;
-    const distractors = sample(pool.filter((r) => r !== first && r.Lithuanian), 3).map(
-      (r) => r.Lithuanian
-    );
+    const distractors = sample(
+      pool.filter((r) => r !== first && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
     setQuizOptions(shuffle([correctLt, ...distractors]));
     setQuizOn(true);
   }
@@ -668,7 +684,10 @@ export default function App() {
     if (nextIdx >= quizQs.length) {
       const today = todayKey();
       if (streak.lastDate !== today) {
-        const inc = streak.lastDate && daysBetween(streak.lastDate, today) === 1 ? streak.streak + 1 : 1;
+        const inc =
+          streak.lastDate && daysBetween(streak.lastDate, today) === 1
+            ? streak.streak + 1
+            : 1;
         setStreak({ streak: inc, lastDate: today });
       }
       setQuizOn(false);
@@ -679,9 +698,10 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
-      (r) => r.Lithuanian
-    );
+    const distractors = sample(
+      quizQs.filter((r) => r !== item && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
     setQuizOptions(shuffle([correctLt, ...distractors]));
   }
   function bumpRagAfterAnswer(item, correct) {
@@ -893,47 +913,38 @@ export default function App() {
                     {T.similarity}: {(s * 100).toFixed(0)}%
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[{ row: A, idx: i }, { row: B, idx: j }].map(
-                      ({ row, idx: ridx }) => (
-                        <div
-                          key={ridx}
-                          className="border border-zinc-800 rounded-md p-2"
-                        >
-                          <div className="font-medium">
-                            {row.English} — {row.Lithuanian}{" "}
-                            <span className="text-xs text-zinc-400">
-                              [{row.Sheet}]
-                            </span>
-                          </div>
-                          {(row.Usage || row.Notes) && (
-                            <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                              {row.Usage && (
-                                <div>
-                                  <span className="text-zinc-500">{T.usage}: </span>
-                                  {row.Usage}
-                                </div>
-                              )}
-                              {row.Notes && (
-                                <div>
-                                  <span className="text-zinc-500">{T.notes}: </span>
-                                  {row.Notes}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          <div className="mt-2">
-                            <button
-                              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                              onClick={() =>
-                                setRows((prev) => prev.filter((_, ii) => ii !== ridx))
-                              }
-                            >
-                              {T.delete}
-                            </button>
-                          </div>
+                    {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian}{" "}
+                          <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
                         </div>
-                      )
-                    )}
+                        {(row.Usage || row.Notes) && (
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && (
+                              <div>
+                                <span className="text-zinc-500">{T.usage}: </span>
+                                {row.Usage}
+                              </div>
+                            )}
+                            {row.Notes && (
+                              <div>
+                                <span className="text-zinc-500">{T.notes}: </span>
+                                {row.Notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button
+                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
+                          >
+                            {T.delete}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
@@ -1106,15 +1117,30 @@ export default function App() {
         <div className="flex items-center gap-2 mt-3">
           <div className="relative flex-1">
             <input
+              ref={searchRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               placeholder={T.search}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="search"
+              inputMode="search"
             />
             {q && (
               <button
+                type="button"
+                tabIndex={-1}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                onClick={() => setQ("")}
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+                onClick={() => {
+                  setQ("");
+                  searchRef.current?.focus({ preventScroll: true });
+                }}
                 aria-label="Clear"
               >
                 ×
