@@ -6,7 +6,7 @@ import AddForm from "./components/AddForm";
 /**
  * Lithuanian Trainer — App.jsx
  * - Tabs: Phrases / Questions / Words / Numbers
- * - Search + clear (sticky focus on mobile, but suppressed on non-search taps)
+ * - Search + clear (global search across all sheets when typing)
  * - Sort: RAG (default), Newest, Oldest
  * - RAG chips (mobile) and tri-column RAG grid (wide screens)
  * - TTS: Azure primary + Browser fallback (no double-play, long-press = slow)
@@ -335,7 +335,7 @@ export default function App() {
   const searchRef = useRef(null);
   const [searchFocused, setSearchFocused] = useState(false);
 
-  // 👇 NEW: suppression window to avoid unwanted re-focus after other interactions
+  // suppress search refocus after other taps
   const suppressRefocusRef = useRef(0);
   const suppressSearchRefocus = (ms = 1200) => {
     suppressRefocusRef.current = Date.now() + ms;
@@ -450,14 +450,13 @@ export default function App() {
     }
   }
 
-  // 👇 UPDATED: press handler now blurs search + suppresses re-focus
+  // play/hold handlers (also suppress search refocus)
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
     let pressed = false;
 
     const start = (e) => {
-      // User is interacting with a non-search control: drop focus & suppress refocus
       dropSearchFocus(1400);
       e.preventDefault();
       firedSlow = false;
@@ -493,12 +492,13 @@ export default function App() {
     };
   }
 
-  // filtering/sorting
+  // ---- FILTERING / SORTING
+  // Global search: if q is non-empty, search across ALL rows (ignore current tab).
   const filtered = useMemo(() => {
-    const byTab = rows.filter((r) => r.Sheet === tab);
+    const haystack = q ? rows : rows.filter((r) => r.Sheet === tab);
     const byQ = !q
-      ? byTab
-      : byTab.filter((r) =>
+      ? haystack
+      : haystack.filter((r) =>
           `${r.English} ${r.Lithuanian} ${r.Phonetic} ${r.Category} ${r.Usage} ${r.Notes}`
             .toLowerCase()
             .includes(q.toLowerCase())
@@ -512,7 +512,7 @@ export default function App() {
     );
   }, [rows, tab, q, sortMode]);
 
-  // 👇 Only refocus search if the user is actively in it AND no suppression window is active
+  // keep search focus sticky only when user is in the box and not suppressed
   useEffect(() => {
     if (!searchFocused) return;
     if (Date.now() < suppressRefocusRef.current) return;
@@ -520,7 +520,7 @@ export default function App() {
     if (el && document.activeElement !== el) {
       el.focus({ preventScroll: true });
     }
-  }, [searchFocused, q]); // keep dependencies minimal to avoid spurious refocus
+  }, [searchFocused, q]);
 
   const ragBuckets = useMemo(() => {
     const buckets = { "🔴": [], "🟠": [], "🟢": [] };
@@ -695,7 +695,10 @@ export default function App() {
     if (nextIdx >= quizQs.length) {
       const today = todayKey();
       if (streak.lastDate !== today) {
-        const inc = streak.lastDate && daysBetween(streak.lastDate, today) === 1 ? streak.streak + 1 : 1;
+        const inc =
+          streak.lastDate && daysBetween(streak.lastDate, today) === 1
+            ? streak.streak + 1
+            : 1;
         setStreak({ streak: inc, lastDate: today });
       }
       setQuizOn(false);
@@ -706,7 +709,7 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
+    the distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
       (r) => r.Lithuanian
     );
     setQuizOptions(shuffle([correctLt, ...distractors]));
@@ -714,7 +717,11 @@ export default function App() {
   function bumpRagAfterAnswer(item, correct) {
     const rag = normalizeRag(item["RAG Icon"]);
     const st =
-      (item._qstat ||= { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } });
+      (item._qstat ||= {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      });
     if (rag === "🔴") {
       if (correct) {
         st.red.ok = (st.red.ok || 0) + 1;
@@ -1291,7 +1298,10 @@ export default function App() {
 
       {/* Quiz modal */}
       {quizOn && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onPointerDown={() => dropSearchFocus(1500)}>
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onPointerDown={() => dropSearchFocus(1500)}
+        >
           <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
             {quizQs.length > 0 &&
               (() => {
@@ -1319,7 +1329,8 @@ export default function App() {
                         const isSelected = quizChoice === opt;
                         const isCorrect = opt === correctLt;
                         const showColors = quizAnswered;
-                        const base = "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
+                        const base =
+                          "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
                         const color = !showColors
                           ? "bg-zinc-900 border-zinc-700"
                           : isCorrect
@@ -1328,7 +1339,11 @@ export default function App() {
                           ? "bg-red-900/40 border-red-600"
                           : "bg-zinc-900 border-zinc-700";
                         return (
-                          <button key={opt} className={`${base} ${color}`} onClick={() => !quizAnswered && answerQuiz(opt)}>
+                          <button
+                            key={opt}
+                            className={`${base} ${color}`}
+                            onClick={() => !quizAnswered && answerQuiz(opt)}
+                          >
                             <span className="flex-1">{opt}</span>
                             <span
                               className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center"
@@ -1342,9 +1357,14 @@ export default function App() {
                       })}
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <button onClick={() => setQuizOn(false)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">Close</button>
+                      <button onClick={() => setQuizOn(false)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+                        Close
+                      </button>
                       {quizAnswered ? (
-                        <button onClick={afterAnswerAdvance} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">
+                        <button
+                          onClick={afterAnswerAdvance}
+                          className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
+                        >
                           {T.nextQuestion}
                         </button>
                       ) : (
