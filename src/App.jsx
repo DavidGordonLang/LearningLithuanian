@@ -6,7 +6,9 @@ import AddForm from "./components/AddForm";
 /**
  * Lithuanian Trainer — App.jsx
  * - Tabs: Phrases / Questions / Words / Numbers
- * - Search + clear (global search across all sheets when typing)
+ * - Global Search across all sheets (when typing)
+ *   • Matches ONLY English or Lithuanian fields (case-insensitive, no fuzzy)
+ *   • Tabs with results get a highlight and count badge
  * - Sort: RAG (default), Newest, Oldest
  * - RAG chips (mobile) and tri-column RAG grid (wide screens)
  * - TTS: Azure primary + Browser fallback (no double-play, long-press = slow)
@@ -493,16 +495,20 @@ export default function App() {
   }
 
   // ---- FILTERING / SORTING
-  // Global search: if q is non-empty, search across ALL rows (ignore current tab).
+
+  // "Exact" search = plain case-insensitive substring,
+  // but ONLY against English and Lithuanian fields (no Usage/Notes/etc).
+  const qNorm = q.trim().toLowerCase();
+  const entryMatchesQuery = (r) =>
+    !!qNorm &&
+    (((r.English || "").toLowerCase().includes(qNorm)) ||
+     ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
+
+  // Global search: if q is non-empty, search across ALL rows (ignore current tab),
+  // else show the selected tab like normal.
   const filtered = useMemo(() => {
-    const haystack = q ? rows : rows.filter((r) => r.Sheet === tab);
-    const byQ = !q
-      ? haystack
-      : haystack.filter((r) =>
-          `${r.English} ${r.Lithuanian} ${r.Phonetic} ${r.Category} ${r.Usage} ${r.Notes}`
-            .toLowerCase()
-            .includes(q.toLowerCase())
-        );
+    const haystack = qNorm ? rows : rows.filter((r) => r.Sheet === tab);
+    const byQ = !qNorm ? haystack : haystack.filter(entryMatchesQuery);
     if (sortMode === "Newest") return [...byQ].sort((a, b) => (b._ts || 0) - (a._ts || 0));
     if (sortMode === "Oldest") return [...byQ].sort((a, b) => (a._ts || 0) - (b._ts || 0));
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
@@ -510,7 +516,17 @@ export default function App() {
       (a, b) =>
         (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, tab, q, sortMode]);
+  }, [rows, tab, qNorm, sortMode]);
+
+  // While searching, compute result counts per sheet to highlight tabs.
+  const sheetCounts = useMemo(() => {
+    if (!qNorm) return null;
+    const counts = { Phrases: 0, Questions: 0, Words: 0, Numbers: 0 };
+    for (const r of rows) {
+      if (entryMatchesQuery(r)) counts[r.Sheet] = (counts[r.Sheet] || 0) + 1;
+    }
+    return counts;
+  }, [rows, qNorm]);
 
   // keep search focus sticky only when user is in the box and not suppressed
   useEffect(() => {
@@ -520,7 +536,7 @@ export default function App() {
     if (el && document.activeElement !== el) {
       el.focus({ preventScroll: true });
     }
-  }, [searchFocused, q]);
+  }, [searchFocused, qNorm]);
 
   const ragBuckets = useMemo(() => {
     const buckets = { "🔴": [], "🟠": [], "🟢": [] };
@@ -709,7 +725,7 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    the distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
+    const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
       (r) => r.Lithuanian
     );
     setQuizOptions(shuffle([correctLt, ...distractors]));
@@ -1164,20 +1180,41 @@ export default function App() {
           <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs (with highlights while searching) */}
         <div className="flex items-center gap-2 mt-3 flex-wrap">
-          {["Phrases", "Questions", "Words", "Numbers"].map((t) => (
-            <button
-              key={t}
-              onClick={() => { dropSearchFocus(600); setTab(t); }}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-sm border",
-                tab === t ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
-              )}
-            >
-              {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
-            </button>
-          ))}
+          {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
+            const hits = sheetCounts?.[t] || 0;
+            const searching = !!qNorm;
+            const isActive = tab === t;
+            const base =
+              "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
+            const normal =
+              isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
+            const highlighted =
+              hits > 0
+                ? "ring-2 ring-emerald-500 ring-offset-0"
+                : searching
+                ? "opacity-60"
+                : "";
+            return (
+              <button
+                key={t}
+                onClick={() => {
+                  dropSearchFocus(600);
+                  setTab(t);
+                }}
+                className={cn(base, normal, highlighted)}
+                title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
+              >
+                {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
+                {hits > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
+                    {hits}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* RAG chips (mobile) */}
