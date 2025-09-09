@@ -35,6 +35,7 @@ const LEVEL_STEP = 2500;
 const XP_PER_CORRECT = 50;
 
 const STR = {
+  // UI shown when direction is EN2LT (English UI text)
   EN2LT: {
     appTitle1: "Lithuanian",
     appTitle2: "Trainer",
@@ -76,13 +77,15 @@ const STR = {
     voice: "Voice",
     fetchVoices: "Fetch voices",
     choose: "— choose —",
-    direction: "Direction",
-    en2lt: "EN → LT",
-    lt2en: "LT → EN",
+    direction: "Learning direction",
+    // Clearer learning direction labels
+    en2lt: "I’m learning Lithuanian (EN → LT)",
+    lt2en: "I’m learning English (LT → EN)",
     settings: "Settings",
     libraryTitle: "Library",
-    installEN: "Install EN→LT starter",
-    installLT: "Install LT→EN starter",
+    // Clearer starter names
+    installEN: "Install “Learn Lithuanian” starter (EN → LT)",
+    installLT: "Install “Learn English” starter (LT → EN)",
     installNums: "Install Numbers pack",
     importJSON: "Import JSON",
     clearAll: "Clear library",
@@ -102,6 +105,8 @@ const STR = {
     done: "Done",
     retry: "Retry",
   },
+
+  // UI shown when direction is LT2EN (Lithuanian UI text)
   LT2EN: {
     appTitle1: "Anglų",
     appTitle2: "kalbos treniruoklis",
@@ -143,13 +148,15 @@ const STR = {
     voice: "Balsas",
     fetchVoices: "Gauti balsus",
     choose: "— pasirinkite —",
-    direction: "Kryptis",
-    en2lt: "EN → LT",
-    lt2en: "LT → EN",
+    direction: "Mokymosi kryptis",
+    // Clearer learning direction labels (LT)
+    en2lt: "Mokausi lietuvių (EN → LT)",
+    lt2en: "Mokausi anglų (LT → EN)",
     settings: "Nustatymai",
     libraryTitle: "Biblioteka",
-    installEN: "Įdiegti EN→LT pradžią",
-    installLT: "Įdiegti LT→EN pradžią",
+    // Clearer starter names (LT)
+    installEN: "Įdiegti rinkinį „Mokausi lietuvių“ (EN → LT)",
+    installLT: "Įdiegti rinkinį „Mokausi anglų“ (LT → EN)",
     installNums: "Įdiegti skaičių paketą",
     importJSON: "Importuoti JSON",
     clearAll: "Išvalyti biblioteką",
@@ -740,13 +747,25 @@ export default function App() {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button onClick={() => fetchStarter("EN2LT")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+          <button
+            onClick={() => fetchStarter("EN2LT")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="English prompts → Lithuanian answers. Installs EN→LT starter."
+          >
             {T.installEN}
           </button>
-          <button onClick={() => fetchStarter("LT2EN")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+          <button
+            onClick={() => fetchStarter("LT2EN")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Lithuanian prompts → English answers. Installs LT→EN starter."
+          >
             {T.installLT}
           </button>
-          <button onClick={installNumbersOnly} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+          <button
+            onClick={installNumbersOnly}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Adds only entries from the Numbers sheet in the starter files."
+          >
             {T.installNums}
           </button>
 
@@ -762,13 +781,19 @@ export default function App() {
                 e.target.value = "";
               }}
             />
-            <button onClick={() => fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+              title="Import a custom JSON array of entries."
+            >
               {T.importJSON}
             </button>
             <button
               onClick={() => {
                 try {
-                  const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+                  const blob = new Blob([JSON.stringify(rows, null, 2)], {
+                    type: "application/json",
+                  });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
@@ -780,10 +805,15 @@ export default function App() {
                 }
               }}
               className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+              title="Export your current library as JSON."
             >
               Export JSON
             </button>
-            <button onClick={clearLibrary} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2">
+            <button
+              onClick={clearLibrary}
+              className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
+              title="Remove all entries from your library."
+            >
               {T.clearAll}
             </button>
           </div>
@@ -817,10 +847,16 @@ export default function App() {
                         {(row.Usage || row.Notes) && (
                           <div className="mt-1 text-xs text-zinc-400 space-y-1">
                             {row.Usage && (
-                              <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>
+                              <div>
+                                <span className="text-zinc-500">{T.usage}: </span>
+                                {row.Usage}
+                              </div>
                             )}
                             {row.Notes && (
-                              <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>
+                              <div>
+                                <span className="text-zinc-500">{T.notes}: </span>
+                                {row.Notes}
+                              </div>
                             )}
                           </div>
                         )}
@@ -846,32 +882,58 @@ export default function App() {
           </div>
           <div className="space-y-3">
             {dupeResults.close.map(([i, j, s]) => {
-              const A = rows[i], B = rows[j];
+              const A = rows[i],
+                B = rows[j];
               return (
-                <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-                  <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
+                <div
+                  key={`${i}-${j}`}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-3"
+                >
+                  <div className="text-xs text-zinc-400 mb-2">
+                    {T.similarity}: {(s * 100).toFixed(0)}%
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
-                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
-                        <div className="font-medium">
-                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
-                        </div>
-                        {(row.Usage || row.Notes) && (
-                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                            {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
-                            {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
+                    {[{ row: A, idx: i }, { row: B, idx: j }].map(
+                      ({ row, idx: ridx }) => (
+                        <div
+                          key={ridx}
+                          className="border border-zinc-800 rounded-md p-2"
+                        >
+                          <div className="font-medium">
+                            {row.English} — {row.Lithuanian}{" "}
+                            <span className="text-xs text-zinc-400">
+                              [{row.Sheet}]
+                            </span>
                           </div>
-                        )}
-                        <div className="mt-2">
-                          <button
-                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
-                          >
-                            {T.delete}
-                          </button>
+                          {(row.Usage || row.Notes) && (
+                            <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                              {row.Usage && (
+                                <div>
+                                  <span className="text-zinc-500">{T.usage}: </span>
+                                  {row.Usage}
+                                </div>
+                              )}
+                              {row.Notes && (
+                                <div>
+                                  <span className="text-zinc-500">{T.notes}: </span>
+                                  {row.Notes}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-2">
+                            <button
+                              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                              onClick={() =>
+                                setRows((prev) => prev.filter((_, ii) => ii !== ridx))
+                              }
+                            >
+                              {T.delete}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
               );
@@ -897,8 +959,15 @@ export default function App() {
                   onClick={() => setDirection(d)}
                   className={cn(
                     "px-3 py-1.5 rounded-md text-sm border",
-                    direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                    direction === d
+                      ? "bg-emerald-600 border-emerald-600"
+                      : "bg-zinc-900 border-zinc-700"
                   )}
+                  title={
+                    d === "EN2LT"
+                      ? "Prompts in English → answers in Lithuanian"
+                      : "Prompts in Lithuanian → answers in English"
+                  }
                 >
                   {d === "EN2LT" ? T.en2lt : T.lt2en}
                 </button>
@@ -1016,7 +1085,9 @@ export default function App() {
                       alert(e.message);
                     }
                   }}
-                  className={`bg-zinc-800 px-3 py-2 rounded-md ${(!azureRegion || !azureKey) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`bg-zinc-800 px-3 py-2 rounded-md ${
+                    !azureRegion || !azureKey ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   {T.fetchVoices}
                 </button>
@@ -1066,12 +1137,21 @@ export default function App() {
 
         {/* Streak + Level */}
         <div className="mt-2 flex items-center gap-3">
-          <div className="text-xs text-zinc-400">🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span></div>
-          <div className="text-xs text-zinc-400">🥇 {T.level} <span className="font-semibold">{level}</span></div>
-          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-            <div className="h-full bg-emerald-600" style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }} />
+          <div className="text-xs text-zinc-400">
+            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
           </div>
-          <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
+          <div className="text-xs text-zinc-400">
+            🥇 {T.level} <span className="font-semibold">{level}</span>
+          </div>
+          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
+            <div
+              className="h-full bg-emerald-600"
+              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
+            />
+          </div>
+          <div className="text-xs text-zinc-400">
+            {levelProgress} / {LEVEL_STEP} XP
+          </div>
         </div>
 
         {/* Tabs */}
@@ -1085,7 +1165,13 @@ export default function App() {
                 tab === t ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
               )}
             >
-              {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
+              {t === "Phrases"
+                ? T.phrases
+                : t === "Questions"
+                ? T.questions
+                : t === "Words"
+                ? T.words
+                : T.numbers}
             </button>
           ))}
         </div>
@@ -1099,7 +1185,9 @@ export default function App() {
                 onClick={() => setRagChip(x)}
                 className={cn(
                   "px-2 py-1 rounded-md text-xs border",
-                  ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                  ragChip === x
+                    ? "bg-emerald-600 border-emerald-600"
+                    : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {x}
@@ -1117,7 +1205,9 @@ export default function App() {
                   <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
                     {k}
                   </span>
-                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
+                  <div className="text-sm text-zinc-400">
+                    {ragBuckets[k].length} item(s)
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {ragBuckets[k].map((r) => {
@@ -1185,7 +1275,9 @@ export default function App() {
         <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
           <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
             <details>
-              <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
+              <summary className="cursor-pointer text-sm text-zinc-300">
+                {T.addEntry}
+              </summary>
               <AddForm
                 tab={tab}
                 setRows={setRows}
@@ -1204,7 +1296,13 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
-      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
+      {page === "library" ? (
+        <LibraryView />
+      ) : page === "settings" ? (
+        <SettingsView />
+      ) : (
+        <HomeView />
+      )}
 
       {/* Quiz modal */}
       {quizOn && (
@@ -1264,7 +1362,10 @@ export default function App() {
                       })}
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <button onClick={() => setQuizOn(false)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+                      <button
+                        onClick={() => setQuizOn(false)}
+                        className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                      >
                         Close
                       </button>
                       {quizAnswered ? (
