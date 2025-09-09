@@ -6,7 +6,7 @@ import AddForm from "./components/AddForm";
 /**
  * Lithuanian Trainer — App.jsx
  * - Tabs: Phrases / Questions / Words / Numbers
- * - Search + clear (sticky focus on mobile)
+ * - Search + clear (sticky focus on mobile, but suppressed on non-search taps)
  * - Sort: RAG (default), Newest, Oldest
  * - RAG chips (mobile) and tri-column RAG grid (wide screens)
  * - TTS: Azure primary + Browser fallback (no double-play, long-press = slow)
@@ -35,7 +35,6 @@ const LEVEL_STEP = 2500;
 const XP_PER_CORRECT = 50;
 
 const STR = {
-  // UI shown when direction is EN2LT (English UI text)
   EN2LT: {
     appTitle1: "Lithuanian",
     appTitle2: "Trainer",
@@ -78,12 +77,10 @@ const STR = {
     fetchVoices: "Fetch voices",
     choose: "— choose —",
     direction: "Learning direction",
-    // Clearer learning direction labels
     en2lt: "I’m learning Lithuanian (EN → LT)",
     lt2en: "I’m learning English (LT → EN)",
     settings: "Settings",
     libraryTitle: "Library",
-    // Clearer starter names
     installEN: "Install “Learn Lithuanian” starter (EN → LT)",
     installLT: "Install “Learn English” starter (LT → EN)",
     installNums: "Install Numbers pack",
@@ -105,8 +102,6 @@ const STR = {
     done: "Done",
     retry: "Retry",
   },
-
-  // UI shown when direction is LT2EN (Lithuanian UI text)
   LT2EN: {
     appTitle1: "Anglų",
     appTitle2: "kalbos treniruoklis",
@@ -149,12 +144,10 @@ const STR = {
     fetchVoices: "Gauti balsus",
     choose: "— pasirinkite —",
     direction: "Mokymosi kryptis",
-    // Clearer learning direction labels (LT)
     en2lt: "Mokausi lietuvių (EN → LT)",
     lt2en: "Mokausi anglų (LT → EN)",
     settings: "Nustatymai",
     libraryTitle: "Biblioteka",
-    // Clearer starter names (LT)
     installEN: "Įdiegti rinkinį „Mokausi lietuvių“ (EN → LT)",
     installLT: "Įdiegti rinkinį „Mokausi anglų“ (LT → EN)",
     installNums: "Įdiegti skaičių paketą",
@@ -222,10 +215,7 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (
-    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
-    ["amber", "orange", "yellow"].includes(s)
-  )
+  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s))
     return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
@@ -342,9 +332,21 @@ export default function App() {
   const [rows, setRows] = useState(loadRows());
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
-  // --- Sticky search focus (Android-friendly)
   const searchRef = useRef(null);
   const [searchFocused, setSearchFocused] = useState(false);
+
+  // 👇 NEW: suppression window to avoid unwanted re-focus after other interactions
+  const suppressRefocusRef = useRef(0);
+  const suppressSearchRefocus = (ms = 1200) => {
+    suppressRefocusRef.current = Date.now() + ms;
+  };
+  const dropSearchFocus = (ms = 1200) => {
+    try {
+      searchRef.current?.blur();
+    } catch {}
+    setSearchFocused(false);
+    suppressSearchRefocus(ms);
+  };
 
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
@@ -447,11 +449,16 @@ export default function App() {
       alert("Voice error: " + (e?.message || e));
     }
   }
+
+  // 👇 UPDATED: press handler now blurs search + suppresses re-focus
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
     let pressed = false;
+
     const start = (e) => {
+      // User is interacting with a non-search control: drop focus & suppress refocus
+      dropSearchFocus(1400);
       e.preventDefault();
       firedSlow = false;
       pressed = true;
@@ -461,6 +468,7 @@ export default function App() {
         playText(text, { slow: true });
       }, 550);
     };
+
     const finish = (e) => {
       e?.preventDefault?.();
       if (!pressed) return;
@@ -504,12 +512,15 @@ export default function App() {
     );
   }, [rows, tab, q, sortMode]);
 
-  // --- Keep Android keyboard from collapsing between renders
+  // 👇 Only refocus search if the user is actively in it AND no suppression window is active
   useEffect(() => {
-    if (searchFocused && searchRef.current && document.activeElement !== searchRef.current) {
-      searchRef.current.focus({ preventScroll: true });
+    if (!searchFocused) return;
+    if (Date.now() < suppressRefocusRef.current) return;
+    const el = searchRef.current;
+    if (el && document.activeElement !== el) {
+      el.focus({ preventScroll: true });
     }
-  }, [searchFocused, q, sortMode, tab, width, filtered.length]);
+  }, [searchFocused, q]); // keep dependencies minimal to avoid spurious refocus
 
   const ragBuckets = useMemo(() => {
     const buckets = { "🔴": [], "🟠": [], "🟢": [] };
@@ -528,6 +539,7 @@ export default function App() {
   function startEdit(i) {
     setEditIdx(i);
     setEditDraft({ ...rows[i] });
+    dropSearchFocus(800);
   }
   function saveEdit(i) {
     const clean = { ...editDraft, "RAG Icon": normalizeRag(editDraft["RAG Icon"]) };
@@ -628,8 +640,7 @@ export default function App() {
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a],
-            B = list[b];
+          const A = list[a], B = list[b];
           const s = (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
@@ -663,6 +674,7 @@ export default function App() {
     return shuffle(picked).slice(0, targetSize);
   }
   function startQuiz() {
+    dropSearchFocus(1500);
     if (rows.length < 4) return alert("Add more entries first (need at least 4).");
     const pool = computeQuizPool(rows, 10);
     if (!pool.length) return alert("No quiz candidates found.");
@@ -672,10 +684,9 @@ export default function App() {
     setQuizChoice(null);
     const first = pool[0];
     const correctLt = first.Lithuanian;
-    const distractors = sample(
-      pool.filter((r) => r !== first && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
+    const distractors = sample(pool.filter((r) => r !== first && r.Lithuanian), 3).map(
+      (r) => r.Lithuanian
+    );
     setQuizOptions(shuffle([correctLt, ...distractors]));
     setQuizOn(true);
   }
@@ -684,10 +695,7 @@ export default function App() {
     if (nextIdx >= quizQs.length) {
       const today = todayKey();
       if (streak.lastDate !== today) {
-        const inc =
-          streak.lastDate && daysBetween(streak.lastDate, today) === 1
-            ? streak.streak + 1
-            : 1;
+        const inc = streak.lastDate && daysBetween(streak.lastDate, today) === 1 ? streak.streak + 1 : 1;
         setStreak({ streak: inc, lastDate: today });
       }
       setQuizOn(false);
@@ -698,10 +706,9 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    const distractors = sample(
-      quizQs.filter((r) => r !== item && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
+    const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
+      (r) => r.Lithuanian
+    );
     setQuizOptions(shuffle([correctLt, ...distractors]));
   }
   function bumpRagAfterAnswer(item, correct) {
@@ -902,37 +909,20 @@ export default function App() {
           </div>
           <div className="space-y-3">
             {dupeResults.close.map(([i, j, s]) => {
-              const A = rows[i],
-                B = rows[j];
+              const A = rows[i], B = rows[j];
               return (
-                <div
-                  key={`${i}-${j}`}
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-3"
-                >
-                  <div className="text-xs text-zinc-400 mb-2">
-                    {T.similarity}: {(s * 100).toFixed(0)}%
-                  </div>
+                <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                  <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
                       <div key={ridx} className="border border-zinc-800 rounded-md p-2">
                         <div className="font-medium">
-                          {row.English} — {row.Lithuanian}{" "}
-                          <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
                         </div>
                         {(row.Usage || row.Notes) && (
                           <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                            {row.Usage && (
-                              <div>
-                                <span className="text-zinc-500">{T.usage}: </span>
-                                {row.Usage}
-                              </div>
-                            )}
-                            {row.Notes && (
-                              <div>
-                                <span className="text-zinc-500">{T.notes}: </span>
-                                {row.Notes}
-                              </div>
-                            )}
+                            {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
+                            {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
                           </div>
                         )}
                         <div className="mt-2">
@@ -967,18 +957,15 @@ export default function App() {
               {["EN2LT", "LT2EN"].map((d) => (
                 <button
                   key={d}
-                  onClick={() => setDirection(d)}
+                  onClick={() => {
+                    dropSearchFocus(800);
+                    setDirection(d);
+                  }}
                   className={cn(
                     "px-3 py-1.5 rounded-md text-sm border",
-                    direction === d
-                      ? "bg-emerald-600 border-emerald-600"
-                      : "bg-zinc-900 border-zinc-700"
+                    direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
                   )}
-                  title={
-                    d === "EN2LT"
-                      ? "Prompts in English → answers in Lithuanian"
-                      : "Prompts in Lithuanian → answers in English"
-                  }
+                  title={d === "EN2LT" ? "Prompts in English → answers in Lithuanian" : "Prompts in Lithuanian → answers in English"}
                 >
                   {d === "EN2LT" ? T.en2lt : T.lt2en}
                 </button>
@@ -994,7 +981,7 @@ export default function App() {
                   type="radio"
                   name="ttsprov"
                   checked={ttsProvider === "browser"}
-                  onChange={() => setTtsProvider("browser")}
+                  onChange={() => { dropSearchFocus(800); setTtsProvider("browser"); }}
                 />{" "}
                 {T.browserVoice}
               </label>
@@ -1003,7 +990,7 @@ export default function App() {
                   type="radio"
                   name="ttsprov"
                   checked={ttsProvider === "azure"}
-                  onChange={() => setTtsProvider("azure")}
+                  onChange={() => { dropSearchFocus(800); setTtsProvider("azure"); }}
                 />{" "}
                 {T.azure}
               </label>
@@ -1096,9 +1083,7 @@ export default function App() {
                       alert(e.message);
                     }
                   }}
-                  className={`bg-zinc-800 px-3 py-2 rounded-md ${
-                    !azureRegion || !azureKey ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`bg-zinc-800 px-3 py-2 rounded-md ${(!azureRegion || !azureKey) ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {T.fetchVoices}
                 </button>
@@ -1153,6 +1138,7 @@ export default function App() {
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value)}
+              onFocus={() => dropSearchFocus(800)}
             >
               <option value="RAG">{T.rag}</option>
               <option value="Newest">{T.newest}</option>
@@ -1163,21 +1149,12 @@ export default function App() {
 
         {/* Streak + Level */}
         <div className="mt-2 flex items-center gap-3">
-          <div className="text-xs text-zinc-400">
-            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
-          </div>
-          <div className="text-xs text-zinc-400">
-            🥇 {T.level} <span className="font-semibold">{level}</span>
-          </div>
+          <div className="text-xs text-zinc-400">🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span></div>
+          <div className="text-xs text-zinc-400">🥇 {T.level} <span className="font-semibold">{level}</span></div>
           <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-            <div
-              className="h-full bg-emerald-600"
-              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
-            />
+            <div className="h-full bg-emerald-600" style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }} />
           </div>
-          <div className="text-xs text-zinc-400">
-            {levelProgress} / {LEVEL_STEP} XP
-          </div>
+          <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
         </div>
 
         {/* Tabs */}
@@ -1185,19 +1162,13 @@ export default function App() {
           {["Phrases", "Questions", "Words", "Numbers"].map((t) => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              onClick={() => { dropSearchFocus(600); setTab(t); }}
               className={cn(
                 "px-3 py-1.5 rounded-full text-sm border",
                 tab === t ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800"
               )}
             >
-              {t === "Phrases"
-                ? T.phrases
-                : t === "Questions"
-                ? T.questions
-                : t === "Words"
-                ? T.words
-                : T.numbers}
+              {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
             </button>
           ))}
         </div>
@@ -1208,12 +1179,10 @@ export default function App() {
             {["All", "🔴", "🟠", "🟢"].map((x) => (
               <button
                 key={x}
-                onClick={() => setRagChip(x)}
+                onClick={() => { dropSearchFocus(400); setRagChip(x); }}
                 className={cn(
                   "px-2 py-1 rounded-md text-xs border",
-                  ragChip === x
-                    ? "bg-emerald-600 border-emerald-600"
-                    : "bg-zinc-900 border-zinc-700"
+                  ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {x}
@@ -1231,9 +1200,7 @@ export default function App() {
                   <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
                     {k}
                   </span>
-                  <div className="text-sm text-zinc-400">
-                    {ragBuckets[k].length} item(s)
-                  </div>
+                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
                 </div>
                 <div className="space-y-2">
                   {ragBuckets[k].map((r) => {
@@ -1301,9 +1268,7 @@ export default function App() {
         <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
           <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
             <details>
-              <summary className="cursor-pointer text-sm text-zinc-300">
-                {T.addEntry}
-              </summary>
+              <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
               <AddForm
                 tab={tab}
                 setRows={setRows}
@@ -1322,17 +1287,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
-      {page === "library" ? (
-        <LibraryView />
-      ) : page === "settings" ? (
-        <SettingsView />
-      ) : (
-        <HomeView />
-      )}
+      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
       {/* Quiz modal */}
       {quizOn && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onPointerDown={() => dropSearchFocus(1500)}>
           <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
             {quizQs.length > 0 &&
               (() => {
@@ -1360,8 +1319,7 @@ export default function App() {
                         const isSelected = quizChoice === opt;
                         const isCorrect = opt === correctLt;
                         const showColors = quizAnswered;
-                        const base =
-                          "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
+                        const base = "w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2";
                         const color = !showColors
                           ? "bg-zinc-900 border-zinc-700"
                           : isCorrect
@@ -1370,11 +1328,7 @@ export default function App() {
                           ? "bg-red-900/40 border-red-600"
                           : "bg-zinc-900 border-zinc-700";
                         return (
-                          <button
-                            key={opt}
-                            className={`${base} ${color}`}
-                            onClick={() => !quizAnswered && answerQuiz(opt)}
-                          >
+                          <button key={opt} className={`${base} ${color}`} onClick={() => !quizAnswered && answerQuiz(opt)}>
                             <span className="flex-1">{opt}</span>
                             <span
                               className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center"
@@ -1388,17 +1342,9 @@ export default function App() {
                       })}
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <button
-                        onClick={() => setQuizOn(false)}
-                        className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
-                      >
-                        Close
-                      </button>
+                      <button onClick={() => setQuizOn(false)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">Close</button>
                       {quizAnswered ? (
-                        <button
-                          onClick={afterAnswerAdvance}
-                          className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
-                        >
+                        <button onClick={afterAnswerAdvance} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold">
                           {T.nextQuestion}
                         </button>
                       ) : (
