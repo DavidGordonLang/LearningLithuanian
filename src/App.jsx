@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
@@ -317,6 +317,45 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
+/** Keeps input focus (and keyboard) unless user actually taps elsewhere. */
+function useStickyInputFocus(ref) {
+  const typingRef = useRef(false);
+  const blockRefocusUntil = useRef(0);
+
+  useEffect(() => {
+    const onPointerDown = () => {
+      // If user really tapped away, allow blur for a short window.
+      blockRefocusUntil.current = Date.now() + 350;
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => window.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
+
+  const onFocus = () => {
+    typingRef.current = true;
+  };
+
+  const onBlur = () => {
+    // If we’re not in typing mode, do nothing.
+    if (!typingRef.current) return;
+    // If a real tap happened recently, respect it.
+    if (Date.now() < blockRefocusUntil.current) return;
+    // Otherwise it was a layout/re-render hiccup → refocus ASAP.
+    requestAnimationFrame(() => {
+      const el = ref.current;
+      if (el && document.activeElement !== el) {
+        el.focus({ preventScroll: true });
+      }
+    });
+  };
+
+  const stopTyping = () => {
+    typingRef.current = false;
+  };
+
+  return { onFocus, onBlur, stopTyping };
+}
+
 export default function App() {
   // layout
   const [page, setPage] = useState("home");
@@ -348,6 +387,8 @@ export default function App() {
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
   const searchRef = useRef(null);
+  const sticky = useStickyInputFocus(searchRef);
+  const qDeferred = useDeferredValue(q);
 
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
@@ -451,7 +492,7 @@ export default function App() {
     }
   }
 
-  // Press handlers (do NOT blur any inputs; just prevent buttons from stealing focus)
+  // Press handlers (don’t steal focus from inputs)
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -498,7 +539,7 @@ export default function App() {
   // ---- FILTERING / SORTING
 
   // Exact search (case-insensitive substring) on English or Lithuanian only
-  const qNorm = q.trim().toLowerCase();
+  const qNorm = qDeferred.trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
@@ -1113,6 +1154,11 @@ export default function App() {
               ref={searchRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
+              onFocus={sticky.onFocus}
+              onBlur={sticky.onBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") sticky.stopTyping(); // let keyboard close if user submits
+              }}
               placeholder={T.search}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
               autoComplete="off"
@@ -1130,7 +1176,7 @@ export default function App() {
                 onTouchStart={(e) => e.preventDefault()}
                 onClick={() => {
                   setQ("");
-                  // keep focus where it is; don't force refocus
+                  // keep focus; sticky hook will maintain it
                 }}
                 aria-label="Clear"
               >
