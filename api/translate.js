@@ -1,110 +1,114 @@
-// valid values here: 'nodejs' | 'edge' | 'experimental-edge'
-export const config = { runtime: 'nodejs' };
-
 // /api/translate.js
-// Node.js Serverless Function (Vercel) — requires OPENAI_API_KEY in project env (Production)
+// Vercel Node Function. Requires OPENAI_API_KEY (Project → Settings → Environment Variables).
+
+export const config = { runtime: 'nodejs' };
 
 export default async function handler(req, res) {
   try {
-    // Simple health check so /api/translate in a browser doesn't 405
-    if (req.method === 'GET') {
+    if (req.method !== 'POST') {
       return res
         .status(200)
-        .json({ ok: true, hint: "POST { text, from:'en'|'lt'|'auto', to:'lt'|'en' } to translate." });
+        .json({ ok: true, hint: "POST { text, from: 'en'|'lt'|'auto', to: 'lt'|'en' } to translate." });
     }
 
-    if (req.method !== "POST") {
-      res.setHeader("Allow", "POST, GET");
-      return res.status(405).json({ ok: false, error: "Method not allowed" });
-    }
-
+    // --- Env sanity
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.error("[/api/translate] Missing OPENAI_API_KEY");
-      return res.status(500).json({ ok: false, error: "Server not configured (no API key)" });
+      return res.status(500).json({ ok: false, error: 'Missing OPENAI_API_KEY on server' });
+    }
+    const model = process.env.OPENAI_TRANSLATE_MODEL || 'gpt-4o-mini';
+
+    // --- Parse JSON body
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch {
+        return res.status(400).json({ ok: false, error: 'Invalid JSON body' });
+      }
     }
 
-    // Parse body
-    let body;
-    try {
-      body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    } catch {
-      return res.status(400).json({ ok: false, error: "Invalid JSON body" });
-    }
-    const text = (body?.text || "").trim();
-    const from = (body?.from || "auto").trim();   // 'en' | 'lt' | 'auto'
-    const to   = (body?.to   || "lt").trim();     // 'lt' | 'en'
-
+    const text = String(body?.text || '').trim();
+    const from = String(body?.from || 'auto').trim(); // 'en' | 'lt' | 'auto'
+    const to   = String(body?.to   || 'lt').trim();   // 'en' | 'lt'
     if (!text) return res.status(400).json({ ok: false, error: "Missing 'text'" });
-    if (!["en", "lt", "auto"].includes(from)) return res.status(400).json({ ok: false, error: "Bad 'from' value" });
-    if (!["en", "lt"].includes(to)) return res.status(400).json({ ok: false, error: "Bad 'to' value" });
+    if (!['en','lt','auto'].includes(from)) return res.status(400).json({ ok:false, error:"Bad 'from' value" });
+    if (!['en','lt'].includes(to)) return res.status(400).json({ ok:false, error:"Bad 'to' value" });
 
-    const model = process.env.OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
+    // --- Compose prompt
+    const sys =
+      'You translate between English and Lithuanian. ' +
+      'Return ONLY a JSON object with keys: sourcelang ("en"|"lt"), targetlang ("en"|"lt"), ' +
+      'translation (string), phonetic (simple Latin syllables with hyphens, no IPA), ' +
+      'usage (1–3 words max, e.g. "greeting", "polite request"), notes (very short; may include alternatives). ' +
+      'No code fences.';
 
-    const sys = [
-      `You translate between English and Lithuanian.`,
-      `Return ONLY a single JSON object with keys:`,
-      `sourcelang ("en"|"lt"), targetlang ("en"|"lt"),`,
-      `translation (string), phonetic (string, simple Latin with hyphens, no IPA),`,
-      `usage (very short, e.g. "greeting", "polite request"), notes (short, may include alternatives).`,
-      `Keep "usage" to 1–3 words max. Do not wrap the JSON in code fences.`
-    ].join(" ");
+    const payload = {
+      model,
+      messages: [
+        { role: 'system', content: sys },
+        { role: 'user', content: `from=${from}, to=${to}, text="""${text}"""` }
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' }
+    };
 
-    const messages = [
-      { role: "system", content: sys },
-      { role: "user",   content: `from=${from}, to=${to}, text="""${text}"""` }
-    ];
-
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.2,
-        response_format: { type: "json_object" }
-      })
+    // --- Call OpenAI
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
 
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
-      console.error("[/api/translate] OpenAI HTTP error:", resp.status, errText);
-      return res.status(502).json({ ok: false, error: "Upstream error", status: resp.status });
+    const bodyText = await r.text();
+
+    if (!r.ok) {
+      // Bubble up OpenAI error to the client so we can see it in the UI
+      let detail;
+      try { detail = JSON.parse(bodyText); } catch {}
+      const message =
+        detail?.error?.message ||
+        detail?.message ||
+        bodyText?.slice(0, 500) ||
+        'Unknown upstream error';
+      console.error('[translate] OpenAI error:', r.status, message);
+      return res.status(502).json({ ok: false, error: 'OpenAI error', status: r.status, message });
     }
 
-    const data = await resp.json();
-    const content = data?.choices?.[0]?.message?.content || "{}";
+    let data;
+    try { data = JSON.parse(bodyText); }
+    catch (e) {
+      console.error('[translate] Non-JSON OpenAI response:', bodyText?.slice(0, 500));
+      return res.status(502).json({ ok: false, error: 'Non-JSON response from OpenAI' });
+    }
+
+    let content = data?.choices?.[0]?.message?.content ?? '{}';
+    if (typeof content !== 'string') content = JSON.stringify(content);
 
     let parsed;
-    try {
-      parsed = JSON.parse(content);
-    } catch (e) {
-      console.error("[/api/translate] JSON parse fail:", e, "content=", content);
-      return res.status(502).json({ ok: false, error: "Model returned non-JSON" });
+    try { parsed = JSON.parse(content); }
+    catch (e) {
+      console.error('[translate] Model returned non-JSON content:', content?.slice(0, 500));
+      return res.status(502).json({ ok: false, error: 'Model content was not JSON' });
     }
 
     const out = {
-      sourcelang: String(parsed.sourcelang || (from === "auto" ? "" : from)).toLowerCase(),
+      sourcelang: String(parsed.sourcelang || (from === 'auto' ? '' : from)).toLowerCase(),
       targetlang: String(parsed.targetlang || to).toLowerCase(),
-      translation: String(parsed.translation || "").trim(),
-      phonetic: String(parsed.phonetic || "").trim(),
-      usage: String(parsed.usage || "").trim(),
-      notes: String(parsed.notes || "").trim()
+      translation: String(parsed.translation || '').trim(),
+      phonetic:    String(parsed.phonetic || '').trim(),
+      usage:       String(parsed.usage || '').trim(),
+      notes:       String(parsed.notes || '').trim()
     };
 
     if (!out.translation) {
-      console.error("[/api/translate] Missing translation in model output:", parsed);
-      return res.status(502).json({ ok: false, error: "No translation from model" });
+      console.error('[translate] Missing translation in model output:', parsed);
+      return res.status(502).json({ ok: false, error: 'No translation from model' });
     }
 
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json({ ok: true, ...out });
   } catch (err) {
-    console.error("[/api/translate] Uncaught error:", err);
-    return res.status(500).json({ ok: false, error: "Internal error" });
+    console.error('[translate] Unhandled error:', err);
+    return res.status(500).json({ ok: false, error: 'Internal error' });
   }
 }
