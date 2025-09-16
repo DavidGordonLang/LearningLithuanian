@@ -25,17 +25,16 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Missing OPENAI_API_KEY' });
     }
 
-    // Keep usage SHORT (2–3 words) + simple categories
+    // Stricter instructions – short usage tag + concise notes
     const system = [
       'You are a precise Lithuanian↔English translator.',
-      'Return STRICT JSON only with keys: translation, phonetic, usage, notes.',
-      'Rules:',
-      '- translation: natural, correct.',
-      "- phonetic: simple, human-friendly pronunciation (no IPA).",
-      "- usage: a SHORT 1–3 word context tag chosen from this set:",
+      'Return STRICT JSON with keys: translation, phonetic, usage, notes.',
+      '- translation: natural and correct.',
+      "- phonetic: SIMPLE, human-friendly; no IPA; for the TARGET language.",
+      '- usage: one SHORT tag chosen from:',
       '  ["greeting","small talk","eating out","shopping","directions","transport","accommodation","family","friends","work","health","emergency","home","phone","money","time","other"]',
-      "- notes: optional; concise (≤120 chars). Include key alternatives or register (e.g. “polite form”, “slang”, “also: <alt>”).",
-      'No extra text, no backticks.',
+      '- notes: optional; ≤120 chars; include alternatives/register if helpful.',
+      'Output JSON only. No backticks, no prose.',
     ].join('\n');
 
     const user = `from=${from}; to=${to}; text: """${text}"""`;
@@ -71,27 +70,127 @@ export default async function handler(req, res) {
     try {
       out = JSON.parse(raw);
     } catch {
-      // last-ditch fallback: return translation only
       out = { translation: raw, phonetic: '', usage: 'other', notes: '' };
+    }
+
+    let translation = String(out.translation || '').trim();
+    let phonetic = String(out.phonetic || '').trim();
+    const usage = (out.usage || 'other').toLowerCase();
+    const notes = String(out.notes || '').trim();
+
+    // --- Phonetic fallback for Lithuanian targets ---
+    if (to === 'lt') {
+      if (!phonetic || tooSimilar(phonetic, translation)) {
+        phonetic = ltPhoneticFallback(translation);
+      }
+    } else {
+      // English target: phonetic is optional; if model echoed the same, blank it.
+      if (tooSimilar(phonetic, translation)) phonetic = '';
     }
 
     return res.status(200).json({
       sourcelang: from,
       targetlang: to,
-      translation: out.translation || '',
-      phonetic: out.phonetic || '',
-      usage: (out.usage || 'other').toLowerCase(),
-      notes: out.notes || '',
+      translation,
+      phonetic,
+      usage,
+      notes,
     });
   } catch (e) {
     return res.status(500).json({ error: 'Server error', detail: String(e) });
   }
 }
 
-// ---- helpers
+// -------- helpers --------
 async function readJson(req) {
   const chunks = [];
   for await (const c of req) chunks.push(Buffer.from(c));
   const body = Buffer.concat(chunks).toString('utf8') || '{}';
   return JSON.parse(body);
+}
+
+// Is phonetic basically the same as translation?
+function tooSimilar(a = '', b = '') {
+  const na = normalize(a);
+  const nb = normalize(b);
+  if (!na || !nb) return true;
+  if (na === nb) return true;
+  const s = jaccardBigrams(na, nb);
+  return s > 0.9;
+}
+function normalize(s) {
+  return stripDiacritics(String(s).toLowerCase())
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function jaccardBigrams(a, b) {
+  const g = (s) => {
+    const arr = [];
+    for (let i = 0; i < s.length - 1; i++) arr.push(s.slice(i, i + 2));
+    return arr;
+  };
+  const A = new Set(g(a));
+  const B = new Set(g(b));
+  let inter = 0;
+  for (const x of A) if (B.has(x)) inter++;
+  const union = A.size + B.size - inter;
+  return union ? inter / union : 1;
+}
+function stripDiacritics(s) {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[č]/g, 'c')
+    .replace(/[š]/g, 's')
+    .replace(/[ž]/g, 'z')
+    .replace(/[ą]/g, 'a')
+    .replace(/[ę]/g, 'e')
+    .replace(/[ė]/g, 'e')
+    .replace(/[į]/g, 'i')
+    .replace(/[ųū]/g, 'u');
+}
+
+// Very rough Lithuanian → EN-friendly phonetic with simple hyphenation.
+function ltPhoneticFallback(text = '') {
+  const vowels = new Set(['a','e','i','o','u','y','ą','ę','ė','į','ų','ū']);
+  const map = {
+    'č':'ch','š':'sh','ž':'zh','j':'y',
+    'ą':'ah','a':'a',
+    'ę':'eh','ė':'eh','e':'e',
+    'į':'ee','y':'ee','i':'i',
+    'ū':'oo','ų':'oo','u':'oo',
+    'o':'o',
+    'k':'k','g':'g','d':'d','t':'t','p':'p','b':'b','m':'m',
+    'n':'n','l':'l','r':'r','s':'s','z':'z','v':'v','h':'h','f':'f'
+  };
+
+  const toPh = (word) => {
+    const lower = word.toLowerCase();
+    // hyphenate after V-C when followed by a vowel (ga-li-me, gau-ti, pra-šau)
+    let withHyphens = '';
+    for (let i = 0; i < lower.length; i++) {
+      const ch = lower[i];
+      withHyphens += ch;
+      const prev = lower[i];
+      const next = lower[i + 1];
+      const next2 = lower[i + 2];
+      if (vowels.has(prev) && next && !vowels.has(next) && next2 && vowels.has(next2)) {
+        withHyphens += '-';
+      }
+    }
+    // map characters to simple sounds
+    let out = '';
+    for (const ch of withHyphens) {
+      out += map[ch] ?? ch;
+    }
+    return out;
+  };
+
+  return text
+    .split(/(\s+)/)            // keep spaces/punct
+    .map(tok => /\s+/.test(tok) ? tok : toPh(tok))
+    .join('')
+    .replace(/\s+-\s+/g, '-')  // tidy
+    .replace(/-{2,}/g, '-');
 }
