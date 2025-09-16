@@ -1,3 +1,6 @@
+// Force a versioned Node runtime for this Serverless Function (required by Vercel)
+export const config = { runtime: 'nodejs20.x' };
+
 // /api/translate.js
 // Node.js Serverless Function (Vercel) — requires OPENAI_API_KEY in project env (Production)
 
@@ -33,15 +36,14 @@ export default async function handler(req, res) {
 
     const model = process.env.OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 
-    // System instruction: keep usage terse; clean phonetic; JSON only
+    // System instruction
     const sys = [
       `You translate between English and Lithuanian.`,
       `Return ONLY a single JSON object with keys:`,
-      `  sourcelang (\"en\"|\"lt\"), targetlang (\"en\"|\"lt\"),`,
+      `  sourcelang ("en"|"lt"), targetlang ("en"|"lt"),`,
       `  translation (string), phonetic (string, simple Latin with hyphens, no IPA),`,
       `  usage (very short, e.g. "greeting", "polite request"), notes (short, may include alternatives).`,
-      `Keep "usage" to 1–3 words max.`,
-      `Do not wrap the JSON in code fences.`
+      `Keep "usage" to 1–3 words max. Do not wrap the JSON in code fences.`
     ].join(" ");
 
     const messages = [
@@ -80,7 +82,6 @@ export default async function handler(req, res) {
       return res.status(502).json({ ok: false, error: "Model returned non-JSON" });
     }
 
-    // Minimal sanity cleanup
     const out = {
       sourcelang: String(parsed.sourcelang || (from === "auto" ? "" : from)).toLowerCase(),
       targetlang: String(parsed.targetlang || to).toLowerCase(),
@@ -95,7 +96,6 @@ export default async function handler(req, res) {
       return res.status(502).json({ ok: false, error: "No translation from model" });
     }
 
-    // Cache disabled; explicit JSON
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({ ok: true, ...out });
