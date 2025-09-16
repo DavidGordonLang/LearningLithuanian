@@ -1,90 +1,97 @@
-// api/translate.js
-// Simple translator function for Vercel (Node.js runtime)
-
+// /api/translate.js
 export default async function handler(req, res) {
-  // Quick GET so you can verify the route exists in a browser
-  if (req.method === "GET") {
+  if (req.method === 'GET') {
     return res.status(200).json({
       ok: true,
-      hint: "POST { text, from: 'en'|'lt'|'auto', to: 'lt'|'en' } to translate."
+      hint:
+        "POST { text, from: 'en'|'lt'|'auto', to: 'lt'|'en' } to translate.",
     });
   }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { text, from = "auto", to = "lt" } = req.body || {};
-    if (!text || typeof text !== "string") {
-      return res.status(400).json({ error: "Missing 'text' (string)" });
-    }
-    if (!["en", "lt", "auto"].includes(from) || !["en", "lt"].includes(to)) {
-      return res.status(400).json({ error: "Invalid 'from'/'to' values" });
-    }
-
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return res
-        .status(500)
-        .json({ error: "Server misconfigured: OPENAI_API_KEY is missing" });
+    const { text, from = 'auto', to } = await readJson(req);
+    if (!text || !to || !['lt', 'en'].includes(to)) {
+      return res.status(400).json({
+        error:
+          "Bad request. Provide { text, from: 'en'|'lt'|'auto', to: 'lt'|'en' }",
+      });
     }
 
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'Missing OPENAI_API_KEY' });
+    }
+
+    // Keep usage SHORT (2–3 words) + simple categories
     const system = [
-      "You are a precise EN↔LT translator.",
-      "Return **strict JSON** only, matching this schema:",
-      '{ "sourceLang": "en|lt", "targetLang": "en|lt",',
-      '  "translation": "string", "phonetic": "string",',
-      '  "usage": "string", "notes": "string" }',
-      "Prefer natural, idiomatic phrasing. If 'from' is 'auto', detect the language first.",
-      "For phonetic, use a simple learner-friendly pronunciation (not full IPA unless helpful).",
-    ].join(" ");
+      'You are a precise Lithuanian↔English translator.',
+      'Return STRICT JSON only with keys: translation, phonetic, usage, notes.',
+      'Rules:',
+      '- translation: natural, correct.',
+      "- phonetic: simple, human-friendly pronunciation (no IPA).",
+      "- usage: a SHORT 1–3 word context tag chosen from this set:",
+      '  ["greeting","small talk","eating out","shopping","directions","transport","accommodation","family","friends","work","health","emergency","home","phone","money","time","other"]',
+      "- notes: optional; concise (≤120 chars). Include key alternatives or register (e.g. “polite form”, “slang”, “also: <alt>”).",
+      'No extra text, no backticks.',
+    ].join('\n');
 
-    const user = JSON.stringify({
-      text,
-      from,
-      to
-    });
+    const user = `from=${from}; to=${to}; text: """${text}"""`;
 
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user }
-        ],
+        model: 'gpt-4o-mini',
         temperature: 0.2,
-        response_format: { type: "json_object" }
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+        response_format: { type: 'json_object' },
       }),
     });
 
     if (!r.ok) {
-      const txt = await r.text().catch(() => "");
+      const txt = await r.text().catch(() => '');
       return res
-        .status(502)
-        .json({ error: "OpenAI error", details: txt || r.statusText });
+        .status(500)
+        .json({ error: 'OpenAI error', detail: txt.slice(0, 400) });
     }
 
     const data = await r.json();
-    const content =
-      data?.choices?.[0]?.message?.content?.trim() || "{}";
+    const raw = data.choices?.[0]?.message?.content ?? '{}';
 
-    // Ensure it's JSON (response_format already enforces it)
-    let parsed;
+    let out;
     try {
-      parsed = JSON.parse(content);
+      out = JSON.parse(raw);
     } catch {
-      parsed = { translation: content };
+      // last-ditch fallback: return translation only
+      out = { translation: raw, phonetic: '', usage: 'other', notes: '' };
     }
 
-    res.setHeader("Cache-Control", "no-store");
-    return res.status(200).json(parsed);
-  } catch (err) {
-    return res.status(500).json({ error: "Server error", details: String(err?.message || err) });
+    return res.status(200).json({
+      sourcelang: from,
+      targetlang: to,
+      translation: out.translation || '',
+      phonetic: out.phonetic || '',
+      usage: (out.usage || 'other').toLowerCase(),
+      notes: out.notes || '',
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Server error', detail: String(e) });
   }
+}
+
+// ---- helpers
+async function readJson(req) {
+  const chunks = [];
+  for await (const c of req) chunks.push(Buffer.from(c));
+  const body = Buffer.concat(chunks).toString('utf8') || '{}';
+  return JSON.parse(body);
 }
