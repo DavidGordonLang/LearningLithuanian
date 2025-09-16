@@ -1,193 +1,169 @@
-// src/components/AddForm.jsx
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 
+/**
+ * AddForm
+ * - If only EN or LT is provided, calls /api/translate to fill the other side on Save.
+ * - Defaults new entries to RAG 🔴 when translation was used.
+ * - After successful save:
+ *    • switches sort mode to "Newest" (if setSortMode is provided),
+ *    • calls onClose() if provided (for modal),
+ *    • otherwise clears the form.
+ *
+ * Props:
+ *  - tab: string ("Phrases" | "Questions" | "Words" | "Numbers")
+ *  - setRows: fn
+ *  - T: i18n labels
+ *  - genId: fn
+ *  - nowTs: fn
+ *  - normalizeRag: fn
+ *  - onClose?: fn
+ *  - setSortMode?: fn
+ */
 export default function AddForm({
-  tab,
+  tab = "Phrases",
   setRows,
   T,
   genId,
   nowTs,
   normalizeRag,
+  onClose,
+  setSortMode,
 }) {
-  const [draft, setDraft] = useState({
-    English: "",
-    Lithuanian: "",
-    Phonetic: "",
-    Category: "",
-    Usage: "",
-    Notes: "",
-    "RAG Icon": "🟠",
-    Sheet: tab || "Phrases",
-  });
-  const [busy, setBusy] = useState(false);
-  const enRef = useRef(null);
-  const ltRef = useRef(null);
+  const [english, setEnglish] = useState("");
+  const [lithuanian, setLithuanian] = useState("");
+  const [phonetic, setPhonetic] = useState("");
+  const [category, setCategory] = useState("");
+  const [usage, setUsage] = useState("");
+  const [notes, setNotes] = useState("");
+  const [sheet, setSheet] = useState(tab || "Phrases");
+  const [loading, setLoading] = useState(false);
 
-  // keep Sheet in sync with current tab
-  React.useEffect(() => {
-    setDraft((d) => ({ ...d, Sheet: tab || "Phrases" }));
-  }, [tab]);
-
-  function update(k, v) {
-    setDraft((d) => ({ ...d, [k]: v }));
+  function simplifyUsage(u) {
+    const s = String(u || "").trim();
+    if (!s) return "";
+    // Simple heuristic: keep the first short clause/sentence.
+    const first = s.split(/(?<=\.)\s+|;|\n/)[0];
+    return first.length <= 140 ? first : first.slice(0, 140) + "…";
   }
 
-  async function doTranslate(dir /* "en>lt" | "lt>en" | "auto" */) {
+  async function translateIfNeeded(en, lt) {
+    // If both sides exist, no call needed
+    if (en && lt) return { en, lt, ph: phonetic, us: usage, nt: notes, viaApi: false };
+
+    const text = en || lt;
+    if (!text) throw new Error("Please enter English or Lithuanian.");
+
+    const from = en ? "en" : "lt";
+    const to = en ? "lt" : "en";
+
+    const res = await fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, from, to }),
+    });
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(msg || "Translation failed.");
+    }
+
+    const data = await res.json();
+    if (!data?.ok || !data?.data) throw new Error("Translation service returned an unexpected response.");
+
+    const d = data.data;
+    // API returns: english, lithuanian, phonetic, usage, notes (all optional except the pair)
+    const apiEn = String(d.english || "").trim();
+    const apiLt = String(d.lithuanian || "").trim();
+    const apiPh = String(d.phonetic || "");
+    const apiUsage = simplifyUsage(d.usage || "");
+    const apiNotes = String(d.notes || "");
+
+    return {
+      en: en || apiEn,
+      lt: lt || apiLt,
+      ph: phonetic || apiPh,
+      us: usage || apiUsage,
+      nt: notes || apiNotes,
+      viaApi: true,
+    };
+  }
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    if (loading) return;
+
     try {
-      let from = "auto";
-      let to = "lt";
-      let text = "";
+      setLoading(true);
 
-      const en = draft.English.trim();
-      const lt = draft.Lithuanian.trim();
+      const { en, lt, ph, us, nt, viaApi } = await translateIfNeeded(
+        english.trim(),
+        lithuanian.trim()
+      );
 
-      if (dir === "en>lt" || (dir === "auto" && en && !lt)) {
-        from = "en";
-        to = "lt";
-        text = en;
-      } else if (dir === "lt>en" || (dir === "auto" && lt && !en)) {
-        from = "lt";
-        to = "en";
-        text = lt;
-      } else if (dir === "auto" && en && lt) {
-        // if both present, prefer translating from the one you just edited (fallback: EN→LT)
-        const last = document.activeElement === ltRef.current ? "lt>en" : "en>lt";
-        return doTranslate(last);
+      if (!en || !lt) {
+        throw new Error("Could not determine both sides. Please fill at least one side.");
+      }
+
+      const entry = {
+        English: en,
+        Lithuanian: lt,
+        Phonetic: ph || "",
+        Category: category.trim(),
+        Usage: simplifyUsage(us || ""),
+        Notes: nt || "",
+        // Default RAG to red if we had to translate; otherwise keep amber as safe default
+        "RAG Icon": normalizeRag(viaApi ? "🔴" : "🟠"),
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(sheet) ? sheet : "Phrases",
+        _id: genId(),
+        _ts: nowTs(),
+        _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
+      };
+
+      // Prepend new entry so it shows first even before sort switch
+      setRows((prev) => [entry, ...prev]);
+
+      // Switch view to "Newest" so the item is clearly first
+      if (typeof setSortMode === "function") setSortMode("Newest");
+
+      // Close modal if provided; else clear form
+      if (typeof onClose === "function") {
+        onClose();
       } else {
-        alert("Type something in English or Lithuanian first.");
-        return;
+        setEnglish("");
+        setLithuanian("");
+        setPhonetic("");
+        setCategory("");
+        setUsage("");
+        setNotes("");
+        setSheet(tab || "Phrases");
       }
-
-      setBusy(true);
-      const r = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, from, to }),
-      });
-      const j = await r.json();
-
-      if (!r.ok) {
-        throw new Error(j?.error || "Translate failed");
-      }
-
-      // Apply results; when using translate, default RAG to 🔴
-      if (to === "lt") {
-        setDraft((d) => ({
-          ...d,
-          Lithuanian: j.translation || d.Lithuanian,
-          Phonetic: j.phonetic || d.Phonetic,
-          Usage: cap(j.usage || d.Usage || ""),
-          Notes: j.notes || d.Notes || "",
-          "RAG Icon": "🔴",
-        }));
-        // keep caret where the user was typing
-        ltRef.current?.focus({ preventScroll: true });
-      } else {
-        setDraft((d) => ({
-          ...d,
-          English: j.translation || d.English,
-          Usage: cap(j.usage || d.Usage || ""),
-          Notes: j.notes || d.Notes || "",
-          // phonetic for EN targets is rarely useful; leave as-is
-          "RAG Icon": "🔴",
-        }));
-        enRef.current?.focus({ preventScroll: true });
-      }
-    } catch (e) {
-      alert(e.message || String(e));
+    } catch (err) {
+      alert(err?.message || String(err));
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
   }
 
-  function save() {
-    const E = String(draft.English || "").trim();
-    const L = String(draft.Lithuanian || "").trim();
-    if (!E && !L) return alert("Add at least English or Lithuanian.");
-    const row = {
-      ...draft,
-      English: E,
-      Lithuanian: L,
-      Phonetic: String(draft.Phonetic || "").trim(),
-      Category: String(draft.Category || "").trim(),
-      Usage: String(draft.Usage || "").trim(),
-      Notes: String(draft.Notes || "").trim(),
-      "RAG Icon": normalizeRag(draft["RAG Icon"] || "🟠"),
-      Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(draft.Sheet)
-        ? draft.Sheet
-        : "Phrases",
-      _id: genId(),
-      _ts: nowTs(),
-      _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
-    };
-    setRows((prev) => [row, ...prev]);
-    // reset but keep Sheet and RAG default amber for manual entries
-    setDraft({
-      English: "",
-      Lithuanian: "",
-      Phonetic: "",
-      Category: "",
-      Usage: "",
-      Notes: "",
-      "RAG Icon": "🟠",
-      Sheet: tab || "Phrases",
-    });
-    enRef.current?.focus({ preventScroll: true });
-  }
-
   return (
-    <div className="mt-3 bg-zinc-900 border border-zinc-700 rounded-xl p-3 space-y-3">
+    <form onSubmit={onSubmit} className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
           <div className="text-xs mb-1">{T.english}</div>
           <textarea
-            ref={enRef}
-            value={draft.English}
-            onChange={(e) => update("English", e.target.value)}
+            value={english}
+            onChange={(e) => setEnglish(e.target.value)}
+            placeholder="e.g. Could I get the bill, please?"
             className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[60px]"
-            placeholder="Type English…"
           />
         </div>
         <div>
           <div className="text-xs mb-1">{T.lithuanian}</div>
           <textarea
-            ref={ltRef}
-            value={draft.Lithuanian}
-            onChange={(e) => update("Lithuanian", e.target.value)}
+            value={lithuanian}
+            onChange={(e) => setLithuanian(e.target.value)}
+            placeholder="e.g. Ar galėčiau gauti sąskaitą?"
             className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[60px]"
-            placeholder="Įrašyk lietuviškai…"
           />
-        </div>
-      </div>
-
-      {/* Translate controls */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          disabled={busy}
-          onClick={() => doTranslate("auto")}
-          className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50"
-          title="Translate from the side you filled"
-        >
-          {busy ? "Translating…" : "Translate (Auto)"}
-        </button>
-        <button
-          disabled={busy}
-          onClick={() => doTranslate("en>lt")}
-          className="px-2 py-1 rounded-md text-xs bg-zinc-800 disabled:opacity-50"
-          title="English → Lithuanian"
-        >
-          EN→LT
-        </button>
-        <button
-          disabled={busy}
-          onClick={() => doTranslate("lt>en")}
-          className="px-2 py-1 rounded-md text-xs bg-zinc-800 disabled:opacity-50"
-          title="Lithuanian → English"
-        >
-          LT→EN
-        </button>
-        <div className="text-xs text-zinc-400">
-          When Translate is used, RAG defaults to 🔴.
         </div>
       </div>
 
@@ -195,72 +171,76 @@ export default function AddForm({
         <div>
           <div className="text-xs mb-1">{T.phonetic}</div>
           <input
-            value={draft.Phonetic}
-            onChange={(e) => update("Phonetic", e.target.value)}
+            value={phonetic}
+            onChange={(e) => setPhonetic(e.target.value)}
+            placeholder="Optional — phonetic hint"
             className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-            placeholder="ar ga-li-me gau-ti…"
           />
         </div>
         <div>
           <div className="text-xs mb-1">{T.category}</div>
           <input
-            value={draft.Category}
-            onChange={(e) => update("Category", e.target.value)}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="Optional — e.g. Restaurant"
             className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-            placeholder="e.g. Dining"
           />
         </div>
       </div>
 
       <div>
         <div className="text-xs mb-1">{T.usage}</div>
-        <input
-          value={draft.Usage}
-          onChange={(e) => update("Usage", e.target.value)}
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-          placeholder="e.g. Eating out"
+        <textarea
+          value={usage}
+          onChange={(e) => setUsage(e.target.value)}
+          placeholder="Short usage/context (auto-simplified on save)"
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[48px]"
         />
       </div>
 
       <div>
         <div className="text-xs mb-1">{T.notes}</div>
         <textarea
-          value={draft.Notes}
-          onChange={(e) => update("Notes", e.target.value)}
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[60px]"
-          placeholder="Alt phrasing, register, etc."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Optional — alternatives, register, grammar note…"
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[48px]"
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="text-xs">{T.ragLabel}:</div>
-        {["🔴", "🟠", "🟢"].map((r) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <div className="text-xs mb-1">{T.sheet}</div>
+          <select
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+            value={sheet}
+            onChange={(e) => setSheet(e.target.value)}
+          >
+            <option value="Phrases">{T.phrases}</option>
+            <option value="Questions">{T.questions}</option>
+            <option value="Words">{T.words}</option>
+            <option value="Numbers">{T.numbers}</option>
+          </select>
+        </div>
+        <div className="flex items-end gap-2">
           <button
-            key={r}
-            onClick={() => update("RAG Icon", r)}
-            className={`px-2 py-1 rounded-md text-sm border ${
-              draft["RAG Icon"] === r
-                ? "bg-emerald-600 border-emerald-600"
-                : "bg-zinc-900 border-zinc-700"
+            type="submit"
+            disabled={loading}
+            className={`flex-1 bg-emerald-600 hover:bg-emerald-500 rounded-md px-3 py-2 font-semibold ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
             }`}
           >
-            {r}
+            {loading ? "Saving…" : T.save}
           </button>
-        ))}
-        <div className="ml-auto">
           <button
-            onClick={save}
-            className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-semibold"
+            type="button"
+            onClick={() => (typeof onClose === "function" ? onClose() : null)}
+            className="bg-zinc-800 rounded-md px-3 py-2"
           >
-            {T.save}
+            {T.cancel}
           </button>
         </div>
       </div>
-    </div>
+    </form>
   );
-}
-
-function cap(s = "") {
-  if (!s) return s;
-  return s.slice(0, 1).toUpperCase() + s.slice(1);
 }
