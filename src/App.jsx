@@ -5,9 +5,16 @@ import AddForm from "./components/AddForm";
 
 /**
  * Lithuanian Trainer — App.jsx
- * Keyboard fix: HomeView / LibraryView / SettingsView are now TOP-LEVEL components,
- * not re-declared inside App(). This prevents remounting on every keystroke,
- * so focused inputs keep focus and the Android keyboard stays open.
+ * - Tabs: Phrases / Questions / Words / Numbers
+ * - Global Search across all sheets (when typing)
+ *   • Matches ONLY English or Lithuanian fields (case-insensitive, no fuzzy)
+ *   • Tabs with results get a highlight and count badge
+ * - Sort: RAG (default), Newest, Oldest
+ * - RAG chips (mobile) and tri-column RAG grid (wide screens)
+ * - TTS: Azure primary + Browser fallback (no double-play, long-press = slow)
+ * - Quiz: promote/demote rules + XP/Level + streak
+ * - Library: JSON import/clear, starter installs, duplicate finder
+ * - Full UI language swap (EN→LT / LT→EN)
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -310,568 +317,6 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
-/* ===========================
-   TOP-LEVEL PRESENTATIONAL VIEWS
-   =========================== */
-
-function LibraryView({
-  T,
-  rows,
-  fetchStarter,
-  installNumbersOnly,
-  importJsonFile,
-  clearLibrary,
-  dupeResults,
-  onScanDupes,
-  onDeleteRowByIndex,
-}) {
-  const fileRef = useRef(null);
-  return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
-          onClick={() => fetchStarter("EN2LT")}
-          className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          title="English prompts → Lithuanian answers. Installs EN→LT starter."
-        >
-          {T.installEN}
-        </button>
-        <button
-          onClick={() => fetchStarter("LT2EN")}
-          className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          title="Lithuanian prompts → English answers. Installs LT→EN starter."
-        >
-          {T.installLT}
-        </button>
-        <button
-          onClick={installNumbersOnly}
-          className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          title="Adds only entries from the Numbers sheet in the starter files."
-        >
-          {T.installNums}
-        </button>
-
-        <div className="col-span-1 sm:col-span-3 flex items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importJsonFile(f);
-              e.target.value = "";
-            }}
-          />
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-            title="Import a custom JSON array of entries."
-          >
-            {T.importJSON}
-          </button>
-          <button
-            onClick={() => {
-              try {
-                const blob = new Blob([JSON.stringify(rows, null, 2)], {
-                  type: "application/json",
-                });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "lithuanian_trainer_export.json";
-                a.click();
-                URL.revokeObjectURL(url);
-              } catch (e) {
-                alert("Export failed: " + e.message);
-              }
-            }}
-            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-            title="Export your current library as JSON."
-          >
-            Export JSON
-          </button>
-          <button
-            onClick={clearLibrary}
-            className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
-            title="Remove all entries from your library."
-          >
-            {T.clearAll}
-          </button>
-        </div>
-      </div>
-
-      {/* Duplicates */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-lg font-semibold">{T.dupFinder}</div>
-          <button onClick={onScanDupes} className="bg-zinc-800 px-3 py-2 rounded-md">
-            {T.scan}
-          </button>
-        </div>
-
-        {/* Exact duplicates */}
-        <div className="text-sm text-zinc-400 mb-2">
-          {T.exactGroups}: {dupeResults.exact.length} group(s)
-        </div>
-        <div className="space-y-3 mb-6">
-          {dupeResults.exact.map((group, gi) => (
-            <div key={gi} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {group.map((ridx) => (
-                  <div key={ridx} className="border border-zinc-800 rounded-md p-2">
-                    <div className="font-medium">
-                      {rows[ridx].English} — {rows[ridx].Lithuanian}{" "}
-                      <span className="text-xs text-zinc-400">[{rows[ridx].Sheet}]</span>
-                    </div>
-                    {(rows[ridx].Usage || rows[ridx].Notes) && (
-                      <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                        {rows[ridx].Usage && (
-                          <div>
-                            <span className="text-zinc-500">Usage: </span>
-                            {rows[ridx].Usage}
-                          </div>
-                        )}
-                        {rows[ridx].Notes && (
-                          <div>
-                            <span className="text-zinc-500">Notes: </span>
-                            {rows[ridx].Notes}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="mt-2">
-                      <button
-                        className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                        onClick={() => onDeleteRowByIndex(ridx)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Close matches */}
-        <div className="text-sm text-zinc-400 mb-2">
-          {T.closeMatches}: {dupeResults.close.length} pair(s)
-        </div>
-        <div className="space-y-3">
-          {dupeResults.close.map(([i, j, s]) => (
-            <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-              <div className="text-xs text-zinc-400 mb-2">Similarity: {(s * 100).toFixed(0)}%</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[rows[i], rows[j]].map((row, ridx) => (
-                  <div key={`${i}-${j}-${ridx}`} className="border border-zinc-800 rounded-md p-2">
-                    <div className="font-medium">
-                      {row.English} — {row.Lithuanian}{" "}
-                      <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
-                    </div>
-                    {(row.Usage || row.Notes) && (
-                      <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                        {row.Usage && (
-                          <div>
-                            <span className="text-zinc-500">Usage: </span>
-                            {row.Usage}
-                          </div>
-                        )}
-                        {row.Notes && (
-                          <div>
-                            <span className="text-zinc-500">Notes: </span>
-                            {row.Notes}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="mt-2">
-                      <button
-                        className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                        onClick={() => onDeleteRowByIndex(ridx ? j : i)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SettingsView({ T, direction, setDirection, ttsProvider, setTtsProvider, voices, browserVoiceName, setBrowserVoiceName, azureKey, setAzureKey, azureRegion, setAzureRegion, azureVoices, setAzureVoices, azureVoiceShortName, setAzureVoiceShortName }) {
-  return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-20">
-      <div className="mt-4 bg-zinc-900 border border-zinc-700 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">{T.settings}</div>
-
-        <div>
-          <div className="text-xs mb-1">{T.direction}</div>
-          <div className="flex gap-2">
-            {["EN2LT", "LT2EN"].map((d) => (
-              <button
-                key={d}
-                onClick={() => setDirection(d)}
-                className={cn(
-                  "px-3 py-1.5 rounded-md text-sm border",
-                  direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
-                )}
-                title={d === "EN2LT" ? "Prompts in English → answers in Lithuanian" : "Prompts in Lithuanian → answers in English"}
-              >
-                {d === "EN2LT" ? T.en2lt : T.lt2en}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="text-xs mb-1">TTS</div>
-          <div className="flex flex-wrap gap-3">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="ttsprov"
-                checked={ttsProvider === "browser"}
-                onChange={() => setTtsProvider("browser")}
-              />{" "}
-              {T.browserVoice}
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="ttsprov"
-                checked={ttsProvider === "azure"}
-                onChange={() => setTtsProvider("azure")}
-              />{" "}
-              {T.azure}
-            </label>
-          </div>
-        </div>
-
-        {ttsProvider === "browser" && (
-          <div className="space-y-2">
-            <div className="text-xs mb-1">{T.voice}</div>
-            <select
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-              value={browserVoiceName}
-              onChange={(e) => setBrowserVoiceName(e.target.value)}
-              title={T.browserVoice}
-            >
-              <option value="">Auto voice</option>
-              {voices.map((v) => (
-                <option key={v.name} value={v.name}>
-                  {v.name} ({v.lang})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {ttsProvider === "azure" && (
-          <div className="space-y-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <div className="text-xs mb-1">{T.subKey}</div>
-                <input
-                  type="password"
-                  value={azureKey}
-                  onChange={(e) => setAzureKey(e.target.value)}
-                  placeholder="Azure key"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                />
-              </div>
-              <div>
-                <div className="text-xs mb-1">{T.region}</div>
-                <input
-                  value={azureRegion}
-                  onChange={(e) => setAzureRegion(e.target.value)}
-                  placeholder="e.g. westeurope"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <div className="text-xs mb-1">{T.voice}</div>
-                <select
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                  value={azureVoiceShortName}
-                  onChange={(e) => setAzureVoiceShortName(e.target.value)}
-                >
-                  <option value="">{T.choose}</option>
-                  {azureVoices.map((v) => (
-                    <option key={v.shortName} value={v.shortName}>
-                      {v.displayName} ({v.shortName})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                disabled={!azureRegion || !azureKey}
-                onClick={async () => {
-                  if (!azureRegion || !azureKey) {
-                    alert("Enter Azure region and key first.");
-                    return;
-                  }
-                  try {
-                    const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-                    const res = await fetch(url, {
-                      headers: { "Ocp-Apim-Subscription-Key": azureKey },
-                    });
-                    if (!res.ok) throw new Error("Failed to fetch Azure voices");
-                    const data = await res.json();
-                    const vs = data.map((v) => ({
-                      shortName: v.ShortName,
-                      locale: v.Locale,
-                      displayName: v.LocalName || v.FriendlyName || v.ShortName,
-                    }));
-                    setAzureVoices(vs);
-                    if (!azureVoiceShortName && vs.length) setAzureVoiceShortName(vs[0].shortName);
-                  } catch (e) {
-                    alert(e.message);
-                  }
-                }}
-                className={`bg-zinc-800 px-3 py-2 rounded-md ${(!azureRegion || !azureKey) ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                {T.fetchVoices}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function HomeView({
-  T,
-  WIDE,
-  q,
-  setQ,
-  sortMode,
-  setSortMode,
-  sheetCounts,
-  qNorm,
-  ragBuckets,
-  rows,
-  setRows,
-  editIdx,
-  setEditIdx,
-  editDraft,
-  setEditDraft,
-  expanded,
-  setExpanded,
-  direction,
-  startEdit,
-  saveEdit,
-  remove,
-  normalizeRag,
-  pressHandlers,
-  ragChip,
-  setRagChip,
-  chipFiltered,
-  tab,
-  setTab,
-}) {
-  const searchRef = useRef(null);
-
-  return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-      {/* Search + Sort */}
-      <div className="flex items-center gap-2 mt-3">
-        <div className="relative flex-1">
-          <input
-            ref={searchRef}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={T.search}
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="search"
-            inputMode="search"
-          />
-          {q && (
-            <button
-              type="button"
-              tabIndex={-1}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              onClick={() => setQ("")}
-              aria-label="Clear"
-            >
-              ×
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-400">{T.sort}</span>
-          <select
-            className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
-            value={sortMode}
-            onChange={(e) => setSortMode(e.target.value)}
-          >
-            <option value="RAG">{T.rag}</option>
-            <option value="Newest">{T.newest}</option>
-            <option value="Oldest">{T.oldest}</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Tabs (with highlights while searching) */}
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
-        {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
-          const hits = sheetCounts?.[t] || 0;
-          const searching = !!qNorm;
-          const isActive = tab === t;
-          const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
-          const normal = isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
-          const highlighted =
-            hits > 0 ? "ring-2 ring-emerald-500 ring-offset-0"
-            : searching ? "opacity-60"
-            : "";
-          return (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={cn(base, normal, highlighted)}
-              title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
-            >
-              {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
-              {hits > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
-                  {hits}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* RAG chips (mobile) */}
-      {sortMode === "RAG" && !WIDE && (
-        <div className="mt-3 flex items-center gap-2">
-          {["All", "🔴", "🟠", "🟢"].map((x) => (
-            <button
-              key={x}
-              onClick={() => setRagChip(x)}
-              className={cn(
-                "px-2 py-1 rounded-md text-xs border",
-                ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
-              )}
-            >
-              {x}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* tri-column grid (wide) or list (mobile) */}
-      {sortMode === "RAG" && WIDE ? (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {["🔴", "🟠", "🟢"].map((k) => (
-            <div key={k}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
-                  {k}
-                </span>
-                <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
-              </div>
-              <div className="space-y-2">
-                {ragBuckets[k].map((r) => {
-                  const idx = rows.indexOf(r);
-                  return (
-                    <EntryCard
-                      key={r._id || idx}
-                      r={r}
-                      idx={idx}
-                      rows={rows}
-                      setRows={setRows}
-                      editIdx={editIdx}
-                      setEditIdx={setEditIdx}
-                      editDraft={editDraft}
-                      setEditDraft={setEditDraft}
-                      expanded={expanded}
-                      setExpanded={setExpanded}
-                      T={T}
-                      direction={direction}
-                      startEdit={startEdit}
-                      saveEdit={saveEdit}
-                      remove={remove}
-                      normalizeRag={normalizeRag}
-                      pressHandlers={pressHandlers}
-                      cn={cn}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-4 space-y-2">
-          {chipFiltered.map((r) => {
-            const idx = rows.indexOf(r);
-            return (
-              <EntryCard
-                key={r._id || idx}
-                r={r}
-                idx={idx}
-                rows={rows}
-                setRows={setRows}
-                editIdx={editIdx}
-                setEditIdx={setEditIdx}
-                editDraft={editDraft}
-                setEditDraft={setEditDraft}
-                expanded={expanded}
-                setExpanded={setExpanded}
-                T={T}
-                direction={direction}
-                startEdit={startEdit}
-                saveEdit={saveEdit}
-                remove={remove}
-                normalizeRag={normalizeRag}
-                pressHandlers={pressHandlers}
-                cn={cn}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add form */}
-      <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur border-t border-zinc-800">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
-          <details>
-            <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
-            <AddForm
-              tab={tab}
-              setRows={setRows}
-              T={T}
-              genId={genId}
-              nowTs={nowTs}
-              normalizeRag={normalizeRag}
-            />
-          </details>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===========================
-   MAIN APP
-   =========================== */
-
 export default function App() {
   // layout
   const [page, setPage] = useState("home");
@@ -886,7 +331,7 @@ export default function App() {
   // data + prefs
   const [rows, setRows] = useState(loadRows());
 
-  // one-time migration for stable keys/ts
+  // one-time migration for stable keys/ts (prevents remount focus losses)
   useEffect(() => {
     let changed = false;
     const migrated = rows.map((r) => {
@@ -902,6 +347,7 @@ export default function App() {
 
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
+  const searchRef = useRef(null);
 
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
@@ -972,6 +418,33 @@ export default function App() {
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
+  // --- ANDROID KEYBOARD "STICKY FOCUS" PATCH ---
+  useEffect(() => {
+    const handler = (evt) => {
+      const el = evt.target;
+      if (!el || !(el instanceof HTMLElement)) return;
+      const tag = el.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA") return;
+      if (el.hasAttribute("readonly") || el.hasAttribute("disabled")) return;
+      let s, e;
+      try {
+        s = el.selectionStart;
+        e = el.selectionEnd;
+      } catch {}
+      requestAnimationFrame(() => {
+        if (document.activeElement !== el) {
+          el.focus({ preventScroll: true });
+          try {
+            if (s != null && e != null) el.setSelectionRange(s, e);
+          } catch {}
+        }
+      });
+    };
+    document.addEventListener("input", handler, true);
+    return () => document.removeEventListener("input", handler, true);
+  }, []);
+  // ------------------------------------------------
+
   // audio helpers
   async function playText(text, { slow = false } = {}) {
     try {
@@ -1005,7 +478,7 @@ export default function App() {
     }
   }
 
-  // Press handlers (don’t let buttons steal focus)
+  // Press handlers (do NOT blur inputs; just prevent buttons from stealing focus)
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -1056,7 +529,7 @@ export default function App() {
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
-     ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
+      ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
 
   // If searching, search across ALL rows; otherwise show only current tab
   const filtered = useMemo(() => {
@@ -1067,7 +540,7 @@ export default function App() {
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...byQ].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"]) ] ?? 1) - (order[normalizeRag(b["RAG Icon"]) ] ?? 1)
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
   }, [rows, tab, qNorm, sortMode]);
 
@@ -1331,83 +804,550 @@ export default function App() {
     );
   }
 
+  // ---------- Add Modal state ----------
+  const [addOpen, setAddOpen] = useState(false);
+
+  // Only for AddForm: wrap setRows so we can close the modal right after a successful save.
+  const setRowsFromAddForm = React.useCallback(
+    (updater) => {
+      setRows((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        // Close modal in a microtask after state is applied
+        queueMicrotask(() => {
+          setAddOpen(false);
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        });
+        return next;
+      });
+    },
+    [setRows]
+  );
+  // ------------------------------------
+
+  function LibraryView() {
+    const fileRef = useRef(null);
+    return (
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => fetchStarter("EN2LT")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="English prompts → Lithuanian answers. Installs EN→LT starter."
+          >
+            {T.installEN}
+          </button>
+        </div>
+
+        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => fetchStarter("LT2EN")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Lithuanian prompts → English answers. Installs LT→EN starter."
+          >
+            {T.installLT}
+          </button>
+          <button
+            onClick={installNumbersOnly}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Adds only entries from the Numbers sheet in the starter files."
+          >
+            {T.installNums}
+          </button>
+        </div>
+
+        <div className="mt-3 col-span-1 sm:col-span-3 flex items-center gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importJsonFile(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Import a custom JSON array of entries."
+          >
+            {T.importJSON}
+          </button>
+          <button
+            onClick={() => {
+              try {
+                const blob = new Blob([JSON.stringify(rows, null, 2)], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "lithuanian_trainer_export.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (e) {
+                alert("Export failed: " + e.message);
+              }
+            }}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Export your current library as JSON."
+          >
+            Export JSON
+          </button>
+          <button
+            onClick={clearLibrary}
+            className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
+            title="Remove all entries from your library."
+          >
+            {T.clearAll}
+          </button>
+        </div>
+
+        {/* Duplicates */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-lg font-semibold">{T.dupFinder}</div>
+            <button onClick={scanDupes} className="bg-zinc-800 px-3 py-2 rounded-md">
+              {T.scan}
+            </button>
+          </div>
+
+          {/* Exact duplicates */}
+          <div className="text-sm text-zinc-400 mb-2">
+            {T.exactGroups}: {dupeResults.exact.length} group(s)
+          </div>
+          <div className="space-y-3 mb-6">
+            {dupeResults.exact.map((group, gi) => (
+              <div key={gi} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {group.map((ridx) => {
+                    const row = rows[ridx];
+                    return (
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian}{" "}
+                          <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                        </div>
+                        {(row.Usage || row.Notes) && (
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && (
+                              <div>
+                                <span className="text-zinc-500">{T.usage}: </span>
+                                {row.Usage}
+                              </div>
+                            )}
+                            {row.Notes && (
+                              <div>
+                                <span className="text-zinc-500">{T.notes}: </span>
+                                {row.Notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button
+                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
+                          >
+                            {T.delete}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Close matches */}
+          <div className="text-sm text-zinc-400 mb-2">
+            {T.closeMatches}: {dupeResults.close.length} pair(s)
+          </div>
+          <div className="space-y-3">
+            {dupeResults.close.map(([i, j, s]) => {
+              const A = rows[i], B = rows[j];
+              return (
+                <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                  <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                        </div>
+                        {(row.Usage || row.Notes) && (
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
+                            {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button
+                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
+                          >
+                            {T.delete}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function SettingsView() {
+    return (
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-20">
+        <div className="mt-4 bg-zinc-900 border border-zinc-700 rounded-2xl p-4 space-y-4">
+          <div className="text-lg font-semibold">{T.settings}</div>
+
+          <div>
+            <div className="text-xs mb-1">{T.direction}</div>
+            <div className="flex gap-2">
+              {["EN2LT", "LT2EN"].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDirection(d)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-sm border",
+                    direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                  )}
+                  title={d === "EN2LT" ? "Prompts in English → answers in Lithuanian" : "Prompts in Lithuanian → answers in English"}
+                >
+                  {d === "EN2LT" ? T.en2lt : T.lt2en}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs mb-1">TTS</div>
+            <div className="flex flex-wrap gap-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="ttsprov"
+                  checked={ttsProvider === "browser"}
+                  onChange={() => setTtsProvider("browser")}
+                />{" "}
+                {T.browserVoice}
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="ttsprov"
+                  checked={ttsProvider === "azure"}
+                  onChange={() => setTtsProvider("azure")}
+                />{" "}
+                {T.azure}
+              </label>
+            </div>
+          </div>
+
+          {/* Browser voice selection */}
+          {ttsProvider === "browser" && (
+            <div className="space-y-2">
+              <div className="text-xs mb-1">{T.voice}</div>
+              <select
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                value={browserVoiceName}
+                onChange={(e) => setBrowserVoiceName(e.target.value)}
+                title={T.browserVoice}
+              >
+                <option value="">Auto voice</option>
+                {voices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Azure settings */}
+          {ttsProvider === "azure" && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <div className="text-xs mb-1">{T.subKey}</div>
+                  <input
+                    type="password"
+                    value={azureKey}
+                    onChange={(e) => setAzureKey(e.target.value)}
+                    placeholder="Azure key"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <div className="text-xs mb-1">{T.region}</div>
+                  <input
+                    value={azureRegion}
+                    onChange={(e) => setAzureRegion(e.target.value)}
+                    placeholder="e.g. westeurope"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <div className="text-xs mb-1">{T.voice}</div>
+                  <select
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                    value={azureVoiceShortName}
+                    onChange={(e) => setAzureVoiceShortName(e.target.value)}
+                  >
+                    <option value="">{T.choose}</option>
+                    {azureVoices.map((v) => (
+                      <option key={v.shortName} value={v.shortName}>
+                        {v.displayName} ({v.shortName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  disabled={!azureRegion || !azureKey}
+                  onClick={async () => {
+                    if (!azureRegion || !azureKey) {
+                      alert("Enter Azure region and key first.");
+                      return;
+                    }
+                    try {
+                      const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+                      const res = await fetch(url, {
+                        headers: { "Ocp-Apim-Subscription-Key": azureKey },
+                      });
+                      if (!res.ok) throw new Error("Failed to fetch Azure voices");
+                      const data = await res.json();
+                      const vs = data.map((v) => ({
+                        shortName: v.ShortName,
+                        locale: v.Locale,
+                        displayName: v.LocalName || v.FriendlyName || v.ShortName,
+                      }));
+                      setAzureVoices(vs);
+                      if (!azureVoiceShortName && vs.length) setAzureVoiceShortName(vs[0].shortName);
+                    } catch (e) {
+                      alert(e.message);
+                    }
+                  }}
+                  className={`bg-zinc-800 px-3 py-2 rounded-md ${(!azureRegion || !azureKey) ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {T.fetchVoices}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function HomeView() {
+    return (
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
+        {/* Search + Sort */}
+        <div className="flex items-center gap-2 mt-3">
+          <div className="relative flex-1">
+            <input
+              ref={searchRef}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={T.search}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="search"
+              inputMode="search"
+            />
+            {q && (
+              <button
+                type="button"
+                tabIndex={-1}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+                onClick={() => {
+                  setQ("");
+                }}
+                aria-label="Clear"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-400">{T.sort}</span>
+            <select
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value)}
+            >
+              <option value="RAG">{T.rag}</option>
+              <option value="Newest">{T.newest}</option>
+              <option value="Oldest">{T.oldest}</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Streak + Level */}
+        <div className="mt-2 flex items-center gap-3">
+          <div className="text-xs text-zinc-400">🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span></div>
+          <div className="text-xs text-zinc-400">🥇 {T.level} <span className="font-semibold">{level}</span></div>
+          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
+            <div className="h-full bg-emerald-600" style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }} />
+          </div>
+          <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
+        </div>
+
+        {/* Tabs (with highlights while searching) */}
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
+            const hits = sheetCounts?.[t] || 0;
+            const searching = !!qNorm;
+            const isActive = tab === t;
+            const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
+            const normal = isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
+            const highlighted =
+              hits > 0 ? "ring-2 ring-emerald-500 ring-offset-0"
+              : searching ? "opacity-60"
+              : "";
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(base, normal, highlighted)}
+                title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
+              >
+                {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
+                {hits > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
+                    {hits}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* RAG chips (mobile) */}
+        {sortMode === "RAG" && !WIDE && (
+          <div className="mt-3 flex items-center gap-2">
+            {["All", "🔴", "🟠", "🟢"].map((x) => (
+              <button
+                key={x}
+                onClick={() => setRagChip(x)}
+                className={cn(
+                  "px-2 py-1 rounded-md text-xs border",
+                  ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                )}
+              >
+                {x}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* tri-column grid (wide) or list (mobile) */}
+        {sortMode === "RAG" && WIDE ? (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {["🔴", "🟠", "🟢"].map((k) => (
+              <div key={k}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
+                    {k}
+                  </span>
+                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
+                </div>
+                <div className="space-y-2">
+                  {ragBuckets[k].map((r) => {
+                    const idx = rows.indexOf(r);
+                    return (
+                      <EntryCard
+                        key={r._id || idx}
+                        r={r}
+                        idx={idx}
+                        rows={rows}
+                        setRows={setRows}
+                        editIdx={editIdx}
+                        setEditIdx={setEditIdx}
+                        editDraft={editDraft}
+                        setEditDraft={setEditDraft}
+                        expanded={expanded}
+                        setExpanded={setExpanded}
+                        T={T}
+                        direction={direction}
+                        startEdit={startEdit}
+                        saveEdit={saveEdit}
+                        remove={remove}
+                        normalizeRag={normalizeRag}
+                        pressHandlers={pressHandlers}
+                        cn={cn}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {chipFiltered.map((r) => {
+              const idx = rows.indexOf(r);
+              return (
+                <EntryCard
+                  key={r._id || idx}
+                  r={r}
+                  idx={idx}
+                  rows={rows}
+                  setRows={setRows}
+                  editIdx={editIdx}
+                  setEditIdx={setEditIdx}
+                  editDraft={editDraft}
+                  setEditDraft={setEditDraft}
+                  expanded={expanded}
+                  setExpanded={setExpanded}
+                  T={T}
+                  direction={direction}
+                  startEdit={startEdit}
+                  saveEdit={saveEdit}
+                  remove={remove}
+                  normalizeRag={normalizeRag}
+                  pressHandlers={pressHandlers}
+                  cn={cn}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Floating Add (+) Button */}
+        <button
+          aria-label="Add entry"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold"
+          onClick={() => setAddOpen(true)}
+        >
+          +
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
 
-      {/* Streak + Level (kept here so they don't remount with the views) */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-2 flex items-center gap-3">
-        <div className="text-xs text-zinc-400">🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span></div>
-        <div className="text-xs text-zinc-400">🥇 {T.level} <span className="font-semibold">{level}</span></div>
-        <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-          <div className="h-full bg-emerald-600" style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }} />
-        </div>
-        <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
-      </div>
-
-      {page === "library" ? (
-        <LibraryView
-          T={T}
-          rows={rows}
-          fetchStarter={fetchStarter}
-          installNumbersOnly={installNumbersOnly}
-          importJsonFile={importJsonFile}
-          clearLibrary={clearLibrary}
-          dupeResults={dupeResults}
-          onScanDupes={scanDupes}
-          onDeleteRowByIndex={(idx) => setRows((prev) => prev.filter((_, ii) => ii !== idx))}
-        />
-      ) : page === "settings" ? (
-        <SettingsView
-          T={T}
-          direction={direction}
-          setDirection={setDirection}
-          ttsProvider={ttsProvider}
-          setTtsProvider={setTtsProvider}
-          voices={voices}
-          browserVoiceName={browserVoiceName}
-          setBrowserVoiceName={setBrowserVoiceName}
-          azureKey={azureKey}
-          setAzureKey={setAzureKey}
-          azureRegion={azureRegion}
-          setAzureRegion={setAzureRegion}
-          azureVoices={azureVoices}
-          setAzureVoices={setAzureVoices}
-          azureVoiceShortName={azureVoiceShortName}
-          setAzureVoiceShortName={setAzureVoiceShortName}
-        />
-      ) : (
-        <HomeView
-          T={T}
-          WIDE={WIDE}
-          q={q}
-          setQ={setQ}
-          sortMode={sortMode}
-          setSortMode={setSortMode}
-          sheetCounts={sheetCounts}
-          qNorm={qNorm}
-          ragBuckets={ragBuckets}
-          rows={rows}
-          setRows={setRows}
-          editIdx={editIdx}
-          setEditIdx={setEditIdx}
-          editDraft={editDraft}
-          setEditDraft={setEditDraft}
-          expanded={expanded}
-          setExpanded={setExpanded}
-          direction={direction}
-          startEdit={startEdit}
-          saveEdit={saveEdit}
-          remove={remove}
-          normalizeRag={normalizeRag}
-          pressHandlers={pressHandlers}
-          ragChip={ragChip}
-          setRagChip={setRagChip}
-          chipFiltered={chipFiltered}
-          tab={tab}
-          setTab={setTab}
-        />
-      )}
+      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
       {/* Quiz modal */}
       {quizOn && (
@@ -1484,6 +1424,43 @@ export default function App() {
                   </>
                 );
               })()}
+          </div>
+        </div>
+      )}
+
+      {/* Add Entry Modal */}
+      {addOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onPointerDown={() => {
+            // tap outside closes and drops keyboard
+            setAddOpen(false);
+            if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+          }}
+        >
+          <div
+            className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-lg font-semibold">{STR[direction].addEntry}</div>
+              <button
+                className="px-2 py-1 rounded-md bg-zinc-800"
+                onClick={() => setAddOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <AddForm
+              tab={tab}
+              // IMPORTANT: pass the wrapped setter so modal closes right after save
+              setRows={setRowsFromAddForm}
+              T={STR[direction]}
+              genId={genId}
+              nowTs={nowTs}
+              normalizeRag={normalizeRag}
+            />
           </div>
         </div>
       )}
