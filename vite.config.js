@@ -7,12 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // ⬇️ add this block
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}']
-      }
-      // We’re serving the manifest from /public, so we don’t need to
-      // duplicate it here. If you preferred, you could put the manifest
-      // object here instead.
-    })
-  ]
+        navigateFallbackDenylist: [/^\/api\//], // don't route /api/* to index.html
+      },
+    }),
+  ],
 })
