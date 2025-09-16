@@ -209,7 +209,7 @@ const loadStreak = () => {
 };
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
 
-// ---- Utils (inlined)
+// ---- Utils
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -223,8 +223,7 @@ function normalizeRag(icon = "") {
   return "🟠";
 }
 function daysBetween(d1, d2) {
-  const a = new Date(d1 + "T00:00:00"),
-    b = new Date(d2 + "T00:00:00");
+  const a = new Date(d1 + "T00:00:00"), b = new Date(d2 + "T00:00:00");
   return Math.round((b - a) / 86400000);
 }
 function shuffle(arr) {
@@ -252,8 +251,7 @@ function sim2(a = "", b = "") {
     for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
     return g;
   };
-  const g1 = grams(s1),
-    g2 = grams(s2);
+  const g1 = grams(s1), g2 = grams(s2);
   const map = new Map();
   g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
   let inter = 0;
@@ -332,23 +330,24 @@ export default function App() {
 
   // data + prefs
   const [rows, setRows] = useState(loadRows());
+
+  // one-time migration for stable keys/ts (prevents remount focus losses)
+  useEffect(() => {
+    let changed = false;
+    const migrated = rows.map((r) => {
+      if (!r._id || typeof r._id !== "string") {
+        changed = true;
+        return { ...r, _id: genId(), _ts: r._ts || nowTs() };
+      }
+      return r;
+    });
+    if (changed) setRows(migrated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
   const searchRef = useRef(null);
-  const [searchFocused, setSearchFocused] = useState(false);
-
-  // suppress search refocus after other taps
-  const suppressRefocusRef = useRef(0);
-  const suppressSearchRefocus = (ms = 1200) => {
-    suppressRefocusRef.current = Date.now() + ms;
-  };
-  const dropSearchFocus = (ms = 1200) => {
-    try {
-      searchRef.current?.blur();
-    } catch {}
-    setSearchFocused(false);
-    suppressSearchRefocus(ms);
-  };
 
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
@@ -452,15 +451,15 @@ export default function App() {
     }
   }
 
-  // play/hold handlers (also suppress search refocus)
+  // Press handlers (do NOT blur any inputs; just prevent buttons from stealing focus)
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
     let pressed = false;
 
     const start = (e) => {
-      dropSearchFocus(1400);
       e.preventDefault();
+      e.stopPropagation();
       firedSlow = false;
       pressed = true;
       timer = setTimeout(() => {
@@ -472,6 +471,7 @@ export default function App() {
 
     const finish = (e) => {
       e?.preventDefault?.();
+      e?.stopPropagation?.();
       if (!pressed) return;
       pressed = false;
       if (timer) clearTimeout(timer);
@@ -480,6 +480,7 @@ export default function App() {
     };
     const cancel = (e) => {
       e?.preventDefault?.();
+      e?.stopPropagation?.();
       pressed = false;
       if (timer) clearTimeout(timer);
       timer = null;
@@ -496,16 +497,14 @@ export default function App() {
 
   // ---- FILTERING / SORTING
 
-  // "Exact" search = plain case-insensitive substring,
-  // but ONLY against English and Lithuanian fields (no Usage/Notes/etc).
+  // Exact search (case-insensitive substring) on English or Lithuanian only
   const qNorm = q.trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
      ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
 
-  // Global search: if q is non-empty, search across ALL rows (ignore current tab),
-  // else show the selected tab like normal.
+  // If searching, search across ALL rows; otherwise show only current tab
   const filtered = useMemo(() => {
     const haystack = qNorm ? rows : rows.filter((r) => r.Sheet === tab);
     const byQ = !qNorm ? haystack : haystack.filter(entryMatchesQuery);
@@ -518,25 +517,13 @@ export default function App() {
     );
   }, [rows, tab, qNorm, sortMode]);
 
-  // While searching, compute result counts per sheet to highlight tabs.
+  // Per-sheet counts while searching (for tab highlights)
   const sheetCounts = useMemo(() => {
     if (!qNorm) return null;
     const counts = { Phrases: 0, Questions: 0, Words: 0, Numbers: 0 };
-    for (const r of rows) {
-      if (entryMatchesQuery(r)) counts[r.Sheet] = (counts[r.Sheet] || 0) + 1;
-    }
+    for (const r of rows) if (entryMatchesQuery(r)) counts[r.Sheet] = (counts[r.Sheet] || 0) + 1;
     return counts;
   }, [rows, qNorm]);
-
-  // keep search focus sticky only when user is in the box and not suppressed
-  useEffect(() => {
-    if (!searchFocused) return;
-    if (Date.now() < suppressRefocusRef.current) return;
-    const el = searchRef.current;
-    if (el && document.activeElement !== el) {
-      el.focus({ preventScroll: true });
-    }
-  }, [searchFocused, qNorm]);
 
   const ragBuckets = useMemo(() => {
     const buckets = { "🔴": [], "🟠": [], "🟢": [] };
@@ -555,7 +542,6 @@ export default function App() {
   function startEdit(i) {
     setEditIdx(i);
     setEditDraft({ ...rows[i] });
-    dropSearchFocus(800);
   }
   function saveEdit(i) {
     const clean = { ...editDraft, "RAG Icon": normalizeRag(editDraft["RAG Icon"]) };
@@ -690,7 +676,6 @@ export default function App() {
     return shuffle(picked).slice(0, targetSize);
   }
   function startQuiz() {
-    dropSearchFocus(1500);
     if (rows.length < 4) return alert("Add more entries first (need at least 4).");
     const pool = computeQuizPool(rows, 10);
     if (!pool.length) return alert("No quiz candidates found.");
@@ -804,6 +789,9 @@ export default function App() {
           >
             {T.installEN}
           </button>
+        </div>
+
+        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             onClick={() => fetchStarter("LT2EN")}
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
@@ -818,55 +806,55 @@ export default function App() {
           >
             {T.installNums}
           </button>
+        </div>
 
-          <div className="col-span-1 sm:col-span-3 flex items-center gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) importJsonFile(f);
-                e.target.value = "";
-              }}
-            />
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-              title="Import a custom JSON array of entries."
-            >
-              {T.importJSON}
-            </button>
-            <button
-              onClick={() => {
-                try {
-                  const blob = new Blob([JSON.stringify(rows, null, 2)], {
-                    type: "application/json",
-                  });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "lithuanian_trainer_export.json";
-                  a.click();
-                  URL.revokeObjectURL(url);
-                } catch (e) {
-                  alert("Export failed: " + e.message);
-                }
-              }}
-              className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-              title="Export your current library as JSON."
-            >
-              Export JSON
-            </button>
-            <button
-              onClick={clearLibrary}
-              className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
-              title="Remove all entries from your library."
-            >
-              {T.clearAll}
-            </button>
-          </div>
+        <div className="mt-3 col-span-1 sm:col-span-3 flex items-center gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importJsonFile(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Import a custom JSON array of entries."
+          >
+            {T.importJSON}
+          </button>
+          <button
+            onClick={() => {
+              try {
+                const blob = new Blob([JSON.stringify(rows, null, 2)], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "lithuanian_trainer_export.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (e) {
+                alert("Export failed: " + e.message);
+              }
+            }}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Export your current library as JSON."
+          >
+            Export JSON
+          </button>
+          <button
+            onClick={clearLibrary}
+            className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
+            title="Remove all entries from your library."
+          >
+            {T.clearAll}
+          </button>
         </div>
 
         {/* Duplicates */}
@@ -980,10 +968,7 @@ export default function App() {
               {["EN2LT", "LT2EN"].map((d) => (
                 <button
                   key={d}
-                  onClick={() => {
-                    dropSearchFocus(800);
-                    setDirection(d);
-                  }}
+                  onClick={() => setDirection(d)}
                   className={cn(
                     "px-3 py-1.5 rounded-md text-sm border",
                     direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
@@ -1004,7 +989,7 @@ export default function App() {
                   type="radio"
                   name="ttsprov"
                   checked={ttsProvider === "browser"}
-                  onChange={() => { dropSearchFocus(800); setTtsProvider("browser"); }}
+                  onChange={() => setTtsProvider("browser")}
                 />{" "}
                 {T.browserVoice}
               </label>
@@ -1013,7 +998,7 @@ export default function App() {
                   type="radio"
                   name="ttsprov"
                   checked={ttsProvider === "azure"}
-                  onChange={() => { dropSearchFocus(800); setTtsProvider("azure"); }}
+                  onChange={() => setTtsProvider("azure")}
                 />{" "}
                 {T.azure}
               </label>
@@ -1128,8 +1113,6 @@ export default function App() {
               ref={searchRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
               placeholder={T.search}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
               autoComplete="off"
@@ -1147,7 +1130,7 @@ export default function App() {
                 onTouchStart={(e) => e.preventDefault()}
                 onClick={() => {
                   setQ("");
-                  searchRef.current?.focus({ preventScroll: true });
+                  // keep focus where it is; don't force refocus
                 }}
                 aria-label="Clear"
               >
@@ -1161,7 +1144,6 @@ export default function App() {
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value)}
-              onFocus={() => dropSearchFocus(800)}
             >
               <option value="RAG">{T.rag}</option>
               <option value="Newest">{T.newest}</option>
@@ -1186,23 +1168,16 @@ export default function App() {
             const hits = sheetCounts?.[t] || 0;
             const searching = !!qNorm;
             const isActive = tab === t;
-            const base =
-              "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
-            const normal =
-              isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
+            const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
+            const normal = isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
             const highlighted =
-              hits > 0
-                ? "ring-2 ring-emerald-500 ring-offset-0"
-                : searching
-                ? "opacity-60"
-                : "";
+              hits > 0 ? "ring-2 ring-emerald-500 ring-offset-0"
+              : searching ? "opacity-60"
+              : "";
             return (
               <button
                 key={t}
-                onClick={() => {
-                  dropSearchFocus(600);
-                  setTab(t);
-                }}
+                onClick={() => setTab(t)}
                 className={cn(base, normal, highlighted)}
                 title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
               >
@@ -1223,7 +1198,7 @@ export default function App() {
             {["All", "🔴", "🟠", "🟢"].map((x) => (
               <button
                 key={x}
-                onClick={() => { dropSearchFocus(400); setRagChip(x); }}
+                onClick={() => setRagChip(x)}
                 className={cn(
                   "px-2 py-1 rounded-md text-xs border",
                   ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
@@ -1331,14 +1306,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
+
       {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
       {/* Quiz modal */}
       {quizOn && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-          onPointerDown={() => dropSearchFocus(1500)}
-        >
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
             {quizQs.length > 0 &&
               (() => {
