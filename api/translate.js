@@ -6,20 +6,25 @@ export const config = { runtime: 'nodejs20.x' };
 
 export default async function handler(req, res) {
   try {
-    // Only POST
+    // Simple health check so /api/translate in a browser doesn't 405
+    if (req.method === 'GET') {
+      return res
+        .status(200)
+        .json({ ok: true, hint: "POST { text, from:'en'|'lt'|'auto', to:'lt'|'en' } to translate." });
+    }
+
     if (req.method !== "POST") {
-      res.setHeader("Allow", "POST");
+      res.setHeader("Allow", "POST, GET");
       return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    // Env
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       console.error("[/api/translate] Missing OPENAI_API_KEY");
       return res.status(500).json({ ok: false, error: "Server not configured (no API key)" });
     }
 
-    // Body
+    // Parse body
     let body;
     try {
       body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -36,13 +41,12 @@ export default async function handler(req, res) {
 
     const model = process.env.OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 
-    // System instruction
     const sys = [
       `You translate between English and Lithuanian.`,
       `Return ONLY a single JSON object with keys:`,
-      `  sourcelang ("en"|"lt"), targetlang ("en"|"lt"),`,
-      `  translation (string), phonetic (string, simple Latin with hyphens, no IPA),`,
-      `  usage (very short, e.g. "greeting", "polite request"), notes (short, may include alternatives).`,
+      `sourcelang ("en"|"lt"), targetlang ("en"|"lt"),`,
+      `translation (string), phonetic (string, simple Latin with hyphens, no IPA),`,
+      `usage (very short, e.g. "greeting", "polite request"), notes (short, may include alternatives).`,
       `Keep "usage" to 1–3 words max. Do not wrap the JSON in code fences.`
     ].join(" ");
 
