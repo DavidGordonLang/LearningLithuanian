@@ -1,153 +1,106 @@
-// /api/translate.js  — full replace
+// /api/translate.js
+// Node.js Serverless Function (Vercel) — requires OPENAI_API_KEY in project env (Production)
 
-const MODEL = "gpt-4o-mini";
-
-// ---------- utils ----------
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", (c) => (data += c));
-    req.on("end", () => {
-      try { resolve(data ? JSON.parse(data) : {}); }
-      catch (e) { reject(e); }
-    });
-    req.on("error", reject);
-  });
-}
-
-function extractJSON(str) {
-  if (typeof str !== "string") return null;
-  // Try strict JSON first
-  try { return JSON.parse(str); } catch {}
-  // Fallback: last JSON-looking block
-  const m = str.match(/\{[\s\S]*\}$/);
-  if (!m) return null;
-  try { return JSON.parse(m[0]); } catch { return null; }
-}
-
-function shortUsage(u) {
-  const s = String(u || "").trim();
-  if (!s) return "";
-  const first = s.split(/(?<=\.)\s+|;|\n/)[0];
-  return first.length <= 140 ? first : first.slice(0, 140) + "…";
-}
-
-// ---------- handler ----------
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
-    res.setHeader("Cache-Control", "no-store");
-
-    if (req.method === "GET") {
-      return res.status(200).json({
-        ok: true,
-        hint: "POST { text, from: 'en'|'lt'|'auto', to: 'lt'|'en' } to translate."
-      });
-    }
+    // Only POST
     if (req.method !== "POST") {
-      res.setHeader("Allow", "POST, GET");
-      return res.status(405).json({ ok: false, error: "Method Not Allowed" });
+      res.setHeader("Allow", "POST");
+      return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ ok: false, error: "Missing OPENAI_API_KEY" });
+    // Env
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error("[/api/translate] Missing OPENAI_API_KEY");
+      return res.status(500).json({ ok: false, error: "Server not configured (no API key)" });
     }
 
-    // read body safely
+    // Body
     let body;
-    try { body = await readBody(req); }
-    catch (e) {
-      console.error("Bad JSON body:", e);
+    try {
+      body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    } catch {
       return res.status(400).json({ ok: false, error: "Invalid JSON body" });
     }
+    const text = (body?.text || "").trim();
+    const from = (body?.from || "auto").trim();   // 'en' | 'lt' | 'auto'
+    const to   = (body?.to   || "lt").trim();     // 'lt' | 'en'
 
-    const text = String(body?.text || "").trim();
-    let from = String(body?.from || "auto").toLowerCase();
-    let to = String(body?.to || "lt").toLowerCase();
+    if (!text) return res.status(400).json({ ok: false, error: "Missing 'text'" });
+    if (!["en", "lt", "auto"].includes(from)) return res.status(400).json({ ok: false, error: "Bad 'from' value" });
+    if (!["en", "lt"].includes(to)) return res.status(400).json({ ok: false, error: "Bad 'to' value" });
 
-    if (!text) return res.status(400).json({ ok: false, error: "Missing 'text'." });
-    if (!["en", "lt"].includes(to)) return res.status(400).json({ ok: false, error: "Invalid 'to'." });
-    if (!["en", "lt", "auto"].includes(from)) from = "auto";
-    if (from !== "auto" && from === to) {
-      return res.status(400).json({ ok: false, error: "from and to cannot match." });
-    }
+    const model = process.env.OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 
+    // System instruction: keep usage terse; clean phonetic; JSON only
     const sys = [
-      "You are an English↔Lithuanian translator.",
-      "Return only a single JSON object with keys:",
-      "english, lithuanian, phonetic, usage, notes.",
-      "Rules:",
-      "- Translate naturally and succinctly.",
-      "- phonetic: simple hyphenated *target-language* pronunciation (no IPA).",
-      '- usage: 1–5 words like "greeting", "restaurant", "small talk".',
-      "- notes: short alternates or brief grammar hint; may be empty."
+      `You translate between English and Lithuanian.`,
+      `Return ONLY a single JSON object with keys:`,
+      `  sourcelang (\"en\"|\"lt\"), targetlang (\"en\"|\"lt\"),`,
+      `  translation (string), phonetic (string, simple Latin with hyphens, no IPA),`,
+      `  usage (very short, e.g. "greeting", "polite request"), notes (short, may include alternatives).`,
+      `Keep "usage" to 1–3 words max.`,
+      `Do not wrap the JSON in code fences.`
     ].join(" ");
 
-    const user = JSON.stringify({ text, from, to });
+    const messages = [
+      { role: "system", content: sys },
+      { role: "user",   content: `from=${from}, to=${to}, text="""${text}"""` }
+    ];
 
-    const headers = {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    };
-    const url = "https://api.openai.com/v1/chat/completions";
-
-    // Try with response_format first
-    const basePayload = {
-      model: MODEL,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: sys },
-        { role: "user", content: user },
-      ],
-    };
-
-    async function call(payload) {
-      const r = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
-      const text = await r.text(); // never assume valid JSON
-      return { ok: r.ok, status: r.status, text };
-    }
-
-    let first = await call({ ...basePayload, response_format: { type: "json_object" } });
-
-    // Fallback without response_format if needed (older model behaviors, etc.)
-    if (!first.ok) {
-      console.warn("Upstream not OK (first attempt):", first.status, first.text.slice(0, 400));
-      const second = await call(basePayload);
-      if (!second.ok) {
-        console.error("Upstream not OK (second attempt):", second.status, second.text.slice(0, 400));
-        return res.status(502).json({ ok: false, error: "Upstream error", status: second.status, detail: second.text });
-      }
-      first = second;
-    }
-
-    // Parse model output robustly
-    let parsed;
-    try { parsed = JSON.parse(first.text); } catch { parsed = null; }
-    const rawContent = parsed?.choices?.[0]?.message?.content?.trim?.() ?? first.text.trim();
-    const data = extractJSON(rawContent) || {};
-
-    // Normalize fields + defaults
-    const english = (data.english ?? (from === "lt" ? data.translation : text) ?? "").toString().trim();
-    const lithuanian = (data.lithuanian ?? (from === "en" ? data.translation : "") ?? "").toString().trim();
-    const phonetic = (data.phonetic || "").toString().trim();
-    const usageField = shortUsage(data.usage || "");
-    const notes = (data.notes || "").toString().trim();
-
-    if (!english || !lithuanian) {
-      console.warn("Normalization failed; raw content:", rawContent.slice(0, 400));
-      return res.status(200).json({
-        ok: false,
-        error: "Normalization failed",
-        received: data,
-      });
-    }
-
-    return res.status(200).json({
-      ok: true,
-      data: { english, lithuanian, phonetic, usage: usageField, notes }
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0.2,
+        response_format: { type: "json_object" }
+      })
     });
-  } catch (e) {
-    // absolute last-resort guard so the function never hard-crashes
-    console.error("translate.js fatal:", e);
-    return res.status(500).json({ ok: false, error: "Server error", detail: String(e?.message || e) });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      console.error("[/api/translate] OpenAI HTTP error:", resp.status, errText);
+      return res.status(502).json({ ok: false, error: "Upstream error", status: resp.status });
+    }
+
+    const data = await resp.json();
+    const content = data?.choices?.[0]?.message?.content || "{}";
+
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (e) {
+      console.error("[/api/translate] JSON parse fail:", e, "content=", content);
+      return res.status(502).json({ ok: false, error: "Model returned non-JSON" });
+    }
+
+    // Minimal sanity cleanup
+    const out = {
+      sourcelang: String(parsed.sourcelang || (from === "auto" ? "" : from)).toLowerCase(),
+      targetlang: String(parsed.targetlang || to).toLowerCase(),
+      translation: String(parsed.translation || "").trim(),
+      phonetic: String(parsed.phonetic || "").trim(),
+      usage: String(parsed.usage || "").trim(),
+      notes: String(parsed.notes || "").trim()
+    };
+
+    if (!out.translation) {
+      console.error("[/api/translate] Missing translation in model output:", parsed);
+      return res.status(502).json({ ok: false, error: "No translation from model" });
+    }
+
+    // Cache disabled; explicit JSON
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json({ ok: true, ...out });
+  } catch (err) {
+    console.error("[/api/translate] Uncaught error:", err);
+    return res.status(500).json({ ok: false, error: "Internal error" });
   }
-};
+}
