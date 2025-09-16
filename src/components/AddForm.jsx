@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 
 /**
- * AddForm
- * - If only EN or LT is provided, calls /api/translate to fill the other side on Save.
- * - Defaults new entries to RAG 🔴 when translation was used.
- * - After successful save:
- *    • switches sort mode to "Newest" (if setSortMode is provided),
- *    • calls onClose() if provided (for modal),
- *    • otherwise clears the form.
+ * AddForm (manual translate)
+ * - Click "Translate" to fill the missing side + phonetic/usage/notes.
+ * - Save requires BOTH English and Lithuanian to be present.
+ * - If Translate was used, new item defaults to RAG 🔴, else RAG 🟠.
+ * - After saving:
+ *    • switches sort mode to "Newest" (if setSortMode provided),
+ *    • calls onClose() if provided (modal), else clears the form.
  *
  * Props:
  *  - tab: string ("Phrases" | "Questions" | "Words" | "Numbers")
@@ -36,107 +36,63 @@ export default function AddForm({
   const [usage, setUsage] = useState("");
   const [notes, setNotes] = useState("");
   const [sheet, setSheet] = useState(tab || "Phrases");
+
   const [loading, setLoading] = useState(false);
+  const [usedTranslate, setUsedTranslate] = useState(false);
 
   function simplifyUsage(u) {
     const s = String(u || "").trim();
     if (!s) return "";
-    // Simple heuristic: keep the first short clause/sentence.
     const first = s.split(/(?<=\.)\s+|;|\n/)[0];
     return first.length <= 140 ? first : first.slice(0, 140) + "…";
+    // keep it short & “equating out”
   }
 
-  async function translateIfNeeded(en, lt) {
-    // If both sides exist, no call needed
-    if (en && lt) return { en, lt, ph: phonetic, us: usage, nt: notes, viaApi: false };
+  async function onTranslate() {
+    if (loading) return;
 
-    const text = en || lt;
-    if (!text) throw new Error("Please enter English or Lithuanian.");
+    const en = english.trim();
+    const lt = lithuanian.trim();
 
-    const from = en ? "en" : "lt";
-    const to = en ? "lt" : "en";
-
-    const res = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, from, to }),
-    });
-
-    if (!res.ok) {
-      const msg = await res.text().catch(() => "");
-      throw new Error(msg || "Translation failed.");
+    if (!en && !lt) {
+      alert("Type something in English or Lithuanian first.");
+      return;
     }
 
-    const data = await res.json();
-    if (!data?.ok || !data?.data) throw new Error("Translation service returned an unexpected response.");
-
-    const d = data.data;
-    // API returns: english, lithuanian, phonetic, usage, notes (all optional except the pair)
-    const apiEn = String(d.english || "").trim();
-    const apiLt = String(d.lithuanian || "").trim();
-    const apiPh = String(d.phonetic || "");
-    const apiUsage = simplifyUsage(d.usage || "");
-    const apiNotes = String(d.notes || "");
-
-    return {
-      en: en || apiEn,
-      lt: lt || apiLt,
-      ph: phonetic || apiPh,
-      us: usage || apiUsage,
-      nt: notes || apiNotes,
-      viaApi: true,
-    };
-  }
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (loading) return;
+    const from = en && !lt ? "en" : !en && lt ? "lt" : "auto";
+    const to = from === "en" ? "lt" : from === "lt" ? "en" : "lt";
 
     try {
       setLoading(true);
 
-      const { en, lt, ph, us, nt, viaApi } = await translateIfNeeded(
-        english.trim(),
-        lithuanian.trim()
-      );
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: en || lt,
+          from,
+          to,
+        }),
+      });
 
-      if (!en || !lt) {
-        throw new Error("Could not determine both sides. Please fill at least one side.");
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || "Translation failed.");
       }
 
-      const entry = {
-        English: en,
-        Lithuanian: lt,
-        Phonetic: ph || "",
-        Category: category.trim(),
-        Usage: simplifyUsage(us || ""),
-        Notes: nt || "",
-        // Default RAG to red if we had to translate; otherwise keep amber as safe default
-        "RAG Icon": normalizeRag(viaApi ? "🔴" : "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(sheet) ? sheet : "Phrases",
-        _id: genId(),
-        _ts: nowTs(),
-        _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
-      };
+      const json = await res.json();
+      if (!json?.ok || !json?.data) throw new Error("Translation service returned an unexpected response.");
 
-      // Prepend new entry so it shows first even before sort switch
-      setRows((prev) => [entry, ...prev]);
+      const d = json.data;
 
-      // Switch view to "Newest" so the item is clearly first
-      if (typeof setSortMode === "function") setSortMode("Newest");
+      // API returns fields: english, lithuanian, phonetic, usage, notes
+      if (!en && d.english) setEnglish(d.english);
+      if (!lt && d.lithuanian) setLithuanian(d.lithuanian);
+      if (d.phonetic) setPhonetic(d.phonetic);
+      if (d.usage) setUsage((prev) => prev || simplifyUsage(d.usage));
+      if (d.notes) setNotes((prev) => prev || d.notes);
 
-      // Close modal if provided; else clear form
-      if (typeof onClose === "function") {
-        onClose();
-      } else {
-        setEnglish("");
-        setLithuanian("");
-        setPhonetic("");
-        setCategory("");
-        setUsage("");
-        setNotes("");
-        setSheet(tab || "Phrases");
-      }
+      setUsedTranslate(true);
     } catch (err) {
       alert(err?.message || String(err));
     } finally {
@@ -144,8 +100,60 @@ export default function AddForm({
     }
   }
 
+  function onCancel() {
+    if (typeof onClose === "function") onClose();
+  }
+
+  function resetForm() {
+    setEnglish("");
+    setLithuanian("");
+    setPhonetic("");
+    setCategory("");
+    setUsage("");
+    setNotes("");
+    setSheet(tab || "Phrases");
+    setUsedTranslate(false);
+  }
+
+  function onSave(e) {
+    e.preventDefault();
+    if (loading) return;
+
+    const en = english.trim();
+    const lt = lithuanian.trim();
+
+    if (!en || !lt) {
+      alert("Please fill both English and Lithuanian before saving (use Translate if needed).");
+      return;
+    }
+
+    const entry = {
+      English: en,
+      Lithuanian: lt,
+      Phonetic: phonetic.trim(),
+      Category: category.trim(),
+      Usage: simplifyUsage(usage),
+      Notes: notes.trim(),
+      "RAG Icon": normalizeRag(usedTranslate ? "🔴" : "🟠"),
+      Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(sheet) ? sheet : "Phrases",
+      _id: genId(),
+      _ts: nowTs(),
+      _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
+    };
+
+    // Prepend so it visibly appears first, then flip sort
+    setRows((prev) => [entry, ...prev]);
+    if (typeof setSortMode === "function") setSortMode("Newest");
+
+    if (typeof onClose === "function") {
+      onClose();
+    } else {
+      resetForm();
+    }
+  }
+
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSave} className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
           <div className="text-xs mb-1">{T.english}</div>
@@ -193,7 +201,7 @@ export default function AddForm({
         <textarea
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
-          placeholder="Short usage/context (auto-simplified on save)"
+          placeholder="Short usage/context (kept concise on save)"
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[48px]"
         />
       </div>
@@ -222,7 +230,18 @@ export default function AddForm({
             <option value="Numbers">{T.numbers}</option>
           </select>
         </div>
+
         <div className="flex items-end gap-2">
+          <button
+            type="button"
+            onClick={onTranslate}
+            disabled={loading}
+            className={`bg-zinc-800 rounded-md px-3 py-2 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+            title="Fill the missing side + phonetic/usage/notes"
+          >
+            {loading ? "Translating…" : "Translate"}
+          </button>
+
           <button
             type="submit"
             disabled={loading}
@@ -230,13 +249,10 @@ export default function AddForm({
               loading ? "opacity-70 cursor-not-allowed" : ""
             }`}
           >
-            {loading ? "Saving…" : T.save}
+            {T.save}
           </button>
-          <button
-            type="button"
-            onClick={() => (typeof onClose === "function" ? onClose() : null)}
-            className="bg-zinc-800 rounded-md px-3 py-2"
-          >
+
+          <button type="button" onClick={onCancel} className="bg-zinc-800 rounded-md px-3 py-2">
             {T.cancel}
           </button>
         </div>
