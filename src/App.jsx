@@ -661,6 +661,7 @@ function HomeView({
   qNorm,
   ragBuckets,
   rows,
+  setRows,
   editIdx,
   setEditIdx,
   editDraft,
@@ -725,8 +726,6 @@ function HomeView({
           </select>
         </div>
       </div>
-
-      {/* Streak/level are shown in App header area; left here as-is if you prefer */}
 
       {/* Tabs (with highlights while searching) */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -796,7 +795,7 @@ function HomeView({
                       r={r}
                       idx={idx}
                       rows={rows}
-                      setRows={() => {}}
+                      setRows={setRows}
                       editIdx={editIdx}
                       setEditIdx={setEditIdx}
                       editDraft={editDraft}
@@ -828,7 +827,7 @@ function HomeView({
                 r={r}
                 idx={idx}
                 rows={rows}
-                setRows={() => {}}
+                setRows={setRows}
                 editIdx={editIdx}
                 setEditIdx={setEditIdx}
                 editDraft={editDraft}
@@ -856,7 +855,7 @@ function HomeView({
             <summary className="cursor-pointer text-sm text-zinc-300">{T.addEntry}</summary>
             <AddForm
               tab={tab}
-              setRows={(updater) => updater && console.warn("setRows from EntryCard not used in this view")}
+              setRows={setRows}
               T={T}
               genId={genId}
               nowTs={nowTs}
@@ -1068,7 +1067,7 @@ export default function App() {
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...byQ].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
+        (order[normalizeRag(a["RAG Icon"]) ] ?? 1) - (order[normalizeRag(b["RAG Icon"]) ] ?? 1)
     );
   }, [rows, tab, qNorm, sortMode]);
 
@@ -1265,7 +1264,6 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    thedistractors:
     const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
       (r) => r.Lithuanian
     );
@@ -1390,6 +1388,7 @@ export default function App() {
           qNorm={qNorm}
           ragBuckets={ragBuckets}
           rows={rows}
+          setRows={setRows}
           editIdx={editIdx}
           setEditIdx={setEditIdx}
           editDraft={editDraft}
