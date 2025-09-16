@@ -15,11 +15,6 @@ import AddForm from "./components/AddForm";
  * - Quiz: promote/demote rules + XP/Level + streak
  * - Library: JSON import/clear, starter installs, duplicate finder
  * - Full UI language swap (EN→LT / LT→EN)
- *
- * Keyboard fix:
- *   • useGlobalTypingStickyFocus(): keeps focus on the field you’re typing in
- *     for ~1.2s after the last keystroke so Android keyboards don’t collapse
- *     when React re-renders the view.
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -322,51 +317,6 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
-/**
- * --- Global fix for Android keyboard blur ---
- * Keeps focus on the element you’re actively typing in for ~1200ms
- * after the last input event, even if a re-render steals focus.
- */
-function useGlobalTypingStickyFocus(lockMs = 1200) {
-  useEffect(() => {
-    let raf = 0;
-    const state = { lastEl: null, until: 0 };
-
-    const onAnyInput = (e) => {
-      const el = e.target;
-      if (!el) return;
-      const tag = el.tagName;
-      const type = el.getAttribute?.("type") || "";
-      const isTextField =
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        (tag === "INPUT" && ["text", "search", "email", "tel", "url", "password"].includes(type));
-      if (!isTextField) return;
-      state.lastEl = el;
-      state.until = Date.now() + lockMs;
-    };
-
-    const tick = () => {
-      if (state.lastEl && Date.now() < state.until) {
-        if (document.activeElement !== state.lastEl) {
-          try {
-            state.lastEl.focus({ preventScroll: true });
-          } catch {}
-        }
-      }
-      raf = window.requestAnimationFrame(tick);
-    };
-
-    document.addEventListener("input", onAnyInput, true);
-    raf = window.requestAnimationFrame(tick);
-
-    return () => {
-      document.removeEventListener("input", onAnyInput, true);
-      window.cancelAnimationFrame(raf);
-    };
-  }, [lockMs]);
-}
-
 export default function App() {
   // layout
   const [page, setPage] = useState("home");
@@ -381,7 +331,7 @@ export default function App() {
   // data + prefs
   const [rows, setRows] = useState(loadRows());
 
-  // one-time migration for stable keys/ts (prevents odd remounts)
+  // one-time migration for stable keys/ts (prevents remount focus losses)
   useEffect(() => {
     let changed = false;
     const migrated = rows.map((r) => {
@@ -398,9 +348,6 @@ export default function App() {
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
   const searchRef = useRef(null);
-
-  // apply the global sticky focus fixer
-  useGlobalTypingStickyFocus(1200);
 
   const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
@@ -471,6 +418,37 @@ export default function App() {
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
+  // --- ANDROID KEYBOARD "STICKY FOCUS" PATCH ---
+  // Re-focus the input/textarea a frame after its value changes to stop the IME collapsing.
+  useEffect(() => {
+    const handler = (evt) => {
+      const el = evt.target;
+      if (!el || !(el instanceof HTMLElement)) return;
+      const tag = el.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA") return;
+      if (el.hasAttribute("readonly") || el.hasAttribute("disabled")) return;
+      // Remember caret
+      let s, e;
+      try {
+        s = el.selectionStart;
+        e = el.selectionEnd;
+      } catch {}
+      // Restore focus/caret next frame (after React re-render)
+      requestAnimationFrame(() => {
+        if (document.activeElement !== el) {
+          el.focus({ preventScroll: true });
+          try {
+            if (s != null && e != null) el.setSelectionRange(s, e);
+          } catch {}
+        }
+      });
+    };
+    // Capture-phase listener so it runs even if children stopPropagation
+    document.addEventListener("input", handler, true);
+    return () => document.removeEventListener("input", handler, true);
+  }, []);
+  // ------------------------------------------------
+
   // audio helpers
   async function playText(text, { slow = false } = {}) {
     try {
@@ -504,7 +482,7 @@ export default function App() {
     }
   }
 
-  // Press handlers (don’t affect input focus)
+  // Press handlers (do NOT blur inputs; just prevent buttons from stealing focus)
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -555,7 +533,7 @@ export default function App() {
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
-      ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
+     ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
 
   // If searching, search across ALL rows; otherwise show only current tab
   const filtered = useMemo(() => {
@@ -1171,7 +1149,8 @@ export default function App() {
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
-              // intentionally no enterKeyHint / inputMode to avoid Android quirks
+              enterKeyHint="search"
+              inputMode="search"
             />
             {q && (
               <button
@@ -1182,7 +1161,7 @@ export default function App() {
                 onTouchStart={(e) => e.preventDefault()}
                 onClick={() => {
                   setQ("");
-                  // keep focus where it is; don’t force refocus
+                  // keep focus where it is
                 }}
                 aria-label="Clear"
               >
@@ -1229,7 +1208,6 @@ export default function App() {
             return (
               <button
                 key={t}
-                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setTab(t)}
                 className={cn(base, normal, highlighted)}
                 title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
@@ -1251,7 +1229,6 @@ export default function App() {
             {["All", "🔴", "🟠", "🟢"].map((x) => (
               <button
                 key={x}
-                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setRagChip(x)}
                 className={cn(
                   "px-2 py-1 rounded-md text-xs border",
