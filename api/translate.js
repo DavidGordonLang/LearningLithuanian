@@ -1,5 +1,5 @@
-// Force a versioned Node runtime for this Serverless Function (required by Vercel)
-export const config = { runtime: 'nodejs20.x' };
+// valid values here: 'nodejs' | 'edge' | 'experimental-edge'
+export const config = { runtime: 'nodejs' };
 
 // /api/translate.js
 // Node.js Serverless Function (Vercel) — requires OPENAI_API_KEY in project env (Production)
