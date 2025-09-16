@@ -1,82 +1,90 @@
 // api/translate.js
-export const config = { runtime: "edge" };
+// Simple translator function for Vercel (Node.js runtime)
 
-const SYS = `You are a precise Lithuanian↔English translator.
-Return STRICT JSON with keys: english, lithuanian, phonetic, usage, notes, category.
-- phonetic: simple, human-friendly (no IPA), with dashes for syllables when helpful.
-- usage: 1–2 natural example sentence(s) using the phrase.
-- notes: brief nuance/register/politeness.
-- category: one or two words (e.g., "Greetings", "Travel", "Food").`;
+export default async function handler(req, res) {
+  // Quick GET so you can verify the route exists in a browser
+  if (req.method === "GET") {
+    return res.status(200).json({
+      ok: true,
+      hint: "POST { text, from: 'en'|'lt'|'auto', to: 'lt'|'en' } to translate."
+    });
+  }
 
-export default async function handler(req) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
   try {
-    const { text, direction } = await req.json();
-    if (!text || !direction || !["EN2LT", "LT2EN"].includes(direction)) {
-      return json({ error: "Invalid request" }, 400);
+    const { text, from = "auto", to = "lt" } = req.body || {};
+    if (!text || typeof text !== "string") {
+      return res.status(400).json({ error: "Missing 'text' (string)" });
+    }
+    if (!["en", "lt", "auto"].includes(from) || !["en", "lt"].includes(to)) {
+      return res.status(400).json({ error: "Invalid 'from'/'to' values" });
     }
 
-    const user = [
-      `Direction: ${direction === "EN2LT" ? "English to Lithuanian" : "Lithuanian to English"}`,
-      `Text: ${text}`,
-      `Respond ONLY with a JSON object.`
-    ].join("\n");
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res
+        .status(500)
+        .json({ error: "Server misconfigured: OPENAI_API_KEY is missing" });
+    }
+
+    const system = [
+      "You are a precise EN↔LT translator.",
+      "Return **strict JSON** only, matching this schema:",
+      '{ "sourceLang": "en|lt", "targetLang": "en|lt",',
+      '  "translation": "string", "phonetic": "string",',
+      '  "usage": "string", "notes": "string" }',
+      "Prefer natural, idiomatic phrasing. If 'from' is 'auto', detect the language first.",
+      "For phonetic, use a simple learner-friendly pronunciation (not full IPA unless helpful).",
+    ].join(" ");
+
+    const user = JSON.stringify({
+      text,
+      from,
+      to
+    });
 
     const r = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "content-type": "application/json",
-        "authorization": `Bearer ${process.env.OPENAI_API_KEY || ""}`,
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        temperature: 0.3,
         messages: [
-          { role: "system", content: SYS },
-          { role: "user", content: user },
+          { role: "system", content: system },
+          { role: "user", content: user }
         ],
-        response_format: { type: "json_object" },
+        temperature: 0.2,
+        response_format: { type: "json_object" }
       }),
     });
 
     if (!r.ok) {
-      const err = await safeJson(r);
-      return json({ error: err?.error?.message || `Upstream error (${r.status})` }, r.status);
+      const txt = await r.text().catch(() => "");
+      return res
+        .status(502)
+        .json({ error: "OpenAI error", details: txt || r.statusText });
     }
 
     const data = await r.json();
-    const raw = data?.choices?.[0]?.message?.content?.trim() || "{}";
-    const parsed = safeParseJSON(raw);
+    const content =
+      data?.choices?.[0]?.message?.content?.trim() || "{}";
 
-    return json({
-      english: parsed.english || (direction === "LT2EN" ? "" : text),
-      lithuanian: parsed.lithuanian || (direction === "EN2LT" ? "" : text),
-      phonetic: parsed.phonetic || "",
-      usage: parsed.usage || "",
-      notes: parsed.notes || "",
-      category: parsed.category || "",
-    });
-  } catch (e) {
-    return json({ error: e.message || "Unexpected error" }, 500);
-  }
-}
+    // Ensure it's JSON (response_format already enforces it)
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = { translation: content };
+    }
 
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
-
-async function safeJson(res) {
-  try { return await res.json(); } catch { return null; }
-}
-
-function safeParseJSON(s) {
-  try {
-    // strip code fences if any
-    const clean = s.replace(/^```json\s*|\s*```$/g, "");
-    return JSON.parse(clean);
-  } catch {
-    return {};
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json(parsed);
+  } catch (err) {
+    return res.status(500).json({ error: "Server error", details: String(err?.message || err) });
   }
 }
