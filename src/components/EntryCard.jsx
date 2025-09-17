@@ -19,7 +19,7 @@ export default function EntryCard({
   normalizeRag,
   pressHandlers,
   cn,
-  lastAddedId,   // NEW: id to flash
+  lastAddedId,   // id to flash
 }) {
   const isEditing = editIdx === idx;
   const isExpanded = expanded?.has?.(idx);
@@ -38,39 +38,35 @@ export default function EntryCard({
     setExpanded(next);
   }
 
-  // ---- Flash overlay state (quick in, slow out)
-  const shouldFlash = lastAddedId && r._id === lastAddedId;
+  // --- New card flash: quick in, slow out
   const [hlOpacity, setHlOpacity] = useState(0);
   const [hlDur, setHlDur] = useState("150ms");
+  const shouldFlash = lastAddedId && r._id === lastAddedId;
 
   useEffect(() => {
     if (!shouldFlash) return;
-    // quick fade-in
-    setHlDur("150ms");
+    setHlDur("150ms");  // fast in
     setHlOpacity(1);
     const t1 = setTimeout(() => {
-      // slow fade-out
-      setHlDur("1100ms");
+      setHlDur("1100ms"); // slow out
       setHlOpacity(0);
     }, 160);
     return () => clearTimeout(t1);
   }, [shouldFlash]);
 
-  // --- EDITING VIEW ---
+  // --- EDIT MODE ---
   if (isEditing) {
     return (
       <div className="relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-        {/* highlight overlay */}
         <div
           className="pointer-events-none absolute inset-0 rounded-xl"
           style={{
-            background: "rgba(16,185,129,0.28)", // emerald-ish
+            background: "rgba(16,185,129,0.28)",
             opacity: hlOpacity,
             transition: `opacity ${hlDur} ease-in-out`,
           }}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {/* (editing fields unchanged) */}
           <div>
             <div className="text-xs text-zinc-400 mb-1">{T.english}</div>
             <input
@@ -178,7 +174,7 @@ export default function EntryCard({
       />
 
       <div className="flex items-start gap-3">
-        {/* RAG dot */}
+        {/* RAG + Sheet */}
         <div className="mt-0.5 shrink-0">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-zinc-800">
             {rag}
@@ -201,7 +197,7 @@ export default function EntryCard({
               <div className="text-sm font-medium">{targetText || "—"}</div>
             </div>
 
-            {/* Play target */}
+            {/* Primary play button -> speak TARGET side */}
             <button
               className={cn(
                 "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-semibold",
@@ -217,19 +213,32 @@ export default function EntryCard({
             </button>
           </div>
 
+          {/* Details */}
           {isExpanded && (
             <div className="mt-2 text-xs text-zinc-300 space-y-1">
               {r.Phonetic && (
-                <div><span className="text-zinc-500">{T.phonetic}: </span>{r.Phonetic}</div>
+                <div>
+                  <span className="text-zinc-500">{T.phonetic}: </span>
+                  {r.Phonetic}
+                </div>
               )}
               {r.Category && (
-                <div><span className="text-zinc-500">{T.category}: </span>{r.Category}</div>
+                <div>
+                  <span className="text-zinc-500">{T.category}: </span>
+                  {r.Category}
+                </div>
               )}
               {r.Usage && (
-                <div><span className="text-zinc-500">{T.usage}: </span>{r.Usage}</div>
+                <div>
+                  <span className="text-zinc-500">{T.usage}: </span>
+                  {r.Usage}
+                </div>
               )}
               {r.Notes && (
-                <div><span className="text-zinc-500">{T.notes}: </span>{r.Notes}</div>
+                <div>
+                  <span className="text-zinc-500">{T.notes}: </span>
+                  {r.Notes}
+                </div>
               )}
               <div className="text-zinc-500">
                 {T.sheet}: <span className="text-zinc-300">{sheet}</span>
@@ -241,10 +250,16 @@ export default function EntryCard({
 
       {/* Actions */}
       <div className="mt-3 flex items-center gap-2">
-        <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={toggleExpanded}>
+        <button
+          className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+          onClick={toggleExpanded}
+        >
           {isExpanded ? T.hideDetails : T.showDetails}
         </button>
-        <button className="bg-zinc-800 px-3 py-2 rounded-md text-sm" onClick={() => startEdit(idx)}>
+        <button
+          className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+          onClick={() => setEditIdx(idx)}
+        >
           {T.edit}
         </button>
         <button
