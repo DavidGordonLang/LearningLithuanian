@@ -8,6 +8,7 @@ export default function AddForm({
   nowTs,
   normalizeRag,
   onClose, // optional – parent can pass this when using a modal
+  onSaved, // optional – parent gets the new row's _id after save
 }) {
   const [english, setEnglish] = useState("");
   const [lithuanian, setLithuanian] = useState("");
@@ -104,6 +105,7 @@ export default function AddForm({
     if (!eng) return alert("Please add English.");
     if (!lt) return alert("Please translate first.");
 
+    const newId = genId();
     const row = {
       English: eng,
       Lithuanian: lt,
@@ -113,7 +115,7 @@ export default function AddForm({
       Notes: notes.trim(),
       "RAG Icon": normalizeRag("🔴"), // default new/translated items to RED
       Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(sheet) ? sheet : "Phrases",
-      _id: genId(),
+      _id: newId,
       _ts: nowTs(),
       _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
     };
@@ -121,6 +123,7 @@ export default function AddForm({
     setRows((prev) => [row, ...prev]); // prepend so it surfaces immediately
     resetForm();
     if (onClose) onClose();
+    if (onSaved) onSaved(newId);
   }
 
   return (
