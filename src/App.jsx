@@ -1,4 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useDeferredValue,
+  startTransition,
+  forwardRef,
+  memo,
+} from "react";
 import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
@@ -186,13 +195,15 @@ const loadXP = () => {
     return 0;
   }
 };
-const saveXP = (xp) => localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
+const saveXP = (xp) =>
+  localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const loadStreak = () => {
   try {
     const s = JSON.parse(localStorage.getItem(LSK_STREAK) || "null");
-    if (!s || typeof s.streak !== "number") return { streak: 0, lastDate: "" };
+    if (!s || typeof s.streak !== "number")
+      return { streak: 0, lastDate: "" };
     return s;
   } catch {
     return { streak: 0, lastDate: "" };
@@ -208,13 +219,17 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s))
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
     return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
 function daysBetween(d1, d2) {
-  const a = new Date(d1 + "T00:00:00"), b = new Date(d2 + "T00:00:00");
+  const a = new Date(d1 + "T00:00:00"),
+    b = new Date(d2 + "T00:00:00");
   return Math.round((b - a) / 86400000);
 }
 function shuffle(arr) {
@@ -242,7 +257,8 @@ function sim2(a = "", b = "") {
     for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
     return g;
   };
-  const g1 = grams(s1), g2 = grams(s2);
+  const g1 = grams(s1),
+    g2 = grams(s2);
   const map = new Map();
   g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
   let inter = 0;
@@ -265,7 +281,8 @@ function useVoices() {
     };
     refresh();
     window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
-    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+    return () =>
+      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
   }, []);
   return voices;
 }
@@ -308,6 +325,73 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
+/** -------------------------
+ *  SearchBox (isolated input)
+ *  - memoized + ref-forwarded
+ *  - local anti-blur to restore focus when WebView dumps it
+ *  - wrapper has data-skip-sticky to opt-out of global focus patch
+ * ------------------------- */
+const SearchBox = memo(
+  forwardRef(function SearchBox(
+    { value, onChangeValue, placeholder },
+    ref
+  ) {
+    const userIntentRef = useRef(0);
+
+    const onBlur = (e) => {
+      const now = performance?.now ? performance.now() : Date.now();
+      const delta = now - (userIntentRef.current || 0);
+      const intended = delta >= 0 && delta < 350;
+      const hasTarget =
+        !!e.relatedTarget && e.relatedTarget instanceof HTMLElement;
+
+      if (!intended && !hasTarget) {
+        requestAnimationFrame(() => {
+          const el = e.target;
+          if (document.activeElement !== el) el?.focus?.({ preventScroll: true });
+        });
+      }
+    };
+
+    return (
+      <div className="relative flex-1" data-skip-sticky>
+        <input
+          ref={ref}
+          value={value}
+          onChange={(e) => onChangeValue(e.target.value)}
+          onBlur={onBlur}
+          onPointerDownCapture={() => {
+            userIntentRef.current = performance?.now
+              ? performance.now()
+              : Date.now();
+          }}
+          placeholder={placeholder}
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="search"
+          inputMode="search"
+          type="search"
+        />
+        {!!value && (
+          <button
+            type="button"
+            tabIndex={-1}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
+            onClick={() => onChangeValue("")}
+            aria-label="Clear"
+          >
+            ×
+          </button>
+        )}
+      </div>
+    );
+  })
+);
+
 export default function App() {
   // layout
   const [page, setPage] = useState("home");
@@ -338,11 +422,16 @@ export default function App() {
 
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
+  const dq = useDeferredValue(q); // deferred for cheap typing
   const searchRef = useRef(null);
 
-  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
+  const [sortMode, setSortMode] = useState(
+    () => localStorage.getItem(LSK_SORT) || "RAG"
+  );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
-  const [direction, setDirection] = useState(() => localStorage.getItem(LSK_DIR) || "EN2LT");
+  const [direction, setDirection] = useState(
+    () => localStorage.getItem(LSK_DIR) || "EN2LT"
+  );
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
 
@@ -361,13 +450,20 @@ export default function App() {
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
-  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
-  const [azureKey, setAzureKey] = useState(() => localStorage.getItem(LSK_AZURE_KEY) || "");
-  const [azureRegion, setAzureRegion] = useState(() => localStorage.getItem(LSK_AZURE_REGION) || "");
+  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [
+    ttsProvider,
+  ]);
+  const [azureKey, setAzureKey] = useState(
+    () => localStorage.getItem(LSK_AZURE_KEY) || ""
+  );
+  const [azureRegion, setAzureRegion] = useState(
+    () => localStorage.getItem(LSK_AZURE_REGION) || ""
+  );
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || "";
+      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
+        ?.shortName || "";
     } catch {
       return "";
     }
@@ -379,7 +475,10 @@ export default function App() {
     if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion);
   }, [azureRegion]);
   useEffect(() => {
-    localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
+    localStorage.setItem(
+      LSK_AZURE_VOICE,
+      JSON.stringify({ shortName: azureVoiceShortName })
+    );
   }, [azureVoiceShortName]);
 
   const voices = useVoices();
@@ -435,7 +534,10 @@ export default function App() {
       if (now < (window.__lt_focus_lock_until || 0)) return;
 
       let s, e;
-      try { s = el.selectionStart; e = el.selectionEnd; } catch {}
+      try {
+        s = el.selectionStart;
+        e = el.selectionEnd;
+      } catch {}
 
       requestAnimationFrame(() => {
         const now2 = performance?.now ? performance.now() : Date.now();
@@ -443,7 +545,9 @@ export default function App() {
 
         if (document.activeElement !== el) {
           el.focus({ preventScroll: true });
-          try { if (s != null && e != null) el.setSelectionRange(s, e); } catch {}
+          try {
+            if (s != null && e != null) el.setSelectionRange(s, e);
+          } catch {}
         }
       });
     };
@@ -466,7 +570,13 @@ export default function App() {
       }
       if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
         const delta = slow ? "-40%" : "0%";
-        const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, delta);
+        const url = await speakAzureHTTP(
+          text,
+          azureVoiceShortName,
+          azureKey,
+          azureRegion,
+          delta
+        );
         const a = new Audio(url);
         audioRef.current = a;
         a.onended = () => {
@@ -532,7 +642,7 @@ export default function App() {
 
   // ---- FILTERING / SORTING
 
-  const qNorm = q.trim().toLowerCase();
+  const qNorm = dq.trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
@@ -541,19 +651,23 @@ export default function App() {
   const filtered = useMemo(() => {
     const haystack = qNorm ? rows : rows.filter((r) => r.Sheet === tab);
     const byQ = !qNorm ? haystack : haystack.filter(entryMatchesQuery);
-    if (sortMode === "Newest") return [...byQ].sort((a, b) => (b._ts || 0) - (a._ts || 0));
-    if (sortMode === "Oldest") return [...byQ].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+    if (sortMode === "Newest")
+      return [...byQ].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+    if (sortMode === "Oldest")
+      return [...byQ].sort((a, b) => (a._ts || 0) - (b._ts || 0));
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...byQ].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
+        (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
   }, [rows, tab, qNorm, sortMode]);
 
   const sheetCounts = useMemo(() => {
     if (!qNorm) return null;
     const counts = { Phrases: 0, Questions: 0, Words: 0, Numbers: 0 };
-    for (const r of rows) if (entryMatchesQuery(r)) counts[r.Sheet] = (counts[r.Sheet] || 0) + 1;
+    for (const r of rows)
+      if (entryMatchesQuery(r)) counts[r.Sheet] = (counts[r.Sheet] || 0) + 1;
     return counts;
   }, [rows, qNorm]);
 
@@ -596,11 +710,17 @@ export default function App() {
         Usage: String(r.Usage || "").trim(),
         Notes: String(r.Notes || "").trim(),
         "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+          ? r.Sheet
+          : "Phrases",
         _id: r._id || genId(),
         _ts: r._ts || nowTs(),
         _qstat:
-          r._qstat || { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
+          r._qstat || {
+            red: { ok: 0, bad: 0 },
+            amb: { ok: 0, bad: 0 },
+            grn: { ok: 0, bad: 0 },
+          },
       }))
       .filter((r) => r.English || r.Lithuanian);
     setRows((prev) => [...cleaned, ...prev]);
@@ -619,7 +739,9 @@ export default function App() {
   }
 
   async function installNumbersOnly() {
-    const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(Boolean);
+    const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(
+      Boolean
+    );
     let found = [];
     for (const url of urls) {
       try {
@@ -674,8 +796,11 @@ export default function App() {
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a], B = list[b];
-          const s = (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
+          const A = list[a],
+            B = list[b];
+          const s =
+            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) /
+            2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
       }
@@ -717,9 +842,10 @@ export default function App() {
     setQuizChoice(null);
     const first = pool[0];
     const correctLt = first.Lithuanian;
-    const distractors = sample(pool.filter((r) => r !== first && r.Lithuanian), 3).map(
-      (r) => r.Lithuanian
-    );
+    const distractors = sample(
+      pool.filter((r) => r !== first && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
     setQuizOptions(shuffle([correctLt, ...distractors]));
     setQuizOn(true);
   }
@@ -742,9 +868,10 @@ export default function App() {
     setQuizChoice(null);
     const item = quizQs[nextIdx];
     const correctLt = item.Lithuanian;
-    const distractors = sample(quizQs.filter((r) => r !== item && r.Lithuanian), 3).map(
-      (r) => r.Lithuanian
-    );
+    const distractors = sample(
+      quizQs.filter((r) => r !== item && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
     setQuizOptions(shuffle([correctLt, ...distractors]));
   }
   function bumpRagAfterAnswer(item, correct) {
@@ -811,27 +938,23 @@ export default function App() {
 
   // ---------- Add Modal state ----------
   const [addOpen, setAddOpen] = useState(false);
-
   // NEW: track which card was just added (for highlight)
   const [justAddedId, setJustAddedId] = useState(null);
 
   // Only for AddForm: wrap setRows so we can close the modal right after a successful save.
-  const setRowsFromAddForm = React.useCallback(
-    (updater) => {
-      setRows((prev) => {
-        const next = typeof updater === "function" ? updater(prev) : updater;
-        // Close modal in a microtask after state is applied
-        queueMicrotask(() => {
-          setAddOpen(false);
-          if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur();
-          }
-        });
-        return next;
+  const setRowsFromAddForm = React.useCallback((updater) => {
+    setRows((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      // Close modal in a microtask after state is applied
+      queueMicrotask(() => {
+        setAddOpen(false);
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
       });
-    },
-    [setRows]
-  );
+      return next;
+    });
+  }, []);
   // ------------------------------------
 
   function LibraryView() {
@@ -977,32 +1100,50 @@ export default function App() {
           </div>
           <div className="space-y-3">
             {dupeResults.close.map(([i, j, s]) => {
-              const A = rows[i], B = rows[j];
+              const A = rows[i],
+                B = rows[j];
               return (
                 <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-                  <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s * 100).toFixed(0)}%</div>
+                  <div className="text-xs text-zinc-400 mb-2">
+                    {T.similarity}: {(s * 100).toFixed(0)}%
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[{ row: A, idx: i }, { row: B, idx: j }].map(({ row, idx: ridx }) => (
-                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
-                        <div className="font-medium">
-                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
-                        </div>
-                        {(row.Usage || row.Notes) && (
-                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                            {row.Usage && <div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>}
-                            {row.Notes && <div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>}
+                    {[{ row: A, idx: i }, { row: B, idx: j }].map(
+                      ({ row, idx: ridx }) => (
+                        <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                          <div className="font-medium">
+                            {row.English} — {row.Lithuanian}{" "}
+                            <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
                           </div>
-                        )}
-                        <div className="mt-2">
-                          <button
-                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
-                          >
-                            {T.delete}
-                          </button>
+                          {(row.Usage || row.Notes) && (
+                            <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                              {row.Usage && (
+                                <div>
+                                  <span className="text-zinc-500">{T.usage}: </span>
+                                  {row.Usage}
+                                </div>
+                              )}
+                              {row.Notes && (
+                                <div>
+                                  <span className="text-zinc-500">{T.notes}: </span>
+                                  {row.Notes}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-2">
+                            <button
+                              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                              onClick={() =>
+                                setRows((prev) => prev.filter((_, ii) => ii !== ridx))
+                              }
+                            >
+                              {T.delete}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
               );
@@ -1028,9 +1169,15 @@ export default function App() {
                   onClick={() => setDirection(d)}
                   className={cn(
                     "px-3 py-1.5 rounded-md text-sm border",
-                    direction === d ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                    direction === d
+                      ? "bg-emerald-600 border-emerald-600"
+                      : "bg-zinc-900 border-zinc-700"
                   )}
-                  title={d === "EN2LT" ? "Prompts in English → answers in Lithuanian" : "Prompts in Lithuanian → answers in English"}
+                  title={
+                    d === "EN2LT"
+                      ? "Prompts in English → answers in Lithuanian"
+                      : "Prompts in Lithuanian → answers in English"
+                  }
                 >
                   {d === "EN2LT" ? T.en2lt : T.lt2en}
                 </button>
@@ -1143,12 +1290,15 @@ export default function App() {
                         displayName: v.LocalName || v.FriendlyName || v.ShortName,
                       }));
                       setAzureVoices(vs);
-                      if (!azureVoiceShortName && vs.length) setAzureVoiceShortName(vs[0].shortName);
+                      if (!azureVoiceShortName && vs.length)
+                        setAzureVoiceShortName(vs[0].shortName);
                     } catch (e) {
                       alert(e.message);
                     }
                   }}
-                  className={`bg-zinc-800 px-3 py-2 rounded-md ${(!azureRegion || !azureKey) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`bg-zinc-800 px-3 py-2 rounded-md ${
+                    !azureRegion || !azureKey ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   {T.fetchVoices}
                 </button>
@@ -1165,36 +1315,12 @@ export default function App() {
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
         {/* Search + Sort */}
         <div className="flex items-center gap-2 mt-3">
-          <div className="relative flex-1">
-            <input
-              data-skip-sticky
-              ref={searchRef}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={T.search}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              enterKeyHint="search"
-              inputMode="search"
-            />
-            {q && (
-              <button
-                type="button"
-                tabIndex={-1}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                onMouseDown={(e) => e.preventDefault()}
-                onTouchStart={(e) => e.preventDefault()}
-                onClick={() => {
-                  setQ("");
-                }}
-                aria-label="Clear"
-              >
-                ×
-              </button>
-            )}
-          </div>
+          <SearchBox
+            ref={searchRef}
+            value={q}
+            onChangeValue={(val) => startTransition(() => setQ(val))}
+            placeholder={T.search}
+          />
           <div className="flex items-center gap-2">
             <span className="text-xs text-zinc-400">{T.sort}</span>
             <select
@@ -1211,12 +1337,21 @@ export default function App() {
 
         {/* Streak + Level */}
         <div className="mt-2 flex items-center gap-3">
-          <div className="text-xs text-zinc-400">🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span></div>
-          <div className="text-xs text-zinc-400">🥇 {T.level} <span className="font-semibold">{level}</span></div>
-          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-            <div className="h-full bg-emerald-600" style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }} />
+          <div className="text-xs text-zinc-400">
+            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
           </div>
-          <div className="text-xs text-zinc-400">{levelProgress} / {LEVEL_STEP} XP</div>
+          <div className="text-xs text-zinc-400">
+            🥇 {T.level} <span className="font-semibold">{level}</span>
+          </div>
+          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
+            <div
+              className="h-full bg-emerald-600"
+              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
+            />
+          </div>
+          <div className="text-xs text-zinc-400">
+            {levelProgress} / {LEVEL_STEP} XP
+          </div>
         </div>
 
         {/* Tabs (with highlights while searching) */}
@@ -1225,12 +1360,17 @@ export default function App() {
             const hits = sheetCounts?.[t] || 0;
             const searching = !!qNorm;
             const isActive = tab === t;
-            const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
-            const normal = isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
+            const base =
+              "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
+            const normal = isActive
+              ? "bg-emerald-600 border-emerald-600"
+              : "bg-zinc-900 border-zinc-800";
             const highlighted =
-              hits > 0 ? "ring-2 ring-emerald-500 ring-offset-0"
-              : searching ? "opacity-60"
-              : "";
+              hits > 0
+                ? "ring-2 ring-emerald-500 ring-offset-0"
+                : searching
+                ? "opacity-60"
+                : "";
             return (
               <button
                 key={t}
@@ -1238,7 +1378,13 @@ export default function App() {
                 className={cn(base, normal, highlighted)}
                 title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
               >
-                {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
+                {t === "Phrases"
+                  ? T.phrases
+                  : t === "Questions"
+                  ? T.questions
+                  : t === "Words"
+                  ? T.words
+                  : T.numbers}
                 {hits > 0 && (
                   <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
                     {hits}
@@ -1258,7 +1404,9 @@ export default function App() {
                 onClick={() => setRagChip(x)}
                 className={cn(
                   "px-2 py-1 rounded-md text-xs border",
-                  ragChip === x ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-700"
+                  ragChip === x
+                    ? "bg-emerald-600 border-emerald-600"
+                    : "bg-zinc-900 border-zinc-700"
                 )}
               >
                 {x}
@@ -1302,7 +1450,7 @@ export default function App() {
                         normalizeRag={normalizeRag}
                         pressHandlers={pressHandlers}
                         cn={cn}
-                        flashId={justAddedId}   // <-- fixed
+                        flashId={justAddedId} {/* <-- fixed prop */}
                       />
                     );
                   })}
@@ -1358,7 +1506,13 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
 
-      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
+      {page === "library" ? (
+        <LibraryView />
+      ) : page === "settings" ? (
+        <SettingsView />
+      ) : (
+        <HomeView />
+      )}
 
       {/* Quiz modal */}
       {quizOn && (
@@ -1418,7 +1572,10 @@ export default function App() {
                       })}
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <button onClick={() => setQuizOn(false)} className="bg-zinc-800 px-3 py-2 rounded-md text-sm">
+                      <button
+                        onClick={() => setQuizOn(false)}
+                        className="bg-zinc-800 px-3 py-2 rounded-md text-sm"
+                      >
                         Close
                       </button>
                       {quizAnswered ? (
@@ -1446,7 +1603,8 @@ export default function App() {
           onPointerDown={() => {
             // tap outside closes and drops keyboard
             setAddOpen(false);
-            if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+            if (document.activeElement instanceof HTMLElement)
+              document.activeElement.blur();
           }}
         >
           <div
@@ -1455,10 +1613,7 @@ export default function App() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">{STR[direction].addEntry}</div>
-              <button
-                className="px-2 py-1 rounded-md bg-zinc-800"
-                onClick={() => setAddOpen(false)}
-              >
+              <button className="px-2 py-1 rounded-md bg-zinc-800" onClick={() => setAddOpen(false)}>
                 Close
               </button>
             </div>
