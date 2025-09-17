@@ -409,14 +409,22 @@ export default function App() {
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
- // --- ANDROID KEYBOARD "STICKY FOCUS" PATCH ---
-// Global guard: when true, we don't re-focus inputs (used by AddForm.translate)
-if (typeof window !== "undefined" && window.__lt_focus_lock == null) {
-  window.__lt_focus_lock = false;
+// --- ANDROID KEYBOARD "STICKY FOCUS" PATCH ---
+// Use a short-lived timestamp instead of a boolean.
+// Any time now < __lt_focus_lock_until, we skip refocusing.
+if (typeof window !== "undefined" && window.__lt_focus_lock_until == null) {
+  window.__lt_focus_lock_until = 0;
 }
 useEffect(() => {
+  // force-clear on mount (in case a previous screen left it set)
+  if (typeof window !== "undefined") window.__lt_focus_lock_until = 0;
+
   const handler = (evt) => {
-    if (window.__lt_focus_lock) return;
+    const now = (typeof performance !== "undefined" && performance.now)
+      ? performance.now()
+      : Date.now();
+    if (now < (window.__lt_focus_lock_until || 0)) return;
+
     const el = evt.target;
     if (!el || !(el instanceof HTMLElement)) return;
     const tag = el.tagName;
@@ -430,7 +438,11 @@ useEffect(() => {
     } catch {}
 
     requestAnimationFrame(() => {
-      if (window.__lt_focus_lock) return;
+      const now2 = (typeof performance !== "undefined" && performance.now)
+        ? performance.now()
+        : Date.now();
+      if (now2 < (window.__lt_focus_lock_until || 0)) return;
+
       if (document.activeElement !== el) {
         el.focus({ preventScroll: true });
         try {
@@ -439,10 +451,12 @@ useEffect(() => {
       }
     });
   };
+
   document.addEventListener("input", handler, true);
   return () => document.removeEventListener("input", handler, true);
 }, []);
 // ------------------------------------------------
+
 
   // audio helpers
   async function playText(text, { slow = false } = {}) {
