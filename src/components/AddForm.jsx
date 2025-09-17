@@ -7,8 +7,8 @@ export default function AddForm({
   genId,
   nowTs,
   normalizeRag,
-  onClose,         // optional – parent can pass this when using a modal
-  onAdded,         // NEW – parent can pass (id) to auto-sort/flash/etc.
+  onClose,   // optional – parent can pass this when using a modal
+  onSaved,   // parent passes (id) to auto-sort/flash/etc.
 }) {
   const [english, setEnglish] = useState("");
   const [lithuanian, setLithuanian] = useState("");
@@ -54,10 +54,10 @@ export default function AddForm({
       return;
     }
 
-    // --- MOBILE KEYBOARD: lock sticky-focus and blur input so the keyboard hides
+    // --- MOBILE KEYBOARD: short-lived focus lock + blur to hide keyboard
+    const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
     if (typeof window !== "undefined") {
-      window.__lt_focus_lock = true;
-      // blur on next frame (beats any pending rAF from typing)
+      window.__lt_focus_lock_until = now + 800; // matches App.jsx sticky-focus patch
       requestAnimationFrame(() => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       });
@@ -75,8 +75,7 @@ export default function AddForm({
       try {
         raw = await r.json();
       } catch {
-        const t = await r.text();
-        raw = JSON.parse(t);
+        raw = JSON.parse(await r.text());
       }
 
       if (!r.ok) {
@@ -96,10 +95,10 @@ export default function AddForm({
       alert("Translation service returned an unexpected response.");
     } finally {
       setBusy(false);
-      // release lock a little later so any late events won’t refocus an input
+      // ensure the lock drops even if the request timing varies
       setTimeout(() => {
-        if (typeof window !== "undefined") window.__lt_focus_lock = false;
-      }, 400);
+        if (typeof window !== "undefined") window.__lt_focus_lock_until = 0;
+      }, 900);
     }
   }
 
@@ -134,9 +133,7 @@ export default function AddForm({
     };
 
     setRows((prev) => [row, ...prev]); // prepend so it surfaces immediately
-    // tell parent (so it can sort to Newest + flash)
-    onAdded?.(row._id);
-
+    onSaved?.(row._id);                // let parent auto-sort + flash
     resetForm();
     onClose?.();
   }
