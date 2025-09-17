@@ -409,54 +409,49 @@ export default function App() {
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
-// --- ANDROID KEYBOARD "STICKY FOCUS" PATCH ---
-// Use a short-lived timestamp instead of a boolean.
-// Any time now < __lt_focus_lock_until, we skip refocusing.
-if (typeof window !== "undefined" && window.__lt_focus_lock_until == null) {
-  window.__lt_focus_lock_until = 0;
-}
-useEffect(() => {
-  // force-clear on mount (in case a previous screen left it set)
-  if (typeof window !== "undefined") window.__lt_focus_lock_until = 0;
+  // --- ANDROID KEYBOARD "STICKY FOCUS" PATCH (scoped + opt-out) ---
+  if (typeof window !== "undefined" && window.__lt_focus_lock_until == null) {
+    window.__lt_focus_lock_until = 0;
+  }
+  useEffect(() => {
+    if (typeof window !== "undefined") window.__lt_focus_lock_until = 0;
 
-  const handler = (evt) => {
-    const now = (typeof performance !== "undefined" && performance.now)
-      ? performance.now()
-      : Date.now();
-    if (now < (window.__lt_focus_lock_until || 0)) return;
+    const shouldSkip = (el) => {
+      if (!el || !(el instanceof HTMLElement)) return true;
+      // Opt-out markers & search fields shouldn't be refocused
+      if (el.closest("[data-skip-sticky]")) return true;
+      if (el.matches?.('input[type="search"], [inputmode="search"]')) return true;
+      if (searchRef.current && el === searchRef.current) return true;
+      return false;
+    };
 
-    const el = evt.target;
-    if (!el || !(el instanceof HTMLElement)) return;
-    const tag = el.tagName;
-    if (tag !== "INPUT" && tag !== "TEXTAREA") return;
-    if (el.hasAttribute("readonly") || el.hasAttribute("disabled")) return;
+    const onInputCapture = (evt) => {
+      const el = evt.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (evt.isComposing) return; // IME composing: never poke focus
+      if (shouldSkip(el)) return;
 
-    let s, e;
-    try {
-      s = el.selectionStart;
-      e = el.selectionEnd;
-    } catch {}
+      const now = performance?.now ? performance.now() : Date.now();
+      if (now < (window.__lt_focus_lock_until || 0)) return;
 
-    requestAnimationFrame(() => {
-      const now2 = (typeof performance !== "undefined" && performance.now)
-        ? performance.now()
-        : Date.now();
-      if (now2 < (window.__lt_focus_lock_until || 0)) return;
+      let s, e;
+      try { s = el.selectionStart; e = el.selectionEnd; } catch {}
 
-      if (document.activeElement !== el) {
-        el.focus({ preventScroll: true });
-        try {
-          if (s != null && e != null) el.setSelectionRange(s, e);
-        } catch {}
-      }
-    });
-  };
+      requestAnimationFrame(() => {
+        const now2 = performance?.now ? performance.now() : Date.now();
+        if (now2 < (window.__lt_focus_lock_until || 0)) return;
 
-  document.addEventListener("input", handler, true);
-  return () => document.removeEventListener("input", handler, true);
-}, []);
-// ------------------------------------------------
+        if (document.activeElement !== el) {
+          el.focus({ preventScroll: true });
+          try { if (s != null && e != null) el.setSelectionRange(s, e); } catch {}
+        }
+      });
+    };
 
+    document.addEventListener("input", onInputCapture, true);
+    return () => document.removeEventListener("input", onInputCapture, true);
+  }, []);
+  // ------------------------------------------------
 
   // audio helpers
   async function playText(text, { slow = false } = {}) {
@@ -1172,6 +1167,7 @@ useEffect(() => {
         <div className="flex items-center gap-2 mt-3">
           <div className="relative flex-1">
             <input
+              data-skip-sticky
               ref={searchRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -1306,7 +1302,7 @@ useEffect(() => {
                         normalizeRag={normalizeRag}
                         pressHandlers={pressHandlers}
                         cn={cn}
-                        lastAddedId={justAddedId}
+                        flashId={justAddedId}   // <-- fixed
                       />
                     );
                   })}
