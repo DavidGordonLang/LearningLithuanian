@@ -4,7 +4,6 @@ import React, {
   useRef,
   useState,
   useDeferredValue,
-  startTransition,
   forwardRef,
   memo,
 } from "react";
@@ -13,9 +12,10 @@ import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 
 /**
- * Lithuanian Trainer — App.jsx (mobile keyboard-stability build)
- * - Fix: swap window.resize width tracking for matchMedia("(min-width:1024px)")
- *        so the search input doesn't lose focus when the mobile keyboard opens.
+ * Lithuanian Trainer — App.jsx (keyboard-stability + instrumentation)
+ * - Layout width via matchMedia("(min-width:1024px)") — avoids IME resize churn.
+ * - Temporary console instrumentation to trace focus/mount behavior.
+ * - Search handler uses setQ directly (easy isolation; revert to startTransition later if desired).
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -327,7 +327,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 }
 
 /** -------------------------
- *  SearchBox (isolated input)
+ *  SearchBox (isolated input) + instrumentation
  * ------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox(
@@ -335,6 +335,14 @@ const SearchBox = memo(
     ref
   ) {
     const userIntentRef = useRef(0);
+
+    // TEMP instrumentation: mount/unmount + focus/blur trace
+    useEffect(() => {
+      console.log("[SearchBox] mount");
+      return () => console.log("[SearchBox] unmount");
+    }, []);
+    const onFocusLog = () => console.log("[SearchBox] focus");
+    const onBlurLogNative = () => console.log("[SearchBox] blur (native)");
 
     const onBlur = (e) => {
       const now = performance?.now ? performance.now() : Date.now();
@@ -357,7 +365,11 @@ const SearchBox = memo(
           ref={ref}
           value={value}
           onChange={(e) => onChangeValue(e.target.value)}
-          onBlur={onBlur}
+          onFocus={onFocusLog}
+          onBlur={(e) => {
+            onBlur(e);
+            onBlurLogNative();
+          }}
           onPointerDownCapture={() => {
             userIntentRef.current = performance?.now
               ? performance.now()
@@ -371,7 +383,7 @@ const SearchBox = memo(
           spellCheck={false}
           enterKeyHint="search"
           inputMode="search"
-          type="text"
+          type="text" /* keep text; inputMode shows search keyboard */
         />
         {!!value && (
           <button
@@ -410,6 +422,7 @@ function useWide() {
     const handler = (e) => setWide(e.matches);
     if (mql.addEventListener) mql.addEventListener("change", handler);
     else mql.addListener(handler);
+    // set initial
     setWide(mql.matches);
     return () => {
       if (mql.removeEventListener) mql.removeEventListener("change", handler);
@@ -421,14 +434,31 @@ function useWide() {
 }
 
 export default function App() {
-  // layout (replaced resize-with-width with media query)
+  // layout via media query (no IME resize churn)
   const WIDE = useWide();
 
-  // ✅ restored (was missing in a previous patch)
+  // page state (was missing in an earlier version)
   const [page, setPage] = useState("home");
 
   // data + prefs
   const [rows, setRows] = useState(loadRows());
+
+  // TEMP instrumentation: global focus/blur + resize trace
+  useEffect(() => {
+    const onResize = () => console.log("[App] window resized");
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  useEffect(() => {
+    const onFocus = (e) => console.log("[doc] focus", e.target);
+    const onBlur = (e) => console.log("[doc] blur", e.target);
+    document.addEventListener("focus", onFocus, true);
+    document.addEventListener("blur", onBlur, true);
+    return () => {
+      document.removeEventListener("focus", onFocus, true);
+      document.removeEventListener("blur", onBlur, true);
+    };
+  }, []);
 
   // one-time migration for stable keys/ts (prevents remount focus losses)
   useEffect(() => {
@@ -1356,10 +1386,11 @@ export default function App() {
           <SearchBox
             ref={searchRef}
             value={q}
-            onChangeValue={(val) => startTransition(() => setQ(val))}
+            // Isolation: set state directly (you can revert to startTransition later)
+            onChangeValue={(val) => setQ(val)}
             placeholder={T.search}
           />
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <span className="text-xs text-zinc-400">{T.sort}</span>
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
