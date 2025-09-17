@@ -409,32 +409,40 @@ export default function App() {
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
-  // --- ANDROID KEYBOARD "STICKY FOCUS" PATCH ---
-  useEffect(() => {
-    const handler = (evt) => {
-      const el = evt.target;
-      if (!el || !(el instanceof HTMLElement)) return;
-      const tag = el.tagName;
-      if (tag !== "INPUT" && tag !== "TEXTAREA") return;
-      if (el.hasAttribute("readonly") || el.hasAttribute("disabled")) return;
-      let s, e;
-      try {
-        s = el.selectionStart;
-        e = el.selectionEnd;
-      } catch {}
-      requestAnimationFrame(() => {
-        if (document.activeElement !== el) {
-          el.focus({ preventScroll: true });
-          try {
-            if (s != null && e != null) el.setSelectionRange(s, e);
-          } catch {}
-        }
-      });
-    };
-    document.addEventListener("input", handler, true);
-    return () => document.removeEventListener("input", handler, true);
-  }, []);
-  // ------------------------------------------------
+ // --- ANDROID KEYBOARD "STICKY FOCUS" PATCH ---
+// Global guard: when true, we don't re-focus inputs (used by AddForm.translate)
+if (typeof window !== "undefined" && window.__lt_focus_lock == null) {
+  window.__lt_focus_lock = false;
+}
+useEffect(() => {
+  const handler = (evt) => {
+    if (window.__lt_focus_lock) return;
+    const el = evt.target;
+    if (!el || !(el instanceof HTMLElement)) return;
+    const tag = el.tagName;
+    if (tag !== "INPUT" && tag !== "TEXTAREA") return;
+    if (el.hasAttribute("readonly") || el.hasAttribute("disabled")) return;
+
+    let s, e;
+    try {
+      s = el.selectionStart;
+      e = el.selectionEnd;
+    } catch {}
+
+    requestAnimationFrame(() => {
+      if (window.__lt_focus_lock) return;
+      if (document.activeElement !== el) {
+        el.focus({ preventScroll: true });
+        try {
+          if (s != null && e != null) el.setSelectionRange(s, e);
+        } catch {}
+      }
+    });
+  };
+  document.addEventListener("input", handler, true);
+  return () => document.removeEventListener("input", handler, true);
+}, []);
+// ------------------------------------------------
 
   // audio helpers
   async function playText(text, { slow = false } = {}) {
@@ -1284,7 +1292,7 @@ export default function App() {
                         normalizeRag={normalizeRag}
                         pressHandlers={pressHandlers}
                         cn={cn}
-                        flashId={justAddedId}
+                        lastAddedId={justAddedId}
                       />
                     );
                   })}
