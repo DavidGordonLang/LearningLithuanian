@@ -7,8 +7,9 @@ export default function AddForm({
   genId,
   nowTs,
   normalizeRag,
-  onClose,        // optional – parent can pass this when using a modal
-  direction,      // "EN2LT" | "LT2EN" (from parent)
+  onClose,       // optional – parent can pass this when using a modal
+  direction,     // "EN2LT" | "LT2EN"
+  onAdded,       // NEW: parent callback to highlight & resort
 }) {
   const [english, setEnglish] = useState("");
   const [lithuanian, setLithuanian] = useState("");
@@ -31,13 +32,13 @@ export default function AddForm({
       ok: !!(obj && (obj.ok === true || String(lower.ok) === "true")),
       sourcelang: String(
         lower.sourcelang ??
-        lower.sourcelanguage ??
-        lower.sourcelangauge ??
-        lower.sourcelan ??
-        lower.sourcelangue ??
-        lower.sourcelangage ??
-        lower.sourcelangug ??
-        ""
+          lower.sourcelanguage ??
+          lower.sourcelangauge ??
+          lower.sourcelan ??
+          lower.sourcelangue ??
+          lower.sourcelangage ??
+          lower.sourcelangug ??
+          ""
       ).toLowerCase(),
       targetlang: String(lower.targetlang ?? lower.targetlanguage ?? lower.targetlan ?? "").toLowerCase(),
       translation: String(lower.translation ?? lower.lt ?? lower.lithuanian ?? "").trim(),
@@ -51,11 +52,9 @@ export default function AddForm({
     const e = english.trim();
     const l = lithuanian.trim();
 
-    // Single-source convenience
     if (e && !l) return { from: "en", to: "lt", text: e, target: "lt" };
     if (l && !e) return { from: "lt", to: "en", text: l, target: "en" };
 
-    // Both filled → follow app direction, ask permission to overwrite target
     if (e && l) {
       const prefer = direction === "LT2EN" ? "en" : "lt";
       const which = prefer === "lt" ? T.lithuanian : T.english;
@@ -95,7 +94,6 @@ export default function AddForm({
         if (out.phonetic) setPhonetic(out.phonetic);
       } else {
         setEnglish(out.translation);
-        // phonetic generally only meaningful for Lithuanian; keep as-is
       }
       if (out.usage) setUsage((u) => u || out.usage);
       if (out.notes) setNotes((n) => n || out.notes);
@@ -123,6 +121,7 @@ export default function AddForm({
     if (!eng) return alert("Please add English.");
     if (!lt) return alert("Please translate first.");
 
+    const id = genId();
     const row = {
       English: eng,
       Lithuanian: lt,
@@ -130,16 +129,18 @@ export default function AddForm({
       Category: category.trim(),
       Usage: usage.trim(),
       Notes: notes.trim(),
-      "RAG Icon": normalizeRag("🔴"), // default new/translated items to RED
+      "RAG Icon": normalizeRag("🔴"),
       Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(sheet) ? sheet : "Phrases",
-      _id: genId(),
+      _id: id,
       _ts: nowTs(),
       _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
     };
 
     setRows((prev) => [row, ...prev]);
+    // Tell parent AFTER state is queued to ensure the card renders
+    queueMicrotask(() => onAdded?.(id));
     resetForm();
-    if (onClose) onClose();
+    onClose?.();
   }
 
   function swapFields() {
@@ -152,7 +153,7 @@ export default function AddForm({
 
   return (
     <div className="space-y-3">
-      {/* Row 1 */}
+      {/* Row 1 with swap */}
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-3 items-end">
         <div>
           <div className="text-xs mb-1">{T.english}</div>
@@ -165,10 +166,10 @@ export default function AddForm({
           />
         </div>
 
-        {/* Swap */}
         <div className="pb-0.5 flex justify-center">
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()} // keep keyboard up
             onClick={swapFields}
             title="Swap English ↔ Lithuanian"
             className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-lg leading-none"
@@ -234,6 +235,8 @@ export default function AddForm({
         {/* Cancel – left */}
         <div className="justify-self-start">
           <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => (onClose ? onClose() : resetForm())}
             className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
           >
@@ -244,6 +247,8 @@ export default function AddForm({
         {/* Translate – center (amber) */}
         <div className="justify-self-center">
           <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={translate}
             disabled={busy || (!english.trim() && !lithuanian.trim())}
             className={`px-3 py-2 rounded-md font-semibold ${
@@ -260,6 +265,8 @@ export default function AddForm({
         {/* Save – right (green) */}
         <div className="justify-self-end">
           <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={save}
             disabled={!canSave}
             className={`px-4 py-2 rounded-md font-semibold ${
