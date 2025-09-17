@@ -13,8 +13,7 @@ import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 
 /**
- * Lithuanian Trainer — App.jsx
- * (…comments unchanged…)
+ * Lithuanian Trainer — App.jsx (mobile keyboard-stability build)
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -369,10 +368,11 @@ const SearchBox = memo(
           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
           autoComplete="off"
           autoCorrect="off"
+          autoCapitalize="off"
           spellCheck={false}
           enterKeyHint="search"
           inputMode="search"
-          type="search"
+          type="text"
         />
         {!!value && (
           <button
@@ -422,7 +422,7 @@ export default function App() {
 
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
-  const dq = useDeferredValue(q); // deferred for cheap typing
+  const dq = useDeferredValue(q); // defers heavy filtering while typing
   const searchRef = useRef(null);
 
   const [sortMode, setSortMode] = useState(
@@ -517,7 +517,6 @@ export default function App() {
 
     const shouldSkip = (el) => {
       if (!el || !(el instanceof HTMLElement)) return true;
-      // Opt-out markers & search fields shouldn't be refocused
       if (el.closest("[data-skip-sticky]")) return true;
       if (el.matches?.('input[type="search"], [inputmode="search"]')) return true;
       if (searchRef.current && el === searchRef.current) return true;
@@ -527,7 +526,7 @@ export default function App() {
     const onInputCapture = (evt) => {
       const el = evt.target;
       if (!(el instanceof HTMLElement)) return;
-      if (evt.isComposing) return; // IME composing: never poke focus
+      if (evt.isComposing) return;
       if (shouldSkip(el)) return;
 
       const now = performance?.now ? performance.now() : Date.now();
@@ -556,6 +555,27 @@ export default function App() {
     return () => document.removeEventListener("input", onInputCapture, true);
   }, []);
   // ------------------------------------------------
+
+  // Keep the keyboard from collapsing if the WebView drops focus from the search
+  useEffect(() => {
+    const ref = searchRef;
+    const onFocusOut = (e) => {
+      const t = e.target;
+      if (!ref.current || t !== ref.current) return;
+
+      const hasNewTarget = e.relatedTarget instanceof HTMLElement;
+      if (!hasNewTarget) {
+        requestAnimationFrame(() => {
+          if (document.activeElement !== ref.current) {
+            ref.current?.focus?.({ preventScroll: true });
+          }
+        });
+      }
+    };
+
+    document.addEventListener("focusout", onFocusOut, true);
+    return () => document.removeEventListener("focusout", onFocusOut, true);
+  }, []);
 
   // audio helpers
   async function playText(text, { slow = false } = {}) {
@@ -938,14 +958,11 @@ export default function App() {
 
   // ---------- Add Modal state ----------
   const [addOpen, setAddOpen] = useState(false);
-  // NEW: track which card was just added (for highlight)
   const [justAddedId, setJustAddedId] = useState(null);
 
-  // Only for AddForm: wrap setRows so we can close the modal right after a successful save.
   const setRowsFromAddForm = React.useCallback((updater) => {
     setRows((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      // Close modal in a microtask after state is applied
       queueMicrotask(() => {
         setAddOpen(false);
         if (document.activeElement instanceof HTMLElement) {
@@ -1209,7 +1226,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Browser voice selection */}
           {ttsProvider === "browser" && (
             <div className="space-y-2">
               <div className="text-xs mb-1">{T.voice}</div>
@@ -1229,7 +1245,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Azure settings */}
           {ttsProvider === "azure" && (
             <div className="space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1321,7 +1336,7 @@ export default function App() {
             onChangeValue={(val) => startTransition(() => setQ(val))}
             placeholder={T.search}
           />
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <span className="text-xs text-zinc-400">{T.sort}</span>
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
@@ -1517,7 +1532,7 @@ export default function App() {
       {/* Quiz modal */}
       {quizOn && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <div className="w/full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
             {quizQs.length > 0 &&
               (() => {
                 const item = quizQs[quizIdx];
@@ -1601,7 +1616,6 @@ export default function App() {
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onPointerDown={() => {
-            // tap outside closes and drops keyboard
             setAddOpen(false);
             if (document.activeElement instanceof HTMLElement)
               document.activeElement.blur();
@@ -1627,7 +1641,6 @@ export default function App() {
               normalizeRag={normalizeRag}
               direction={direction}
               onSaved={(id) => {
-                // auto-switch to Newest, jump to top, and flash the new card
                 setSortMode("Newest");
                 window.scrollTo({ top: 0, behavior: "smooth" });
                 setJustAddedId(id);
