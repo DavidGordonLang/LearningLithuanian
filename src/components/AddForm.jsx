@@ -7,8 +7,8 @@ export default function AddForm({
   genId,
   nowTs,
   normalizeRag,
-  onClose, // optional – parent can pass this when using a modal
-  onSaved, // optional – parent gets the new row's _id after save
+  onClose,        // optional – parent can pass this when using a modal
+  direction,      // "EN2LT" | "LT2EN" (from parent)
 }) {
   const [english, setEnglish] = useState("");
   const [lithuanian, setLithuanian] = useState("");
@@ -20,7 +20,7 @@ export default function AddForm({
 
   const [busy, setBusy] = useState(false);
   const canSave = useMemo(
-    () => english.trim() && (lithuanian.trim() || !busy),
+    () => english.trim() && lithuanian.trim() && !busy,
     [english, lithuanian, busy]
   );
 
@@ -31,13 +31,13 @@ export default function AddForm({
       ok: !!(obj && (obj.ok === true || String(lower.ok) === "true")),
       sourcelang: String(
         lower.sourcelang ??
-          lower.sourcelanguage ??
-          lower.sourcelangauge ??
-          lower.sourcelan ??
-          lower.sourcelangue ??
-          lower.sourcelangage ??
-          lower.sourcelangug ??
-          ""
+        lower.sourcelanguage ??
+        lower.sourcelangauge ??
+        lower.sourcelan ??
+        lower.sourcelangue ??
+        lower.sourcelangage ??
+        lower.sourcelangug ??
+        ""
       ).toLowerCase(),
       targetlang: String(lower.targetlang ?? lower.targetlanguage ?? lower.targetlan ?? "").toLowerCase(),
       translation: String(lower.translation ?? lower.lt ?? lower.lithuanian ?? "").trim(),
@@ -47,38 +47,56 @@ export default function AddForm({
     };
   }
 
-  async function translate() {
-    const text = english.trim();
-    if (!text) {
-      alert("Type something in the English field first.");
-      return;
+  function decideDirection() {
+    const e = english.trim();
+    const l = lithuanian.trim();
+
+    // Single-source convenience
+    if (e && !l) return { from: "en", to: "lt", text: e, target: "lt" };
+    if (l && !e) return { from: "lt", to: "en", text: l, target: "en" };
+
+    // Both filled → follow app direction, ask permission to overwrite target
+    if (e && l) {
+      const prefer = direction === "LT2EN" ? "en" : "lt";
+      const which = prefer === "lt" ? T.lithuanian : T.english;
+      const ok = window.confirm(`Overwrite the ${which} field with a fresh translation?`);
+      if (!ok) return null;
+      if (prefer === "lt") return { from: "en", to: "lt", text: e, target: "lt" };
+      return { from: "lt", to: "en", text: l, target: "en" };
     }
+
+    alert("Type in either the English or Lithuanian field, then Translate.");
+    return null;
+  }
+
+  async function translate() {
+    const plan = decideDirection();
+    if (!plan) return;
+
     setBusy(true);
     try {
       const r = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, from: "en", to: "lt" }),
+        body: JSON.stringify({ text: plan.text, from: plan.from, to: plan.to }),
       });
 
       let raw;
-      try {
-        raw = await r.json();
-      } catch {
-        const t = await r.text();
-        raw = JSON.parse(t);
-      }
+      try { raw = await r.json(); }
+      catch { raw = JSON.parse(await r.text()); }
 
-      if (!r.ok) {
-        const msg = raw?.error || `HTTP ${r.status}`;
-        throw new Error(msg);
-      }
+      if (!r.ok) throw new Error(raw?.error || `HTTP ${r.status}`);
 
       const out = normalizeApi(raw);
       if (!out.translation) throw new Error("Missing translation in response.");
 
-      setLithuanian(out.translation);
-      if (out.phonetic) setPhonetic(out.phonetic);
+      if (plan.target === "lt") {
+        setLithuanian(out.translation);
+        if (out.phonetic) setPhonetic(out.phonetic);
+      } else {
+        setEnglish(out.translation);
+        // phonetic generally only meaningful for Lithuanian; keep as-is
+      }
       if (out.usage) setUsage((u) => u || out.usage);
       if (out.notes) setNotes((n) => n || out.notes);
     } catch (e) {
@@ -105,7 +123,6 @@ export default function AddForm({
     if (!eng) return alert("Please add English.");
     if (!lt) return alert("Please translate first.");
 
-    const newId = genId();
     const row = {
       English: eng,
       Lithuanian: lt,
@@ -115,21 +132,28 @@ export default function AddForm({
       Notes: notes.trim(),
       "RAG Icon": normalizeRag("🔴"), // default new/translated items to RED
       Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(sheet) ? sheet : "Phrases",
-      _id: newId,
+      _id: genId(),
       _ts: nowTs(),
       _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
     };
 
-    setRows((prev) => [row, ...prev]); // prepend so it surfaces immediately
+    setRows((prev) => [row, ...prev]);
     resetForm();
     if (onClose) onClose();
-    if (onSaved) onSaved(newId);
+  }
+
+  function swapFields() {
+    setEnglish((e) => {
+      const e2 = lithuanian;
+      setLithuanian(e);
+      return e2;
+    });
   }
 
   return (
     <div className="space-y-3">
       {/* Row 1 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-3 items-end">
         <div>
           <div className="text-xs mb-1">{T.english}</div>
           <input
@@ -140,6 +164,19 @@ export default function AddForm({
             autoFocus
           />
         </div>
+
+        {/* Swap */}
+        <div className="pb-0.5 flex justify-center">
+          <button
+            type="button"
+            onClick={swapFields}
+            title="Swap English ↔ Lithuanian"
+            className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-lg leading-none"
+          >
+            ⇄
+          </button>
+        </div>
+
         <div>
           <div className="text-xs mb-1">{T.lithuanian}</div>
           <input
@@ -208,13 +245,13 @@ export default function AddForm({
         <div className="justify-self-center">
           <button
             onClick={translate}
-            disabled={busy || !english.trim()}
+            disabled={busy || (!english.trim() && !lithuanian.trim())}
             className={`px-3 py-2 rounded-md font-semibold ${
-              busy || !english.trim()
+              busy || (!english.trim() && !lithuanian.trim())
                 ? "bg-amber-600/50 cursor-not-allowed"
                 : "bg-amber-600 hover:bg-amber-500"
             }`}
-            title="Translate English → Lithuanian"
+            title="Smart translate (EN↔LT)"
           >
             {busy ? "Translating…" : "Translate"}
           </button>
@@ -224,16 +261,27 @@ export default function AddForm({
         <div className="justify-self-end">
           <button
             onClick={save}
-            disabled={!canSave || !lithuanian.trim()}
+            disabled={!canSave}
             className={`px-4 py-2 rounded-md font-semibold ${
-              !lithuanian.trim() || !canSave
-                ? "bg-emerald-600/50 cursor-not-allowed"
-                : "bg-emerald-600 hover:bg-emerald-500"
+              !canSave ? "bg-emerald-600/50 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-500"
             }`}
           >
             {T.save}
           </button>
         </div>
+      </div>
+
+      <div>
+        <div className="text-xs mb-1">{T.sheet}</div>
+        <select
+          value={sheet}
+          onChange={(e) => setSheet(e.target.value)}
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+        >
+          {["Phrases", "Questions", "Words", "Numbers"].map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </div>
     </div>
   );
