@@ -20,6 +20,7 @@ export default function EntryCard({
   normalizeRag,
   pressHandlers,
   cn,
+  flashId, // NEW: id to flash highlight when just added
 }) {
   const isEditing = editIdx === idx;
   const isExpanded = expanded?.has?.(idx);
@@ -159,7 +160,12 @@ export default function EntryCard({
 
   // --- READ-ONLY VIEW ---
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+    <div
+      className={cn(
+        "bg-zinc-900 border border-zinc-800 rounded-xl p-3 transition-colors duration-700",
+        r._id === flashId && "bg-emerald-600/15 ring-2 ring-emerald-500"
+      )}
+    >
       <div className="flex items-start gap-3">
         {/* RAG + Sheet */}
         <div className="mt-0.5 shrink-0">
