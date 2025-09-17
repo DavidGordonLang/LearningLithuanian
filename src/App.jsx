@@ -1452,6 +1452,7 @@ export default function App() {
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
+              direction={direction}
               onSaved={(id) => {
                 // auto-switch to Newest, jump to top, and flash the new card
                 setSortMode("Newest");
