@@ -14,6 +14,8 @@ import AddForm from "./components/AddForm";
 
 /**
  * Lithuanian Trainer — App.jsx (mobile keyboard-stability build)
+ * - Fix: swap window.resize width tracking for matchMedia("(min-width:1024px)")
+ *        so the search input doesn't lose focus when the mobile keyboard opens.
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -326,9 +328,6 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 
 /** -------------------------
  *  SearchBox (isolated input)
- *  - memoized + ref-forwarded
- *  - local anti-blur to restore focus when WebView dumps it
- *  - wrapper has data-skip-sticky to opt-out of global focus patch
  * ------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox(
@@ -392,16 +391,39 @@ const SearchBox = memo(
   })
 );
 
-export default function App() {
-  // layout
-  const [page, setPage] = useState("home");
-  const [width, setWidth] = useState(() => window.innerWidth);
+/** -------------------------
+ *  Hook: matchMedia for WIDE
+ *  (doesn't fire on soft keyboard)
+ * ------------------------- */
+function useWide() {
+  const query = "(min-width: 1024px)";
+  const get = () =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia(query).matches
+      : false;
+
+  const [wide, setWide] = useState(get);
+
   useEffect(() => {
-    const onR = () => setWidth(window.innerWidth);
-    window.addEventListener("resize", onR);
-    return () => window.removeEventListener("resize", onR);
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia(query);
+    const handler = (e) => setWide(e.matches);
+    if (mql.addEventListener) mql.addEventListener("change", handler);
+    else mql.addListener(handler);
+    // set initial in case of hydration mismatch
+    setWide(mql.matches);
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener("change", handler);
+      else mql.removeListener(handler);
+    };
   }, []);
-  const WIDE = width >= 1024;
+
+  return wide;
+}
+
+export default function App() {
+  // layout (replaced resize-with-width with media query)
+  const WIDE = useWide();
 
   // data + prefs
   const [rows, setRows] = useState(loadRows());
@@ -715,7 +737,7 @@ export default function App() {
     setEditIdx(null);
   }
   function remove(i) {
-    if (!confirm(T.confirm)) return;
+    if (!confirm(STR[direction].confirm)) return;
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
@@ -793,7 +815,7 @@ export default function App() {
     }
   }
   function clearLibrary() {
-    if (!confirm(T.confirm)) return;
+    if (!confirm(STR[direction].confirm)) return;
     setRows([]);
   }
 
@@ -984,7 +1006,7 @@ export default function App() {
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="English prompts → Lithuanian answers. Installs EN→LT starter."
           >
-            {T.installEN}
+            {STR[direction].installEN}
           </button>
         </div>
 
@@ -994,14 +1016,14 @@ export default function App() {
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="Lithuanian prompts → English answers. Installs LT→EN starter."
           >
-            {T.installLT}
+            {STR[direction].installLT}
           </button>
           <button
             onClick={installNumbersOnly}
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="Adds only entries from the Numbers sheet in the starter files."
           >
-            {T.installNums}
+            {STR[direction].installNums}
           </button>
         </div>
 
@@ -1022,7 +1044,7 @@ export default function App() {
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="Import a custom JSON array of entries."
           >
-            {T.importJSON}
+            {STR[direction].importJSON}
           </button>
           <button
             onClick={() => {
@@ -1050,22 +1072,22 @@ export default function App() {
             className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
             title="Remove all entries from your library."
           >
-            {T.clearAll}
+            {STR[direction].clearAll}
           </button>
         </div>
 
         {/* Duplicates */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-lg font-semibold">{T.dupFinder}</div>
+            <div className="text-lg font-semibold">{STR[direction].dupFinder}</div>
             <button onClick={scanDupes} className="bg-zinc-800 px-3 py-2 rounded-md">
-              {T.scan}
+              {STR[direction].scan}
             </button>
           </div>
 
           {/* Exact duplicates */}
           <div className="text-sm text-zinc-400 mb-2">
-            {T.exactGroups}: {dupeResults.exact.length} group(s)
+            {STR[direction].exactGroups}: {dupeResults.exact.length} group(s)
           </div>
           <div className="space-y-3 mb-6">
             {dupeResults.exact.map((group, gi) => (
@@ -1083,13 +1105,13 @@ export default function App() {
                           <div className="mt-1 text-xs text-zinc-400 space-y-1">
                             {row.Usage && (
                               <div>
-                                <span className="text-zinc-500">{T.usage}: </span>
+                                <span className="text-zinc-500">{STR[direction].usage}: </span>
                                 {row.Usage}
                               </div>
                             )}
                             {row.Notes && (
                               <div>
-                                <span className="text-zinc-500">{T.notes}: </span>
+                                <span className="text-zinc-500">{STR[direction].notes}: </span>
                                 {row.Notes}
                               </div>
                             )}
@@ -1100,7 +1122,7 @@ export default function App() {
                             className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
                             onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
                           >
-                            {T.delete}
+                            {STR[direction].delete}
                           </button>
                         </div>
                       </div>
@@ -1113,7 +1135,7 @@ export default function App() {
 
           {/* Close matches */}
           <div className="text-sm text-zinc-400 mb-2">
-            {T.closeMatches}: {dupeResults.close.length} pair(s)
+            {STR[direction].closeMatches}: {dupeResults.close.length} pair(s)
           </div>
           <div className="space-y-3">
             {dupeResults.close.map(([i, j, s]) => {
@@ -1122,7 +1144,7 @@ export default function App() {
               return (
                 <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
                   <div className="text-xs text-zinc-400 mb-2">
-                    {T.similarity}: {(s * 100).toFixed(0)}%
+                    {STR[direction].similarity}: {(s * 100).toFixed(0)}%
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[{ row: A, idx: i }, { row: B, idx: j }].map(
@@ -1136,13 +1158,13 @@ export default function App() {
                             <div className="mt-1 text-xs text-zinc-400 space-y-1">
                               {row.Usage && (
                                 <div>
-                                  <span className="text-zinc-500">{T.usage}: </span>
+                                  <span className="text-zinc-500">{STR[direction].usage}: </span>
                                   {row.Usage}
                                 </div>
                               )}
                               {row.Notes && (
                                 <div>
-                                  <span className="text-zinc-500">{T.notes}: </span>
+                                  <span className="text-zinc-500">{STR[direction].notes}: </span>
                                   {row.Notes}
                                 </div>
                               )}
@@ -1155,7 +1177,7 @@ export default function App() {
                                 setRows((prev) => prev.filter((_, ii) => ii !== ridx))
                               }
                             >
-                              {T.delete}
+                              {STR[direction].delete}
                             </button>
                           </div>
                         </div>
@@ -1175,10 +1197,10 @@ export default function App() {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-20">
         <div className="mt-4 bg-zinc-900 border border-zinc-700 rounded-2xl p-4 space-y-4">
-          <div className="text-lg font-semibold">{T.settings}</div>
+          <div className="text-lg font-semibold">{STR[direction].settings}</div>
 
           <div>
-            <div className="text-xs mb-1">{T.direction}</div>
+            <div className="text-xs mb-1">{STR[direction].direction}</div>
             <div className="flex gap-2">
               {["EN2LT", "LT2EN"].map((d) => (
                 <button
@@ -1196,7 +1218,7 @@ export default function App() {
                       : "Prompts in Lithuanian → answers in English"
                   }
                 >
-                  {d === "EN2LT" ? T.en2lt : T.lt2en}
+                  {d === "EN2LT" ? STR[direction].en2lt : STR[direction].lt2en}
                 </button>
               ))}
             </div>
@@ -1212,7 +1234,7 @@ export default function App() {
                   checked={ttsProvider === "browser"}
                   onChange={() => setTtsProvider("browser")}
                 />{" "}
-                {T.browserVoice}
+                {STR[direction].browserVoice}
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -1221,19 +1243,19 @@ export default function App() {
                   checked={ttsProvider === "azure"}
                   onChange={() => setTtsProvider("azure")}
                 />{" "}
-                {T.azure}
+                {STR[direction].azure}
               </label>
             </div>
           </div>
 
           {ttsProvider === "browser" && (
             <div className="space-y-2">
-              <div className="text-xs mb-1">{T.voice}</div>
+              <div className="text-xs mb-1">{STR[direction].voice}</div>
               <select
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                 value={browserVoiceName}
                 onChange={(e) => setBrowserVoiceName(e.target.value)}
-                title={T.browserVoice}
+                title={STR[direction].browserVoice}
               >
                 <option value="">Auto voice</option>
                 {voices.map((v) => (
@@ -1249,7 +1271,7 @@ export default function App() {
             <div className="space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <div className="text-xs mb-1">{T.subKey}</div>
+                  <div className="text-xs mb-1">{STR[direction].subKey}</div>
                   <input
                     type="password"
                     value={azureKey}
@@ -1259,7 +1281,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <div className="text-xs mb-1">{T.region}</div>
+                  <div className="text-xs mb-1">{STR[direction].region}</div>
                   <input
                     value={azureRegion}
                     onChange={(e) => setAzureRegion(e.target.value)}
@@ -1271,13 +1293,13 @@ export default function App() {
 
               <div className="flex items-end gap-2">
                 <div className="flex-1">
-                  <div className="text-xs mb-1">{T.voice}</div>
+                  <div className="text-xs mb-1">{STR[direction].voice}</div>
                   <select
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                     value={azureVoiceShortName}
                     onChange={(e) => setAzureVoiceShortName(e.target.value)}
                   >
-                    <option value="">{T.choose}</option>
+                    <option value="">{STR[direction].choose}</option>
                     {azureVoices.map((v) => (
                       <option key={v.shortName} value={v.shortName}>
                         {v.displayName} ({v.shortName})
@@ -1315,7 +1337,7 @@ export default function App() {
                     !azureRegion || !azureKey ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  {T.fetchVoices}
+                  {STR[direction].fetchVoices}
                 </button>
               </div>
             </div>
@@ -1334,18 +1356,18 @@ export default function App() {
             ref={searchRef}
             value={q}
             onChangeValue={(val) => startTransition(() => setQ(val))}
-            placeholder={T.search}
+            placeholder={STR[direction].search}
           />
           <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-400">{T.sort}</span>
+            <span className="text-xs text-zinc-400">{STR[direction].sort}</span>
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value)}
             >
-              <option value="RAG">{T.rag}</option>
-              <option value="Newest">{T.newest}</option>
-              <option value="Oldest">{T.oldest}</option>
+              <option value="RAG">{STR[direction].rag}</option>
+              <option value="Newest">{STR[direction].newest}</option>
+              <option value="Oldest">{STR[direction].oldest}</option>
             </select>
           </div>
         </div>
@@ -1353,10 +1375,10 @@ export default function App() {
         {/* Streak + Level */}
         <div className="mt-2 flex items-center gap-3">
           <div className="text-xs text-zinc-400">
-            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
+            🔥 {STR[direction].streak}: <span className="font-semibold">{streak.streak}</span>
           </div>
           <div className="text-xs text-zinc-400">
-            🥇 {T.level} <span className="font-semibold">{level}</span>
+            🥇 {STR[direction].level} <span className="font-semibold">{level}</span>
           </div>
           <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
             <div
@@ -1394,12 +1416,12 @@ export default function App() {
                 title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
               >
                 {t === "Phrases"
-                  ? T.phrases
+                  ? STR[direction].phrases
                   : t === "Questions"
-                  ? T.questions
+                  ? STR[direction].questions
                   : t === "Words"
-                  ? T.words
-                  : T.numbers}
+                  ? STR[direction].words
+                  : STR[direction].numbers}
                 {hits > 0 && (
                   <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
                     {hits}
@@ -1457,7 +1479,7 @@ export default function App() {
                         setEditDraft={setEditDraft}
                         expanded={expanded}
                         setExpanded={setExpanded}
-                        T={T}
+                        T={STR[direction]}
                         direction={direction}
                         startEdit={startEdit}
                         saveEdit={saveEdit}
@@ -1490,7 +1512,7 @@ export default function App() {
                   setEditDraft={setEditDraft}
                   expanded={expanded}
                   setExpanded={setExpanded}
-                  T={T}
+                  T={STR[direction]}
                   direction={direction}
                   startEdit={startEdit}
                   saveEdit={saveEdit}
@@ -1519,7 +1541,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
+      <Header T={STR[direction]} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
 
       {page === "library" ? (
         <LibraryView />
@@ -1541,7 +1563,7 @@ export default function App() {
                 return (
                   <>
                     <div className="text-sm text-zinc-400 mb-1">
-                      {T.prompt} {quizIdx + 1} / {quizQs.length}
+                      {STR[direction].prompt} {quizIdx + 1} / {quizQs.length}
                     </div>
                     <div className="flex items-center gap-2 mb-3">
                       <div className="text-lg font-medium flex-1">{questionText}</div>
@@ -1553,7 +1575,7 @@ export default function App() {
                         ►
                       </button>
                     </div>
-                    <div className="text-sm text-zinc-400 mb-1">{T.chooseLT}</div>
+                    <div className="text-sm text-zinc-400 mb-1">{STR[direction].chooseLT}</div>
                     <div className="space-y-2">
                       {quizOptions.map((opt) => {
                         const isSelected = quizChoice === opt;
@@ -1598,7 +1620,7 @@ export default function App() {
                           onClick={afterAnswerAdvance}
                           className="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-md text-sm font-semibold"
                         >
-                          {T.nextQuestion}
+                          {STR[direction].nextQuestion}
                         </button>
                       ) : (
                         <div className="text-sm text-zinc-400">&nbsp;</div>
