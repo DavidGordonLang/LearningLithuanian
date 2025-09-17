@@ -20,7 +20,7 @@ export default function EntryCard({
   normalizeRag,
   pressHandlers,
   cn,
-  flashId, // NEW: id to flash highlight when just added
+  flashId, // id to flash when just added
 }) {
   const isEditing = editIdx === idx;
   const isExpanded = expanded?.has?.(idx);
@@ -159,13 +159,23 @@ export default function EntryCard({
   }
 
   // --- READ-ONLY VIEW ---
+  const isFlashing = r._id && flashId && r._id === flashId;
+
   return (
     <div
       className={cn(
-        "bg-zinc-900 border border-zinc-800 rounded-xl p-3 transition-colors duration-700",
-        r._id === flashId && "bg-emerald-600/15 ring-2 ring-emerald-500"
+        "relative bg-zinc-900 border border-zinc-800 rounded-xl p-3 transition-colors duration-700",
+        isFlashing && "bg-emerald-600/20"
       )}
     >
+      {/* Flash overlay (very visible): static ring + ping */}
+      {isFlashing && (
+        <>
+          <span className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-emerald-500" />
+          <span className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-emerald-500 animate-ping" />
+        </>
+      )}
+
       <div className="flex items-start gap-3">
         {/* RAG + Sheet */}
         <div className="mt-0.5 shrink-0">
