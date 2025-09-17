@@ -1321,7 +1321,7 @@ export default function App() {
             onChangeValue={(val) => startTransition(() => setQ(val))}
             placeholder={T.search}
           />
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
             <span className="text-xs text-zinc-400">{T.sort}</span>
             <select
               className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
@@ -1450,7 +1450,7 @@ export default function App() {
                         normalizeRag={normalizeRag}
                         pressHandlers={pressHandlers}
                         cn={cn}
-                        flashId={justAddedId} {/* <-- fixed prop */}
+                        flashId={justAddedId}
                       />
                     );
                   })}
