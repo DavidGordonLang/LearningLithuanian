@@ -1,33 +1,13 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
-/**
- * AddForm (manual translate)
- * - Click "Translate" to fill the missing side + phonetic/usage/notes.
- * - Save requires BOTH English and Lithuanian to be present.
- * - If Translate was used, new item defaults to RAG 🔴, else RAG 🟠.
- * - After saving:
- *    • switches sort mode to "Newest" (if setSortMode provided),
- *    • calls onClose() if provided (modal), else clears the form.
- *
- * Props:
- *  - tab: string ("Phrases" | "Questions" | "Words" | "Numbers")
- *  - setRows: fn
- *  - T: i18n labels
- *  - genId: fn
- *  - nowTs: fn
- *  - normalizeRag: fn
- *  - onClose?: fn
- *  - setSortMode?: fn
- */
 export default function AddForm({
-  tab = "Phrases",
+  tab,
   setRows,
   T,
   genId,
   nowTs,
   normalizeRag,
-  onClose,
-  setSortMode,
+  onClose, // optional – parent can pass this when using a modal
 }) {
   const [english, setEnglish] = useState("");
   const [lithuanian, setLithuanian] = useState("");
@@ -37,71 +17,72 @@ export default function AddForm({
   const [notes, setNotes] = useState("");
   const [sheet, setSheet] = useState(tab || "Phrases");
 
-  const [loading, setLoading] = useState(false);
-  const [usedTranslate, setUsedTranslate] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const canSave = useMemo(
+    () => english.trim() && (lithuanian.trim() || !busy),
+    [english, lithuanian, busy]
+  );
 
-  function simplifyUsage(u) {
-    const s = String(u || "").trim();
-    if (!s) return "";
-    const first = s.split(/(?<=\.)\s+|;|\n/)[0];
-    return first.length <= 140 ? first : first.slice(0, 140) + "…";
-    // keep it short & “equating out”
+  function normalizeApi(obj) {
+    // Make all keys lower-case for tolerant access
+    const lower = {};
+    for (const [k, v] of Object.entries(obj || {})) lower[String(k).toLowerCase()] = v;
+
+    // Support both camelCase and lowercase snake-ish keys
+    return {
+      ok: !!(obj && (obj.ok === true || String(lower.ok) === "true")),
+      sourcelang:
+        String(lower.sourcelang ?? lower.sourcelanguage ?? lower.sourcelangauge ?? lower.sourcelan ?? lower.sourcelangue ?? lower.sourcelangage ?? lower.sourcelangug ?? "").toLowerCase(),
+      targetlang:
+        String(lower.targetlang ?? lower.targetlanguage ?? lower.targetlan ?? "").toLowerCase(),
+      translation: String(lower.translation ?? lower.lt ?? lower.lithuanian ?? "").trim(),
+      phonetic: String(lower.phonetic ?? lower.pronunciation ?? "").trim(),
+      usage: String(lower.usage ?? "").trim(),
+      notes: String(lower.notes ?? "").trim(),
+    };
   }
 
-  async function onTranslate() {
-    if (loading) return;
-
-    const en = english.trim();
-    const lt = lithuanian.trim();
-
-    if (!en && !lt) {
-      alert("Type something in English or Lithuanian first.");
+  async function translate() {
+    const text = english.trim();
+    if (!text) {
+      alert("Type something in the English field first.");
       return;
     }
-
-    const from = en && !lt ? "en" : !en && lt ? "lt" : "auto";
-    const to = from === "en" ? "lt" : from === "lt" ? "en" : "lt";
-
+    setBusy(true);
     try {
-      setLoading(true);
-
-      const res = await fetch("/api/translate", {
+      const r = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: en || lt,
-          from,
-          to,
-        }),
+        body: JSON.stringify({ text, from: "en", to: "lt" }),
       });
 
-      if (!res.ok) {
-        const msg = await res.text().catch(() => "");
-        throw new Error(msg || "Translation failed.");
+      // Be lenient: try JSON first; if that fails, try text→JSON.
+      let raw;
+      try {
+        raw = await r.json();
+      } catch {
+        const t = await r.text();
+        raw = JSON.parse(t);
       }
 
-      const json = await res.json();
-      if (!json?.ok || !json?.data) throw new Error("Translation service returned an unexpected response.");
+      if (!r.ok) {
+        const msg = raw?.error || `HTTP ${r.status}`;
+        throw new Error(msg);
+      }
 
-      const d = json.data;
+      const out = normalizeApi(raw);
+      if (!out.translation) throw new Error("Missing translation in response.");
 
-      // API returns fields: english, lithuanian, phonetic, usage, notes
-      if (!en && d.english) setEnglish(d.english);
-      if (!lt && d.lithuanian) setLithuanian(d.lithuanian);
-      if (d.phonetic) setPhonetic(d.phonetic);
-      if (d.usage) setUsage((prev) => prev || simplifyUsage(d.usage));
-      if (d.notes) setNotes((prev) => prev || d.notes);
-
-      setUsedTranslate(true);
-    } catch (err) {
-      alert(err?.message || String(err));
+      setLithuanian(out.translation);
+      if (out.phonetic) setPhonetic(out.phonetic);
+      if (out.usage) setUsage((u) => u || out.usage);
+      if (out.notes) setNotes((n) => n || out.notes);
+    } catch (e) {
+      console.error("[AddForm] translate error:", e);
+      alert("Translation service returned an unexpected response.");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
-  }
-
-  function onCancel() {
-    if (typeof onClose === "function") onClose();
   }
 
   function resetForm() {
@@ -112,70 +93,60 @@ export default function AddForm({
     setUsage("");
     setNotes("");
     setSheet(tab || "Phrases");
-    setUsedTranslate(false);
   }
 
-  function onSave(e) {
-    e.preventDefault();
-    if (loading) return;
-
-    const en = english.trim();
+  function save() {
+    const eng = english.trim();
     const lt = lithuanian.trim();
+    if (!eng) return alert("Please add English.");
+    if (!lt) return alert("Please translate first.");
 
-    if (!en || !lt) {
-      alert("Please fill both English and Lithuanian before saving (use Translate if needed).");
-      return;
-    }
-
-    const entry = {
-      English: en,
+    const row = {
+      English: eng,
       Lithuanian: lt,
       Phonetic: phonetic.trim(),
       Category: category.trim(),
-      Usage: simplifyUsage(usage),
+      Usage: usage.trim(),
       Notes: notes.trim(),
-      "RAG Icon": normalizeRag(usedTranslate ? "🔴" : "🟠"),
+      "RAG Icon": normalizeRag("🔴"), // default new/translated items to RED
       Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(sheet) ? sheet : "Phrases",
       _id: genId(),
       _ts: nowTs(),
       _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
     };
 
-    // Prepend so it visibly appears first, then flip sort
-    setRows((prev) => [entry, ...prev]);
-    if (typeof setSortMode === "function") setSortMode("Newest");
-
-    if (typeof onClose === "function") {
-      onClose();
-    } else {
-      resetForm();
-    }
+    setRows((prev) => [row, ...prev]); // prepend so it surfaces immediately
+    resetForm();
+    if (onClose) onClose();
   }
 
   return (
-    <form onSubmit={onSave} className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className="space-y-3">
+      {/* Row 1 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <div className="text-xs mb-1">{T.english}</div>
-          <textarea
+          <input
             value={english}
             onChange={(e) => setEnglish(e.target.value)}
-            placeholder="e.g. Could I get the bill, please?"
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[60px]"
+            placeholder="e.g. Hello"
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+            autoFocus
           />
         </div>
         <div>
           <div className="text-xs mb-1">{T.lithuanian}</div>
-          <textarea
+          <input
             value={lithuanian}
             onChange={(e) => setLithuanian(e.target.value)}
-            placeholder="e.g. Ar galėčiau gauti sąskaitą?"
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[60px]"
+            placeholder="e.g. Labas / Sveiki"
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {/* Row 2 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <div className="text-xs mb-1">{T.phonetic}</div>
           <input
@@ -198,65 +169,70 @@ export default function AddForm({
 
       <div>
         <div className="text-xs mb-1">{T.usage}</div>
-        <textarea
+        <input
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
           placeholder="Short usage/context (kept concise on save)"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[48px]"
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
         />
       </div>
 
       <div>
         <div className="text-xs mb-1">{T.notes}</div>
-        <textarea
+        <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Optional — alternatives, register, grammar note…"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 min-h-[48px]"
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
         <div>
           <div className="text-xs mb-1">{T.sheet}</div>
           <select
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
             value={sheet}
             onChange={(e) => setSheet(e.target.value)}
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           >
-            <option value="Phrases">{T.phrases}</option>
-            <option value="Questions">{T.questions}</option>
-            <option value="Words">{T.words}</option>
-            <option value="Numbers">{T.numbers}</option>
+            {["Phrases", "Questions", "Words", "Numbers"].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
         </div>
 
-        <div className="flex items-end gap-2">
+        <div className="flex gap-2 justify-end">
           <button
-            type="button"
-            onClick={onTranslate}
-            disabled={loading}
-            className={`bg-zinc-800 rounded-md px-3 py-2 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
-            title="Fill the missing side + phonetic/usage/notes"
+            onClick={translate}
+            disabled={busy || !english.trim()}
+            className={`px-3 py-2 rounded-md border ${
+              busy ? "opacity-60 cursor-not-allowed" : ""
+            } bg-zinc-800 border-zinc-700`}
+            title="Translate English → Lithuanian"
           >
-            {loading ? "Translating…" : "Translate"}
+            {busy ? "Translating…" : "Translate"}
           </button>
-
           <button
-            type="submit"
-            disabled={loading}
-            className={`flex-1 bg-emerald-600 hover:bg-emerald-500 rounded-md px-3 py-2 font-semibold ${
-              loading ? "opacity-70 cursor-not-allowed" : ""
+            onClick={save}
+            disabled={!canSave || !lithuanian.trim()}
+            className={`px-4 py-2 rounded-md font-semibold ${
+              !lithuanian.trim() || !canSave
+                ? "bg-emerald-600/50 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-500"
             }`}
           >
             {T.save}
           </button>
-
-          <button type="button" onClick={onCancel} className="bg-zinc-800 rounded-md px-3 py-2">
+          <button
+            onClick={() => (onClose ? onClose() : resetForm())}
+            className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
+          >
             {T.cancel}
           </button>
         </div>
       </div>
-    </form>
+    </div>
   );
 }
