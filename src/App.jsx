@@ -5,16 +5,7 @@ import AddForm from "./components/AddForm";
 
 /**
  * Lithuanian Trainer — App.jsx
- * - Tabs: Phrases / Questions / Words / Numbers
- * - Global Search across all sheets (when typing)
- *   • Matches ONLY English or Lithuanian fields (case-insensitive, no fuzzy)
- *   • Tabs with results get a highlight and count badge
- * - Sort: RAG (default), Newest, Oldest
- * - RAG chips (mobile) and tri-column RAG grid (wide screens)
- * - TTS: Azure primary + Browser fallback (no double-play, long-press = slow)
- * - Quiz: promote/demote rules + XP/Level + streak
- * - Library: JSON import/clear, starter installs, duplicate finder
- * - Full UI language swap (EN→LT / LT→EN)
+ * (…comments unchanged…)
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -478,7 +469,7 @@ export default function App() {
     }
   }
 
-  // Press handlers (do NOT blur inputs; just prevent buttons from stealing focus)
+  // Press handlers
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -524,14 +515,12 @@ export default function App() {
 
   // ---- FILTERING / SORTING
 
-  // Exact search (case-insensitive substring) on English or Lithuanian only
   const qNorm = q.trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
       ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
 
-  // If searching, search across ALL rows; otherwise show only current tab
   const filtered = useMemo(() => {
     const haystack = qNorm ? rows : rows.filter((r) => r.Sheet === tab);
     const byQ = !qNorm ? haystack : haystack.filter(entryMatchesQuery);
@@ -544,7 +533,6 @@ export default function App() {
     );
   }, [rows, tab, qNorm, sortMode]);
 
-  // Per-sheet counts while searching (for tab highlights)
   const sheetCounts = useMemo(() => {
     if (!qNorm) return null;
     const counts = { Phrases: 0, Questions: 0, Words: 0, Numbers: 0 };
@@ -806,6 +794,9 @@ export default function App() {
 
   // ---------- Add Modal state ----------
   const [addOpen, setAddOpen] = useState(false);
+
+  // NEW: track which card was just added (for highlight)
+  const [justAddedId, setJustAddedId] = useState(null);
 
   // Only for AddForm: wrap setRows so we can close the modal right after a successful save.
   const setRowsFromAddForm = React.useCallback(
@@ -1293,6 +1284,7 @@ export default function App() {
                         normalizeRag={normalizeRag}
                         pressHandlers={pressHandlers}
                         cn={cn}
+                        flashId={justAddedId}
                       />
                     );
                   })}
@@ -1325,6 +1317,7 @@ export default function App() {
                   normalizeRag={normalizeRag}
                   pressHandlers={pressHandlers}
                   cn={cn}
+                  flashId={justAddedId}
                 />
               );
             })}
@@ -1454,12 +1447,18 @@ export default function App() {
 
             <AddForm
               tab={tab}
-              // IMPORTANT: pass the wrapped setter so modal closes right after save
               setRows={setRowsFromAddForm}
               T={STR[direction]}
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
+              onSaved={(id) => {
+                // auto-switch to Newest, jump to top, and flash the new card
+                setSortMode("Newest");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                setJustAddedId(id);
+                setTimeout(() => setJustAddedId(null), 1400);
+              }}
             />
           </div>
         </div>
