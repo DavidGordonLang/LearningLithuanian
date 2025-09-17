@@ -1,5 +1,29 @@
 // src/components/EntryCard.jsx
-import React from "react";
+import React, { useEffect } from "react";
+
+let flashStylesInjected = false;
+function ensureFlashStyles() {
+  if (flashStylesInjected) return;
+  const css = `
+  /* Quick in (12%), slow out (→100%) */
+  @keyframes ll-flash-bg {
+    0%   { background-color: rgba(16,185,129,0); }
+    12%  { background-color: rgba(16,185,129,0.22); }
+    100% { background-color: rgba(16,185,129,0); }
+  }
+  @keyframes ll-flash-ring {
+    0%   { opacity: 0; transform: scale(0.96); }
+    12%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.04); }
+  }
+  .ll-flash-bg   { animation: ll-flash-bg 1200ms cubic-bezier(.2,.8,.2,1) forwards; }
+  .ll-flash-ring { animation: ll-flash-ring 1400ms cubic-bezier(.2,.8,.2,1) forwards; }
+  `;
+  const style = document.createElement("style");
+  style.textContent = css;
+  document.head.appendChild(style);
+  flashStylesInjected = true;
+}
 
 export default function EntryCard({
   r,
@@ -39,6 +63,12 @@ export default function EntryCard({
     else next.add(idx);
     setExpanded(next);
   }
+
+  // Premium flash styles (inject once)
+  const isFlashing = r._id && flashId && r._id === flashId;
+  useEffect(() => {
+    if (isFlashing) ensureFlashStyles();
+  }, [isFlashing]);
 
   // --- EDITING VIEW ---
   if (isEditing) {
@@ -159,21 +189,16 @@ export default function EntryCard({
   }
 
   // --- READ-ONLY VIEW ---
-  const isFlashing = r._id && flashId && r._id === flashId;
-
   return (
     <div
       className={cn(
-        "relative bg-zinc-900 border border-zinc-800 rounded-xl p-3 transition-colors duration-700",
-        isFlashing && "bg-emerald-600/20"
+        "relative bg-zinc-900 border border-zinc-800 rounded-xl p-3 transition-colors",
+        isFlashing && "ll-flash-bg"
       )}
     >
-      {/* Flash overlay (very visible): static ring + ping */}
+      {/* Premium ring overlay */}
       {isFlashing && (
-        <>
-          <span className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-emerald-500" />
-          <span className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-emerald-500 animate-ping" />
-        </>
+        <span className="pointer-events-none absolute inset-0 rounded-xl border-2 border-emerald-500 ll-flash-ring" />
       )}
 
       <div className="flex items-start gap-3">
