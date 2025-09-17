@@ -24,17 +24,21 @@ export default function AddForm({
   );
 
   function normalizeApi(obj) {
-    // Make all keys lower-case for tolerant access
     const lower = {};
     for (const [k, v] of Object.entries(obj || {})) lower[String(k).toLowerCase()] = v;
-
-    // Support both camelCase and lowercase snake-ish keys
     return {
       ok: !!(obj && (obj.ok === true || String(lower.ok) === "true")),
-      sourcelang:
-        String(lower.sourcelang ?? lower.sourcelanguage ?? lower.sourcelangauge ?? lower.sourcelan ?? lower.sourcelangue ?? lower.sourcelangage ?? lower.sourcelangug ?? "").toLowerCase(),
-      targetlang:
-        String(lower.targetlang ?? lower.targetlanguage ?? lower.targetlan ?? "").toLowerCase(),
+      sourcelang: String(
+        lower.sourcelang ??
+          lower.sourcelanguage ??
+          lower.sourcelangauge ??
+          lower.sourcelan ??
+          lower.sourcelangue ??
+          lower.sourcelangage ??
+          lower.sourcelangug ??
+          ""
+      ).toLowerCase(),
+      targetlang: String(lower.targetlang ?? lower.targetlanguage ?? lower.targetlan ?? "").toLowerCase(),
       translation: String(lower.translation ?? lower.lt ?? lower.lithuanian ?? "").trim(),
       phonetic: String(lower.phonetic ?? lower.pronunciation ?? "").trim(),
       usage: String(lower.usage ?? "").trim(),
@@ -56,7 +60,6 @@ export default function AddForm({
         body: JSON.stringify({ text, from: "en", to: "lt" }),
       });
 
-      // Be lenient: try JSON first; if that fails, try text→JSON.
       let raw;
       try {
         raw = await r.json();
@@ -187,33 +190,35 @@ export default function AddForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-        <div>
-          <div className="text-xs mb-1">{T.sheet}</div>
-          <select
-            value={sheet}
-            onChange={(e) => setSheet(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+      <div className="grid grid-cols-3 gap-2 items-center">
+        {/* Cancel – left */}
+        <div className="justify-self-start">
+          <button
+            onClick={() => (onClose ? onClose() : resetForm())}
+            className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
           >
-            {["Phrases", "Questions", "Words", "Numbers"].map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+            {T.cancel}
+          </button>
         </div>
 
-        <div className="flex gap-2 justify-end">
+        {/* Translate – center (amber) */}
+        <div className="justify-self-center">
           <button
             onClick={translate}
             disabled={busy || !english.trim()}
-            className={`px-3 py-2 rounded-md border ${
-              busy ? "opacity-60 cursor-not-allowed" : ""
-            } bg-zinc-800 border-zinc-700`}
+            className={`px-3 py-2 rounded-md font-semibold ${
+              busy || !english.trim()
+                ? "bg-amber-600/50 cursor-not-allowed"
+                : "bg-amber-600 hover:bg-amber-500"
+            }`}
             title="Translate English → Lithuanian"
           >
             {busy ? "Translating…" : "Translate"}
           </button>
+        </div>
+
+        {/* Save – right (green) */}
+        <div className="justify-self-end">
           <button
             onClick={save}
             disabled={!canSave || !lithuanian.trim()}
@@ -224,12 +229,6 @@ export default function AddForm({
             }`}
           >
             {T.save}
-          </button>
-          <button
-            onClick={() => (onClose ? onClose() : resetForm())}
-            className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
-          >
-            {T.cancel}
           </button>
         </div>
       </div>
