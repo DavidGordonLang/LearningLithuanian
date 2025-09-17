@@ -5,19 +5,15 @@ let flashStylesInjected = false;
 function ensureFlashStyles() {
   if (flashStylesInjected) return;
   const css = `
-  /* Quick in (12%), slow out (→100%) */
-  @keyframes ll-flash-bg {
+  /* Quick ramp-up (~12%), long fade-out */
+  @keyframes ll-flash-soft {
     0%   { background-color: rgba(16,185,129,0); }
-    12%  { background-color: rgba(16,185,129,0.22); }
-    100% { background-color: rgba(16,185,129,0); }
+    12%  { background-color: rgba(16,185,129,0.20); } /* fast in */
+    100% { background-color: rgba(16,185,129,0); }    /* slow out */
   }
-  @keyframes ll-flash-ring {
-    0%   { opacity: 0; transform: scale(0.96); }
-    12%  { opacity: 1; transform: scale(1); }
-    100% { opacity: 0; transform: scale(1.04); }
+  .ll-flash-soft {
+    animation: ll-flash-soft 1200ms cubic-bezier(.2,.8,.2,1) forwards;
   }
-  .ll-flash-bg   { animation: ll-flash-bg 1200ms cubic-bezier(.2,.8,.2,1) forwards; }
-  .ll-flash-ring { animation: ll-flash-ring 1400ms cubic-bezier(.2,.8,.2,1) forwards; }
   `;
   const style = document.createElement("style");
   style.textContent = css;
@@ -64,7 +60,7 @@ export default function EntryCard({
     setExpanded(next);
   }
 
-  // Premium flash styles (inject once)
+  // Simple premium flash (soft tint only, no ring/pulse)
   const isFlashing = r._id && flashId && r._id === flashId;
   useEffect(() => {
     if (isFlashing) ensureFlashStyles();
@@ -190,15 +186,13 @@ export default function EntryCard({
 
   // --- READ-ONLY VIEW ---
   return (
-    <div
-      className={cn(
-        "relative bg-zinc-900 border border-zinc-800 rounded-xl p-3 transition-colors",
-        isFlashing && "ll-flash-bg"
-      )}
-    >
-      {/* Premium ring overlay */}
+    <div className={cn("relative bg-zinc-900 border border-zinc-800 rounded-xl p-3 transition-colors")}>
+      {/* Soft highlight overlay (no ring, no pulse) */}
       {isFlashing && (
-        <span className="pointer-events-none absolute inset-0 rounded-xl border-2 border-emerald-500 ll-flash-ring" />
+        <>
+          {ensureFlashStyles()}
+          <span className="pointer-events-none absolute inset-0 rounded-xl ll-flash-soft" />
+        </>
       )}
 
       <div className="flex items-start gap-3">
