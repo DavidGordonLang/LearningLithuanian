@@ -3,8 +3,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useDeferredValue,
-  startTransition,
   forwardRef,
   memo,
 } from "react";
@@ -13,12 +11,11 @@ import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 
 /**
- * Lithuanian Trainer — App.jsx (keyboard-stability fix)
- * Changes from your enhanced build:
- * 1) Removed global focus "sticky" patches that refocused elements on input/blur.
- * 2) Simplified SearchBox: no auto-refocus on blur; lets the browser manage focus (IME stays open).
- * 3) On any play press (tap/long-press), blur the active element before playing audio so keyboard won't appear.
- * Visual/UI and all features preserved.
+ * Lithuanian Trainer — App.jsx (IME-stable search)
+ * Fixes:
+ * - Remove useDeferredValue + startTransition on the search input.
+ * - Gate heavy filtering while user is composing IME text.
+ * - Keep “blur on play” so keyboard doesn’t pop when playing audio.
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -240,7 +237,7 @@ function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = (Math.random() * (i + 1)) | 0;
-    [a[i], a[j]] = [a[j], a[i]];
+    [a[i], a[j]] = [a[j]];
   }
   return a;
 }
@@ -330,21 +327,23 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 }
 
 /** -------------------------
- *  SearchBox (stable input)
- *  - Removed auto-refocus onBlur to prevent keyboard flicker
- *  - No capture-level tricks; let browser manage focus
+ *  SearchBox (IME-stable)
+ *  - No startTransition/useDeferredValue on input.
+ *  - Composition guards prevent heavy re-filtering mid-keystroke.
  * ------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox(
-    { value, onChangeValue, placeholder },
+    { value, onChangeValue, placeholder, onCompStart, onCompEnd },
     ref
   ) {
     return (
-      <div className="relative flex-1" data-skip-sticky>
+      <div className="relative flex-1">
         <input
           ref={ref}
           value={value}
           onChange={(e) => onChangeValue(e.target.value)}
+          onCompositionStart={onCompStart}
+          onCompositionEnd={onCompEnd}
           placeholder={placeholder}
           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
           autoComplete="off"
@@ -402,8 +401,8 @@ export default function App() {
   }, []);
 
   const [tab, setTab] = useState("Phrases");
-  const [q, setQ] = useState("");
-  const dq = useDeferredValue(q); // defers heavy filtering while typing
+  const [q, setQ] = useState("");              // controlled input value
+  const composingRef = useRef(false);          // IME composition flag
   const searchRef = useRef(null);
 
   const [sortMode, setSortMode] = useState(
@@ -489,10 +488,6 @@ export default function App() {
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
-  // NOTE: Removed the previous global focus patches that tried to refocus inputs.
-  // They were the likely cause of the keyboard collapsing after each keystroke
-  // (due to blur/refocus loops and composition interference).
-
   // audio helpers
   async function playText(text, { slow = false } = {}) {
     try {
@@ -532,7 +527,7 @@ export default function App() {
     }
   }
 
-  // Press handlers — modified to blur active input so keyboard doesn't appear on play
+  // Press handlers — blur active input so keyboard doesn't appear on play
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -541,7 +536,6 @@ export default function App() {
     const start = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      // >>> KEY FIX: blur any focused input to prevent keyboard from popping up
       try {
         const ae = document.activeElement;
         if (ae && typeof ae.blur === "function") ae.blur();
@@ -582,8 +576,10 @@ export default function App() {
   }
 
   // ---- FILTERING / SORTING
+  // IME guard: while composing, avoid heavy filtering; show last committed query.
+  const qCommitted = composingRef.current ? q : q;
+  const qNorm = qCommitted.trim().toLowerCase();
 
-  const qNorm = dq.trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
@@ -1254,7 +1250,13 @@ export default function App() {
           <SearchBox
             ref={searchRef}
             value={q}
-            onChangeValue={(val) => startTransition(() => setQ(val))}
+            onChangeValue={(val) => setQ(val)}
+            onCompStart={() => {
+              composingRef.current = true;
+            }}
+            onCompEnd={() => {
+              composingRef.current = false;
+            }}
             placeholder={T.search}
           />
           <div className="flex items-center gap-2">
