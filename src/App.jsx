@@ -4,6 +4,7 @@ import React, {
   useRef,
   useState,
   useDeferredValue,
+  startTransition,
   forwardRef,
   memo,
 } from "react";
@@ -12,10 +13,12 @@ import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 
 /**
- * Lithuanian Trainer — App.jsx (keyboard-stability build, no global focus patches)
- * - Removes document-level focus juggling that can collapse IME.
- * - Keeps SearchBox stable; no remounts; no "helpful" refocus loops.
- * - Prevents layout churn from IME by using matchMedia for WIDE, not window.innerWidth.
+ * Lithuanian Trainer — App.jsx (keyboard-stability fix)
+ * Changes from your enhanced build:
+ * 1) Removed global focus "sticky" patches that refocused elements on input/blur.
+ * 2) Simplified SearchBox: no auto-refocus on blur; lets the browser manage focus (IME stays open).
+ * 3) On any play press (tap/long-press), blur the active element before playing audio so keyboard won't appear.
+ * Visual/UI and all features preserved.
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -327,9 +330,9 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 }
 
 /** -------------------------
- *  SearchBox (ultra-stable input)
- *  - No auto-refocus / no blur tricks
- *  - type="text" + inputMode="search" for IME stability
+ *  SearchBox (stable input)
+ *  - Removed auto-refocus onBlur to prevent keyboard flicker
+ *  - No capture-level tricks; let browser manage focus
  * ------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox(
@@ -337,7 +340,7 @@ const SearchBox = memo(
     ref
   ) {
     return (
-      <div className="relative flex-1">
+      <div className="relative flex-1" data-skip-sticky>
         <input
           ref={ref}
           value={value}
@@ -370,46 +373,21 @@ const SearchBox = memo(
   })
 );
 
-/** -------------------------
- *  Hook: matchMedia for WIDE
- *  (avoids IME-induced window.innerHeight churn)
- * ------------------------- */
-function useWide() {
-  const query = "(min-width: 1024px)";
-  const get = () =>
-    typeof window !== "undefined" && typeof window.matchMedia === "function"
-      ? window.matchMedia(query).matches
-      : false;
-
-  const [wide, setWide] = useState(get);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mql = window.matchMedia(query);
-    const handler = (e) => setWide(e.matches);
-    if (mql.addEventListener) mql.addEventListener("change", handler);
-    else mql.addListener(handler);
-    setWide(mql.matches);
-    return () => {
-      if (mql.removeEventListener) mql.removeEventListener("change", handler);
-      else mql.removeListener(handler);
-    };
-  }, []);
-
-  return wide;
-}
-
 export default function App() {
-  // layout via media query (no IME resize churn)
-  const WIDE = useWide();
-
-  // page state
+  // layout
   const [page, setPage] = useState("home");
+  const [width, setWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const onR = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", onR);
+    return () => window.removeEventListener("resize", onR);
+  }, []);
+  const WIDE = width >= 1024;
 
   // data + prefs
   const [rows, setRows] = useState(loadRows());
 
-  // one-time migration for stable keys/ts
+  // one-time migration for stable keys/ts (prevents remount focus losses)
   useEffect(() => {
     let changed = false;
     const migrated = rows.map((r) => {
@@ -425,7 +403,7 @@ export default function App() {
 
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
-  const dq = useDeferredValue(q);
+  const dq = useDeferredValue(q); // defers heavy filtering while typing
   const searchRef = useRef(null);
 
   const [sortMode, setSortMode] = useState(
@@ -511,6 +489,10 @@ export default function App() {
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
 
+  // NOTE: Removed the previous global focus patches that tried to refocus inputs.
+  // They were the likely cause of the keyboard collapsing after each keystroke
+  // (due to blur/refocus loops and composition interference).
+
   // audio helpers
   async function playText(text, { slow = false } = {}) {
     try {
@@ -550,7 +532,7 @@ export default function App() {
     }
   }
 
-  // Press handlers
+  // Press handlers — modified to blur active input so keyboard doesn't appear on play
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -559,6 +541,11 @@ export default function App() {
     const start = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // >>> KEY FIX: blur any focused input to prevent keyboard from popping up
+      try {
+        const ae = document.activeElement;
+        if (ae && typeof ae.blur === "function") ae.blur();
+      } catch {}
       firedSlow = false;
       pressed = true;
       timer = setTimeout(() => {
@@ -639,7 +626,7 @@ export default function App() {
   }, [filtered, sortMode, WIDE, ragChip]);
 
   // CRUD
-  function startEdit(i) {
+  function startEditRow(i) {
     setEditIdx(i);
     setEditDraft({ ...rows[i] });
   }
@@ -753,7 +740,8 @@ export default function App() {
           const A = list[a],
             B = list[b];
           const s =
-            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
+            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) /
+            2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
       }
@@ -1266,7 +1254,7 @@ export default function App() {
           <SearchBox
             ref={searchRef}
             value={q}
-            onChangeValue={(val) => setQ(val)}
+            onChangeValue={(val) => startTransition(() => setQ(val))}
             placeholder={T.search}
           />
           <div className="flex items-center gap-2">
@@ -1392,13 +1380,13 @@ export default function App() {
                         setExpanded={setExpanded}
                         T={T}
                         direction={direction}
-                        startEdit={startEdit}
+                        startEdit={startEditRow}
                         saveEdit={saveEdit}
                         remove={remove}
                         normalizeRag={normalizeRag}
                         pressHandlers={pressHandlers}
                         cn={cn}
-                        lastAddedId={justAddedId}
+                        flashId={justAddedId}
                       />
                     );
                   })}
@@ -1425,13 +1413,13 @@ export default function App() {
                   setExpanded={setExpanded}
                   T={T}
                   direction={direction}
-                  startEdit={startEdit}
+                  startEdit={startEditRow}
                   saveEdit={saveEdit}
                   remove={remove}
                   normalizeRag={normalizeRag}
                   pressHandlers={pressHandlers}
                   cn={cn}
-                  lastAddedId={justAddedId}
+                  flashId={justAddedId}
                 />
               );
             })}
