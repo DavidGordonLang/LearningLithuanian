@@ -9,6 +9,7 @@ html, body, #root {
 body {
   background-color: #0a0a0b; /* matches bg-zinc-950 */
   color: #e5e7eb;            /* text-zinc-200-ish */
+  overscroll-behavior-y: none; /* avoid scroll chaining that can bump focus */
 }
 
 /* Safe areas for notches */
@@ -23,4 +24,9 @@ body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/* Prevent accidental focus loss caused by pointer ripple overlays (none here, but safe) */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
 }
