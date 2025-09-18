@@ -5,18 +5,19 @@ import React, {
   useState,
   forwardRef,
   memo,
+  startTransition,
 } from "react";
 import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 
 /**
- * App.jsx — keyboard stability (uncontrolled search + sticky bar)
- * - SearchBox is now UNCONTROLLED to avoid React-driven value updates per keystroke.
- * - We mirror the input into state via onInput (rAF) for filtering.
- * - Search row is sticky to isolate it from list layout changes (prevents VK drops).
- * - Play buttons still blur before audio to prevent keyboard popping up on play.
- * - Fixed prop name: pass `lastAddedId` to EntryCard (was `flashId`).
+ * App.jsx — VK stability: debounced search + IME-safe + uncontrolled input
+ * - Uncontrolled search input (React doesn’t write to it while typing)
+ * - We debounce mirroring into state by 200ms (no list churn on every keystroke)
+ * - IME composition guarded (no updates until compositionend)
+ * - Play buttons still blur active input (no VK pop on play)
+ * - Correct prop name: lastAddedId -> EntryCard
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -98,7 +99,7 @@ const STR = {
     removeSelected: "Remove selected",
     similarity: "Similarity",
     prompt: "Prompt",
-    chooseLT: "Choose the Lithuanian",
+    chooseLT: "Choose the Lithuanuanian",
     correct: "Correct!",
     notQuite: "Not quite.",
     nextQuestion: "Next Question",
@@ -175,7 +176,7 @@ const STR = {
   },
 };
 
-// ---- LocalStorage helpers
+// storage helpers
 const saveRows = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadRows = () => {
   try {
@@ -186,8 +187,6 @@ const loadRows = () => {
     return [];
   }
 };
-
-// Robust XP
 const loadXP = () => {
   try {
     const v = Number(localStorage.getItem(LSK_XP) ?? "0");
@@ -198,7 +197,6 @@ const loadXP = () => {
 };
 const saveXP = (xp) =>
   localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
-
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const loadStreak = () => {
   try {
@@ -210,11 +208,10 @@ const loadStreak = () => {
 };
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
 
-// ---- Utils
+// utils
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
 const cn = (...xs) => xs.filter(Boolean).join(" ");
-
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
@@ -270,7 +267,7 @@ function sim2(a = "", b = "") {
   return (2 * inter) / (g1.length + g2.length);
 }
 
-// ---- Voices / TTS
+// TTS
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -324,25 +321,44 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
-/** -------------------------
- *  SearchBox (UNCONTROLLED)
- * ------------------------- */
+/* ----------------------------
+ * Debounced, IME-safe SearchBox
+ * ---------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox(
-    { defaultValue, onUserInput, placeholder },
+    { placeholder, onDebouncedChange, delay = 200 },
     ref
   ) {
-    const rafRef = useRef(0);
+    const tRef = useRef(0);
+    const composingRef = useRef(false);
+
+    const flush = (value) => {
+      // Defer to low priority to avoid jank
+      startTransition(() => onDebouncedChange(value));
+    };
+
     return (
       <div className="relative flex-1">
         <input
           ref={ref}
-          defaultValue={defaultValue}
-          onInput={(e) => {
-            // Mirror user input to state on the next frame to avoid sync layout.
-            cancelAnimationFrame(rafRef.current);
+          defaultValue=""
+          onCompositionStart={() => {
+            composingRef.current = true;
+            // while composing, do not update the list
+            if (tRef.current) clearTimeout(tRef.current);
+          }}
+          onCompositionEnd={(e) => {
+            composingRef.current = false;
             const val = e.currentTarget.value;
-            rafRef.current = requestAnimationFrame(() => onUserInput(val));
+            // commit immediately at composition end
+            flush(val);
+          }}
+          onInput={(e) => {
+            // while composing an IME sequence, ignore
+            if (composingRef.current) return;
+            const val = e.currentTarget.value;
+            if (tRef.current) clearTimeout(tRef.current);
+            tRef.current = window.setTimeout(() => flush(val), delay);
           }}
           placeholder={placeholder}
           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
@@ -354,7 +370,6 @@ const SearchBox = memo(
           inputMode="search"
           type="text"
         />
-        {/* Clear button (manually clears the field & notifies parent) */}
         <button
           type="button"
           tabIndex={-1}
@@ -367,7 +382,7 @@ const SearchBox = memo(
               el.value = "";
               el.focus();
             }
-            onUserInput("");
+            flush("");
           }}
           aria-label="Clear"
         >
@@ -391,8 +406,9 @@ export default function App() {
 
   // data + prefs
   const [rows, setRows] = useState(loadRows());
+  useEffect(() => saveRows(rows), [rows]);
 
-  // one-time migration for stable keys/ts
+  // one-time migration for stable keys
   useEffect(() => {
     let changed = false;
     const migrated = rows.map((r) => {
@@ -407,7 +423,11 @@ export default function App() {
   }, []);
 
   const [tab, setTab] = useState("Phrases");
-  const [q, setQ] = useState("");              // mirrored search text
+
+  // SEARCH:
+  // - qLive is not used for filtering; it’s just here if you ever want to show the live text.
+  // - qFilter is the debounced value that actually drives the list.
+  const [qFilter, setQFilter] = useState("");
   const searchRef = useRef(null);
 
   const [sortMode, setSortMode] = useState(
@@ -490,9 +510,6 @@ export default function App() {
   // audio instance
   const audioRef = useRef(null);
 
-  // persist rows
-  useEffect(() => saveRows(rows), [rows]);
-
   // audio helpers
   async function playText(text, { slow = false } = {}) {
     try {
@@ -531,7 +548,7 @@ export default function App() {
     }
   }
 
-  // press handlers — blur focused input to prevent VK pop on play
+  // Press handlers — blur active input so VK doesn't pop on play
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -579,8 +596,8 @@ export default function App() {
     };
   }
 
-  // ---- FILTERING / SORTING
-  const qNorm = q.trim().toLowerCase();
+  // ---- FILTERING / SORTING (uses qFilter only)
+  const qNorm = qFilter.trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
@@ -616,7 +633,7 @@ export default function App() {
   }, [filtered]);
 
   const [ragChip, setRagChip] = useState("All");
-  const chipFiltered = useMemo(() => {
+  const WIDE_RAG_LIST = useMemo(() => {
     if (sortMode !== "RAG" || WIDE) return filtered;
     if (ragChip === "All") return filtered;
     return filtered.filter((r) => normalizeRag(r["RAG Icon"]) === ragChip);
@@ -637,7 +654,7 @@ export default function App() {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // library: import/starters/clear/dupes
+  // library ops
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -675,7 +692,6 @@ export default function App() {
       alert("Starter error: " + e.message);
     }
   }
-
   async function installNumbersOnly() {
     const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(
       Boolean
@@ -699,7 +715,6 @@ export default function App() {
     await mergeRows(found);
     alert(`Installed ${found.length} Numbers item(s).`);
   }
-
   async function importJsonFile(file) {
     try {
       const data = JSON.parse(await file.text());
@@ -715,7 +730,7 @@ export default function App() {
     setRows([]);
   }
 
-  // Duplicate finder
+  // dupes
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
   function scanDupes() {
     const map = new Map();
@@ -725,7 +740,6 @@ export default function App() {
     });
     const exact = [];
     for (const arr of map.values()) if (arr.length > 1) exact.push(arr);
-
     const close = [];
     const bySheet = rows.reduce((acc, r, i) => {
       (acc[r.Sheet] ||= []).push({ r, i });
@@ -734,11 +748,9 @@ export default function App() {
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a],
-            B = list[b];
+          const A = list[a], B = list[b];
           const s =
-            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) /
-            2;
+            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
       }
@@ -874,10 +886,9 @@ export default function App() {
     );
   }
 
-  // ---------- Add Modal state ----------
+  // Add modal
   const [addOpen, setAddOpen] = useState(false);
   const [justAddedId, setJustAddedId] = useState(null);
-
   const setRowsFromAddForm = React.useCallback((updater) => {
     setRows((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -890,181 +901,199 @@ export default function App() {
       return next;
     });
   }, []);
-  // ------------------------------------
 
-  function HomeView() {
+  function LibraryView() {
+    const fileRef = useRef(null);
     return (
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-        {/* Sticky search + sort row */}
-        <div
-          className="sticky z-30 top-[52px] sm:top-[56px] bg-zinc-950/95 backdrop-blur pt-3 pb-2"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div className="flex items-center gap-2">
-            <SearchBox
-              ref={searchRef}
-              defaultValue=""
-              onUserInput={(val) => setQ(val)}
-              placeholder={T.search}
-            />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400">{T.sort}</span>
-              <select
-                className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value)}
-              >
-                <option value="RAG">{T.rag}</option>
-                <option value="Newest">{T.newest}</option>
-                <option value="Oldest">{T.oldest}</option>
-              </select>
-            </div>
-          </div>
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => fetchStarter("EN2LT")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="English prompts → Lithuanian answers. Installs EN→LT starter."
+          >
+            {T.installEN}
+          </button>
         </div>
 
-        {/* Streak + Level */}
-        <div className="mt-2 flex items-center gap-3">
-          <div className="text-xs text-zinc-400">
-            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
-          </div>
-          <div className="text-xs text-zinc-400">
-            🥇 {T.level} <span className="font-semibold">{level}</span>
-          </div>
-          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-            <div
-              className="h-full bg-emerald-600"
-              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
-            />
-          </div>
-          <div className="text-xs text-zinc-400">
-            {levelProgress} / {LEVEL_STEP} XP
-          </div>
+        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => fetchStarter("LT2EN")}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Lithuanian prompts → English answers. Installs LT→EN starter."
+          >
+            {T.installLT}
+          </button>
+          <button
+            onClick={installNumbersOnly}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Adds only entries from the Numbers sheet in the starter files."
+          >
+            {T.installNums}
+          </button>
         </div>
 
-        {/* Tabs (with highlights while searching) */}
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
-            const hits = sheetCounts?.[t] || 0;
-            const searching = !!qNorm;
-            const isActive = tab === t;
-            const base =
-              "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
-            const normal = isActive
-              ? "bg-emerald-600 border-emerald-600"
-              : "bg-zinc-900 border-zinc-800";
-            const highlighted =
-              hits > 0
-                ? "ring-2 ring-emerald-500 ring-offset-0"
-                : searching
-                ? "opacity-60"
-                : "";
-            return (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={cn(base, normal, highlighted)}
-                title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
-              >
-                {t === "Phrases"
-                  ? T.phrases
-                  : t === "Questions"
-                  ? T.questions
-                  : t === "Words"
-                  ? T.words
-                  : T.numbers}
-                {hits > 0 && (
-                  <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
-                    {hits}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <div className="mt-3 col-span-1 sm:col-span-3 flex items-center gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importJsonFile(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Import a custom JSON array of entries."
+          >
+            {T.importJSON}
+          </button>
+          <button
+            onClick={() => {
+              try {
+                const blob = new Blob([JSON.stringify(rows, null, 2)], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "lithuanian_trainer_export.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (e) {
+                alert("Export failed: " + e.message);
+              }
+            }}
+            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+            title="Export your current library as JSON."
+          >
+            Export JSON
+          </button>
+          <button
+            onClick={clearLibrary}
+            className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
+            title="Remove all entries from your library."
+          >
+            {T.clearAll}
+          </button>
         </div>
 
-        {/* Tri-column grid (wide) or list (mobile) */}
-        {sortMode === "RAG" && WIDE ? (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {["🔴", "🟠", "🟢"].map((k) => (
-              <div key={k}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
-                    {k}
-                  </span>
-                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
-                </div>
-                <div className="space-y-2">
-                  {ragBuckets[k].map((r) => {
-                    const idx = rows.indexOf(r);
+        {/* Duplicates */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-lg font-semibold">{T.dupFinder}</div>
+            <button onClick={scanDupes} className="bg-zinc-800 px-3 py-2 rounded-md">
+              {T.scan}
+            </button>
+          </div>
+
+          {/* Exact duplicates */}
+          <div className="text-sm text-zinc-400 mb-2">
+            {T.exactGroups}: {dupeResults.exact.length} group(s)
+          </div>
+          <div className="space-y-3 mb-6">
+            {dupeResults.exact.map((group, gi) => (
+              <div key={gi} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {group.map((ridx) => {
+                    const row = rows[ridx];
                     return (
-                      <EntryCard
-                        key={r._id || idx}
-                        r={r}
-                        idx={idx}
-                        rows={rows}
-                        setRows={setRows}
-                        editIdx={editIdx}
-                        setEditIdx={setEditIdx}
-                        editDraft={editDraft}
-                        setEditDraft={setEditDraft}
-                        expanded={expanded}
-                        setExpanded={setExpanded}
-                        T={T}
-                        direction={direction}
-                        startEdit={startEditRow}
-                        saveEdit={saveEdit}
-                        remove={remove}
-                        normalizeRag={normalizeRag}
-                        pressHandlers={pressHandlers}
-                        cn={cn}
-                        lastAddedId={justAddedId}
-                      />
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian}{" "}
+                          <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                        </div>
+                        {(row.Usage || row.Notes) && (
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && (
+                              <div>
+                                <span className="text-zinc-500">{T.usage}: </span>
+                                {row.Usage}
+                              </div>
+                            )}
+                            {row.Notes && (
+                              <div>
+                                <span className="text-zinc-500">{T.notes}: </span>
+                                {row.Notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button
+                            className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
+                          >
+                            {T.delete}
+                          </button>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="mt-4 space-y-2">
-            {chipFiltered.map((r) => {
-              const idx = rows.indexOf(r);
+
+          {/* Close matches */}
+          <div className="text-sm text-zinc-400 mb-2">
+            {T.closeMatches}: {dupeResults.close.length} pair(s)
+          </div>
+          <div className="space-y-3">
+            {dupeResults.close.map(([i, j, s]) => {
+              const A = rows[i], B = rows[j];
               return (
-                <EntryCard
-                  key={r._id || idx}
-                  r={r}
-                  idx={idx}
-                  rows={rows}
-                  setRows={setRows}
-                  editIdx={editIdx}
-                  setEditIdx={setEditIdx}
-                  editDraft={editDraft}
-                  setEditDraft={setEditDraft}
-                  expanded={expanded}
-                  setExpanded={setExpanded}
-                  T={T}
-                  direction={direction}
-                  startEdit={startEditRow}
-                  saveEdit={saveEdit}
-                  remove={remove}
-                  normalizeRag={normalizeRag}
-                  pressHandlers={pressHandlers}
-                  cn={cn}
-                  lastAddedId={justAddedId}
-                />
+                <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                  <div className="text-xs text-zinc-400 mb-2">
+                    {T.similarity}: {(s * 100).toFixed(0)}%
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[{ row: A, idx: i }, { row: B, idx: j }].map(
+                      ({ row, idx: ridx }) => (
+                        <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                          <div className="font-medium">
+                            {row.English} — {row.Lithuanian}{" "}
+                            <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                          </div>
+                          {(row.Usage || row.Notes) && (
+                            <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                              {row.Usage && (
+                                <div>
+                                  <span className="text-zinc-500">{T.usage}: </span>
+                                  {row.Usage}
+                                </div>
+                              )}
+                              {row.Notes && (
+                                <div>
+                                  <span className="text-zinc-500">{T.notes}: </span>
+                                  {row.Notes}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-2">
+                            <button
+                              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                              onClick={() =>
+                                setRows((prev) => prev.filter((_, ii) => ii !== ridx))
+                              }
+                            >
+                              {T.delete}
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
-        )}
-
-        {/* Floating Add (+) Button */}
-        <button
-          aria-label="Add entry"
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold"
-          onClick={() => setAddOpen(true)}
-        >
-          +
-        </button>
+        </div>
       </div>
     );
   }
@@ -1223,20 +1252,187 @@ export default function App() {
     );
   }
 
+  function HomeView() {
+    return (
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
+        {/* Sticky search + sort row */}
+        <div
+          className="sticky z-30 top-[52px] sm:top-[56px] bg-zinc-950/95 backdrop-blur pt-3 pb-2"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="flex items-center gap-2">
+            <SearchBox
+              ref={searchRef}
+              placeholder={T.search}
+              onDebouncedChange={(val) => setQFilter(val)}
+              delay={200}
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-400">{T.sort}</span>
+              <select
+                className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value)}
+              >
+                <option value="RAG">{T.rag}</option>
+                <option value="Newest">{T.newest}</option>
+                <option value="Oldest">{T.oldest}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Streak + Level */}
+        <div className="mt-2 flex items-center gap-3">
+          <div className="text-xs text-zinc-400">
+            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
+          </div>
+          <div className="text-xs text-zinc-400">
+            🥇 {T.level} <span className="font-semibold">{level}</span>
+          </div>
+          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
+            <div
+              className="h-full bg-emerald-600"
+              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
+            />
+          </div>
+          <div className="text-xs text-zinc-400">
+            {levelProgress} / {LEVEL_STEP} XP
+          </div>
+        </div>
+
+        {/* Tabs (with highlights while searching) */}
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
+            const hits = (qNorm
+              ? rows.filter((r) =>
+                  ((r.English || "").toLowerCase().includes(qNorm)) ||
+                  ((r.Lithuanian || "").toLowerCase().includes(qNorm))
+                ).filter((r) => r.Sheet === t).length
+              : 0);
+            const searching = !!qNorm;
+            const isActive = tab === t;
+            const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
+            const normal = isActive
+              ? "bg-emerald-600 border-emerald-600"
+              : "bg-zinc-900 border-zinc-800";
+            const highlighted =
+              hits > 0
+                ? "ring-2 ring-emerald-500 ring-offset-0"
+                : searching
+                ? "opacity-60"
+                : "";
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(base, normal, highlighted)}
+                title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
+              >
+                {t === "Phrases" ? T.phrases : t === "Questions" ? T.questions : t === "Words" ? T.words : T.numbers}
+                {hits > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
+                    {hits}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tri-column grid (wide) or list (mobile) */}
+        {sortMode === "RAG" && WIDE ? (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {["🔴", "🟠", "🟢"].map((k) => (
+              <div key={k}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
+                    {k}
+                  </span>
+                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
+                </div>
+                <div className="space-y-2">
+                  {ragBuckets[k].map((r) => {
+                    const idx = rows.indexOf(r);
+                    return (
+                      <EntryCard
+                        key={r._id || idx}
+                        r={r}
+                        idx={idx}
+                        rows={rows}
+                        setRows={setRows}
+                        editIdx={editIdx}
+                        setEditIdx={setEditIdx}
+                        editDraft={editDraft}
+                        setEditDraft={setEditDraft}
+                        expanded={expanded}
+                        setExpanded={setExpanded}
+                        T={T}
+                        direction={direction}
+                        startEdit={startEditRow}
+                        saveEdit={saveEdit}
+                        remove={remove}
+                        normalizeRag={normalizeRag}
+                        pressHandlers={pressHandlers}
+                        cn={cn}
+                        lastAddedId={justAddedId}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {WIDE_RAG_LIST.map((r) => {
+              const idx = rows.indexOf(r);
+              return (
+                <EntryCard
+                  key={r._id || idx}
+                  r={r}
+                  idx={idx}
+                  rows={rows}
+                  setRows={setRows}
+                  editIdx={editIdx}
+                  setEditIdx={setEditIdx}
+                  editDraft={editDraft}
+                  setEditDraft={setEditDraft}
+                  expanded={expanded}
+                  setExpanded={setExpanded}
+                  T={T}
+                  direction={direction}
+                  startEdit={startEditRow}
+                  saveEdit={saveEdit}
+                  remove={remove}
+                  normalizeRag={normalizeRag}
+                  pressHandlers={pressHandlers}
+                  cn={cn}
+                  lastAddedId={justAddedId}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Floating Add (+) Button */}
+        <button
+          aria-label="Add entry"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold"
+          onClick={() => setAddOpen(true)}
+        >
+          +
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
+      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
-      {page === "library" ? (
-        <HomeView /> && <div /> /* noop to keep structure symmetric */
-      ) : page === "settings" ? (
-        <SettingsView />
-      ) : (
-        <HomeView />
-      )}
-
-      {/* Quiz modal */}
-      {/* ... unchanged from your last version ... */}
+      {/* Quiz modal unchanged from your version */}
 
       {/* Add Entry Modal */}
       {addOpen && (
