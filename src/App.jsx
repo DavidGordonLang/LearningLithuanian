@@ -12,12 +12,13 @@ import React, {
 import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
+import SearchDock from "./components/SearchDock";
 import { searchStore } from "./searchStore";
 
 /**
- * App.jsx — Search isolated via external store (VK-stable)
- * - SearchBox never re-renders after mount (no changing props)
- * - IME-safe + anti-blur refocus + debounced publishing to store
+ * App.jsx — VK-stable search via portal + external store
+ * - SearchBox is remount-proof, IME-safe, blur-guarded
+ * - SearchDock portals the search to document.body (fixed) to escape list churn
  * - List subscribes to debounced search via useSyncExternalStore
  */
 
@@ -216,7 +217,11 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s)) return "🟠";
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
+    return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
@@ -250,7 +255,8 @@ function sim2(a = "", b = "") {
     for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
     return g;
   };
-  const g1 = grams(s1), g2 = grams(s2);
+  const g1 = grams(s1),
+    g2 = grams(s2);
   const map = new Map();
   g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
   let inter = 0;
@@ -273,7 +279,8 @@ function useVoices() {
     };
     refresh();
     window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
-    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+    return () =>
+      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
   }, []);
   return voices;
 }
@@ -325,24 +332,24 @@ const SearchBox = memo(
     const inputRef = useRef(null);
     useImperativeHandle(ref, () => inputRef.current);
 
-    // push raw value to store (debounced inside the store)
     const flush = (value) => {
       startTransition(() => searchStore.setRaw(value));
     };
 
-    // 1) Hydrate from store on mount (handles unexpected remounts)
+    // Hydrate from store on mount (handles unexpected remounts)
     useEffect(() => {
       const el = inputRef.current;
       if (!el) return;
-      const raw = searchStore.getRaw(); // current live text user typed
+      const raw = searchStore.getRaw();
       if (raw && el.value !== raw) {
         el.value = raw;
-        // put caret at end
-        try { el.setSelectionRange(raw.length, raw.length); } catch {}
+        try {
+          el.setSelectionRange(raw.length, raw.length);
+        } catch {}
       }
     }, []);
 
-    // 1b) Also rehydrate when tabbing back into the page (mobile Safari quirks)
+    // Also rehydrate when tabbing back into the page
     useEffect(() => {
       const onVis = () => {
         if (document.visibilityState !== "visible") return;
@@ -355,7 +362,6 @@ const SearchBox = memo(
       return () => document.removeEventListener("visibilitychange", onVis);
     }, []);
 
-    // 2) If something steals focus, immediately reclaim it (unless it was our Clear button)
     function refocusSafely() {
       const el = inputRef.current;
       if (!el) return;
@@ -363,7 +369,9 @@ const SearchBox = memo(
         if (document.activeElement !== el) {
           el.focus({ preventScroll: true });
           const len = el.value?.length ?? 0;
-          try { el.setSelectionRange(len, len); } catch {}
+          try {
+            el.setSelectionRange(len, len);
+          } catch {}
         }
       });
     }
@@ -373,7 +381,6 @@ const SearchBox = memo(
         <input
           ref={inputRef}
           defaultValue=""
-          // NOTE: if iOS keeps being weird with search fields, swap to type="text"
           type="text"
           inputMode="search"
           enterKeyHint="search"
@@ -413,7 +420,6 @@ const SearchBox = memo(
             if (el) {
               el.value = "";
               el.focus();
-              // publish empty immediately so results clear fast
               startTransition(() => searchStore.clear());
             }
           }}
@@ -489,7 +495,9 @@ export default function App() {
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
-  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
+  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [
+    ttsProvider,
+  ]);
   const [azureKey, setAzureKey] = useState(
     () => localStorage.getItem(LSK_AZURE_KEY) || ""
   );
@@ -499,7 +507,8 @@ export default function App() {
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || "";
+      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
+        ?.shortName || "";
     } catch {
       return "";
     }
@@ -511,7 +520,10 @@ export default function App() {
     if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion);
   }, [azureRegion]);
   useEffect(() => {
-    localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
+    localStorage.setItem(
+      LSK_AZURE_VOICE,
+      JSON.stringify({ shortName: azureVoiceShortName })
+    );
   }, [azureVoiceShortName]);
 
   const voices = useVoices();
@@ -551,7 +563,13 @@ export default function App() {
       }
       if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
         const delta = slow ? "-40%" : "0%";
-        const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, delta);
+        const url = await speakAzureHTTP(
+          text,
+          azureVoiceShortName,
+          azureKey,
+          azureRegion,
+          delta
+        );
         const a = new Audio(url);
         audioRef.current = a;
         a.onended = () => {
@@ -626,10 +644,14 @@ export default function App() {
       ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
 
   const filtered = useMemo(() => {
-    const base = qNorm ? rows.filter(entryMatchesQuery) : rows.filter((r) => r.Sheet === tab);
+    const base = qNorm
+      ? rows.filter(entryMatchesQuery)
+      : rows.filter((r) => r.Sheet === tab);
 
-    if (sortMode === "Newest") return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
-    if (sortMode === "Oldest") return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+    if (sortMode === "Newest")
+      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+    if (sortMode === "Oldest")
+      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
 
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...base].sort(
@@ -664,7 +686,7 @@ export default function App() {
     setEditIdx(null);
   }
   function remove(i) {
-    if (!confirm(STR[direction].confirm)) return;
+    if (!confirm(T.confirm)) return;
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
@@ -707,7 +729,9 @@ export default function App() {
     }
   }
   async function installNumbersOnly() {
-    const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(Boolean);
+    const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(
+      Boolean
+    );
     let found = [];
     for (const url of urls) {
       try {
@@ -738,7 +762,7 @@ export default function App() {
     }
   }
   function clearLibrary() {
-    if (!confirm(STR[direction].confirm)) return;
+    if (!confirm(T.confirm)) return;
     setRows([]);
   }
 
@@ -760,9 +784,11 @@ export default function App() {
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a], B = list[b];
+          const A = list[a],
+            B = list[b];
           const s =
-            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) / 2;
+            (sim2(A.r.English, B.r.English) + sim2(A.r.Lithuanian, B.r.Lithuanian)) /
+            2;
           if (s >= 0.85) close.push([A.i, B.i, s]);
         }
       }
@@ -924,7 +950,7 @@ export default function App() {
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="English prompts → Lithuanian answers. Installs EN→LT starter."
           >
-            {STR[direction].installEN}
+            {T.installEN}
           </button>
         </div>
 
@@ -934,14 +960,14 @@ export default function App() {
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="Lithuanian prompts → English answers. Installs LT→EN starter."
           >
-            {STR[direction].installLT}
+            {T.installLT}
           </button>
           <button
             onClick={installNumbersOnly}
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="Adds only entries from the Numbers sheet in the starter files."
           >
-            {STR[direction].installNums}
+            {T.installNums}
           </button>
         </div>
 
@@ -962,7 +988,7 @@ export default function App() {
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
             title="Import a custom JSON array of entries."
           >
-            {STR[direction].importJSON}
+            {T.importJSON}
           </button>
           <button
             onClick={() => {
@@ -990,22 +1016,22 @@ export default function App() {
             className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2"
             title="Remove all entries from your library."
           >
-            {STR[direction].clearAll}
+            {T.clearAll}
           </button>
         </div>
 
         {/* Duplicates */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-lg font-semibold">{STR[direction].dupFinder}</div>
+            <div className="text-lg font-semibold">{T.dupFinder}</div>
             <button onClick={scanDupes} className="bg-zinc-800 px-3 py-2 rounded-md">
-              {STR[direction].scan}
+              {T.scan}
             </button>
           </div>
 
           {/* Exact duplicates */}
           <div className="text-sm text-zinc-400 mb-2">
-            {STR[direction].exactGroups}: {dupeResults.exact.length} group(s)
+            {T.exactGroups}: {dupeResults.exact.length} group(s)
           </div>
           <div className="space-y-3 mb-6">
             {dupeResults.exact.map((group, gi) => (
@@ -1023,13 +1049,13 @@ export default function App() {
                           <div className="mt-1 text-xs text-zinc-400 space-y-1">
                             {row.Usage && (
                               <div>
-                                <span className="text-zinc-500">{STR[direction].usage}: </span>
+                                <span className="text-zinc-500">{T.usage}: </span>
                                 {row.Usage}
                               </div>
                             )}
                             {row.Notes && (
                               <div>
-                                <span className="text-zinc-500">{STR[direction].notes}: </span>
+                                <span className="text-zinc-500">{T.notes}: </span>
                                 {row.Notes}
                               </div>
                             )}
@@ -1040,7 +1066,7 @@ export default function App() {
                             className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
                             onClick={() => setRows((prev) => prev.filter((_, ii) => ii !== ridx))}
                           >
-                            {STR[direction].delete}
+                            {T.delete}
                           </button>
                         </div>
                       </div>
@@ -1053,15 +1079,16 @@ export default function App() {
 
           {/* Close matches */}
           <div className="text-sm text-zinc-400 mb-2">
-            {STR[direction].closeMatches}: {dupeResults.close.length} pair(s)
+            {T.closeMatches}: {dupeResults.close.length} pair(s)
           </div>
           <div className="space-y-3">
             {dupeResults.close.map(([i, j, s]) => {
-              const A = rows[i], B = rows[j];
+              const A = rows[i],
+                B = rows[j];
               return (
                 <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
                   <div className="text-xs text-zinc-400 mb-2">
-                    {STR[direction].similarity}: {(s * 100).toFixed(0)}%
+                    {T.similarity}: {(s * 100).toFixed(0)}%
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[{ row: A, idx: i }, { row: B, idx: j }].map(
@@ -1075,13 +1102,13 @@ export default function App() {
                             <div className="mt-1 text-xs text-zinc-400 space-y-1">
                               {row.Usage && (
                                 <div>
-                                  <span className="text-zinc-500">{STR[direction].usage}: </span>
+                                  <span className="text-zinc-500">{T.usage}: </span>
                                   {row.Usage}
                                 </div>
                               )}
                               {row.Notes && (
                                 <div>
-                                  <span className="text-zinc-500">{STR[direction].notes}: </span>
+                                  <span className="text-zinc-500">{T.notes}: </span>
                                   {row.Notes}
                                 </div>
                               )}
@@ -1094,7 +1121,7 @@ export default function App() {
                                 setRows((prev) => prev.filter((_, ii) => ii !== ridx))
                               }
                             >
-                              {STR[direction].delete}
+                              {T.delete}
                             </button>
                           </div>
                         </div>
@@ -1110,202 +1137,19 @@ export default function App() {
     );
   }
 
-  function SettingsView() {
-    return (
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-20">
-        <div className="mt-4 bg-zinc-900 border border-zinc-700 rounded-2xl p-4 space-y-4">
-          <div className="text-lg font-semibold">{STR[direction].settings}</div>
-
-          <div>
-            <div className="text-xs mb-1">{STR[direction].direction}</div>
-            <div className="flex gap-2">
-              {["EN2LT", "LT2EN"].map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setDirection(d)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-sm border",
-                    direction === d
-                      ? "bg-emerald-600 border-emerald-600"
-                      : "bg-zinc-900 border-zinc-700"
-                  )}
-                  title={
-                    d === "EN2LT"
-                      ? "Prompts in English → answers in Lithuanian"
-                      : "Prompts in Lithuanian → answers in English"
-                  }
-                >
-                  {d === "EN2LT" ? STR[direction].en2lt : STR[direction].lt2en}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="text-xs mb-1">TTS</div>
-            <div className="flex flex-wrap gap-3">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="ttsprov"
-                  checked={ttsProvider === "browser"}
-                  onChange={() => setTtsProvider("browser")}
-                />{" "}
-                {STR[direction].browserVoice}
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="ttsprov"
-                  checked={ttsProvider === "azure"}
-                  onChange={() => setTtsProvider("azure")}
-                />{" "}
-                {STR[direction].azure}
-              </label>
-            </div>
-          </div>
-
-          {ttsProvider === "browser" && (
-            <div className="space-y-2">
-              <div className="text-xs mb-1">{STR[direction].voice}</div>
-              <select
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={browserVoiceName}
-                onChange={(e) => setBrowserVoiceName(e.target.value)}
-                title={STR[direction].browserVoice}
-              >
-                <option value="">Auto voice</option>
-                {voices.map((v) => (
-                  <option key={v.name} value={v.name}>
-                    {v.name} ({v.lang})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {ttsProvider === "azure" && (
-            <div className="space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <div className="text-xs mb-1">{STR[direction].subKey}</div>
-                  <input
-                    type="password"
-                    value={azureKey}
-                    onChange={(e) => setAzureKey(e.target.value)}
-                    placeholder="Azure key"
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <div className="text-xs mb-1">{STR[direction].region}</div>
-                  <input
-                    value={azureRegion}
-                    onChange={(e) => setAzureRegion(e.target.value)}
-                    placeholder="e.g. westeurope"
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <div className="text-xs mb-1">{STR[direction].voice}</div>
-                  <select
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    value={azureVoiceShortName}
-                    onChange={(e) => setAzureVoiceShortName(e.target.value)}
-                  >
-                    <option value="">{STR[direction].choose}</option>
-                    {azureVoices.map((v) => (
-                      <option key={v.shortName} value={v.shortName}>
-                        {v.displayName} ({v.shortName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  disabled={!azureRegion || !azureKey}
-                  onClick={async () => {
-                    if (!azureRegion || !azureKey) {
-                      alert("Enter Azure region and key first.");
-                      return;
-                    }
-                    try {
-                      const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-                      const res = await fetch(url, {
-                        headers: { "Ocp-Apim-Subscription-Key": azureKey },
-                      });
-                      if (!res.ok) throw new Error("Failed to fetch Azure voices");
-                      const data = await res.json();
-                      const vs = data.map((v) => ({
-                        shortName: v.ShortName,
-                        locale: v.Locale,
-                        displayName: v.LocalName || v.FriendlyName || v.ShortName,
-                      }));
-                      setAzureVoices(vs);
-                      if (!azureVoiceShortName && vs.length)
-                        setAzureVoiceShortName(vs[0].shortName);
-                    } catch (e) {
-                      alert(e.message);
-                    }
-                  }}
-                  className={`bg-zinc-800 px-3 py-2 rounded-md ${
-                    !azureRegion || !azureKey ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {STR[direction].fetchVoices}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   function HomeView() {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-        {/* Sticky search + sort row */}
-        <div
-          className="sticky z-30 top-[52px] sm:top-[56px] bg-zinc-950/95 backdrop-blur pt-3 pb-2"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-          onPointerDown={(e) => {
-            const tag = (e.target.tagName || "").toLowerCase();
-            const formy =
-              tag === "input" ||
-              tag === "button" ||
-              tag === "select" ||
-              tag === "label" ||
-              tag === "textarea";
-            if (!formy) e.preventDefault();
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <SearchBox placeholder={STR[direction].search} />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400">{STR[direction].sort}</span>
-              <select
-                className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value)}
-              >
-                <option value="RAG">{STR[direction].rag}</option>
-                <option value="Newest">{STR[direction].newest}</option>
-                <option value="Oldest">{STR[direction].oldest}</option>
-              </select>
-            </div>
-          </div>
-        </div>
+        {/* Spacer to account for fixed SearchDock height */}
+        <div style={{ height: 56 }} />
 
         {/* Streak + Level */}
         <div className="mt-2 flex items-center gap-3">
           <div className="text-xs text-zinc-400">
-            🔥 {STR[direction].streak}: <span className="font-semibold">{streak.streak}</span>
+            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
           </div>
           <div className="text-xs text-zinc-400">
-            🥇 {STR[direction].level} <span className="font-semibold">{level}</span>
+            🥇 {T.level} <span className="font-semibold">{level}</span>
           </div>
           <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
             <div
@@ -1321,16 +1165,28 @@ export default function App() {
         {/* Tabs (with highlights while searching) */}
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
-            const hits = (qNorm
+            const hits = qNorm
               ? rows
-                  .filter((r) => ((r.English || "").toLowerCase().includes(qNorm)) || ((r.Lithuanian || "").toLowerCase().includes(qNorm)))
+                  .filter(
+                    (r) =>
+                      (r.English || "").toLowerCase().includes(qNorm) ||
+                      (r.Lithuanian || "").toLowerCase().includes(qNorm)
+                  )
                   .filter((r) => r.Sheet === t).length
-              : 0);
+              : 0;
             const searching = !!qNorm;
-            const isActive = tab === t; // ✅ use real tab
-            const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
-            const normal = isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
-            const highlighted = hits > 0 ? "ring-2 ring-emerald-500 ring-offset-0" : searching ? "opacity-60" : "";
+            const isActive = tab === t;
+            const base =
+              "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
+            const normal = isActive
+              ? "bg-emerald-600 border-emerald-600"
+              : "bg-zinc-900 border-zinc-800";
+            const highlighted =
+              hits > 0
+                ? "ring-2 ring-emerald-500 ring-offset-0"
+                : searching
+                ? "opacity-60"
+                : "";
             return (
               <button
                 key={t}
@@ -1339,12 +1195,12 @@ export default function App() {
                 title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
               >
                 {t === "Phrases"
-                  ? STR[direction].phrases
+                  ? T.phrases
                   : t === "Questions"
-                  ? STR[direction].questions
+                  ? T.questions
                   : t === "Words"
-                  ? STR[direction].words
-                  : STR[direction].numbers}
+                  ? T.words
+                  : T.numbers}
                 {hits > 0 && (
                   <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
                     {hits}
@@ -1364,36 +1220,45 @@ export default function App() {
                   <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">
                     {k}
                   </span>
-                  <div className="text-sm text-zinc-400">{ragBuckets[k].length} item(s)</div>
+                  <div className="text-sm text-zinc-400">
+                    {
+                      filtered.filter(
+                        (r) => normalizeRag(r["RAG Icon"]) === k
+                      ).length
+                    }{" "}
+                    item(s)
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  {ragBuckets[k].map((r) => {
-                    const idx = rows.indexOf(r);
-                    return (
-                      <EntryCard
-                        key={r._id || idx}
-                        r={r}
-                        idx={idx}
-                        rows={rows}
-                        setRows={setRows}
-                        editIdx={editIdx}
-                        setEditIdx={setEditIdx}
-                        editDraft={editDraft}
-                        setEditDraft={setEditDraft}
-                        expanded={expanded}
-                        setExpanded={setExpanded}
-                        T={STR[direction]}
-                        direction={direction}
-                        startEdit={startEditRow}
-                        saveEdit={saveEdit}
-                        remove={remove}
-                        normalizeRag={normalizeRag}
-                        pressHandlers={pressHandlers}
-                        cn={cn}
-                        lastAddedId={justAddedId}
-                      />
-                    );
-                  })}
+                  {filtered
+                    .filter((r) => normalizeRag(r["RAG Icon"]) === k)
+                    .map((r) => {
+                      const idx = rows.indexOf(r);
+                      return (
+                        <EntryCard
+                          key={r._id || idx}
+                          r={r}
+                          idx={idx}
+                          rows={rows}
+                          setRows={setRows}
+                          editIdx={editIdx}
+                          setEditIdx={setEditIdx}
+                          editDraft={editDraft}
+                          setEditDraft={setEditDraft}
+                          expanded={expanded}
+                          setExpanded={setExpanded}
+                          T={T}
+                          direction={direction}
+                          startEdit={startEditRow}
+                          saveEdit={saveEdit}
+                          remove={remove}
+                          normalizeRag={normalizeRag}
+                          pressHandlers={pressHandlers}
+                          cn={cn}
+                          lastAddedId={justAddedId}
+                        />
+                      );
+                    })}
                 </div>
               </div>
             ))}
@@ -1414,7 +1279,7 @@ export default function App() {
                   setEditDraft={setEditDraft}
                   expanded={expanded}
                   setExpanded={setExpanded}
-                  T={STR[direction]}
+                  T={T}
                   direction={direction}
                   startEdit={startEditRow}
                   saveEdit={saveEdit}
@@ -1443,8 +1308,30 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header T={STR[direction]} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
-      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
+      <Header
+        T={T}
+        page={page}
+        setPage={setPage}
+        startQuiz={startQuiz}
+        cn={cn}
+      />
+
+      {/* Fixed, portaled search + sort (isolated from list churn) */}
+      <SearchDock
+        SearchBox={SearchBox}
+        sortMode={sortMode}
+        setSortMode={setSortMode}
+        placeholder={T.search}
+        T={T}
+      />
+
+      {page === "library" ? (
+        <LibraryView />
+      ) : page === "settings" ? (
+        <SettingsView />
+      ) : (
+        <HomeView />
+      )}
 
       {/* Add Entry Modal */}
       {addOpen && (
@@ -1452,7 +1339,8 @@ export default function App() {
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onPointerDown={() => {
             setAddOpen(false);
-            if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+            if (document.activeElement instanceof HTMLElement)
+              document.activeElement.blur();
           }}
         >
           <div
@@ -1460,8 +1348,11 @@ export default function App() {
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
-              <div className="text-lg font-semibold">{STR[direction].addEntry}</div>
-              <button className="px-2 py-1 rounded-md bg-zinc-800" onClick={() => setAddOpen(false)}>
+              <div className="text-lg font-semibold">{T.addEntry}</div>
+              <button
+                className="px-2 py-1 rounded-md bg-zinc-800"
+                onClick={() => setAddOpen(false)}
+              >
                 Close
               </button>
             </div>
@@ -1469,7 +1360,7 @@ export default function App() {
             <AddForm
               tab={tab}
               setRows={setRowsFromAddForm}
-              T={STR[direction]}
+              T={T}
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
