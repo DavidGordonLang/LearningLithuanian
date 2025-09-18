@@ -12,10 +12,10 @@ import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 
 /**
- * Lithuanian Trainer — App.jsx (keyboard-stability + instrumentation)
- * - Layout width via matchMedia("(min-width:1024px)") — avoids IME resize churn.
- * - Temporary console instrumentation to trace focus/mount behavior.
- * - Search handler uses setQ directly (easy isolation; revert to startTransition later if desired).
+ * Lithuanian Trainer — App.jsx (keyboard-stability build, no global focus patches)
+ * - Removes document-level focus juggling that can collapse IME.
+ * - Keeps SearchBox stable; no remounts; no "helpful" refocus loops.
+ * - Prevents layout churn from IME by using matchMedia for WIDE, not window.innerWidth.
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -327,54 +327,21 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 }
 
 /** -------------------------
- *  SearchBox (isolated input) + instrumentation
+ *  SearchBox (ultra-stable input)
+ *  - No auto-refocus / no blur tricks
+ *  - type="text" + inputMode="search" for IME stability
  * ------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox(
     { value, onChangeValue, placeholder },
     ref
   ) {
-    const userIntentRef = useRef(0);
-
-    // TEMP instrumentation: mount/unmount + focus/blur trace
-    useEffect(() => {
-      console.log("[SearchBox] mount");
-      return () => console.log("[SearchBox] unmount");
-    }, []);
-    const onFocusLog = () => console.log("[SearchBox] focus");
-    const onBlurLogNative = () => console.log("[SearchBox] blur (native)");
-
-    const onBlur = (e) => {
-      const now = performance?.now ? performance.now() : Date.now();
-      const delta = now - (userIntentRef.current || 0);
-      const intended = delta >= 0 && delta < 350;
-      const hasTarget =
-        !!e.relatedTarget && e.relatedTarget instanceof HTMLElement;
-
-      if (!intended && !hasTarget) {
-        requestAnimationFrame(() => {
-          const el = e.target;
-          if (document.activeElement !== el) el?.focus?.({ preventScroll: true });
-        });
-      }
-    };
-
     return (
-      <div className="relative flex-1" data-skip-sticky>
+      <div className="relative flex-1">
         <input
           ref={ref}
           value={value}
           onChange={(e) => onChangeValue(e.target.value)}
-          onFocus={onFocusLog}
-          onBlur={(e) => {
-            onBlur(e);
-            onBlurLogNative();
-          }}
-          onPointerDownCapture={() => {
-            userIntentRef.current = performance?.now
-              ? performance.now()
-              : Date.now();
-          }}
           placeholder={placeholder}
           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
           autoComplete="off"
@@ -383,7 +350,7 @@ const SearchBox = memo(
           spellCheck={false}
           enterKeyHint="search"
           inputMode="search"
-          type="text" /* keep text; inputMode shows search keyboard */
+          type="text"
         />
         {!!value && (
           <button
@@ -405,7 +372,7 @@ const SearchBox = memo(
 
 /** -------------------------
  *  Hook: matchMedia for WIDE
- *  (doesn't fire on soft keyboard)
+ *  (avoids IME-induced window.innerHeight churn)
  * ------------------------- */
 function useWide() {
   const query = "(min-width: 1024px)";
@@ -422,7 +389,6 @@ function useWide() {
     const handler = (e) => setWide(e.matches);
     if (mql.addEventListener) mql.addEventListener("change", handler);
     else mql.addListener(handler);
-    // set initial
     setWide(mql.matches);
     return () => {
       if (mql.removeEventListener) mql.removeEventListener("change", handler);
@@ -437,30 +403,13 @@ export default function App() {
   // layout via media query (no IME resize churn)
   const WIDE = useWide();
 
-  // page state (was missing in an earlier version)
+  // page state
   const [page, setPage] = useState("home");
 
   // data + prefs
   const [rows, setRows] = useState(loadRows());
 
-  // TEMP instrumentation: global focus/blur + resize trace
-  useEffect(() => {
-    const onResize = () => console.log("[App] window resized");
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  useEffect(() => {
-    const onFocus = (e) => console.log("[doc] focus", e.target);
-    const onBlur = (e) => console.log("[doc] blur", e.target);
-    document.addEventListener("focus", onFocus, true);
-    document.addEventListener("blur", onBlur, true);
-    return () => {
-      document.removeEventListener("focus", onFocus, true);
-      document.removeEventListener("blur", onBlur, true);
-    };
-  }, []);
-
-  // one-time migration for stable keys/ts (prevents remount focus losses)
+  // one-time migration for stable keys/ts
   useEffect(() => {
     let changed = false;
     const migrated = rows.map((r) => {
@@ -476,7 +425,7 @@ export default function App() {
 
   const [tab, setTab] = useState("Phrases");
   const [q, setQ] = useState("");
-  const dq = useDeferredValue(q); // defers heavy filtering while typing
+  const dq = useDeferredValue(q);
   const searchRef = useRef(null);
 
   const [sortMode, setSortMode] = useState(
@@ -561,75 +510,6 @@ export default function App() {
 
   // persist rows
   useEffect(() => saveRows(rows), [rows]);
-
-  // --- ANDROID KEYBOARD "STICKY FOCUS" PATCH (scoped + opt-out) ---
-  if (typeof window !== "undefined" && window.__lt_focus_lock_until == null) {
-    window.__lt_focus_lock_until = 0;
-  }
-  useEffect(() => {
-    if (typeof window !== "undefined") window.__lt_focus_lock_until = 0;
-
-    const shouldSkip = (el) => {
-      if (!el || !(el instanceof HTMLElement)) return true;
-      if (el.closest("[data-skip-sticky]")) return true;
-      if (el.matches?.('input[type="search"], [inputmode="search"]')) return true;
-      if (searchRef.current && el === searchRef.current) return true;
-      return false;
-    };
-
-    const onInputCapture = (evt) => {
-      const el = evt.target;
-      if (!(el instanceof HTMLElement)) return;
-      if (evt.isComposing) return;
-      if (shouldSkip(el)) return;
-
-      const now = performance?.now ? performance.now() : Date.now();
-      if (now < (window.__lt_focus_lock_until || 0)) return;
-
-      let s, e;
-      try {
-        s = el.selectionStart;
-        e = el.selectionEnd;
-      } catch {}
-
-      requestAnimationFrame(() => {
-        const now2 = performance?.now ? performance.now() : Date.now();
-        if (now2 < (window.__lt_focus_lock_until || 0)) return;
-
-        if (document.activeElement !== el) {
-          el.focus({ preventScroll: true });
-          try {
-            if (s != null && e != null) el.setSelectionRange(s, e);
-          } catch {}
-        }
-      });
-    };
-
-    document.addEventListener("input", onInputCapture, true);
-    return () => document.removeEventListener("input", onInputCapture, true);
-  }, []);
-  // ------------------------------------------------
-
-  // Keep the keyboard from collapsing if the WebView drops focus from the search
-  useEffect(() => {
-    const ref = searchRef;
-    const onFocusOut = (e) => {
-      const t = e.target;
-      if (!ref.current || t !== ref.current) return;
-
-      const hasNewTarget = e.relatedTarget instanceof HTMLElement;
-      if (!hasNewTarget) {
-        requestAnimationFrame(() => {
-          if (document.activeElement !== ref.current) {
-            ref.current?.focus?.({ preventScroll: true });
-          }
-        });
-      }
-    };
-
-    document.addEventListener("focusout", onFocusOut, true);
-    return () => document.removeEventListener("focusout", onFocusOut, true);
-  }, []);
 
   // audio helpers
   async function playText(text, { slow = false } = {}) {
@@ -1386,7 +1266,6 @@ export default function App() {
           <SearchBox
             ref={searchRef}
             value={q}
-            // Isolation: set state directly (you can revert to startTransition later)
             onChangeValue={(val) => setQ(val)}
             placeholder={T.search}
           />
@@ -1552,7 +1431,7 @@ export default function App() {
                   normalizeRag={normalizeRag}
                   pressHandlers={pressHandlers}
                   cn={cn}
-                  flashId={justAddedId}
+                  lastAddedId={justAddedId}
                 />
               );
             })}
@@ -1680,7 +1559,7 @@ export default function App() {
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
-              <div className="text-lg font-semibold">{T.addEntry}</div>
+              <div className="text-lg font-semibold">{STR[direction].addEntry}</div>
               <button className="px-2 py-1 rounded-md bg-zinc-800" onClick={() => setAddOpen(false)}>
                 Close
               </button>
@@ -1689,7 +1568,7 @@ export default function App() {
             <AddForm
               tab={tab}
               setRows={setRowsFromAddForm}
-              T={T}
+              T={STR[direction]}
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
