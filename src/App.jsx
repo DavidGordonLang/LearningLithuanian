@@ -317,13 +317,12 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 }
 
 /* ----------------------------
- * SearchBox — isolated (no changing props)
+ * SearchBox — remount-proof + IME-safe + blur-guard
  * ---------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
     const composingRef = useRef(false);
     const inputRef = useRef(null);
-
     useImperativeHandle(ref, () => inputRef.current);
 
     // push raw value to store (debounced inside the store)
@@ -331,6 +330,32 @@ const SearchBox = memo(
       startTransition(() => searchStore.setRaw(value));
     };
 
+    // 1) Hydrate from store on mount (handles unexpected remounts)
+    useEffect(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      const raw = searchStore.getRaw(); // current live text user typed
+      if (raw && el.value !== raw) {
+        el.value = raw;
+        // put caret at end
+        try { el.setSelectionRange(raw.length, raw.length); } catch {}
+      }
+    }, []);
+
+    // 1b) Also rehydrate when tabbing back into the page (mobile Safari quirks)
+    useEffect(() => {
+      const onVis = () => {
+        if (document.visibilityState !== "visible") return;
+        const el = inputRef.current;
+        if (!el) return;
+        const raw = searchStore.getRaw();
+        if (raw && el.value !== raw) el.value = raw;
+      };
+      document.addEventListener("visibilitychange", onVis);
+      return () => document.removeEventListener("visibilitychange", onVis);
+    }, []);
+
+    // 2) If something steals focus, immediately reclaim it (unless it was our Clear button)
     function refocusSafely() {
       const el = inputRef.current;
       if (!el) return;
@@ -338,9 +363,7 @@ const SearchBox = memo(
         if (document.activeElement !== el) {
           el.focus({ preventScroll: true });
           const len = el.value?.length ?? 0;
-          try {
-            el.setSelectionRange(len, len);
-          } catch {}
+          try { el.setSelectionRange(len, len); } catch {}
         }
       });
     }
@@ -350,6 +373,16 @@ const SearchBox = memo(
         <input
           ref={inputRef}
           defaultValue=""
+          // NOTE: if iOS keeps being weird with search fields, swap to type="text"
+          type="text"
+          inputMode="search"
+          enterKeyHint="search"
+          placeholder={placeholder}
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           onCompositionStart={() => {
             composingRef.current = true;
           }}
@@ -362,23 +395,11 @@ const SearchBox = memo(
             flush(e.currentTarget.value);
           }}
           onBlur={(e) => {
-            // allow blur only if Clear button was the cause
             const related = e.relatedTarget;
             const isClear =
-              related &&
-              related.getAttribute &&
-              related.getAttribute("data-role") === "clear-btn";
+              related?.getAttribute?.("data-role") === "clear-btn";
             if (!isClear) refocusSafely();
           }}
-          placeholder={placeholder}
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          enterKeyHint="search"
-          inputMode="search"
-          type="search"
         />
         <button
           type="button"
@@ -392,8 +413,9 @@ const SearchBox = memo(
             if (el) {
               el.value = "";
               el.focus();
+              // publish empty immediately so results clear fast
+              startTransition(() => searchStore.clear());
             }
-            searchStore.clear();
           }}
           aria-label="Clear"
         >
