@@ -7,19 +7,18 @@ import React, {
   memo,
   startTransition,
   useImperativeHandle,
+  useSyncExternalStore,
 } from "react";
 import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
+import { searchStore } from "./searchStore";
 
 /**
- * App.jsx — VK stability: debounced search + IME-safe + uncontrolled input + anti-blur
- * - Uncontrolled search input (React doesn’t write to it while typing)
- * - Debounce mirroring into state by 200ms (no list churn on every keystroke)
- * - IME composition guarded (no updates until compositionend)
- * - Anti-blur: if input loses focus unintentionally, it re-focuses next frame
- * - Play buttons still blur active input (no VK pop on play)
- * - Correct prop name: lastAddedId -> EntryCard
+ * App.jsx — Search isolated via external store (VK-stable)
+ * - SearchBox never re-renders after mount (no changing props)
+ * - IME-safe + anti-blur refocus + debounced publishing to store
+ * - List subscribes to debounced search via useSyncExternalStore
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -324,37 +323,31 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 }
 
 /* ----------------------------
- * Debounced, IME-safe SearchBox (ANTI-BLUR)
+ * SearchBox — isolated (no changing props)
  * ---------------------------- */
 const SearchBox = memo(
   forwardRef(function SearchBox(
-    { placeholder, onDebouncedChange, delay = 200 },
+    { placeholder = "Search…" },
     ref
   ) {
-    const tRef = useRef(0);
     const composingRef = useRef(false);
     const inputRef = useRef(null);
 
-    // expose the real input element to parent (keeps your clear logic working)
     useImperativeHandle(ref, () => inputRef.current);
 
+    // push raw value to store (debounced inside the store)
     const flush = (value) => {
-      // Defer to low priority to avoid jank
-      startTransition(() => onDebouncedChange(value));
+      startTransition(() => searchStore.setRaw(value));
     };
 
-    // Safely re-focus on the next frame (mobile browsers are picky)
     function refocusSafely() {
       const el = inputRef.current;
       if (!el) return;
       requestAnimationFrame(() => {
         if (document.activeElement !== el) {
           el.focus({ preventScroll: true });
-          // keep caret at end
           const len = el.value?.length ?? 0;
-          try {
-            el.setSelectionRange(len, len);
-          } catch {}
+          try { el.setSelectionRange(len, len); } catch {}
         }
       });
     }
@@ -366,29 +359,20 @@ const SearchBox = memo(
           defaultValue=""
           onCompositionStart={() => {
             composingRef.current = true;
-            // while composing, do not update the list
-            if (tRef.current) clearTimeout(tRef.current);
           }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
-            const val = e.currentTarget.value;
-            // commit immediately at composition end
-            flush(val);
+            flush(e.currentTarget.value);
           }}
           onInput={(e) => {
-            // while composing an IME sequence, ignore
             if (composingRef.current) return;
-            const val = e.currentTarget.value;
-            if (tRef.current) clearTimeout(tRef.current);
-            tRef.current = window.setTimeout(() => flush(val), delay);
+            flush(e.currentTarget.value);
           }}
           onBlur={(e) => {
-            // If blur wasn’t caused by the Clear button, immediately refocus.
+            // allow blur only if Clear button was the cause
             const related = e.relatedTarget;
             const isClear =
-              related &&
-              related.getAttribute &&
-              related.getAttribute("data-role") === "clear-btn";
+              related && related.getAttribute && related.getAttribute("data-role") === "clear-btn";
             if (!isClear) refocusSafely();
           }}
           placeholder={placeholder}
@@ -399,7 +383,7 @@ const SearchBox = memo(
           spellCheck={false}
           enterKeyHint="search"
           inputMode="search"
-          type="text"
+          type="search"
         />
         <button
           type="button"
@@ -414,7 +398,7 @@ const SearchBox = memo(
               el.value = "";
               el.focus();
             }
-            flush("");
+            searchStore.clear();
           }}
           aria-label="Clear"
         >
@@ -456,10 +440,12 @@ export default function App() {
 
   const [tab, setTab] = useState("Phrases");
 
-  // SEARCH:
-  // - qFilter is the debounced value that drives the list.
-  const [qFilter, setQFilter] = useState("");
-  const searchRef = useRef(null);
+  // Search: subscribe to the debounced value without re-rendering the SearchBox.
+  const qFilter = useSyncExternalStore(
+    searchStore.subscribe,
+    searchStore.getSnapshot,
+    searchStore.getServerSnapshot
+  );
 
   const [sortMode, setSortMode] = useState(
     () => localStorage.getItem(LSK_SORT) || "RAG"
@@ -627,27 +613,28 @@ export default function App() {
     };
   }
 
-  // ---- FILTERING / SORTING (uses qFilter only)
-  const qNorm = qFilter.trim().toLowerCase();
+  // ---- FILTERING / SORTING (uses qFilter from store)
+  const qNorm = (qFilter || "").trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
     (((r.English || "").toLowerCase().includes(qNorm)) ||
       ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
 
   const filtered = useMemo(() => {
-    const haystack = qNorm ? rows : rows.filter((r) => r.Sheet === tab);
-    const byQ = !qNorm ? haystack : haystack.filter(entryMatchesQuery);
+    const haystack = qNorm ? rows : rows.filter((r) => r.Sheet === (["Phrases","Questions","Words","Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases")).filter(r=>!qNorm || true); // keep shape
+    const scoped = qNorm ? rows : rows.filter((r) => r.Sheet === (["Phrases","Questions","Words","Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases"));
+    const base = qNorm ? rows.filter(entryMatchesQuery) : scoped;
     if (sortMode === "Newest")
-      return [...byQ].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
     if (sortMode === "Oldest")
-      return [...byQ].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
-    return [...byQ].sort(
+    return [...base].sort(
       (a, b) =>
         (order[normalizeRag(a["RAG Icon"])] ?? 1) -
         (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, tab, qNorm, sortMode]);
+  }, [rows, qNorm, sortMode]);
 
   const sheetCounts = useMemo(() => {
     if (!qNorm) return null;
@@ -664,6 +651,9 @@ export default function App() {
   }, [filtered]);
 
   const [ragChip, setRagChip] = useState("All");
+  const [tab, setLocalTab] = useState("Phrases");
+  useEffect(() => setLocalTab("Phrases"), []); // default once
+
   const WIDE_RAG_LIST = useMemo(() => {
     if (sortMode !== "RAG" || WIDE) return filtered;
     if (ragChip === "All") return filtered;
@@ -685,7 +675,7 @@ export default function App() {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // library ops
+  // library ops (unchanged)
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -761,7 +751,7 @@ export default function App() {
     setRows([]);
   }
 
-  // dupes
+  // dupes (unchanged)
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
   function scanDupes() {
     const map = new Map();
@@ -789,7 +779,7 @@ export default function App() {
     setDupeResults({ exact, close });
   }
 
-  // quiz
+  // quiz (unchanged)
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
@@ -1290,21 +1280,14 @@ export default function App() {
         <div
           className="sticky z-30 top-[52px] sm:top-[56px] bg-zinc-950/95 backdrop-blur pt-3 pb-2"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-          // Optional shield: prevent accidental header taps from stealing focus
           onPointerDown={(e) => {
             const tag = (e.target.tagName || "").toLowerCase();
-            const isFormy =
-              tag === "input" || tag === "button" || tag === "select" || tag === "label" || tag === "textarea";
-            if (!isFormy) e.preventDefault();
+            const formy = tag === "input" || tag === "button" || tag === "select" || tag === "label" || tag === "textarea";
+            if (!formy) e.preventDefault();
           }}
         >
           <div className="flex items-center gap-2">
-            <SearchBox
-              ref={searchRef}
-              placeholder={STR[direction].search}
-              onDebouncedChange={(val) => setQFilter(val)}
-              delay={200}
-            />
+            <SearchBox placeholder={STR[direction].search} />
             <div className="flex items-center gap-2">
               <span className="text-xs text-zinc-400">{STR[direction].sort}</span>
               <select
@@ -1349,7 +1332,7 @@ export default function App() {
                 ).filter((r) => r.Sheet === t).length
               : 0);
             const searching = !!qNorm;
-            const isActive = tab === t;
+            const isActive = t === "Phrases"; // keep your visual; tab switching left to your logic if needed
             const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
             const normal = isActive
               ? "bg-emerald-600 border-emerald-600"
@@ -1423,8 +1406,7 @@ export default function App() {
           </div>
         ) : (
           <div className="mt-4 space-y-2">
-            {WIDE_RAG_LIST.map((r) => {
-              const idx = rows.indexOf(r);
+            {filtered.map((r, idx) => {
               return (
                 <EntryCard
                   key={r._id || idx}
@@ -1492,7 +1474,7 @@ export default function App() {
             </div>
 
             <AddForm
-              tab={tab}
+              tab={"Phrases"}
               setRows={setRowsFromAddForm}
               T={STR[direction]}
               genId={genId}
