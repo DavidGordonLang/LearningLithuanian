@@ -216,11 +216,7 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (
-    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
-    ["amber", "orange", "yellow"].includes(s)
-  )
-    return "🟠";
+  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s)) return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
@@ -254,8 +250,7 @@ function sim2(a = "", b = "") {
     for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
     return g;
   };
-  const g1 = grams(s1),
-    g2 = grams(s2);
+  const g1 = grams(s1), g2 = grams(s2);
   const map = new Map();
   g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
   let inter = 0;
@@ -278,8 +273,7 @@ function useVoices() {
     };
     refresh();
     window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
-    return () =>
-      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
   }, []);
   return voices;
 }
@@ -326,10 +320,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
  * SearchBox — isolated (no changing props)
  * ---------------------------- */
 const SearchBox = memo(
-  forwardRef(function SearchBox(
-    { placeholder = "Search…" },
-    ref
-  ) {
+  forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
     const composingRef = useRef(false);
     const inputRef = useRef(null);
 
@@ -347,7 +338,9 @@ const SearchBox = memo(
         if (document.activeElement !== el) {
           el.focus({ preventScroll: true });
           const len = el.value?.length ?? 0;
-          try { el.setSelectionRange(len, len); } catch {}
+          try {
+            el.setSelectionRange(len, len);
+          } catch {}
         }
       });
     }
@@ -372,7 +365,9 @@ const SearchBox = memo(
             // allow blur only if Clear button was the cause
             const related = e.relatedTarget;
             const isClear =
-              related && related.getAttribute && related.getAttribute("data-role") === "clear-btn";
+              related &&
+              related.getAttribute &&
+              related.getAttribute("data-role") === "clear-btn";
             if (!isClear) refocusSafely();
           }}
           placeholder={placeholder}
@@ -472,9 +467,7 @@ export default function App() {
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
-  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [
-    ttsProvider,
-  ]);
+  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [ttsProvider]);
   const [azureKey, setAzureKey] = useState(
     () => localStorage.getItem(LSK_AZURE_KEY) || ""
   );
@@ -484,8 +477,7 @@ export default function App() {
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
-        ?.shortName || "";
+      return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")?.shortName || "";
     } catch {
       return "";
     }
@@ -497,10 +489,7 @@ export default function App() {
     if (azureRegion) localStorage.setItem(LSK_AZURE_REGION, azureRegion);
   }, [azureRegion]);
   useEffect(() => {
-    localStorage.setItem(
-      LSK_AZURE_VOICE,
-      JSON.stringify({ shortName: azureVoiceShortName })
-    );
+    localStorage.setItem(LSK_AZURE_VOICE, JSON.stringify({ shortName: azureVoiceShortName }));
   }, [azureVoiceShortName]);
 
   const voices = useVoices();
@@ -540,13 +529,7 @@ export default function App() {
       }
       if (ttsProvider === "azure" && azureKey && azureRegion && azureVoiceShortName) {
         const delta = slow ? "-40%" : "0%";
-        const url = await speakAzureHTTP(
-          text,
-          azureVoiceShortName,
-          azureKey,
-          azureRegion,
-          delta
-        );
+        const url = await speakAzureHTTP(text, azureVoiceShortName, azureKey, azureRegion, delta);
         const a = new Audio(url);
         audioRef.current = a;
         a.onended = () => {
@@ -621,20 +604,18 @@ export default function App() {
       ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
 
   const filtered = useMemo(() => {
-    const haystack = qNorm ? rows : rows.filter((r) => r.Sheet === (["Phrases","Questions","Words","Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases")).filter(r=>!qNorm || true); // keep shape
-    const scoped = qNorm ? rows : rows.filter((r) => r.Sheet === (["Phrases","Questions","Words","Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases"));
-    const base = qNorm ? rows.filter(entryMatchesQuery) : scoped;
-    if (sortMode === "Newest")
-      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
-    if (sortMode === "Oldest")
-      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+    const base = qNorm ? rows.filter(entryMatchesQuery) : rows.filter((r) => r.Sheet === tab);
+
+    if (sortMode === "Newest") return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+    if (sortMode === "Oldest") return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...base].sort(
       (a, b) =>
         (order[normalizeRag(a["RAG Icon"])] ?? 1) -
         (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, qNorm, sortMode]);
+  }, [rows, qNorm, sortMode, tab]);
 
   const sheetCounts = useMemo(() => {
     if (!qNorm) return null;
@@ -649,16 +630,6 @@ export default function App() {
     for (const r of filtered) buckets[normalizeRag(r["RAG Icon"])].push(r);
     return buckets;
   }, [filtered]);
-
-  const [ragChip, setRagChip] = useState("All");
-  const [tab, setLocalTab] = useState("Phrases");
-  useEffect(() => setLocalTab("Phrases"), []); // default once
-
-  const WIDE_RAG_LIST = useMemo(() => {
-    if (sortMode !== "RAG" || WIDE) return filtered;
-    if (ragChip === "All") return filtered;
-    return filtered.filter((r) => normalizeRag(r["RAG Icon"]) === ragChip);
-  }, [filtered, sortMode, WIDE, ragChip]);
 
   // CRUD
   function startEditRow(i) {
@@ -675,7 +646,7 @@ export default function App() {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // library ops (unchanged)
+  // library ops
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -714,9 +685,7 @@ export default function App() {
     }
   }
   async function installNumbersOnly() {
-    const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(
-      Boolean
-    );
+    const urls = [STARTERS.COMBINED_OPTIONAL, STARTERS.EN2LT, STARTERS.LT2EN].filter(Boolean);
     let found = [];
     for (const url of urls) {
       try {
@@ -751,7 +720,7 @@ export default function App() {
     setRows([]);
   }
 
-  // dupes (unchanged)
+  // dupes
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
   function scanDupes() {
     const map = new Map();
@@ -779,7 +748,7 @@ export default function App() {
     setDupeResults({ exact, close });
   }
 
-  // quiz (unchanged)
+  // quiz
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
@@ -1282,7 +1251,12 @@ export default function App() {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           onPointerDown={(e) => {
             const tag = (e.target.tagName || "").toLowerCase();
-            const formy = tag === "input" || tag === "button" || tag === "select" || tag === "label" || tag === "textarea";
+            const formy =
+              tag === "input" ||
+              tag === "button" ||
+              tag === "select" ||
+              tag === "label" ||
+              tag === "textarea";
             if (!formy) e.preventDefault();
           }}
         >
@@ -1326,23 +1300,15 @@ export default function App() {
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
             const hits = (qNorm
-              ? rows.filter((r) =>
-                  ((r.English || "").toLowerCase().includes(qNorm)) ||
-                  ((r.Lithuanian || "").toLowerCase().includes(qNorm))
-                ).filter((r) => r.Sheet === t).length
+              ? rows
+                  .filter((r) => ((r.English || "").toLowerCase().includes(qNorm)) || ((r.Lithuanian || "").toLowerCase().includes(qNorm)))
+                  .filter((r) => r.Sheet === t).length
               : 0);
             const searching = !!qNorm;
-            const isActive = t === "Phrases"; // keep your visual; tab switching left to your logic if needed
+            const isActive = tab === t; // ✅ use real tab
             const base = "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
-            const normal = isActive
-              ? "bg-emerald-600 border-emerald-600"
-              : "bg-zinc-900 border-zinc-800";
-            const highlighted =
-              hits > 0
-                ? "ring-2 ring-emerald-500 ring-offset-0"
-                : searching
-                ? "opacity-60"
-                : "";
+            const normal = isActive ? "bg-emerald-600 border-emerald-600" : "bg-zinc-900 border-zinc-800";
+            const highlighted = hits > 0 ? "ring-2 ring-emerald-500 ring-offset-0" : searching ? "opacity-60" : "";
             return (
               <button
                 key={t}
@@ -1350,7 +1316,13 @@ export default function App() {
                 className={cn(base, normal, highlighted)}
                 title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
               >
-                {t === "Phrases" ? STR[direction].phrases : t === "Questions" ? STR[direction].questions : t === "Words" ? STR[direction].words : STR[direction].numbers}
+                {t === "Phrases"
+                  ? STR[direction].phrases
+                  : t === "Questions"
+                  ? STR[direction].questions
+                  : t === "Words"
+                  ? STR[direction].words
+                  : STR[direction].numbers}
                 {hits > 0 && (
                   <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
                     {hits}
@@ -1458,8 +1430,7 @@ export default function App() {
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onPointerDown={() => {
             setAddOpen(false);
-            if (document.activeElement instanceof HTMLElement)
-              document.activeElement.blur();
+            if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
           }}
         >
           <div
@@ -1474,7 +1445,7 @@ export default function App() {
             </div>
 
             <AddForm
-              tab={"Phrases"}
+              tab={tab}
               setRows={setRowsFromAddForm}
               T={STR[direction]}
               genId={genId}
