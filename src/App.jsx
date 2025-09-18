@@ -1519,7 +1519,7 @@ export default function App() {
                         normalizeRag={normalizeRag}
                         pressHandlers={pressHandlers}
                         cn={cn}
-                        flashId={justAddedId}
+                        lastAddedId={justAddedId}
                       />
                     );
                   })}
