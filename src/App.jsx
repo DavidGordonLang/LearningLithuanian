@@ -824,7 +824,6 @@ export default function App() {
   // quiz
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
-  the:
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizChoice, setQuizChoice] = useState(null);
