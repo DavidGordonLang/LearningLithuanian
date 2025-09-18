@@ -1,24 +1,61 @@
-// Register service worker
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(console.error);
-  });
-}
+// Non-intrusive Service Worker registration
+(function registerSW(){
+  if ("serviceWorker" in navigator) {
+    // Defer registration until the browser is idle and no input is focused
+    const go = () => {
+      if (document.activeElement && /input|textarea/i.test(document.activeElement.tagName)) {
+        // try again shortly if user is typing
+        setTimeout(go, 3000);
+        return;
+      }
+      navigator.serviceWorker.register("/sw.js").catch(console.error);
+    };
+    if (document.readyState === "complete") {
+      setTimeout(go, 1500);
+    } else {
+      window.addEventListener("load", () => setTimeout(go, 1500));
+    }
+  }
+})();
 
-// Install banner (Android/desktop Chrome)
+// Install banner (Chrome). Never display while an input is focused.
 let deferredPrompt = null;
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  showInstallBanner();
+  maybeShowInstallBanner();
 });
+
+function inputIsFocused() {
+  const el = document.activeElement;
+  return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+}
+
+function maybeShowInstallBanner() {
+  if (!deferredPrompt) return;
+  if (inputIsFocused()) {
+    // Wait until typing stops
+    const onBlurOnce = () => {
+      setTimeout(showInstallBanner, 250);
+      window.removeEventListener("blur", onBlurOnce, true);
+      document.removeEventListener("focusin", onBlurOnce, true);
+    };
+    window.addEventListener("blur", onBlurOnce, true);
+    document.addEventListener("focusin", onBlurOnce, true);
+    return;
+  }
+  showInstallBanner();
+}
 
 function showInstallBanner() {
   if (!deferredPrompt) return;
 
-  // Create a simple bottom sheet using Tailwind (already loaded)
+  // Create a non-focus-stealing bottom sheet
   const wrap = document.createElement("div");
   wrap.id = "install-banner";
+  wrap.setAttribute("role", "dialog");
+  wrap.setAttribute("aria-live", "polite");
+  wrap.tabIndex = -1; // do not grab focus
   wrap.className =
     "fixed inset-x-0 bottom-0 z-[70] px-4 pb-[calc(1rem+var(--sab))] pt-3 " +
     "bg-zinc-900/95 backdrop-blur border-t border-white/10";
@@ -39,14 +76,21 @@ function showInstallBanner() {
     </div>`;
   document.body.appendChild(wrap);
 
-  document.getElementById("install-btn").onclick = async () => {
+  const btnInstall = document.getElementById("install-btn");
+  const btnDismiss = document.getElementById("install-dismiss");
+
+  btnInstall.addEventListener("click", async () => {
     const e = deferredPrompt;
     deferredPrompt = null;
-    await e.prompt();
-    await e.userChoice; // result can be used if you care
-    removeBanner();
-  };
-  document.getElementById("install-dismiss").onclick = removeBanner;
+    try {
+      await e.prompt();
+      await e.userChoice;
+    } finally {
+      removeBanner();
+    }
+  });
+
+  btnDismiss.addEventListener("click", removeBanner);
 
   function removeBanner() {
     const el = document.getElementById("install-banner");
@@ -54,7 +98,7 @@ function showInstallBanner() {
   }
 }
 
-// iOS hint (Safari doesn’t fire beforeinstallprompt)
+// iOS hint (Safari doesn’t fire beforeinstallprompt). Non-intrusive.
 (function iosHint(){
   const ua = window.navigator.userAgent || "";
   const isIOS = /iPad|iPhone|iPod/.test(ua);
@@ -65,7 +109,7 @@ function showInstallBanner() {
     const hint = document.createElement("div");
     hint.className =
       "fixed inset-x-0 bottom-0 z-[60] px-4 pb-[calc(1rem+var(--sab))] pt-3 " +
-      "bg-zinc-900/95 backdrop-blur border-t border-white/10";
+      "bg-zinc-900/95 backdrop-blur border-t border-white/10 pointer-events-auto";
     hint.innerHTML = `
       <div class="max-w-5xl mx-auto text-sm text-zinc-200">
         <span class="text-emerald-400">Add to Home Screen:</span>
