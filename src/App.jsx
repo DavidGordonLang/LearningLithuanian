@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, {
   useEffect,
   useMemo,
@@ -13,13 +14,11 @@ import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 import SearchDock from "./components/SearchDock";
+import HomeDock from "./components/HomeDock";
 import { searchStore } from "./searchStore";
 
 /**
- * App.jsx — VK-stable search via portal + external store
- * - SearchBox is remount-proof, IME-safe, blur-guarded (but *allows* legit blurs)
- * - SearchDock portals the search below the header (offsetTop)
- * - List subscribes to debounced search via useSyncExternalStore
+ * App.jsx — fixed header + search + home dock; VK-safe focus
  */
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -460,9 +459,10 @@ export default function App() {
   }, []);
   const WIDE = width >= 1024;
 
-  // Decide header + dock heights
-  const HEADER_H = 56; // header height in px
-  const DOCK_H = 56;   // dock height in px
+  // Heights (px)
+  const HEADER_H = 56;      // header height
+  const SEARCH_DOCK_H = 56; // search/sort dock
+  const HOME_DOCK_H = 88;   // streak + tabs bar
 
   // data + prefs
   const [rows, setRows] = useState(loadRows());
@@ -491,7 +491,6 @@ export default function App() {
     searchStore.getServerSnapshot
   );
 
-  // ✅ SINGLE declaration of sortMode
   const [sortMode, setSortMode] = useState(
     () => localStorage.getItem(LSK_SORT) || "RAG"
   );
@@ -701,20 +700,6 @@ export default function App() {
     );
   }, [rows, qNorm, sortMode, tab]);
 
-  const sheetCounts = useMemo(() => {
-    if (!qNorm) return null;
-    const counts = { Phrases: 0, Questions: 0, Words: 0, Numbers: 0 };
-    for (const r of rows)
-      if (entryMatchesQuery(r)) counts[r.Sheet] = (counts[r.Sheet] || 0) + 1;
-    return counts;
-  }, [rows, qNorm]);
-
-  const ragBuckets = useMemo(() => {
-    const buckets = { "🔴": [], "🟠": [], "🟢": [] };
-    for (const r of filtered) buckets[normalizeRag(r["RAG Icon"])].push(r);
-    return buckets;
-  }, [filtered]);
-
   // CRUD
   function startEditRow(i) {
     setEditIdx(i);
@@ -839,6 +824,7 @@ export default function App() {
   // quiz
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
+  the:
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizChoice, setQuizChoice] = useState(null);
@@ -984,6 +970,9 @@ export default function App() {
     const fileRef = useRef(null);
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
+        {/* spacer for header + search (no home dock on Library page) */}
+        <div style={{ height: HEADER_H + SEARCH_DOCK_H }} />
+
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             onClick={() => fetchStarter("EN2LT")}
@@ -1175,78 +1164,10 @@ export default function App() {
   function HomeView() {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-        {/* Spacer to account for header + fixed SearchDock height */}
-        <div style={{ height: HEADER_H + DOCK_H }} />
+        {/* Spacer to account for header + search + home dock */}
+        <div style={{ height: HEADER_H + SEARCH_DOCK_H + HOME_DOCK_H }} />
 
-        {/* Streak + Level */}
-        <div className="mt-2 flex items-center gap-3">
-          <div className="text-xs text-zinc-400">
-            🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
-          </div>
-          <div className="text-xs text-zinc-400">
-            🥇 {T.level} <span className="font-semibold">{level}</span>
-          </div>
-          <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-            <div
-              className="h-full bg-emerald-600"
-              style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
-            />
-          </div>
-          <div className="text-xs text-zinc-400">
-            {levelProgress} / {LEVEL_STEP} XP
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          {["Phrases", "Questions", "Words", "Numbers"].map((t) => {
-            const hits = qNorm
-              ? rows
-                  .filter(
-                    (r) =>
-                      (r.English || "").toLowerCase().includes(qNorm) ||
-                      (r.Lithuanian || "").toLowerCase().includes(qNorm)
-                  )
-                  .filter((r) => r.Sheet === t).length
-              : 0;
-            const searching = !!qNorm;
-            const isActive = tab === t;
-            const base =
-              "relative px-3 py-1.5 rounded-full text-sm border transition-colors";
-            const normal = isActive
-              ? "bg-emerald-600 border-emerald-600"
-              : "bg-zinc-900 border-zinc-800";
-            const highlighted =
-              hits > 0
-                ? "ring-2 ring-emerald-500 ring-offset-0"
-                : searching
-                ? "opacity-60"
-                : "";
-            return (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={cn(base, normal, highlighted)}
-                title={hits ? `${hits} match${hits === 1 ? "" : "es"}` : undefined}
-              >
-                {t === "Phrases"
-                  ? T.phrases
-                  : t === "Questions"
-                  ? T.questions
-                  : t === "Words"
-                  ? T.words
-                  : T.numbers}
-                {hits > 0 && (
-                  <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 text-xs rounded-full bg-emerald-700 px-1">
-                    {hits}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Tri-column grid (wide) or list (mobile) */}
+        {/* Card list */}
         {sortMode === "RAG" && WIDE ? (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             {["🔴", "🟠", "🟢"].map((k) => (
@@ -1341,12 +1262,152 @@ export default function App() {
     );
   }
 
-  // Placeholder: SettingsView
+  // ---------- Settings (restored) ----------
+  async function fetchAzureVoices() {
+    try {
+      if (!azureKey || !azureRegion)
+        return alert("Add Azure key & region first.");
+      const res = await fetch(
+        `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`,
+        { headers: { "Ocp-Apim-Subscription-Key": azureKey } }
+      );
+      if (!res.ok) throw new Error("Voice list request failed");
+      const list = await res.json();
+      setAzureVoices(Array.isArray(list) ? list : []);
+      alert(
+        `Fetched ${Array.isArray(list) ? list.length : 0} voices for ${azureRegion}`
+      );
+    } catch (e) {
+      alert("Fetch voices error: " + (e?.message || e));
+    }
+  }
+
   function SettingsView() {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-        <div style={{ height: HEADER_H + DOCK_H }} />
-        <div className="text-sm text-zinc-400">Settings go here…</div>
+        {/* Spacer for header + search */}
+        <div style={{ height: HEADER_H + SEARCH_DOCK_H }} />
+
+        <h2 className="text-xl font-semibold mb-3">{T.settings}</h2>
+
+        {/* Direction */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+          <div className="text-sm font-semibold mb-2">{T.direction}</div>
+          <div className="flex gap-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="dir"
+                checked={direction === "EN2LT"}
+                onChange={() => setDirection("EN2LT")}
+              />
+              {T.en2lt}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="dir"
+                checked={direction === "LT2EN"}
+                onChange={() => setDirection("LT2EN")}
+              />
+              {T.lt2en}
+            </label>
+          </div>
+        </div>
+
+        {/* Voices */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4 space-y-3">
+          <div className="text-sm font-semibold">
+            {T.azure} / {T.browserVoice}
+          </div>
+
+          <div className="flex flex-wrap gap-3 items-end">
+            <div>
+              <div className="text-xs mb-1">Provider</div>
+              <select
+                className="bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1"
+                value={ttsProvider}
+                onChange={(e) => setTtsProvider(e.target.value)}
+              >
+                <option value="azure">{T.azure}</option>
+                <option value="browser">{T.browserVoice}</option>
+              </select>
+            </div>
+
+            {ttsProvider === "browser" && (
+              <div>
+                <div className="text-xs mb-1">{T.voice}</div>
+                <select
+                  className="bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 min-w-[220px]"
+                  value={browserVoiceName}
+                  onChange={(e) => setBrowserVoiceName(e.target.value)}
+                >
+                  {voices.map((v) => (
+                    <option key={v.name} value={v.name}>
+                      {v.name} ({v.lang})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {ttsProvider === "azure" && (
+              <>
+                <div>
+                  <div className="text-xs mb-1">{T.subKey}</div>
+                  <input
+                    className="bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 min-w-[260px]"
+                    value={azureKey}
+                    onChange={(e) => setAzureKey(e.target.value)}
+                    placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  />
+                </div>
+                <div>
+                  <div className="text-xs mb-1">{T.region}</div>
+                  <input
+                    className="bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1"
+                    value={azureRegion}
+                    onChange={(e) => setAzureRegion(e.target.value)}
+                    placeholder="westeurope / eastus …"
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <button
+                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
+                    onClick={fetchAzureVoices}
+                  >
+                    {T.fetchVoices}
+                  </button>
+                  <select
+                    className="bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 min-w-[260px]"
+                    value={azureVoiceShortName}
+                    onChange={(e) => setAzureVoiceShortName(e.target.value)}
+                  >
+                    <option value="">{T.choose}</option>
+                    {azureVoices.map((v) => (
+                      <option key={v.ShortName} value={v.ShortName}>
+                        {v.LocalName || v.FriendlyName || v.ShortName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Quick test */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <div className="text-sm mb-2">Test voice</div>
+          <button
+            className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500"
+            onClick={() =>
+              playText(direction === "EN2LT" ? "Labas, pasauli!" : "Hello, world!")
+            }
+          >
+            Play sample
+          </button>
+        </div>
       </div>
     );
   }
@@ -1355,7 +1416,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} page={page} setPage={setPage} startQuiz={startQuiz} cn={cn} />
 
-      {/* Fixed, portaled search + sort (isolated from list churn) */}
+      {/* Fixed bars */}
       <SearchDock
         SearchBox={SearchBox}
         sortMode={sortMode}
@@ -1364,14 +1425,23 @@ export default function App() {
         T={T}
         offsetTop={HEADER_H}
       />
-
-      {page === "library" ? (
-        <LibraryView />
-      ) : page === "settings" ? (
-        <SettingsView />
-      ) : (
-        <HomeView />
+      {page === "home" && (
+        <HomeDock
+          T={T}
+          offsetTop={HEADER_H + SEARCH_DOCK_H}
+          LEVEL_STEP={LEVEL_STEP}
+          level={level}
+          levelProgress={levelProgress}
+          streak={streak}
+          rows={rows}
+          qNorm={qNorm}
+          tab={tab}
+          setTab={setTab}
+          cn={cn}
+        />
       )}
+
+      {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
       {/* Add Entry Modal */}
       {addOpen && (
