@@ -54,10 +54,10 @@ export default function AddForm({
       return;
     }
 
-    // --- MOBILE KEYBOARD: short-lived focus lock + blur to hide keyboard
+    // brief focus lock so the search box won't reclaim focus during the async hop
     const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
     if (typeof window !== "undefined") {
-      window.__lt_focus_lock_until = now + 800; // matches App.jsx sticky-focus patch
+      window.__lt_focus_lock_until = now + 800;
       requestAnimationFrame(() => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       });
@@ -95,7 +95,6 @@ export default function AddForm({
       alert("Translation service returned an unexpected response.");
     } finally {
       setBusy(false);
-      // ensure the lock drops even if the request timing varies
       setTimeout(() => {
         if (typeof window !== "undefined") window.__lt_focus_lock_until = 0;
       }, 900);
@@ -132,8 +131,8 @@ export default function AddForm({
       _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
     };
 
-    setRows((prev) => [row, ...prev]); // prepend so it surfaces immediately
-    onSaved?.(row._id);                // let parent auto-sort + flash
+    setRows((prev) => [row, ...prev]);
+    onSaved?.(row._id);
     resetForm();
     onClose?.();
   }
@@ -217,7 +216,7 @@ export default function AddForm({
           </button>
         </div>
 
-        {/* Translate — center (amber) */}
+        {/* Translate — center */}
         <div className="justify-self-center">
           <button
             type="button"
@@ -234,7 +233,7 @@ export default function AddForm({
           </button>
         </div>
 
-        {/* Save — right (green) */}
+        {/* Save — right */}
         <div className="justify-self-end">
           <button
             type="button"
