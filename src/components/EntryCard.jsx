@@ -20,7 +20,7 @@ export default function EntryCard({
   normalizeRag,
   pressHandlers,
   cn,
-  lastAddedId,   // NEW: id of last-added row for flash
+  lastAddedId,   // id of last-added row for flash
 }) {
   const isEditing = editIdx === idx;
   const isExpanded = expanded?.has?.(idx);
