@@ -1,15 +1,25 @@
 import React, { useMemo, useState } from "react";
 
-/**
- * Props:
- * - tab: "Phrases" | "Questions" | "Words" | "Numbers"
- * - setRows(updater)
- * - T: strings
- * - genId()
- * - nowTs()
- * - normalizeRag()
- * - direction: "EN2LT" | "LT2EN"
- */
+function pill(on, label, onClick) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "px-3 py-1 rounded-md border " +
+        (on
+          ? "bg-emerald-700/30 border-emerald-600 text-emerald-200"
+          : "bg-zinc-900 border-zinc-700 text-zinc-200")
+      }
+    >
+      {label}
+    </button>
+  );
+}
+
+const normalize = (s = "") => s.trim().replace(/\s+/g, " ");
+const ltKey = (lt) => normalize(lt).toLowerCase();
+
 export default function AddForm({
   tab,
   setRows,
@@ -17,288 +27,269 @@ export default function AddForm({
   genId,
   nowTs,
   normalizeRag,
-  direction = "EN2LT",
+  direction, // "EN2LT" | "LT2EN"
+  onSaved,
 }) {
-  // Core fields
-  const [en, setEn] = useState("");
-  const [lt, setLt] = useState("");
-  const [ph, setPh] = useState("");
+  // core fields
+  const [english, setEnglish] = useState("");
+  const [lithuanian, setLithuanian] = useState("");
+  const [phonetic, setPhonetic] = useState("");
   const [usage, setUsage] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Style selectors
-  const [tone, setTone] = useState("neutral"); // neutral|friendly|formal|reserved
-  const [audience, setAudience] = useState("respectful"); // general|peer|respectful|intimate
-  const [register, setRegister] = useState("natural"); // natural|balanced|literal
+  // style controls
+  const [tone, setTone] = useState("Neutral"); // Neutral | Friendly | Formal | Reserved
+  const [audience, setAudience] = useState("Respectful"); // General | Peer | Respectful | Intimate
+  const [register, setRegister] = useState("Natural"); // Natural | Balanced | Literal
 
-  // Variant checkboxes (preview & save multiple)
-  const [vGeneral, setVGeneral] = useState(true);
-  const [vFemale, setVFemale] = useState(false);
-  const [vMale, setVMale] = useState(false);
+  // variant checkboxes
+  const [genVariant, setGenVariant] = useState(true);
+  const [femaleVariant, setFemaleVariant] = useState(false);
+  const [maleVariant, setMaleVariant] = useState(false);
 
-  const variants = useMemo(() => {
-    const arr = [];
-    if (vGeneral) arr.push("general");
-    if (vFemale) arr.push("female");
-    if (vMale) arr.push("male");
-    return arr;
-  }, [vGeneral, vFemale, vMale]);
+  // translate status
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  // Preview list derived from variants + current fields
-  const [previews, setPreviews] = useState([]); // [{id, include, rag, meta, en, lt, ph, usage, notes}]
-  const [translating, setTranslating] = useState(false);
+  // Preview list; each item: { key, lt, ph, usage, notes, include }
+  const [preview, setPreview] = useState([]);
 
-  // Helpers
-  const pillsTone = ["neutral", "friendly", "formal", "reserved"];
-  const pillsAudience = ["general", "peer", "respectful", "intimate"];
-  const pillsRegister = ["natural", "balanced", "literal"];
+  const sheet = tab || "Phrases";
 
-  function mkPreviewBase(variant) {
-    return {
-      id: `${variant}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  const toneOptions = ["Neutral", "Friendly", "Formal", "Reserved"];
+  const audienceOptions = ["General", "Peer", "Respectful", "Intimate"];
+  const registerOptions = ["Natural", "Balanced", "Literal"];
+
+  function setPreviewFromResponse(variants, balanced) {
+    // Convert to preview items and collapse duplicates (same LT across variants)
+    const items = variants.map((v) => ({
+      key: v.key,
+      lt: normalize(v.lt),
+      ph: normalize(v.ph),
+      usage: normalize(v.usage),
+      notes: normalize(v.notes),
       include: true,
-      rag: "🟠",
-      meta: { variant, tone, register },
-      en: en.trim(),
-      lt: "",
-      ph: "",
-      usage: "",
-      notes: "",
-    };
-  }
+    }));
 
-  function ensurePreviewsFor(variantList) {
-    // Create or update a preview row per variant
-    setPreviews((prev) => {
-      const map = new Map(prev.map((p) => [p.meta?.variant, p]));
-      const out = [];
-      for (const v of variantList) {
-        const existing = map.get(v);
-        if (existing) {
-          out.push({
-            ...existing,
-            meta: { ...existing.meta, tone, register },
-            en: en.trim(),
-          });
-        } else {
-          out.push(mkPreviewBase(v));
-        }
+    // If nothing usable, tell the user
+    const anyLt = items.some((i) => i.lt);
+    if (!anyLt) {
+      alert(
+        "Translate returned, but no usable Lithuanian was found.\n\n" +
+          "Tip: ensure the API returns { lt, ph, usage, notes } per variant."
+      );
+      return;
+    }
+
+    // De-dup by LT for preview display, but remember which variants collapsed
+    const groups = new Map(); // ltNorm -> array of items
+    for (const it of items) {
+      const k = ltKey(it.lt || "");
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(it);
+    }
+
+    const collapsed = [];
+    for (const [_, group] of groups) {
+      // Keep the first (prefer "general" if present)
+      const first =
+        group.find((g) => g.key === "general") ||
+        group.find((g) => g.key === "addressing_female") ||
+        group[0];
+
+      // If duplicates collapsed, append a tiny hint to notes (for preview only)
+      const others = group.filter((g) => g !== first);
+      let hint = "";
+      if (others.length > 0) {
+        const labels = others.map((g) =>
+          g.key === "addressing_female" ? "female" : g.key === "addressing_male" ? "male" : g.key
+        );
+        hint = `Same form also covers: ${labels.join(", ")}.`;
       }
-      // Keep previous items only if still selected
-      return out;
-    });
+
+      collapsed.push({
+        ...first,
+        notes:
+          first.notes && hint ? `${first.notes} ${hint}` : first.notes || hint,
+      });
+    }
+
+    setPreview(collapsed);
+
+    // also populate the main fields from the first preview (for visibility/edit)
+    const seed = collapsed[0] || items[0];
+    if (seed) {
+      if (seed.lt) setLithuanian(seed.lt);
+      if (seed.ph) setPhonetic(seed.ph);
+      if (seed.usage) setUsage(seed.usage);
+      // Balanced peek: append into Notes if provided
+      if (balanced && balanced.notes) {
+        setNotes((prev) =>
+          prev ? `${prev}\n\nBalanced: ${balanced.notes}` : `Balanced: ${balanced.notes}`
+        );
+      } else if (seed.notes) {
+        setNotes(seed.notes);
+      }
+    }
   }
 
-  // Update previews whenever variants or EN/tone/register change
-  React.useEffect(() => {
-    ensurePreviewsFor(variants);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variants, tone, register, en]);
+  async function doTranslate() {
+    setBusy(true);
+    setError("");
 
-  async function handleTranslate() {
-    const english = en.trim();
-    if (!english) {
-      alert("Please fill the English field first.");
-      return;
-    }
-    if (variants.length === 0) {
-      alert("Select at least one variant (e.g., General).");
-      return;
-    }
-
-    setTranslating(true);
     try {
-      // Send BOTH keys: `english` (for server schema) and `en` (back-compat client schema)
       const payload = {
-        english,         // <- server expects this (per your 400 error)
-        en: english,     // <- belt & braces
-        tone,
-        audience,
-        register,
-        variants,        // ["general","female","male"] subset
-        direction,       // harmless if server ignores it
+        english: english.trim(),
+        direction,
+        options: {
+          tone: tone.toLowerCase(), // neutral/friendly/formal/reserved
+          audience: audience.toLowerCase(), // general/peer/respectful/intimate
+          register: register.toLowerCase(), // natural/balanced/literal
+          variants: {
+            general: !!genVariant,
+            female: !!femaleVariant,
+            male: !!maleVariant,
+          },
+          // Balanced is a "peek" – request it only if user picked Balanced
+          includeBalanced: register === "Balanced",
+        },
       };
+
+      if (!payload.english) {
+        alert('Please enter an English phrase in the "English" field first.');
+        return;
+      }
 
       const res = await fetch("/api/translate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const ct = res.headers.get("content-type") || "";
       if (!res.ok) {
-        const text = ct.includes("application/json") ? JSON.stringify(await res.json()) : await res.text();
+        const msg = await res.text().catch(() => "");
         alert(
-          `Translate failed. You can still fill the fields manually.\n\n` +
-          `${text || res.statusText || "Unknown error"}`
+          "Translate failed. You can still fill the fields manually.\n\n" +
+            (msg || `HTTP ${res.status}`)
         );
-        return;
-      }
-      if (!ct.includes("application/json")) {
-        const text = await res.text();
-        alert(
-          "Translate returned, but no usable fields were found.\n" +
-          "Check the console for the raw response.\n\n" +
-          "Tip: make the API return { lt, ph, usage, notes } or map to those keys."
-        );
-        console.log("Unexpected non-JSON response from /api/translate:", text);
         return;
       }
 
       const data = await res.json();
-      // Expected shapes supported:
-      // 1) Single: { lt, ph, usage, notes }
-      // 2) Multi:  { variants: [ { variant, lt, ph, usage, notes }, ... ] }
-      // 3) Fallback string: { lt: "..." }
-
-      const fromSingle = (obj) => ({
-        lt: (obj?.lt ?? "").trim(),
-        ph: (obj?.ph ?? "").trim(),
-        usage: (obj?.usage ?? "").trim(),
-        notes: (obj?.notes ?? "").trim(),
-      });
-
-      if (Array.isArray(data?.variants) && data.variants.length) {
-        // Map server variants back into our preview rows
-        setPreviews((prev) => {
-          const map = new Map(prev.map((p) => [p.meta?.variant, p]));
-          const out = [...prev];
-          for (const v of data.variants) {
-            const key = (v?.variant || "").toLowerCase(); // "general" | "female" | "male"
-            if (!key) continue;
-            const found = map.get(key);
-            const mapped = fromSingle(v);
-            if (found) {
-              Object.assign(found, {
-                lt: mapped.lt || found.lt,
-                ph: mapped.ph || found.ph,
-                usage: mapped.usage || found.usage,
-                notes: mapped.notes || found.notes,
-              });
-            }
-          }
-          return out;
-        });
-      } else {
-        const mapped = fromSingle(data);
-        // Fill the main LT/PH/Usage/Notes fields as a convenience
-        if (mapped.lt) setLt(mapped.lt);
-        if (mapped.ph) setPh(mapped.ph);
-        if (mapped.usage) setUsage(mapped.usage);
-        if (mapped.notes) setNotes(mapped.notes);
-
-        // Put the same result into all selected previews that lack a value
-        setPreviews((prev) =>
-          prev.map((p) =>
-            p.lt
-              ? p
-              : {
-                  ...p,
-                  lt: mapped.lt || p.lt,
-                  ph: mapped.ph || p.ph,
-                  usage: mapped.usage || p.usage,
-                  notes: mapped.notes || p.notes,
-                }
-          )
+      if (!data?.ok) {
+        alert(
+          "Translate returned an error. You can still fill the fields manually.\n\n" +
+            (data?.error || "Unknown error")
         );
+        return;
       }
+
+      const variants = Array.isArray(data.variants) ? data.variants : [];
+      setPreviewFromResponse(variants, data.balanced);
     } catch (e) {
       console.error(e);
       alert("Translate failed. You can still fill the fields manually.");
     } finally {
-      setTranslating(false);
+      setBusy(false);
     }
   }
 
-  function handleSave() {
-    const selected = previews.filter((p) => p.include);
-    if (!selected.length) {
-      alert("Nothing selected to save.");
+  // Save: commit selected previews, with in-batch de-dup and “same form” annotation
+  function onSave() {
+    const selected = preview.filter((p) => p.include);
+
+    // If no preview yet, save the manual fields as a single card
+    if (selected.length === 0 && !lithuanian.trim()) {
+      alert("Nothing to save yet. Translate first or fill the Lithuanian field.");
       return;
     }
 
-    const base = {
-      English: en.trim(),
-      Phonetic: ph.trim(),
-      Usage: usage.trim(),
-      Notes: notes.trim(),
-      "RAG Icon": "🟠",
-      Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(tab)
-        ? tab
-        : "Phrases",
-    };
+    if (selected.length === 0) {
+      // manual single
+      const id = genId();
+      setRows((prev) => [
+        {
+          English: normalize(english),
+          Lithuanian: normalize(lithuanian),
+          Phonetic: normalize(phonetic),
+          Category: "",
+          Usage: normalize(usage),
+          Notes: normalize(notes),
+          "RAG Icon": "🟠",
+          Sheet: sheet,
+          _id: id,
+          _ts: nowTs(),
+        },
+        ...prev,
+      ]);
+      onSaved?.(id);
+      return;
+    }
 
-    const toSave =
-      selected.length > 0
-        ? selected.map((p) => ({
-            ...base,
-            Lithuanian: (p.lt || lt).trim(),
-            _id: genId(),
-            _ts: nowTs(),
-          }))
-        : [
-            {
-              ...base,
-              Lithuanian: lt.trim(),
-              _id: genId(),
-              _ts: nowTs(),
-            },
-          ];
+    // In-batch collapse by Lithuanian string
+    const groups = new Map(); // lt -> array of previews
+    for (const it of selected) {
+      const key = ltKey(it.lt || "");
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(it);
+    }
+
+    const toSave = [];
+    for (const [_k, group] of groups) {
+      // Keep first; if multiple variants share the same LT, annotate in notes
+      const first = group[0];
+      const others = group.slice(1);
+      let n = first.notes || "";
+      if (others.length > 0) {
+        const labels = others.map((g) =>
+          g.key === "addressing_female" ? "female" : g.key === "addressing_male" ? "male" : g.key
+        );
+        const line = `Same Lithuanian form for: ${labels.join(", ")}.`;
+        n = n ? `${n} ${line}` : line;
+      }
+
+      toSave.push({
+        English: normalize(english),
+        Lithuanian: normalize(first.lt),
+        Phonetic: normalize(first.ph),
+        Category: "",
+        Usage: normalize(first.usage),
+        Notes: normalize(n),
+        "RAG Icon": "🟠",
+        Sheet: sheet,
+        _id: genId(),
+        _ts: nowTs(),
+      });
+    }
 
     setRows((prev) => [...toSave, ...prev]);
+    onSaved?.(toSave[0]?._id);
   }
 
-  /* ----------------------------- UI ----------------------------- */
-
-  const Chip = ({ active, onClick, children }) => (
-    <button
-      type="button"
-      className={
-        "px-3 py-1 rounded-md border " +
-        (active
-          ? "bg-emerald-700 border-emerald-600"
-          : "bg-zinc-900 border-zinc-700 hover:border-zinc-600")
-      }
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-
-  const Checkbox = ({ checked, onChange, label }) => (
-    <label className="flex items-center gap-2 text-sm">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span>{label}</span>
-    </label>
-  );
+  const previewCount = preview.length;
+  const anyPreview = previewCount > 0;
 
   return (
-    <div className="space-y-4">
-      {/* Category tabs are outside in the parent dock; this form just respects `tab` */}
-
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
       {/* English */}
       <div>
         <div className="text-sm mb-1">English</div>
         <input
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          value={english}
+          onChange={(e) => setEnglish(e.target.value)}
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           placeholder="e.g. Hello"
-          value={en}
-          onChange={(e) => setEn(e.target.value)}
         />
       </div>
 
-      {/* Lithuanian (can be typed or filled via Translate) */}
+      {/* Lithuanian */}
       <div>
         <div className="text-sm mb-1">Lithuanian</div>
         <input
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          value={lithuanian}
+          onChange={(e) => setLithuanian(e.target.value)}
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           placeholder="e.g. Labas / Sveiki"
-          value={lt}
-          onChange={(e) => setLt(e.target.value)}
         />
       </div>
 
@@ -306,84 +297,77 @@ export default function AddForm({
       <div>
         <div className="text-sm mb-1">Phonetic</div>
         <input
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          value={phonetic}
+          onChange={(e) => setPhonetic(e.target.value)}
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           placeholder="Optional — phonetic hint"
-          value={ph}
-          onChange={(e) => setPh(e.target.value)}
         />
       </div>
 
       {/* Tone */}
-      <div className="rounded-2xl border border-zinc-800 p-3">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
         <div className="text-sm mb-2">Tone</div>
         <div className="flex flex-wrap gap-2">
-          {pillsTone.map((t) => (
-            <Chip key={t} active={tone === t} onClick={() => setTone(t)}>
-              {t[0].toUpperCase() + t.slice(1)}
-            </Chip>
-          ))}
+          {toneOptions.map((t) =>
+            pill(tone === t, t, () => setTone(t))
+          )}
         </div>
       </div>
 
       {/* Audience */}
-      <div className="rounded-2xl border border-zinc-800 p-3">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
         <div className="text-sm mb-2">Audience</div>
         <div className="flex flex-wrap gap-2">
-          {pillsAudience.map((a) => (
-            <Chip
-              key={a}
-              active={audience === a}
-              onClick={() => setAudience(a)}
-            >
-              {a[0].toUpperCase() + a.slice(1)}
-            </Chip>
-          ))}
+          {audienceOptions.map((a) =>
+            pill(audience === a, a, () => setAudience(a))
+          )}
         </div>
       </div>
 
       {/* Register */}
-      <div className="rounded-2xl border border-zinc-800 p-3">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
         <div className="text-sm mb-2">Register</div>
         <div className="flex flex-wrap gap-2">
-          {pillsRegister.map((r) => (
-            <Chip
-              key={r}
-              active={register === r}
-              onClick={() => setRegister(r)}
-            >
-              {r[0].toUpperCase() + r.slice(1)}
-            </Chip>
-          ))}
+          {registerOptions.map((r) =>
+            pill(register === r, r, () => setRegister(r))
+          )}
         </div>
         <div className="text-xs text-zinc-500 mt-2">
           Natural is the default; Balanced/Literal are “peek” aids (saved in Notes later).
         </div>
       </div>
 
-      {/* Variants */}
-      <div className="rounded-2xl border border-zinc-800 p-3">
+      {/* Generate variants */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
         <div className="text-sm mb-2">Generate variants</div>
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-6">
-            <Checkbox
-              checked={vGeneral}
-              onChange={setVGeneral}
-              label="General / plural"
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={genVariant}
+              onChange={(e) => setGenVariant(e.target.checked)}
             />
-            <Checkbox
-              checked={vFemale}
-              onChange={setVFemale}
-              label="Addressing female"
+            <span>General / plural</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={femaleVariant}
+              onChange={(e) => setFemaleVariant(e.target.checked)}
             />
-            <Checkbox
-              checked={vMale}
-              onChange={setVMale}
-              label="Addressing male"
+            <span>Addressing female</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={maleVariant}
+              onChange={(e) => setMaleVariant(e.target.checked)}
             />
-          </div>
-          <div className="text-xs text-zinc-500">
-            For now this keeps a single card; later we’ll generate distinct outputs per variant.
-          </div>
+            <span>Addressing male</span>
+          </label>
+        </div>
+        <div className="text-xs text-zinc-500 mt-2">
+          If variants end up identical in Lithuanian, they’ll be collapsed automatically.
         </div>
       </div>
 
@@ -391,10 +375,10 @@ export default function AddForm({
       <div>
         <div className="text-sm mb-1">Usage</div>
         <input
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          placeholder="Short usage/context (kept concise on save)"
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          placeholder="Short usage/context (kept concise on save)"
         />
       </div>
 
@@ -402,11 +386,10 @@ export default function AddForm({
       <div>
         <div className="text-sm mb-1">Notes</div>
         <textarea
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          placeholder="Optional — alternatives, register, grammar, nuance"
-          rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          className="w-full min-h-[96px] bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          placeholder="Optional — alternatives, register, grammar, nuance"
         />
       </div>
 
@@ -414,88 +397,85 @@ export default function AddForm({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          className="px-4 py-2 rounded-md bg-zinc-800 border border-zinc-700 disabled:opacity-50"
-          onClick={handleTranslate}
-          disabled={translating || !en.trim() || variants.length === 0}
+          disabled={busy}
+          onClick={doTranslate}
+          className={
+            "px-4 py-2 rounded-md bg-zinc-800 border border-zinc-700 " +
+            (busy ? "opacity-60 cursor-not-allowed" : "")
+          }
         >
-          {translating ? "Translating…" : "Translate"}
+          {busy ? "Translating…" : "Translate"}
         </button>
         <button
           type="button"
+          onClick={onSave}
           className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-semibold"
-          onClick={handleSave}
         >
-          Save
+          {T.save}
         </button>
       </div>
 
       {/* Preview */}
-      <div className="pt-2">
-        <div className="text-sm text-zinc-400 mb-2">
-          Preview ({previews.length} selected)
-        </div>
-        <div className="space-y-3">
-          {previews.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-xl border border-zinc-800 p-3 bg-zinc-900"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="text-sm text-zinc-400">
-                    {p.lt ? p.lt : "(no Lithuanian yet)"}
-                  </div>
-                  <div className="text-xs text-zinc-500">{p.en}</div>
-                  {p.ph && (
-                    <div className="text-xs text-zinc-500 italic mt-0.5">
-                      {p.ph}
+      {anyPreview && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3">
+          <div className="text-sm font-medium mb-2">Preview ({previewCount} selected)</div>
+          <div className="space-y-2">
+            {preview.map((p, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 flex flex-col gap-2"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-base font-semibold leading-tight">
+                      {p.lt || "(no Lithuanian yet)"}
                     </div>
-                  )}
+                    <div className="text-xs text-zinc-400 mt-0.5">{english || "(English…)"}</div>
+                    {p.ph && <div className="text-xs text-zinc-500 italic mt-0.5">{p.ph}</div>}
+                    {p.usage && (
+                      <div className="text-xs text-zinc-400 mt-2">
+                        <span className="text-zinc-500">Usage:</span> {p.usage}
+                      </div>
+                    )}
+                    {p.notes && (
+                      <div className="text-xs text-zinc-400 mt-1 whitespace-pre-wrap">{p.notes}</div>
+                    )}
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
+                        {p.key === "general"
+                          ? "general"
+                          : p.key === "addressing_female"
+                          ? "female"
+                          : p.key === "addressing_male"
+                          ? "male"
+                          : p.key}
+                      </span>
+                      <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
+                        {register.toLowerCase()}
+                      </span>
+                      <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
+                        {tone.toLowerCase()}
+                      </span>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={p.include}
+                      onChange={(e) => {
+                        const next = [...preview];
+                        next[i] = { ...next[i], include: e.target.checked };
+                        setPreview(next);
+                      }}
+                    />
+                    <span className="text-sm">Include</span>
+                  </label>
                 </div>
-                <label className="flex items-center gap-2 text-xs shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={p.include}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setPreviews((prev) =>
-                        prev.map((x) =>
-                          x.id === p.id ? { ...x, include: checked } : x
-                        )
-                      );
-                    }}
-                  />
-                  Include
-                </label>
               </div>
-
-              <div className="flex flex-wrap gap-2 mt-2">
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
-                  {p.meta?.variant || "general"}
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
-                  {p.meta?.tone || tone}
-                </span>
-                <button
-                  type="button"
-                  className="text-xs px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700"
-                  onClick={() => {
-                    const more = [
-                      p.usage ? `Usage: ${p.usage}` : null,
-                      p.notes ? `Notes: ${p.notes}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join("\n");
-                    alert(more || "No extra details yet.");
-                  }}
-                >
-                  More
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </form>
   );
 }
