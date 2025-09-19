@@ -844,8 +844,7 @@ export default function App() {
     setQuizAnswered(false);
     setQuizChoice(null);
     const first = pool[0];
-    the:
-    const correctLt = first.Lithuanian;
+    const correctLt = first.Lithuanian; // ← fixed: removed stray "the:" label
     const distractors = sample(
       pool.filter((r) => r !== first && r.Lithuanian),
       3
