@@ -1,9 +1,9 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 /**
  * Props:
- * - tab: "Phrases" | "Questions" | "Words" | "Numbers" (sheet)
- * - setRows: (updater) => void   // parent handles close-after-save
+ * - tab: "Phrases" | "Questions" | "Words" | "Numbers"
+ * - setRows: (updater) => void
  * - T: strings
  * - genId: () => string
  * - nowTs: () => number
@@ -27,11 +27,11 @@ export default function AddForm({
   const [notes, setNotes] = useState("");
 
   // Controls
-  const [tone, setTone] = useState("Neutral"); // Neutral | Friendly | Formal | Reserved
-  const [aud, setAud] = useState("Respectful"); // General | Peer | Respectful | Intimate
-  const [register, setRegister] = useState("Natural"); // Natural | Balanced | Literal
+  const [tone, setTone] = useState("Neutral");
+  const [aud, setAud] = useState("Respectful");
+  const [register, setRegister] = useState("Natural");
 
-  // Variant selection (what to generate)
+  // Variant selection
   const [vGeneral, setVGeneral] = useState(true);
   const [vFemale, setVFemale] = useState(false);
   const [vMale, setVMale] = useState(false);
@@ -40,10 +40,9 @@ export default function AddForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // ---- NEW: Translate previews state ----
-  const [previews, setPreviews] = useState([]); // array of { id, lt, en, ph, usage, notes, variant, tone, aud, register, include }
+  // Translate previews
+  const [previews, setPreviews] = useState([]); // { id, lt, en, ph, usage, notes, variant, tone, aud, register, include }
 
-  // Helpers
   const selectedVariants = useMemo(() => {
     const list = [];
     if (vGeneral) list.push({ key: "general", label: "General / plural" });
@@ -82,7 +81,6 @@ export default function AddForm({
         tone,
         audience: aud,
         register,
-        // In step 4 (future), we’ll pass variants to API. For now, single call.
         variants: selectedVariants.map((v) => v.key),
       };
 
@@ -110,34 +108,35 @@ export default function AddForm({
       }
 
       const data = await res.json();
-      // Accept several shapes; prefer simple { lt, ph, usage, notes }
+
+      // Normalize expected fields
       const baseLt = (data?.lt ?? "").trim();
       const basePh = (data?.ph ?? "").trim();
       const baseUsage = (data?.usage ?? "").trim();
       const baseNotes = (data?.notes ?? "").trim();
 
-      // Update the form fields with what we got
+      // Update inputs for user review
       if (baseLt) setLt(baseLt);
       if (basePh) setPh(basePh);
       if (baseUsage) setUsage(baseUsage);
       if (baseNotes) setNotes(baseNotes);
 
-      // Build previews for every selected variant (use base result for now)
+      // Build previews for each selected variant
       const pv = selectedVariants.map((v) => ({
         id: genId(),
-        lt: baseLt || lt.trim(),
+        // IMPORTANT: never fall back to English for the Lithuanian title line
+        lt: baseLt || lt.trim() || "",
         en: en.trim(),
         ph: basePh || ph.trim(),
         usage: baseUsage || usage.trim(),
         notes: baseNotes || notes.trim(),
-        variant: v.label, // label for the chip
+        variant: v.label,
         tone,
         aud,
         register,
         include: true,
       }));
 
-      // If nothing selected, don’t create previews (user can still save one manual card)
       setPreviews(pv);
     } catch (e) {
       console.error(e);
@@ -163,12 +162,11 @@ export default function AddForm({
       English: p.en || "",
       Lithuanian: p.lt || "",
       Phonetic: p.ph || "",
-      Category: "", // left blank; user can edit later
+      Category: "",
       Usage: p.usage || "",
       Notes: p.notes || "",
       Sheet: tab,
       "RAG Icon": normalizeRag("🟠"),
-      // Optional: we can embed structured meta into notes or a future field
       _meta: {
         tone: p.tone,
         audience: p.aud,
@@ -224,8 +222,6 @@ export default function AddForm({
         onSave();
       }}
     >
-      {/* Tabs already shown above in the modal header */}
-
       {/* English */}
       <div>
         <div className="text-sm text-zinc-400 mb-1">English</div>
@@ -382,14 +378,14 @@ export default function AddForm({
         </button>
       </div>
 
-      {/* ---- NEW: Previews list ---- */}
+      {/* Previews */}
       {previews.length > 0 && (
         <div className="mt-3 border-t border-zinc-800 pt-3">
           <div className="text-sm font-semibold mb-2">
             Preview ({previews.filter((p) => p.include).length} selected)
           </div>
           <div className="space-y-3">
-            {previews.map((p, i) => (
+            {previews.map((p) => (
               <PreviewCard
                 key={p.id}
                 pv={p}
@@ -411,14 +407,17 @@ export default function AddForm({
   );
 }
 
-/** Small preview card used inside the Add Form modal */
 function PreviewCard({ pv, onToggleInclude }) {
   const [open, setOpen] = useState(false);
+  const hasLt = !!pv.lt;
+
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-base font-semibold leading-tight">{pv.lt}</div>
+          <div className="text-base font-semibold leading-tight">
+            {hasLt ? pv.lt : <span className="text-zinc-500">(no Lithuanian yet)</span>}
+          </div>
           <div className="text-xs text-zinc-400 mt-0.5">{pv.en}</div>
           {pv.ph && (
             <div className="text-xs text-zinc-500 mt-0.5 italic">{pv.ph}</div>
@@ -453,7 +452,7 @@ function PreviewCard({ pv, onToggleInclude }) {
             className="inline-flex h-5 px-2 items-center text-[11px] rounded-full bg-amber-500"
             aria-label="RAG amber"
           />
-          {/* Variant, Tone chips */}
+          {/* Variant + Tone chips */}
           <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
             {pv.variant}
           </span>
