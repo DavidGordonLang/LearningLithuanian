@@ -1,15 +1,13 @@
 // api/translate.js
-// Edge runtime, always return JSON, never throw raw errors.
+// Edge runtime; always return JSON; backward-compatible top-level fields.
 export const config = { runtime: "edge" };
 
-// Small helper for consistent JSON responses
 function json(body, init = {}) {
   const headers = new Headers(init.headers || {});
   if (!headers.has("content-type")) headers.set("content-type", "application/json");
   return new Response(JSON.stringify(body), { ...init, headers });
 }
 
-// Very defensive body parser
 async function readJson(req) {
   try {
     return await req.json();
@@ -29,11 +27,10 @@ export default async function handler(req) {
       return json({ ok: false, error: "Invalid JSON body", detail: body.__parse_error }, { status: 400 });
     }
 
-    // Expected minimal inputs; extend later as we wire options through
     const {
       english = "",
       direction = "EN2LT",
-      options = {}, // tone, audience, register, variants, etc. (future)
+      options = {}, // tone, audience, register, variants (future)
     } = body || {};
 
     if (!english || typeof english !== "string") {
@@ -42,46 +39,57 @@ export default async function handler(req) {
 
     const apiKey = process.env.OPENAI_API_KEY;
 
-    // If no key is configured, return a harmless stub so the UI flow can be tested.
-    if (!apiKey) {
-      return json({
+    // ---------- helper to emit payload with both shapes ----------
+    const reply = ({ lt, ph = "", usage = "", notes = "", meta = {} }) => {
+      const payload = {
         ok: true,
-        data: {
-          // Stub LT line so the UI can show something; replace by real model output when the key is present.
-          lt: direction === "EN2LT" ? `${english} (LT — demo)` : english,
-          usage: "(demo) Replace with model-generated usage once OPENAI_API_KEY is set.",
-          notes: "(demo) Balanced/Literal notes would appear here.",
-          meta: { stub: true, direction, options },
-        },
+        // top-level fields for the current UI
+        lt,
+        ph,
+        usage,
+        notes,
+        // nested shape for future clients
+        data: { lt, ph, usage, notes, meta },
+      };
+      return json(payload);
+    };
+
+    // No key? Return a stub so the UI flow keeps working.
+    if (!apiKey) {
+      return reply({
+        lt: direction === "EN2LT" ? `${english} (LT — demo)` : english,
+        usage: "(demo) Replace with model-generated usage once OPENAI_API_KEY is set.",
+        notes: "(demo) Balanced/Literal notes would appear here.",
+        meta: { stub: true, direction, options },
       });
     }
 
-    // ---------- Real call to OpenAI (simple first pass; we can refine the prompt later) ----------
-    const prompt = [
+    // ---------- Real call to OpenAI ----------
+    const messages = [
       {
         role: "system",
         content:
-          "You are a careful Lithuanian/English translator. Return only the Lithuanian translation when asked EN→LT, concise and natural for everyday use.",
+          "You are a careful Lithuanian/English translator. Prefer concise, natural everyday phrasing.",
       },
       {
         role: "user",
         content:
           direction === "EN2LT"
-            ? `Translate to natural Lithuanian: "${english}"`
-            : `Translate to natural English: "${english}"`,
+            ? `Translate to natural Lithuanian only (no extra text): "${english}"`
+            : `Translate to natural English only (no extra text): "${english}"`,
       },
     ];
 
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "authorization": `Bearer ${apiKey}`,
+        authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
         temperature: 0.2,
-        messages: prompt,
+        messages,
       }),
     });
 
@@ -94,21 +102,15 @@ export default async function handler(req) {
     }
 
     const data = await resp.json().catch(() => ({}));
-    const lt =
-      data?.choices?.[0]?.message?.content?.trim?.() ||
-      "";
+    const translated = data?.choices?.[0]?.message?.content?.trim?.() || "";
 
-    return json({
-      ok: true,
-      data: {
-        lt,
-        usage: "", // We’ll fill these when we extend the prompt in Step 4.
-        notes: "",
-        meta: { stub: false, direction, options },
-      },
+    return reply({
+      lt: translated,
+      usage: "",
+      notes: "",
+      meta: { stub: false, direction, options },
     });
   } catch (err) {
-    // Catch-all: never leak a non-JSON error
     return json(
       { ok: false, error: "Server error", detail: String(err?.message || err) },
       { status: 500 }
