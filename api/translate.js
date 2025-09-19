@@ -1,43 +1,82 @@
 // api/translate.js
-export const config = {
-  runtime: "nodejs",
-};
+export const config = { runtime: "nodejs" };
 
+/* ----------------------------- helpers ----------------------------- */
 function bad(res, msg = "Bad Request", code = 400) {
   res.statusCode = code;
   res.setHeader("Content-Type", "application/json");
   res.end(JSON.stringify({ ok: false, error: msg }));
 }
-
 function ok(res, data) {
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json");
   res.end(JSON.stringify({ ok: true, ...data }));
 }
-
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let buf = "";
     req.on("data", (c) => (buf += c));
     req.on("end", () => {
-      try {
-        resolve(JSON.parse(buf || "{}"));
-      } catch (e) {
-        reject(e);
-      }
+      try { resolve(JSON.parse(buf || "{}")); }
+      catch (e) { reject(e); }
     });
   });
 }
 
+// Naive LT → phonetic fallback (keeps it readable; not IPA)
+function ltToPhonetic(s = "") {
+  const m = {
+    č: "ch", š: "sh", ž: "zh",
+    ą: "ah", ę: "eh", į: "ee", ų: "oo", ū: "oo",
+    ė: "eh", į̃: "ee", ą̃: "ah",
+    gy: "gee", gi: "gee",
+    j: "y", y: "ee", i: "ee", u: "oo", e: "eh", a: "ah", o: "oh",
+  };
+  let out = s.normalize("NFC");
+  // double-pass for digraph-ish and single letters
+  out = out.replace(/č|š|ž|ą|ę|į|ų|ū|ė/gi, (ch) => {
+    const lower = ch.toLowerCase();
+    const rep = m[lower] || ch;
+    return ch === lower ? rep : rep.charAt(0).toUpperCase() + rep.slice(1);
+  });
+  out = out
+    .replace(/j/gi, (ch) => (ch === "j" ? "y" : "Y"))
+    .replace(/y/gi, (ch) => (ch === "y" ? "ee" : "Ee"));
+  // Light cleanup of doubled spaces, punctuation spacing
+  return out.replace(/\s+/g, " ").trim();
+}
+
+// collapse duplicate variants by identical LT
+function dedupeByLt(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const v of arr) {
+    const key = (v.lt || "").toLowerCase().trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(v);
+  }
+  return out;
+}
+
+// tolerate ```json … ``` wrappers
+function stripCodeFences(s = "") {
+  const t = String(s || "");
+  const fence = /^```(?:json)?\s*([\s\S]*?)\s*```$/i;
+  const m = t.match(fence);
+  return m ? m[1] : t;
+}
+
 function wantedVariants(body) {
   const list = [];
-  if (body.includeGeneral) list.push({ key: "general", label: "General / plural" });
-  if (body.includeFemale) list.push({ key: "female", label: "Addressing female" });
-  if (body.includeMale) list.push({ key: "male", label: "Addressing male" });
-  if (!list.length) list.push({ key: "general", label: "General / plural" });
+  if (body.includeGeneral) list.push("general");
+  if (body.includeFemale) list.push("female");
+  if (body.includeMale) list.push("male");
+  if (!list.length) list.push("general");
   return list;
 }
 
+/* ----------------------------- prompt ------------------------------ */
 function buildPrompt(input) {
   const {
     english,
@@ -51,61 +90,42 @@ function buildPrompt(input) {
   const isEN2LT = String(direction || "").toUpperCase() === "EN2LT";
 
   const matrixRules = `
-MATRIX RULES (Lithuanian)
-- "General / plural" MUST use formal/plural 2nd-person: **jūs (nom.) / jus (acc.) / jums (dat.) / jūsų (gen.)**, with matching verb agreement (plural/polite).
-- "Addressing female" and "Addressing male" MUST use informal singular: **tu (nom.) / tave (acc.) / tau (dat.) / tavo (gen.)**, with singular verb agreement.
+MATRIX (Lithuanian)
+- "General / plural" MUST use polite/plural 2nd-person: **jūs / jus / jums / jūsų** with plural/polite verb agreement.
+- "Addressing female" & "Addressing male" MUST use informal singular **tu / tave / tau / tavo** with singular verb agreement.
+- If female & male end up identical, return the same LT for both and note "Gender-neutral in Lithuanian."
+- Respect tone/audience/register when possible, without breaking the pronoun/verb rules.
 
-GUIDANCE
-- If male vs female are identical in Lithuanian, return the same LT for both and add note "Gender-neutral in Lithuanian."
-- Respect tone/audience/register when word choice allows, but DO NOT violate the pronoun/verb rules.
-
-EXAMPLES:
-- "I love you."
-  • general → "Aš jus myliu."
-  • addressing female → "Aš tave myliu."
-  • addressing male → "Aš tave myliu." (note gender-neutral)
-- "Do you have time?"
-  • general → "Ar turite laiko?" (polite) 
-  • addressing female/male → "Ar turi laiko?"
-`;
-
-  const schema = `
-OUTPUT
-Return ONLY JSON:
+OUTPUT JSON SHAPE (STRICT):
 {
   "variants": [
-    { "variant": "general|female|male",
+    {
+      "variant": "general|female|male",
       "lt": "Lithuanian",
-      "ph": "English-friendly phonetics",
-      "usage": "1 concise sentence of usage",
-      "notes": "0-2 concise lines; may be empty"
+      "ph": "Beginner-friendly phonetics (not IPA)",
+      "usage": "Short usage line",
+      "notes": "0–2 concise hints (may be empty)"
     }
   ]
 }
-No markdown, extra keys, or comments.
+NO markdown, NO comments, NO extra keys. If you can only produce one Lithuanian sentence, produce it for all requested variants with correct pronoun/verb.
 `;
 
-  const sys = [
-    `You are a careful Lithuanian translator for a phrasebook app.`,
-    `Target users are beginners; keep translations idiomatic, clean, and safe.`,
-    `Keep usage/notes short.`,
-  ].join(" ");
-
+  const system = `You are a careful Lithuanian translator for a beginner phrasebook app. Keep it idiomatic and safe.`;
   const user = [
     `DIRECTION: ${isEN2LT ? "EN → LT" : "LT → EN"}`,
     `SHEET: ${sheet}`,
     `TONE: ${tone}`,
     `AUDIENCE: ${audience}`,
-    `REGISTER: ${register} (Natural default; Balanced/Literal are reference-only for notes)`,
+    `REGISTER: ${register} (Natural default; Balanced/Literal can be left as hints in notes)`,
+    `ENGLISH INPUT: "${String(english || "").trim()}"`,
     matrixRules,
-    `INPUT ENGLISH: "${String(english || "").trim()}"`,
-    schema,
   ].join("\n\n");
 
-  return { system: sys, user };
+  return { system, user };
 }
 
-async function openAIJson(prompt, model = "gpt-4o-mini", temperature = 0.3) {
+async function openAIJson(prompt, model = "gpt-4o-mini", temperature = 0.2) {
   const key = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_BETA || "";
   if (!key) throw new Error("Missing OPENAI_API_KEY");
 
@@ -126,27 +146,61 @@ async function openAIJson(prompt, model = "gpt-4o-mini", temperature = 0.3) {
     }),
   });
 
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`OpenAI error ${res.status}: ${txt || res.statusText}`);
-  }
+  const text = await res.text();
+  if (!res.ok) throw new Error(`OpenAI ${res.status}: ${text}`);
 
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content || "{}";
-  return JSON.parse(content);
+  // tolerate rare accidental fences even with response_format
+  const clean = stripCodeFences(text);
+  let data;
+  try { data = JSON.parse(clean); }
+  catch { throw new Error(`Non-JSON from OpenAI: ${text.slice(0, 200)}…`); }
+  return data;
 }
 
-function sanitizeVariant(v) {
-  const variant = String(v?.variant || "").toLowerCase();
-  const lt = String(v?.lt || "").trim();
-  const ph = String(v?.ph || "").trim();
-  const usage = String(v?.usage || "").trim();
-  const notes = String(v?.notes || "").trim();
-  if (!["general", "female", "male"].includes(variant)) return null;
+/* ----------------------------- shape fixers ----------------------------- */
+function normalizeVariantObj(v, fallbackVariant = "general") {
+  // accept aliases: lithuanian, lt, text; phonetics, phonetic, ph; etc.
+  const variant = String(v.variant || fallbackVariant || "general").toLowerCase();
+  const lt = String(v.lt || v.lithuanian || v.text || "").trim();
+  const ph = String(v.ph || v.phonetics || v.phonetic || "").trim();
+  const usage = String(v.usage || v.context || "").trim();
+  const notes = String(v.notes || v.note || v.hint || "").trim();
   if (!lt) return null;
   return { variant, lt, ph, usage, notes };
 }
 
+function coerceToVariantArray(json) {
+  // Preferred: { variants: [...] }
+  if (Array.isArray(json?.variants)) {
+    return json.variants.map((x) => normalizeVariantObj(x)).filter(Boolean);
+  }
+
+  // Accept separate keys: { general: {...}, female: {...}, male: {...} }
+  const keys = ["general", "female", "male"];
+  const found = [];
+  keys.forEach((k) => {
+    if (json && typeof json[k] === "object" && json[k]) {
+      const n = normalizeVariantObj({ ...json[k], variant: k });
+      if (n) found.push(n);
+    }
+  });
+  if (found.length) return found;
+
+  // Accept a single object: { lt, ph, ... }
+  if (json && typeof json === "object" && (json.lt || json.lithuanian || json.text)) {
+    const one = normalizeVariantObj(json, "general");
+    return one ? [one] : [];
+  }
+
+  // Accept an array of objects directly
+  if (Array.isArray(json)) {
+    return json.map((x, i) => normalizeVariantObj(x, i === 0 ? "general" : "female")).filter(Boolean);
+  }
+
+  return [];
+}
+
+/* ------------------------------- handler ------------------------------- */
 export default async function handler(req, res) {
   if (req.method !== "POST") return bad(res, "Use POST");
 
@@ -160,35 +214,39 @@ export default async function handler(req, res) {
   const english = String(body.english || "").trim();
   if (!english) return bad(res, 'Missing or invalid "english" string');
 
-  const variantsWanted = wantedVariants(body);
+  const wanted = wantedVariants(body); // ["general", "female", "male"] subset
   const prompt = buildPrompt(body);
 
   try {
-    const json = await openAIJson(prompt);
-    const got = Array.isArray(json?.variants) ? json.variants : [];
-    const wantedSet = new Set(variantsWanted.map((v) => v.key));
-    const cleaned = got
-      .map(sanitizeVariant)
-      .filter(Boolean)
-      .filter((v) => wantedSet.has(v.variant));
+    const raw = await openAIJson(prompt);
+    let variants = coerceToVariantArray(raw);
 
-    const have = new Set(cleaned.map((v) => v.variant));
-    variantsWanted.forEach((w) => {
-      if (have.has(w.key)) return;
-      const reuse = cleaned[0];
-      if (reuse) {
-        cleaned.push({
-          ...reuse,
-          variant: w.key,
-          notes:
-            (reuse.notes ? reuse.notes + " " : "") +
-            "(Auto-filled: verify pronoun/register for this variant.)",
-        });
-      }
-    });
+    // Keep only requested ones (but allow us to remap below)
+    const wantedSet = new Set(wanted);
+    variants = variants.filter((v) => wantedSet.has(v.variant));
 
-    return ok(res, { variants: cleaned });
+    // If model didn’t label variants, copy the first across the requested set
+    if (!variants.length && raw) {
+      const one = coerceToVariantArray(raw)[0];
+      if (one) variants = wanted.map((k) => ({ ...one, variant: k }));
+    }
+
+    // Fallback phonetic if missing
+    variants = variants.map((v) => ({
+      ...v,
+      ph: v.ph && v.ph.trim() ? v.ph : ltToPhonetic(v.lt),
+    }));
+
+    // Dedupe identical LT (model may produce same LT for female/male)
+    variants = dedupeByLt(variants);
+
+    // Final sanity: keep at least one
+    if (!variants.length) {
+      return ok(res, { variants: [] }); // front-end will show the soft error you saw
+    }
+
+    return ok(res, { variants });
   } catch (e) {
-    return bad(`Translation failed: ${e?.message || e || "Unknown error"}`, 500);
+    return bad(res, `Translation failed: ${e?.message || e}`, 500);
   }
 }
