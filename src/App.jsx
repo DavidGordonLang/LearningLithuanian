@@ -19,6 +19,19 @@ const LSK_XP = "lt_xp_v1";
 const LSK_SORT = "lt_sort_v1";
 const LSK_DIR = "lt_direction_v1";
 
+/* Step 2 — new preference flags (UI-only for now) */
+const LSK_DEF_TONE = "lt_def_tone"; // "Neutral" | "Friendly" | "Formal" | "Reserved"
+const LSK_DEF_AUDIENCE = "lt_def_audience"; // "General" | "Peer" | "Respectful" | "Intimate"
+const LSK_DEF_REGISTER = "lt_def_register"; // "Natural" | "Balanced" | "Literal"
+const LSK_DEF_ADDR_GENDER = "lt_def_addr_gender"; // "unspecified" | "female" | "male" | "general_plural"
+
+const LSK_AID_SHOW_BALANCED = "lt_aid_show_balanced"; // boolean
+const LSK_AID_SHOW_LITERAL = "lt_aid_show_literal"; // boolean
+const LSK_UI_NOTES_AUTOCOLLAPSE = "lt_ui_notes_autocollapse"; // boolean
+
+const LSK_A11Y_RAG_LABELS = "lt_a11y_rag_labels"; // boolean
+const LSK_A11Y_BIG_TARGETS = "lt_a11y_big_targets"; // boolean
+
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
   LT2EN: "/data/starter_lt_to_en.json",
@@ -275,41 +288,6 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
   );
 }));
 
-/* ----------------------------- Metrics bar ----------------------------- */
-function MetricsBar({ T, streak, level, levelProgress, HEADER_H, DOCK_H, METRICS_H, LEVEL_STEP }) {
-  const top = HEADER_H + DOCK_H;
-  return (
-    <div
-      className="fixed left-0 right-0 bg-zinc-950/95 backdrop-blur"
-      style={{
-        top: `${top}px`,
-        height: `${METRICS_H}px`,
-        zIndex: 9998,
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-      }}
-      aria-label="Metrics"
-    >
-      <div className="max-w-6xl mx-auto h-full px-3 sm:px-4 flex items-center gap-3">
-        <div className="text-xs text-zinc-400">
-          🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
-        </div>
-        <div className="text-xs text-zinc-400">
-          🥇 {T.level} <span className="font-semibold">{level}</span>
-        </div>
-        <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
-          <div
-            className="h-full bg-emerald-600"
-            style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
-          />
-        </div>
-        <div className="text-xs text-zinc-400">
-          {levelProgress} / {LEVEL_STEP} XP
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ============================== APP ============================== */
 export default function App(){
   // layout
@@ -318,10 +296,9 @@ export default function App(){
   useEffect(()=>{ const onR=()=>setWidth(window.innerWidth); window.addEventListener("resize",onR); return ()=>window.removeEventListener("resize",onR); },[]);
   const WIDE = width>=1024;
 
-  // header + dock + metrics heights
+  // header + dock heights (dock has 2 rows now)
   const HEADER_H = 56;
-  const DOCK_H   = 56;  // single-row dock (search/sort/nav)
-  const METRICS_H = 40; // metrics bar
+  const DOCK_H   = 112;
 
   // data + prefs
   const [rows,setRows]=useState(loadRows());
@@ -434,7 +411,7 @@ export default function App(){
   function saveEdit(i){ const clean={...editDraft,"RAG Icon":normalizeRag(editDraft["RAG Icon"])}; setRows(prev=>prev.map((r,idx)=>idx===i?clean:r)); setEditIdx(null); }
   function remove(i){ if(!confirm(T.confirm)) return; setRows(prev=>prev.filter((_,idx)=>idx!==i)); }
 
-  // library ops (merge/import/etc.)
+  // library ops
   async function mergeRows(newRows){
     const cleaned=newRows.map(r=>({ English:String(r.English||"").trim(), Lithuanian:String(r.Lithuanian||"").trim(),
       Phonetic:String(r.Phonetic||"").trim(), Category:String(r.Category||"").trim(), Usage:String(r.Usage||"").trim(),
@@ -551,8 +528,8 @@ export default function App(){
     const fileRef=useRef(null);
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-        {/* spacer for header + dock + metrics */}
-        <div style={{ height: HEADER_H + DOCK_H + METRICS_H }} />
+        {/* spacer for header + dock */}
+        <div style={{ height: HEADER_H + DOCK_H }} />
 
         <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button onClick={()=>fetchStarter("EN2LT")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.installEN}</button>
@@ -648,8 +625,8 @@ export default function App(){
   function HomeView(){
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-        {/* Spacer for header + dock + metrics */}
-        <div style={{ height: HEADER_H + DOCK_H + METRICS_H }} />
+        {/* Spacer for header + fixed SearchDock (now 2 rows) */}
+        <div style={{ height: HEADER_H + DOCK_H }} />
 
         {/* List */}
         {sortMode==="RAG" && WIDE ? (
@@ -716,6 +693,33 @@ export default function App(){
   function SettingsView(){
     const [showKey,setShowKey]=useState(false);
 
+    /* ------------------ Step 2 states (persisted flags) ------------------ */
+    const [defTone,setDefTone] = useState(()=> localStorage.getItem(LSK_DEF_TONE) || "Neutral");
+    const [defAudience,setDefAudience] = useState(()=> localStorage.getItem(LSK_DEF_AUDIENCE) || "General");
+    const [defRegister,setDefRegister] = useState(()=> localStorage.getItem(LSK_DEF_REGISTER) || "Natural");
+    const [defAddrGender,setDefAddrGender] = useState(()=> localStorage.getItem(LSK_DEF_ADDR_GENDER) || "unspecified");
+
+    const [aidShowBalanced,setAidShowBalanced] = useState(()=> (localStorage.getItem(LSK_AID_SHOW_BALANCED) ?? "false") === "true");
+    const [aidShowLiteral,setAidShowLiteral] = useState(()=> (localStorage.getItem(LSK_AID_SHOW_LITERAL) ?? "false") === "true");
+    const [uiNotesAutocollapse,setUiNotesAutocollapse] = useState(()=> (localStorage.getItem(LSK_UI_NOTES_AUTOCOLLAPSE) ?? "true") !== "false");
+
+    const [a11yRagLabels,setA11yRagLabels] = useState(()=> (localStorage.getItem(LSK_A11Y_RAG_LABELS) ?? "false") === "true");
+    const [a11yBigTargets,setA11yBigTargets] = useState(()=> (localStorage.getItem(LSK_A11Y_BIG_TARGETS) ?? "false") === "true");
+
+    useEffect(()=>localStorage.setItem(LSK_DEF_TONE, defTone),[defTone]);
+    useEffect(()=>localStorage.setItem(LSK_DEF_AUDIENCE, defAudience),[defAudience]);
+    useEffect(()=>localStorage.setItem(LSK_DEF_REGISTER, defRegister),[defRegister]);
+    useEffect(()=>localStorage.setItem(LSK_DEF_ADDR_GENDER, defAddrGender),[defAddrGender]);
+
+    useEffect(()=>localStorage.setItem(LSK_AID_SHOW_BALANCED, String(aidShowBalanced)),[aidShowBalanced]);
+    useEffect(()=>localStorage.setItem(LSK_AID_SHOW_LITERAL, String(aidShowLiteral)),[aidShowLiteral]);
+    useEffect(()=>localStorage.setItem(LSK_UI_NOTES_AUTOCOLLAPSE, String(uiNotesAutocollapse)),[uiNotesAutocollapse]);
+
+    useEffect(()=>localStorage.setItem(LSK_A11Y_RAG_LABELS, String(a11yRagLabels)),[a11yRagLabels]);
+    useEffect(()=>localStorage.setItem(LSK_A11Y_BIG_TARGETS, String(a11yBigTargets)),[a11yBigTargets]);
+
+    /* -------------------------------------------------------------------- */
+
     async function fetchAzureVoices(){
       try{
         const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
@@ -726,9 +730,41 @@ export default function App(){
       }catch(e){ alert("Failed to fetch voices. Check key/region."); }
     }
 
+    const RadioRow = ({label, value, onChange, options}) => (
+      <div>
+        <div className="text-xs text-zinc-400 mb-1">{label}</div>
+        <div className="flex flex-wrap gap-2">
+          {options.map(o=>(
+            <label key={o.value} className="cursor-pointer">
+              <input
+                type="radio"
+                name={label}
+                className="peer sr-only"
+                checked={value===o.value}
+                onChange={()=>onChange(o.value)}
+              />
+              <span className="px-3 py-1.5 rounded-md border border-zinc-700 bg-zinc-900 peer-checked:bg-emerald-600 peer-checked:border-emerald-600 text-sm">
+                {o.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+
+    const Toggle = ({label, checked, onChange, hint}) => (
+      <label className="flex items-center justify-between gap-3 py-2">
+        <div className="flex-1">
+          <div className="text-sm">{label}</div>
+          {hint && <div className="text-xs text-zinc-400">{hint}</div>}
+        </div>
+        <input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)} />
+      </label>
+    );
+
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-        <div style={{ height: HEADER_H + DOCK_H + METRICS_H }} />
+        <div style={{ height: HEADER_H + DOCK_H }} />
 
         <h2 className="text-2xl font-bold mb-4">{T.settings}</h2>
 
@@ -747,7 +783,104 @@ export default function App(){
           </div>
         </div>
 
-        {/* TTS */}
+        {/* Translation defaults (new) */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
+          <div className="text-sm font-semibold mb-3">Translation defaults</div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <RadioRow
+              label="Tone"
+              value={defTone}
+              onChange={setDefTone}
+              options={[
+                {label:"Neutral (default)", value:"Neutral"},
+                {label:"Friendly", value:"Friendly"},
+                {label:"Formal", value:"Formal"},
+                {label:"Reserved", value:"Reserved"},
+              ]}
+            />
+            <RadioRow
+              label="Audience"
+              value={defAudience}
+              onChange={setDefAudience}
+              options={[
+                {label:"General (default)", value:"General"},
+                {label:"Peer", value:"Peer"},
+                {label:"Respectful", value:"Respectful"},
+                {label:"Intimate (future)", value:"Intimate"},
+              ]}
+            />
+            <RadioRow
+              label="Register"
+              value={defRegister}
+              onChange={setDefRegister}
+              options={[
+                {label:"Natural (default)", value:"Natural"},
+                {label:"Balanced (peek)", value:"Balanced"},
+                {label:"Literal (peek)", value:"Literal"},
+              ]}
+            />
+            <RadioRow
+              label="Addressed person (default)"
+              value={defAddrGender}
+              onChange={setDefAddrGender}
+              options={[
+                {label:"Not specified", value:"unspecified"},
+                {label:"Female", value:"female"},
+                {label:"Male", value:"male"},
+                {label:"General / plural", value:"general_plural"},
+              ]}
+            />
+          </div>
+          <div className="text-xs text-zinc-400 mt-3">
+            These are defaults for the Add form. You can still override per translation.
+          </div>
+        </div>
+
+        {/* Learning aids (new) */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
+          <div className="text-sm font-semibold mb-1">Learning aids</div>
+          <div className="divide-y divide-zinc-800">
+            <Toggle
+              label="Show Balanced paraphrase in Notes"
+              checked={aidShowBalanced}
+              onChange={setAidShowBalanced}
+              hint="If available, includes a Balanced (more literal) paraphrase under each card's Notes."
+            />
+            <Toggle
+              label="Show literal gloss"
+              checked={aidShowLiteral}
+              onChange={setAidShowLiteral}
+              hint="When available, show a word-by-word gloss in Notes."
+            />
+            <Toggle
+              label="Auto-collapse long Notes"
+              checked={uiNotesAutocollapse}
+              onChange={setUiNotesAutocollapse}
+              hint="Keep cards tidy; expand with More."
+            />
+          </div>
+        </div>
+
+        {/* Accessibility (new) */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
+          <div className="text-sm font-semibold mb-1">Accessibility</div>
+          <div className="divide-y divide-zinc-800">
+            <Toggle
+              label="Color-blind RAG labels"
+              checked={a11yRagLabels}
+              onChange={setA11yRagLabels}
+              hint="Add small R/A/G text inside the coloured chip."
+            />
+            <Toggle
+              label="Larger touch targets"
+              checked={a11yBigTargets}
+              onChange={setA11yBigTargets}
+              hint="Increase minimum height/padding for pills and buttons."
+            />
+          </div>
+        </div>
+
+        {/* TTS (unchanged except masked key control) */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
           <div className="text-sm font-semibold mb-3">{T.azure} / {T.browserVoice}</div>
 
@@ -830,7 +963,7 @@ export default function App(){
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} cn={cn} />
 
-      {/* Fixed dock with search/sort/nav */}
+      {/* Fixed, portaled dock with search + nav + pinned bars */}
       <SearchDock
         SearchBox={SearchBox}
         sortMode={sortMode}
@@ -840,26 +973,20 @@ export default function App(){
         offsetTop={HEADER_H}
         page={page}
         setPage={setPage}
-      />
-
-      {/* Fixed metrics bar under the dock */}
-      <MetricsBar
-        T={T}
         streak={streak}
         level={level}
         levelProgress={levelProgress}
-        HEADER_H={HEADER_H}
-        DOCK_H={DOCK_H}
-        METRICS_H={METRICS_H}
-        LEVEL_STEP={LEVEL_STEP}
+        levelStep={LEVEL_STEP}
+        tab={tab}
+        setTab={setTab}
       />
 
       {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
-      {/* Add Entry Modal (z above dock+metrics) */}
+      {/* Add Entry Modal */}
       {addOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10050]"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onPointerDown={()=>{ setAddOpen(false); if(document.activeElement instanceof HTMLElement) document.activeElement.blur(); }}
         >
           <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4" onPointerDown={(e)=>e.stopPropagation()}>
