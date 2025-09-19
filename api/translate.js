@@ -1,6 +1,6 @@
 // api/translate.js
 export const config = {
-  runtime: "nodejs18.x",
+  runtime: "nodejs",
 };
 
 function bad(res, msg = "Bad Request", code = 400) {
@@ -34,7 +34,6 @@ function wantedVariants(body) {
   if (body.includeGeneral) list.push({ key: "general", label: "General / plural" });
   if (body.includeFemale) list.push({ key: "female", label: "Addressing female" });
   if (body.includeMale) list.push({ key: "male", label: "Addressing male" });
-  // If none checked, default to general (prevents empty previews)
   if (!list.length) list.push({ key: "general", label: "General / plural" });
   return list;
 }
@@ -49,22 +48,18 @@ function buildPrompt(input) {
     sheet = "Phrases",
   } = input;
 
-  // We only enforce the matrix when EN -> LT (your current flow)
   const isEN2LT = String(direction || "").toUpperCase() === "EN2LT";
 
-  // Hard rule set: how “you” should map in Lithuanian by variant.
-  // These are *requirements*, not suggestions.
   const matrixRules = `
 MATRIX RULES (Lithuanian)
 - "General / plural" MUST use formal/plural 2nd-person: **jūs (nom.) / jus (acc.) / jums (dat.) / jūsų (gen.)**, with matching verb agreement (plural/polite).
 - "Addressing female" and "Addressing male" MUST use informal singular: **tu (nom.) / tave (acc.) / tau (dat.) / tavo (gen.)**, with singular verb agreement.
 
 GUIDANCE
-- If the phrase has no grammatical difference between male vs female (e.g., "Aš tave myliu"), produce identical LT text for those two and add a short note: "Gender-neutral in Lithuanian."
-- If the phrase uses adjectives or past participles that change by addressee gender (rare for direct address), inflect appropriately.
-- Respect requested tone/audience/register when word choice allows, but DO NOT violate the pronoun/verb-agreement rules above.
+- If male vs female are identical in Lithuanian, return the same LT for both and add note "Gender-neutral in Lithuanian."
+- Respect tone/audience/register when word choice allows, but DO NOT violate the pronoun/verb rules.
 
-EXAMPLES (not to be copied literally unless they match the input):
+EXAMPLES:
 - "I love you."
   • general → "Aš jus myliu."
   • addressing female → "Aš tave myliu."
@@ -74,21 +69,20 @@ EXAMPLES (not to be copied literally unless they match the input):
   • addressing female/male → "Ar turi laiko?"
 `;
 
-  // Output schema
   const schema = `
 OUTPUT
-Return ONLY JSON with this shape:
+Return ONLY JSON:
 {
   "variants": [
     { "variant": "general|female|male",
       "lt": "Lithuanian",
       "ph": "English-friendly phonetics",
       "usage": "1 concise sentence of usage",
-      "notes": "0-2 concise lines of guidance/alternatives; may be empty"
+      "notes": "0-2 concise lines; may be empty"
     }
   ]
 }
-No markdown, no extra keys, no comments.
+No markdown, extra keys, or comments.
 `;
 
   const sys = [
@@ -104,7 +98,7 @@ No markdown, no extra keys, no comments.
     `AUDIENCE: ${audience}`,
     `REGISTER: ${register} (Natural default; Balanced/Literal are reference-only for notes)`,
     matrixRules,
-    `INPUT ENGLISH: "${english.trim()}"`,
+    `INPUT ENGLISH: "${String(english || "").trim()}"`,
     schema,
   ].join("\n\n");
 
@@ -113,9 +107,7 @@ No markdown, no extra keys, no comments.
 
 async function openAIJson(prompt, model = "gpt-4o-mini", temperature = 0.3) {
   const key = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_BETA || "";
-  if (!key) {
-    throw new Error("Missing OPENAI_API_KEY");
-  }
+  if (!key) throw new Error("Missing OPENAI_API_KEY");
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -168,26 +160,21 @@ export default async function handler(req, res) {
   const english = String(body.english || "").trim();
   if (!english) return bad(res, 'Missing or invalid "english" string');
 
-  // Compose
   const variantsWanted = wantedVariants(body);
   const prompt = buildPrompt(body);
 
   try {
     const json = await openAIJson(prompt);
-
-    // Filter to only the variants we asked for, and sanitize
     const got = Array.isArray(json?.variants) ? json.variants : [];
-    const mapWanted = new Set(variantsWanted.map((v) => v.key));
+    const wantedSet = new Set(variantsWanted.map((v) => v.key));
     const cleaned = got
       .map(sanitizeVariant)
       .filter(Boolean)
-      .filter((v) => mapWanted.has(v.variant));
+      .filter((v) => wantedSet.has(v.variant));
 
-    // If model returned fewer variants than requested, try to synthesize missing ones
     const have = new Set(cleaned.map((v) => v.variant));
     variantsWanted.forEach((w) => {
       if (have.has(w.key)) return;
-      // Minimal fallback: reuse any available as a placeholder and mark note.
       const reuse = cleaned[0];
       if (reuse) {
         cleaned.push({
@@ -200,13 +187,8 @@ export default async function handler(req, res) {
       }
     });
 
-    // Return strictly what the client expects
     return ok(res, { variants: cleaned });
   } catch (e) {
-    return bad(
-      res,
-      `Translation failed: ${e?.message || e || "Unknown error"}`,
-      500
-    );
+    return bad(`Translation failed: ${e?.message || e || "Unknown error"}`, 500);
   }
 }
