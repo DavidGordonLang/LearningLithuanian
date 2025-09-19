@@ -19,13 +19,6 @@ const LSK_XP = "lt_xp_v1";
 const LSK_SORT = "lt_sort_v1";
 const LSK_DIR = "lt_direction_v1";
 
-/* Settings we’re restoring/adding (flags only, for now) */
-const LSK_DEF_TONE = "lt_def_tone";             // "Neutral" | "Friendly" | "Formal" | "Reserved"
-const LSK_DEF_AUDIENCE = "lt_def_audience";     // "General" | "Peer" | "Respectful" | "Intimate"
-const LSK_DEF_REGISTER = "lt_def_register";     // "Natural" | "Balanced" | "Literal"
-const LSK_SHOW_BALANCED_NOTES = "lt_show_balanced_notes"; // "1"/"0"
-const LSK_A11Y_RAG_LABELS = "lt_a11y_rag_labels";         // "1"/"0"
-
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
   LT2EN: "/data/starter_lt_to_en.json",
@@ -103,33 +96,6 @@ const STR = {
     score: "Score",
     done: "Done",
     retry: "Retry",
-
-    // Settings sections we’re restoring
-    transDefaults: "Translation defaults",
-    tone: "Tone",
-    audience: "Audience",
-    register: "Register",
-    natural: "Natural",
-    balanced: "Balanced",
-    literal: "Literal",
-    neutral: "Neutral",
-    friendly: "Friendly",
-    formal: "Formal",
-    reserved: "Reserved",
-    general: "General",
-    peer: "Peer",
-    respectful: "Respectful",
-    intimate: "Intimate",
-
-    learningAids: "Learning aids",
-    showBalancedInNotes: "Show Balanced in Notes",
-    showBalancedInNotesHint:
-      "When enabled, the Balanced version (if available) is appended to Notes for reference.",
-
-    a11y: "Accessibility",
-    showRagLabels: "Show RAG labels",
-    showRagLabelsHint:
-      "Adds Red / Amber / Green text inside the colored RAG pill for color-blind support.",
   },
   LT2EN: {
     appTitle1: "Anglų",
@@ -197,32 +163,6 @@ const STR = {
     score: "Rezultatas",
     done: "Baigti",
     retry: "Kartoti",
-
-    transDefaults: "Vertimo numatytieji",
-    tone: "Tonas",
-    audience: "Auditorija",
-    register: "Registras",
-    natural: "Natūralus",
-    balanced: "Subalansuotas",
-    literal: "Tiesioginis",
-    neutral: "Neutralus",
-    friendly: "Draugiškas",
-    formal: "Oficialus",
-    reserved: "Santūrus",
-    general: "Bendra",
-    peer: "Bendraamžis",
-    respectful: "Pagarbus",
-    intimate: "Artimas",
-
-    learningAids: "Pagalbinės priemonės",
-    showBalancedInNotes: "Rodyti „Subalansuotą“ pastabose",
-    showBalancedInNotesHint:
-      "Kai įjungta, subalansuota versija (jei yra) pridedama į Pastabas kaip nuoroda.",
-
-    a11y: "Prieinamumas",
-    showRagLabels: "Rodyti RAG žymes",
-    showRagLabelsHint:
-      "Į spalvotą RAG žymę įterpiamas tekstas Raudona / Gintarinė / Žalia žmonėms su spalvų jutimo sutrikimais.",
   },
 };
 
@@ -345,13 +285,13 @@ export default function App(){
 
   // header + dock heights (dock has 2 rows now)
   const HEADER_H = 56;
-  const DOCK_H   = 112;
+  const DOCK_H   = 112; // ~two rows; adjust if you tweak paddings
 
   // data + prefs
   const [rows,setRows]=useState(loadRows());
   useEffect(()=>saveRows(rows),[rows]);
 
-  // one-time migration
+  // one-time migration for stable keys
   useEffect(()=>{ let changed=false;
     const migrated=rows.map(r=>{ if(!r._id||typeof r._id!=="string"){ changed=true; return {...r,_id:genId(),_ts:r._ts||nowTs()}; }
       return r; });
@@ -372,31 +312,6 @@ export default function App(){
   useEffect(()=>localStorage.setItem(LSK_DIR,direction),[direction]);
   const T = STR[direction];
 
-  // Accessibility + Learning aids + Defaults (persist)
-  const [showRagLabels, setShowRagLabels] = useState(() => {
-    try { return localStorage.getItem(LSK_A11Y_RAG_LABELS) === "1"; } catch { return false; }
-  });
-  useEffect(() => {
-    localStorage.setItem(LSK_A11Y_RAG_LABELS, showRagLabels ? "1" : "0");
-  }, [showRagLabels]);
-
-  const [showBalancedInNotes, setShowBalancedInNotes] = useState(() => {
-    try { return localStorage.getItem(LSK_SHOW_BALANCED_NOTES) === "1"; } catch { return false; }
-  });
-  useEffect(() => {
-    localStorage.setItem(LSK_SHOW_BALANCED_NOTES, showBalancedInNotes ? "1" : "0");
-  }, [showBalancedInNotes]);
-
-  const [defTone, setDefTone] = useState(() => localStorage.getItem(LSK_DEF_TONE) || "Neutral");
-  useEffect(() => { localStorage.setItem(LSK_DEF_TONE, defTone); }, [defTone]);
-
-  const [defAudience, setDefAudience] = useState(() => localStorage.getItem(LSK_DEF_AUDIENCE) || "General");
-  useEffect(() => { localStorage.setItem(LSK_DEF_AUDIENCE, defAudience); }, [defAudience]);
-
-  const [defRegister, setDefRegister] = useState(() => localStorage.getItem(LSK_DEF_REGISTER) || "Natural");
-  useEffect(() => { localStorage.setItem(LSK_DEF_REGISTER, defRegister); }, [defRegister]);
-
-  // xp / streak
   const [xp,setXp]=useState(loadXP());
   useEffect(()=>saveXP(xp),[xp]);
   useEffect(()=>{ if(!Number.isFinite(xp)) setXp(0); },[]);
@@ -459,7 +374,7 @@ export default function App(){
     return { "data-press":"1", onPointerDown:start, onPointerUp:finish, onPointerLeave:cancel, onPointerCancel:cancel, onContextMenu:(e)=>e.preventDefault() };
   }
 
-  // allow form controls to take focus
+  // let form controls take focus
   useEffect(()=>{ const onPD=(e)=>{ const t=e.target, el=t instanceof Element ? t : null;
       const formy=el?.matches?.("input, textarea, select, [contenteditable=''], [contenteditable='true']");
       if(formy) allowSearchBlurFor(1000);
@@ -483,7 +398,7 @@ export default function App(){
   function saveEdit(i){ const clean={...editDraft,"RAG Icon":normalizeRag(editDraft["RAG Icon"])}; setRows(prev=>prev.map((r,idx)=>idx===i?clean:r)); setEditIdx(null); }
   function remove(i){ if(!confirm(T.confirm)) return; setRows(prev=>prev.filter((_,idx)=>idx!==i)); }
 
-  // library ops
+  // library ops (merge/import/etc.)
   async function mergeRows(newRows){
     const cleaned=newRows.map(r=>({ English:String(r.English||"").trim(), Lithuanian:String(r.Lithuanian||"").trim(),
       Phonetic:String(r.Phonetic||"").trim(), Category:String(r.Category||"").trim(), Usage:String(r.Usage||"").trim(),
@@ -519,7 +434,7 @@ export default function App(){
     setDupeResults({exact,close});
   }
 
-  // quiz (unchanged)
+  // quiz
   const [quizOn,setQuizOn]=useState(false);
   const [quizQs,setQuizQs]=useState([]);
   const [quizIdx,setQuizIdx]=useState(0);
@@ -596,6 +511,14 @@ export default function App(){
     });
   },[]);
 
+  // 🔒 Lock body scroll while modal open
+  useEffect(()=>{
+    if(!addOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  },[addOpen]);
+
   /* ----------------------------- Views ----------------------------- */
   function LibraryView(){
     const fileRef=useRef(null);
@@ -619,7 +542,7 @@ export default function App(){
           <button onClick={clearLibrary} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2">{T.clearAll}</button>
         </div>
 
-        {/* Duplicates etc. unchanged */}
+        {/* Duplicates */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
             <div className="text-lg font-semibold">{T.dupFinder}</div>
@@ -629,7 +552,67 @@ export default function App(){
           <div className="text-sm text-zinc-400 mb-2">
             {T.exactGroups}: {dupeResults.exact.length} group(s)
           </div>
-          {/* exact groups + close matches (same as before)… */}
+          <div className="space-y-3 mb-6">
+            {dupeResults.exact.map((group,gi)=>(
+              <div key={gi} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {group.map((ridx)=>{
+                    const row=rows[ridx];
+                    return (
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                        </div>
+                        {(row.Usage||row.Notes)&&(
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && (<div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>)}
+                            {row.Notes && (<div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>)}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={()=>setRows(prev=>prev.filter((_,ii)=>ii!==ridx))}>{T.delete}</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-sm text-zinc-400 mb-2">
+            {T.closeMatches}: {dupeResults.close.length} pair(s)
+          </div>
+          <div className="space-y-3">
+            {dupeResults.close.map(([i,j,s])=>{
+              const A=rows[i], B=rows[j];
+              return (
+                <div key={`${i}-${j}`} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                  <div className="text-xs text-zinc-400 mb-2">{T.similarity}: {(s*100).toFixed(0)}%</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[{row:A,idx:i},{row:B,idx:j}].map(({row,idx:ridx})=>(
+                      <div key={ridx} className="border border-zinc-800 rounded-md p-2">
+                        <div className="font-medium">
+                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
+                        </div>
+                        {(row.Usage||row.Notes)&&(
+                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                            {row.Usage && (<div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>)}
+                            {row.Notes && (<div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>)}
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <button className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+                            onClick={()=>setRows(prev=>prev.filter((_,ii)=>ii!==ridx))}>{T.delete}</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -666,7 +649,6 @@ export default function App(){
                         startEdit={startEditRow} saveEdit={saveEdit} remove={remove}
                         normalizeRag={normalizeRag} pressHandlers={pressHandlers}
                         cn={cn} lastAddedId={justAddedId}
-                        showRagLabels={showRagLabels}
                       />
                     );
                   })}
@@ -687,7 +669,6 @@ export default function App(){
                 startEdit={startEditRow} saveEdit={saveEdit} remove={remove}
                 normalizeRag={normalizeRag} pressHandlers={pressHandlers}
                 cn={cn} lastAddedId={justAddedId}
-                showRagLabels={showRagLabels}
               />
             ))}
           </div>
@@ -718,10 +699,6 @@ export default function App(){
       }catch(e){ alert("Failed to fetch voices. Check key/region."); }
     }
 
-    const toneOpts = ["Neutral","Friendly","Formal","Reserved"];
-    const audOpts  = ["General","Peer","Respectful","Intimate"];
-    const regOpts  = ["Natural","Balanced","Literal"];
-
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div style={{ height: HEADER_H + DOCK_H }} />
@@ -741,105 +718,6 @@ export default function App(){
               <span>{T.lt2en}</span>
             </label>
           </div>
-        </div>
-
-        {/* Translation defaults (restored) */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
-          <div className="text-sm font-semibold mb-3">{T.transDefaults}</div>
-
-          <div className="grid gap-3">
-            {/* Tone */}
-            <div>
-              <div className="text-xs mb-2">{T.tone}</div>
-              <div className="flex flex-wrap gap-2">
-                {toneOpts.map(opt=>(
-                  <button
-                    key={opt}
-                    type="button"
-                    className={cn(
-                      "px-3 py-2 rounded-lg border",
-                      defTone===opt ? "bg-emerald-600 border-emerald-500 text-black font-medium" : "bg-zinc-800 border-zinc-700"
-                    )}
-                    onClick={()=>setDefTone(opt)}
-                  >
-                    {T[opt.toLowerCase()] || opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Audience */}
-            <div>
-              <div className="text-xs mb-2">{T.audience}</div>
-              <div className="flex flex-wrap gap-2">
-                {audOpts.map(opt=>(
-                  <button
-                    key={opt}
-                    type="button"
-                    className={cn(
-                      "px-3 py-2 rounded-lg border",
-                      defAudience===opt ? "bg-emerald-600 border-emerald-500 text-black font-medium" : "bg-zinc-800 border-zinc-700"
-                    )}
-                    onClick={()=>setDefAudience(opt)}
-                  >
-                    {T[opt.toLowerCase()] || opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Register */}
-            <div>
-              <div className="text-xs mb-2">{T.register}</div>
-              <div className="flex flex-wrap gap-2">
-                {regOpts.map(opt=>(
-                  <button
-                    key={opt}
-                    type="button"
-                    className={cn(
-                      "px-3 py-2 rounded-lg border",
-                      defRegister===opt ? "bg-emerald-600 border-emerald-500 text-black font-medium" : "bg-zinc-800 border-zinc-700"
-                    )}
-                    onClick={()=>setDefRegister(opt)}
-                  >
-                    {T[opt.toLowerCase()] || opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Learning aids (restored) */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
-          <div className="text-sm font-semibold mb-2">{T.learningAids}</div>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={showBalancedInNotes}
-              onChange={(e)=>setShowBalancedInNotes(e.target.checked)}
-            />
-            <div>
-              <div className="font-medium">{T.showBalancedInNotes}</div>
-              <div className="text-xs text-zinc-400">{T.showBalancedInNotesHint}</div>
-            </div>
-          </label>
-        </div>
-
-        {/* Accessibility (kept) */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
-          <div className="text-sm font-semibold mb-2">{T.a11y}</div>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={showRagLabels}
-              onChange={(e)=>setShowRagLabels(e.target.checked)}
-            />
-            <div>
-              <div className="font-medium">{T.showRagLabels}</div>
-              <div className="text-xs text-zinc-400">{T.showRagLabelsHint}</div>
-            </div>
-          </label>
         </div>
 
         {/* TTS */}
@@ -948,10 +826,13 @@ export default function App(){
       {/* Add Entry Modal */}
       {addOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           onPointerDown={()=>{ setAddOpen(false); if(document.activeElement instanceof HTMLElement) document.activeElement.blur(); }}
         >
-          <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4" onPointerDown={(e)=>e.stopPropagation()}>
+          <div
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
+            onPointerDown={(e)=>e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">{T.addEntry}</div>
               <button className="px-2 py-1 rounded-md bg-zinc-800" onClick={()=>setAddOpen(false)}>Close</button>
