@@ -1,190 +1,212 @@
-// /api/translate.js
-// Variant-aware translate endpoint
-// Expects JSON: { english, direction, options: { tone, audience, register, variants: {general, female, male}, includeBalanced } }
-//
-// Returns JSON:
-// { ok: true, variants: [{ key, lt, ph, usage, notes }...], balanced?: { lt, ph, usage, notes } }
-
+// api/translate.js
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs18.x",
 };
 
-function json(status, obj) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" },
+function bad(res, msg = "Bad Request", code = 400) {
+  res.statusCode = code;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify({ ok: false, error: msg }));
+}
+
+function ok(res, data) {
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify({ ok: true, ...data }));
+}
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let buf = "";
+    req.on("data", (c) => (buf += c));
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(buf || "{}"));
+      } catch (e) {
+        reject(e);
+      }
+    });
   });
 }
 
-function coerceStr(x) {
-  if (typeof x === "string") return x.trim();
-  if (x == null) return "";
-  return String(x).trim();
+function wantedVariants(body) {
+  const list = [];
+  if (body.includeGeneral) list.push({ key: "general", label: "General / plural" });
+  if (body.includeFemale) list.push({ key: "female", label: "Addressing female" });
+  if (body.includeMale) list.push({ key: "male", label: "Addressing male" });
+  // If none checked, default to general (prevents empty previews)
+  if (!list.length) list.push({ key: "general", label: "General / plural" });
+  return list;
 }
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ALT;
+function buildPrompt(input) {
+  const {
+    english,
+    tone = "neutral",
+    audience = "general",
+    register = "natural",
+    direction = "EN2LT",
+    sheet = "Phrases",
+  } = input;
 
-const SYS_PROMPT = `
-You are a Lithuanian translation assistant for a phrasebook app.
-Your job is to produce short, natural Lithuanian lines, plus a simple phonetic hint (Latin letters),
-a one-line usage/context, and concise notes (only if genuinely useful).
+  // We only enforce the matrix when EN -> LT (your current flow)
+  const isEN2LT = String(direction || "").toUpperCase() === "EN2LT";
 
-CRITICAL:
-- Keep Lithuanian lines short and natural for everyday speech.
-- When the caller asks for multiple "variants" (general, addressing_female, addressing_male),
-  ONLY change the Lithuanian if Lithuanian actually changes by addressee; otherwise reuse the same line.
-- Do NOT invent gender differences where Lithuanian does not vary; Lithuanian often remains the same.
-- If there is *no* change between variants, still include each requested variant (with the same Lithuanian),
-  so the client can collapse them.
-- "Balanced" is an explanatory peek: provide a slightly more literal paraphrase/word-choice explanation.
-  Do not be verbose; 1–2 sentences max. Use English for explanations.
+  // Hard rule set: how “you” should map in Lithuanian by variant.
+  // These are *requirements*, not suggestions.
+  const matrixRules = `
+MATRIX RULES (Lithuanian)
+- "General / plural" MUST use formal/plural 2nd-person: **jūs (nom.) / jus (acc.) / jums (dat.) / jūsų (gen.)**, with matching verb agreement (plural/polite).
+- "Addressing female" and "Addressing male" MUST use informal singular: **tu (nom.) / tave (acc.) / tau (dat.) / tavo (gen.)**, with singular verb agreement.
 
-Output schema (MUST be valid JSON):
-{
-  "variants": [
-    { "key": "general", "lt": "...", "ph": "...", "usage": "...", "notes": "..." },
-    { "key": "addressing_female", "lt": "...", "ph": "...", "usage": "...", "notes": "..." },
-    { "key": "addressing_male", "lt": "...", "ph": "...", "usage": "...", "notes": "..." }
-  ],
-  "balanced": { "lt": "...", "ph": "...", "usage": "...", "notes": "..." } // include ONLY if requested
-}
+GUIDANCE
+- If the phrase has no grammatical difference between male vs female (e.g., "Aš tave myliu"), produce identical LT text for those two and add a short note: "Gender-neutral in Lithuanian."
+- If the phrase uses adjectives or past participles that change by addressee gender (rare for direct address), inflect appropriately.
+- Respect requested tone/audience/register when word choice allows, but DO NOT violate the pronoun/verb-agreement rules above.
 
-Rules:
-- "ph" is a rough, friendly phonetic; keep it short (no IPA).
-- "usage" is one concise sentence.
-- "notes" is optional; keep it tight (alternatives/register/grammar only if helpful).
-- Never include Markdown or backticks.
+EXAMPLES (not to be copied literally unless they match the input):
+- "I love you."
+  • general → "Aš jus myliu."
+  • addressing female → "Aš tave myliu."
+  • addressing male → "Aš tave myliu." (note gender-neutral)
+- "Do you have time?"
+  • general → "Ar turite laiko?" (polite) 
+  • addressing female/male → "Ar turi laiko?"
 `;
 
-async function callOpenAI({ english, direction, options }) {
-  if (!OPENAI_API_KEY) {
+  // Output schema
+  const schema = `
+OUTPUT
+Return ONLY JSON with this shape:
+{
+  "variants": [
+    { "variant": "general|female|male",
+      "lt": "Lithuanian",
+      "ph": "English-friendly phonetics",
+      "usage": "1 concise sentence of usage",
+      "notes": "0-2 concise lines of guidance/alternatives; may be empty"
+    }
+  ]
+}
+No markdown, no extra keys, no comments.
+`;
+
+  const sys = [
+    `You are a careful Lithuanian translator for a phrasebook app.`,
+    `Target users are beginners; keep translations idiomatic, clean, and safe.`,
+    `Keep usage/notes short.`,
+  ].join(" ");
+
+  const user = [
+    `DIRECTION: ${isEN2LT ? "EN → LT" : "LT → EN"}`,
+    `SHEET: ${sheet}`,
+    `TONE: ${tone}`,
+    `AUDIENCE: ${audience}`,
+    `REGISTER: ${register} (Natural default; Balanced/Literal are reference-only for notes)`,
+    matrixRules,
+    `INPUT ENGLISH: "${english.trim()}"`,
+    schema,
+  ].join("\n\n");
+
+  return { system: sys, user };
+}
+
+async function openAIJson(prompt, model = "gpt-4o-mini", temperature = 0.3) {
+  const key = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_BETA || "";
+  if (!key) {
     throw new Error("Missing OPENAI_API_KEY");
   }
 
-  const wantGeneral = !!(options?.variants?.general);
-  const wantFemale  = !!(options?.variants?.female);
-  const wantMale    = !!(options?.variants?.male);
-  const wantBalanced = !!options?.includeBalanced;
-
-  const requestedKeys = [];
-  if (wantGeneral) requestedKeys.push("general");
-  if (wantFemale)  requestedKeys.push("addressing_female");
-  if (wantMale)    requestedKeys.push("addressing_male");
-
-  // Simple guard – always request at least general
-  if (requestedKeys.length === 0) requestedKeys.push("general");
-
-  const userPrompt = {
-    english: coerceStr(english),
-    direction: direction === "LT2EN" ? "LT2EN" : "EN2LT",
-    tone: coerceStr(options?.tone || "neutral"),
-    audience: coerceStr(options?.audience || "general"),
-    register: coerceStr(options?.register || "natural"),
-    requestedVariants: requestedKeys,
-    includeBalanced: wantBalanced,
-  };
-
-  const messages = [
-    { role: "system", content: SYS_PROMPT },
-    {
-      role: "user",
-      content:
-        `Translate with the constraints below and return EXACTLY the JSON schema:
-
-Task:
-- Direction: ${userPrompt.direction}
-- English: "${userPrompt.english}"
-
-Style:
-- Tone: ${userPrompt.tone}
-- Audience: ${userPrompt.audience}
-- Register: ${userPrompt.register}
-
-Variants to produce: ${userPrompt.requestedVariants.join(", ")}
-Include balanced: ${userPrompt.includeBalanced ? "yes" : "no"}
-
-Remember: produce JSON only, no extra text.`,
-    },
-  ];
-
-  // Use the Chat Completions API via fetch to avoid SDK coupling
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "content-type": "application/json",
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.4,
+      model,
+      temperature,
       response_format: { type: "json_object" },
-      messages,
+      messages: [
+        { role: "system", content: prompt.system },
+        { role: "user", content: prompt.user },
+      ],
     }),
   });
 
-  if (!resp.ok) {
-    const txt = await resp.text().catch(() => "");
-    throw new Error(`OpenAI HTTP ${resp.status}: ${txt || resp.statusText}`);
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`OpenAI error ${res.status}: ${txt || res.statusText}`);
   }
 
-  const data = await resp.json();
-  const raw = data?.choices?.[0]?.message?.content || "{}";
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("Model did not return valid JSON.");
-  }
-
-  const cleanedVariants = Array.isArray(parsed.variants) ? parsed.variants : [];
-  const clean = (v, key) => ({
-    key: key || coerceStr(v.key),
-    lt: coerceStr(v.lt),
-    ph: coerceStr(v.ph),
-    usage: coerceStr(v.usage),
-    notes: coerceStr(v.notes),
-  });
-
-  const out = {
-    ok: true,
-    variants: cleanedVariants.map((v) => clean(v)),
-  };
-
-  if (userPrompt.includeBalanced && parsed.balanced) {
-    out.balanced = clean(parsed.balanced, "balanced");
-  }
-
-  return out;
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content || "{}";
+  return JSON.parse(content);
 }
 
-export default async function handler(req) {
+function sanitizeVariant(v) {
+  const variant = String(v?.variant || "").toLowerCase();
+  const lt = String(v?.lt || "").trim();
+  const ph = String(v?.ph || "").trim();
+  const usage = String(v?.usage || "").trim();
+  const notes = String(v?.notes || "").trim();
+  if (!["general", "female", "male"].includes(variant)) return null;
+  if (!lt) return null;
+  return { variant, lt, ph, usage, notes };
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") return bad(res, "Use POST");
+
+  let body;
   try {
-    if (req.method !== "POST") {
-      return json(405, { ok: false, error: "Method not allowed" });
-    }
+    body = await parseBody(req);
+  } catch {
+    return bad(res, "Invalid JSON body");
+  }
 
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return json(400, { ok: false, error: "Expected JSON body" });
-    }
+  const english = String(body.english || "").trim();
+  if (!english) return bad(res, 'Missing or invalid "english" string');
 
-    const english = coerceStr(body.english);
-    const direction = coerceStr(body.direction || "EN2LT");
-    const options = body.options || {};
+  // Compose
+  const variantsWanted = wantedVariants(body);
+  const prompt = buildPrompt(body);
 
-    if (!english) {
-      return json(400, { ok: false, error: 'Missing or invalid "english" string' });
-    }
+  try {
+    const json = await openAIJson(prompt);
 
-    const result = await callOpenAI({ english, direction, options });
-    return json(200, result);
-  } catch (err) {
-    return json(500, {
-      ok: false,
-      error: String(err?.message || err || "Server error"),
+    // Filter to only the variants we asked for, and sanitize
+    const got = Array.isArray(json?.variants) ? json.variants : [];
+    const mapWanted = new Set(variantsWanted.map((v) => v.key));
+    const cleaned = got
+      .map(sanitizeVariant)
+      .filter(Boolean)
+      .filter((v) => mapWanted.has(v.variant));
+
+    // If model returned fewer variants than requested, try to synthesize missing ones
+    const have = new Set(cleaned.map((v) => v.variant));
+    variantsWanted.forEach((w) => {
+      if (have.has(w.key)) return;
+      // Minimal fallback: reuse any available as a placeholder and mark note.
+      const reuse = cleaned[0];
+      if (reuse) {
+        cleaned.push({
+          ...reuse,
+          variant: w.key,
+          notes:
+            (reuse.notes ? reuse.notes + " " : "") +
+            "(Auto-filled: verify pronoun/register for this variant.)",
+        });
+      }
     });
+
+    // Return strictly what the client expects
+    return ok(res, { variants: cleaned });
+  } catch (e) {
+    return bad(
+      res,
+      `Translation failed: ${e?.message || e || "Unknown error"}`,
+      500
+    );
   }
 }
