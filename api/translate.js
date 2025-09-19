@@ -1,39 +1,26 @@
-// Vercel Serverless Function (Node.js)
 // File: api/translate.js
-// Reads body JSON and returns a translation object your client already understands,
-// plus optional `variants` and `balanced`.
+// Vercel Edge Function – robust JSON parsing + clearer errors + backward compatibility.
 
-const MODEL = process.env.OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
+export const config = { runtime: "edge" };
+
+const MODEL = (process.env.OPENAI_TRANSLATE_MODEL || "gpt-4o-mini").trim();
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 
-function safeStr(x, fallback = "") {
-  return (typeof x === "string" ? x : fallback).trim();
-}
+/* ------------------------- helpers ------------------------- */
+const j = (obj, status = 200) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
 
-function bool(x) {
-  return x === true || x === "true" || x === 1 || x === "1";
-}
+const s = (x, f = "") => (typeof x === "string" ? x : f).trim();
+const b = (x) => x === true || x === "true" || x === 1 || x === "1";
 
-function pickCategory(txt = "") {
-  // Very light heuristic; the UI can still override.
-  const t = txt.trim();
-  if (t.endsWith("?")) return "Questions";
-  return "Phrases";
-}
+const pickCategory = (txt = "") =>
+  txt.trim().endsWith("?") ? "Questions" : "Phrases";
 
-// Compose a single instruction for one variant
-function variantInstruction(variantKey) {
-  if (variantKey === "female") {
-    return "Addressed person is female; use forms that agree with addressing a woman when gendered forms differ.";
-  }
-  if (variantKey === "male") {
-    return "Addressed person is male; use forms that agree with addressing a man when gendered forms differ.";
-  }
-  // general
-  return "Addressed person is unspecified or plural; prefer neutral/general address.";
-}
-
-function makeMessages(payload) {
+/* Build prompt */
+function buildPrompt(payload) {
   const {
     direction = "EN2LT",
     english = "",
@@ -44,27 +31,25 @@ function makeMessages(payload) {
     variants = {},
   } = payload || {};
 
-  // We translate either EN→LT or LT→EN; current app focuses on EN→LT.
-  const src = safeStr(direction) === "LT2EN" ? "Lithuanian" : "English";
-  const dst = safeStr(direction) === "LT2EN" ? "English" : "Lithuanian";
+  const src = s(direction) === "LT2EN" ? "Lithuanian" : "English";
+  const dst = s(direction) === "LT2EN" ? "English" : "Lithuanian";
+  const userText = src === "English" ? s(english) : s(lithuanian);
 
-  const userText =
-    src === "English" ? safeStr(english) : safeStr(lithuanian);
-
-  const wantGeneral = bool(variants?.general ?? true);
-  const wantFemale = bool(variants?.female);
-  const wantMale = bool(variants?.male);
-
+  const wantGeneral = b(variants?.general ?? true);
+  const wantFemale = b(variants?.female);
+  const wantMale = b(variants?.male);
   const variantList = [
     ...(wantGeneral ? ["general"] : []),
     ...(wantFemale ? ["female"] : []),
     ...(wantMale ? ["male"] : []),
   ];
+  const wantVariants =
+    variantList.length > 1 || (variantList.length === 1 && variantList[0] !== "general");
+  const includeBalanced = register === "Balanced";
 
-  // Register guidance
   const regNote =
     register === "Literal"
-      ? "Produce a literal, word-for-word style where feasible, even if a bit stiff."
+      ? "Produce a literal, word-for-word style where feasible, even if slightly stiff."
       : register === "Balanced"
       ? "Produce a balanced rendering (close to the source wording but still natural)."
       : "Default to natural, idiomatic modern usage.";
@@ -75,18 +60,10 @@ function makeMessages(payload) {
     "Never invent facts; keep usage and notes practical for a learner.",
   ].join(" ");
 
-  const style = `Tone: ${tone}. Audience: ${audience}. Register: ${register}. ${regNote}`;
-
-  // When multiple variants are requested, we’ll ask for an array of variants too.
-  const wantVariants = variantList.length > 1 || (variantList.length === 1 && variantList[0] !== "general");
-
-  // Balanced “peek” (for Notes/aux info)
-  const includeBalanced = register === "Balanced";
-
   const user = [
     `Translate the following ${src} text into ${dst}.`,
     `Source (${src}): """${userText}"""`,
-    style,
+    `Tone: ${tone}. Audience: ${audience}. Register: ${register}. ${regNote}`,
     wantVariants
       ? `Also generate ${variantList.length} ${dst} variants as appropriate: ${variantList.join(", ")}.`
       : "A single best rendering is fine.",
@@ -98,84 +75,44 @@ function makeMessages(payload) {
       ? `  - "lithuanian" (primary), "phonetic", "usage", "notes", "category", "variants" (array of {key, lithuanian, phonetic, usage, notes}),`
       : `  - "lithuanian" (primary), "phonetic", "usage", "notes", "category",`,
     includeBalanced ? `  - "balanced"` : ``,
-    `Notes should include brief alternatives, register/grammar tips where useful.`,
-    `Category should be one of "Phrases", "Questions", "Words", or "Numbers".`,
+    `Category must be "Phrases", "Questions", "Words", or "Numbers".`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  return { sys, user, wantVariants, includeBalanced, variantList };
-}
-
-async function callOpenAI(messages) {
-  const res = await fetch(OPENAI_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0.4,
-      messages: [
-        { role: "system", content: messages.sys },
-        { role: "user", content: messages.user },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`OpenAI error (${res.status}): ${txt || res.statusText}`);
-  }
-
-  const out = await res.json();
-  const content = out?.choices?.[0]?.message?.content ?? "{}";
-  let json;
-  try {
-    json = JSON.parse(content);
-  } catch {
-    json = {};
-  }
-  return json;
+  return { sys, user, includeBalanced };
 }
 
 function normalizeResponse(payload, ai) {
   const direction = payload?.direction || "EN2LT";
 
-  // Primary fields
-  let lithuanian = safeStr(ai.lithuanian);
-  let phonetic = safeStr(ai.phonetic);
-  let usage = safeStr(ai.usage);
-  let notes = safeStr(ai.notes);
+  let lithuanian = s(ai.lithuanian);
+  let phonetic = s(ai.phonetic);
+  let usage = s(ai.usage);
+  let notes = s(ai.notes);
   let category = ai.category && ["Phrases", "Questions", "Words", "Numbers"].includes(ai.category)
     ? ai.category
     : pickCategory(payload?.english || payload?.lithuanian || "");
 
-  // Optional Balanced
-  const balanced = safeStr(ai.balanced);
+  const balanced = s(ai.balanced);
 
-  // Variants, if any
   const variants = Array.isArray(ai.variants)
     ? ai.variants
-        .map(v => ({
-          key: safeStr(v.key),
-          lithuanian: safeStr(v.lithuanian),
-          phonetic: safeStr(v.phonetic),
-          usage: safeStr(v.usage),
-          notes: safeStr(v.notes),
+        .map((v) => ({
+          key: s(v.key),
+          lithuanian: s(v.lithuanian),
+          phonetic: s(v.phonetic),
+          usage: s(v.usage),
+          notes: s(v.notes),
         }))
-        .filter(v => v.lithuanian)
+        .filter((v) => v.lithuanian)
     : [];
 
-  // If balanced exists, tuck a short cue into notes (non-destructive)
   if (balanced) {
     const cue = `\n\nBalanced peek: ${balanced}`;
     notes = notes ? notes + cue : cue.trim();
   }
 
-  // Fallbacks: if the model somehow didn’t return Lithuanian for EN→LT, keep client stable
   if (!lithuanian && direction === "EN2LT") lithuanian = "";
   if (!phonetic) phonetic = "";
 
@@ -190,27 +127,61 @@ function normalizeResponse(payload, ai) {
   };
 }
 
-module.exports = async (req, res) => {
+/* ------------------------- handler ------------------------- */
+export default async function handler(req) {
   try {
     if (req.method !== "POST") {
-      res.status(405).json({ error: "Method not allowed" });
-      return;
+      return j({ error: "Method not allowed" }, 405);
     }
+
     if (!process.env.OPENAI_API_KEY) {
-      res.status(500).json({ error: "OPENAI_API_KEY is not configured on the server." });
-      return;
+      return j({ error: "OPENAI_API_KEY is not configured" }, 500);
     }
 
-    const payload = req.body || {};
-    const { sys, user } = makeMessages(payload);
+    const payload = await req.json().catch(() => ({}));
+    const { sys, user } = buildPrompt(payload);
 
-    const ai = await callOpenAI({ sys, user });
+    const oaRes = await fetch(OPENAI_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!oaRes.ok) {
+      const txt = await oaRes.text().catch(() => "");
+      return j(
+        {
+          error: "openai_request_failed",
+          status: oaRes.status,
+          detail: txt || oaRes.statusText,
+        },
+        502
+      );
+    }
+
+    const data = await oaRes.json();
+    const content = data?.choices?.[0]?.message?.content ?? "{}";
+    let ai;
+    try {
+      ai = JSON.parse(content);
+    } catch {
+      ai = {};
+    }
+
     const out = normalizeResponse(payload, ai);
-
-    // Backward compatible: ensure top-level keys exist
-    res.status(200).json(out);
+    return j(out, 200);
   } catch (err) {
-    console.error("[/api/translate] error:", err);
-    res.status(500).json({ error: "Translate failed" });
+    return j({ error: "translate_unexpected", detail: String(err?.message || err) }, 500);
   }
-};
+}
