@@ -275,6 +275,41 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
   );
 }));
 
+/* ----------------------------- Metrics bar ----------------------------- */
+function MetricsBar({ T, streak, level, levelProgress, HEADER_H, DOCK_H, METRICS_H, LEVEL_STEP }) {
+  const top = HEADER_H + DOCK_H;
+  return (
+    <div
+      className="fixed left-0 right-0 bg-zinc-950/95 backdrop-blur"
+      style={{
+        top: `${top}px`,
+        height: `${METRICS_H}px`,
+        zIndex: 9998,
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}
+      aria-label="Metrics"
+    >
+      <div className="max-w-6xl mx-auto h-full px-3 sm:px-4 flex items-center gap-3">
+        <div className="text-xs text-zinc-400">
+          🔥 {T.streak}: <span className="font-semibold">{streak.streak}</span>
+        </div>
+        <div className="text-xs text-zinc-400">
+          🥇 {T.level} <span className="font-semibold">{level}</span>
+        </div>
+        <div className="flex-1 h-2 bg-zinc-800 rounded-md overflow-hidden">
+          <div
+            className="h-full bg-emerald-600"
+            style={{ width: `${(levelProgress / LEVEL_STEP) * 100}%` }}
+          />
+        </div>
+        <div className="text-xs text-zinc-400">
+          {levelProgress} / {LEVEL_STEP} XP
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ============================== APP ============================== */
 export default function App(){
   // layout
@@ -283,9 +318,10 @@ export default function App(){
   useEffect(()=>{ const onR=()=>setWidth(window.innerWidth); window.addEventListener("resize",onR); return ()=>window.removeEventListener("resize",onR); },[]);
   const WIDE = width>=1024;
 
-  // header + dock heights (dock has 2 rows now)
+  // header + dock + metrics heights
   const HEADER_H = 56;
-  const DOCK_H   = 112; // ~two rows; adjust if you tweak paddings
+  const DOCK_H   = 56;  // single-row dock (search/sort/nav)
+  const METRICS_H = 40; // metrics bar
 
   // data + prefs
   const [rows,setRows]=useState(loadRows());
@@ -515,8 +551,8 @@ export default function App(){
     const fileRef=useRef(null);
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-        {/* spacer for header + dock */}
-        <div style={{ height: HEADER_H + DOCK_H }} />
+        {/* spacer for header + dock + metrics */}
+        <div style={{ height: HEADER_H + DOCK_H + METRICS_H }} />
 
         <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button onClick={()=>fetchStarter("EN2LT")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.installEN}</button>
@@ -612,8 +648,8 @@ export default function App(){
   function HomeView(){
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-        {/* Spacer for header + fixed SearchDock (now 2 rows) */}
-        <div style={{ height: HEADER_H + DOCK_H }} />
+        {/* Spacer for header + dock + metrics */}
+        <div style={{ height: HEADER_H + DOCK_H + METRICS_H }} />
 
         {/* List */}
         {sortMode==="RAG" && WIDE ? (
@@ -692,7 +728,7 @@ export default function App(){
 
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-        <div style={{ height: HEADER_H + DOCK_H }} />
+        <div style={{ height: HEADER_H + DOCK_H + METRICS_H }} />
 
         <h2 className="text-2xl font-bold mb-4">{T.settings}</h2>
 
@@ -794,7 +830,7 @@ export default function App(){
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header T={T} cn={cn} />
 
-      {/* Fixed, portaled dock with search + nav + pinned bars */}
+      {/* Fixed dock with search/sort/nav */}
       <SearchDock
         SearchBox={SearchBox}
         sortMode={sortMode}
@@ -804,20 +840,26 @@ export default function App(){
         offsetTop={HEADER_H}
         page={page}
         setPage={setPage}
+      />
+
+      {/* Fixed metrics bar under the dock */}
+      <MetricsBar
+        T={T}
         streak={streak}
         level={level}
         levelProgress={levelProgress}
-        levelStep={LEVEL_STEP}
-        tab={tab}
-        setTab={setTab}
+        HEADER_H={HEADER_H}
+        DOCK_H={DOCK_H}
+        METRICS_H={METRICS_H}
+        LEVEL_STEP={LEVEL_STEP}
       />
 
       {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
-      {/* Add Entry Modal */}
+      {/* Add Entry Modal (z above dock+metrics) */}
       {addOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10050]"
           onPointerDown={()=>{ setAddOpen(false); if(document.activeElement instanceof HTMLElement) document.activeElement.blur(); }}
         >
           <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4" onPointerDown={(e)=>e.stopPropagation()}>
