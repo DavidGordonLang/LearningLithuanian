@@ -3,11 +3,11 @@ import React, { useMemo, useState } from "react";
 /**
  * Props:
  * - tab: "Phrases" | "Questions" | "Words" | "Numbers"
- * - setRows: (updater) => void
+ * - setRows(updater)
  * - T: strings
- * - genId: () => string
- * - nowTs: () => number
- * - normalizeRag: (emojiOrColor) => "🔴"|"🟠"|"🟢"
+ * - genId()
+ * - nowTs()
+ * - normalizeRag()
  * - direction: "EN2LT" | "LT2EN"
  */
 export default function AddForm({
@@ -17,78 +17,107 @@ export default function AddForm({
   genId,
   nowTs,
   normalizeRag,
-  direction,
+  direction = "EN2LT",
 }) {
-  // Base fields
+  // Core fields
   const [en, setEn] = useState("");
   const [lt, setLt] = useState("");
   const [ph, setPh] = useState("");
   const [usage, setUsage] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Controls
-  const [tone, setTone] = useState("Neutral");
-  const [aud, setAud] = useState("Respectful");
-  const [register, setRegister] = useState("Natural");
+  // Style selectors
+  const [tone, setTone] = useState("neutral"); // neutral|friendly|formal|reserved
+  const [audience, setAudience] = useState("respectful"); // general|peer|respectful|intimate
+  const [register, setRegister] = useState("natural"); // natural|balanced|literal
 
-  // Variant selection
+  // Variant checkboxes (preview & save multiple)
   const [vGeneral, setVGeneral] = useState(true);
   const [vFemale, setVFemale] = useState(false);
   const [vMale, setVMale] = useState(false);
 
-  // UX
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  // Translate previews
-  const [previews, setPreviews] = useState([]); // { id, lt, en, ph, usage, notes, variant, tone, aud, register, include }
-
-  const selectedVariants = useMemo(() => {
-    const list = [];
-    if (vGeneral) list.push({ key: "general", label: "General / plural" });
-    if (vFemale) list.push({ key: "female", label: "Addressing female" });
-    if (vMale) list.push({ key: "male", label: "Addressing male" });
-    return list;
+  const variants = useMemo(() => {
+    const arr = [];
+    if (vGeneral) arr.push("general");
+    if (vFemale) arr.push("female");
+    if (vMale) arr.push("male");
+    return arr;
   }, [vGeneral, vFemale, vMale]);
 
-  function pillButton(active, onClick, label) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={
-          "px-3 py-2 rounded-md border text-sm " +
-          (active
-            ? "bg-emerald-600 border-emerald-500"
-            : "bg-zinc-900 border-zinc-700")
-        }
-      >
-        {label}
-      </button>
-    );
+  // Preview list derived from variants + current fields
+  const [previews, setPreviews] = useState([]); // [{id, include, rag, meta, en, lt, ph, usage, notes}]
+  const [translating, setTranslating] = useState(false);
+
+  // Helpers
+  const pillsTone = ["neutral", "friendly", "formal", "reserved"];
+  const pillsAudience = ["general", "peer", "respectful", "intimate"];
+  const pillsRegister = ["natural", "balanced", "literal"];
+
+  function mkPreviewBase(variant) {
+    return {
+      id: `${variant}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      include: true,
+      rag: "🟠",
+      meta: { variant, tone, register },
+      en: en.trim(),
+      lt: "",
+      ph: "",
+      usage: "",
+      notes: "",
+    };
   }
 
-  async function onTranslate() {
-    setError("");
-    setBusy(true);
-    setPreviews([]);
-
-    try {
-      const payload = {
-        direction,
-        en: en.trim(),
-        lt: lt.trim(),
-        tone,
-        audience: aud,
-        register,
-        variants: selectedVariants.map((v) => v.key),
-      };
-
-      if (!payload.en) {
-        setBusy(false);
-        alert("Please enter an English prompt/phrase first.");
-        return;
+  function ensurePreviewsFor(variantList) {
+    // Create or update a preview row per variant
+    setPreviews((prev) => {
+      const map = new Map(prev.map((p) => [p.meta?.variant, p]));
+      const out = [];
+      for (const v of variantList) {
+        const existing = map.get(v);
+        if (existing) {
+          out.push({
+            ...existing,
+            meta: { ...existing.meta, tone, register },
+            en: en.trim(),
+          });
+        } else {
+          out.push(mkPreviewBase(v));
+        }
       }
+      // Keep previous items only if still selected
+      return out;
+    });
+  }
+
+  // Update previews whenever variants or EN/tone/register change
+  React.useEffect(() => {
+    ensurePreviewsFor(variants);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variants, tone, register, en]);
+
+  async function handleTranslate() {
+    const english = en.trim();
+    if (!english) {
+      alert("Please fill the English field first.");
+      return;
+    }
+    if (variants.length === 0) {
+      alert("Select at least one variant (e.g., General).");
+      return;
+    }
+
+    setTranslating(true);
+    try {
+      // Send BOTH keys: `english` (for server schema) and `en` (back-compat client schema)
+      const payload = {
+        english,         // <- server expects this (per your 400 error)
+        en: english,     // <- belt & braces
+        tone,
+        audience,
+        register,
+        variants,        // ["general","female","male"] subset
+        direction,       // harmless if server ignores it
+      };
 
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -96,377 +125,376 @@ export default function AddForm({
         body: JSON.stringify(payload),
       });
 
-      const ctype = res.headers.get("content-type") || "";
-      if (!ctype.includes("application/json")) {
-        const txt = await res.text();
-        console.warn("Translate non-JSON:", txt);
+      const ct = res.headers.get("content-type") || "";
+      if (!res.ok) {
+        const text = ct.includes("application/json") ? JSON.stringify(await res.json()) : await res.text();
         alert(
-          "Translate returned, but no usable fields were found.\nCheck the console for the raw response.\n\nTip: make the API return { lt, ph, usage, notes } or map to those keys."
+          `Translate failed. You can still fill the fields manually.\n\n` +
+          `${text || res.statusText || "Unknown error"}`
         );
-        setBusy(false);
+        return;
+      }
+      if (!ct.includes("application/json")) {
+        const text = await res.text();
+        alert(
+          "Translate returned, but no usable fields were found.\n" +
+          "Check the console for the raw response.\n\n" +
+          "Tip: make the API return { lt, ph, usage, notes } or map to those keys."
+        );
+        console.log("Unexpected non-JSON response from /api/translate:", text);
         return;
       }
 
       const data = await res.json();
+      // Expected shapes supported:
+      // 1) Single: { lt, ph, usage, notes }
+      // 2) Multi:  { variants: [ { variant, lt, ph, usage, notes }, ... ] }
+      // 3) Fallback string: { lt: "..." }
 
-      // Normalize expected fields
-      const baseLt = (data?.lt ?? "").trim();
-      const basePh = (data?.ph ?? "").trim();
-      const baseUsage = (data?.usage ?? "").trim();
-      const baseNotes = (data?.notes ?? "").trim();
+      const fromSingle = (obj) => ({
+        lt: (obj?.lt ?? "").trim(),
+        ph: (obj?.ph ?? "").trim(),
+        usage: (obj?.usage ?? "").trim(),
+        notes: (obj?.notes ?? "").trim(),
+      });
 
-      // Update inputs for user review
-      if (baseLt) setLt(baseLt);
-      if (basePh) setPh(basePh);
-      if (baseUsage) setUsage(baseUsage);
-      if (baseNotes) setNotes(baseNotes);
+      if (Array.isArray(data?.variants) && data.variants.length) {
+        // Map server variants back into our preview rows
+        setPreviews((prev) => {
+          const map = new Map(prev.map((p) => [p.meta?.variant, p]));
+          const out = [...prev];
+          for (const v of data.variants) {
+            const key = (v?.variant || "").toLowerCase(); // "general" | "female" | "male"
+            if (!key) continue;
+            const found = map.get(key);
+            const mapped = fromSingle(v);
+            if (found) {
+              Object.assign(found, {
+                lt: mapped.lt || found.lt,
+                ph: mapped.ph || found.ph,
+                usage: mapped.usage || found.usage,
+                notes: mapped.notes || found.notes,
+              });
+            }
+          }
+          return out;
+        });
+      } else {
+        const mapped = fromSingle(data);
+        // Fill the main LT/PH/Usage/Notes fields as a convenience
+        if (mapped.lt) setLt(mapped.lt);
+        if (mapped.ph) setPh(mapped.ph);
+        if (mapped.usage) setUsage(mapped.usage);
+        if (mapped.notes) setNotes(mapped.notes);
 
-      // Build previews for each selected variant
-      const pv = selectedVariants.map((v) => ({
-        id: genId(),
-        // IMPORTANT: never fall back to English for the Lithuanian title line
-        lt: baseLt || lt.trim() || "",
-        en: en.trim(),
-        ph: basePh || ph.trim(),
-        usage: baseUsage || usage.trim(),
-        notes: baseNotes || notes.trim(),
-        variant: v.label,
-        tone,
-        aud,
-        register,
-        include: true,
-      }));
-
-      setPreviews(pv);
+        // Put the same result into all selected previews that lack a value
+        setPreviews((prev) =>
+          prev.map((p) =>
+            p.lt
+              ? p
+              : {
+                  ...p,
+                  lt: mapped.lt || p.lt,
+                  ph: mapped.ph || p.ph,
+                  usage: mapped.usage || p.usage,
+                  notes: mapped.notes || p.notes,
+                }
+          )
+        );
+      }
     } catch (e) {
       console.error(e);
-      alert(
-        "Translate failed. You can still fill the fields manually.\n\n" +
-          (e?.message || e)
-      );
+      alert("Translate failed. You can still fill the fields manually.");
     } finally {
-      setBusy(false);
+      setTranslating(false);
     }
   }
 
-  function saveRowsFromPreviews() {
+  function handleSave() {
     const selected = previews.filter((p) => p.include);
     if (!selected.length) {
-      alert("Nothing selected to save. Toggle at least one preview.");
+      alert("Nothing selected to save.");
       return;
     }
 
-    const rowsToAdd = selected.map((p) => ({
-      _id: genId(),
-      _ts: nowTs(),
-      English: p.en || "",
-      Lithuanian: p.lt || "",
-      Phonetic: p.ph || "",
-      Category: "",
-      Usage: p.usage || "",
-      Notes: p.notes || "",
-      Sheet: tab,
-      "RAG Icon": normalizeRag("🟠"),
-      _meta: {
-        tone: p.tone,
-        audience: p.aud,
-        register: p.register,
-        variant: p.variant,
-      },
-    }));
-
-    setRows((prev) => [...rowsToAdd, ...prev]);
-  }
-
-  function saveSingleRow() {
-    const row = {
-      _id: genId(),
-      _ts: nowTs(),
+    const base = {
       English: en.trim(),
-      Lithuanian: lt.trim(),
       Phonetic: ph.trim(),
-      Category: "",
       Usage: usage.trim(),
       Notes: notes.trim(),
-      Sheet: tab,
-      "RAG Icon": normalizeRag("🟠"),
-      _meta: {
-        tone,
-        audience: aud,
-        register,
-        variant: "General / single",
-      },
+      "RAG Icon": "🟠",
+      Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(tab)
+        ? tab
+        : "Phrases",
     };
 
-    if (!row.English || !row.Lithuanian) {
-      alert("Please provide at least English and Lithuanian before saving.");
-      return;
-    }
+    const toSave =
+      selected.length > 0
+        ? selected.map((p) => ({
+            ...base,
+            Lithuanian: (p.lt || lt).trim(),
+            _id: genId(),
+            _ts: nowTs(),
+          }))
+        : [
+            {
+              ...base,
+              Lithuanian: lt.trim(),
+              _id: genId(),
+              _ts: nowTs(),
+            },
+          ];
 
-    setRows((prev) => [row, ...prev]);
+    setRows((prev) => [...toSave, ...prev]);
   }
 
-  function onSave() {
-    if (previews.length) {
-      saveRowsFromPreviews();
-    } else {
-      saveSingleRow();
-    }
-  }
+  /* ----------------------------- UI ----------------------------- */
+
+  const Chip = ({ active, onClick, children }) => (
+    <button
+      type="button"
+      className={
+        "px-3 py-1 rounded-md border " +
+        (active
+          ? "bg-emerald-700 border-emerald-600"
+          : "bg-zinc-900 border-zinc-700 hover:border-zinc-600")
+      }
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+
+  const Checkbox = ({ checked, onChange, label }) => (
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span>{label}</span>
+    </label>
+  );
 
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-    >
+    <div className="space-y-4">
+      {/* Category tabs are outside in the parent dock; this form just respects `tab` */}
+
       {/* English */}
       <div>
-        <div className="text-sm text-zinc-400 mb-1">English</div>
+        <div className="text-sm mb-1">English</div>
         <input
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          placeholder="e.g. Hello"
           value={en}
           onChange={(e) => setEn(e.target.value)}
-          placeholder="e.g. Hello"
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
         />
       </div>
 
-      {/* Lithuanian */}
+      {/* Lithuanian (can be typed or filled via Translate) */}
       <div>
-        <div className="text-sm text-zinc-400 mb-1">Lithuanian</div>
+        <div className="text-sm mb-1">Lithuanian</div>
         <input
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          placeholder="e.g. Labas / Sveiki"
           value={lt}
           onChange={(e) => setLt(e.target.value)}
-          placeholder="e.g. Labas / Sveiki"
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
         />
       </div>
 
       {/* Phonetic */}
       <div>
-        <div className="text-sm text-zinc-400 mb-1">Phonetic</div>
+        <div className="text-sm mb-1">Phonetic</div>
         <input
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          placeholder="Optional — phonetic hint"
           value={ph}
           onChange={(e) => setPh(e.target.value)}
-          placeholder="Optional — phonetic hint"
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
         />
       </div>
 
       {/* Tone */}
-      <fieldset className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
-        <legend className="px-1 text-sm text-zinc-300">Tone</legend>
+      <div className="rounded-2xl border border-zinc-800 p-3">
+        <div className="text-sm mb-2">Tone</div>
         <div className="flex flex-wrap gap-2">
-          {pillButton(tone === "Neutral", () => setTone("Neutral"), "Neutral")}
-          {pillButton(tone === "Friendly", () => setTone("Friendly"), "Friendly")}
-          {pillButton(tone === "Formal", () => setTone("Formal"), "Formal")}
-          {pillButton(tone === "Reserved", () => setTone("Reserved"), "Reserved")}
+          {pillsTone.map((t) => (
+            <Chip key={t} active={tone === t} onClick={() => setTone(t)}>
+              {t[0].toUpperCase() + t.slice(1)}
+            </Chip>
+          ))}
         </div>
-      </fieldset>
+      </div>
 
       {/* Audience */}
-      <fieldset className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
-        <legend className="px-1 text-sm text-zinc-300">Audience</legend>
+      <div className="rounded-2xl border border-zinc-800 p-3">
+        <div className="text-sm mb-2">Audience</div>
         <div className="flex flex-wrap gap-2">
-          {pillButton(aud === "General", () => setAud("General"), "General")}
-          {pillButton(aud === "Peer", () => setAud("Peer"), "Peer")}
-          {pillButton(aud === "Respectful", () => setAud("Respectful"), "Respectful")}
-          {pillButton(aud === "Intimate", () => setAud("Intimate"), "Intimate")}
+          {pillsAudience.map((a) => (
+            <Chip
+              key={a}
+              active={audience === a}
+              onClick={() => setAudience(a)}
+            >
+              {a[0].toUpperCase() + a.slice(1)}
+            </Chip>
+          ))}
         </div>
-      </fieldset>
+      </div>
 
       {/* Register */}
-      <fieldset className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
-        <legend className="px-1 text-sm text-zinc-300">Register</legend>
+      <div className="rounded-2xl border border-zinc-800 p-3">
+        <div className="text-sm mb-2">Register</div>
         <div className="flex flex-wrap gap-2">
-          {pillButton(
-            register === "Natural",
-            () => setRegister("Natural"),
-            "Natural"
-          )}
-          {pillButton(
-            register === "Balanced",
-            () => setRegister("Balanced"),
-            "Balanced"
-          )}
-          {pillButton(
-            register === "Literal",
-            () => setRegister("Literal"),
-            "Literal"
-          )}
+          {pillsRegister.map((r) => (
+            <Chip
+              key={r}
+              active={register === r}
+              onClick={() => setRegister(r)}
+            >
+              {r[0].toUpperCase() + r.slice(1)}
+            </Chip>
+          ))}
         </div>
-        <p className="text-xs text-zinc-500 mt-2">
-          Natural is the default; Balanced/Literal are “peek” aids (saved in
-          Notes later).
-        </p>
-      </fieldset>
+        <div className="text-xs text-zinc-500 mt-2">
+          Natural is the default; Balanced/Literal are “peek” aids (saved in Notes later).
+        </div>
+      </div>
 
-      {/* Generate variants */}
-      <fieldset className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
-        <legend className="px-1 text-sm text-zinc-300">Generate variants</legend>
-        <div className="grid sm:grid-cols-2 gap-3 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+      {/* Variants */}
+      <div className="rounded-2xl border border-zinc-800 p-3">
+        <div className="text-sm mb-2">Generate variants</div>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-6">
+            <Checkbox
               checked={vGeneral}
-              onChange={(e) => setVGeneral(e.target.checked)}
+              onChange={setVGeneral}
+              label="General / plural"
             />
-            <span>General / plural</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={vFemale}
-              onChange={(e) => setVFemale(e.target.checked)}
+              onChange={setVFemale}
+              label="Addressing female"
             />
-            <span>Addressing female</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={vMale}
-              onChange={(e) => setVMale(e.target.checked)}
+              onChange={setVMale}
+              label="Addressing male"
             />
-            <span>Addressing male</span>
-          </label>
+          </div>
+          <div className="text-xs text-zinc-500">
+            For now this keeps a single card; later we’ll generate distinct outputs per variant.
+          </div>
         </div>
-        <p className="text-xs text-zinc-500 mt-2">
-          For now this saves multiple cards with your current LT line; later we’ll
-          generate distinct outputs per variant.
-        </p>
-      </fieldset>
+      </div>
 
       {/* Usage */}
       <div>
-        <div className="text-sm text-zinc-400 mb-1">Usage</div>
+        <div className="text-sm mb-1">Usage</div>
         <input
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          placeholder="Short usage/context (kept concise on save)"
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
-          placeholder="Short usage/context (kept concise on save)"
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
         />
       </div>
 
       {/* Notes */}
       <div>
-        <div className="text-sm text-zinc-400 mb-1">Notes</div>
+        <div className="text-sm mb-1">Notes</div>
         <textarea
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
+          placeholder="Optional — alternatives, register, grammar, nuance"
+          rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Optional — alternatives, register, grammar, nuance"
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 min-h-[96px]"
         />
       </div>
 
-      {/* Translate / Save */}
-      <div className="flex items-center justify-end gap-2 pt-2">
+      {/* Actions */}
+      <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={onTranslate}
-          disabled={busy}
-          className="px-4 py-2 rounded-md bg-zinc-800 border border-zinc-700 disabled:opacity-60"
+          className="px-4 py-2 rounded-md bg-zinc-800 border border-zinc-700 disabled:opacity-50"
+          onClick={handleTranslate}
+          disabled={translating || !en.trim() || variants.length === 0}
         >
-          {busy ? "Translating…" : "Translate"}
+          {translating ? "Translating…" : "Translate"}
         </button>
         <button
-          type="submit"
-          className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500"
+          type="button"
+          className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-semibold"
+          onClick={handleSave}
         >
           Save
         </button>
       </div>
 
-      {/* Previews */}
-      {previews.length > 0 && (
-        <div className="mt-3 border-t border-zinc-800 pt-3">
-          <div className="text-sm font-semibold mb-2">
-            Preview ({previews.filter((p) => p.include).length} selected)
-          </div>
-          <div className="space-y-3">
-            {previews.map((p) => (
-              <PreviewCard
-                key={p.id}
-                pv={p}
-                onToggleInclude={() =>
-                  setPreviews((old) =>
-                    old.map((x) =>
-                      x.id === p.id ? { ...x, include: !x.include } : x
-                    )
-                  )
-                }
-              />
-            ))}
-          </div>
+      {/* Preview */}
+      <div className="pt-2">
+        <div className="text-sm text-zinc-400 mb-2">
+          Preview ({previews.length} selected)
         </div>
-      )}
+        <div className="space-y-3">
+          {previews.map((p) => (
+            <div
+              key={p.id}
+              className="rounded-xl border border-zinc-800 p-3 bg-zinc-900"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="text-sm text-zinc-400">
+                    {p.lt ? p.lt : "(no Lithuanian yet)"}
+                  </div>
+                  <div className="text-xs text-zinc-500">{p.en}</div>
+                  {p.ph && (
+                    <div className="text-xs text-zinc-500 italic mt-0.5">
+                      {p.ph}
+                    </div>
+                  )}
+                </div>
+                <label className="flex items-center gap-2 text-xs shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={p.include}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setPreviews((prev) =>
+                        prev.map((x) =>
+                          x.id === p.id ? { ...x, include: checked } : x
+                        )
+                      );
+                    }}
+                  />
+                  Include
+                </label>
+              </div>
 
-      {error && <div className="text-sm text-red-400">{error}</div>}
-    </form>
-  );
-}
-
-function PreviewCard({ pv, onToggleInclude }) {
-  const [open, setOpen] = useState(false);
-  const hasLt = !!pv.lt;
-
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-base font-semibold leading-tight">
-            {hasLt ? pv.lt : <span className="text-zinc-500">(no Lithuanian yet)</span>}
-          </div>
-          <div className="text-xs text-zinc-400 mt-0.5">{pv.en}</div>
-          {pv.ph && (
-            <div className="text-xs text-zinc-500 mt-0.5 italic">{pv.ph}</div>
-          )}
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
+                  {p.meta?.variant || "general"}
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
+                  {p.meta?.tone || tone}
+                </span>
+                <button
+                  type="button"
+                  className="text-xs px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700"
+                  onClick={() => {
+                    const more = [
+                      p.usage ? `Usage: ${p.usage}` : null,
+                      p.notes ? `Notes: ${p.notes}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join("\n");
+                    alert(more || "No extra details yet.");
+                  }}
+                >
+                  More
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-        <label className="flex items-center gap-2 text-xs">
-          <input
-            type="checkbox"
-            checked={pv.include}
-            onChange={onToggleInclude}
-          />
-          Include
-        </label>
-      </div>
-
-      {pv.usage && (
-        <div className="text-xs text-zinc-400 mt-2">
-          <span className="text-zinc-500">Usage:</span> {pv.usage}
-        </div>
-      )}
-
-      {pv.notes && open && (
-        <div className="text-xs text-zinc-300 mt-2 whitespace-pre-wrap border-t border-zinc-800 pt-2">
-          {pv.notes}
-        </div>
-      )}
-
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex items-center gap-2">
-          {/* RAG chip (amber default) */}
-          <span
-            className="inline-flex h-5 px-2 items-center text-[11px] rounded-full bg-amber-500"
-            aria-label="RAG amber"
-          />
-          {/* Variant + Tone chips */}
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
-            {pv.variant}
-          </span>
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
-            {pv.tone}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="text-xs text-zinc-300 hover:text-white px-2 py-1 rounded-md bg-zinc-800/60 border border-zinc-700"
-        >
-          {open ? "Less" : "More"}
-        </button>
       </div>
     </div>
   );
