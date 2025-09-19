@@ -1,190 +1,190 @@
-// api/translate.js
-// Edge runtime; returns JSON; produces { lt, ph, usage, notes } both top-level and nested.
-export const config = { runtime: "edge" };
+// /api/translate.js
+// Variant-aware translate endpoint
+// Expects JSON: { english, direction, options: { tone, audience, register, variants: {general, female, male}, includeBalanced } }
+//
+// Returns JSON:
+// { ok: true, variants: [{ key, lt, ph, usage, notes }...], balanced?: { lt, ph, usage, notes } }
 
-function json(body, init = {}) {
-  const headers = new Headers(init.headers || {});
-  if (!headers.has("content-type")) headers.set("content-type", "application/json");
-  return new Response(JSON.stringify(body), { ...init, headers });
+export const config = {
+  runtime: "edge",
+};
+
+function json(status, obj) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }
 
-async function readJson(req) {
+function coerceStr(x) {
+  if (typeof x === "string") return x.trim();
+  if (x == null) return "";
+  return String(x).trim();
+}
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ALT;
+
+const SYS_PROMPT = `
+You are a Lithuanian translation assistant for a phrasebook app.
+Your job is to produce short, natural Lithuanian lines, plus a simple phonetic hint (Latin letters),
+a one-line usage/context, and concise notes (only if genuinely useful).
+
+CRITICAL:
+- Keep Lithuanian lines short and natural for everyday speech.
+- When the caller asks for multiple "variants" (general, addressing_female, addressing_male),
+  ONLY change the Lithuanian if Lithuanian actually changes by addressee; otherwise reuse the same line.
+- Do NOT invent gender differences where Lithuanian does not vary; Lithuanian often remains the same.
+- If there is *no* change between variants, still include each requested variant (with the same Lithuanian),
+  so the client can collapse them.
+- "Balanced" is an explanatory peek: provide a slightly more literal paraphrase/word-choice explanation.
+  Do not be verbose; 1–2 sentences max. Use English for explanations.
+
+Output schema (MUST be valid JSON):
+{
+  "variants": [
+    { "key": "general", "lt": "...", "ph": "...", "usage": "...", "notes": "..." },
+    { "key": "addressing_female", "lt": "...", "ph": "...", "usage": "...", "notes": "..." },
+    { "key": "addressing_male", "lt": "...", "ph": "...", "usage": "...", "notes": "..." }
+  ],
+  "balanced": { "lt": "...", "ph": "...", "usage": "...", "notes": "..." } // include ONLY if requested
+}
+
+Rules:
+- "ph" is a rough, friendly phonetic; keep it short (no IPA).
+- "usage" is one concise sentence.
+- "notes" is optional; keep it tight (alternatives/register/grammar only if helpful).
+- Never include Markdown or backticks.
+`;
+
+async function callOpenAI({ english, direction, options }) {
+  if (!OPENAI_API_KEY) {
+    throw new Error("Missing OPENAI_API_KEY");
+  }
+
+  const wantGeneral = !!(options?.variants?.general);
+  const wantFemale  = !!(options?.variants?.female);
+  const wantMale    = !!(options?.variants?.male);
+  const wantBalanced = !!options?.includeBalanced;
+
+  const requestedKeys = [];
+  if (wantGeneral) requestedKeys.push("general");
+  if (wantFemale)  requestedKeys.push("addressing_female");
+  if (wantMale)    requestedKeys.push("addressing_male");
+
+  // Simple guard – always request at least general
+  if (requestedKeys.length === 0) requestedKeys.push("general");
+
+  const userPrompt = {
+    english: coerceStr(english),
+    direction: direction === "LT2EN" ? "LT2EN" : "EN2LT",
+    tone: coerceStr(options?.tone || "neutral"),
+    audience: coerceStr(options?.audience || "general"),
+    register: coerceStr(options?.register || "natural"),
+    requestedVariants: requestedKeys,
+    includeBalanced: wantBalanced,
+  };
+
+  const messages = [
+    { role: "system", content: SYS_PROMPT },
+    {
+      role: "user",
+      content:
+        `Translate with the constraints below and return EXACTLY the JSON schema:
+
+Task:
+- Direction: ${userPrompt.direction}
+- English: "${userPrompt.english}"
+
+Style:
+- Tone: ${userPrompt.tone}
+- Audience: ${userPrompt.audience}
+- Register: ${userPrompt.register}
+
+Variants to produce: ${userPrompt.requestedVariants.join(", ")}
+Include balanced: ${userPrompt.includeBalanced ? "yes" : "no"}
+
+Remember: produce JSON only, no extra text.`,
+    },
+  ];
+
+  // Use the Chat Completions API via fetch to avoid SDK coupling
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      temperature: 0.4,
+      response_format: { type: "json_object" },
+      messages,
+    }),
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => "");
+    throw new Error(`OpenAI HTTP ${resp.status}: ${txt || resp.statusText}`);
+  }
+
+  const data = await resp.json();
+  const raw = data?.choices?.[0]?.message?.content || "{}";
+
+  let parsed;
   try {
-    return await req.json();
-  } catch (err) {
-    return { __parse_error: String(err?.message || err) };
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("Model did not return valid JSON.");
   }
-}
 
-// Extract first JSON object from a string as a fallback.
-function extractFirstJsonObject(text = "") {
-  const s = String(text);
-  let depth = 0, start = -1;
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (ch === "{") {
-      if (depth === 0) start = i;
-      depth++;
-    } else if (ch === "}") {
-      depth--;
-      if (depth === 0 && start !== -1) {
-        const chunk = s.slice(start, i + 1);
-        try {
-          return JSON.parse(chunk);
-        } catch {}
-      }
-    }
+  const cleanedVariants = Array.isArray(parsed.variants) ? parsed.variants : [];
+  const clean = (v, key) => ({
+    key: key || coerceStr(v.key),
+    lt: coerceStr(v.lt),
+    ph: coerceStr(v.ph),
+    usage: coerceStr(v.usage),
+    notes: coerceStr(v.notes),
+  });
+
+  const out = {
+    ok: true,
+    variants: cleanedVariants.map((v) => clean(v)),
+  };
+
+  if (userPrompt.includeBalanced && parsed.balanced) {
+    out.balanced = clean(parsed.balanced, "balanced");
   }
-  return null;
+
+  return out;
 }
 
 export default async function handler(req) {
   try {
     if (req.method !== "POST") {
-      return json({ ok: false, error: "Method not allowed" }, { status: 405 });
+      return json(405, { ok: false, error: "Method not allowed" });
     }
 
-    const body = await readJson(req);
-    if (body && body.__parse_error) {
-      return json({ ok: false, error: "Invalid JSON body", detail: body.__parse_error }, { status: 400 });
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return json(400, { ok: false, error: "Expected JSON body" });
     }
 
-    const {
-      english = "",
-      direction = "EN2LT",
-      options = {}, // tone, audience, register, variants (reserved)
-    } = body || {};
+    const english = coerceStr(body.english);
+    const direction = coerceStr(body.direction || "EN2LT");
+    const options = body.options || {};
 
-    if (!english || typeof english !== "string") {
-      return json({ ok: false, error: 'Missing or invalid "english" string' }, { status: 400 });
+    if (!english) {
+      return json(400, { ok: false, error: 'Missing or invalid "english" string' });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-
-    // ---------- reply helper: mirror fields at top-level & nested ----------
-    const reply = ({ lt = "", ph = "", usage = "", notes = "", meta = {} }) => {
-      const payload = {
-        ok: true,
-        lt,
-        ph,
-        usage,
-        notes,
-        data: { lt, ph, usage, notes, meta },
-      };
-      return json(payload);
-    };
-
-    // ---------- Demo fallback (no key set) ----------
-    if (!apiKey) {
-      // simple stub so the UI flow works
-      const targetIsLt = direction === "EN2LT";
-      return reply({
-        lt: targetIsLt ? `${english} (LT — demo)` : english,
-        ph: targetIsLt ? "(demo phonetic)" : "",
-        usage: "(demo) Short note on when to use this phrase.",
-        notes: "(demo) Alternatives or grammar tips would appear here.",
-        meta: { stub: true, direction, options },
-      });
-    }
-
-    const targetIsLt = direction === "EN2LT";
-
-    // ---------- Build structured prompt ----------
-    const sys = [
-      "You are a careful Lithuanian/English translator.",
-      "Return natural everyday phrasing. Be concise and accurate.",
-      "Output ONLY JSON with keys: lt, ph, usage, notes.",
-      "Constraints:",
-      `- 'lt': the translated line in the TARGET language (${targetIsLt ? "Lithuanian" : "English"}), no quotes.`,
-      `- 'ph': ${targetIsLt ? "a simple Latin phonetic guide for the Lithuanian line (no IPA), e.g., 'Kah too hoo-ree oh-men-yee-eh'." : "empty string (\"\")"}.`,
-      "- 'usage': a short one-sentence context (≤ 120 chars).",
-      "- 'notes': brief helpful notes: alternatives/grammar/register (≤ 220 chars).",
-    ].join("\n");
-
-    const user = targetIsLt
-      ? `Translate to NATURAL Lithuanian. Source: "${english}".`
-      : `Translate to NATURAL English. Source (Lithuanian): "${english}".`;
-
-    // Soft influence—doesn't have to be wired yet, but helps the output quality.
-    const styleHints = [];
-    if (options?.tone) styleHints.push(`tone=${options.tone}`);
-    if (options?.audience) styleHints.push(`audience=${options.audience}`);
-    if (options?.register) styleHints.push(`register=${options.register}`);
-    const hint =
-      styleHints.length > 0
-        ? `Hints: ${styleHints.join(", ")}`
-        : "Hints: none.";
-
-    const messages = [
-      { role: "system", content: sys },
-      { role: "user", content: `${user}\n${hint}\nReturn JSON only.` },
-    ];
-
-    // ---------- Call OpenAI ----------
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.2,
-        // Ask for structured JSON; some models may ignore this—fallback below handles that.
-        response_format: { type: "json_object" },
-        messages,
-      }),
-    });
-
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      return json(
-        { ok: false, error: "OpenAI request failed", status: resp.status, detail: text?.slice(0, 800) },
-        { status: 502 }
-      );
-    }
-
-    const raw = await resp.text(); // read as text first to be robust
-    let parsed = null;
-
-    // Try direct JSON parse
-    try { parsed = JSON.parse(raw); } catch {}
-
-    // If it's a chat-completions payload with choices
-    let content = parsed?.choices?.[0]?.message?.content;
-    if (!content && typeof raw === "string" && !parsed) {
-      // response_format sometimes yields the JSON directly (no wrapper)
-      content = raw;
-    }
-
-    // Try to parse content as JSON
-    let obj = null;
-    if (content) {
-      try { obj = JSON.parse(content); } catch {
-        obj = extractFirstJsonObject(content);
-      }
-    }
-
-    // Final guards
-    const lt = String(obj?.lt || "").trim();
-    const ph = String(obj?.ph || "").trim();
-    const usage = String(obj?.usage || "").trim();
-    const notes = String(obj?.notes || "").trim();
-
-    if (!lt) {
-      // As a last resort, try to pull a plain string from the model
-      const fallbackLt =
-        parsed?.choices?.[0]?.message?.content?.trim?.() ||
-        content?.trim?.() ||
-        "";
-      return reply({ lt: fallbackLt, ph: targetIsLt ? ph : "", usage, notes, meta: { structured: false } });
-    }
-
-    return reply({ lt, ph: targetIsLt ? ph : "", usage, notes, meta: { structured: true } });
+    const result = await callOpenAI({ english, direction, options });
+    return json(200, result);
   } catch (err) {
-    return json(
-      { ok: false, error: "Server error", detail: String(err?.message || err) },
-      { status: 500 }
-    );
+    return json(500, {
+      ok: false,
+      error: String(err?.message || err || "Server error"),
+    });
   }
 }
