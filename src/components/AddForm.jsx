@@ -4,13 +4,8 @@ import React, { useMemo, useState } from "react";
  * AddForm
  * Props:
  * - tab: "Phrases" | "Questions" | "Words" | "Numbers"
- * - setRows: (updater) => void   // parent will close modal after save
- * - T: i18n strings
- * - genId: () => string
- * - nowTs: () => number
- * - normalizeRag: (str) => "🔴" | "🟠" | "🟢"
- * - direction: "EN2LT" | "LT2EN"
- * - onSaved: (id: string) => void
+ * - setRows: (updater) => void
+ * - T, genId, nowTs, normalizeRag, direction, onSaved
  */
 export default function AddForm({
   tab,
@@ -31,9 +26,9 @@ export default function AddForm({
   const [category, setCategory] = useState("");
 
   // translation helpers (UI-only for now)
-  const [tone, setTone] = useState("neutral"); // neutral | friendly | formal | reserved
-  const [audience, setAudience] = useState("respectful"); // general | peer | respectful | intimate
-  const [register, setRegister] = useState("natural"); // natural | balanced | literal
+  const [tone, setTone] = useState("neutral");
+  const [audience, setAudience] = useState("respectful");
+  const [register, setRegister] = useState("natural");
   const [genGeneral, setGenGeneral] = useState(true);
   const [genFemale, setGenFemale] = useState(false);
   const [genMale, setGenMale] = useState(false);
@@ -46,7 +41,15 @@ export default function AddForm({
       : "Phrases";
   }, [tab]);
 
-  /* -------------------------- translate (fixed) -------------------------- */
+  // helper: pick the first non-empty string
+  function pickFirst(...candidates) {
+    for (const v of candidates) {
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+    return "";
+    }
+
+  /* -------------------------- translate (defensive) -------------------------- */
   async function handleTranslate() {
     if (!english.trim()) {
       alert("Please enter an English prompt first.");
@@ -56,19 +59,14 @@ export default function AddForm({
     setBusy(true);
     try {
       const body = {
-        direction,           // "EN2LT" | "LT2EN"
+        direction,
         english: english.trim(),
-        tone,                // neutral | friendly | formal | reserved
-        audience,            // general | peer | respectful | intimate
-        register,            // natural | balanced | literal
-        variants: {          // UI flags only for now
-          general: genGeneral,
-          female: genFemale,
-          male: genMale,
-        },
+        tone,
+        audience,
+        register,
+        variants: { general: genGeneral, female: genFemale, male: genMale },
       };
 
-      // ✅ Point to the API route (not "/translate")
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,30 +74,67 @@ export default function AddForm({
       });
 
       const ct = res.headers.get("content-type") || "";
-      if (!res.ok) {
-        const txt = ct.includes("application/json")
-          ? JSON.stringify(await res.json())
-          : await res.text();
-        throw new Error(`HTTP ${res.status} — ${txt || "translate error"}`);
-      }
-      if (!ct.includes("application/json")) {
+      let data;
+      if (ct.includes("application/json")) {
+        data = await res.json();
+      } else {
+        // not JSON -> show a helpful error preview
         const txt = await res.text();
         throw new Error(
-          "Expected JSON but got HTML/text. Check the API route and deployment.\n\n" +
-            txt.slice(0, 200)
+          `Expected JSON from /api/translate but got ${ct || "unknown"}.\n\n` +
+            txt.slice(0, 400)
         );
       }
 
-      const data = await res.json();
-      // Expected minimal shape for now: { lt, ph, usage, notes }
-      if (!data || typeof data !== "object") {
-        throw new Error("Malformed response from /api/translate");
+      // Always log raw to help us debug quickly
+      console.debug("[/api/translate] raw response:", data);
+
+      // Accept a few possible server shapes
+      const lt =
+        pickFirst(
+          data?.lt,
+          data?.lithuanian,
+          data?.translation?.lt,
+          data?.result?.lt,
+          typeof data === "string" ? data : ""
+        ) || "";
+
+      const ph =
+        pickFirst(
+          data?.ph,
+          data?.phonetic,
+          data?.translation?.ph,
+          data?.result?.ph
+        ) || "";
+
+      const use =
+        pickFirst(
+          data?.usage,
+          data?.context,
+          data?.result?.usage,
+          data?.translation?.usage
+        ) || "";
+
+      const nts =
+        pickFirst(
+          data?.notes,
+          data?.explanations,
+          data?.result?.notes,
+          data?.translation?.notes
+        ) || "";
+
+      if (!lt && !ph && !use && !nts) {
+        alert(
+          "Translate returned, but no usable fields were found.\n" +
+            "Check the console for the raw response.\n\n" +
+            "Tip: make the API return { lt, ph, usage, notes } or map to those keys."
+        );
       }
 
-      if (data.lt) setLithuanian(data.lt);
-      if (data.ph) setPhonetic(data.ph);
-      if (data.usage) setUsage(data.usage);
-      if (data.notes) setNotes(data.notes);
+      if (lt) setLithuanian(lt);
+      if (ph) setPhonetic(ph);
+      if (use) setUsage(use);
+      if (nts) setNotes(nts);
     } catch (err) {
       console.error(err);
       alert(
@@ -131,14 +166,14 @@ export default function AddForm({
       Usage: usage.trim(),
       Notes: notes.trim(),
       Sheet: sheet,
-      "RAG Icon": normalizeRag("🟠"), // default Amber
+      "RAG Icon": normalizeRag("🟠"),
       _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
     };
 
     setRows((prev) => [row, ...prev]);
     onSaved?.(row._id);
 
-    // reset inputs for a new entry
+    // reset inputs
     setEnglish("");
     setLithuanian("");
     setPhonetic("");
@@ -160,20 +195,17 @@ export default function AddForm({
     { key: "formal", label: "Formal" },
     { key: "reserved", label: "Reserved" },
   ];
-
   const audienceBtns = [
     { key: "general", label: "General" },
     { key: "peer", label: "Peer" },
     { key: "respectful", label: "Respectful" },
     { key: "intimate", label: "Intimate" },
   ];
-
   const registerBtns = [
     { key: "natural", label: "Natural" },
     { key: "balanced", label: "Balanced" },
     { key: "literal", label: "Literal" },
   ];
-
   const pill = (active) =>
     `px-3 py-2 rounded-xl border ${
       active
@@ -335,9 +367,8 @@ export default function AddForm({
         />
       </div>
 
-      {/* Category (optional free text for now) */}
+      {/* Category (reserved for later) */}
       <div className="hidden">
-        {/* Keep the wire; we may surface this later as a select */}
         <input
           value={category}
           onChange={(e) => setCategory(e.target.value)}
