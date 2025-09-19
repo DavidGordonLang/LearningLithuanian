@@ -651,6 +651,22 @@ export default function App() {
     return () => document.removeEventListener("pointerdown", onPD, true);
   }, []);
 
+  // ---------------- Add modal state (declare BEFORE using in effects) -----
+  const [addOpen, setAddOpen] = useState(false);
+  const [justAddedId, setJustAddedId] = useState(null);
+  const setRowsFromAddForm = React.useCallback((updater) => {
+    setRows((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      queueMicrotask(() => {
+        setAddOpen(false);
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      });
+      return next;
+    });
+  }, []);
+
   // 🔒 lock background scroll when Add Modal is open
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -828,6 +844,7 @@ export default function App() {
     setQuizAnswered(false);
     setQuizChoice(null);
     const first = pool[0];
+    the:
     const correctLt = first.Lithuanian;
     const distractors = sample(
       pool.filter((r) => r !== first && r.Lithuanian),
@@ -922,22 +939,6 @@ export default function App() {
       })
     );
   }
-
-  // Add modal
-  const [addOpen, setAddOpen] = useState(false);
-  const [justAddedId, setJustAddedId] = useState(null);
-  const setRowsFromAddForm = React.useCallback((updater) => {
-    setRows((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      queueMicrotask(() => {
-        setAddOpen(false);
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-      });
-      return next;
-    });
-  }, []);
 
   /* ----------------------------- Views ----------------------------- */
   function LibraryView() {
