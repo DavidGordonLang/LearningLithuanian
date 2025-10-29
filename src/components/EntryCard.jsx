@@ -1,202 +1,162 @@
-import React from "react";
+import React, { useState } from "react";
 
-export default function EntryCard({
-  r,
-  idx,
-  rows,
-  setRows,
-  editIdx,
-  setEditIdx,
-  editDraft,
-  setEditDraft,
-  expanded,
-  setExpanded,
-  T,
-  direction,
-  startEdit,
-  saveEdit,
-  remove,
-  normalizeRag,
-  pressHandlers,
-  cn,
-  lastAddedId,
-  showRagLabels = false, // NEW
-}) {
-  const isEditing = editIdx === idx;
-  const isExpanded = expanded?.has?.(r._id || idx);
+/**
+ * Props:
+ *  - row (required): item object with stable id
+ *  - onSave(patch)
+ *  - onDelete()
+ *  - settings (for audio playback later)
+ *
+ * Edit mode is now **scoped per-card** and saves by id (passed from parent).
+ * This eliminates index-based corruption (FIX for BUG-2).
+ */
+export default function EntryCard({ row, onSave, onDelete }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(() => ({
+    en: row.en || "",
+    lt: row.lt || "",
+    notes: row.notes || "",
+    tone: row.tone || "",
+    audience: row.audience || "",
+    register: row.register || "",
+    status: row.status || "red",
+  }));
 
-  // RAG color map
-  const rag = normalizeRag(r["RAG Icon"]);
-  const ragMap = {
-    "🔴": { bg: "bg-red-600", text: "Red" },
-    "🟠": { bg: "bg-amber-500", text: "Amber" },
-    "🟢": { bg: "bg-green-600", text: "Green" },
-  };
-  const ragCfg = ragMap[rag] || { bg: "bg-zinc-700", text: "" };
-
-  function toggleExpand() {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      const key = r._id || idx;
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
+  function startEdit() {
+    setDraft({
+      en: row.en || "",
+      lt: row.lt || "",
+      notes: row.notes || "",
+      tone: row.tone || "",
+      audience: row.audience || "",
+      register: row.register || "",
+      status: row.status || "red",
     });
+    setIsEditing(true);
   }
 
-  function commitSave() {
-    saveEdit(idx);
-  }
-  function cancelEdit() {
-    setEditIdx(null);
+  function save() {
+    onSave?.({ ...draft });
+    setIsEditing(false);
   }
 
   return (
-    <div
-      className={cn(
-        "bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3",
-        lastAddedId && (r._id === lastAddedId) ? "ring-2 ring-emerald-500" : ""
-      )}
+    <article
+      className="rounded-xl border border-neutral-800 bg-neutral-900 p-4"
+      aria-labelledby={`h-${row.id}`}
     >
-      {/* Top: LT / EN / Phonetic + Play */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-lg font-semibold leading-tight break-words">
-            {r.Lithuanian}
-          </div>
-          <div className="text-xs text-zinc-400 mt-0.5 break-words">
-            {r.English}
-          </div>
-          {r.Phonetic ? (
-            <div className="text-xs text-zinc-500 mt-0.5 italic break-words">
-              {r.Phonetic}
+      {!isEditing ? (
+        <>
+          <header className="flex items-center justify-between gap-3">
+            <h3 id={`h-${row.id}`} className="font-medium">
+              {row.en} <span className="text-neutral-500">→</span> {row.lt}
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500">{row.status}</span>
+              <button
+                className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 focus:outline-none focus:ring"
+                onClick={startEdit}
+              >
+                Edit
+              </button>
+              <button
+                className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 focus:outline-none focus:ring"
+                onClick={onDelete}
+              >
+                Delete
+              </button>
             </div>
+          </header>
+          {row.notes ? (
+            <p className="mt-2 text-neutral-300">{row.notes}</p>
           ) : null}
-        </div>
-        <button
-          className="shrink-0 h-10 w-10 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-black font-bold"
-          title="Play"
-          aria-label={`Play '${r.Lithuanian || ""}'`}
-          {...pressHandlers(r.Lithuanian || "")}
-        >
-          ▶
-        </button>
-      </div>
+        </>
+      ) : (
+        <div className="grid gap-2">
+          <label className="text-sm text-neutral-300">
+            English
+            <input
+              className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus:outline-none focus:ring"
+              value={draft.en}
+              onChange={(e) => setDraft({ ...draft, en: e.target.value })}
+            />
+          </label>
 
-      {/* Usage preview */}
-      {r.Usage && (
-        <div className={cn("text-xs text-zinc-400", isExpanded ? "" : "line-clamp-2")}>
-          <span className="text-zinc-500">{T.usage}: </span>
-          {r.Usage}
-        </div>
-      )}
+          <label className="text-sm text-neutral-300">
+            Lithuanian
+            <input
+              className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus:outline-none focus:ring"
+              value={draft.lt}
+              onChange={(e) => setDraft({ ...draft, lt: e.target.value })}
+            />
+          </label>
 
-      {/* Notes (expanded) */}
-      {isExpanded && r.Notes && (
-        <div className="text-xs text-zinc-300 whitespace-pre-wrap border-t border-zinc-800 pt-2">
-          {r.Notes}
-        </div>
-      )}
+          <label className="text-sm text-neutral-300">
+            Notes
+            <textarea
+              className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus:outline-none focus:ring"
+              rows={3}
+              value={draft.notes}
+              onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+            />
+          </label>
 
-      {/* Edit block */}
-      {isEditing && (
-        <div className="border-t border-zinc-800 pt-3 space-y-2">
-          {[
-            ["English", "text"],
-            ["Lithuanian", "text"],
-            ["Phonetic", "text"],
-            ["Category", "text"],
-            ["Usage", "textarea"],
-            ["Notes", "textarea"],
-          ].map(([key, kind]) => (
-            <div key={key}>
-              <div className="text-xs text-zinc-400 mb-1">{T[key.toLowerCase()] || key}</div>
-              {kind === "textarea" ? (
-                <textarea
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                  rows={3}
-                  value={editDraft[key] || ""}
-                  onChange={(e) => setEditDraft((d) => ({ ...d, [key]: e.target.value }))}
-                />
-              ) : (
-                <input
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-sm"
-                  value={editDraft[key] || ""}
-                  onChange={(e) => setEditDraft((d) => ({ ...d, [key]: e.target.value }))}
-                />
-              )}
-            </div>
-          ))}
-          <div className="flex items-center gap-2 pt-1">
-            <button
-              className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
-              onClick={cancelEdit}
+          <div className="grid grid-cols-3 gap-3">
+            <label className="text-sm text-neutral-300">
+              Tone
+              <input
+                className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus:outline-none focus:ring"
+                value={draft.tone}
+                onChange={(e) => setDraft({ ...draft, tone: e.target.value })}
+              />
+            </label>
+            <label className="text-sm text-neutral-300">
+              Audience
+              <input
+                className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus:outline-none focus:ring"
+                value={draft.audience}
+                onChange={(e) => setDraft({ ...draft, audience: e.target.value })}
+              />
+            </label>
+            <label className="text-sm text-neutral-300">
+              Register
+              <input
+                className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus:outline-none focus:ring"
+                value={draft.register}
+                onChange={(e) => setDraft({ ...draft, register: e.target.value })}
+              />
+            </label>
+          </div>
+
+          <label className="text-sm text-neutral-300">
+            Status (R/A/G)
+            <select
+              className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus:outline-none focus:ring"
+              value={draft.status}
+              onChange={(e) => setDraft({ ...draft, status: e.target.value })}
             >
-              {T.cancel}
+              <option value="red">Red (learning)</option>
+              <option value="amber">Amber (okay)</option>
+              <option value="green">Green (mastered)</option>
+            </select>
+          </label>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring"
+              onClick={save}
+            >
+              Save
             </button>
             <button
-              className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold"
-              onClick={commitSave}
+              className="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 focus:outline-none focus:ring"
+              onClick={() => setIsEditing(false)}
             >
-              {T.save}
+              Cancel
             </button>
           </div>
         </div>
       )}
-
-      {/* Footer: pills (RAG left-most), actions right */}
-      <div className="flex items-center justify-between pt-1">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* RAG pill */}
-          <span
-            className={cn(
-              "inline-flex items-center justify-center rounded-full px-2",
-              // Make it pill-height even with no text
-              "h-5 min-w-[1.5rem]",
-              ragCfg.bg
-            )}
-            aria-label={`RAG status ${ragCfg.text || ""}`}
-          >
-            {/* visible text only when accessibility toggle is ON */}
-            {showRagLabels ? (
-              <span className="text-[11px] leading-none font-medium text-white">
-                {ragCfg.text}
-              </span>
-            ) : (
-              <span className="sr-only">{ragCfg.text}</span>
-            )}
-          </span>
-
-          {/* Sheet tag */}
-          {r.Sheet && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
-              {r.Sheet}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            className="text-xs text-zinc-300 hover:text-white px-2 py-1 rounded-md bg-zinc-800/60 border border-zinc-700"
-            onClick={toggleExpand}
-            aria-expanded={isExpanded}
-          >
-            {isExpanded ? T.hideDetails : T.showDetails}
-          </button>
-          <button
-            className="text-xs px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700"
-            onClick={()=>startEdit(idx)}
-          >
-            {T.edit}
-          </button>
-          <button
-            className="text-xs px-2 py-1 rounded-md bg-red-800/40 border border-red-600"
-            onClick={()=>remove(idx)}
-          >
-            {T.delete}
-          </button>
-        </div>
-      </div>
-    </div>
+    </article>
   );
 }
