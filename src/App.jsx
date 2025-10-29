@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AddForm from "./components/AddForm";
 import EntryCard from "./components/EntryCard";
-import Settings from "./components/Settings";
+import HomeDock from "./components/HomeDock";
 
 /**
  * ------- STORAGE KEYS -------
  */
-const LS_KEY_ITEMS = "ll_items_v2"; // bump schema to v2 for id-based edits
+const LS_KEY_ITEMS = "ll_items_v2"; // schema v2: id-based items
 const LS_KEY_SETTINGS = "ll_settings_v2";
 
 /**
@@ -32,7 +32,7 @@ function saveJSON(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* ignore quota errors for now */
+    /* ignore quota errors */
   }
 }
 
@@ -61,37 +61,44 @@ function Toast({ message, onDone, timeout = 2000 }) {
  * ------- APP -------
  */
 export default function App() {
-  // items: array of { id, en, lt, dir, notes, tone, audience, register, createdAt, updatedAt, status }
+  // items: array of { id, en, lt, dir, notes, tone, audience, register, createdAt, updatedAt, status, variants, audio }
   const [items, setItems] = useState(() => loadJSON(LS_KEY_ITEMS, []));
-  // settings: { ttsProvider: 'browser' | 'azure', azureRegion, azureKey, voiceName }
+  // settings for audio
   const [settings, setSettings] = useState(() =>
-    loadJSON(LS_KEY_SETTINGS, { ttsProvider: "browser", azureRegion: "", azureKey: "", voiceName: "" })
+    loadJSON(LS_KEY_SETTINGS, {
+      ttsProvider: "browser",
+      azureRegion: "",
+      azureKey: "",
+      voiceName: "",
+    })
   );
   // ui
   const [showAdd, setShowAdd] = useState(false);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState("");
 
-  // Persist
   useEffect(() => saveJSON(LS_KEY_ITEMS, items), [items]);
   useEffect(() => saveJSON(LS_KEY_SETTINGS, settings), [settings]);
 
-  // Derived / search (simple, case-insensitive; diacritics left as-is)
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((r) =>
-      (r.en || "").toLowerCase().includes(q) ||
-      (r.lt || "").toLowerCase().includes(q) ||
-      (r.notes || "").toLowerCase().includes(q)
+    return items.filter(
+      (r) =>
+        (r.en || "").toLowerCase().includes(q) ||
+        (r.lt || "").toLowerCase().includes(q) ||
+        (r.notes || "").toLowerCase().includes(q)
     );
   }, [items, query]);
 
-  /**
-   * ------- CRUD by stable id (FIX for BUG-2) -------
-   */
+  function normNotes(n) {
+    if (n === null || n === undefined) return "";
+    if (typeof n === "number" && Number.isNaN(n)) return "";
+    return String(n);
+  }
+
+  // ---- CRUD (by stable id) ----
   function addItem(payload) {
-    // payload is expected to have at least { en, lt }
     const newItem = {
       id: uuid(),
       en: (payload.en ?? "").trim(),
@@ -101,7 +108,7 @@ export default function App() {
       tone: payload.tone || "",
       audience: payload.audience || "",
       register: payload.register || "",
-      status: payload.status || "red", // keep legacy R/A/G idea
+      status: payload.status || "red",
       createdAt: nowISO(),
       updatedAt: nowISO(),
       variants: Array.isArray(payload.variants) ? payload.variants : [],
@@ -115,7 +122,14 @@ export default function App() {
   function updateItem(id, patch) {
     setItems((prev) =>
       prev.map((r) =>
-        r.id === id ? { ...r, ...patch, notes: normNotes(patch.notes ?? r.notes), updatedAt: nowISO() } : r
+        r.id === id
+          ? {
+              ...r,
+              ...patch,
+              notes: normNotes(patch.notes ?? r.notes),
+              updatedAt: nowISO(),
+            }
+          : r
       )
     );
     setToast("Updated ✓");
@@ -124,13 +138,6 @@ export default function App() {
   function deleteItem(id) {
     setItems((prev) => prev.filter((r) => r.id !== id));
     setToast("Deleted");
-  }
-
-  function normNotes(n) {
-    // FIX for BUG-5 (avoid NaN showing up)
-    if (n === null || n === undefined) return "";
-    if (typeof n === "number" && Number.isNaN(n)) return "";
-    return String(n);
   }
 
   return (
@@ -146,12 +153,10 @@ export default function App() {
             >
               + Add
             </button>
-            <Settings
-              value={settings}
-              onChange={setSettings}
-            />
+            <HomeDock value={settings} onChange={setSettings} />
           </nav>
         </div>
+
         <div className="max-w-5xl mx-auto px-4 pb-3">
           <label htmlFor="search" className="sr-only">
             Search phrases
@@ -175,7 +180,7 @@ export default function App() {
               <li key={row.id}>
                 <EntryCard
                   row={row}
-                  onSave={(patch) => updateItem(row.id, patch)} // FIX for BUG-2
+                  onSave={(patch) => updateItem(row.id, patch)}
                   onDelete={() => deleteItem(row.id)}
                   settings={settings}
                 />
@@ -185,11 +190,10 @@ export default function App() {
         )}
       </main>
 
-      {/* Slide-over add panel (with Esc + focus handling) — FIX for BUG-4 in Batch 2, but we add Esc now */}
       {showAdd && (
         <AddOverlay onClose={() => setShowAdd(false)}>
           <AddForm
-            onSave={(payload) => addItem(payload)} // FIX for BUG-1 (wire the correct handler name)
+            onSave={(payload) => addItem(payload)}
             onCancel={() => setShowAdd(false)}
           />
         </AddOverlay>
@@ -201,11 +205,12 @@ export default function App() {
 }
 
 /**
- * Accessible slide-over overlay with Esc handling and initial focus.
- * (Focus trapping will be added in Batch 2 with a small lib; here we at least add Esc + autofocus.)
+ * Slide-over overlay with Esc to close.
+ * (Full focus trap/ARIA dialog polish planned for Batch 2.)
  */
 function AddOverlay({ children, onClose }) {
   const panelRef = useRef(null);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -225,7 +230,6 @@ function AddOverlay({ children, onClose }) {
       role="dialog"
       aria-label="Add new card"
       onMouseDown={(e) => {
-        // click backdrop to close
         if (e.target === e.currentTarget) onClose();
       }}
     >
