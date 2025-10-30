@@ -236,7 +236,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta="0%"){
 /* ----------------------------- focus guard ----------------------------- */
 function allowSearchBlurFor(ms=800){ window.__allowSearchBlurUntil=Date.now()+ms; }
 
-/* ----------------------------- SearchBox ----------------------------- */
+/* ----------------------------- SearchBox (focus-safe) ----------------------------- */
 const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }, ref){
   const composingRef=useRef(false);
   const inputRef=useRef(null);
@@ -245,6 +245,7 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
 
   useEffect(()=>{ const el=inputRef.current; if(!el) return; const raw=searchStore.getRaw();
     if(raw && el.value!==raw){ el.value=raw; try{ el.setSelectionRange(raw.length,raw.length);}catch{} } },[]);
+
   useEffect(()=>{ const onVis=()=>{ if(document.visibilityState!=="visible") return;
       const el=inputRef.current; if(!el) return; const raw=searchStore.getRaw(); if(raw && el.value!==raw) el.value=raw; };
     document.addEventListener("visibilitychange",onVis);
@@ -254,6 +255,11 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
   const refocusSafely=()=>{ const el=inputRef.current; if(!el) return;
     requestAnimationFrame(()=>{ if(document.activeElement!==el){ el.focus({preventScroll:true}); const len=el.value?.length??0; try{ el.setSelectionRange(len,len);}catch{} }});
   };
+
+  const isFormControl = (el) =>
+    !!el && !!el.matches && el.matches(
+      'input, textarea, select, [contenteditable=""], [contenteditable="true"]'
+    );
 
   return (
     <div className="relative flex-1">
@@ -271,9 +277,21 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
         onCompositionStart={()=>{composingRef.current=true;}}
         onCompositionEnd={(e)=>{composingRef.current=false; flush(e.currentTarget.value);}}
         onInput={(e)=>{ if(composingRef.current) return; flush(e.currentTarget.value); }}
-        onBlur={(e)=>{ const until=window.__allowSearchBlurUntil||0; const allow=until>Date.now();
-          const isClear=e.relatedTarget?.getAttribute?.("data-role")==="clear-btn";
-          if(!allow && !isClear && !e.relatedTarget){ refocusSafely(); } }}
+        onBlur={(e)=>{
+          // Let blur happen if:
+          //  1) recently allowed, OR
+          //  2) focus moved to a real form control, OR
+          //  3) the clear button got focus.
+          const until = window.__allowSearchBlurUntil || 0;
+          const allow = until > Date.now();
+          const active = document.activeElement;
+          const movedToForm = isFormControl(active);
+          const isClear = e.relatedTarget?.getAttribute?.("data-role") === "clear-btn";
+
+          if (!allow && !isClear && !e.relatedTarget && !movedToForm) {
+            refocusSafely();
+          }
+        }}
       />
       <button
         type="button" data-role="clear-btn" tabIndex={-1}
@@ -303,6 +321,7 @@ export default function App(){
   const [rows,setRows]=useState(loadRows());
   useEffect(()=>saveRows(rows),[rows]);
 
+  // one-time migration for stable ids
   useEffect(()=>{ let changed=false;
     const migrated=rows.map(r=>{ if(!r._id||typeof r._id!=="string"){ changed=true; return {...r,_id:genId(),_ts:r._ts||nowTs()}; }
       return r; });
@@ -312,8 +331,10 @@ export default function App(){
 
   const [tab,setTab]=useState("Phrases");
 
+  // search subscription
   const qFilter=useSyncExternalStore(searchStore.subscribe,searchStore.getSnapshot,searchStore.getServerSnapshot);
 
+  // sort + direction
   const [sortMode,setSortMode]=useState(()=>localStorage.getItem(LSK_SORT)||"RAG");
   useEffect(()=>localStorage.setItem(LSK_SORT,sortMode),[sortMode]);
 
@@ -346,7 +367,7 @@ export default function App(){
   const [browserVoiceName,setBrowserVoiceName]=useState("");
   const browserVoice=useMemo(()=>voices.find(v=>v.name===browserVoiceName)||voices[0],[voices,browserVoiceName]);
 
-  // ui
+  // ui state
   const [expanded,setExpanded]=useState(new Set());
   const [editIdx,setEditIdx]=useState(null);
   const [editDraft,setEditDraft]=useState({ English:"", Lithuanian:"", Phonetic:"", Category:"", Usage:"", Notes:"", "RAG Icon":"🟠", Sheet:"Phrases" });
@@ -376,6 +397,7 @@ export default function App(){
     }catch(e){ console.error(e); alert("Voice error: "+(e?.message||e)); }
   }
 
+  // Press handlers for long/short press play
   function pressHandlers(text){
     let timer=null, firedSlow=false, pressed=false;
     const start=(e)=>{ e.preventDefault(); e.stopPropagation();
@@ -388,7 +410,23 @@ export default function App(){
     return { "data-press":"1", onPointerDown:start, onPointerUp:finish, onPointerLeave:cancel, onPointerCancel:cancel, onContextMenu:(e)=>e.preventDefault() };
   }
 
-  useEffect(()=>{ const onPD=(e)=>{ const t=e.target, el=t instanceof Element ? t : null;
+  // Let form controls take focus without the SearchBox fighting them
+  useEffect(()=>{
+    const onFocusIn = (e) => {
+      const el = e.target;
+      if (el && el.matches?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) {
+        // generous window so desktop & mobile keyboards aren’t bounced
+        allowSearchBlurFor(4000);
+      }
+    };
+    document.addEventListener('focusin', onFocusIn, true);
+    return () => document.removeEventListener('focusin', onFocusIn, true);
+  },[]);
+
+  // Allow pointer on real form controls to also relax blur guard (helps mobile)
+  useEffect(()=>{ 
+    const onPD=(e)=>{
+      const t=e.target, el=t instanceof Element ? t : null;
       const formy=el?.matches?.("input, textarea, select, [contenteditable=''], [contenteditable='true']");
       if(formy) allowSearchBlurFor(1000);
     };
@@ -396,6 +434,7 @@ export default function App(){
     return ()=>document.removeEventListener("pointerdown",onPD,true);
   },[]);
 
+  // filtering / sorting
   const qNorm=(qFilter||"").trim().toLowerCase();
   const entryMatchesQuery=(r)=>!!qNorm && (((r.English||"").toLowerCase().includes(qNorm)) || ((r.Lithuanian||"").toLowerCase().includes(qNorm)));
   const filtered=useMemo(()=>{ const base=qNorm ? rows.filter(entryMatchesQuery) : rows.filter((r)=>r.Sheet===tab);
@@ -405,14 +444,14 @@ export default function App(){
     return [...base].sort((a,b)=>(order[normalizeRag(a["RAG Icon"])]??1)-(order[normalizeRag(b["RAG Icon"])]??1));
   },[rows,qNorm,sortMode,tab]);
 
+  // CRUD
   function startEditRow(i){ setEditIdx(i); setEditDraft({...rows[i]}); }
   function saveEdit(i){ const clean={...editDraft,"RAG Icon":normalizeRag(editDraft["RAG Icon"])}; setRows(prev=>prev.map((r,idx)=>idx===i?clean:r)); setEditIdx(null); }
   function remove(i){ if(!confirm(STR[direction].confirm)) return; setRows(prev=>prev.filter((_,idx)=>idx!==i)); }
 
-  // mergeRows now sanitises NaN/undefined notes → empty string
+  // mergeRows sanitises NaN/undefined notes → empty string
   async function mergeRows(newRows){
     const cleaned=newRows.map(r=>{
-      // sanitise notes and other fields safely
       const safeText = (v) => {
         if (v === null || v === undefined) return "";
         if (typeof v === "number" && !Number.isFinite(v)) return "";
@@ -436,6 +475,7 @@ export default function App(){
   }
 
   // busy helpers
+  const [busy,setBusy]=useState({on:false,label:""});
   const withBusy = async (label, fn) => {
     setBusy({on:true,label});
     try { return await fn(); }
@@ -448,9 +488,7 @@ export default function App(){
         const url=STARTERS[kind]; if(!url) throw new Error("Starter not found");
         const res=await fetch(url); if(!res.ok) throw new Error("Failed to fetch starter");
         const data = await res.json();
-        const before = rows.length;
         await mergeRows(Array.isArray(data)?data:[]);
-        const delta = (rows.length + (Array.isArray(data)?data.length:0)) - before; // rough UI hint
         flashToast(`${T.installing} ✓`);
       }catch(e){ alert("Starter error: "+e.message); }
     });
@@ -491,6 +529,7 @@ export default function App(){
 
   function clearLibrary(){ if(!confirm(STR[direction].confirm)) return; setRows([]); }
 
+  // duplicates
   const [dupeResults,setDupeResults]=useState({exact:[],close:[]});
   function scanDupes(){
     const map=new Map();
@@ -502,6 +541,7 @@ export default function App(){
     setDupeResults({exact,close});
   }
 
+  // quiz
   const [quizOn,setQuizOn]=useState(false);
   const [quizQs,setQuizQs]=useState([]);
   const [quizIdx,setQuizIdx]=useState(0);
@@ -568,6 +608,7 @@ export default function App(){
     setRows(prev=>prev.map(r=>{ if(r===item || (r._id&&item._id&&r._id===item._id)){ const clone={...r}; bumpRagAfterAnswer(clone,correct); return clone; } return r; }));
   }
 
+  // Add modal state
   const [addOpen,setAddOpen]=useState(false);
   const [justAddedId,setJustAddedId]=useState(null);
   const setRowsFromAddForm=React.useCallback((updater)=>{
@@ -741,9 +782,9 @@ export default function App(){
           </div>
         ) : (
           <div className="mt-2 space-y-2">
-            {filtered.map((r,idx)=>(
+            {filtered.map((r)=>(
               <EntryCard
-                key={r._id||idx}
+                key={r._id}
                 r={r} idx={rows.indexOf(r)} rows={rows} setRows={setRows}
                 editIdx={editIdx} setEditIdx={setEditIdx}
                 editDraft={editDraft} setEditDraft={setEditDraft}
@@ -893,7 +934,6 @@ export default function App(){
                     type="button"
                     className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
                     onClick={()=>{
-                      // Nudges some browsers to populate voices list
                       try { window.speechSynthesis?.getVoices?.(); } catch {}
                     }}
                   >
@@ -998,7 +1038,6 @@ export default function App(){
                   const next = typeof updater==="function"?updater(prev):updater;
                   return next;
                 });
-                // success toast + auto-dismiss handled here
                 flashToast(T.saved);
                 setAddOpen(false);
                 setTimeout(()=>window.scrollTo({ top: 0, behavior: "smooth" }), 0);
@@ -1008,7 +1047,7 @@ export default function App(){
               nowTs={nowTs}
               normalizeRag={normalizeRag}
               direction={direction}
-              onSave={(id)=>{ /* kept for compatibility with your AddForm */ }}
+              onSave={(id)=>{}}
               onCancel={()=>setAddOpen(false)}
             />
           </div>
