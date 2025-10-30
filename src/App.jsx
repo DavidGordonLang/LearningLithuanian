@@ -596,7 +596,6 @@ export default function App(){
 
   /* ------------------------------ Add Entry modal ------------------------- */
   const [addOpen,setAddOpen]=useState(false);
-  const [justAddedId,setJustAddedId]=useState(null);
 
   // Close on ESC while modal open
   useEffect(()=>{
@@ -760,7 +759,7 @@ export default function App(){
                         T={T} direction={direction}
                         startEdit={startEditRow} saveEdit={saveEdit} remove={remove}
                         normalizeRag={normalizeRag} pressHandlers={pressHandlers}
-                        cn={cn} lastAddedId={justAddedId}
+                        cn={cn} lastAddedId={null}
                       />
                     );
                   })}
@@ -780,7 +779,7 @@ export default function App(){
                 T={T} direction={direction}
                 startEdit={startEditRow} saveEdit={saveEdit} remove={remove}
                 normalizeRag={normalizeRag} pressHandlers={pressHandlers}
-                cn={cn} lastAddedId={justAddedId}
+                cn={cn} lastAddedId={null}
               />
             ))}
           </div>
@@ -852,13 +851,14 @@ export default function App(){
             {/* Azure creds — hidden for browser fallback */}
             {!isBrowser && (
               <>
+                {/* Subscription Key (UNCONTROLLED to prevent focus loss) */}
                 <div>
                   <div className="text-xs mb-1">{T.subKey}</div>
                   <div className="flex items-center gap-2">
                     <input
                       type={showKey ? "text" : "password"}
-                      value={azureKey}
-                      onChange={(e)=>setAzureKey(e.target.value)}
+                      defaultValue={azureKey}
+                      onInput={(e)=>setAzureKey(e.currentTarget.value)}
                       className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                       placeholder="••••••••••••••••"
                     />
@@ -872,11 +872,12 @@ export default function App(){
                   </div>
                 </div>
 
+                {/* Region (UNCONTROLLED to prevent focus loss) */}
                 <div>
                   <div className="text-xs mb-1">{T.region}</div>
                   <input
-                    value={azureRegion}
-                    onChange={(e)=>setAzureRegion(e.target.value)}
+                    defaultValue={azureRegion}
+                    onInput={(e)=>setAzureRegion(e.currentTarget.value)}
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                     placeholder="westeurope, eastus, ..."
                   />
@@ -999,14 +1000,14 @@ export default function App(){
                 nowTs={nowTs}
                 normalizeRag={normalizeRag}
                 direction={direction}
-                onSave={(id)=>{ setSortMode("Newest"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(()=>setSortMode("RAG"),0); }}
+                onSave={()=>{ setSortMode("Newest"); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(()=>setSortMode("RAG"),0); }}
                 onCancel={()=>setAddOpen(false)}
               />
             </div>
           </div>
         )}
 
-        {/* Floating Add Button (outside modal for clarity) */}
+        {/* Floating Add Button */}
         <button
           aria-label="Add entry"
           className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold"
