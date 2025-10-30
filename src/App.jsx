@@ -96,6 +96,12 @@ const STR = {
     score: "Score",
     done: "Done",
     retry: "Retry",
+    // helpers
+    installing: "Installing…",
+    importing: "Importing…",
+    exporting: "Exporting…",
+    saved: "Saved",
+    providerNote: "Using your browser’s built-in voices. No key needed.",
   },
   LT2EN: {
     appTitle1: "Anglų",
@@ -163,6 +169,12 @@ const STR = {
     score: "Rezultatas",
     done: "Baigti",
     retry: "Kartoti",
+    // helpers
+    installing: "Diegiama…",
+    importing: "Importuojama…",
+    exporting: "Eksportuojama…",
+    saved: "Išsaugota",
+    providerNote: "Naudojami naršyklės balsai. Raktas nereikalingas.",
   },
 };
 
@@ -339,6 +351,13 @@ export default function App(){
   const [editIdx,setEditIdx]=useState(null);
   const [editDraft,setEditDraft]=useState({ English:"", Lithuanian:"", Phonetic:"", Category:"", Usage:"", Notes:"", "RAG Icon":"🟠", Sheet:"Phrases" });
 
+  // toast
+  const [toast,setToast]=useState("");
+  const flashToast=(msg,ms=1600)=>{ setToast(msg); window.clearTimeout(flashToast._t); flashToast._t=window.setTimeout(()=>setToast(""),ms); };
+
+  // library progress
+  const [busy,setBusy]=useState({on:false,label:""});
+
   // audio
   const audioRef=useRef(null);
   async function playText(text,{slow=false}={}){
@@ -390,27 +409,86 @@ export default function App(){
   function saveEdit(i){ const clean={...editDraft,"RAG Icon":normalizeRag(editDraft["RAG Icon"])}; setRows(prev=>prev.map((r,idx)=>idx===i?clean:r)); setEditIdx(null); }
   function remove(i){ if(!confirm(STR[direction].confirm)) return; setRows(prev=>prev.filter((_,idx)=>idx!==i)); }
 
+  // mergeRows now sanitises NaN/undefined notes → empty string
   async function mergeRows(newRows){
-    const cleaned=newRows.map(r=>({ English:String(r.English||"").trim(), Lithuanian:String(r.Lithuanian||"").trim(),
-      Phonetic:String(r.Phonetic||"").trim(), Category:String(r.Category||"").trim(), Usage:String(r.Usage||"").trim(),
-      Notes:String(r.Notes||"").trim(), "RAG Icon":normalizeRag(r["RAG Icon"]||"🟠"),
-      Sheet:["Phrases","Questions","Words","Numbers"].includes(r.Sheet)?r.Sheet:"Phrases", _id:r._id||genId(), _ts:r._ts||nowTs(),
-      _qstat:r._qstat||{red:{ok:0,bad:0},amb:{ok:0,bad:0},grn:{ok:0,bad:0}} })).filter(r=>r.English||r.Lithuanian);
+    const cleaned=newRows.map(r=>{
+      // sanitise notes and other fields safely
+      const safeText = (v) => {
+        if (v === null || v === undefined) return "";
+        if (typeof v === "number" && !Number.isFinite(v)) return "";
+        return String(v).trim();
+      };
+      return {
+        English: safeText(r.English),
+        Lithuanian: safeText(r.Lithuanian),
+        Phonetic: safeText(r.Phonetic),
+        Category: safeText(r.Category),
+        Usage: safeText(r.Usage),
+        Notes: safeText(r.Notes),
+        "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
+        Sheet: ["Phrases","Questions","Words","Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
+        _id: r._id || genId(),
+        _ts: r._ts || nowTs(),
+        _qstat: r._qstat || { red:{ok:0,bad:0}, amb:{ok:0,bad:0}, grn:{ok:0,bad:0} }
+      };
+    }).filter(r=>r.English||r.Lithuanian);
     setRows(prev=>[...cleaned,...prev]);
   }
-  async function fetchStarter(kind){ try{ const url=STARTERS[kind]; if(!url) throw new Error("Starter not found");
-      const res=await fetch(url); if(!res.ok) throw new Error("Failed to fetch starter"); await mergeRows(await res.json()); alert("Installed."); }
-    catch(e){ alert("Starter error: "+e.message); } }
+
+  // busy helpers
+  const withBusy = async (label, fn) => {
+    setBusy({on:true,label});
+    try { return await fn(); }
+    finally { setBusy({on:false,label:""}); }
+  };
+
+  async function fetchStarter(kind){
+    return withBusy(T.installing, async ()=>{
+      try{
+        const url=STARTERS[kind]; if(!url) throw new Error("Starter not found");
+        const res=await fetch(url); if(!res.ok) throw new Error("Failed to fetch starter");
+        const data = await res.json();
+        const before = rows.length;
+        await mergeRows(Array.isArray(data)?data:[]);
+        const delta = (rows.length + (Array.isArray(data)?data.length:0)) - before; // rough UI hint
+        flashToast(`${T.installing} ✓`);
+      }catch(e){ alert("Starter error: "+e.message); }
+    });
+  }
+
   async function installNumbersOnly(){
-    const urls=[STARTERS.COMBINED_OPTIONAL,STARTERS.EN2LT,STARTERS.LT2EN].filter(Boolean); let found=[];
-    for(const url of urls){ try{ const res=await fetch(url); if(!res.ok) continue; const data=await res.json(); if(Array.isArray(data)){ const nums=data.filter(r=>String(r.Sheet)==="Numbers"); found=found.concat(nums);} } catch{} }
-    if(!found.length){ alert("No Numbers entries found in starter files."); return; }
-    await mergeRows(found); alert(`Installed ${found.length} Numbers item(s).`);
+    return withBusy(T.installing, async ()=>{
+      const urls=[STARTERS.COMBINED_OPTIONAL,STARTERS.EN2LT,STARTERS.LT2EN].filter(Boolean);
+      let found=[];
+      for(const url of urls){
+        try{
+          const res=await fetch(url); if(!res.ok) continue;
+          const data=await res.json();
+          if(Array.isArray(data)){
+            const nums=data.filter(r=>String(r.Sheet)==="Numbers");
+            found=found.concat(nums);
+          }
+        } catch {}
+      }
+      if(!found.length){ alert("No Numbers entries found in starter files."); return; }
+      const count = found.length;
+      await mergeRows(found);
+      flashToast(`Installed ${count} Numbers item(s).`);
+    });
   }
+
   async function importJsonFile(file){
-    try{ const data=JSON.parse(await file.text()); if(!Array.isArray(data)) throw new Error("JSON must be an array"); await mergeRows(data); alert("Imported."); }
-    catch(e){ alert("Import failed: "+e.message); }
+    return withBusy(T.importing, async ()=>{
+      try{
+        const data=JSON.parse(await file.text());
+        if(!Array.isArray(data)) throw new Error("JSON must be an array");
+        const count = data.length;
+        await mergeRows(data);
+        flashToast(`${T.importing} ✓ (${count})`);
+      }catch(e){ alert("Import failed: "+e.message); }
+    });
   }
+
   function clearLibrary(){ if(!confirm(STR[direction].confirm)) return; setRows([]); }
 
   const [dupeResults,setDupeResults]=useState({exact:[],close:[]});
@@ -521,6 +599,14 @@ export default function App(){
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div style={{ height: HEADER_H + DOCK_H }} />
 
+        {/* Busy bar */}
+        {busy.on && (
+          <div className="mb-3 flex items-center gap-2 text-sm text-zinc-300">
+            <span className="inline-block animate-spin h-4 w-4 border-2 border-zinc-400 border-t-transparent rounded-full" />
+            <span>{busy.label}</span>
+          </div>
+        )}
+
         <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button onClick={()=>fetchStarter("EN2LT")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.installEN}</button>
           <button onClick={()=>fetchStarter("LT2EN")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.installLT}</button>
@@ -531,7 +617,12 @@ export default function App(){
           <input ref={fileRef} type="file" accept=".json,application/json" className="hidden"
             onChange={(e)=>{ const f=e.target.files?.[0]; if(f) importJsonFile(f); e.target.value=""; }} />
           <button onClick={()=>fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.importJSON}</button>
-          <button onClick={()=>{ try{ const blob=new Blob([JSON.stringify(rows,null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="lithuanian_trainer_export.json"; a.click(); URL.revokeObjectURL(url);} catch(e){ alert("Export failed: "+e.message);} }}
+          <button onClick={()=>{ try{
+              flashToast("Exported");
+              const blob=new Blob([JSON.stringify(rows,null,2)],{type:"application/json"});
+              const url=URL.createObjectURL(blob); const a=document.createElement("a");
+              a.href=url; a.download="lithuanian_trainer_export.json"; a.click(); URL.revokeObjectURL(url);
+            } catch(e){ alert("Export failed: "+e.message);} }}
             className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">Export JSON</button>
           <button onClick={clearLibrary} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2">{T.clearAll}</button>
         </div>
@@ -653,7 +744,7 @@ export default function App(){
             {filtered.map((r,idx)=>(
               <EntryCard
                 key={r._id||idx}
-                r={r} idx={idx} rows={rows} setRows={setRows}
+                r={r} idx={rows.indexOf(r)} rows={rows} setRows={setRows}
                 editIdx={editIdx} setEditIdx={setEditIdx}
                 editDraft={editDraft} setEditDraft={setEditDraft}
                 expanded={expanded} setExpanded={setExpanded}
@@ -691,6 +782,8 @@ export default function App(){
       }catch(e){ alert("Failed to fetch voices. Check key/region."); }
     }
 
+    const isBrowser = ttsProvider === "browser";
+
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div style={{ height: HEADER_H + DOCK_H }} />
@@ -724,56 +817,91 @@ export default function App(){
                 <option value="azure">Azure Speech</option>
                 <option value="browser">Browser (fallback)</option>
               </select>
+              {isBrowser && (
+                <div className="text-xs text-zinc-400 mt-1">{T.providerNote}</div>
+              )}
             </div>
 
-            <div>
-              <div className="text-xs mb-1">{T.subKey}</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type={showKey ? "text" : "password"}
-                  value={azureKey}
-                  onChange={(e)=>setAzureKey(e.target.value)}
-                  className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                  placeholder="••••••••••••••••"
-                />
-                <button
-                  type="button"
-                  className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
-                  onClick={()=>setShowKey(v=>!v)}
-                >
-                  {showKey ? "Hide" : "Show"}
-                </button>
+            {!isBrowser && (
+              <>
+                <div>
+                  <div className="text-xs mb-1">{T.subKey}</div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type={showKey ? "text" : "password"}
+                      value={azureKey}
+                      onChange={(e)=>setAzureKey(e.target.value)}
+                      className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                      placeholder="••••••••••••••••"
+                    />
+                    <button
+                      type="button"
+                      className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
+                      onClick={()=>setShowKey(v=>!v)}
+                    >
+                      {showKey ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs mb-1">{T.region}</div>
+                  <input
+                    value={azureRegion}
+                    onChange={(e)=>setAzureRegion(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                    placeholder="westeurope, eastus, ..."
+                  />
+                </div>
+
+                <div className="flex gap-2 items-end sm:col-span-2">
+                  <button type="button" onClick={fetchAzureVoices}
+                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700">
+                    {T.fetchVoices}
+                  </button>
+                  <select
+                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                    value={azureVoiceShortName}
+                    onChange={(e)=>setAzureVoiceShortName(e.target.value)}
+                  >
+                    <option value="">{T.choose}</option>
+                    {azureVoices.map(v=>(
+                      <option key={v.ShortName || v.shortName} value={v.ShortName || v.shortName}>
+                        {v.LocalName || v.Name || v.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {isBrowser && (
+              <div className="sm:col-span-2">
+                <div className="text-xs mb-1">Browser voice</div>
+                <div className="flex gap-2">
+                  <select
+                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                    value={browserVoiceName || (voices[0]?.name ?? "")}
+                    onChange={(e)=>setBrowserVoiceName(e.target.value)}
+                  >
+                    {voices.length === 0 && <option value="">(No voices found yet)</option>}
+                    {voices.map(v=>(
+                      <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
+                    onClick={()=>{
+                      // Nudges some browsers to populate voices list
+                      try { window.speechSynthesis?.getVoices?.(); } catch {}
+                    }}
+                  >
+                    Refresh
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div>
-              <div className="text-xs mb-1">{T.region}</div>
-              <input
-                value={azureRegion}
-                onChange={(e)=>setAzureRegion(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                placeholder="westeurope, eastus, ..."
-              />
-            </div>
-
-            <div className="flex gap-2 items-end">
-              <button type="button" onClick={fetchAzureVoices}
-                className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700">
-                {T.fetchVoices}
-              </button>
-              <select
-                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={azureVoiceShortName}
-                onChange={(e)=>setAzureVoiceShortName(e.target.value)}
-              >
-                <option value="">{T.choose}</option>
-                {azureVoices.map(v=>(
-                  <option key={v.ShortName || v.shortName} value={v.ShortName || v.shortName}>
-                    {v.LocalName || v.Name || v.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            )}
           </div>
 
           <div className="mt-4">
@@ -791,7 +919,6 @@ export default function App(){
   }
 
   /* ----------------------------- render ----------------------------- */
-  // Prevent clicks behind the modal when open.
   const appShellClass = cn(
     "min-h-screen bg-zinc-950 text-zinc-100",
     addOpen ? "pointer-events-none select-none" : ""
@@ -831,9 +958,16 @@ export default function App(){
         >
           +
         </button>
+
+        {/* Toast */}
+        {toast && (
+          <div className="fixed bottom-5 right-5 z-[10000] bg-zinc-900/95 border border-zinc-700 rounded-lg px-3 py-2 text-sm shadow-lg">
+            {toast}
+          </div>
+        )}
       </div>
 
-      {/* Modal overlay is outside of app shell so it can receive pointer events while shell is blocked */}
+      {/* Modal overlay */}
       {addOpen && (
         <div
           className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
@@ -859,13 +993,22 @@ export default function App(){
 
             <AddForm
               tab={tab}
-              setRows={setRowsFromAddForm}
+              setRows={(updater)=>{
+                setRows(prev=>{
+                  const next = typeof updater==="function"?updater(prev):updater;
+                  return next;
+                });
+                // success toast + auto-dismiss handled here
+                flashToast(T.saved);
+                setAddOpen(false);
+                setTimeout(()=>window.scrollTo({ top: 0, behavior: "smooth" }), 0);
+              }}
               T={STR[direction]}
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
               direction={direction}
-              onSave={(id)=>{ setSortMode("Newest"); window.scrollTo({ top: 0, behavior: "smooth" }); setJustAddedId(id); setTimeout(()=>setJustAddedId(null),1400); }}
+              onSave={(id)=>{ /* kept for compatibility with your AddForm */ }}
               onCancel={()=>setAddOpen(false)}
             />
           </div>
