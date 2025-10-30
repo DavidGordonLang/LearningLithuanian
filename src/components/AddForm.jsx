@@ -3,15 +3,10 @@ import React, { useMemo, useState } from "react";
 /**
  * AddForm
  *
- * Props (as used by App.jsx):
- *  - tab: "Phrases" | "Questions" | "Words" | "Numbers"
- *  - setRows: (updater) => void    // App wraps this to also close the modal
- *  - T: i18n strings object (EN2LT/LT2EN)
- *  - genId: () => string
- *  - nowTs: () => number
- *  - normalizeRag: (icon) => "🔴"|"🟠"|"🟢"
- *  - direction: "EN2LT" | "LT2EN"
+ * Props:
+ *  - tab, setRows, T, genId, nowTs, normalizeRag, direction (unchanged)
  *  - onSave?: (newId: string) => void
+ *  - onCancel?: () => void            // NEW: used to close the modal
  */
 export default function AddForm({
   tab,
@@ -22,6 +17,7 @@ export default function AddForm({
   normalizeRag,
   direction,
   onSave,
+  onCancel, // NEW
 }) {
   const [english, setEnglish] = useState("");
   const [lithuanian, setLithuanian] = useState("");
@@ -31,11 +27,10 @@ export default function AddForm({
   const [notes, setNotes] = useState("");
   const [rag, setRag] = useState("🟠");
 
-  const canSave = useMemo(() => {
-    // Minimal requirement: one side + the other side
-    // For EN→LT learners, prefer English+Lithuanian; same for the inverse.
-    return String(english).trim() !== "" && String(lithuanian).trim() !== "";
-  }, [english, lithuanian]);
+  const canSave = useMemo(
+    () => String(english).trim() !== "" && String(lithuanian).trim() !== "",
+    [english, lithuanian]
+  );
 
   function reset() {
     setEnglish("");
@@ -58,27 +53,21 @@ export default function AddForm({
       Usage: String(usage || "").trim(),
       Notes: String(notes || "").trim(),
       "RAG Icon": normalizeRag(rag || "🟠"),
-      Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(tab)
-        ? tab
-        : "Phrases",
+      Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(tab) ? tab : "Phrases",
       _id,
       _ts,
-      _qstat: {
-        red: { ok: 0, bad: 0 },
-        amb: { ok: 0, bad: 0 },
-        grn: { ok: 0, bad: 0 },
-      },
+      _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
     };
   }
 
   function handleSave(e) {
     e?.preventDefault?.();
     if (!canSave) return;
-
     const row = buildRow();
-    setRows((prev) => [row, ...prev]); // persist immediately
-    onSave?.(row._id);                  // let App toast/scroll and highlight
-    reset();                            // clear the form (modal will close via App)
+    setRows((prev) => [row, ...prev]);
+    onSave?.(row._id);
+    reset();
+    onCancel?.(); // close the modal after saving
   }
 
   return (
@@ -89,12 +78,10 @@ export default function AddForm({
         handleSave();
       }}
     >
-      {/* Direction hint */}
       <div className="text-xs text-zinc-400">
         {direction === "EN2LT" ? T.en2lt : T.lt2en}
       </div>
 
-      {/* English */}
       <div>
         <label className="block text-xs mb-1" htmlFor="add-en">
           {T.english} <span className="text-red-400">*</span>
@@ -108,7 +95,6 @@ export default function AddForm({
         />
       </div>
 
-      {/* Lithuanian */}
       <div>
         <label className="block text-xs mb-1" htmlFor="add-lt">
           {T.lithuanian} <span className="text-red-400">*</span>
@@ -122,7 +108,6 @@ export default function AddForm({
         />
       </div>
 
-      {/* Phonetic */}
       <div>
         <label className="block text-xs mb-1" htmlFor="add-ph">
           {T.phonetic}
@@ -136,7 +121,6 @@ export default function AddForm({
         />
       </div>
 
-      {/* Category */}
       <div>
         <label className="block text-xs mb-1" htmlFor="add-cat">
           {T.category}
@@ -150,7 +134,6 @@ export default function AddForm({
         />
       </div>
 
-      {/* Usage */}
       <div>
         <label className="block text-xs mb-1" htmlFor="add-usage">
           {T.usage}
@@ -165,7 +148,6 @@ export default function AddForm({
         />
       </div>
 
-      {/* Notes */}
       <div>
         <label className="block text-xs mb-1" htmlFor="add-notes">
           {T.notes}
@@ -180,7 +162,6 @@ export default function AddForm({
         />
       </div>
 
-      {/* RAG + Sheet (Sheet is shown read-only for clarity) */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs mb-1" htmlFor="add-rag">
@@ -211,12 +192,14 @@ export default function AddForm({
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-2 pt-1">
         <button
           type="button"
           className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
-          onClick={reset}
+          onClick={() => {
+            reset();
+            onCancel?.(); // now actually closes
+          }}
         >
           {T.cancel}
         </button>
