@@ -31,7 +31,7 @@ const LEVEL_STEP = 2500;
 const XP_PER_CORRECT = 50;
 
 /* ============================================================================
-   UI STRINGS (EN ↔ LT)
+   UI STRINGS
    ========================================================================== */
 const STR = {
   EN2LT: {
@@ -177,31 +177,18 @@ const STR = {
    ========================================================================== */
 const saveRows = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
 const loadRows = () => {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
+  try { const raw = localStorage.getItem(LS_KEY); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+  catch { return []; }
 };
 const loadXP = () => {
-  try {
-    const v = Number(localStorage.getItem(LSK_XP) ?? "0");
-    return Number.isFinite(v) ? v : 0;
-  } catch {
-    return 0;
-  }
+  try { const v = Number(localStorage.getItem(LSK_XP) ?? "0"); return Number.isFinite(v) ? v : 0; }
+  catch { return 0; }
 };
 const saveXP = (xp) => localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const loadStreak = () => {
-  try {
-    const s = JSON.parse(localStorage.getItem(LSK_STREAK) || "null");
-    return s && typeof s.streak === "number" ? s : { streak: 0, lastDate: "" };
-  } catch {
-    return { streak: 0, lastDate: "" };
-  }
+  try { const s = JSON.parse(localStorage.getItem(LSK_STREAK) || "null"); return s && typeof s.streak === "number" ? s : { streak: 0, lastDate: "" }; }
+  catch { return { streak: 0, lastDate: "" }; }
 };
 const saveStreak = (s) => localStorage.setItem(LSK_STREAK, JSON.stringify(s));
 
@@ -215,23 +202,16 @@ function normalizeRag(icon = "") {
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
-function daysBetween(d1, d2) {
-  const a = new Date(d1 + "T00:00:00"), b = new Date(d2 + "T00:00:00");
-  return Math.round((b - a) / 86400000);
-}
+function daysBetween(d1, d2) { const a = new Date(d1 + "T00:00:00"), b = new Date(d2 + "T00:00:00"); return Math.round((b - a) / 86400000); }
 function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]];} return a; }
 function sample(arr,n){ if(!arr.length||n<=0)return[]; if(n>=arr.length)return shuffle(arr); const idxs=new Set(); while(idxs.size<n) idxs.add((Math.random()*arr.length)|0); return [...idxs].map(i=>arr[i]); }
-function sim2(a="",b=""){ const s1=(a+"").toLowerCase().trim(); const s2=(b+"").toLowerCase().trim();
-  if(!s1||!s2) return 0; if(s1===s2) return 1;
+function sim2(a="",b=""){ const s1=(a+"").toLowerCase().trim(); const s2=(b+"").toLowerCase().trim(); if(!s1||!s2) return 0; if(s1===s2) return 1;
   const grams=(s)=>{const g=[]; for(let i=0;i<s.length-1;i++) g.push(s.slice(i,i+2)); return g;};
-  const g1=grams(s1), g2=grams(s2);
-  const map=new Map(); g1.forEach(x=>map.set(x,(map.get(x)||0)+1));
-  let inter=0; g2.forEach(x=>{ if(map.get(x)){ inter++; map.set(x,map.get(x)-1);} });
-  return (2*inter)/(g1.length+g2.length);
+  const g1=grams(s1), g2=grams(s2); const map=new Map(); g1.forEach(x=>map.set(x,(map.get(x)||0)+1)); let inter=0; g2.forEach(x=>{ if(map.get(x)){ inter++; map.set(x,map.get(x)-1);} }); return (2*inter)/(g1.length+g2.length);
 }
 
 /* ============================================================================
-   TTS (Azure + Browser fallback)
+   TTS
    ========================================================================== */
 function useVoices(){
   const [voices,setVoices]=useState([]);
@@ -263,14 +243,13 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta="0%"){
 }
 
 /* ============================================================================
-   SEARCH BOX — focus-safe (does NOT steal focus)
+   SEARCH BOX — focus-safe
    ========================================================================== */
 const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }, ref){
   const composingRef = useRef(false);
   const inputRef = useRef(null);
   useImperativeHandle(ref, () => inputRef.current);
 
-  // Keep value in sync on mount only; never force focus.
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
@@ -315,38 +294,31 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
    APP
    ========================================================================== */
 export default function App(){
-  /* --------------------------- layout / dimensions ------------------------ */
+  // layout
   const [page,setPage]=useState("home");
   const [width,setWidth]=useState(()=>window.innerWidth);
-  useEffect(()=>{
-    const onR=()=>setWidth(window.innerWidth);
-    window.addEventListener("resize",onR);
-    return ()=>window.removeEventListener("resize",onR);
-  },[]);
+  useEffect(()=>{ const onR=()=>setWidth(window.innerWidth); window.addEventListener("resize",onR); return ()=>window.removeEventListener("resize",onR); },[]);
   const WIDE = width>=1024;
   const HEADER_H = 56;
-  const DOCK_H   = 112; // SearchDock ~two rows
+  const DOCK_H   = 112;
 
-  /* ------------------------------- data & prefs --------------------------- */
+  // data + prefs
   const [rows,setRows]=useState(loadRows());
   useEffect(()=>saveRows(rows),[rows]);
 
-  // One-time migration to ensure each row has a stable _id / _ts
+  // ensure stable ids
   useEffect(()=>{ let changed=false;
-    const migrated=rows.map(r=>{
-      if(!r._id||typeof r._id!=="string"){ changed=true; return {...r,_id:genId(),_ts:r._ts||nowTs()}; }
-      return r;
-    });
+    const migrated=rows.map(r=>{ if(!r._id||typeof r._id!=="string"){ changed=true; return {...r,_id:genId(),_ts:r._ts||nowTs()}; } return r; });
     if(changed) setRows(migrated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   const [tab,setTab]=useState("Phrases");
 
-  // Search subscription (store lives outside React)
+  // search
   const qFilter=useSyncExternalStore(searchStore.subscribe,searchStore.getSnapshot,searchStore.getServerSnapshot);
 
-  // Sort + Direction
+  // sort + direction
   const [sortMode,setSortMode]=useState(()=>localStorage.getItem(LSK_SORT)||"RAG");
   useEffect(()=>localStorage.setItem(LSK_SORT,sortMode),[sortMode]);
 
@@ -354,7 +326,7 @@ export default function App(){
   useEffect(()=>localStorage.setItem(LSK_DIR,direction),[direction]);
   const T = STR[direction];
 
-  // Gamification bits
+  // gamification
   const [xp,setXp]=useState(loadXP());
   useEffect(()=>saveXP(xp),[xp]);
   useEffect(()=>{ if(!Number.isFinite(xp)) setXp(0); },[]);
@@ -364,14 +336,14 @@ export default function App(){
   const [streak,setStreak]=useState(loadStreak());
   useEffect(()=>saveStreak(streak),[streak]);
 
-  /* ----------------------------------- TTS -------------------------------- */
+  // TTS prefs
   const [ttsProvider,setTtsProvider]=useState(()=>localStorage.getItem(LSK_TTS_PROVIDER)||"azure");
   useEffect(()=>localStorage.setItem(LSK_TTS_PROVIDER,ttsProvider),[ttsProvider]);
+
   const [azureKey,setAzureKey]=useState(()=>localStorage.getItem(LSK_AZURE_KEY)||"");
   const [azureRegion,setAzureRegion]=useState(()=>localStorage.getItem(LSK_AZURE_REGION)||"");
   const [azureVoices,setAzureVoices]=useState([]);
-  const [azureVoiceShortName,setAzureVoiceShortName]=useState(()=>{ try{
-    return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE)||"null")?.shortName||""; }catch{ return ""; }});
+  const [azureVoiceShortName,setAzureVoiceShortName]=useState(()=>{ try{ return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE)||"null")?.shortName||""; }catch{ return ""; }});
   useEffect(()=>{ localStorage.setItem(LSK_AZURE_KEY,azureKey ?? ""); },[azureKey]);
   useEffect(()=>{ localStorage.setItem(LSK_AZURE_REGION,azureRegion ?? ""); },[azureRegion]);
   useEffect(()=>{ localStorage.setItem(LSK_AZURE_VOICE,JSON.stringify({shortName:azureVoiceShortName})); },[azureVoiceShortName]);
@@ -380,7 +352,7 @@ export default function App(){
   const [browserVoiceName,setBrowserVoiceName]=useState("");
   const browserVoice=useMemo(()=>voices.find(v=>v.name===browserVoiceName)||voices[0],[voices,browserVoiceName]);
 
-  // Single audio instance
+  // audio
   const audioRef=useRef(null);
   async function playText(text,{slow=false}={}){
     try{
@@ -400,20 +372,16 @@ export default function App(){
     }catch(e){ console.error(e); alert("Voice error: "+(e?.message||e)); }
   }
 
-  // Pointer press → short play; long-press → slow play
+  // press handlers
   function pressHandlers(text){
     let timer=null, firedSlow=false, pressed=false;
-    const start=(e)=>{ e.preventDefault(); e.stopPropagation();
-      try{ const ae=document.activeElement; if(ae && typeof ae.blur==="function") ae.blur(); }catch{}
-      firedSlow=false; pressed=true;
-      timer=setTimeout(()=>{ if(!pressed) return; firedSlow=true; playText(text,{slow:true}); },550);
-    };
+    const start=(e)=>{ e.preventDefault(); e.stopPropagation(); try{ const ae=document.activeElement; if(ae && typeof ae.blur==="function") ae.blur(); }catch{} firedSlow=false; pressed=true; timer=setTimeout(()=>{ if(!pressed) return; firedSlow=true; playText(text,{slow:true}); },550); };
     const finish=(e)=>{ e?.preventDefault?.(); e?.stopPropagation?.(); if(!pressed) return; pressed=false; if(timer) clearTimeout(timer); timer=null; if(!firedSlow) playText(text); };
     const cancel=(e)=>{ e?.preventDefault?.(); e?.stopPropagation?.(); pressed=false; if(timer) clearTimeout(timer); timer=null; };
     return { "data-press":"1", onPointerDown:start, onPointerUp:finish, onPointerLeave:cancel, onPointerCancel:cancel, onContextMenu:(e)=>e.preventDefault() };
   }
 
-  /* ------------------------------ filtering/sorting ----------------------- */
+  // filter/sort
   const qNorm=(qFilter||"").trim().toLowerCase();
   const entryMatchesQuery=(r)=>!!qNorm && (((r.English||"").toLowerCase().includes(qNorm)) || ((r.Lithuanian||"").toLowerCase().includes(qNorm)));
   const filtered=useMemo(()=>{ const base=qNorm ? rows.filter(entryMatchesQuery) : rows.filter((r)=>r.Sheet===tab);
@@ -423,106 +391,53 @@ export default function App(){
     return [...base].sort((a,b)=>(order[normalizeRag(a["RAG Icon"])]??1)-(order[normalizeRag(b["RAG Icon"])]??1));
   },[rows,qNorm,sortMode,tab]);
 
-  /* ---------------------------------- CRUD -------------------------------- */
+  // edit/delete
   const [expanded,setExpanded]=useState(new Set());
   const [editIdx,setEditIdx]=useState(null);
   const [editDraft,setEditDraft]=useState({ English:"", Lithuanian:"", Phonetic:"", Category:"", Usage:"", Notes:"", "RAG Icon":"🟠", Sheet:"Phrases" });
-
   function startEditRow(i){ setEditIdx(i); setEditDraft({...rows[i]}); }
   function saveEdit(i){ const clean={...editDraft,"RAG Icon":normalizeRag(editDraft["RAG Icon"])}; setRows(prev=>prev.map((r,idx)=>idx===i?clean:r)); setEditIdx(null); }
   function remove(i){ if(!confirm(STR[direction].confirm)) return; setRows(prev=>prev.filter((_,idx)=>idx!==i)); }
 
-  // Merge arrays of rows with cleaning (avoid NaN in Notes etc.)
+  // merge/import
   async function mergeRows(newRows){
     const cleaned=newRows.map(r=>{
-      const safe = (v) => {
-        if (v === null || v === undefined) return "";
-        if (typeof v === "number" && !Number.isFinite(v)) return "";
-        return String(v).trim();
-      };
-      return {
-        English: safe(r.English),
-        Lithuanian: safe(r.Lithuanian),
-        Phonetic: safe(r.Phonetic),
-        Category: safe(r.Category),
-        Usage: safe(r.Usage),
-        Notes: safe(r.Notes),
-        "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases","Questions","Words","Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
-        _id: r._id || genId(),
-        _ts: r._ts || nowTs(),
-        _qstat: r._qstat || { red:{ok:0,bad:0}, amb:{ok:0,bad:0}, grn:{ok:0,bad:0} }
-      };
+      const safe=(v)=>{ if(v==null) return ""; if(typeof v==="number" && !Number.isFinite(v)) return ""; return String(v).trim(); };
+      return { English:safe(r.English), Lithuanian:safe(r.Lithuanian), Phonetic:safe(r.Phonetic), Category:safe(r.Category), Usage:safe(r.Usage), Notes:safe(r.Notes),
+        "RAG Icon":normalizeRag(r["RAG Icon"]||"🟠"), Sheet:["Phrases","Questions","Words","Numbers"].includes(r.Sheet)?r.Sheet:"Phrases",
+        _id:r._id||genId(), _ts:r._ts||nowTs(), _qstat:r._qstat||{red:{ok:0,bad:0},amb:{ok:0,bad:0},grn:{ok:0,bad:0}} };
     }).filter(r=>r.English||r.Lithuanian);
     setRows(prev=>[...cleaned,...prev]);
   }
-
-  async function fetchStarter(kind){
-    try{
-      const url=STARTERS[kind]; if(!url) throw new Error("Starter not found");
-      const res=await fetch(url); if(!res.ok) throw new Error("Failed to fetch starter");
-      const data = await res.json();
-      await mergeRows(Array.isArray(data)?data:[]);
-      alert("Installed.");
-    }catch(e){ alert("Starter error: "+e.message); }
-  }
-
+  async function fetchStarter(kind){ try{ const url=STARTERS[kind]; if(!url) throw new Error("Starter not found"); const res=await fetch(url); if(!res.ok) throw new Error("Failed to fetch starter"); await mergeRows(await res.json()); alert("Installed."); } catch(e){ alert("Starter error: "+e.message); } }
   async function installNumbersOnly(){
-    const urls=[STARTERS.COMBINED_OPTIONAL,STARTERS.EN2LT,STARTERS.LT2EN].filter(Boolean);
-    let found=[];
-    for(const url of urls){
-      try{
-        const res=await fetch(url); if(!res.ok) continue;
-        const data=await res.json();
-        if(Array.isArray(data)){
-          const nums=data.filter(r=>String(r.Sheet)==="Numbers");
-          found=found.concat(nums);
-        }
-      } catch {}
-    }
+    const urls=[STARTERS.COMBINED_OPTIONAL,STARTERS.EN2LT,STARTERS.LT2EN].filter(Boolean); let found=[];
+    for(const url of urls){ try{ const res=await fetch(url); if(!res.ok) continue; const data=await res.json(); if(Array.isArray(data)){ const nums=data.filter(r=>String(r.Sheet)==="Numbers"); found=found.concat(nums);} } catch{} }
     if(!found.length){ alert("No Numbers entries found in starter files."); return; }
-    await mergeRows(found);
-    alert(`Installed ${found.length} Numbers item(s).`);
+    await mergeRows(found); alert(`Installed ${found.length} Numbers item(s).`);
   }
-
-  async function importJsonFile(file){
-    try{
-      const data=JSON.parse(await file.text());
-      if(!Array.isArray(data)) throw new Error("JSON must be an array");
-      await mergeRows(data);
-      alert("Imported.");
-    }catch(e){ alert("Import failed: "+e.message); }
-  }
-
+  async function importJsonFile(file){ try{ const data=JSON.parse(await file.text()); if(!Array.isArray(data)) throw new Error("JSON must be an array"); await mergeRows(data); alert("Imported."); } catch(e){ alert("Import failed: "+e.message); } }
   function clearLibrary(){ if(!confirm(STR[direction].confirm)) return; setRows([]); }
 
-  /* ------------------------------ duplicates ------------------------------ */
+  // dups
   const [dupeResults,setDupeResults]=useState({exact:[],close:[]});
   function scanDupes(){
     const map=new Map();
     rows.forEach((r,i)=>{ const key=`${r.English}|||${r.Lithuanian}`.toLowerCase().trim(); map.set(key,(map.get(key)||[]).concat(i)); });
     const exact=[]; for(const arr of map.values()) if(arr.length>1) exact.push(arr);
     const close=[]; const bySheet=rows.reduce((acc,r,i)=>{ (acc[r.Sheet] ||= []).push({r,i}); return acc; },{});
-    for(const list of Object.values(bySheet)){
-      for(let a=0;a<list.length;a++){
-        for(let b=a+1;b<list.length;b++){
-          const A=list[a], B=list[b];
-          const s=(sim2(A.r.English,B.r.English)+sim2(A.r.Lithuanian,B.r.Lithuanian))/2;
-          if(s>=0.85) close.push([A.i,B.i,s]);
-        }
-      }
-    }
+    for(const list of Object.values(bySheet)){ for(let a=0;a<list.length;a++){ for(let b=a+1;b<list.length;b++){
+      const A=list[a], B=list[b]; const s=(sim2(A.r.English,B.r.English)+sim2(A.r.Lithuanian,B.r.Lithuanian))/2; if(s>=0.85) close.push([A.i,B.i,s]); } } }
     setDupeResults({exact,close});
   }
 
-  /* ---------------------------------- quiz -------------------------------- */
+  // quiz
   const [quizOn,setQuizOn]=useState(false);
   const [quizQs,setQuizQs]=useState([]);
   const [quizIdx,setQuizIdx]=useState(0);
   const [quizAnswered,setQuizAnswered]=useState(false);
   const [quizChoice,setQuizChoice]=useState(null);
   const [quizOptions,setQuizOptions]=useState([]);
-
   function computeQuizPool(allRows,targetSize=10){
     const withPairs=allRows.filter(r=>r.English&&r.Lithuanian);
     const red=withPairs.filter(r=>normalizeRag(r["RAG Icon"])==="🔴");
@@ -532,23 +447,17 @@ export default function App(){
     const needA=Math.min(Math.max(4,Math.floor(targetSize*0.4)), amb.length||0);
     const needG=Math.min(Math.max(1,Math.floor(targetSize*0.1)), grn.length||0);
     let picked=[...sample(red,needR),...sample(amb,needA),...sample(grn,needG)];
-    while(picked.length<targetSize){
-      const leftovers=withPairs.filter(r=>!picked.includes(r)); if(!leftovers.length) break;
-      picked.push(leftovers[(Math.random()*leftovers.length)|0]);
-    }
+    while(picked.length<targetSize){ const leftovers=withPairs.filter(r=>!picked.includes(r)); if(!leftovers.length) break; picked.push(leftovers[(Math.random()*leftovers.length)|0]); }
     return shuffle(picked).slice(0,targetSize);
   }
-
   function startQuiz(){
     if(rows.length<4) return alert("Add more entries first (need at least 4).");
     const pool=computeQuizPool(rows,10); if(!pool.length) return alert("No quiz candidates found.");
     setQuizQs(pool); setQuizIdx(0); setQuizAnswered(false); setQuizChoice(null);
-    const first=pool[0];
-    const correctLt=first.Lithuanian;
+    const first=pool[0]; const correctLt=first.Lithuanian;
     const distractors=sample(pool.filter(r=>r!==first&&r.Lithuanian),3).map(r=>r.Lithuanian);
     setQuizOptions(shuffle([correctLt,...distractors])); setQuizOn(true);
   }
-
   function afterAnswerAdvance(){
     const nextIdx=quizIdx+1;
     if(nextIdx>=quizQs.length){
@@ -564,105 +473,53 @@ export default function App(){
     const distractors=sample(quizQs.filter(r=>r!==item&&r.Lithuanian),3).map(r=>r.Lithuanian);
     setQuizOptions(shuffle([correctLt,...distractors]));
   }
-
   function bumpRagAfterAnswer(item,correct){
     const rag=normalizeRag(item["RAG Icon"]);
     const st=(item._qstat ||= { red:{ok:0,bad:0}, amb:{ok:0,bad:0}, grn:{ok:0,bad:0} });
-    if(rag==="🔴"){
-      if(correct){ st.red.ok=(st.red.ok||0)+1; if(st.red.ok>=5){ item["RAG Icon"]="🟠"; st.red.ok=st.red.bad=0; } }
-      else { st.red.bad=(st.red.bad||0)+1; }
-    } else if(rag==="🟠"){
-      if(correct){ st.amb.ok=(st.amb.ok||0)+1; if(st.amb.ok>=5){ item["RAG Icon"]="🟢"; st.amb.ok=st.amb.bad=0; } }
-      else { st.amb.bad=(st.amb.bad||0)+1; if(st.amb.bad>=3){ item["RAG Icon"]="🔴"; st.amb.ok=st.amb.bad=0; } }
-    } else if(rag==="🟢"){
-      if(!correct){ st.grn.bad=(st.grn.bad||0)+1; item["RAG Icon"]="🟠"; st.grn.ok=st.grn.bad=0; }
-      else { st.grn.ok=(st.grn.ok||0)+1; }
-    }
+    if(rag==="🔴"){ if(correct){ st.red.ok=(st.red.ok||0)+1; if(st.red.ok>=5){ item["RAG Icon"]="🟠"; st.red.ok=st.red.bad=0; } } else { st.red.bad=(st.red.bad||0)+1; } }
+    else if(rag==="🟠"){ if(correct){ st.amb.ok=(st.amb.ok||0)+1; if(st.amb.ok>=5){ item["RAG Icon"]="🟢"; st.amb.ok=st.amb.bad=0; } } else { st.amb.bad=(st.amb.bad||0)+1; if(st.amb.bad>=3){ item["RAG Icon"]="🔴"; st.amb.ok=st.amb.bad=0; } } }
+    else if(rag==="🟢"){ if(!correct){ st.grn.bad=(st.grn.bad||0)+1; item["RAG Icon"]="🟠"; st.grn.ok=st.grn.bad=0; } else { st.grn.ok=(st.grn.ok||0)+1; } }
   }
-
   async function answerQuiz(option){
     if(quizAnswered) return;
     const item=quizQs[quizIdx]; const correct=option===item.Lithuanian;
     setQuizChoice(option); setQuizAnswered(true);
     if(correct) setXp(x=>(Number.isFinite(x)?x:0)+XP_PER_CORRECT);
     await playText(item.Lithuanian,{slow:false});
-    setRows(prev=>prev.map(r=>{
-      if(r===item || (r._id&&item._id&&r._id===item._id)){
-        const clone={...r}; bumpRagAfterAnswer(clone,correct); return clone;
-      }
-      return r;
-    }));
+    setRows(prev=>prev.map(r=>{ if(r===item || (r._id&&item._id&&r._id===item._id)){ const clone={...r}; bumpRagAfterAnswer(clone,correct); return clone; } return r; }));
   }
 
-  /* ------------------------------ Add Entry modal ------------------------- */
+  // Add modal
   const [addOpen,setAddOpen]=useState(false);
-
-  // Close on ESC while modal open
-  useEffect(()=>{
-    if(!addOpen) return;
-    const onKey = (e) => { if(e.key === "Escape") setAddOpen(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  },[addOpen]);
-
-  // Prevent body scroll when modal open
-  useEffect(()=>{
-    if(!addOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  },[addOpen]);
-
-  const setRowsFromAddForm=React.useCallback((updater)=>{
-    setRows(prev=>{
-      const next=typeof updater==="function"?updater(prev):updater;
-      return next;
-    });
-  },[]);
+  useEffect(()=>{ if(!addOpen) return; const onKey=(e)=>{ if(e.key==="Escape") setAddOpen(false); }; window.addEventListener("keydown",onKey); return ()=>window.removeEventListener("keydown",onKey); },[addOpen]);
+  useEffect(()=>{ if(!addOpen) return; const prev=document.body.style.overflow; document.body.style.overflow="hidden"; return ()=>{ document.body.style.overflow=prev; }; },[addOpen]);
+  const setRowsFromAddForm=React.useCallback((updater)=>{ setRows(prev=>{ const next=typeof updater==="function"?updater(prev):updater; return next; }); },[]);
 
   /* --------------------------------- VIEWS -------------------------------- */
+
   function LibraryView(){
     const fileRef=useRef(null);
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div style={{ height: HEADER_H + DOCK_H }} />
-
         <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button onClick={()=>fetchStarter("EN2LT")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.installEN}</button>
           <button onClick={()=>fetchStarter("LT2EN")} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.installLT}</button>
           <button onClick={installNumbersOnly} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.installNums}</button>
         </div>
-
         <div className="mt-3 col-span-1 sm:col-span-3 flex items-center gap-2">
-          <input
-            ref={fileRef} type="file" accept=".json,application/json" className="hidden"
-            onChange={(e)=>{ const f=e.target.files?.[0]; if(f) importJsonFile(f); e.target.value=""; }}
-          />
+          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(e)=>{ const f=e.target.files?.[0]; if(f) importJsonFile(f); e.target.value=""; }} />
           <button onClick={()=>fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.importJSON}</button>
-          <button
-            onClick={()=>{ try{
-              const blob=new Blob([JSON.stringify(rows,null,2)],{type:"application/json"});
-              const url=URL.createObjectURL(blob);
-              const a=document.createElement("a"); a.href=url; a.download="lithuanian_trainer_export.json"; a.click();
-              URL.revokeObjectURL(url);
-            } catch(e){ alert("Export failed: "+e.message);} }}
-            className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2"
-          >
-            Export JSON
-          </button>
+          <button onClick={()=>{ try{ const blob=new Blob([JSON.stringify(rows,null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="lithuanian_trainer_export.json"; a.click(); URL.revokeObjectURL(url);} catch(e){ alert("Export failed: "+e.message);} }} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">Export JSON</button>
           <button onClick={clearLibrary} className="bg-zinc-900 border border-red-600 text-red-400 rounded-md px-3 py-2">{T.clearAll}</button>
         </div>
-
-        {/* Duplicates */}
+        {/* Duplicates UI (unchanged) */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
             <div className="text-lg font-semibold">{T.dupFinder}</div>
             <button onClick={scanDupes} className="bg-zinc-800 px-3 py-2 rounded-md">{T.scan}</button>
           </div>
-
-          <div className="text-sm text-zinc-400 mb-2">
-            {T.exactGroups}: {dupeResults.exact.length} group(s)
-          </div>
+          <div className="text-sm text-zinc-400 mb-2">{T.exactGroups}: {dupeResults.exact.length} group(s)</div>
           <div className="space-y-3 mb-6">
             {dupeResults.exact.map((group,gi)=>(
               <div key={gi} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
@@ -671,19 +528,9 @@ export default function App(){
                     const row=rows[ridx];
                     return (
                       <div key={ridx} className="border border-zinc-800 rounded-md p-2">
-                        <div className="font-medium">
-                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
-                        </div>
-                        {(row.Usage||row.Notes)&&(
-                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                            {row.Usage && (<div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>)}
-                            {row.Notes && (<div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>)}
-                          </div>
-                        )}
-                        <div className="mt-2">
-                          <button className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                            onClick={()=>setRows(prev=>prev.filter((_,ii)=>ii!==ridx))}>{T.delete}</button>
-                        </div>
+                        <div className="font-medium">{row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span></div>
+                        {(row.Usage||row.Notes)&&(<div className="mt-1 text-xs text-zinc-400 space-y-1">{row.Usage && (<div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>)}{row.Notes && (<div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>)}</div>)}
+                        <div className="mt-2"><button className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md" onClick={()=>setRows(prev=>prev.filter((_,ii)=>ii!==ridx))}>{T.delete}</button></div>
                       </div>
                     );
                   })}
@@ -691,10 +538,7 @@ export default function App(){
               </div>
             ))}
           </div>
-
-          <div className="text-sm text-zinc-400 mb-2">
-            {T.closeMatches}: {dupeResults.close.length} pair(s)
-          </div>
+          <div className="text-sm text-zinc-400 mb-2">{T.closeMatches}: {dupeResults.close.length} pair(s)</div>
           <div className="space-y-3">
             {dupeResults.close.map(([i,j,s])=>{
               const A=rows[i], B=rows[j];
@@ -704,19 +548,9 @@ export default function App(){
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[{row:A,idx:i},{row:B,idx:j}].map(({row,idx:ridx})=>(
                       <div key={ridx} className="border border-zinc-800 rounded-md p-2">
-                        <div className="font-medium">
-                          {row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span>
-                        </div>
-                        {(row.Usage||row.Notes)&&(
-                          <div className="mt-1 text-xs text-zinc-400 space-y-1">
-                            {row.Usage && (<div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>)}
-                            {row.Notes && (<div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>)}
-                          </div>
-                        )}
-                        <div className="mt-2">
-                          <button className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                            onClick={()=>setRows(prev=>prev.filter((_,ii)=>ii!==ridx))}>{T.delete}</button>
-                        </div>
+                        <div className="font-medium">{row.English} — {row.Lithuanian} <span className="text-xs text-zinc-400">[{row.Sheet}]</span></div>
+                        {(row.Usage||row.Notes)&&(<div className="mt-1 text-xs text-zinc-400 space-y-1">{row.Usage && (<div><span className="text-zinc-500">{T.usage}: </span>{row.Usage}</div>)}{row.Notes && (<div><span className="text-zinc-500">{T.notes}: </span>{row.Notes}</div>)}</div>)}
+                        <div className="mt-2"><button className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md" onClick={()=>setRows(prev=>prev.filter((_,ii)=>ii!==ridx))}>{T.delete}</button></div>
                       </div>
                     ))}
                   </div>
@@ -732,35 +566,24 @@ export default function App(){
   function HomeView(){
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-        {/* Spacer for header + dock */}
         <div style={{ height: HEADER_H + DOCK_H }} />
-
-        {/* List */}
         {sortMode==="RAG" && WIDE ? (
           <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
             {["🔴","🟠","🟢"].map((k)=>(
               <div key={k}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="inline-flex items-center gap-1 text-white text-xs px-2 py-0.5 rounded-full bg-zinc-700">{k}</span>
-                  <div className="text-sm text-zinc-400">
-                    {filtered.filter(r=>normalizeRag(r["RAG Icon"])===k).length} item(s)
-                  </div>
+                  <div className="text-sm text-zinc-400">{filtered.filter(r=>normalizeRag(r["RAG Icon"])===k).length} item(s)</div>
                 </div>
                 <div className="space-y-2">
                   {filtered.filter(r=>normalizeRag(r["RAG Icon"])===k).map((r)=>{
                     const idx=rows.indexOf(r);
                     return (
-                      <EntryCard
-                        key={r._id||idx}
-                        r={r} idx={idx} rows={rows} setRows={setRows}
-                        editIdx={editIdx} setEditIdx={setEditIdx}
-                        editDraft={editDraft} setEditDraft={setEditDraft}
-                        expanded={expanded} setExpanded={setExpanded}
-                        T={T} direction={direction}
+                      <EntryCard key={r._id||idx} r={r} idx={idx} rows={rows} setRows={setRows}
+                        editIdx={editIdx} setEditIdx={setEditIdx} editDraft={editDraft} setEditDraft={setEditDraft}
+                        expanded={expanded} setExpanded={setExpanded} T={T} direction={direction}
                         startEdit={startEditRow} saveEdit={saveEdit} remove={remove}
-                        normalizeRag={normalizeRag} pressHandlers={pressHandlers}
-                        cn={cn} lastAddedId={null}
-                      />
+                        normalizeRag={normalizeRag} pressHandlers={pressHandlers} cn={cn} lastAddedId={null} />
                     );
                   })}
                 </div>
@@ -770,47 +593,40 @@ export default function App(){
         ) : (
           <div className="mt-2 space-y-2">
             {filtered.map((r,idx)=>(
-              <EntryCard
-                key={r._id||idx}
-                r={r} idx={idx} rows={rows} setRows={setRows}
-                editIdx={editIdx} setEditIdx={setEditIdx}
-                editDraft={editDraft} setEditDraft={setEditDraft}
-                expanded={expanded} setExpanded={setExpanded}
-                T={T} direction={direction}
+              <EntryCard key={r._id||idx} r={r} idx={idx} rows={rows} setRows={setRows}
+                editIdx={editIdx} setEditIdx={setEditIdx} editDraft={editDraft} setEditDraft={setEditDraft}
+                expanded={expanded} setExpanded={setExpanded} T={T} direction={direction}
                 startEdit={startEditRow} saveEdit={saveEdit} remove={remove}
-                normalizeRag={normalizeRag} pressHandlers={pressHandlers}
-                cn={cn} lastAddedId={null}
-              />
+                normalizeRag={normalizeRag} pressHandlers={pressHandlers} cn={cn} lastAddedId={null} />
             ))}
           </div>
         )}
-
-        {/* Floating Add (+) Button */}
-        <button
-          aria-label="Add entry"
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold"
-          onClick={()=>setAddOpen(true)}
-        >
-          +
-        </button>
+        <button aria-label="Add entry" className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold" onClick={()=>setAddOpen(true)}>+</button>
       </div>
     );
   }
 
   function SettingsView(){
     const [showKey,setShowKey]=useState(false);
+    const isBrowser = ttsProvider === "browser";
+
+    // 🔒 Local field state — avoids App re-render on every keystroke
+    const [keyField, setKeyField] = useState(azureKey);
+    const [regionField, setRegionField] = useState(azureRegion);
+
+    // Commit to App (and localStorage) on blur or Save click
+    const commitKey = ()=> setAzureKey(keyField);
+    const commitRegion = ()=> setAzureRegion(regionField);
 
     async function fetchAzureVoices(){
       try{
-        const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-        const res = await fetch(url,{ headers: { "Ocp-Apim-Subscription-Key": azureKey }});
+        const url = `https://${(regionField||azureRegion)}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+        const res = await fetch(url,{ headers: { "Ocp-Apim-Subscription-Key": (keyField||azureKey) }});
         if(!res.ok) throw new Error("Fetch failed");
         const data = await res.json();
         setAzureVoices(data || []);
       }catch(e){ alert("Failed to fetch voices. Check key/region."); }
     }
-
-    const isBrowser = ttsProvider === "browser";
 
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
@@ -837,62 +653,62 @@ export default function App(){
           <div className="text-sm font-semibold mb-3">{T.azure} / {T.browserVoice}</div>
 
           <div className="grid sm:grid-cols-2 gap-3">
-            {/* Provider select */}
+            {/* Provider */}
             <div>
               <div className="text-xs mb-1">Provider</div>
-              <select className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={ttsProvider} onChange={(e)=>setTtsProvider(e.target.value)}>
+              <select className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2" value={ttsProvider} onChange={(e)=>setTtsProvider(e.target.value)}>
                 <option value="azure">Azure Speech</option>
                 <option value="browser">Browser (fallback)</option>
               </select>
               {isBrowser && <div className="text-xs text-zinc-400 mt-1">{T.providerNote}</div>}
             </div>
 
-            {/* Azure creds — hidden for browser fallback */}
+            {/* Azure creds (hidden when Browser fallback) */}
             {!isBrowser && (
               <>
-                {/* Subscription Key (UNCONTROLLED to prevent focus loss) */}
+                {/* Subscription Key — controlled locally; commit on blur or Save */}
                 <div>
                   <div className="text-xs mb-1">{T.subKey}</div>
                   <div className="flex items-center gap-2">
                     <input
                       type={showKey ? "text" : "password"}
-                      defaultValue={azureKey}
-                      onInput={(e)=>setAzureKey(e.currentTarget.value)}
+                      value={keyField}
+                      onChange={(e)=>setKeyField(e.currentTarget.value)}
+                      onBlur={commitKey}
                       className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                       placeholder="••••••••••••••••"
                     />
-                    <button
-                      type="button"
-                      className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
-                      onClick={()=>setShowKey(v=>!v)}
-                    >
+                    <button type="button" className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs" onClick={()=>setShowKey(v=>!v)}>
                       {showKey ? "Hide" : "Show"}
+                    </button>
+                    <button type="button" className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs" onClick={commitKey}>
+                      Save
                     </button>
                   </div>
                 </div>
 
-                {/* Region (UNCONTROLLED to prevent focus loss) */}
+                {/* Region — controlled locally; commit on blur or Save */}
                 <div>
                   <div className="text-xs mb-1">{T.region}</div>
-                  <input
-                    defaultValue={azureRegion}
-                    onInput={(e)=>setAzureRegion(e.currentTarget.value)}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    placeholder="westeurope, eastus, ..."
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={regionField}
+                      onChange={(e)=>setRegionField(e.currentTarget.value)}
+                      onBlur={commitRegion}
+                      className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                      placeholder="westeurope, eastus, ..."
+                    />
+                    <button type="button" className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs" onClick={commitRegion}>
+                      Save
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex gap-2 items-end sm:col-span-2">
-                  <button type="button" onClick={fetchAzureVoices}
-                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700">
+                  <button type="button" onClick={fetchAzureVoices} className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700">
                     {T.fetchVoices}
                   </button>
-                  <select
-                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    value={azureVoiceShortName}
-                    onChange={(e)=>setAzureVoiceShortName(e.target.value)}
-                  >
+                  <select className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2" value={azureVoiceShortName} onChange={(e)=>setAzureVoiceShortName(e.target.value)}>
                     <option value="">{T.choose}</option>
                     {azureVoices.map(v=>(
                       <option key={v.ShortName || v.shortName} value={v.ShortName || v.shortName}>
@@ -909,23 +725,11 @@ export default function App(){
               <div className="sm:col-span-2">
                 <div className="text-xs mb-1">Browser voice</div>
                 <div className="flex gap-2">
-                  <select
-                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    value={browserVoiceName || (voices[0]?.name ?? "")}
-                    onChange={(e)=>setBrowserVoiceName(e.target.value)}
-                  >
+                  <select className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2" value={browserVoiceName || (voices[0]?.name ?? "")} onChange={(e)=>setBrowserVoiceName(e.target.value)}>
                     {voices.length === 0 && <option value="">(No voices found yet)</option>}
-                    {voices.map(v=>(
-                      <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
-                    ))}
+                    {voices.map(v=>(<option key={v.name} value={v.name}>{v.name} ({v.lang})</option>))}
                   </select>
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
-                    onClick={()=>{
-                      try { window.speechSynthesis?.getVoices?.(); } catch {}
-                    }}
-                  >
+                  <button type="button" className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700" onClick={()=>{ try { window.speechSynthesis?.getVoices?.(); } catch {} }}>
                     Refresh
                   </button>
                 </div>
@@ -935,10 +739,7 @@ export default function App(){
 
           <div className="mt-4">
             <div className="text-sm mb-2">Test voice</div>
-            <button
-              className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500"
-              onClick={()=>playText(direction==="EN2LT" ? "Sveiki! Kaip sekasi?" : "Hello! How are you?")}
-            >
+            <button className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500" onClick={()=>playText(direction==="EN2LT" ? "Sveiki! Kaip sekasi?" : "Hello! How are you?")}>
               Play sample
             </button>
           </div>
@@ -952,8 +753,6 @@ export default function App(){
     <>
       <div className="min-h-screen bg-zinc-950 text-zinc-100">
         <Header T={T} cn={cn} />
-
-        {/* Fixed dock (search + nav + streak/level) */}
         <SearchDock
           SearchBox={SearchBox}
           sortMode={sortMode}
@@ -970,28 +769,20 @@ export default function App(){
           tab={tab}
           setTab={setTab}
         />
-
-        {/* Pages */}
         {page === "library" ? <LibraryView /> : page === "settings" ? <SettingsView /> : <HomeView />}
 
         {/* Add Entry Modal */}
         {addOpen && (
           <div
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Add entry"
+            role="dialog" aria-modal="true" aria-label="Add entry"
             onPointerDown={()=>{ setAddOpen(false); if(document.activeElement instanceof HTMLElement) document.activeElement.blur(); }}
           >
-            <div
-              className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
-              onPointerDown={(e)=>e.stopPropagation()}
-            >
+            <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-4" onPointerDown={(e)=>e.stopPropagation()}>
               <div className="flex items-center justify-between mb-3">
                 <div className="text-lg font-semibold">{T.addEntry}</div>
                 <button className="px-2 py-1 rounded-md bg-zinc-800" onClick={()=>setAddOpen(false)}>Close</button>
               </div>
-
               <AddForm
                 tab={tab}
                 setRows={setRowsFromAddForm}
@@ -1008,13 +799,7 @@ export default function App(){
         )}
 
         {/* Floating Add Button */}
-        <button
-          aria-label="Add entry"
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold"
-          onClick={()=>setAddOpen(true)}
-        >
-          +
-        </button>
+        <button aria-label="Add entry" className="fixed bottom-5 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 shadow-xl flex items-center justify-center text-3xl font-bold" onClick={()=>setAddOpen(true)}>+</button>
       </div>
     </>
   );
