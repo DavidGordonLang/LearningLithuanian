@@ -839,15 +839,16 @@ export default function App(){
             </div>
 
             <AddForm
-              tab={tab}
-              setRows={setRowsFromAddForm}
-              T={T}
-              genId={genId}
-              nowTs={nowTs}
-              normalizeRag={normalizeRag}
-              direction={direction}
-              onSaved={(id)=>{ setSortMode("Newest"); window.scrollTo({ top:0, behavior:"smooth" }); setJustAddedId(id); setTimeout(()=>setJustAddedId(null),1400); }}
-            />
+  tab={tab}
+  setRows={setRowsFromAddForm}
+  T={T}
+  genId={genId}
+  nowTs={nowTs}
+  normalizeRag={normalizeRag}
+  direction={direction}
+  onSave={(id)=>{ setSortMode("Newest"); window.scrollTo({ top: 0, behavior: "smooth" }); setJustAddedId(id); setTimeout(()=>setJustAddedId(null),1400); }}
+/>
+
           </div>
         </div>
       )}
