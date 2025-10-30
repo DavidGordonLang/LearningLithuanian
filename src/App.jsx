@@ -246,7 +246,9 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
 
   return (
     <div className="relative flex-1">
+      <label htmlFor="main-search" className="sr-only">Search phrases</label>
       <input
+        id="main-search"
         ref={inputRef}
         defaultValue=""
         type="text"
@@ -283,9 +285,9 @@ export default function App(){
   useEffect(()=>{ const onR=()=>setWidth(window.innerWidth); window.addEventListener("resize",onR); return ()=>window.removeEventListener("resize",onR); },[]);
   const WIDE = width>=1024;
 
-  // header + dock heights (dock has 2 rows now)
+  // header + dock heights
   const HEADER_H = 56;
-  const DOCK_H   = 112; // ~two rows; adjust if you tweak paddings
+  const DOCK_H   = 112;
 
   // data + prefs
   const [rows,setRows]=useState(loadRows());
@@ -329,8 +331,8 @@ export default function App(){
   const [azureVoices,setAzureVoices]=useState([]);
   const [azureVoiceShortName,setAzureVoiceShortName]=useState(()=>{ try{
     return JSON.parse(localStorage.getItem(LSK_AZURE_VOICE)||"null")?.shortName||""; }catch{ return ""; }});
-  useEffect(()=>{ if(azureKey) localStorage.setItem(LSK_AZURE_KEY,azureKey); },[azureKey]);
-  useEffect(()=>{ if(azureRegion) localStorage.setItem(LSK_AZURE_REGION,azureRegion); },[azureRegion]);
+  useEffect(()=>{ if(azureKey !== null) localStorage.setItem(LSK_AZURE_KEY,azureKey); },[azureKey]);
+  useEffect(()=>{ if(azureRegion !== null) localStorage.setItem(LSK_AZURE_REGION,azureRegion); },[azureRegion]);
   useEffect(()=>{ localStorage.setItem(LSK_AZURE_VOICE,JSON.stringify({shortName:azureVoiceShortName})); },[azureVoiceShortName]);
 
   const voices=useVoices();
@@ -720,68 +722,105 @@ export default function App(){
           </div>
         </div>
 
-        {/* TTS */}
+        {/* TTS SETTINGS (FIX: Browser fallback works; Azure UI hidden in browser mode) */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
           <div className="text-sm font-semibold mb-3">{T.azure} / {T.browserVoice}</div>
 
           <div className="grid sm:grid-cols-2 gap-3">
+            {/* Provider */}
             <div>
               <div className="text-xs mb-1">Provider</div>
-              <select className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={ttsProvider} onChange={(e)=>setTtsProvider(e.target.value)}>
+              <select
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                value={ttsProvider}
+                onChange={(e)=>setTtsProvider(e.target.value)}
+              >
                 <option value="azure">Azure Speech</option>
                 <option value="browser">Browser (fallback)</option>
               </select>
             </div>
 
-            <div>
-              <div className="text-xs mb-1">{T.subKey}</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type={showKey ? "text" : "password"}
-                  value={azureKey}
-                  onChange={(e)=>setAzureKey(e.target.value)}
-                  className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                  placeholder="••••••••••••••••"
-                />
-                <button
-                  type="button"
-                  className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
-                  onClick={()=>setShowKey(v=>!v)}
+            {/* ---------- Azure-only fields ---------- */}
+            {ttsProvider === "azure" && (
+              <>
+                <div>
+                  <div className="text-xs mb-1">{T.subKey}</div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type={showKey ? "text" : "password"}
+                      value={azureKey}
+                      onChange={(e)=>setAzureKey(e.target.value)}
+                      className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                      placeholder="••••••••••••••••"
+                    />
+                    <button
+                      type="button"
+                      className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
+                      onClick={()=>setShowKey(v=>!v)}
+                    >
+                      {showKey ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs mb-1">{T.region}</div>
+                  <input
+                    value={azureRegion}
+                    onChange={(e)=>setAzureRegion(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                    placeholder="westeurope, eastus, ..."
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex gap-2 items-end">
+                  <button
+                    type="button"
+                    onClick={fetchAzureVoices}
+                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
+                  >
+                    {T.fetchVoices}
+                  </button>
+                  <select
+                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                    value={azureVoiceShortName}
+                    onChange={(e)=>setAzureVoiceShortName(e.target.value)}
+                  >
+                    <option value="">{T.choose}</option>
+                    {azureVoices.map(v=>(
+                      <option key={v.ShortName || v.shortName} value={v.ShortName || v.shortName}>
+                        {v.LocalName || v.Name || v.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* ---------- Browser-only fields ---------- */}
+            {ttsProvider === "browser" && (
+              <div className="sm:col-span-2">
+                <div className="text-xs mb-1">{T.voice}</div>
+                <select
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                  value={browserVoiceName}
+                  onChange={(e)=>setBrowserVoiceName(e.target.value)}
                 >
-                  {showKey ? "Hide" : "Show"}
-                </button>
+                  {Array.isArray(voices) && voices.length > 0 ? (
+                    voices.map(v => (
+                      <option key={v.name} value={v.name}>
+                        {v.name} — {v.lang}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">{T.choose}</option>
+                  )}
+                </select>
+                <div className="text-xs text-zinc-400 mt-1">
+                  Browser voices depend on your OS & installed language packs.
+                </div>
               </div>
-            </div>
-
-            <div>
-              <div className="text-xs mb-1">{T.region}</div>
-              <input
-                value={azureRegion}
-                onChange={(e)=>setAzureRegion(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                placeholder="westeurope, eastus, ..."
-              />
-            </div>
-
-            <div className="flex gap-2 items-end">
-              <button type="button" onClick={fetchAzureVoices}
-                className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700">
-                {T.fetchVoices}
-              </button>
-              <select
-                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={azureVoiceShortName}
-                onChange={(e)=>setAzureVoiceShortName(e.target.value)}
-              >
-                <option value="">{T.choose}</option>
-                {azureVoices.map(v=>(
-                  <option key={v.ShortName || v.shortName} value={v.ShortName || v.shortName}>
-                    {v.LocalName || v.Name || v.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            )}
           </div>
 
           <div className="mt-4">
@@ -832,23 +871,23 @@ export default function App(){
           <div
             className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
             onPointerDown={(e)=>e.stopPropagation()}
+            role="dialog" aria-modal="true" aria-label="Add entry"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">{T.addEntry}</div>
-              <button className="px-2 py-1 rounded-md bg-zinc-800" onClick={()=>setAddOpen(false)}>Close</button>
+              <button className="px-2 py-1 rounded-md bg-zinc-800" onClick={()=>setAddOpen(false)} aria-label="Close">Close</button>
             </div>
 
             <AddForm
-  tab={tab}
-  setRows={setRowsFromAddForm}
-  T={T}
-  genId={genId}
-  nowTs={nowTs}
-  normalizeRag={normalizeRag}
-  direction={direction}
-  onSave={(id)=>{ setSortMode("Newest"); window.scrollTo({ top: 0, behavior: "smooth" }); setJustAddedId(id); setTimeout(()=>setJustAddedId(null),1400); }}
-/>
-
+              tab={tab}
+              setRows={setRowsFromAddForm}
+              T={T}
+              genId={genId}
+              nowTs={nowTs}
+              normalizeRag={normalizeRag}
+              direction={direction}
+              onSave={(id)=>{ setSortMode("Newest"); window.scrollTo({ top: 0, behavior: "smooth" }); setJustAddedId(id); setTimeout(()=>setJustAddedId(null),1400); }}
+            />
           </div>
         </div>
       )}
