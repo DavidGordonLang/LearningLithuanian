@@ -278,16 +278,11 @@ const SearchBox = memo(forwardRef(function SearchBox({ placeholder="Search…" }
         onCompositionEnd={(e)=>{composingRef.current=false; flush(e.currentTarget.value);}}
         onInput={(e)=>{ if(composingRef.current) return; flush(e.currentTarget.value); }}
         onBlur={(e)=>{
-          // Let blur happen if:
-          //  1) recently allowed, OR
-          //  2) focus moved to a real form control, OR
-          //  3) the clear button got focus.
           const until = window.__allowSearchBlurUntil || 0;
           const allow = until > Date.now();
           const active = document.activeElement;
           const movedToForm = isFormControl(active);
           const isClear = e.relatedTarget?.getAttribute?.("data-role") === "clear-btn";
-
           if (!allow && !isClear && !e.relatedTarget && !movedToForm) {
             refocusSafely();
           }
@@ -376,8 +371,13 @@ export default function App(){
   const [toast,setToast]=useState("");
   const flashToast=(msg,ms=1600)=>{ setToast(msg); window.clearTimeout(flashToast._t); flashToast._t=window.setTimeout(()=>setToast(""),ms); };
 
-  // library progress
+  // busy helpers (SINGLE declaration)
   const [busy,setBusy]=useState({on:false,label:""});
+  const withBusy = async (label, fn) => {
+    setBusy({on:true,label});
+    try { return await fn(); }
+    finally { setBusy({on:false,label:""}); }
+  };
 
   // audio
   const audioRef=useRef(null);
@@ -415,7 +415,6 @@ export default function App(){
     const onFocusIn = (e) => {
       const el = e.target;
       if (el && el.matches?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) {
-        // generous window so desktop & mobile keyboards aren’t bounced
         allowSearchBlurFor(4000);
       }
     };
@@ -423,7 +422,7 @@ export default function App(){
     return () => document.removeEventListener('focusin', onFocusIn, true);
   },[]);
 
-  // Allow pointer on real form controls to also relax blur guard (helps mobile)
+  // Also relax blur guard on pointerdown (helps mobile)
   useEffect(()=>{ 
     const onPD=(e)=>{
       const t=e.target, el=t instanceof Element ? t : null;
@@ -473,14 +472,6 @@ export default function App(){
     }).filter(r=>r.English||r.Lithuanian);
     setRows(prev=>[...cleaned,...prev]);
   }
-
-  // busy helpers
-  const [busy,setBusy]=useState({on:false,label:""});
-  const withBusy = async (label, fn) => {
-    setBusy({on:true,label});
-    try { return await fn(); }
-    finally { setBusy({on:false,label:""}); }
-  };
 
   async function fetchStarter(kind){
     return withBusy(T.installing, async ()=>{
@@ -659,7 +650,6 @@ export default function App(){
             onChange={(e)=>{ const f=e.target.files?.[0]; if(f) importJsonFile(f); e.target.value=""; }} />
           <button onClick={()=>fileRef.current?.click()} className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2">{T.importJSON}</button>
           <button onClick={()=>{ try{
-              flashToast("Exported");
               const blob=new Blob([JSON.stringify(rows,null,2)],{type:"application/json"});
               const url=URL.createObjectURL(blob); const a=document.createElement("a");
               a.href=url; a.download="lithuanian_trainer_export.json"; a.click(); URL.revokeObjectURL(url);
