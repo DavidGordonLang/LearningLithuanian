@@ -1,18 +1,44 @@
 import { create } from "zustand";
 
-// Phrase store — will hold all Lithuanian/English phrases.
-// This is the skeleton; we will wire in real logic after the UI shell is stable.
+const LS_KEY = "lt_phrasebook_v3";
 
-export const usePhraseStore = create((set) => ({
-  phrases: [],
+// --- Helpers moved from App.jsx ---
+const loadRows = () => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
 
-  // --- Actions (empty for now, we fill them step by step) ---
-  setPhrases: (list) =>
-    set({
-      phrases: Array.isArray(list) ? list : [],
-    }),
+const saveRows = (rows) => {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(rows));
+  } catch (err) {
+    console.error("Failed saving rows", err);
+  }
+};
 
-  addPhrase: () => {},
-  updatePhrase: () => {},
-  deletePhrase: () => {},
+// --- Zustand store ---
+export const usePhraseStore = create((set, get) => ({
+  // Initial state
+  rows: loadRows(),
+
+  // Save to localStorage whenever rows change
+  _persist: () => {
+    const rows = get().rows;
+    saveRows(rows);
+  },
+
+  // Replace the entire phrase list
+  setRows: (update) => {
+    set((state) => {
+      const next =
+        typeof update === "function" ? update(state.rows) : update;
+      return { rows: next };
+    });
+    get()._persist();
+  },
 }));
