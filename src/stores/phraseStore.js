@@ -68,11 +68,26 @@ export const usePhraseStore = create((set, get) => {
         phrases: [row, ...state.phrases],
       })),
 
-    // Edit a phrase by index
+    // Edit a phrase by index (legacy)
     editPhrase: (index, updated) =>
       set((state) => {
         const next = state.phrases.map((r, i) =>
           i === index ? updated : r
+        );
+        return { phrases: next };
+      }),
+
+    // NEW: Delete a phrase by index
+    removePhrase: (index) =>
+      set((state) => ({
+        phrases: state.phrases.filter((_, i) => i !== index),
+      })),
+
+    // NEW: Save edited phrase with timestamp
+    saveEditedPhrase: (index, updated) =>
+      set((state) => {
+        const next = state.phrases.map((r, i) =>
+          i === index ? { ...updated, _ts: r._ts || Date.now() } : r
         );
         return { phrases: next };
       }),
