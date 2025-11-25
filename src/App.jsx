@@ -14,6 +14,7 @@ import Header from "./components/Header";
 import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 import SearchDock from "./components/SearchDock";
+import HomeView from "./views/HomeView";
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
 
