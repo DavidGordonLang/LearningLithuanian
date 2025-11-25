@@ -1527,8 +1527,6 @@ const setRows = usePhraseStore((s) => s.setPhrases);
                           key={r._id || idx}
                           r={r}
                           idx={idx}
-                          rows={rows}
-                          setRows={setRows}
                           editIdx={editIdx}
                           setEditIdx={setEditIdx}
                           editDraft={editDraft}
@@ -1557,8 +1555,6 @@ const setRows = usePhraseStore((s) => s.setPhrases);
                 key={r._id || idx}
                 r={r}
                 idx={idx}
-                rows={rows}
-                setRows={setRows}
                 editIdx={editIdx}
                 setEditIdx={setEditIdx}
                 editDraft={editDraft}
