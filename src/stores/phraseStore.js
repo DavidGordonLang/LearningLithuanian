@@ -22,37 +22,64 @@ const saveRows = (rows) => {
 };
 
 // --- Zustand store ---
-export const usePhraseStore = create((set, get) => ({
-  // Initial state
-  phrases: loadRows(),
+export const usePhraseStore = create((set, get) => {
+  const store = {
+    // Initial state
+    phrases: loadRows(),
 
-  // Persist helper
-  _persist: () => {
-    saveRows(get().phrases);
-  },
+    // Auto-migrate missing IDs/timestamps on load
+    _migrateRows: () => {
+      const rows = get().phrases;
+      let changed = false;
+      const migrated = rows.map((r) => {
+        if (!r._id || typeof r._id !== "string") {
+          changed = true;
+          return {
+            ...r,
+            _id: Math.random().toString(36).slice(2),
+            _ts: r._ts || Date.now(),
+          };
+        }
+        return r;
+      });
+      if (changed) set({ phrases: migrated });
+    },
 
-  // Replace the entire phrase list
-  setPhrases: (update) => {
-    set((state) => {
-      const next =
-        typeof update === "function" ? update(state.phrases) : update;
-      return { phrases: next };
-    });
-    get()._persist();
-  },
+    // Persist helper
+    _persist: () => {
+      saveRows(get().phrases);
+    },
 
-  // Add a single phrase (Step 8A)
-  addPhrase: (row) =>
-    set((state) => ({
-      phrases: [row, ...state.phrases],
-    })),
+    // Replace the entire phrase list
+    setPhrases: (update) => {
+      set((state) => {
+        const next =
+          typeof update === "function"
+            ? update(state.phrases)
+            : update;
+        return { phrases: next };
+      });
+      get()._persist();
+    },
 
-  // Edit a phrase by index (Step 8B)
-  editPhrase: (index, updated) =>
-    set((state) => {
-      const next = state.phrases.map((r, i) =>
-        i === index ? updated : r
-      );
-      return { phrases: next };
-    }),
-}));
+    // Add a single phrase
+    addPhrase: (row) =>
+      set((state) => ({
+        phrases: [row, ...state.phrases],
+      })),
+
+    // Edit a phrase by index
+    editPhrase: (index, updated) =>
+      set((state) => {
+        const next = state.phrases.map((r, i) =>
+          i === index ? updated : r
+        );
+        return { phrases: next };
+      }),
+  };
+
+  // Run the migration once when the store is created
+  store._migrateRows();
+
+  return store;
+});
