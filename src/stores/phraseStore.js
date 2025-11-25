@@ -46,4 +46,13 @@ export const usePhraseStore = create((set, get) => ({
     set((state) => ({
       phrases: [row, ...state.phrases],
     })),
+
+  // Edit a phrase by index (Step 8B)
+  editPhrase: (index, updated) =>
+    set((state) => {
+      const next = state.phrases.map((r, i) =>
+        i === index ? updated : r
+      );
+      return { phrases: next };
+    }),
 }));
