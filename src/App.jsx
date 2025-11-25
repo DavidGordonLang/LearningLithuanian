@@ -15,6 +15,7 @@ import EntryCard from "./components/EntryCard";
 import AddForm from "./components/AddForm";
 import SearchDock from "./components/SearchDock";
 import { searchStore } from "./searchStore";
+import { usePhraseStore } from "./stores/phraseStore";
 
 /* ============================================================================
    CONSTANTS
@@ -416,9 +417,11 @@ export default function App() {
   const WIDE = width >= 1024;
   const HEADER_H = 56;
   const DOCK_H = 112;
+// Replace old local rows state with store state
+const rows = usePhraseStore((s) => s.phrases);
+const setRows = usePhraseStore((s) => s.setPhrases);
 
   // data + prefs
-  const [rows, setRows] = useState(loadRows());
   useEffect(() => saveRows(rows), [rows]);
 
   // ensure stable ids
