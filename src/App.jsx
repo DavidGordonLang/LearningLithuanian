@@ -1543,7 +1543,6 @@ const setRows = usePhraseStore((s) => s.setPhrases);
                           normalizeRag={normalizeRag}
                           pressHandlers={pressHandlers}
                           cn={cn}
-                          lastAddedId={null}
                         />
                       );
                     })}
@@ -1574,7 +1573,6 @@ const setRows = usePhraseStore((s) => s.setPhrases);
                 normalizeRag={normalizeRag}
                 pressHandlers={pressHandlers}
                 cn={cn}
-                lastAddedId={null}
               />
             ))}
           </div>
