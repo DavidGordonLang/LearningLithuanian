@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
 
-// --- Helpers moved from App.jsx ---
+// --- Helpers ---
 const loadRows = () => {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -24,21 +24,26 @@ const saveRows = (rows) => {
 // --- Zustand store ---
 export const usePhraseStore = create((set, get) => ({
   // Initial state
-  rows: loadRows(),
+  phrases: loadRows(),
 
-  // Save to localStorage whenever rows change
+  // Persist helper
   _persist: () => {
-    const rows = get().rows;
-    saveRows(rows);
+    saveRows(get().phrases);
   },
 
   // Replace the entire phrase list
-  setRows: (update) => {
+  setPhrases: (update) => {
     set((state) => {
       const next =
-        typeof update === "function" ? update(state.rows) : update;
-      return { rows: next };
+        typeof update === "function" ? update(state.phrases) : update;
+      return { phrases: next };
     });
     get()._persist();
   },
+
+  // Add a single phrase (Step 8A)
+  addPhrase: (row) =>
+    set((state) => ({
+      phrases: [row, ...state.phrases],
+    })),
 }));
