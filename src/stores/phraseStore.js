@@ -1,8 +1,11 @@
+// src/stores/phraseStore.js
 import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
 
-// --- Helpers ---
+// --------------------------------------
+// Helpers
+// --------------------------------------
 const loadRows = () => {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -21,13 +24,15 @@ const saveRows = (rows) => {
   }
 };
 
-// --- Zustand store ---
+// --------------------------------------
+// Store
+// --------------------------------------
 export const usePhraseStore = create((set, get) => {
   const store = {
-    // Initial state
+    // Initial data
     phrases: loadRows(),
 
-    // Auto-migrate missing IDs/timestamps on load
+    // Auto-migrate missing IDs / timestamps
     _migrateRows: () => {
       const rows = get().phrases;
       let changed = false;
@@ -42,15 +47,16 @@ export const usePhraseStore = create((set, get) => {
         }
         return r;
       });
+
       if (changed) set({ phrases: migrated });
     },
 
-    // Persist helper
+    // Persist to localStorage
     _persist: () => {
       saveRows(get().phrases);
     },
 
-    // Replace the entire phrase list
+    // Replace full list
     setPhrases: (update) => {
       set((state) => {
         const next =
@@ -62,28 +68,19 @@ export const usePhraseStore = create((set, get) => {
       get()._persist();
     },
 
-    // Add a single phrase
+    // Add a new phrase
     addPhrase: (row) =>
       set((state) => ({
         phrases: [row, ...state.phrases],
       })),
 
-    // Edit a phrase by index (legacy)
-    editPhrase: (index, updated) =>
-      set((state) => {
-        const next = state.phrases.map((r, i) =>
-          i === index ? updated : r
-        );
-        return { phrases: next };
-      }),
-
-    // NEW: Delete a phrase by index
+    // Delete a phrase by index
     removePhrase: (index) =>
       set((state) => ({
         phrases: state.phrases.filter((_, i) => i !== index),
       })),
 
-    // NEW: Save edited phrase with timestamp
+    // Save edits to a phrase
     saveEditedPhrase: (index, updated) =>
       set((state) => {
         const next = state.phrases.map((r, i) =>
@@ -93,7 +90,7 @@ export const usePhraseStore = create((set, get) => {
       }),
   };
 
-  // Run the migration once when the store is created
+  // Run migration immediately
   store._migrateRows();
 
   return store;
