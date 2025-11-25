@@ -194,7 +194,9 @@ const loadXP = () => {
 };
 const saveXP = (xp) =>
   localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
+
 const todayKey = () => new Date().toISOString().slice(0, 10);
+
 const loadStreak = () => {
   try {
     const s = JSON.parse(localStorage.getItem(LSK_STREAK) || "null");
@@ -211,6 +213,7 @@ const saveStreak = (s) =>
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
@@ -222,11 +225,13 @@ function normalizeRag(icon = "") {
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
+
 function daysBetween(d1, d2) {
-  const a = new Date(d1 + "T00:00:00"),
-    b = new Date(d2 + "T00:00:00");
+  const a = new Date(d1 + "T00:00:00");
+  const b = new Date(d2 + "T00:00:00");
   return Math.round((b - a) / 86400000);
 }
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -235,6 +240,7 @@ function shuffle(arr) {
   }
   return a;
 }
+
 function sample(arr, n) {
   if (!arr.length || n <= 0) return [];
   if (n >= arr.length) return shuffle(arr);
@@ -242,6 +248,7 @@ function sample(arr, n) {
   while (idxs.size < n) idxs.add((Math.random() * arr.length) | 0);
   return [...idxs].map((i) => arr[i]);
 }
+
 function sim2(a = "", b = "") {
   const s1 = (a + "").toLowerCase().trim();
   const s2 = (b + "").toLowerCase().trim();
@@ -252,8 +259,8 @@ function sim2(a = "", b = "") {
     for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
     return g;
   };
-  const g1 = grams(s1),
-    g2 = grams(s2);
+  const g1 = grams(s1);
+  const g2 = grams(s2);
   const map = new Map();
   g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
   let inter = 0;
@@ -269,6 +276,7 @@ function sim2(a = "", b = "") {
 /* ============================================================================
    TTS
    ========================================================================== */
+
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
@@ -283,6 +291,7 @@ function useVoices() {
   }, []);
   return voices;
 }
+
 function escapeXml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -291,6 +300,7 @@ function escapeXml(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
+
 function speakBrowser(text, voice, rate = 1) {
   if (!window.speechSynthesis) {
     alert("Speech synthesis not supported.");
@@ -303,6 +313,7 @@ function speakBrowser(text, voice, rate = 1) {
   u.rate = rate;
   window.speechSynthesis.speak(u);
 }
+
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const ssml = `<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
@@ -325,6 +336,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 /* ============================================================================
    SEARCH BOX — focus-safe
    ========================================================================== */
+
 const SearchBox = memo(
   forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
     const composingRef = useRef(false);
@@ -395,26 +407,29 @@ const SearchBox = memo(
 /* ============================================================================
    APP
    ========================================================================== */
+
 export default function App() {
   // layout
   const [page, setPage] = useState("home");
   const [width, setWidth] = useState(() => window.innerWidth);
+
   useEffect(() => {
     const onR = () => setWidth(window.innerWidth);
     window.addEventListener("resize", onR);
     return () => window.removeEventListener("resize", onR);
   }, []);
+
   const WIDE = width >= 1024;
   const HEADER_H = 56;
   const DOCK_H = 112;
-// Replace old local rows state with store state
-const rows = usePhraseStore((s) => s.phrases);
-const setRows = usePhraseStore((s) => s.setPhrases);
+
+  // phrase store (Zustand)
+  const rows = usePhraseStore((s) => s.phrases);
+  const setRows = usePhraseStore((s) => s.setPhrases);
+  const removePhrase = usePhraseStore((s) => s.removePhrase);
+  const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
   // data + prefs
-
-
-
   const [tab, setTab] = useState("Phrases");
 
   // search
@@ -441,7 +456,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
   useEffect(() => saveXP(xp), [xp]);
   useEffect(() => {
     if (!Number.isFinite(xp)) setXp(0);
-  }, []);
+  }, [xp]);
   const level = Math.floor((Number.isFinite(xp) ? xp : 0) / LEVEL_STEP) + 1;
   const levelProgress = (Number.isFinite(xp) ? xp : 0) % LEVEL_STEP;
 
@@ -474,27 +489,19 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       return "";
     }
   });
-  useEffect(
-    () => {
-      localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
-    },
-    [azureKey]
-  );
-  useEffect(
-    () => {
-      localStorage.setItem(LSK_AZURE_REGION, azureRegion ?? "");
-    },
-    [azureRegion]
-  );
-  useEffect(
-    () => {
-      localStorage.setItem(
-        LSK_AZURE_VOICE,
-        JSON.stringify({ shortName: azureVoiceShortName })
-      );
-    },
-    [azureVoiceShortName]
-  );
+
+  useEffect(() => {
+    localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
+  }, [azureKey]);
+  useEffect(() => {
+    localStorage.setItem(LSK_AZURE_REGION, azureRegion ?? "");
+  }, [azureRegion]);
+  useEffect(() => {
+    localStorage.setItem(
+      LSK_AZURE_VOICE,
+      JSON.stringify({ shortName: azureVoiceShortName })
+    );
+  }, [azureVoiceShortName]);
 
   const voices = useVoices();
   const [browserVoiceName, setBrowserVoiceName] = useState("");
@@ -549,9 +556,10 @@ const setRows = usePhraseStore((s) => s.setPhrases);
 
   // press handlers (card tap/long-press)
   function pressHandlers(text) {
-    let timer = null,
-      firedSlow = false,
-      pressed = false;
+    let timer = null;
+    let firedSlow = false;
+    let pressed = false;
+
     const start = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -567,6 +575,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
         playText(text, { slow: true });
       }, 550);
     };
+
     const finish = (e) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
@@ -576,6 +585,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       timer = null;
       if (!firedSlow) playText(text);
     };
+
     const cancel = (e) => {
       e?.preventDefault?.();
       e?.stopPropagation?.();
@@ -583,6 +593,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       if (timer) clearTimeout(timer);
       timer = null;
     };
+
     return {
       "data-press": "1",
       onPointerDown: start,
@@ -597,16 +608,19 @@ const setRows = usePhraseStore((s) => s.setPhrases);
   const qNorm = (qFilter || "").trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
-    (((r.English || "").toLowerCase().includes(qNorm)) ||
-      ((r.Lithuanian || "").toLowerCase().includes(qNorm)));
+    ((r.English || "").toLowerCase().includes(qNorm) ||
+      (r.Lithuanian || "").toLowerCase().includes(qNorm));
+
   const filtered = useMemo(() => {
     const base = qNorm
       ? rows.filter(entryMatchesQuery)
       : rows.filter((r) => r.Sheet === tab);
+
     if (sortMode === "Newest")
       return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
     if (sortMode === "Oldest")
       return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...base].sort(
       (a, b) =>
@@ -628,21 +642,46 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     "RAG Icon": "🟠",
     Sheet: "Phrases",
   });
+
   function startEditRow(i) {
+    const row = rows[i];
+    if (!row) return;
     setEditIdx(i);
-    setEditDraft({ ...rows[i] });
+    setEditDraft({ ...row });
   }
+
   function saveEdit(i) {
+    const original = rows[i];
+    if (!original) {
+      setEditIdx(null);
+      return;
+    }
     const clean = {
+      ...original,
       ...editDraft,
       "RAG Icon": normalizeRag(editDraft["RAG Icon"]),
     };
-    setRows((prev) => prev.map((r, idx) => (idx === i ? clean : r)));
+    if (clean._id && typeof saveEditedPhrase === "function") {
+      saveEditedPhrase(clean);
+    } else {
+      // Fallback to direct state update if store helper missing
+      setRows((prev) =>
+        prev.map((r, idx) => (idx === i ? clean : r))
+      );
+    }
     setEditIdx(null);
   }
+
   function remove(i) {
+    const row = rows[i];
+    if (!row) return;
     if (!confirm(STR[direction].confirm)) return;
-    setRows((prev) => prev.filter((_, idx) => idx !== i));
+
+    if (row._id && typeof removePhrase === "function") {
+      removePhrase(row._id);
+    } else {
+      setRows((prev) => prev.filter((_, idx) => idx !== i));
+    }
   }
 
   // merge/import
@@ -676,8 +715,10 @@ const setRows = usePhraseStore((s) => s.setPhrases);
         };
       })
       .filter((r) => r.English || r.Lithuanian);
+
     setRows((prev) => [...cleaned, ...prev]);
   }
+
   async function fetchStarter(kind) {
     try {
       const url = STARTERS[kind];
@@ -690,6 +731,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       alert("Starter error: " + e.message);
     }
   }
+
   async function installNumbersOnly() {
     const urls = [
       STARTERS.COMBINED_OPTIONAL,
@@ -715,6 +757,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     await mergeRows(found);
     alert(`Installed ${found.length} Numbers item(s).`);
   }
+
   async function importJsonFile(file) {
     try {
       const data = JSON.parse(await file.text());
@@ -725,6 +768,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       alert("Import failed: " + e.message);
     }
   }
+
   function clearLibrary() {
     if (!confirm(STR[direction].confirm)) return;
     setRows([]);
@@ -732,6 +776,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
 
   // dups
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
+
   function scanDupes() {
     const map = new Map();
     rows.forEach((r, i) => {
@@ -739,7 +784,10 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       map.set(key, (map.get(key) || []).concat(i));
     });
     const exact = [];
-    for (const arr of map.values()) if (arr.length > 1) exact.push(arr);
+    for (const arr of map.values()) {
+      if (arr.length > 1) exact.push(arr);
+    }
+
     const close = [];
     const bySheet = rows.reduce((acc, r, i) => {
       (acc[r.Sheet] ||= []).push({ r, i });
@@ -748,8 +796,8 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     for (const list of Object.values(bySheet)) {
       for (let a = 0; a < list.length; a++) {
         for (let b = a + 1; b < list.length; b++) {
-          const A = list[a],
-            B = list[b];
+          const A = list[a];
+          const B = list[b];
           const s =
             (sim2(A.r.English, B.r.English) +
               sim2(A.r.Lithuanian, B.r.Lithuanian)) /
@@ -768,6 +816,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizChoice, setQuizChoice] = useState(null);
   const [quizOptions, setQuizOptions] = useState([]);
+
   function computeQuizPool(allRows, targetSize = 10) {
     const withPairs = allRows.filter((r) => r.English && r.Lithuanian);
     const red = withPairs.filter(
@@ -779,6 +828,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     const grn = withPairs.filter(
       (r) => normalizeRag(r["RAG Icon"]) === "🟢"
     );
+
     const needR = Math.min(
       Math.max(5, Math.floor(targetSize * 0.5)),
       red.length || 0
@@ -791,6 +841,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       Math.max(1, Math.floor(targetSize * 0.1)),
       grn.length || 0
     );
+
     let picked = [
       ...sample(red, needR),
       ...sample(amb, needA),
@@ -803,11 +854,17 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     }
     return shuffle(picked).slice(0, targetSize);
   }
+
   function startQuiz() {
-    if (rows.length < 4)
-      return alert("Add more entries first (need at least 4).");
+    if (rows.length < 4) {
+      alert("Add more entries first (need at least 4).");
+      return;
+    }
     const pool = computeQuizPool(rows, 10);
-    if (!pool.length) return alert("No quiz candidates found.");
+    if (!pool.length) {
+      alert("No quiz candidates found.");
+      return;
+    }
     setQuizQs(pool);
     setQuizIdx(0);
     setQuizAnswered(false);
@@ -821,6 +878,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     setQuizOptions(shuffle([correctLt, ...distractors]));
     setQuizOn(true);
   }
+
   function afterAnswerAdvance() {
     const nextIdx = quizIdx + 1;
     if (nextIdx >= quizQs.length) {
@@ -846,6 +904,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     ).map((r) => r.Lithuanian);
     setQuizOptions(shuffle([correctLt, ...distractors]));
   }
+
   function bumpRagAfterAnswer(item, correct) {
     const rag = normalizeRag(item["RAG Icon"]);
     const st =
@@ -854,6 +913,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
         amb: { ok: 0, bad: 0 },
         grn: { ok: 0, bad: 0 },
       });
+
     if (rag === "🔴") {
       if (correct) {
         st.red.ok = (st.red.ok || 0) + 1;
@@ -888,6 +948,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       }
     }
   }
+
   async function answerQuiz(option) {
     if (quizAnswered) return;
     const item = quizQs[quizIdx];
@@ -911,6 +972,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
 
   // Add modal
   const [addOpen, setAddOpen] = useState(false);
+
   useEffect(() => {
     if (!addOpen) return;
     const onKey = (e) => {
@@ -919,6 +981,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [addOpen]);
+
   useEffect(() => {
     if (!addOpen) return;
     const prev = document.body.style.overflow;
@@ -927,15 +990,19 @@ const setRows = usePhraseStore((s) => s.setPhrases);
       document.body.style.overflow = prev;
     };
   }, [addOpen]);
-  const setRowsFromAddForm = React.useCallback((updater) => {
-  setRows(updater);
-}, [setRows]);
 
+  const setRowsFromAddForm = React.useCallback(
+    (updater) => {
+      setRows(updater);
+    },
+    [setRows]
+  );
 
   /* --------------------------------- VIEWS -------------------------------- */
 
   function LibraryView() {
     const fileRef = useRef(null);
+
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
         <div style={{ height: HEADER_H + DOCK_H }} />
@@ -982,10 +1049,9 @@ const setRows = usePhraseStore((s) => s.setPhrases);
           <button
             onClick={() => {
               try {
-                const blob = new Blob(
-                  [JSON.stringify(rows, null, 2)],
-                  { type: "application/json" }
-                );
+                const blob = new Blob([JSON.stringify(rows, null, 2)], {
+                  type: "application/json",
+                });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
@@ -1032,6 +1098,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {group.map((ridx) => {
                     const row = rows[ridx];
+                    if (!row) return null;
                     return (
                       <div
                         key={ridx}
@@ -1066,11 +1133,16 @@ const setRows = usePhraseStore((s) => s.setPhrases);
                         <div className="mt-2">
                           <button
                             className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                            onClick={() =>
-                              setRows((prev) =>
-                                prev.filter((_, ii) => ii !== ridx)
-                              )
-                            }
+                            onClick={() => {
+                              const target = rows[ridx];
+                              if (target?._id && typeof removePhrase === "function") {
+                                removePhrase(target._id);
+                              } else {
+                                setRows((prev) =>
+                                  prev.filter((_, ii) => ii !== ridx)
+                                );
+                              }
+                            }}
                           >
                             {T.delete}
                           </button>
@@ -1088,8 +1160,9 @@ const setRows = usePhraseStore((s) => s.setPhrases);
           </div>
           <div className="space-y-3">
             {dupeResults.close.map(([i, j, s]) => {
-              const A = rows[i],
-                B = rows[j];
+              const A = rows[i];
+              const B = rows[j];
+              if (!A || !B) return null;
               return (
                 <div
                   key={`${i}-${j}`}
@@ -1134,11 +1207,19 @@ const setRows = usePhraseStore((s) => s.setPhrases);
                           <div className="mt-2">
                             <button
                               className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
-                              onClick={() =>
-                                setRows((prev) =>
-                                  prev.filter((_, ii) => ii !== ridx)
-                                )
-                              }
+                              onClick={() => {
+                                const target = rows[ridx];
+                                if (
+                                  target?._id &&
+                                  typeof removePhrase === "function"
+                                ) {
+                                  removePhrase(target._id);
+                                } else {
+                                  setRows((prev) =>
+                                    prev.filter((_, ii) => ii !== ridx)
+                                  );
+                                }
+                              }}
                             >
                               {T.delete}
                             </button>
@@ -1197,7 +1278,6 @@ const setRows = usePhraseStore((s) => s.setPhrases);
           throw new Error(msg);
         }
         const data = await res.json();
-        // Build result object; fall back sensibly
         const english =
           data.english ||
           (direction === "EN2LT" ? text : data.english || "");
@@ -1598,7 +1678,9 @@ const setRows = usePhraseStore((s) => s.setPhrases);
 
     async function fetchAzureVoices() {
       try {
-        const url = `https://${(regionField || azureRegion)}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+        const url = `https://${
+          regionField || azureRegion
+        }.tts.speech.microsoft.com/cognitiveservices/voices/list`;
         const res = await fetch(url, {
           headers: { "Ocp-Apim-Subscription-Key": keyField || azureKey },
         });
@@ -1819,6 +1901,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
           offsetTop={HEADER_H}
           page={page}
           setPage={setPage}
+          // optional: if SearchDock has quiz/start props you can pass startQuiz, level, streak here
         />
         {page === "library" ? (
           <LibraryView />
