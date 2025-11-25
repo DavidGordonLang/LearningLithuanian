@@ -20,7 +20,6 @@ import { usePhraseStore } from "./stores/phraseStore";
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
-const LS_KEY = "lt_phrasebook_v3";
 const LSK_TTS_PROVIDER = "lt_tts_provider";
 const LSK_AZURE_KEY = "lt_azure_key";
 const LSK_AZURE_REGION = "lt_azure_region";
@@ -184,16 +183,7 @@ const STR = {
 /* ============================================================================
    HELPERS
    ========================================================================== */
-const saveRows = (rows) => localStorage.setItem(LS_KEY, JSON.stringify(rows));
-const loadRows = () => {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-};
+
 const loadXP = () => {
   try {
     const v = Number(localStorage.getItem(LSK_XP) ?? "0");
@@ -422,7 +412,6 @@ const rows = usePhraseStore((s) => s.phrases);
 const setRows = usePhraseStore((s) => s.setPhrases);
 
   // data + prefs
-  useEffect(() => saveRows(rows), [rows]);
 
   // ensure stable ids
   useEffect(() => {
@@ -951,11 +940,9 @@ const setRows = usePhraseStore((s) => s.setPhrases);
     };
   }, [addOpen]);
   const setRowsFromAddForm = React.useCallback((updater) => {
-    setRows((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      return next;
-    });
-  }, []);
+  setRows(updater);
+}, [setRows]);
+
 
   /* --------------------------------- VIEWS -------------------------------- */
 
