@@ -413,19 +413,7 @@ const setRows = usePhraseStore((s) => s.setPhrases);
 
   // data + prefs
 
-  // ensure stable ids
-  useEffect(() => {
-    let changed = false;
-    const migrated = rows.map((r) => {
-      if (!r._id || typeof r._id !== "string") {
-        changed = true;
-        return { ...r, _id: genId(), _ts: r._ts || nowTs() };
-      }
-      return r;
-    });
-    if (changed) setRows(migrated);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
 
   const [tab, setTab] = useState("Phrases");
 
