@@ -1,34 +1,71 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 /**
  * AddForm
  *
  * Props:
- *  - tab, setRows, T, genId, nowTs, normalizeRag, direction (unchanged)
- *  - onSave?: (newId: string) => void
- *  - onCancel?: () => void            // NEW: used to close the modal
+ *  - tab
+ *  - T
+ *  - genId
+ *  - nowTs
+ *  - normalizeRag
+ *  - direction
+ *  - mode: "add" | "edit"
+ *  - initialRow?: phrase row (when editing)
+ *  - onSubmit: (row) => void    // returns the full row (add or edit)
+ *  - onCancel: () => void       // closes the modal
  */
 export default function AddForm({
   tab,
-  setRows,
   T,
   genId,
   nowTs,
   normalizeRag,
   direction,
-  onSave,
-  onCancel, // NEW
+  mode = "add",
+  initialRow,
+  onSubmit,
+  onCancel,
 }) {
-  const [english, setEnglish] = useState("");
-  const [lithuanian, setLithuanian] = useState("");
-  const [phonetic, setPhonetic] = useState("");
-  const [category, setCategory] = useState("");
-  const [usage, setUsage] = useState("");
-  const [notes, setNotes] = useState("");
-  const [rag, setRag] = useState("🟠");
+  const isEdit = mode === "edit" && !!initialRow;
+
+  const [english, setEnglish] = useState(initialRow?.English || "");
+  const [lithuanian, setLithuanian] = useState(
+    initialRow?.Lithuanian || ""
+  );
+  const [phonetic, setPhonetic] = useState(initialRow?.Phonetic || "");
+  const [category, setCategory] = useState(initialRow?.Category || "");
+  const [usage, setUsage] = useState(initialRow?.Usage || "");
+  const [notes, setNotes] = useState(initialRow?.Notes || "");
+  const [rag, setRag] = useState(
+    normalizeRag(initialRow?.["RAG Icon"] || "🟠")
+  );
+
+  // If the editing row changes while the modal is open, sync fields
+  useEffect(() => {
+    if (!isEdit || !initialRow) return;
+    setEnglish(initialRow.English || "");
+    setLithuanian(initialRow.Lithuanian || "");
+    setPhonetic(initialRow.Phonetic || "");
+    setCategory(initialRow.Category || "");
+    setUsage(initialRow.Usage || "");
+    setNotes(initialRow.Notes || "");
+    setRag(normalizeRag(initialRow["RAG Icon"] || "🟠"));
+  }, [isEdit, initialRow, normalizeRag]);
+
+  const sheetValue = useMemo(() => {
+    const allowed = ["Phrases", "Questions", "Words", "Numbers"];
+    if (initialRow && allowed.includes(initialRow.Sheet)) {
+      return initialRow.Sheet;
+    }
+    if (allowed.includes(tab)) return tab;
+    return "Phrases";
+  }, [initialRow, tab]);
 
   const canSave = useMemo(
-    () => String(english).trim() !== "" && String(lithuanian).trim() !== "",
+    () =>
+      String(english).trim() !== "" &&
+      String(lithuanian).trim() !== "",
     [english, lithuanian]
   );
 
@@ -43,20 +80,35 @@ export default function AddForm({
   }
 
   function buildRow() {
-    const _id = genId();
+    const base = initialRow || {};
+    // B: always update timestamp on edit, and of course for add
+    const _id =
+      isEdit && base._id ? base._id : genId();
     const _ts = nowTs();
+    const _qstat =
+      isEdit && base._qstat
+        ? base._qstat
+        : {
+            red: { ok: 0, bad: 0 },
+            amb: { ok: 0, bad: 0 },
+            grn: { ok: 0, bad: 0 },
+          };
+
     return {
+      ...base,
       English: String(english || "").trim(),
       Lithuanian: String(lithuanian || "").trim(),
       Phonetic: String(phonetic || "").trim(),
       Category: String(category || "").trim(),
       Usage: String(usage || "").trim(),
       Notes: String(notes || "").trim(),
-      "RAG Icon": normalizeRag(rag || "🟠"),
-      Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(tab) ? tab : "Phrases",
+      "RAG Icon": normalizeRag(
+        rag || base["RAG Icon"] || "🟠"
+      ),
+      Sheet: sheetValue,
       _id,
       _ts,
-      _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
+      _qstat,
     };
   }
 
@@ -64,10 +116,8 @@ export default function AddForm({
     e?.preventDefault?.();
     if (!canSave) return;
     const row = buildRow();
-    setRows((prev) => [row, ...prev]);
-    onSave?.(row._id);
-    reset();
-    onCancel?.(); // close the modal after saving
+    onSubmit?.(row);
+    if (!isEdit) reset();
   }
 
   return (
@@ -75,7 +125,7 @@ export default function AddForm({
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        handleSave();
+        handleSave(e);
       }}
     >
       <div className="text-xs text-zinc-400">
@@ -91,7 +141,11 @@ export default function AddForm({
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           value={english}
           onChange={(e) => setEnglish(e.target.value)}
-          placeholder={direction === "EN2LT" ? "Good evening" : "Labas vakaras — English"}
+          placeholder={
+            direction === "EN2LT"
+              ? "Good evening"
+              : "Labas vakaras — English"
+          }
         />
       </div>
 
@@ -104,7 +158,11 @@ export default function AddForm({
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           value={lithuanian}
           onChange={(e) => setLithuanian(e.target.value)}
-          placeholder={direction === "EN2LT" ? "Labas vakaras" : "Hello — Lietuviškai"}
+          placeholder={
+            direction === "EN2LT"
+              ? "Labas vakaras"
+              : "Hello — Lietuviškai"
+          }
         />
       </div>
 
@@ -186,7 +244,7 @@ export default function AddForm({
           <input
             id="add-sheet"
             className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-zinc-400"
-            value={["Phrases", "Questions", "Words", "Numbers"].includes(tab) ? tab : "Phrases"}
+            value={sheetValue}
             readOnly
           />
         </div>
@@ -197,8 +255,8 @@ export default function AddForm({
           type="button"
           className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
           onClick={() => {
-            reset();
-            onCancel?.(); // now actually closes
+            if (!isEdit) reset();
+            onCancel?.();
           }}
         >
           {T.cancel}
@@ -214,7 +272,8 @@ export default function AddForm({
 
       {!canSave && (
         <div className="text-xs text-red-400">
-          Please enter both {T.english.toLowerCase()} and {T.lithuanian.toLowerCase()}.
+          Please enter both {T.english.toLowerCase()} and{" "}
+          {T.lithuanian.toLowerCase()}.
         </div>
       )}
     </form>
