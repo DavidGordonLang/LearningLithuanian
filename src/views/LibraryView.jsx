@@ -1,96 +1,18 @@
 // src/views/LibraryView.jsx
-import React, {
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import React, { useMemo, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { searchStore } from "../searchStore";
 
-// simple classnames helper (duplicated from App)
-const cn = (...xs) => xs.filter(Boolean).join(" ");
-
-// Long-press / tap handler for audio
-function makePressHandlers(text, playText) {
-  let timer = null;
-  let firedSlow = false;
-  let pressed = false;
-
-  const start = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      const ae = document.activeElement;
-      if (ae && typeof ae.blur === "function") ae.blur();
-    } catch {}
-    firedSlow = false;
-    pressed = true;
-    timer = window.setTimeout(() => {
-      if (!pressed) return;
-      firedSlow = true;
-      playText(text, { slow: true });
-    }, 550);
-  };
-
-  const finish = (e) => {
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-    if (!pressed) return;
-    pressed = false;
-    if (timer) window.clearTimeout(timer);
-    timer = null;
-    if (!firedSlow) playText(text, { slow: false });
-  };
-
-  const cancel = (e) => {
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-    pressed = false;
-    if (timer) window.clearTimeout(timer);
-    timer = null;
-  };
-
-  return {
-    "data-press": "1",
-    onPointerDown: start,
-    onPointerUp: finish,
-    onPointerLeave: cancel,
-    onPointerCancel: cancel,
-    onContextMenu: (e) => e.preventDefault(),
-  };
-}
-
-function RagBadge({ icon, normalizeRag }) {
-  const rag = normalizeRag(icon);
-  let label = "Amber";
-  let dotClass = "bg-amber-400";
-  if (rag === "🔴") {
-    label = "Red";
-    dotClass = "bg-red-500";
-  } else if (rag === "🟢") {
-    label = "Green";
-    dotClass = "bg-emerald-500";
-  }
-
-  return (
-    <div className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full bg-zinc-800 border border-zinc-700">
-      <span className={cn("w-2 h-2 rounded-full", dotClass)} />
-      <span>{label}</span>
-    </div>
-  );
-}
-
-const EMPTY_DRAFT = {
-  English: "",
-  Lithuanian: "",
-  Phonetic: "",
-  Category: "",
-  Usage: "",
-  Notes: "",
-  "RAG Icon": "🟠",
-  Sheet: "Phrases",
-};
-
+/**
+ * LibraryView
+ *
+ * Combines:
+ * - Starter packs / import / clear / duplicate tools
+ * - Full phrase list with RAG, audio and delete
+ *
+ * This lives under the "Library" tab. Search + sort are controlled globally by
+ * SearchDock via `searchStore` + the `sortMode` prop.
+ */
 export default function LibraryView({
   T,
   rows,
@@ -102,18 +24,14 @@ export default function LibraryView({
   dupeResults,
   scanDupes,
   normalizeRag,
-  removePhrase,
   sortMode,
   direction,
   playText,
+  removePhrase,
 }) {
-  const fileInputRef = useRef(null);
-
   const [activeSheet, setActiveSheet] = useState("Phrases");
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [draft, setDraft] = useState(EMPTY_DRAFT);
 
-  // --- search / sort wiring (uses the same global store as SearchDock) ---
+  // Global search text from SearchDock
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
@@ -121,17 +39,18 @@ export default function LibraryView({
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
 
-  const entryMatchesQuery = (r) =>
-    !!qNorm &&
-    ((r.English || "").toLowerCase().includes(qNorm) ||
-      (r.Lithuanian || "").toLowerCase().includes(qNorm) ||
-      (r.Category || "").toLowerCase().includes(qNorm) ||
-      (r.Usage || "").toLowerCase().includes(qNorm));
-
-  const filtered = useMemo(() => {
-    const base = qNorm
-      ? rows.filter(entryMatchesQuery)
-      : rows.filter((r) => (r.Sheet || "Phrases") === activeSheet);
+  const filteredRows = useMemo(() => {
+    let base = rows;
+    if (activeSheet) {
+      base = base.filter((r) => r.Sheet === activeSheet);
+    }
+    if (qNorm) {
+      base = base.filter((r) => {
+        const en = (r.English || "").toLowerCase();
+        const lt = (r.Lithuanian || "").toLowerCase();
+        return en.includes(qNorm) || lt.includes(qNorm);
+      });
+    }
 
     if (sortMode === "Newest") {
       return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
@@ -146,9 +65,9 @@ export default function LibraryView({
         (order[normalizeRag(a["RAG Icon"])] ?? 1) -
         (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, qNorm, sortMode, activeSheet, normalizeRag]);
+  }, [rows, activeSheet, qNorm, sortMode, normalizeRag]);
 
-  // --- counts per sheet for the small tabs ---
+  const totalCount = rows.length;
   const sheetCounts = useMemo(() => {
     const counts = { Phrases: 0, Questions: 0, Words: 0, Numbers: 0 };
     for (const r of rows) {
@@ -158,438 +77,333 @@ export default function LibraryView({
     return counts;
   }, [rows]);
 
-  // --- editing helpers ------------------------------------------------------
-
-  function beginEditRow(row) {
-    const idx = rows.findIndex(
-      (r) =>
-        r === row ||
-        (r._id && row._id && r._id === row._id) ||
-        (r.English === row.English &&
-          r.Lithuanian === row.Lithuanian &&
-          r.Sheet === row.Sheet)
-    );
-    if (idx === -1) return;
-    setEditingIndex(idx);
-    setDraft({
-      ...EMPTY_DRAFT,
-      ...rows[idx],
-      "RAG Icon": normalizeRag(rows[idx]["RAG Icon"] || "🟠"),
-      Sheet: rows[idx].Sheet || "Phrases",
-    });
-  }
-
-  function cancelEdit() {
-    setEditingIndex(null);
-    setDraft(EMPTY_DRAFT);
-  }
-
-  function saveEdit() {
-    if (editingIndex == null || editingIndex < 0) return;
-    const clean = {
-      ...rows[editingIndex],
-      ...draft,
-      "RAG Icon": normalizeRag(draft["RAG Icon"]),
-      Sheet: draft.Sheet || "Phrases",
+  function onImportClick() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (file) importJsonFile(file);
     };
-    setRows((prev) => prev.map((r, i) => (i === editingIndex ? clean : r)));
-    setEditingIndex(null);
-    setDraft(EMPTY_DRAFT);
+    input.click();
   }
 
-  function handleDelete(row) {
-    const idx = rows.findIndex(
-      (r) =>
-        r === row ||
-        (r._id && row._id && r._id === row._id) ||
-        (r.English === row.English &&
-          r.Lithuanian === row.Lithuanian &&
-          r.Sheet === row.Sheet)
+  function toggleRag(id) {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r._id !== id) return r;
+        const current = normalizeRag(r["RAG Icon"]);
+        const next = current === "🔴" ? "🟠" : current === "🟠" ? "🟢" : "🔴";
+        return { ...r, "RAG Icon": next };
+      })
     );
-    if (idx === -1) return;
-    if (!window.confirm(T.confirm)) return;
-
-    const target = rows[idx];
-    const id = target._id;
-
-    if (id && typeof removePhrase === "function") {
-      removePhrase(id);
-    } else {
-      setRows((prev) => prev.filter((_, i) => i !== idx));
-    }
   }
 
-  function handleAddBlank() {
-    // simple quick-add: create a blank entry on current sheet and go straight into edit
-    const newRow = {
-      ...EMPTY_DRAFT,
-      Sheet: activeSheet,
-      _id: Math.random().toString(36).slice(2),
-      _ts: Date.now(),
-    };
-    setRows((prev) => [newRow, ...prev]);
-    const idx = 0; // new row at top
-    setEditingIndex(idx);
-    setDraft(newRow);
-  }
-
-  // --- import / export ------------------------------------------------------
-
-  function handleImportClick() {
-    fileInputRef.current?.click();
-  }
-
-  async function handleFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await importJsonFile(file);
-    e.target.value = "";
-  }
-
-  function handleExport() {
-    try {
-      const blob = new Blob([JSON.stringify(rows, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "lithuanian_trainer_library.json";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert("Export failed.");
-    }
-  }
-
-  // Which side should be spoken on tap?
-  const speakField = direction === "EN2LT" ? "Lithuanian" : "English";
+  const showLtAudio = direction === "EN2LT";
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
       {/* spacer for header + dock */}
       <div style={{ height: 56 + 112 }} />
 
-      {/* Starter / import buttons */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <button
-          type="button"
-          className="px-4 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm hover:bg-zinc-800"
-          onClick={() => fetchStarter("EN2LT")}
-        >
-          {T.installEN}
-        </button>
-        <button
-          type="button"
-          className="px-4 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm hover:bg-zinc-800"
-          onClick={() => fetchStarter("LT2EN")}
-        >
-          {T.installLT}
-        </button>
-        <button
-          type="button"
-          className="px-4 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm hover:bg-zinc-800"
-          onClick={installNumbersOnly}
-        >
-          {T.installNums}
-        </button>
-      </div>
-
-      <div className="flex flex-wrap gap-3 items-center mb-6">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="px-4 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm hover:bg-zinc-800"
-            onClick={handleImportClick}
-          >
-            {T.importJSON}
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm hover:bg-zinc-800"
-            onClick={handleExport}
-          >
-            Export JSON
-          </button>
+      {/* Header row */}
+      <div className="flex items-baseline justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
+          <p className="text-sm text-zinc-400">
+            {totalCount} {T.phrases.toLowerCase()} total
+          </p>
         </div>
-
-        <button
-          type="button"
-          className="px-4 py-2 rounded-md bg-red-900/60 border border-red-700 text-sm text-red-100 hover:bg-red-900"
-          onClick={clearLibrary}
-        >
-          {T.clearAll}
-        </button>
-
-        <button
-          type="button"
-          className="ml-auto px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold"
-          onClick={handleAddBlank}
-        >
-          {T.addEntry}
-        </button>
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="application/json"
-          className="hidden"
-          onChange={handleFileChange}
-        />
       </div>
 
       {/* Sheet tabs */}
-      <div className="flex flex-wrap gap-2 mb-4 text-sm">
-        {["Phrases", "Questions", "Words", "Numbers"].map((sheet) => (
-          <button
-            key={sheet}
-            type="button"
-            onClick={() => setActiveSheet(sheet)}
-            className={cn(
-              "px-3 py-1.5 rounded-full border text-xs sm:text-sm",
-              activeSheet === sheet
-                ? "bg-zinc-100 text-zinc-900 border-zinc-100"
-                : "bg-zinc-900 text-zinc-200 border-zinc-700 hover:bg-zinc-800"
-            )}
-          >
-            {T[sheet.toLowerCase()] || sheet} ·{" "}
-            {sheetCounts[sheet] ?? 0}
-          </button>
-        ))}
+      <div className="inline-flex rounded-full bg-zinc-900 border border-zinc-800 p-1 mb-4">
+        {["Phrases", "Questions", "Words", "Numbers"].map((sheet) => {
+          const active = activeSheet === sheet;
+          return (
+            <button
+              key={sheet}
+              type="button"
+              className={
+                "px-3 sm:px-4 py-1.5 text-xs sm:text-sm rounded-full transition " +
+                (active
+                  ? "bg-emerald-500 text-black font-semibold"
+                  : "text-zinc-300 hover:bg-zinc-800")
+              }
+              onClick={() => setActiveSheet(sheet)}
+            >
+              {T[sheet.toLowerCase()] || sheet}{" "}
+              <span className="text-[11px] text-zinc-300/80">
+                ({sheetCounts[sheet] || 0})
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Library list */}
-      <h2 className="text-xl font-semibold mb-3">{T.libraryTitle}</h2>
-
-      {filtered.length === 0 ? (
-        <p className="text-sm text-zinc-400">
-          No entries found for this view.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((row) => {
-            const idx = rows.findIndex(
-              (r) =>
-                r === row ||
-                (r._id && row._id && r._id === row._id) ||
-                (r.English === row.English &&
-                  r.Lithuanian === row.Lithuanian &&
-                  r.Sheet === row.Sheet)
-            );
-            const isEditing = editingIndex === idx;
-            const speakText = row[speakField] || "";
-
-            return (
-              <div
-                key={row._id || `${row.English}__${row.Lithuanian}__${idx}`}
-                className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col gap-2"
-              >
-                {/* Top row */}
-                <div className="flex gap-3 items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    {isEditing ? (
-                      <>
-                        <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                          <input
-                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-1.5 text-sm"
-                            placeholder={T.english}
-                            value={draft.English}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                English: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-1.5 text-sm"
-                            placeholder={T.lithuanian}
-                            value={draft.Lithuanian}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                Lithuanian: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                          <input
-                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-1.5 text-xs"
-                            placeholder={T.phonetic}
-                            value={draft.Phonetic}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                Phonetic: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-1.5 text-xs"
-                            placeholder={T.category}
-                            value={draft.Category}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                Category: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                          <input
-                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-1.5 text-xs"
-                            placeholder={T.usage}
-                            value={draft.Usage}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                Usage: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-1.5 text-xs"
-                            placeholder={T.notes}
-                            value={draft.Notes}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                Notes: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="text-left"
-                        {...makePressHandlers(speakText, playText)}
-                      >
-                        <div className="text-sm font-semibold truncate">
-                          {row.English || "—"}{" "}
-                          <span className="text-zinc-500">—</span>{" "}
-                          {row.Lithuanian || "—"}
-                        </div>
-                        {row.Phonetic && (
-                          <div className="text-xs text-zinc-400 mt-0.5">
-                            {row.Phonetic}
-                          </div>
-                        )}
-                      </button>
-                    )}
-
-                    {!isEditing && (
-                      <div className="mt-1 text-xs text-zinc-400 space-x-4">
-                        <span>
-                          Sheet: {row.Sheet || "Phrases"}
-                        </span>
-                        {row.Category && (
-                          <span>Category: {row.Category}</span>
-                        )}
-                        {row.Usage && (
-                          <span>Usage: {row.Usage}</span>
-                        )}
-                        {row.Notes && (
-                          <span>Notes: {row.Notes}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2">
-                    {isEditing ? (
-                      <select
-                        className="bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 text-xs"
-                        value={draft["RAG Icon"] || "🟠"}
-                        onChange={(e) =>
-                          setDraft((d) => ({
-                            ...d,
-                            "RAG Icon": e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="🔴">🔴 Red</option>
-                        <option value="🟠">🟠 Amber</option>
-                        <option value="🟢">🟢 Green</option>
-                      </select>
-                    ) : (
-                      <RagBadge
-                        icon={row["RAG Icon"]}
-                        normalizeRag={normalizeRag}
-                      />
-                    )}
-
-                    <div className="flex gap-1">
-                      {isEditing ? (
-                        <>
-                          <button
-                            type="button"
-                            className="px-2 py-1 rounded-md bg-emerald-600 text-xs"
-                            onClick={saveEdit}
-                          >
-                            {T.save}
-                          </button>
-                          <button
-                            type="button"
-                            className="px-2 py-1 rounded-md bg-zinc-800 text-xs"
-                            onClick={cancelEdit}
-                          >
-                            {T.cancel}
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            className="px-2 py-1 rounded-md bg-zinc-800 text-xs"
-                            onClick={() => beginEditRow(row)}
-                          >
-                            {T.edit}
-                          </button>
-                          <button
-                            type="button"
-                            className="px-2 py-1 rounded-md bg-red-900/70 text-xs text-red-100"
-                            onClick={() => handleDelete(row)}
-                          >
-                            {T.delete}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Duplicate finder */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold">{T.dupFinder}</h3>
+      {/* Starter / import tools */}
+      <div className="grid gap-4 md:grid-cols-2 mb-6">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <h3 className="text-sm font-semibold mb-2">{T.installEN}</h3>
+          <p className="text-xs text-zinc-400 mb-2">
+            EN → LT core phrases for everyday practice.
+          </p>
           <button
             type="button"
-            className="px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-700 text-xs hover:bg-zinc-800"
+            onClick={() => fetchStarter("EN2LT")}
+            className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-sm font-medium"
+          >
+            {T.installEN}
+          </button>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <h3 className="text-sm font-semibold mb-2">{T.installLT}</h3>
+          <p className="text-xs text-zinc-400 mb-2">
+            LT → EN phrases for reverse practice.
+          </p>
+          <button
+            type="button"
+            onClick={() => fetchStarter("LT2EN")}
+            className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-sm font-medium"
+          >
+            {T.installLT}
+          </button>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <h3 className="text-sm font-semibold mb-2">{T.installNums}</h3>
+          <p className="text-xs text-zinc-400 mb-2">
+            Numbers pack only – handy if you already have phrases.
+          </p>
+          <button
+            type="button"
+            onClick={installNumbersOnly}
+            className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-sm font-medium"
+          >
+            {T.installNums}
+          </button>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <h3 className="text-sm font-semibold mb-2">{T.importJSON}</h3>
+          <p className="text-xs text-zinc-400 mb-3">
+            Import or merge another JSON library export.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onImportClick}
+              className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-sm"
+            >
+              {T.importJSON}
+            </button>
+            <button
+              type="button"
+              onClick={clearLibrary}
+              className="px-3 py-2 rounded-md bg-red-600/80 hover:bg-red-500 text-sm"
+            >
+              {T.clearAll}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Duplicate finder */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6">
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">{T.dupFinder}</h3>
+            <p className="text-xs text-zinc-400">
+              Scan for exact or near-duplicate entries.
+            </p>
+          </div>
+          <button
+            type="button"
             onClick={scanDupes}
+            className="px-3 py-1.5 rounded-md bg-zinc-800 border border-zinc-700 text-xs font-medium"
           >
             {T.scan}
           </button>
         </div>
-        <div className="text-xs text-zinc-400 space-y-1">
-          <div>
-            {T.exactGroups}: {dupeResults.exact?.length || 0} group(s)
+
+        {dupeResults.exact.length === 0 &&
+          dupeResults.close.length === 0 && (
+            <p className="text-xs text-zinc-500">
+              No duplicates found yet. Run a scan after importing or adding
+              more phrases.
+            </p>
+          )}
+
+        {dupeResults.exact.length > 0 && (
+          <div className="mt-3">
+            <div className="text-xs font-semibold mb-1">
+              {T.exactGroups} ({dupeResults.exact.length})
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs">
+              {dupeResults.exact.map((group, idx) => (
+                <div
+                  key={idx}
+                  className="border border-zinc-800 rounded-md p-2"
+                >
+                  {group.map((i) => {
+                    const r = rows[i];
+                    if (!r) return null;
+                    return (
+                      <div key={r._id || i} className="flex items-center gap-2">
+                        <span className="text-zinc-400 text-[11px]">
+                          #{i}
+                        </span>
+                        <span className="flex-1">
+                          {(r.English || "").slice(0, 80)}
+                          {r.English && r.English.length > 80 && "…"}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-[11px] text-red-400 hover:text-red-300"
+                          onClick={() =>
+                            removePhrase(r._id || i)
+                          }
+                        >
+                          {T.delete}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
-          <div>
-            {T.closeMatches}: {dupeResults.close?.length || 0} pair(s)
+        )}
+
+        {dupeResults.close.length > 0 && (
+          <div className="mt-3">
+            <div className="text-xs font-semibold mb-1">
+              {T.closeMatches} ({dupeResults.close.length})
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1 text-[11px]">
+              {dupeResults.close.map(([ai, bi, sim], idx) => {
+                const A = rows[ai];
+                const B = rows[bi];
+                if (!A || !B) return null;
+                return (
+                  <div
+                    key={idx}
+                    className="border border-zinc-800 rounded-md p-2 space-y-1"
+                  >
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-zinc-400">
+                        {T.similarity}: {(sim * 100).toFixed(0)}%
+                      </span>
+                      <button
+                        type="button"
+                        className="text-red-400 hover:text-red-300"
+                        onClick={() => removePhrase(B._id || bi)}
+                      >
+                        {T.removeSelected}
+                      </button>
+                    </div>
+                    <div>
+                      <span className="text-emerald-400">A:</span>{" "}
+                      {(A.English || "").slice(0, 80)}
+                    </div>
+                    <div>
+                      <span className="text-amber-400">B:</span>{" "}
+                      {(B.English || "").slice(0, 80)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Phrase list */}
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">
+          {T[activeSheet.toLowerCase()] || activeSheet} ·{" "}
+          {filteredRows.length} / {sheetCounts[activeSheet] || 0}
+        </h3>
+        <p className="text-xs text-zinc-400">
+          {sortMode === "Newest"
+            ? T.newest
+            : sortMode === "Oldest"
+            ? T.oldest
+            : T.rag}
+        </p>
+      </div>
+
+      {filteredRows.length === 0 ? (
+        <p className="text-sm text-zinc-400">
+          No entries here yet. Try installing a starter pack or adding a new
+          entry from the Home view.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {filteredRows.map((r) => (
+            <article
+              key={r._id}
+              className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <button
+                    type="button"
+                    className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center"
+                    title={T.ragLabel}
+                    onClick={() => toggleRag(r._id)}
+                  >
+                    {normalizeRag(r["RAG Icon"])}
+                  </button>
+                  {r.Category && (
+                    <span className="text-[11px] uppercase tracking-wide text-zinc-400">
+                      {r.Category}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm font-semibold truncate">
+                  {r.English || "—"}
+                </div>
+                <div className="text-sm text-emerald-300 truncate">
+                  {r.Lithuanian || "—"}
+                </div>
+                {r.Phonetic && (
+                  <div className="text-[11px] text-zinc-400 italic truncate">
+                    {r.Phonetic}
+                  </div>
+                )}
+                {(r.Usage || r.Notes) && (
+                  <div className="text-[11px] text-zinc-400 mt-0.5 line-clamp-2">
+                    {r.Usage || r.Notes}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-row sm:flex-col gap-1 items-end sm:items-stretch mt-1 sm:mt-0">
+                <button
+                  type="button"
+                  className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-medium"
+                  onClick={() =>
+                    playText(
+                      showLtAudio ? r.Lithuanian || "" : r.English || ""
+                    )
+                  }
+                >
+                  ▶ {showLtAudio ? "LT" : "EN"}
+                </button>
+                <button
+                  type="button"
+                  className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium"
+                  onClick={() => removePhrase(r._id)}
+                >
+                  {T.delete}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
