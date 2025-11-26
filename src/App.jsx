@@ -1222,28 +1222,42 @@ export default function App() {
           setPage={setPage}
         />
 
-        {page === "library" ? (
-          <LibraryView
-            T={T}
-            rows={rows}
-            setRows={setRows}
-            fetchStarter={fetchStarter}
-            installNumbersOnly={installNumbersOnly}
-            importJsonFile={importJsonFile}
-            clearLibrary={clearLibrary}
-            dupeResults={dupeResults}
-            scanDupes={scanDupes}
-            normalizeRag={normalizeRag}
-            removePhrase={(rowId) => {
-              const removeByIndex = usePhraseStore.getState().removePhrase;
-
-              const row = rows.find((r) => r._id === rowId);
-              if (row) {
-                const idx = rows.findIndex((r) => r._id === rowId);
-                if (idx !== -1) removeByIndex(idx);
-              } else {
-                setRows((prev) => prev.filter((r) => r._id !== rowId));
-              }
+       {page === "library" ? (
+  <LibraryView
+    T={T}
+    rows={rows}
+    setRows={setRows}
+    fetchStarter={fetchStarter}
+    installNumbersOnly={installNumbersOnly}
+    importJsonFile={importJsonFile}
+    clearLibrary={clearLibrary}
+    dupeResults={dupeResults}
+    scanDupes={scanDupes}
+    normalizeRag={normalizeRag}
+    removePhrase={(id) => {
+      const idx = rows.findIndex((r) => r._id === id);
+      if (idx !== -1) {
+        const removeFromStore = usePhraseStore.getState().removePhrase;
+        removeFromStore(idx);
+      } else {
+        setRows((prev) => prev.filter((r) => r._id !== id));
+      }
+    }}
+  />
+) : page === "settings" ? (
+  <SettingsView />
+) : (
+  <HomeView
+    direction={direction}
+    setDirection={setDirection}
+    playText={playText}
+    setRows={setRows}
+    genId={genId}
+    nowTs={nowTs}
+    STR={STR}
+    cn={cn}
+  />
+)}
             }}
           />
         ) : page === "settings" ? (
