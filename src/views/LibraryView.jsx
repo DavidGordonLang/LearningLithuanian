@@ -1,6 +1,4 @@
-// src/views/LibraryView.jsx
-import React, { useMemo, useState } from "react";
-import { useSyncExternalStore } from "react";
+import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { searchStore } from "../searchStore";
 
 export default function LibraryView({
@@ -12,7 +10,7 @@ export default function LibraryView({
   direction,
   playText,
   removePhrase,
-  onEditRow,            // passed in from App.jsx
+  onEditRow, // provided by App.jsx
 }) {
   const [expanded, setExpanded] = useState(new Set());
 
@@ -25,6 +23,7 @@ export default function LibraryView({
 
   const filteredRows = useMemo(() => {
     let base = rows;
+
     if (qNorm) {
       base = base.filter((r) => {
         const en = (r.English || "").toLowerCase();
@@ -67,6 +66,7 @@ export default function LibraryView({
     );
   }
 
+  // Long-press handler for audio, with extra guards to avoid text selection.
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -74,6 +74,11 @@ export default function LibraryView({
 
     const start = (e) => {
       e.preventDefault();
+      e.stopPropagation();
+      try {
+        const ae = document.activeElement;
+        if (ae && typeof ae.blur === "function") ae.blur();
+      } catch {}
       firedSlow = false;
       pressed = true;
       timer = setTimeout(() => {
@@ -85,13 +90,16 @@ export default function LibraryView({
 
     const finish = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       pressed = false;
       if (timer) clearTimeout(timer);
       timer = null;
       if (!firedSlow) playText(text);
     };
 
-    const cancel = () => {
+    const cancel = (e) => {
+      e.preventDefault?.();
+      e.stopPropagation?.();
       pressed = false;
       if (timer) clearTimeout(timer);
       timer = null;
@@ -140,7 +148,7 @@ export default function LibraryView({
                   {/* RAG */}
                   <button
                     type="button"
-                    className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center"
+                    className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none"
                     onClick={() => cycleRag(r._id)}
                   >
                     {normalizeRag(r["RAG Icon"])}
@@ -174,21 +182,26 @@ export default function LibraryView({
                     <button
                       type="button"
                       className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-medium select-none"
+                      onMouseDown={(e) => e.preventDefault()}
                       {...pressHandlers(textToPlay)}
                     >
                       ▶ {showLtAudio ? "LT" : "EN"}
                     </button>
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium-none"
-                      onClick={() => onEditRow(r._id)}
+                      className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium select-none"
+                      onClick={() => onEditRow && onEditRow(r._id)}
                     >
                       {T.edit}
                     </button>
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-md bg-red-600/80 hover:bg-red-500 text-xs font-medium-none"
-                      onClick={() => removePhrase(r._id)}
+                      className="px-2.5 py-1 rounded-md bg-red-600/80 hover:bg-red-500 text-xs font-medium select-none"
+                      onClick={() => {
+                        if (window.confirm(T.confirm)) {
+                          removePhrase(r._id);
+                        }
+                      }}
                     >
                       {T.delete}
                     </button>
