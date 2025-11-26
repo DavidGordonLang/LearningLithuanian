@@ -424,6 +424,7 @@ export default function App() {
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
+  console.log("[LT APP] rows in store:", rows.length, rows);
   const setRows = usePhraseStore((s) => s.setPhrases);
   const removePhraseByIndex = usePhraseStore((s) => s.removePhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
