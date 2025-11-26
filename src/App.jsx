@@ -899,52 +899,6 @@ export default function App() {
     };
   }, [addOpen]);
 
-  // Wrapper so AddForm can be reused for both "add" and "edit" flows.
-  // In edit mode, we detect the new row AddForm tries to insert and
-  // instead merge its fields into the existing row (keeping the same _id).
-  const setRowsFromAddForm = React.useCallback(
-    (updater) => {
-      if (!editRowId) {
-        // Pure add mode
-        setRows(updater);
-        return;
-      }
-
-      const targetId = editRowId;
-      setRows((prev) => {
-        const next =
-          typeof updater === "function" ? updater(prev) : updater;
-        if (!Array.isArray(next)) return prev;
-
-        const prevIds = new Set(prev.map((r) => r._id));
-        const created = next.find((r) => !prevIds.has(r._id));
-
-        // If we can't detect the newly created row, just fall back
-        // to whatever AddForm produced.
-        if (!created) return next;
-
-        return prev.map((r) =>
-          r._id === targetId
-            ? {
-                ...r,
-                English: created.English,
-                Lithuanian: created.Lithuanian,
-                Phonetic: created.Phonetic,
-                Category: created.Category,
-                Usage: created.Usage,
-                Notes: created.Notes,
-                "RAG Icon": normalizeRag(
-                  created["RAG Icon"] || r["RAG Icon"]
-                ),
-                Sheet: created.Sheet || r.Sheet,
-              }
-            : r
-        );
-      });
-    },
-    [setRows, editRowId]
-  );
-
   /* --------------------------------- Settings -------------------------------- */
 
   function SettingsView() {
@@ -1257,21 +1211,31 @@ export default function App() {
               </div>
               <AddForm
                 tab={tab}
-                setRows={setRowsFromAddForm}
                 T={T}
                 genId={genId}
                 nowTs={nowTs}
                 normalizeRag={normalizeRag}
                 direction={direction}
-                mode={isEditing ? "edit" : "add"} // optional, for AddForm if it uses it
+                mode={isEditing ? "edit" : "add"}
                 initialRow={editingRow || undefined}
-                onSave={() => {
-                  if (!editRowId) {
-                    // Only do the "jump to newest then back to RAG" trick on add
+                onSubmit={(row) => {
+                  if (isEditing) {
+                    // Update existing phrase by _id; timestamp is already updated in row
+                    setRows((prev) =>
+                      prev.map((r) =>
+                        r._id === row._id ? row : r
+                      )
+                    );
+                  } else {
+                    // New phrase at the top
+                    setRows((prev) => [row, ...prev]);
+                    // UX: briefly sort by Newest then revert to RAG
                     setSortMode("Newest");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     setTimeout(() => setSortMode("RAG"), 0);
                   }
+                  setAddOpen(false);
+                  setEditRowId(null);
                 }}
                 onCancel={() => {
                   setAddOpen(false);
