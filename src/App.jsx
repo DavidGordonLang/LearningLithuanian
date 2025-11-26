@@ -17,6 +17,7 @@ import SearchDock from "./components/SearchDock";
 import HomeView from "./views/HomeView";
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
+import LibraryView from "./views/LibraryView";
 
 /* ============================================================================
    CONSTANTS
@@ -335,7 +336,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 }
 
 /* ============================================================================
-   SEARCH BOX — focus-safe
+   SEARCH BOX
    ========================================================================== */
 
 const SearchBox = memo(
@@ -383,7 +384,6 @@ const SearchBox = memo(
         />
         <button
           type="button"
-          data-role="clear-btn"
           tabIndex={-1}
           className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
           onMouseDown={(e) => e.preventDefault()}
@@ -410,7 +410,6 @@ const SearchBox = memo(
    ========================================================================== */
 
 export default function App() {
-  // layout
   const [page, setPage] = useState("home");
   const [width, setWidth] = useState(() => window.innerWidth);
 
@@ -424,23 +423,20 @@ export default function App() {
   const HEADER_H = 56;
   const DOCK_H = 112;
 
-  // phrase store (Zustand)
+  // store
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
-  const removePhrase = usePhraseStore((s) => s.removePhrase);
+  const removePhraseByIndex = usePhraseStore((s) => s.removePhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
-  // data + prefs
   const [tab, setTab] = useState("Phrases");
 
-  // search
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
 
-  // sort + direction
   const [sortMode, setSortMode] = useState(
     () => localStorage.getItem(LSK_SORT) || "RAG"
   );
@@ -452,7 +448,6 @@ export default function App() {
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
 
-  // gamification
   const [xp, setXp] = useState(loadXP());
   useEffect(() => saveXP(xp), [xp]);
   useEffect(() => {
@@ -464,7 +459,6 @@ export default function App() {
   const [streak, setStreak] = useState(loadStreak());
   useEffect(() => saveStreak(streak), [streak]);
 
-  // TTS prefs
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
@@ -555,7 +549,7 @@ export default function App() {
     }
   }
 
-  // press handlers (card tap/long-press)
+  // press
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -605,7 +599,6 @@ export default function App() {
     };
   }
 
-  // filter/sort
   const qNorm = (qFilter || "").trim().toLowerCase();
   const entryMatchesQuery = (r) =>
     !!qNorm &&
@@ -630,7 +623,6 @@ export default function App() {
     );
   }, [rows, qNorm, sortMode, tab]);
 
-  // edit/delete
   const [expanded, setExpanded] = useState(new Set());
   const [editIdx, setEditIdx] = useState(null);
   const [editDraft, setEditDraft] = useState({
@@ -663,9 +655,8 @@ export default function App() {
       "RAG Icon": normalizeRag(editDraft["RAG Icon"]),
     };
     if (clean._id && typeof saveEditedPhrase === "function") {
-      saveEditedPhrase(clean);
+      saveEditedPhrase(i, clean);
     } else {
-      // Fallback to direct state update if store helper missing
       setRows((prev) =>
         prev.map((r, idx) => (idx === i ? clean : r))
       );
@@ -678,14 +669,14 @@ export default function App() {
     if (!row) return;
     if (!confirm(STR[direction].confirm)) return;
 
-    if (row._id && typeof removePhrase === "function") {
-      removePhrase(row._id);
+    if (row._id && typeof removePhraseByIndex === "function") {
+      removePhraseByIndex(i);
     } else {
       setRows((prev) => prev.filter((_, idx) => idx !== i));
     }
   }
 
-  // merge/import
+  // import/merge
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => {
@@ -775,7 +766,6 @@ export default function App() {
     setRows([]);
   }
 
-  // dups
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
 
   function scanDupes() {
@@ -971,7 +961,6 @@ export default function App() {
     );
   }
 
-  // Add modal
   const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
@@ -999,7 +988,7 @@ export default function App() {
     [setRows]
   );
 
-  /* --------------------------------- VIEWS -------------------------------- */
+  /* --------------------------------- Settings -------------------------------- */
 
   function SettingsView() {
     const [showKey, setShowKey] = useState(false);
@@ -1032,7 +1021,6 @@ export default function App() {
         <div style={{ height: HEADER_H + DOCK_H }} />
         <h2 className="text-2xl font-bold mb-4">{T.settings}</h2>
 
-        {/* Direction */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
           <div className="text-sm font-semibold mb-2">
             {T.direction}
@@ -1059,14 +1047,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* TTS */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
           <div className="text-sm font-semibold mb-3">
             {T.azure} / {T.browserVoice}
           </div>
 
           <div className="grid sm:grid-cols-2 gap-3">
-            {/* Provider */}
             <div>
               <div className="text-xs mb-1">Provider</div>
               <select
@@ -1084,7 +1070,6 @@ export default function App() {
               )}
             </div>
 
-            {/* Azure creds */}
             {!isBrowser && (
               <>
                 <div>
@@ -1166,7 +1151,6 @@ export default function App() {
               </>
             )}
 
-            {/* Browser voice */}
             {isBrowser && (
               <div className="sm:col-span-2">
                 <div className="text-xs mb-1">Browser voice</div>
@@ -1221,7 +1205,7 @@ export default function App() {
     );
   }
 
-  /* -------------------------------- RENDER ------------------------------- */
+  /* ------------------------------ RENDER --------------------------------- */
 
   return (
     <>
@@ -1236,38 +1220,47 @@ export default function App() {
           offsetTop={HEADER_H}
           page={page}
           setPage={setPage}
-          // optional: if SearchDock has quiz/start props you can pass startQuiz, level, streak here
         />
+
         {page === "library" ? (
-  <LibraryView
-    T={T}
-    rows={rows}
-    setRows={setRows}
-    fetchStarter={fetchStarter}
-    installNumbersOnly={installNumbersOnly}
-    importJsonFile={importJsonFile}
-    clearLibrary={clearLibrary}
-    dupeResults={dupeResults}
-    scanDupes={scanDupes}
-    normalizeRag={normalizeRag}
-    removePhrase={(id) => {
-      // we support both _id-based removal and index fallback
-      const row = rows.find((r) => r._id === id);
-      if (row && typeof removePhrase === "function") {
-        removePhrase(id);
-      } else {
-        setRows((prev) => prev.filter((r) => r._id !== id));
-      }
-    }}
-  />
-) : page === "settings" ? (
-  <SettingsView />
-) : (
-  <HomeView />
-)}
+          <LibraryView
+            T={T}
+            rows={rows}
+            setRows={setRows}
+            fetchStarter={fetchStarter}
+            installNumbersOnly={installNumbersOnly}
+            importJsonFile={importJsonFile}
+            clearLibrary={clearLibrary}
+            dupeResults={dupeResults}
+            scanDupes={scanDupes}
+            normalizeRag={normalizeRag}
+            removePhrase={(rowId) => {
+              const removeByIndex = usePhraseStore.getState().removePhrase;
 
+              const row = rows.find((r) => r._id === rowId);
+              if (row) {
+                const idx = rows.findIndex((r) => r._id === rowId);
+                if (idx !== -1) removeByIndex(idx);
+              } else {
+                setRows((prev) => prev.filter((r) => r._id !== rowId));
+              }
+            }}
+          />
+        ) : page === "settings" ? (
+          <SettingsView />
+        ) : (
+          <HomeView
+            direction={direction}
+            setDirection={setDirection}
+            playText={playText}
+            setRows={setRows}
+            genId={genId}
+            nowTs={nowTs}
+            STR={STR}
+            cn={cn}
+          />
+        )}
 
-        {/* Add Entry Modal */}
         {addOpen && (
           <div
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
