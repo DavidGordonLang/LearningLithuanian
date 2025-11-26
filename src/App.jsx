@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, {
   useEffect,
   useMemo,
@@ -426,8 +425,6 @@ export default function App() {
   const rows = usePhraseStore((s) => s.phrases);
   console.log("[LT APP] rows in store:", rows.length, rows);
   const setRows = usePhraseStore((s) => s.setPhrases);
-  const removePhraseByIndex = usePhraseStore((s) => s.removePhrase);
-  const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
   const [tab, setTab] = useState("Phrases");
 
@@ -549,55 +546,9 @@ export default function App() {
     }
   }
 
-  // press handlers (kept here in case views need them later)
-  function pressHandlers(text) {
-    let timer = null;
-    let firedSlow = false;
-    let pressed = false;
-
-    const start = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      try {
-        const ae = document.activeElement;
-        if (ae && typeof ae.blur === "function") ae.blur();
-      } catch {}
-      firedSlow = false;
-      pressed = true;
-      timer = setTimeout(() => {
-        if (!pressed) return;
-        firedSlow = true;
-        playText(text, { slow: true });
-      }, 550);
-    };
-
-    const finish = (e) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      if (!pressed) return;
-      pressed = false;
-      if (timer) clearTimeout(timer);
-      timer = null;
-      if (!firedSlow) playText(text);
-    };
-
-    const cancel = (e) => {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      pressed = false;
-      if (timer) clearTimeout(timer);
-      timer = null;
-    };
-
-    return {
-      "data-press": "1",
-      onPointerDown: start,
-      onPointerUp: finish,
-      onPointerLeave: cancel,
-      onPointerCancel: cancel,
-      onContextMenu: (e) => e.preventDefault(),
-    };
-  }
+  /* ============================================================================
+     LIBRARY FILTERING (FOR QUIZ)
+     ========================================================================== */
 
   const qNorm = (qFilter || "").trim().toLowerCase();
   const entryMatchesQuery = (r) =>
@@ -623,60 +574,10 @@ export default function App() {
     );
   }, [rows, qNorm, sortMode, tab]);
 
-  const [expanded, setExpanded] = useState(new Set());
-  const [editIdx, setEditIdx] = useState(null);
-  const [editDraft, setEditDraft] = useState({
-    English: "",
-    Lithuanian: "",
-    Phonetic: "",
-    Category: "",
-    Usage: "",
-    Notes: "",
-    "RAG Icon": "🟠",
-    Sheet: "Phrases",
-  });
+  /* ============================================================================
+     IMPORT / STARTERS / DUPES
+     ========================================================================== */
 
-  function startEditRow(i) {
-    const row = rows[i];
-    if (!row) return;
-    setEditIdx(i);
-    setEditDraft({ ...row });
-  }
-
-  function saveEdit(i) {
-    const original = rows[i];
-    if (!original) {
-      setEditIdx(null);
-      return;
-    }
-    const clean = {
-      ...original,
-      ...editDraft,
-      "RAG Icon": normalizeRag(editDraft["RAG Icon"]),
-    };
-    if (clean._id && typeof saveEditedPhrase === "function") {
-      saveEditedPhrase(i, clean);
-    } else {
-      setRows((prev) =>
-        prev.map((r, idx) => (idx === i ? clean : r))
-      );
-    }
-    setEditIdx(null);
-  }
-
-  function remove(i) {
-    const row = rows[i];
-    if (!row) return;
-    if (!confirm(STR[direction].confirm)) return;
-
-    if (row._id && typeof removePhraseByIndex === "function") {
-      removePhraseByIndex(i);
-    } else {
-      setRows((prev) => prev.filter((_, idx) => idx !== i));
-    }
-  }
-
-  // import/merge
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => {
@@ -800,7 +701,10 @@ export default function App() {
     setDupeResults({ exact, close });
   }
 
-  // quiz (kept here for compatibility, even if HomeView runs its own quiz UI)
+  /* ============================================================================
+     QUIZ
+     ========================================================================== */
+
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
   const [quizIdx, setQuizIdx] = useState(0);
@@ -961,12 +865,26 @@ export default function App() {
     );
   }
 
+  /* ============================================================================
+     ADD / EDIT MODAL (Option B)
+     ========================================================================== */
+
   const [addOpen, setAddOpen] = useState(false);
+  const [editRowId, setEditRowId] = useState(null);
+
+  const editingRow = useMemo(
+    () => rows.find((r) => r._id === editRowId) || null,
+    [rows, editRowId]
+  );
+  const isEditing = !!editingRow;
 
   useEffect(() => {
     if (!addOpen) return;
     const onKey = (e) => {
-      if (e.key === "Escape") setAddOpen(false);
+      if (e.key === "Escape") {
+        setAddOpen(false);
+        setEditRowId(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -981,11 +899,50 @@ export default function App() {
     };
   }, [addOpen]);
 
+  // Wrapper so AddForm can be reused for both "add" and "edit" flows.
+  // In edit mode, we detect the new row AddForm tries to insert and
+  // instead merge its fields into the existing row (keeping the same _id).
   const setRowsFromAddForm = React.useCallback(
     (updater) => {
-      setRows(updater);
+      if (!editRowId) {
+        // Pure add mode
+        setRows(updater);
+        return;
+      }
+
+      const targetId = editRowId;
+      setRows((prev) => {
+        const next =
+          typeof updater === "function" ? updater(prev) : updater;
+        if (!Array.isArray(next)) return prev;
+
+        const prevIds = new Set(prev.map((r) => r._id));
+        const created = next.find((r) => !prevIds.has(r._id));
+
+        // If we can't detect the newly created row, just fall back
+        // to whatever AddForm produced.
+        if (!created) return next;
+
+        return prev.map((r) =>
+          r._id === targetId
+            ? {
+                ...r,
+                English: created.English,
+                Lithuanian: created.Lithuanian,
+                Phonetic: created.Phonetic,
+                Category: created.Category,
+                Usage: created.Usage,
+                Notes: created.Notes,
+                "RAG Icon": normalizeRag(
+                  created["RAG Icon"] || r["RAG Icon"]
+                ),
+                Sheet: created.Sheet || r.Sheet,
+              }
+            : r
+        );
+      });
     },
-    [setRows]
+    [setRows, editRowId]
   );
 
   /* --------------------------------- Settings -------------------------------- */
@@ -1223,32 +1180,35 @@ export default function App() {
         />
 
         {page === "library" ? (
-         <LibraryView
-  T={T}
-  rows={rows}
-  setRows={setRows}
-  fetchStarter={fetchStarter}
-  installNumbersOnly={installNumbersOnly}
-  importJsonFile={importJsonFile}
-  clearLibrary={clearLibrary}
-  dupeResults={dupeResults}
-  scanDupes={scanDupes}
-  normalizeRag={normalizeRag}
-  sortMode={sortMode}
-  direction={direction}
-  playText={playText}
-  removePhrase={(id) => {
-    // Prefer removing by index via the zustand store if possible
-    const idx = rows.findIndex((r) => r._id === id);
-    if (idx !== -1) {
-      const removeFromStore = usePhraseStore.getState().removePhrase;
-      removeFromStore(idx);
-    } else {
-      // Fallback: filter by _id
-      setRows((prev) => prev.filter((r) => r._id !== id));
-    }
-  }}
-/>
+          <LibraryView
+            T={T}
+            rows={rows}
+            setRows={setRows}
+            fetchStarter={fetchStarter}
+            installNumbersOnly={installNumbersOnly}
+            importJsonFile={importJsonFile}
+            clearLibrary={clearLibrary}
+            dupeResults={dupeResults}
+            scanDupes={scanDupes}
+            normalizeRag={normalizeRag}
+            sortMode={sortMode}
+            direction={direction}
+            playText={playText}
+            removePhrase={(id) => {
+              const idx = rows.findIndex((r) => r._id === id);
+              if (idx !== -1) {
+                const removeFromStore =
+                  usePhraseStore.getState().removePhrase;
+                removeFromStore(idx);
+              } else {
+                setRows((prev) => prev.filter((r) => r._id !== id));
+              }
+            }}
+            onEditRow={(id) => {
+              setEditRowId(id);
+              setAddOpen(true);
+            }}
+          />
         ) : page === "settings" ? (
           <SettingsView />
         ) : (
@@ -1269,9 +1229,10 @@ export default function App() {
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
             role="dialog"
             aria-modal="true"
-            aria-label="Add entry"
+            aria-label={isEditing ? T.edit : T.addEntry}
             onPointerDown={() => {
               setAddOpen(false);
+              setEditRowId(null);
               if (document.activeElement instanceof HTMLElement)
                 document.activeElement.blur();
             }}
@@ -1282,11 +1243,14 @@ export default function App() {
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="text-lg font-semibold">
-                  {T.addEntry}
+                  {isEditing ? T.edit : T.addEntry}
                 </div>
                 <button
                   className="px-2 py-1 rounded-md bg-zinc-800"
-                  onClick={() => setAddOpen(false)}
+                  onClick={() => {
+                    setAddOpen(false);
+                    setEditRowId(null);
+                  }}
                 >
                   Close
                 </button>
@@ -1299,12 +1263,20 @@ export default function App() {
                 nowTs={nowTs}
                 normalizeRag={normalizeRag}
                 direction={direction}
+                mode={isEditing ? "edit" : "add"} // optional, for AddForm if it uses it
+                initialRow={editingRow || undefined}
                 onSave={() => {
-                  setSortMode("Newest");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                  setTimeout(() => setSortMode("RAG"), 0);
+                  if (!editRowId) {
+                    // Only do the "jump to newest then back to RAG" trick on add
+                    setSortMode("Newest");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    setTimeout(() => setSortMode("RAG"), 0);
+                  }
                 }}
-                onCancel={() => setAddOpen(false)}
+                onCancel={() => {
+                  setAddOpen(false);
+                  setEditRowId(null);
+                }}
               />
             </div>
           </div>
