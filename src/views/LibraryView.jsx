@@ -173,21 +173,21 @@ export default function LibraryView({
                   <div className="flex flex-col gap-1 items-end">
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-medium"
+                      className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-medium select-none"
                       {...pressHandlers(textToPlay)}
                     >
                       ▶ {showLtAudio ? "LT" : "EN"}
                     </button>
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium"
+                      className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium-none"
                       onClick={() => onEditRow(r._id)}
                     >
                       {T.edit}
                     </button>
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-md bg-red-600/80 hover:bg-red-500 text-xs font-medium"
+                      className="px-2.5 py-1 rounded-md bg-red-600/80 hover:bg-red-500 text-xs font-medium-none"
                       onClick={() => removePhrase(r._id)}
                     >
                       {T.delete}
