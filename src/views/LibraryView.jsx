@@ -86,6 +86,55 @@ export default function LibraryView({
           {T.clearAll}
         </button>
       </div>
+{/* Phrase list */}
+<div className="mt-6">
+  <h2 className="text-xl font-semibold mb-3">{T.libraryTitle}</h2>
+
+  {rows.length === 0 ? (
+    <div className="text-zinc-400 text-sm">
+      Your library is empty. Install a starter pack or import JSON.
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {rows.map((r) => (
+        <div key={r._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="font-medium text-zinc-100">
+                {r.English} — {r.Lithuanian}
+              </div>
+
+              <div className="text-xs text-zinc-400 mt-1">
+                Sheet: {r.Sheet}
+              </div>
+
+              {r.Usage && (
+                <div className="text-xs text-zinc-400 mt-1">
+                  <span className="text-zinc-500">{T.usage}: </span>
+                  {r.Usage}
+                </div>
+              )}
+
+              {r.Notes && (
+                <div className="text-xs text-zinc-400 mt-1">
+                  <span className="text-zinc-500">{T.notes}: </span>
+                  {r.Notes}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => removePhrase(r._id)}
+              className="text-xs bg-red-800/40 border border-red-600 px-2 py-1 rounded-md"
+            >
+              {T.delete}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
       {/* Duplicates UI */}
       <div className="mt-6">
