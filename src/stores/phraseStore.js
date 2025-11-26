@@ -3,9 +3,7 @@ import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
 
-// --------------------------------------
-// Helpers
-// --------------------------------------
+/* --------------------------- Helpers --------------------------- */
 const loadRows = () => {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -24,74 +22,73 @@ const saveRows = (rows) => {
   }
 };
 
-// --------------------------------------
-// Store
-// --------------------------------------
-export const usePhraseStore = create((set, get) => {
-  const store = {
-    // Initial data
-    phrases: loadRows(),
+/* ------------------------ Zustand Store ------------------------ */
 
-    // Auto-migrate missing IDs / timestamps
-    _migrateRows: () => {
-      const rows = get().phrases;
-      let changed = false;
-      const migrated = rows.map((r) => {
-        if (!r._id || typeof r._id !== "string") {
-          changed = true;
-          return {
-            ...r,
-            _id: Math.random().toString(36).slice(2),
-            _ts: r._ts || Date.now(),
-          };
-        }
-        return r;
-      });
+export const usePhraseStore = create((set, get) => ({
+  // initial state
+  phrases: loadRows(),
 
-      if (changed) set({ phrases: migrated });
-    },
+  // ensure each row has an ID and timestamp
+  _migrateRows: () => {
+    const rows = get().phrases || [];
+    let changed = false;
 
-    // Persist to localStorage
-    _persist: () => {
-      saveRows(get().phrases);
-    },
+    const migrated = rows.map((r) => {
+      if (!r._id || typeof r._id !== "string") {
+        changed = true;
+        return {
+          ...r,
+          _id: Math.random().toString(36).slice(2),
+          _ts: r._ts || Date.now(),
+        };
+      }
+      return r;
+    });
 
-    // Replace full list
-    setPhrases: (update) => {
-      set((state) => {
-        const next =
-          typeof update === "function"
-            ? update(state.phrases)
-            : update;
-        return { phrases: next };
-      });
-      get()._persist();
-    },
+    if (changed) {
+      set({ phrases: migrated });
+      saveRows(migrated);
+    }
+  },
 
-    // Add a new phrase
-    addPhrase: (row) =>
-      set((state) => ({
-        phrases: [row, ...state.phrases],
-      })),
+  // replace entire list
+  setPhrases: (update) => {
+    set((state) => {
+      const next =
+        typeof update === "function" ? update(state.phrases) : update;
+      return { phrases: next };
+    });
+    saveRows(get().phrases);
+  },
 
-    // Delete a phrase by index
-    removePhrase: (index) =>
-      set((state) => ({
-        phrases: state.phrases.filter((_, i) => i !== index),
-      })),
+  // add entry
+  addPhrase: (row) =>
+    set((state) => {
+      const next = [row, ...state.phrases];
+      saveRows(next);
+      return { phrases: next };
+    }),
 
-    // Save edits to a phrase
-    saveEditedPhrase: (index, updated) =>
-      set((state) => {
-        const next = state.phrases.map((r, i) =>
-          i === index ? { ...updated, _ts: r._ts || Date.now() } : r
-        );
-        return { phrases: next };
-      }),
-  };
+  // update a phrase by index
+  saveEditedPhrase: (index, updated) =>
+    set((state) => {
+      const next = state.phrases.map((r, i) =>
+        i === index
+          ? { ...updated, _ts: r._ts || Date.now() }
+          : r
+      );
+      saveRows(next);
+      return { phrases: next };
+    }),
 
-  // Run migration immediately
-  store._migrateRows();
+  // remove phrase by index
+  removePhrase: (index) =>
+    set((state) => {
+      const next = state.phrases.filter((_, i) => i !== index);
+      saveRows(next);
+      return { phrases: next };
+    }),
+}));
 
-  return store;
-});
+// Run migration on startup
+usePhraseStore.getState()._migrateRows();
