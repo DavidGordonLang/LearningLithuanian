@@ -1223,27 +1223,32 @@ export default function App() {
         />
 
         {page === "library" ? (
-          <LibraryView
-            T={T}
-            rows={rows}
-            setRows={setRows}
-            fetchStarter={fetchStarter}
-            installNumbersOnly={installNumbersOnly}
-            importJsonFile={importJsonFile}
-            clearLibrary={clearLibrary}
-            dupeResults={dupeResults}
-            scanDupes={scanDupes}
-            normalizeRag={normalizeRag}
-            removePhrase={(id) => {
-              const idx = rows.findIndex((r) => r._id === id);
-              if (idx !== -1) {
-                const removeFromStore = usePhraseStore.getState().removePhrase;
-                removeFromStore(idx);
-              } else {
-                setRows((prev) => prev.filter((r) => r._id !== id));
-              }
-            }}
-          />
+         <LibraryView
+  T={T}
+  rows={rows}
+  setRows={setRows}
+  fetchStarter={fetchStarter}
+  installNumbersOnly={installNumbersOnly}
+  importJsonFile={importJsonFile}
+  clearLibrary={clearLibrary}
+  dupeResults={dupeResults}
+  scanDupes={scanDupes}
+  normalizeRag={normalizeRag}
+  sortMode={sortMode}
+  direction={direction}
+  playText={playText}
+  removePhrase={(id) => {
+    // Prefer removing by index via the zustand store if possible
+    const idx = rows.findIndex((r) => r._id === id);
+    if (idx !== -1) {
+      const removeFromStore = usePhraseStore.getState().removePhrase;
+      removeFromStore(idx);
+    } else {
+      // Fallback: filter by _id
+      setRows((prev) => prev.filter((r) => r._id !== id));
+    }
+  }}
+/>
         ) : page === "settings" ? (
           <SettingsView />
         ) : (
