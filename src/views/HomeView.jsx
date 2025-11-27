@@ -4,16 +4,21 @@ export default function HomeView({
   direction,
   setDirection,
   playText,
-  onOpenAddForm, // optional: if provided, shows "+ Add Phrase" button
+  onOpenAddForm, // optional
+  setRows,
+  genId,
+  nowTs,
 }) {
   const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
   const [translating, setTranslating] = useState(false);
 
-  // tone: "friendly" | "neutral" | "formal"
-  const [tone, setTone] = useState("friendly");
-  // gender: "neutral" | "female" | "male"
-  const [gender, setGender] = useState("neutral");
+  const [ltOut, setLtOut] = useState("");
+  const [enLiteral, setEnLiteral] = useState("");
+  const [enNatural, setEnNatural] = useState("");
+  const [phonetics, setPhonetics] = useState("");
+
+  const [tone, setTone] = useState("friendly"); // "friendly" | "neutral" | "formal"
+  const [gender, setGender] = useState("neutral"); // "neutral" | "female" | "male"
 
   const isEnToLt = direction === "EN2LT";
 
@@ -22,7 +27,10 @@ export default function HomeView({
     if (!text) return;
 
     setTranslating(true);
-    setOutput("");
+    setLtOut("");
+    setEnLiteral("");
+    setEnNatural("");
+    setPhonetics("");
 
     try {
       const res = await fetch("/api/translate", {
@@ -31,29 +39,62 @@ export default function HomeView({
         body: JSON.stringify({
           text,
           direction,
-          // Only meaningful into LT; backend can ignore when not EN2LT
           tone,
           gender,
         }),
       });
 
       const data = await res.json();
-      if (data?.translated) {
-        setOutput(data.translated);
+
+      if (data?.lt && data?.en_literal) {
+        setLtOut(data.lt);
+        setEnLiteral(data.en_literal);
+        setEnNatural(data.en_natural || data.en_literal);
+        setPhonetics(data.phonetics || "");
       } else {
-        setOutput("Translation failed.");
+        setLtOut("Translation error.");
       }
     } catch (err) {
       console.error(err);
-      setOutput("Translation error.");
+      setLtOut("Translation error.");
     } finally {
       setTranslating(false);
     }
   }
 
+  function handleSaveToLibrary() {
+    if (!ltOut || !enLiteral) return;
+    if (!setRows || !genId || !nowTs) return;
+
+    const englishInput = input.trim();
+
+    const row = {
+      English: englishInput || enNatural || enLiteral,
+      EnglishOriginal: englishInput || "",
+      EnglishLiteral: enLiteral,
+      EnglishNatural: enNatural || enLiteral,
+      Lithuanian: ltOut,
+      Phonetic: phonetics || "",
+      Category: "",
+      Usage: "",
+      Notes: "",
+      "RAG Icon": "🟠",
+      Sheet: "Phrases",
+      _id: genId(),
+      _ts: nowTs(),
+      _qstat: {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      },
+    };
+
+    setRows((prev) => [row, ...prev]);
+    // optional: scroll to top or show a toast later
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
-      {/* offset for header + dock */}
       <div style={{ height: 56 + 112 }} />
 
       {/* Header */}
@@ -113,9 +154,7 @@ export default function HomeView({
 
       {/* Speaking to... (gender) */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3">
-        <div className="flex items-center justify-between mb-2 gap-2">
-          <div className="text-sm font-semibold">Speaking to…</div>
-        </div>
+        <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <div className="flex gap-2 flex-wrap">
           {["neutral", "female", "male"].map((g) => {
             const label =
@@ -213,29 +252,53 @@ export default function HomeView({
       </div>
 
       {/* Output */}
-      {output && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <label className="block text-sm mb-2">
-            {direction === "EN2LT" ? "Lithuanian" : "English"}
-          </label>
-          <div className="text-lg font-semibold mb-3 break-words">
-            {output}
+      {ltOut && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
+          <div>
+            <label className="block text-sm mb-1">
+              {direction === "EN2LT" ? "Lithuanian" : "Lithuanian (base phrase)"}
+            </label>
+            <div className="text-lg font-semibold break-words">{ltOut}</div>
+            {phonetics && (
+              <div className="text-sm text-zinc-400 mt-1">
+                {phonetics}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="border-t border-zinc-800 pt-3 space-y-1 text-sm">
+            <div>
+              <span className="font-semibold">English meaning (literal): </span>
+              <span>{enLiteral}</span>
+            </div>
+            <div>
+              <span className="font-semibold">English meaning (natural): </span>
+              <span>{enNatural}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap pt-2">
             <button
               type="button"
               className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black"
-              onClick={() => playText(output)}
+              onClick={() => playText(ltOut)}
             >
               ▶ Normal
             </button>
             <button
               type="button"
               className="px-3 py-2 rounded-md bg-emerald-700 hover:bg-emerald-600 text-black"
-              onClick={() => playText(output, { slow: true })}
+              onClick={() => playText(ltOut, { slow: true })}
             >
               🐢 Slow
+            </button>
+            <button
+              type="button"
+              className="px-3 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 text-sm"
+              onClick={handleSaveToLibrary}
+              disabled={!setRows}
+            >
+              Save to library
             </button>
           </div>
         </div>
