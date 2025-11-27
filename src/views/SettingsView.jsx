@@ -1,4 +1,3 @@
-// src/views/SettingsView.jsx
 import React, { useState } from "react";
 
 export default function SettingsView({
@@ -19,7 +18,7 @@ export default function SettingsView({
   setBrowserVoiceName,
   voices,
   playText,
-  fetchStarter, // for starter pack install
+  fetchStarter,
 }) {
   const [showKey, setShowKey] = useState(false);
   const [keyField, setKeyField] = useState(azureKey);
@@ -30,14 +29,10 @@ export default function SettingsView({
 
   async function fetchAzureVoices() {
     try {
-      const url = `https://${
-        regionField || azureRegion
-      }.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-
+      const url = `https://${regionField || azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
       const res = await fetch(url, {
         headers: { "Ocp-Apim-Subscription-Key": keyField || azureKey },
       });
-
       if (!res.ok) throw new Error("Failed to fetch voices");
       const data = await res.json();
       setAzureVoices(data || []);
@@ -48,10 +43,12 @@ export default function SettingsView({
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-      <h2 className="text-3xl font-bold mb-6">{T.settings}</h2>
+
+      {/* FIXED: removed mt-6 default gap */}
+      <h2 className="text-3xl font-bold">{T.settings}</h2>
 
       {/* Learning direction */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mt-4 mb-6">
         <div className="text-sm font-semibold mb-2">{T.direction}</div>
 
         <div className="flex gap-6 flex-wrap">
@@ -77,7 +74,7 @@ export default function SettingsView({
         </div>
       </div>
 
-      {/* Starter pack (EN -> LT only) */}
+      {/* Starter Pack */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6">
         <div className="text-sm font-semibold mb-2">Starter Pack</div>
         <p className="text-xs text-zinc-400 mb-3">
@@ -93,13 +90,12 @@ export default function SettingsView({
         </button>
       </div>
 
-      {/* Azure / Browser */}
+      {/* Azure */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
         <div className="text-sm font-semibold mb-3">
           Azure Speech / Browser (fallback)
         </div>
 
-        {/* Provider */}
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <div className="text-xs mb-1">Provider</div>
@@ -113,7 +109,6 @@ export default function SettingsView({
             </select>
           </div>
 
-          {/* Azure config */}
           {ttsProvider === "azure" && (
             <>
               <div>
@@ -125,13 +120,11 @@ export default function SettingsView({
                     onChange={(e) => setKeyField(e.target.value)}
                     onBlur={commitKey}
                     className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    placeholder="••••••••••••••••"
                   />
                   <button
                     className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md select-none"
                     onClick={() => setShowKey((v) => !v)}
                     onMouseDown={(e) => e.preventDefault()}
-                    onTouchStart={(e) => e.preventDefault()}
                   >
                     {showKey ? "Hide" : "Show"}
                   </button>
@@ -139,7 +132,6 @@ export default function SettingsView({
                     className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md select-none"
                     onClick={commitKey}
                     onMouseDown={(e) => e.preventDefault()}
-                    onTouchStart={(e) => e.preventDefault()}
                   >
                     Save
                   </button>
@@ -154,13 +146,11 @@ export default function SettingsView({
                     onChange={(e) => setRegionField(e.target.value)}
                     onBlur={commitRegion}
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    placeholder="westeurope, eastus…"
                   />
                   <button
                     className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md select-none"
                     onClick={commitRegion}
                     onMouseDown={(e) => e.preventDefault()}
-                    onTouchStart={(e) => e.preventDefault()}
                   >
                     Save
                   </button>
@@ -173,7 +163,6 @@ export default function SettingsView({
                   onClick={fetchAzureVoices}
                   className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md select-none"
                   onMouseDown={(e) => e.preventDefault()}
-                  onTouchStart={(e) => e.preventDefault()}
                 >
                   {T.fetchVoices}
                 </button>
@@ -199,7 +188,6 @@ export default function SettingsView({
             </>
           )}
 
-          {/* Browser voice */}
           {ttsProvider === "browser" && (
             <div className="sm:col-span-2">
               <div className="text-xs mb-1">Browser voice</div>
@@ -229,8 +217,6 @@ export default function SettingsView({
                   : "Hello! How are you?"
               )
             }
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
           >
             Play sample
           </button>
