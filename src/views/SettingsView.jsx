@@ -19,9 +19,8 @@ export default function SettingsView({
   setBrowserVoiceName,
   voices,
   playText,
-  fetchStarter,        // <— needed for starter pack install
+  fetchStarter, // for starter pack install
 }) {
-
   const [showKey, setShowKey] = useState(false);
   const [keyField, setKeyField] = useState(azureKey);
   const [regionField, setRegionField] = useState(azureRegion);
@@ -31,10 +30,12 @@ export default function SettingsView({
 
   async function fetchAzureVoices() {
     try {
-      const url = `https://${regionField || azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+      const url = `https://${
+        regionField || azureRegion
+      }.tts.speech.microsoft.com/cognitiveservices/voices/list`;
 
       const res = await fetch(url, {
-        headers: { "Ocp-Apim-Subscription-Key": keyField || azureKey }
+        headers: { "Ocp-Apim-Subscription-Key": keyField || azureKey },
       });
 
       if (!res.ok) throw new Error("Failed to fetch voices");
@@ -53,8 +54,8 @@ export default function SettingsView({
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6">
         <div className="text-sm font-semibold mb-2">{T.direction}</div>
 
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2">
+        <div className="flex gap-6 flex-wrap">
+          <label className="flex items-center gap-2 select-none">
             <input
               type="radio"
               name="dir"
@@ -64,7 +65,7 @@ export default function SettingsView({
             <span>{T.en2lt}</span>
           </label>
 
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 select-none">
             <input
               type="radio"
               name="dir"
@@ -76,7 +77,7 @@ export default function SettingsView({
         </div>
       </div>
 
-      {/* Starter pack */}
+      {/* Starter pack (EN -> LT only) */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6">
         <div className="text-sm font-semibold mb-2">Starter Pack</div>
         <p className="text-xs text-zinc-400 mb-3">
@@ -84,7 +85,9 @@ export default function SettingsView({
         </p>
         <button
           onClick={() => fetchStarter("EN2LT")}
-          className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500"
+          className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500 select-none"
+          onMouseDown={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
         >
           Install starter pack
         </button>
@@ -125,14 +128,18 @@ export default function SettingsView({
                     placeholder="••••••••••••••••"
                   />
                   <button
-                    className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md"
+                    className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md select-none"
                     onClick={() => setShowKey((v) => !v)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.preventDefault()}
                   >
                     {showKey ? "Hide" : "Show"}
                   </button>
                   <button
-                    className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md"
+                    className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md select-none"
                     onClick={commitKey}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.preventDefault()}
                   >
                     Save
                   </button>
@@ -150,8 +157,10 @@ export default function SettingsView({
                     placeholder="westeurope, eastus…"
                   />
                   <button
-                    className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md"
+                    className="px-2 py-2 bg-zinc-800 border border-zinc-700 text-xs rounded-md select-none"
                     onClick={commitRegion}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.preventDefault()}
                   >
                     Save
                   </button>
@@ -162,7 +171,9 @@ export default function SettingsView({
                 <button
                   type="button"
                   onClick={fetchAzureVoices}
-                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md"
+                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md select-none"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onTouchStart={(e) => e.preventDefault()}
                 >
                   {T.fetchVoices}
                 </button>
@@ -170,11 +181,16 @@ export default function SettingsView({
                 <select
                   className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
                   value={azureVoiceShortName}
-                  onChange={(e) => setAzureVoiceShortName(e.target.value)}
+                  onChange={(e) =>
+                    setAzureVoiceShortName(e.target.value)
+                  }
                 >
                   <option value="">{T.choose}</option>
                   {azureVoices.map((v) => (
-                    <option key={v.ShortName || v.shortName} value={v.ShortName || v.shortName}>
+                    <option
+                      key={v.ShortName || v.shortName}
+                      value={v.ShortName || v.shortName}
+                    >
                       {v.LocalName || v.Name || v.name}
                     </option>
                   ))}
@@ -205,10 +221,16 @@ export default function SettingsView({
         <div className="mt-4">
           <div className="text-sm mb-2">Test voice</div>
           <button
-            className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500"
+            className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500 select-none"
             onClick={() =>
-              playText(direction === "EN2LT" ? "Sveiki! Kaip sekasi?" : "Hello! How are you?")
+              playText(
+                direction === "EN2LT"
+                  ? "Sveiki! Kaip sekasi?"
+                  : "Hello! How are you?"
+              )
             }
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
           >
             Play sample
           </button>
