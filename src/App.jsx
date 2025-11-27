@@ -90,8 +90,8 @@ const STR = {
     lt2en: "I’m learning English (LT → EN)",
     settings: "Settings",
     libraryTitle: "Library",
-    installEN: "Install “Learn Lithuanian” starter (EN → LT)",
-    installLT: "Install “Learn English” starter (LT → EN)",
+    installEN: 'Install "Learn Lithuanian" starter (EN → LT)',
+    installLT: 'Install "Learn English" starter (LT → EN)',
     installNums: "Install Numbers pack",
     importJSON: "Import JSON",
     clearAll: "Clear library",
@@ -103,7 +103,7 @@ const STR = {
     removeSelected: "Remove selected",
     similarity: "Similarity",
     prompt: "Prompt",
-    chooseLT: "Choose the Lithuanuanian",
+    chooseLT: "Choose the Lithuanian",
     correct: "Correct!",
     notQuite: "Not quite.",
     nextQuestion: "Next Question",
@@ -158,8 +158,8 @@ const STR = {
     lt2en: "Mokausi anglų (LT → EN)",
     settings: "Nustatymai",
     libraryTitle: "Biblioteka",
-    installEN: "Įdiegti rinkinį „Mokausi lietuvių“ (EN → LT)",
-    installLT: "Įdiegti rinkinį „Mokausi anglų“ (LT → EN)",
+    installEN: 'Įdiegti rinkinį „Mokausi lietuvių“ (EN → LT)',
+    installLT: 'Įdiegti rinkinį „Mokausi anglų“ (LT → EN)',
     installNums: "Įdiegti skaičių paketą",
     importJSON: "Importuoti JSON",
     clearAll: "Išvalyti biblioteką",
@@ -185,6 +185,8 @@ const STR = {
 /* ============================================================================
    HELPERS
    ========================================================================== */
+
+const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 const loadXP = () => {
   try {
@@ -214,7 +216,6 @@ const saveStreak = (s) =>
 
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
-const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
@@ -297,7 +298,7 @@ function useVoices() {
 function escapeXml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
+    .replace(/</g, "&lt/")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
@@ -365,7 +366,7 @@ const SearchBox = memo(
           inputMode="search"
           enterKeyHint="search"
           placeholder={placeholder}
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none select-none"
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
@@ -411,16 +412,29 @@ const SearchBox = memo(
 
 export default function App() {
   const [page, setPage] = useState("home");
-  const [width, setWidth] = useState(() => window.innerWidth);
 
+  // dynamic header measurement
+  const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const measure = () => {
+      const h = headerRef.current.getBoundingClientRect().height || 0;
+      setHeaderHeight(h);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  const [width, setWidth] = useState(() => window.innerWidth);
   useEffect(() => {
     const onR = () => setWidth(window.innerWidth);
     window.addEventListener("resize", onR);
     return () => window.removeEventListener("resize", onR);
   }, []);
-
-  const WIDE = width >= 1024;
-  const HEADER_H = 88; // header + nav pills visual height
+  const WIDE = width >= 1024; // kept for future layout decisions, even if not used yet
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
@@ -547,7 +561,7 @@ export default function App() {
   }
 
   /* ============================================================================
-     LIBRARY FILTERING (FOR QUIZ / FUTURE USE)
+     LIBRARY FILTERING (for future reuse, quiz, etc.)
      ========================================================================== */
 
   const qNorm = (qFilter || "").trim().toLowerCase();
@@ -663,7 +677,7 @@ export default function App() {
   }
 
   function clearLibrary() {
-    if (!confirm(STR[direction].confirm)) return;
+    if (!confirm(T.confirm)) return;
     setRows([]);
   }
 
@@ -702,7 +716,7 @@ export default function App() {
   }
 
   /* ============================================================================
-     QUIZ (kept for later wiring)
+     QUIZ
      ========================================================================== */
 
   const [quizOn, setQuizOn] = useState(false);
@@ -774,32 +788,6 @@ export default function App() {
     setQuizOn(true);
   }
 
-  function afterAnswerAdvance() {
-    const nextIdx = quizIdx + 1;
-    if (nextIdx >= quizQs.length) {
-      const today = todayKey();
-      if (streak.lastDate !== today) {
-        const inc =
-          streak.lastDate && daysBetween(streak.lastDate, today) === 1
-            ? streak.streak + 1
-            : 1;
-        setStreak({ streak: inc, lastDate: today });
-      }
-      setQuizOn(false);
-      return;
-    }
-    setQuizIdx(nextIdx);
-    setQuizAnswered(false);
-    setQuizChoice(null);
-    const item = quizQs[nextIdx];
-    const correctLt = item.Lithuanian;
-    const distractors = sample(
-      quizQs.filter((r) => r !== item && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
-    setQuizOptions(shuffle([correctLt, ...distractors]));
-  }
-
   function bumpRagAfterAnswer(item, correct) {
     const rag = normalizeRag(item["RAG Icon"]);
     const st =
@@ -865,6 +853,32 @@ export default function App() {
     );
   }
 
+  function afterAnswerAdvance() {
+    const nextIdx = quizIdx + 1;
+    if (nextIdx >= quizQs.length) {
+      const today = todayKey();
+      if (streak.lastDate !== today) {
+        const inc =
+          streak.lastDate && daysBetween(streak.lastDate, today) === 1
+            ? streak.streak + 1
+            : 1;
+        setStreak({ streak: inc, lastDate: today });
+      }
+      setQuizOn(false);
+      return;
+    }
+    setQuizIdx(nextIdx);
+    setQuizAnswered(false);
+    setQuizChoice(null);
+    const item = quizQs[nextIdx];
+    const correctLt = item.Lithuanian;
+    const distractors = sample(
+      quizQs.filter((r) => r !== item && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
+    setQuizOptions(shuffle([correctLt, ...distractors]));
+  }
+
   /* ============================================================================
      ADD / EDIT MODAL + TOAST
      ========================================================================== */
@@ -907,28 +921,29 @@ export default function App() {
 
   /* ------------------------------ RENDER --------------------------------- */
 
-  // Home / Settings: just header
-  // Library: header + SearchDock (approx. 52px extra)
-  const contentOffset = page === "library" ? 140 : HEADER_H;
+  // Header is sticky; we push content down by its actual measured height.
+  // SearchDock is rendered INSIDE <main> so Library content naturally sits under it.
+  const contentOffset = headerHeight || 0;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header T={T} page={page} setPage={setPage} />
-
-      {page === "library" && (
-        <SearchDock
-          SearchBox={SearchBox}
-          sortMode={sortMode}
-          setSortMode={setSortMode}
-          placeholder={T.search}
-          T={T}
-          offsetTop={HEADER_H}
-          page={page}
-          setPage={setPage}
-        />
-      )}
+      <Header ref={headerRef} T={T} page={page} setPage={setPage} />
 
       <main style={{ paddingTop: contentOffset }}>
+        {page === "library" && (
+          <SearchDock
+            SearchBox={SearchBox}
+            sortMode={sortMode}
+            setSortMode={setSortMode}
+            placeholder={T.search}
+            T={T}
+            offsetTop={headerHeight}
+            page={page}
+            // setPage still passed, in case you ever re-add nav there
+            setPage={setPage}
+          />
+        )}
+
         {page === "library" ? (
           <LibraryView
             T={T}
@@ -1002,7 +1017,7 @@ export default function App() {
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
-          aria-label={isEditing ? STR[direction].edit : STR[direction].addEntry}
+          aria-label={isEditing ? T.edit : T.addEntry}
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
@@ -1016,7 +1031,7 @@ export default function App() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">
-                {isEditing ? STR[direction].edit : STR[direction].addEntry}
+                {isEditing ? T.edit : T.addEntry}
               </div>
               <button
                 className="px-2 py-1 rounded-md bg-zinc-800 select-none"
@@ -1032,7 +1047,7 @@ export default function App() {
             </div>
             <AddForm
               tab={tab}
-              T={STR[direction]}
+              T={T}
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
