@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, {
   useEffect,
   useMemo,
@@ -419,8 +420,7 @@ export default function App() {
   }, []);
 
   const WIDE = width >= 1024;
-  const HEADER_H = 56;
-  const DOCK_H = 112;
+  const HEADER_H = 88; // header + nav pills visual height
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
@@ -907,7 +907,9 @@ export default function App() {
 
   /* ------------------------------ RENDER --------------------------------- */
 
-  const contentOffset = HEADER_H + (page === "library" ? DOCK_H : 0);
+  // Home / Settings: just header
+  // Library: header + SearchDock (approx. 52px extra)
+  const contentOffset = page === "library" ? 140 : HEADER_H;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -1000,7 +1002,7 @@ export default function App() {
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
-          aria-label={isEditing ? T.edit : T.addEntry}
+          aria-label={isEditing ? STR[direction].edit : STR[direction].addEntry}
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
@@ -1014,7 +1016,7 @@ export default function App() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">
-                {isEditing ? T.edit : T.addEntry}
+                {isEditing ? STR[direction].edit : STR[direction].addEntry}
               </div>
               <button
                 className="px-2 py-1 rounded-md bg-zinc-800 select-none"
@@ -1030,7 +1032,7 @@ export default function App() {
             </div>
             <AddForm
               tab={tab}
-              T={T}
+              T={STR[direction]}
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
