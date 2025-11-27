@@ -1191,7 +1191,7 @@ function showToast(msg) {
     {toast}
   </div>
 )}
-        )}   ← **THIS IS WHAT YOU ARE MISSING**
+        )}
 
 {addOpen && (
 
