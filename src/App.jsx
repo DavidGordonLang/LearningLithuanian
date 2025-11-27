@@ -1191,9 +1191,10 @@ function showToast(msg) {
     {toast}
   </div>
 )}
+        )}   ← **THIS IS WHAT YOU ARE MISSING**
 
+{addOpen && (
 
-        {addOpen && (
           <div
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
             role="dialog"
