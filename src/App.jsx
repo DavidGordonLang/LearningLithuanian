@@ -1170,26 +1170,58 @@ function showToast(msg) {
               setAddOpen(true);
             }}
           />
-        ) : page === "settings" ? (
-          <SettingsView />
-        ) : (
-      <HomeView
-  direction={direction}
-  setDirection={setDirection}
-  playText={playText}
-  setRows={setRows}
-  genId={genId}
-  nowTs={nowTs}
-  STR={STR}
-  cn={cn}
-  rows={rows}
-  showToast={showToast}
-/>
+       {page === "library" ? (
+  <LibraryView
+    T={T}
+    rows={rows}
+    setRows={setRows}
+    fetchStarter={fetchStarter}
+    installNumbersOnly={installNumbersOnly}
+    importJsonFile={importJsonFile}
+    clearLibrary={clearLibrary}
+    dupeResults={dupeResults}
+    scanDupes={scanDupes}
+    normalizeRag={normalizeRag}
+    sortMode={sortMode}
+    direction={direction}
+    playText={playText}
+    removePhrase={(id) => {
+      const idx = rows.findIndex((r) => r._id === id);
+      if (idx !== -1) {
+        const removeFromStore = usePhraseStore.getState().removePhrase;
+        removeFromStore(idx);
+      } else {
+        setRows((prev) => prev.filter((r) => r._id !== id));
+      }
+    }}
+    onEditRow={(id) => {
+      setEditRowId(id);
+      setAddOpen(true);
+    }}
+  />
+) : page === "settings" ? (
+  <SettingsView />
+) : (
+  <>
+    <HomeView
+      direction={direction}
+      setDirection={setDirection}
+      playText={playText}
+      setRows={setRows}
+      genId={genId}
+      nowTs={nowTs}
+      STR={STR}
+      cn={cn}
+      rows={rows}
+      showToast={showToast}
+    />
 
-{toast && (
-  <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
-    {toast}
-  </div>
+    {toast && (
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
+        {toast}
+      </div>
+    )}
+  </>
 )}
 
         )}
