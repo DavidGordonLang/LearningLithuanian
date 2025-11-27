@@ -8,8 +8,8 @@ export default function HomeView({
   setRows,
   genId,
   nowTs,
-  showToast, // NEW
-  rows,      // NEW: needed for duplicate check
+  showToast,
+  rows,
 }) {
   const [input, setInput] = useState("");
   const [translating, setTranslating] = useState(false);
@@ -19,11 +19,14 @@ export default function HomeView({
   const [enNatural, setEnNatural] = useState("");
   const [phonetics, setPhonetics] = useState("");
 
-  const [tone, setTone] = useState("friendly");
-  const [gender, setGender] = useState("neutral");
+  const [gender, setGender] = useState("neutral"); // neutral | male | female
+  const [tone, setTone] = useState("friendly");    // friendly | neutral | polite
 
   const isEnToLt = direction === "EN2LT";
 
+  /* -------------------------------------------------------------
+     API CALL
+  ------------------------------------------------------------- */
   async function handleTranslate() {
     const text = input.trim();
     if (!text) return;
@@ -64,6 +67,9 @@ export default function HomeView({
     }
   }
 
+  /* -------------------------------------------------------------
+     CLEAR
+  ------------------------------------------------------------- */
   function handleClear() {
     setInput("");
     setLtOut("");
@@ -72,6 +78,9 @@ export default function HomeView({
     setPhonetics("");
   }
 
+  /* -------------------------------------------------------------
+     SAVE TO LIBRARY
+  ------------------------------------------------------------- */
   function handleSaveToLibrary() {
     if (!ltOut || !enLiteral) return;
     if (!setRows || !genId || !nowTs) return;
@@ -79,7 +88,6 @@ export default function HomeView({
     const englishInput = input.trim();
     if (!englishInput) return;
 
-    // Duplicate rule: EnglishOriginal + Lithuanian MUST be unique
     const already = rows.some(
       (r) =>
         (r.EnglishOriginal || r.English || "").trim().toLowerCase() ===
@@ -118,6 +126,40 @@ export default function HomeView({
     showToast?.("Saved to library ✓");
   }
 
+  /* -------------------------------------------------------------
+     SEGMENTED CONTROL COMPONENT
+  ------------------------------------------------------------- */
+  function Segmented({ value, onChange, options }) {
+    return (
+      <div className="flex w-full bg-zinc-800 border border-zinc-700 rounded-xl overflow-hidden">
+        {options.map((opt, idx) => {
+          const active = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className={
+                "flex-1 px-3 py-2 text-sm font-medium transition-colors " +
+                (active
+                  ? "bg-emerald-600 text-black"
+                  : "bg-zinc-900 text-zinc-200 hover:bg-zinc-700") +
+                (idx !== options.length - 1
+                  ? " border-r border-zinc-700"
+                  : "")
+              }
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  /* =============================================================
+     RENDER
+  ============================================================= */
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
       <div style={{ height: 56 + 112 }} />
@@ -140,7 +182,7 @@ export default function HomeView({
         </button>
       )}
 
-      {/* Direction toggle */}
+      {/* Learning direction */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
         <div className="text-sm font-semibold mb-2">Learning direction</div>
         <div className="flex gap-3 flex-wrap">
@@ -171,7 +213,33 @@ export default function HomeView({
         </div>
       </div>
 
-      {/* Tone + Gender omitted here for brevity – unchanged */}
+      {/* Speaking to… */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+        <div className="text-sm font-semibold mb-2">Speaking to…</div>
+        <Segmented
+          value={gender}
+          onChange={setGender}
+          options={[
+            { value: "neutral", label: "Neutral" },
+            { value: "male", label: "Male" },
+            { value: "female", label: "Female" },
+          ]}
+        />
+      </div>
+
+      {/* Tone */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+        <div className="text-sm font-semibold mb-2">Tone</div>
+        <Segmented
+          value={tone}
+          onChange={setTone}
+          options={[
+            { value: "friendly", label: "Friendly" },
+            { value: "neutral", label: "Neutral" },
+            { value: "polite", label: "Polite" },
+          ]}
+        />
+      </div>
 
       {/* Input */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
@@ -215,10 +283,9 @@ export default function HomeView({
               {direction === "EN2LT" ? "Lithuanian" : "Lithuanian (base phrase)"}
             </label>
             <div className="text-lg font-semibold break-words">{ltOut}</div>
+
             {phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">
-                {phonetics}
-              </div>
+              <div className="text-sm text-zinc-400 mt-1">{phonetics}</div>
             )}
           </div>
 
