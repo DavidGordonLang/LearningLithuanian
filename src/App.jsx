@@ -13,6 +13,7 @@ import Header from "./components/Header";
 import AddForm from "./components/AddForm";
 import SearchDock from "./components/SearchDock";
 import HomeView from "./views/HomeView";
+import SettingsView from "./views/SettingsView";
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
 import LibraryView from "./views/LibraryView";
@@ -383,7 +384,7 @@ const SearchBox = memo(
         <button
           type="button"
           tabIndex={-1}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 select-none"
           onMouseDown={(e) => e.preventDefault()}
           onTouchStart={(e) => e.preventDefault()}
           onClick={() => {
@@ -423,7 +424,6 @@ export default function App() {
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
-  console.log("[LT APP] rows in store:", rows.length, rows);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
   const [tab, setTab] = useState("Phrases");
@@ -702,7 +702,7 @@ export default function App() {
   }
 
   /* ============================================================================
-     QUIZ (kept for now, can be wired back in later)
+     QUIZ (kept for later wiring)
      ========================================================================== */
 
   const [quizOn, setQuizOn] = useState(false);
@@ -871,7 +871,6 @@ export default function App() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
-
   const [toast, setToast] = useState("");
 
   function showToast(msg) {
@@ -906,228 +905,15 @@ export default function App() {
     };
   }, [addOpen]);
 
-  /* --------------------------------- Settings -------------------------------- */
-
-  function SettingsView() {
-    const [showKey, setShowKey] = useState(false);
-    const isBrowser = ttsProvider === "browser";
-
-    const [keyField, setKeyField] = useState(azureKey);
-    const [regionField, setRegionField] = useState(azureRegion);
-
-    const commitKey = () => setAzureKey(keyField);
-    const commitRegion = () => setAzureRegion(regionField);
-
-    async function fetchAzureVoices() {
-      try {
-        const url = `https://${
-          regionField || azureRegion
-        }.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-        const res = await fetch(url, {
-          headers: { "Ocp-Apim-Subscription-Key": keyField || azureKey },
-        });
-        if (!res.ok) throw new Error("Fetch failed");
-        const data = await res.json();
-        setAzureVoices(data || []);
-      } catch (e) {
-        alert("Failed to fetch voices. Check key/region.");
-      }
-    }
-
-    return (
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24 pt-20">
-        <h2 className="text-2xl font-bold mb-4">{T.settings}</h2>
-
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
-          <div className="text-sm font-semibold mb-2">
-            {T.direction}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="dir"
-                checked={direction === "EN2LT"}
-                onChange={() => setDirection("EN2LT")}
-              />
-              <span>{T.en2lt}</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="dir"
-                checked={direction === "LT2EN"}
-                onChange={() => setDirection("LT2EN")}
-              />
-              <span>{T.lt2en}</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="text-sm font-semibold mb-3">
-            {T.azure} / {T.browserVoice}
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div>
-              <div className="text-xs mb-1">Provider</div>
-              <select
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={ttsProvider}
-                onChange={(e) => setTtsProvider(e.target.value)}
-              >
-                <option value="azure">Azure Speech</option>
-                <option value="browser">Browser (fallback)</option>
-              </select>
-              {isBrowser && (
-                <div className="text-xs text-zinc-400 mt-1">
-                  {T.providerNote}
-                </div>
-              )}
-            </div>
-
-            {!isBrowser && (
-              <>
-                <div>
-                  <div className="text-xs mb-1">{T.subKey}</div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type={showKey ? "text" : "password"}
-                      value={keyField}
-                      onChange={(e) => setKeyField(e.currentTarget.value)}
-                      onBlur={commitKey}
-                      className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                      placeholder="••••••••••••••••"
-                    />
-                    <button
-                      type="button"
-                      className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
-                      onClick={() => setShowKey((v) => !v)}
-                    >
-                      {showKey ? "Hide" : "Show"}
-                    </button>
-                    <button
-                      type="button"
-                      className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
-                      onClick={commitKey}
-                    >
-                      Save
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs mb-1">{T.region}</div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={regionField}
-                      onChange={(e) =>
-                        setRegionField(e.currentTarget.value)
-                      }
-                      onBlur={commitRegion}
-                      className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                      placeholder="westeurope, eastus, ..."
-                    />
-                    <button
-                      type="button"
-                      className="px-2 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-xs"
-                      onClick={commitRegion}
-                    >
-                      Save
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 items-end sm:col-span-2">
-                  <button
-                    type="button"
-                    onClick={fetchAzureVoices}
-                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
-                  >
-                    {T.fetchVoices}
-                  </button>
-                  <select
-                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    value={azureVoiceShortName}
-                    onChange={(e) =>
-                      setAzureVoiceShortName(e.target.value)
-                    }
-                  >
-                    <option value="">{T.choose}</option>
-                    {azureVoices.map((v) => (
-                      <option
-                        key={v.ShortName || v.shortName}
-                        value={v.ShortName || v.shortName}
-                      >
-                        {v.LocalName || v.Name || v.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-
-            {isBrowser && (
-              <div className="sm:col-span-2">
-                <div className="text-xs mb-1">Browser voice</div>
-                <div className="flex gap-2">
-                  <select
-                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                    value={browserVoiceName || voices[0]?.name || ""}
-                    onChange={(e) => setBrowserVoiceName(e.target.value)}
-                  >
-                    {voices.length === 0 && (
-                      <option value="">(No voices found yet)</option>
-                    )}
-                    {voices.map((v) => (
-                      <option key={v.name} value={v.name}>
-                        {v.name} ({v.lang})
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
-                    onClick={() => {
-                      try {
-                        window.speechSynthesis?.getVoices?.();
-                      } catch {}
-                    }}
-                  >
-                    Refresh
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <div className="text-sm mb-2">Test voice</div>
-            <button
-              className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500"
-              onClick={() =>
-                playText(
-                  direction === "EN2LT"
-                    ? "Sveiki! Kaip sekasi?"
-                    : "Hello! How are you?"
-                )
-              }
-            >
-              Play sample
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   /* ------------------------------ RENDER --------------------------------- */
 
+  const contentOffset = HEADER_H + (page === "library" ? DOCK_H : 0);
+
   return (
-    <>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100">
-        <Header T={T} cn={cn} />
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <Header T={T} cn={cn} />
+
+      {page === "library" && (
         <SearchDock
           SearchBox={SearchBox}
           sortMode={sortMode}
@@ -1138,18 +924,14 @@ export default function App() {
           page={page}
           setPage={setPage}
         />
+      )}
 
+      <main style={{ paddingTop: contentOffset }}>
         {page === "library" ? (
           <LibraryView
             T={T}
             rows={rows}
             setRows={setRows}
-            fetchStarter={fetchStarter}
-            installNumbersOnly={installNumbersOnly}
-            importJsonFile={importJsonFile}
-            clearLibrary={clearLibrary}
-            dupeResults={dupeResults}
-            scanDupes={scanDupes}
             normalizeRag={normalizeRag}
             sortMode={sortMode}
             direction={direction}
@@ -1170,7 +952,26 @@ export default function App() {
             }}
           />
         ) : page === "settings" ? (
-          <SettingsView />
+          <SettingsView
+            T={T}
+            direction={direction}
+            setDirection={setDirection}
+            ttsProvider={ttsProvider}
+            setTtsProvider={setTtsProvider}
+            azureKey={azureKey}
+            setAzureKey={setAzureKey}
+            azureRegion={azureRegion}
+            setAzureRegion={setAzureRegion}
+            azureVoices={azureVoices}
+            setAzureVoices={setAzureVoices}
+            azureVoiceShortName={azureVoiceShortName}
+            setAzureVoiceShortName={setAzureVoiceShortName}
+            browserVoiceName={browserVoiceName}
+            setBrowserVoiceName={setBrowserVoiceName}
+            voices={voices}
+            playText={playText}
+            fetchStarter={fetchStarter}
+          />
         ) : (
           <>
             <HomeView
@@ -1192,70 +993,72 @@ export default function App() {
             )}
           </>
         )}
+      </main>
 
-        {addOpen && (
+      {addOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={isEditing ? T.edit : T.addEntry}
+          onPointerDown={() => {
+            setAddOpen(false);
+            setEditRowId(null);
+            if (document.activeElement instanceof HTMLElement)
+              document.activeElement.blur();
+          }}
+        >
           <div
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-label={isEditing ? T.edit : T.addEntry}
-            onPointerDown={() => {
-              setAddOpen(false);
-              setEditRowId(null);
-              if (document.activeElement instanceof HTMLElement)
-                document.activeElement.blur();
-            }}
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-lg font-semibold">
-                  {isEditing ? T.edit : T.addEntry}
-                </div>
-                <button
-                  className="px-2 py-1 rounded-md bg-zinc-800"
-                  onClick={() => {
-                    setAddOpen(false);
-                    setEditRowId(null);
-                  }}
-                >
-                  Close
-                </button>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-lg font-semibold">
+                {isEditing ? T.edit : T.addEntry}
               </div>
-              <AddForm
-                tab={tab}
-                T={T}
-                genId={genId}
-                nowTs={nowTs}
-                normalizeRag={normalizeRag}
-                direction={direction}
-                mode={isEditing ? "edit" : "add"}
-                initialRow={editingRow || undefined}
-                onSubmit={(row) => {
-                  if (isEditing) {
-                    setRows((prev) =>
-                      prev.map((r) => (r._id === row._id ? row : r))
-                    );
-                  } else {
-                    setRows((prev) => [row, ...prev]);
-                    setSortMode("Newest");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                    setTimeout(() => setSortMode("RAG"), 0);
-                  }
+              <button
+                className="px-2 py-1 rounded-md bg-zinc-800 select-none"
+                onClick={() => {
                   setAddOpen(false);
                   setEditRowId(null);
                 }}
-                onCancel={() => {
-                  setAddOpen(false);
-                  setEditRowId(null);
-                }}
-              />
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+              >
+                Close
+              </button>
             </div>
+            <AddForm
+              tab={tab}
+              T={T}
+              genId={genId}
+              nowTs={nowTs}
+              normalizeRag={normalizeRag}
+              direction={direction}
+              mode={isEditing ? "edit" : "add"}
+              initialRow={editingRow || undefined}
+              onSubmit={(row) => {
+                if (isEditing) {
+                  setRows((prev) =>
+                    prev.map((r) => (r._id === row._id ? row : r))
+                  );
+                } else {
+                  setRows((prev) => [row, ...prev]);
+                  setSortMode("Newest");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  setTimeout(() => setSortMode("RAG"), 0);
+                }
+                setAddOpen(false);
+                setEditRowId(null);
+              }}
+              onCancel={() => {
+                setAddOpen(false);
+                setEditRowId(null);
+              }}
+            />
           </div>
-        )}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }
