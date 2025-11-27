@@ -10,15 +10,8 @@ export default function SearchDock({
   T,
   offsetTop = 56,
   page,
-  setPage,
 }) {
   const isLibrary = page === "library";
-
-  const tabs = [
-    { id: "home", label: T.navHome },
-    { id: "library", label: T.navLibrary },
-    { id: "settings", label: T.navSettings },
-  ];
 
   return (
     <div
@@ -26,36 +19,10 @@ export default function SearchDock({
       style={{ top: offsetTop }}
     >
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 space-y-2">
-        {/* Top row: nav pills */}
-        <div className="flex justify-center sm:justify-start">
-          <nav className="inline-flex rounded-full bg-zinc-900 p-1 text-xs sm:text-sm">
-            {tabs.map((tab) => {
-              const active = page === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  className={cn(
-                    "px-3 sm:px-4 py-1.5 rounded-full font-medium transition",
-                    active
-                      ? "bg-emerald-500 text-zinc-950 shadow"
-                      : "text-zinc-300 hover:bg-zinc-800"
-                  )}
-                  onClick={() => setPage(tab.id)}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onTouchStart={(e) => e.preventDefault()}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Library-only: search + sort */}
+        {/* LIBRARY ONLY */}
         {isLibrary && (
           <div className="space-y-2 pb-1">
-            {/* Search gets whole row */}
+            {/* Search */}
             <div className="flex">
               <SearchBox placeholder={placeholder} />
             </div>
@@ -70,7 +37,7 @@ export default function SearchDock({
                     key={mode}
                     type="button"
                     className={cn(
-                      "px-2.5 py-1 rounded-full border text-xs sm:text-sm",
+                      "px-2.5 py-1 rounded-full border text-xs sm:text-sm select-none",
                       active
                         ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
                         : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
