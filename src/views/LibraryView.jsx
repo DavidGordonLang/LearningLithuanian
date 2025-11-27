@@ -118,8 +118,6 @@ export default function LibraryView({
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-      <div style={{ height: 56 + 112 }} />
-
       <h2 className="text-2xl font-bold mb-4">{T.libraryTitle}</h2>
 
       <div className="mb-3 text-sm text-zinc-400">
@@ -150,6 +148,8 @@ export default function LibraryView({
                     type="button"
                     className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none"
                     onClick={() => cycleRag(r._id)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.preventDefault()}
                   >
                     {normalizeRag(r["RAG Icon"])}
                   </button>
@@ -191,6 +191,8 @@ export default function LibraryView({
                       type="button"
                       className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium select-none"
                       onClick={() => onEditRow && onEditRow(r._id)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onTouchStart={(e) => e.preventDefault()}
                     >
                       {T.edit}
                     </button>
@@ -202,6 +204,8 @@ export default function LibraryView({
                           removePhrase(r._id);
                         }
                       }}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onTouchStart={(e) => e.preventDefault()}
                     >
                       {T.delete}
                     </button>
@@ -213,19 +217,25 @@ export default function LibraryView({
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
                       <div>
-                        <span className="text-zinc-500">{T.usage}: </span>
+                        <span className="text-zinc-500">
+                          {T.usage}:{" "}
+                        </span>
                         {r.Usage}
                       </div>
                     )}
                     {r.Notes && (
                       <div>
-                        <span className="text-zinc-500">{T.notes}: </span>
+                        <span className="text-zinc-500">
+                          {T.notes}:{" "}
+                        </span>
                         {r.Notes}
                       </div>
                     )}
                     {r.Category && (
                       <div>
-                        <span className="text-zinc-500">{T.category}: </span>
+                        <span className="text-zinc-500">
+                          {T.category}:{" "}
+                        </span>
                         {r.Category}
                       </div>
                     )}
