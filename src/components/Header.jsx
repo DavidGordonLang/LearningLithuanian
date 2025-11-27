@@ -1,8 +1,8 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-export default function Header({ T, page, setPage }) {
+const Header = forwardRef(function Header({ T, page, setPage }, ref) {
   const tabs = [
     { id: "home", label: T.navHome },
     { id: "library", label: T.navLibrary },
@@ -11,6 +11,7 @@ export default function Header({ T, page, setPage }) {
 
   return (
     <header
+      ref={ref}
       className={cn(
         "sticky top-0 z-[10000] bg-zinc-950/95 backdrop-blur border-b border-zinc-800"
       )}
@@ -55,4 +56,6 @@ export default function Header({ T, page, setPage }) {
       </div>
     </header>
   );
-}
+});
+
+export default Header;
