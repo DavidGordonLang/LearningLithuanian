@@ -10,7 +10,7 @@ export default function LibraryView({
   direction,
   playText,
   removePhrase,
-  onEditRow, // provided by App.jsx
+  onEditRow,
 }) {
   const [expanded, setExpanded] = useState(new Set());
 
@@ -66,7 +66,6 @@ export default function LibraryView({
     );
   }
 
-  // Long-press handler for audio, with extra guards to avoid text selection.
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -118,16 +117,16 @@ export default function LibraryView({
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-      <h2 className="text-2xl font-bold mb-4">{T.libraryTitle}</h2>
 
-      <div className="mb-3 text-sm text-zinc-400">
+      {/* REMOVED THE DEFAULT TOP MARGIN */}
+      <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
+
+      <div className="mt-1 mb-3 text-sm text-zinc-400">
         {filteredRows.length} / {rows.length} {T.phrases.toLowerCase()}
       </div>
 
       {filteredRows.length === 0 ? (
-        <p className="text-sm text-zinc-400">
-          No entries match your search.
-        </p>
+        <p className="text-sm text-zinc-400">No entries match your search.</p>
       ) : (
         <div className="space-y-2">
           {filteredRows.map((r) => {
@@ -143,7 +142,6 @@ export default function LibraryView({
               >
                 {/* Top Row */}
                 <div className="flex items-start gap-3">
-                  {/* RAG */}
                   <button
                     type="button"
                     className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none"
@@ -154,7 +152,6 @@ export default function LibraryView({
                     {normalizeRag(r["RAG Icon"])}
                   </button>
 
-                  {/* Text */}
                   <div
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => toggleExpand(r._id)}
@@ -177,7 +174,6 @@ export default function LibraryView({
                     )}
                   </div>
 
-                  {/* Buttons */}
                   <div className="flex flex-col gap-1 items-end">
                     <button
                       type="button"
@@ -212,30 +208,23 @@ export default function LibraryView({
                   </div>
                 </div>
 
-                {/* Expanded Section */}
                 {isOpen && (
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
                       <div>
-                        <span className="text-zinc-500">
-                          {T.usage}:{" "}
-                        </span>
+                        <span className="text-zinc-500">{T.usage}: </span>
                         {r.Usage}
                       </div>
                     )}
                     {r.Notes && (
                       <div>
-                        <span className="text-zinc-500">
-                          {T.notes}:{" "}
-                        </span>
+                        <span className="text-zinc-500">{T.notes}: </span>
                         {r.Notes}
                       </div>
                     )}
                     {r.Category && (
                       <div>
-                        <span className="text-zinc-500">
-                          {T.category}:{" "}
-                        </span>
+                        <span className="text-zinc-500">{T.category}: </span>
                         {r.Category}
                       </div>
                     )}
