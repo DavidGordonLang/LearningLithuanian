@@ -1,15 +1,23 @@
 import React from "react";
 
-export default function Header({ T, cn }) {
+const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+export default function Header({ T, page, setPage }) {
+  const tabs = [
+    { id: "home", label: T.navHome },
+    { id: "library", label: T.navLibrary },
+    { id: "settings", label: T.navSettings },
+  ];
+
   return (
     <header
       className={cn(
-        "sticky top-0 z-[10000] bg-zinc-950/95 backdrop-blur",
-        "border-b border-zinc-800"
+        "sticky top-0 z-[10000] bg-zinc-950/95 backdrop-blur border-b border-zinc-800"
       )}
     >
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3">
-        <div className="flex items-baseline gap-3">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-3 pb-1">
+        {/* App Title */}
+        <div className="flex items-baseline gap-3 mb-2">
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
             <span className="text-white">{T.appTitle1}</span>{" "}
             <span className="text-emerald-500">{T.appTitle2}</span>
@@ -18,6 +26,32 @@ export default function Header({ T, cn }) {
             {T.subtitle}
           </span>
         </div>
+
+        {/* NAVIGATION PILLS */}
+        <nav className="flex justify-center sm:justify-start">
+          <div className="inline-flex rounded-full bg-zinc-900 p-1 text-xs sm:text-sm">
+            {tabs.map((tab) => {
+              const active = page === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={cn(
+                    "px-3 sm:px-4 py-1.5 rounded-full font-medium transition select-none",
+                    active
+                      ? "bg-emerald-500 text-zinc-950 shadow"
+                      : "text-zinc-300 hover:bg-zinc-800"
+                  )}
+                  onClick={() => setPage(tab.id)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onTouchStart={(e) => e.preventDefault()}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     </header>
   );
