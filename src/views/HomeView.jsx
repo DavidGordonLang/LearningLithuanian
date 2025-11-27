@@ -4,7 +4,7 @@ export default function HomeView({
   direction,
   setDirection,
   playText,
-  onOpenAddForm, // optional
+  onOpenAddForm,
   setRows,
   genId,
   nowTs,
@@ -19,14 +19,11 @@ export default function HomeView({
   const [enNatural, setEnNatural] = useState("");
   const [phonetics, setPhonetics] = useState("");
 
-  const [gender, setGender] = useState("neutral"); // neutral | male | female
-  const [tone, setTone] = useState("friendly"); // friendly | neutral | polite
+  const [gender, setGender] = useState("neutral");
+  const [tone, setTone] = useState("friendly");
 
   const isEnToLt = direction === "EN2LT";
 
-  /* -------------------------------------------------------------
-     API CALL
-  ------------------------------------------------------------- */
   async function handleTranslate() {
     const text = input.trim();
     if (!text) return;
@@ -67,9 +64,6 @@ export default function HomeView({
     }
   }
 
-  /* -------------------------------------------------------------
-     CLEAR
-  ------------------------------------------------------------- */
   function handleClear() {
     setInput("");
     setLtOut("");
@@ -78,9 +72,6 @@ export default function HomeView({
     setPhonetics("");
   }
 
-  /* -------------------------------------------------------------
-     SAVE TO LIBRARY
-  ------------------------------------------------------------- */
   function handleSaveToLibrary() {
     if (!ltOut || !enLiteral) return;
     if (!setRows || !genId || !nowTs) return;
@@ -126,9 +117,6 @@ export default function HomeView({
     showToast?.("Saved to library ✓");
   }
 
-  /* -------------------------------------------------------------
-     SEGMENTED CONTROL COMPONENT
-  ------------------------------------------------------------- */
   function Segmented({ value, onChange, options }) {
     return (
       <div className="flex w-full bg-zinc-800 border border-zinc-700 rounded-xl overflow-hidden">
@@ -159,13 +147,11 @@ export default function HomeView({
     );
   }
 
-  /* =============================================================
-     RENDER
-  ============================================================= */
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
-      {/* Header */}
-      <div className="mb-4">
+
+      {/* REMOVED TOP MARGIN HERE */}
+      <div className="">
         <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
         <p className="text-sm text-zinc-400 mt-1">
           Draft the phrase, tune the tone, hear it spoken, then save it to your
@@ -173,10 +159,9 @@ export default function HomeView({
         </p>
       </div>
 
-      {/* Optional Add Phrase button */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="mb-6 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none"
+          className="mt-4 mb-6 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none"
           onClick={() => onOpenAddForm()}
           onMouseDown={(e) => e.preventDefault()}
           onTouchStart={(e) => e.preventDefault()}
@@ -185,8 +170,9 @@ export default function HomeView({
         </button>
       )}
 
+      {/* Everything else unchanged */}
       {/* Learning direction */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4 mb-4">
         <div className="text-sm font-semibold mb-2">Learning direction</div>
         <div className="flex gap-3 flex-wrap">
           <button
@@ -220,7 +206,7 @@ export default function HomeView({
         </div>
       </div>
 
-      {/* Speaking to… */}
+      {/* Speaking to */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <Segmented
