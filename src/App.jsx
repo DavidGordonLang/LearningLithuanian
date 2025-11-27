@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, {
   useEffect,
   useMemo,
@@ -36,7 +37,7 @@ const STARTERS = {
 };
 
 const LEVEL_STEP = 2500;
-const XP_PER_CORRECT = 50;
+const XP_PER_CORRECT = 50; // kept for now in case we reintroduce quiz later
 
 /* ============================================================================
    UI STRINGS
@@ -417,16 +418,15 @@ export default function App() {
     return () => window.removeEventListener("resize", onR);
   }, []);
 
-  const WIDE = width >= 1024;
+  const WIDE = width >= 1024; // reserved for future layout tweaks
   const HEADER_H = 56;
   const DOCK_H = 112;
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
-  console.log("[LT APP] rows in store:", rows.length, rows);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
-  const [tab, setTab] = useState("Phrases");
+  const [tab, setTab] = useState("Phrases"); // used by AddForm; tab UI can be re-added later
 
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
@@ -547,7 +547,7 @@ export default function App() {
   }
 
   /* ============================================================================
-     LIBRARY FILTERING (FOR QUIZ)
+     LIBRARY FILTERING (for potential future use)
      ========================================================================== */
 
   const qNorm = (qFilter || "").trim().toLowerCase();
@@ -702,182 +702,17 @@ export default function App() {
   }
 
   /* ============================================================================
-     QUIZ
-     ========================================================================== */
-
-  const [quizOn, setQuizOn] = useState(false);
-  const [quizQs, setQuizQs] = useState([]);
-  const [quizIdx, setQuizIdx] = useState(0);
-  const [quizAnswered, setQuizAnswered] = useState(false);
-  const [quizChoice, setQuizChoice] = useState(null);
-  const [quizOptions, setQuizOptions] = useState([]);
-
-  function computeQuizPool(allRows, targetSize = 10) {
-    const withPairs = allRows.filter((r) => r.English && r.Lithuanian);
-    const red = withPairs.filter(
-      (r) => normalizeRag(r["RAG Icon"]) === "🔴"
-    );
-    const amb = withPairs.filter(
-      (r) => normalizeRag(r["RAG Icon"]) === "🟠"
-    );
-    const grn = withPairs.filter(
-      (r) => normalizeRag(r["RAG Icon"]) === "🟢"
-    );
-
-    const needR = Math.min(
-      Math.max(5, Math.floor(targetSize * 0.5)),
-      red.length || 0
-    );
-    const needA = Math.min(
-      Math.max(4, Math.floor(targetSize * 0.4)),
-      amb.length || 0
-    );
-    const needG = Math.min(
-      Math.max(1, Math.floor(targetSize * 0.1)),
-      grn.length || 0
-    );
-
-    let picked = [
-      ...sample(red, needR),
-      ...sample(amb, needA),
-      ...sample(grn, needG),
-    ];
-    while (picked.length < targetSize) {
-      const leftovers = withPairs.filter((r) => !picked.includes(r));
-      if (!leftovers.length) break;
-      picked.push(leftovers[(Math.random() * leftovers.length) | 0]);
-    }
-    return shuffle(picked).slice(0, targetSize);
-  }
-
-  function startQuiz() {
-    if (rows.length < 4) {
-      alert("Add more entries first (need at least 4).");
-      return;
-    }
-    const pool = computeQuizPool(rows, 10);
-    if (!pool.length) {
-      alert("No quiz candidates found.");
-      return;
-    }
-    setQuizQs(pool);
-    setQuizIdx(0);
-    setQuizAnswered(false);
-    setQuizChoice(null);
-    const first = pool[0];
-    const correctLt = first.Lithuanian;
-    const distractors = sample(
-      pool.filter((r) => r !== first && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
-    setQuizOptions(shuffle([correctLt, ...distractors]));
-    setQuizOn(true);
-  }
-
-  function afterAnswerAdvance() {
-    const nextIdx = quizIdx + 1;
-    if (nextIdx >= quizQs.length) {
-      const today = todayKey();
-      if (streak.lastDate !== today) {
-        const inc =
-          streak.lastDate && daysBetween(streak.lastDate, today) === 1
-            ? streak.streak + 1
-            : 1;
-        setStreak({ streak: inc, lastDate: today });
-      }
-      setQuizOn(false);
-      return;
-    }
-    setQuizIdx(nextIdx);
-    setQuizAnswered(false);
-    setQuizChoice(null);
-    const item = quizQs[nextIdx];
-    const correctLt = item.Lithuanian;
-    const distractors = sample(
-      quizQs.filter((r) => r !== item && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
-    setQuizOptions(shuffle([correctLt, ...distractors]));
-  }
-
-  function bumpRagAfterAnswer(item, correct) {
-    const rag = normalizeRag(item["RAG Icon"]);
-    const st =
-      (item._qstat ||= {
-        red: { ok: 0, bad: 0 },
-        amb: { ok: 0, bad: 0 },
-        grn: { ok: 0, bad: 0 },
-      });
-
-    if (rag === "🔴") {
-      if (correct) {
-        st.red.ok = (st.red.ok || 0) + 1;
-        if (st.red.ok >= 5) {
-          item["RAG Icon"] = "🟠";
-          st.red.ok = st.red.bad = 0;
-        }
-      } else {
-        st.red.bad = (st.red.bad || 0) + 1;
-      }
-    } else if (rag === "🟠") {
-      if (correct) {
-        st.amb.ok = (st.amb.ok || 0) + 1;
-        if (st.amb.ok >= 5) {
-          item["RAG Icon"] = "🟢";
-          st.amb.ok = st.amb.bad = 0;
-        }
-      } else {
-        st.amb.bad = (st.amb.bad || 0) + 1;
-        if (st.amb.bad >= 3) {
-          item["RAG Icon"] = "🔴";
-          st.amb.ok = st.amb.bad = 0;
-        }
-      }
-    } else if (rag === "🟢") {
-      if (!correct) {
-        st.grn.bad = (st.grn.bad || 0) + 1;
-        item["RAG Icon"] = "🟠";
-        st.grn.ok = st.grn.bad = 0;
-      } else {
-        st.grn.ok = (st.grn.ok || 0) + 1;
-      }
-    }
-  }
-
-  async function answerQuiz(option) {
-    if (quizAnswered) return;
-    const item = quizQs[quizIdx];
-    const correct = option === item.Lithuanian;
-    setQuizChoice(option);
-    setQuizAnswered(true);
-    if (correct)
-      setXp((x) => (Number.isFinite(x) ? x : 0) + XP_PER_CORRECT);
-    await playText(item.Lithuanian, { slow: false });
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r === item || (r._id && item._id && r._id === item._id)) {
-          const clone = { ...r };
-          bumpRagAfterAnswer(clone, correct);
-          return clone;
-        }
-        return r;
-      })
-    );
-  }
-
-  /* ============================================================================
-     ADD / EDIT MODAL (Option B)
+     ADD / EDIT MODAL + TOAST
      ========================================================================== */
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
-// ---- Toast system ----
-const [toast, setToast] = useState("");
 
-function showToast(msg) {
-  setToast(msg);
-  setTimeout(() => setToast(""), 2200);
-}
+  const [toast, setToast] = useState("");
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2200);
+  }
 
   const editingRow = useMemo(
     () => rows.find((r) => r._id === editRowId) || null,
@@ -1170,66 +1005,32 @@ function showToast(msg) {
               setAddOpen(true);
             }}
           />
-       {page === "library" ? (
-  <LibraryView
-    T={T}
-    rows={rows}
-    setRows={setRows}
-    fetchStarter={fetchStarter}
-    installNumbersOnly={installNumbersOnly}
-    importJsonFile={importJsonFile}
-    clearLibrary={clearLibrary}
-    dupeResults={dupeResults}
-    scanDupes={scanDupes}
-    normalizeRag={normalizeRag}
-    sortMode={sortMode}
-    direction={direction}
-    playText={playText}
-    removePhrase={(id) => {
-      const idx = rows.findIndex((r) => r._id === id);
-      if (idx !== -1) {
-        const removeFromStore = usePhraseStore.getState().removePhrase;
-        removeFromStore(idx);
-      } else {
-        setRows((prev) => prev.filter((r) => r._id !== id));
-      }
-    }}
-    onEditRow={(id) => {
-      setEditRowId(id);
-      setAddOpen(true);
-    }}
-  />
-) : page === "settings" ? (
-  <SettingsView />
-) : (
-  <>
-    <HomeView
-      direction={direction}
-      setDirection={setDirection}
-      playText={playText}
-      setRows={setRows}
-      genId={genId}
-      nowTs={nowTs}
-      STR={STR}
-      cn={cn}
-      rows={rows}
-      showToast={showToast}
-    />
+        ) : page === "settings" ? (
+          <SettingsView />
+        ) : (
+          <>
+            <HomeView
+              direction={direction}
+              setDirection={setDirection}
+              playText={playText}
+              setRows={setRows}
+              genId={genId}
+              nowTs={nowTs}
+              STR={STR}
+              cn={cn}
+              rows={rows}
+              showToast={showToast}
+            />
 
-    {toast && (
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
-        {toast}
-      </div>
-    )}
-  </>
-)}
-
+            {toast && (
+              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
+                {toast}
+              </div>
+            )}
+          </>
         )}
 
-{addOpen && (
-
-
-
+        {addOpen && (
           <div
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
             role="dialog"
