@@ -871,6 +871,13 @@ export default function App() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
+// ---- Toast system ----
+const [toast, setToast] = useState("");
+
+function showToast(msg) {
+  setToast(msg);
+  setTimeout(() => setToast(""), 2200);
+}
 
   const editingRow = useMemo(
     () => rows.find((r) => r._id === editRowId) || null,
@@ -1166,17 +1173,18 @@ export default function App() {
         ) : page === "settings" ? (
           <SettingsView />
         ) : (
-          <HomeView
-            direction={direction}
-            setDirection={setDirection}
-            playText={playText}
-            setRows={setRows}
-            genId={genId}
-            nowTs={nowTs}
-            STR={STR}
-            cn={cn}
-          />
-        )}
+         <HomeView
+  direction={direction}
+  setDirection={setDirection}
+  playText={playText}
+  setRows={setRows}
+  genId={genId}
+  nowTs={nowTs}
+  STR={STR}
+  cn={cn}
+  rows={rows}            // NEW
+  showToast={showToast}  // NEW
+/>
 
         {addOpen && (
           <div
