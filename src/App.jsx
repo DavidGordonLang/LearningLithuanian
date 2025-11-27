@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, {
   useEffect,
   useMemo,
@@ -37,7 +36,7 @@ const STARTERS = {
 };
 
 const LEVEL_STEP = 2500;
-const XP_PER_CORRECT = 50; // kept for now in case we reintroduce quiz later
+const XP_PER_CORRECT = 50;
 
 /* ============================================================================
    UI STRINGS
@@ -418,15 +417,16 @@ export default function App() {
     return () => window.removeEventListener("resize", onR);
   }, []);
 
-  const WIDE = width >= 1024; // reserved for future layout tweaks
+  const WIDE = width >= 1024;
   const HEADER_H = 56;
   const DOCK_H = 112;
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
+  console.log("[LT APP] rows in store:", rows.length, rows);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
-  const [tab, setTab] = useState("Phrases"); // used by AddForm; tab UI can be re-added later
+  const [tab, setTab] = useState("Phrases");
 
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
@@ -547,7 +547,7 @@ export default function App() {
   }
 
   /* ============================================================================
-     LIBRARY FILTERING (for potential future use)
+     LIBRARY FILTERING (FOR QUIZ / FUTURE USE)
      ========================================================================== */
 
   const qNorm = (qFilter || "").trim().toLowerCase();
@@ -702,6 +702,170 @@ export default function App() {
   }
 
   /* ============================================================================
+     QUIZ (kept for now, can be wired back in later)
+     ========================================================================== */
+
+  const [quizOn, setQuizOn] = useState(false);
+  const [quizQs, setQuizQs] = useState([]);
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizAnswered, setQuizAnswered] = useState(false);
+  const [quizChoice, setQuizChoice] = useState(null);
+  const [quizOptions, setQuizOptions] = useState([]);
+
+  function computeQuizPool(allRows, targetSize = 10) {
+    const withPairs = allRows.filter((r) => r.English && r.Lithuanian);
+    const red = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🔴"
+    );
+    const amb = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🟠"
+    );
+    const grn = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🟢"
+    );
+
+    const needR = Math.min(
+      Math.max(5, Math.floor(targetSize * 0.5)),
+      red.length || 0
+    );
+    const needA = Math.min(
+      Math.max(4, Math.floor(targetSize * 0.4)),
+      amb.length || 0
+    );
+    const needG = Math.min(
+      Math.max(1, Math.floor(targetSize * 0.1)),
+      grn.length || 0
+    );
+
+    let picked = [
+      ...sample(red, needR),
+      ...sample(amb, needA),
+      ...sample(grn, needG),
+    ];
+    while (picked.length < targetSize) {
+      const leftovers = withPairs.filter((r) => !picked.includes(r));
+      if (!leftovers.length) break;
+      picked.push(leftovers[(Math.random() * leftovers.length) | 0]);
+    }
+    return shuffle(picked).slice(0, targetSize);
+  }
+
+  function startQuiz() {
+    if (rows.length < 4) {
+      alert("Add more entries first (need at least 4).");
+      return;
+    }
+    const pool = computeQuizPool(rows, 10);
+    if (!pool.length) {
+      alert("No quiz candidates found.");
+      return;
+    }
+    setQuizQs(pool);
+    setQuizIdx(0);
+    setQuizAnswered(false);
+    setQuizChoice(null);
+    const first = pool[0];
+    const correctLt = first.Lithuanian;
+    const distractors = sample(
+      pool.filter((r) => r !== first && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
+    setQuizOptions(shuffle([correctLt, ...distractors]));
+    setQuizOn(true);
+  }
+
+  function afterAnswerAdvance() {
+    const nextIdx = quizIdx + 1;
+    if (nextIdx >= quizQs.length) {
+      const today = todayKey();
+      if (streak.lastDate !== today) {
+        const inc =
+          streak.lastDate && daysBetween(streak.lastDate, today) === 1
+            ? streak.streak + 1
+            : 1;
+        setStreak({ streak: inc, lastDate: today });
+      }
+      setQuizOn(false);
+      return;
+    }
+    setQuizIdx(nextIdx);
+    setQuizAnswered(false);
+    setQuizChoice(null);
+    const item = quizQs[nextIdx];
+    const correctLt = item.Lithuanian;
+    const distractors = sample(
+      quizQs.filter((r) => r !== item && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
+    setQuizOptions(shuffle([correctLt, ...distractors]));
+  }
+
+  function bumpRagAfterAnswer(item, correct) {
+    const rag = normalizeRag(item["RAG Icon"]);
+    const st =
+      (item._qstat ||= {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      });
+
+    if (rag === "🔴") {
+      if (correct) {
+        st.red.ok = (st.red.ok || 0) + 1;
+        if (st.red.ok >= 5) {
+          item["RAG Icon"] = "🟠";
+          st.red.ok = st.red.bad = 0;
+        }
+      } else {
+        st.red.bad = (st.red.bad || 0) + 1;
+      }
+    } else if (rag === "🟠") {
+      if (correct) {
+        st.amb.ok = (st.amb.ok || 0) + 1;
+        if (st.amb.ok >= 5) {
+          item["RAG Icon"] = "🟢";
+          st.amb.ok = st.amb.bad = 0;
+        }
+      } else {
+        st.amb.bad = (st.amb.bad || 0) + 1;
+        if (st.amb.bad >= 3) {
+          item["RAG Icon"] = "🔴";
+          st.amb.ok = st.amb.bad = 0;
+        }
+      }
+    } else if (rag === "🟢") {
+      if (!correct) {
+        st.grn.bad = (st.grn.bad || 0) + 1;
+        item["RAG Icon"] = "🟠";
+        st.grn.ok = st.grn.bad = 0;
+      } else {
+        st.grn.ok = (st.grn.ok || 0) + 1;
+      }
+    }
+  }
+
+  async function answerQuiz(option) {
+    if (quizAnswered) return;
+    const item = quizQs[quizIdx];
+    const correct = option === item.Lithuanian;
+    setQuizChoice(option);
+    setQuizAnswered(true);
+    if (correct)
+      setXp((x) => (Number.isFinite(x) ? x : 0) + XP_PER_CORRECT);
+    await playText(item.Lithuanian, { slow: false });
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r === item || (r._id && item._id && r._id === item._id)) {
+          const clone = { ...r };
+          bumpRagAfterAnswer(clone, correct);
+          return clone;
+        }
+        return r;
+      })
+    );
+  }
+
+  /* ============================================================================
      ADD / EDIT MODAL + TOAST
      ========================================================================== */
 
@@ -709,6 +873,7 @@ export default function App() {
   const [editRowId, setEditRowId] = useState(null);
 
   const [toast, setToast] = useState("");
+
   function showToast(msg) {
     setToast(msg);
     setTimeout(() => setToast(""), 2200);
@@ -770,15 +935,14 @@ export default function App() {
     }
 
     return (
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24">
-        <div style={{ height: HEADER_H + DOCK_H }} />
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-24 pt-20">
         <h2 className="text-2xl font-bold mb-4">{T.settings}</h2>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-4">
           <div className="text-sm font-semibold mb-2">
             {T.direction}
           </div>
-          <div className="flex gap-6">
+          <div className="flex flex-col sm:flex-row gap-3">
             <label className="flex items-center gap-2">
               <input
                 type="radio"
@@ -1021,7 +1185,6 @@ export default function App() {
               rows={rows}
               showToast={showToast}
             />
-
             {toast && (
               <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
                 {toast}
@@ -1072,16 +1235,11 @@ export default function App() {
                 initialRow={editingRow || undefined}
                 onSubmit={(row) => {
                   if (isEditing) {
-                    // Update existing phrase by _id; timestamp is already updated in row
                     setRows((prev) =>
-                      prev.map((r) =>
-                        r._id === row._id ? row : r
-                      )
+                      prev.map((r) => (r._id === row._id ? row : r))
                     );
                   } else {
-                    // New phrase at the top
                     setRows((prev) => [row, ...prev]);
-                    // UX: briefly sort by Newest then revert to RAG
                     setSortMode("Newest");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     setTimeout(() => setSortMode("RAG"), 0);
