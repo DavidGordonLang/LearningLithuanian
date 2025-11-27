@@ -20,7 +20,7 @@ export default function HomeView({
   const [phonetics, setPhonetics] = useState("");
 
   const [gender, setGender] = useState("neutral"); // neutral | male | female
-  const [tone, setTone] = useState("friendly");    // friendly | neutral | polite
+  const [tone, setTone] = useState("friendly"); // friendly | neutral | polite
 
   const isEnToLt = direction === "EN2LT";
 
@@ -139,8 +139,10 @@ export default function HomeView({
               key={opt.value}
               type="button"
               onClick={() => onChange(opt.value)}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
               className={
-                "flex-1 px-3 py-2 text-sm font-medium transition-colors " +
+                "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none " +
                 (active
                   ? "bg-emerald-600 text-black"
                   : "bg-zinc-900 text-zinc-200 hover:bg-zinc-700") +
@@ -162,21 +164,22 @@ export default function HomeView({
   ============================================================= */
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
-      <div style={{ height: 56 + 112 }} />
-
       {/* Header */}
       <div className="mb-4">
         <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
         <p className="text-sm text-zinc-400 mt-1">
-          Draft the phrase, tune the tone, hear it spoken, then save it to your library.
+          Draft the phrase, tune the tone, hear it spoken, then save it to your
+          library.
         </p>
       </div>
 
       {/* Optional Add Phrase button */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="mb-6 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold"
+          className="mb-6 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none"
           onClick={() => onOpenAddForm()}
+          onMouseDown={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
         >
           + Add Phrase
         </button>
@@ -189,24 +192,28 @@ export default function HomeView({
           <button
             type="button"
             className={
-              "px-3 py-1.5 rounded-md text-sm border " +
+              "px-3 py-1.5 rounded-md text-sm border select-none " +
               (direction === "EN2LT"
                 ? "bg-emerald-600 border-emerald-500 text-black font-semibold"
                 : "bg-zinc-950 border-zinc-700 text-zinc-200")
             }
             onClick={() => setDirection("EN2LT")}
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
           >
             English → Lithuanian
           </button>
           <button
             type="button"
             className={
-              "px-3 py-1.5 rounded-md text-sm border " +
+              "px-3 py-1.5 rounded-md text-sm border select-none " +
               (direction === "LT2EN"
                 ? "bg-emerald-600 border-emerald-500 text-black font-semibold"
                 : "bg-zinc-950 border-zinc-700 text-zinc-200")
             }
             onClick={() => setDirection("LT2EN")}
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
           >
             Lithuanian → English
           </button>
@@ -244,7 +251,7 @@ export default function HomeView({
       {/* Input */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
         <label className="block text-sm mb-2">
-          {direction === "EN2LT"
+          {isEnToLt
             ? "What do you want to say in English?"
             : "Ką norite pasakyti lietuviškai?"}
         </label>
@@ -258,17 +265,21 @@ export default function HomeView({
         <div className="flex gap-3 flex-wrap">
           <button
             type="button"
-            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 font-semibold disabled:opacity-60"
+            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 font-semibold disabled:opacity-60 select-none"
             onClick={handleTranslate}
             disabled={translating || !input.trim()}
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
           >
             {translating ? "Translating…" : "Translate"}
           </button>
 
           <button
             type="button"
-            className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 font-semibold"
+            className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 font-semibold select-none"
             onClick={handleClear}
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
           >
             Clear
           </button>
@@ -280,22 +291,28 @@ export default function HomeView({
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
           <div>
             <label className="block text-sm mb-1">
-              {direction === "EN2LT" ? "Lithuanian" : "Lithuanian (base phrase)"}
+              {isEnToLt ? "Lithuanian" : "Lithuanian (base phrase)"}
             </label>
             <div className="text-lg font-semibold break-words">{ltOut}</div>
 
             {phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">{phonetics}</div>
+              <div className="text-sm text-zinc-400 mt-1">
+                {phonetics}
+              </div>
             )}
           </div>
 
           <div className="border-t border-zinc-800 pt-3 space-y-1 text-sm">
             <div>
-              <span className="font-semibold">English meaning (literal): </span>
+              <span className="font-semibold">
+                English meaning (literal):{" "}
+              </span>
               <span>{enLiteral}</span>
             </div>
             <div>
-              <span className="font-semibold">English meaning (natural): </span>
+              <span className="font-semibold">
+                English meaning (natural):{" "}
+              </span>
               <span>{enNatural}</span>
             </div>
           </div>
@@ -303,22 +320,28 @@ export default function HomeView({
           <div className="flex items-center gap-3 flex-wrap pt-2">
             <button
               type="button"
-              className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black"
+              className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black select-none"
               onClick={() => playText(ltOut)}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
             >
               ▶ Normal
             </button>
             <button
               type="button"
-              className="px-3 py-2 rounded-md bg-emerald-700 hover:bg-emerald-600 text-black"
+              className="px-3 py-2 rounded-md bg-emerald-700 hover:bg-emerald-600 text-black select-none"
               onClick={() => playText(ltOut, { slow: true })}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
             >
               🐢 Slow
             </button>
             <button
               type="button"
-              className="px-3 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 text-sm"
+              className="px-3 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 text-sm select-none"
               onClick={handleSaveToLibrary}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
             >
               Save to library
             </button>
