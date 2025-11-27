@@ -1173,7 +1173,7 @@ function showToast(msg) {
         ) : page === "settings" ? (
           <SettingsView />
         ) : (
-         <HomeView
+      <HomeView
   direction={direction}
   setDirection={setDirection}
   playText={playText}
@@ -1182,13 +1182,16 @@ function showToast(msg) {
   nowTs={nowTs}
   STR={STR}
   cn={cn}
-  rows={rows}            // NEW
-  showToast={showToast}  // NEW
-           {toast && (
+  rows={rows}
+  showToast={showToast}
+/>
+
+{toast && (
   <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
     {toast}
   </div>
 )}
+
 
 />
 
