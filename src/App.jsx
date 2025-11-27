@@ -1184,6 +1184,12 @@ function showToast(msg) {
   cn={cn}
   rows={rows}            // NEW
   showToast={showToast}  // NEW
+           {toast && (
+  <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
+    {toast}
+  </div>
+)}
+
 />
 
         {addOpen && (
