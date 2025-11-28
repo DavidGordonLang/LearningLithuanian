@@ -1,4 +1,3 @@
-// src/views/DuplicateScannerView.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -8,15 +7,12 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       ? document.getElementById("toast-root")
       : null;
 
-  // All duplicate groups: [{ key, items: [row,row,...] }]
   const [groups, setGroups] = useState([]);
   const [hasScanned, setHasScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
-  // Single undo snapshot (either delete or skip)
   const undoRef = useRef(null);
 
-  // Toast state
   const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
 
@@ -36,7 +32,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     setToast({ message, undo: true });
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
-      // if user ignores it, forget the undo snapshot
       undoRef.current = null;
     }, 3000);
   }
@@ -51,39 +46,32 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     setToast(null);
 
     if (snapshot.type === "delete") {
-      // Restore one deleted item globally
       window.dispatchEvent(
         new CustomEvent("restorePhrase", {
           detail: { item: snapshot.deletedItem },
         })
       );
 
-      // Restore the entire group snapshot exactly as it was before deletion
       setGroups((prev) => {
         const next = [...prev];
-
-        // remove any current group with same key
         const existingIndex = next.findIndex(
           (g) => g.key === snapshot.groupSnapshot.key
         );
         if (existingIndex !== -1) {
           next.splice(existingIndex, 1);
         }
-
         const insertIndex = Math.min(
           snapshot.groupIndex,
           Math.max(next.length, 0)
         );
         next.splice(insertIndex, 0, {
           key: snapshot.groupSnapshot.key,
-          // clone items to avoid accidental mutation
           items: [...snapshot.groupSnapshot.items],
         });
 
         return next;
       });
     } else if (snapshot.type === "skip") {
-      // Restore the skipped group
       setGroups((prev) => {
         const next = [...prev];
         const existingIndex = next.findIndex(
@@ -141,7 +129,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Delete + Skip handlers (with full-group snapshot for delete)
+     Delete + Skip handlers
      ============================================================ */
   function handleDelete(item, groupKey, itemIndex) {
     const groupIndex = groups.findIndex((g) => g.key === groupKey);
@@ -149,7 +137,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
     const groupSnapshot = groups[groupIndex];
 
-    // Save full snapshot of the group as it was before deletion
     undoRef.current = {
       type: "delete",
       deletedItem: item,
@@ -160,11 +147,8 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       groupIndex,
     };
 
-    // Remove globally
     removePhrase(item._id);
 
-    // Update local groups: remove just this item,
-    // and if only 1 left, drop the group entirely.
     setGroups((prev) => {
       const next = [...prev];
       const gIndex = next.findIndex((g) => g.key === groupKey);
@@ -176,7 +160,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       if (items.length > 1) {
         next[gIndex] = { ...group, items };
       } else {
-        // no longer a duplicate group
         next.splice(gIndex, 1);
       }
       return next;
@@ -212,7 +195,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Swipeable item
+     Swipeable item (lighter shadow version)
      ============================================================ */
   function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
@@ -259,7 +242,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
       const dx = lastX.current - startX.current;
       const width = ref.current?.offsetWidth || 300;
-      const threshold = width * 0.25; // 25% swipe → delete
+      const threshold = width * 0.25;
 
       if (Math.abs(dx) >= threshold) {
         const dir = dx > 0 ? 1 : -1;
@@ -288,7 +271,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
         : 0;
 
     return (
-      <div className="relative overflow-hidden rounded-lg border border-zinc-800">
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-800">
         {/* Delete track */}
         <div
           className="absolute inset-0 bg-zinc-800 flex items-center justify-center"
@@ -301,9 +284,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
             className="text-red-500 text-sm font-semibold"
             style={{
               opacity: isFading ? 1 : 0,
-              transform: isFading
-                ? "translateY(0px)"
-                : "translateY(6px)",
+              transform: isFading ? "translateY(0px)" : "translateY(6px)",
               transition: "opacity 0.3s ease, transform 0.3s ease",
             }}
           >
@@ -314,7 +295,15 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
         {/* Foreground card */}
         <article
           ref={ref}
-          className="relative z-10 bg-zinc-950 p-3 touch-pan-y"
+          className="
+            relative z-10 
+            bg-zinc-900/95 
+            border border-zinc-800 
+            rounded-2xl 
+            p-3 
+            shadow-[0_0_12px_rgba(0,0,0,0.15)]
+            touch-pan-y
+          "
           style={cardStyle}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -356,18 +345,30 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Group section
+     Duplicate group section
      ============================================================ */
   function DuplicateGroupSection({ group, index }) {
     return (
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+      <section
+        className="
+          bg-zinc-900/95 
+          border border-zinc-800 
+          rounded-2xl 
+          p-4 
+          shadow-[0_0_20px_rgba(0,0,0,0.25)]
+        "
+      >
         <div className="flex items-center justify-between mb-2">
           <div className="text-sm font-semibold">
             Group {index + 1} • {group.items.length} items
           </div>
           <button
             type="button"
-            className="text-xs px-3 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700"
+            className="
+              text-xs px-3 py-1 
+              rounded-xl 
+              bg-zinc-800 hover:bg-zinc-700
+            "
             onClick={() => handleSkipGroup(group.key)}
           >
             Skip group
@@ -393,11 +394,17 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
      ============================================================ */
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-28 relative">
-      {/* Toast via portal */}
+      {/* Toast portal */}
       {toast &&
         toastRoot &&
         createPortal(
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700 text-zinc-100 px-4 py-2 rounded-lg shadow-lg z-[9999] flex items-center gap-3">
+          <div className="
+            fixed bottom-24 left-1/2 -translate-x-1/2 
+            bg-zinc-900/95 border border-zinc-800 
+            text-zinc-100 px-4 py-2 
+            rounded-2xl shadow-lg z-[9999] 
+            flex items-center gap-3
+          ">
             <span className="text-sm">{toast.message}</span>
             {toast.undo && (
               <button
@@ -415,7 +422,10 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       <div className="flex items-center justify-between gap-2 mb-4 mt-2">
         <button
           type="button"
-          className="px-3 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 text-sm"
+          className="
+            px-3 py-2 rounded-xl 
+            bg-zinc-800 hover:bg-zinc-700 text-sm
+          "
           onClick={onBack}
         >
           ← Back to settings
@@ -423,7 +433,11 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
         <button
           type="button"
-          className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black text-sm font-semibold"
+          className="
+            px-3 py-2 rounded-xl 
+            bg-emerald-600 hover:bg-emerald-500 
+            text-black text-sm font-semibold
+          "
           onClick={scanDuplicates}
           disabled={isScanning}
         >
@@ -442,9 +456,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
         <div className="mb-4 text-sm text-zinc-300">
           {groups.length === 0
             ? "No duplicates found."
-            : `Found ${groups.length} active group${
-                groups.length !== 1 ? "s" : ""
-              }.`}
+            : `Found ${groups.length} active group${groups.length !== 1 ? "s" : ""}.`}
         </div>
       )}
 
