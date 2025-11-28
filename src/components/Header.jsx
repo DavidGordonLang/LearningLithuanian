@@ -1,3 +1,4 @@
+// src/components/Header.jsx
 import React, { forwardRef } from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -16,10 +17,9 @@ const Header = forwardRef(function Header({ T, page, setPage }, ref) {
         "sticky top-0 z-[10000] bg-zinc-950/95 backdrop-blur border-b border-zinc-800"
       )}
     >
-      {/* Reduced padding, removed all bottom spacing */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-2 pb-0">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-2 pb-1">
 
-        {/* Title row – removed mb-2 */}
+        {/* Title */}
         <div className="flex items-baseline gap-3">
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
             <span className="text-white">{T.appTitle1}</span>{" "}
@@ -30,7 +30,7 @@ const Header = forwardRef(function Header({ T, page, setPage }, ref) {
           </span>
         </div>
 
-        {/* Nav — added slight top spacing for breathing room, removed bottom gap */}
+        {/* Navigation */}
         <nav className="flex justify-center sm:justify-start mt-2">
           <div className="inline-flex rounded-full bg-zinc-900 p-1 text-xs sm:text-sm">
             {tabs.map((tab) => {
