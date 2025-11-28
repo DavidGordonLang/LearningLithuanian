@@ -26,6 +26,8 @@ const LSK_TTS_PROVIDER = "lt_tts_provider";
 const LSK_AZURE_KEY = "lt_azure_key";
 const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice";
+const LSK_STREAK = "lt_quiz_streak_v1";
+const LSK_XP = "lt_xp_v1";
 const LSK_SORT = "lt_sort_v1";
 const LSK_DIR = "lt_direction_v1";
 
@@ -34,6 +36,9 @@ const STARTERS = {
   LT2EN: "/data/starter_lt_to_en.json",
   COMBINED_OPTIONAL: "/data/starter_combined_dedup.json",
 };
+
+const LEVEL_STEP = 2500;
+const XP_PER_CORRECT = 50;
 
 /* ============================================================================
    UI STRINGS
@@ -46,145 +51,133 @@ const STR = {
     navHome: "Home",
     navLibrary: "Library",
     navSettings: "Settings",
-
-    heroTitle: "Say it right — then save it.",
-    heroBody:
-      "Draft the phrase, tune the tone, hear it spoken, then save it to your library.",
-    learningDirection: "Learning direction",
-    enToLt: "English → Lithuanian",
-    ltToEn: "Lithuanian → English",
-    speakingTo: "Speaking to…",
-    speakingNeutral: "Neutral",
-    speakingMale: "Male",
-    speakingFemale: "Female",
-    tone: "Tone",
-    toneFriendly: "Friendly",
-    toneNeutral: "Neutral",
-    tonePolite: "Polite",
-    inputLabelEn: "What do you want to say in English?",
-    inputLabelLt: "What do you want to say in Lithuanian?",
-    translate: "Translate",
-    clear: "Clear",
-    addToLibrary: "Add to library",
-    copiedToForm: "Copied to Add form",
-    addedToLibrary: "Added to library",
-    fieldRequired: "Please add a phrase first.",
-
-    libraryTitle: "Library",
-    libraryCount: (n) => `${n} phrases`,
-    search: "Search...",
+    startQuiz: "Start Quiz",
+    search: "Search…",
     sort: "Sort:",
     newest: "Newest",
     oldest: "Oldest",
     rag: "RAG",
-    noResults: "No results found.",
-    playLt: "LT",
-    playEn: "EN",
+    streak: "Streak",
+    level: "Level",
+    phrases: "Phrases",
+    questions: "Questions",
+    words: "Words",
+    numbers: "Numbers",
+    showDetails: "Show details",
+    hideDetails: "Hide details",
     edit: "Edit",
     delete: "Delete",
-
-    addEntry: "Add phrase",
-    editEntry: "Edit phrase",
-    enLabel: "English",
-    ltLabel: "Lithuanian",
-    phoneticsLabel: "Phonetics",
-    tagLabel: "Tag / Note",
-    ragLabel: "RAG status",
+    addEntry: "+ Add entry",
+    english: "English",
+    lithuanian: "Lithuanian",
+    phonetic: "Phonetic",
+    category: "Category",
+    usage: "Usage",
+    notes: "Notes",
+    ragLabel: "RAG",
+    sheet: "Sheet",
     save: "Save",
     cancel: "Cancel",
-
-    settingsTitle: "Settings",
-    directionHeading: "Learning direction",
-    directionEnToLt: "I’m learning Lithuanian (EN → LT)",
-    directionLtToEn: "I’m learning English (LT → EN)",
-
-    starterHeading: "Starter Pack",
-    starterButton: "Install starter pack",
-
-    ttsHeading: "Azure Speech / Browser (fallback)",
-    ttsProviderLabel: "Provider",
-    ttsProviderAzure: "Azure Speech",
-    ttsProviderBrowser: "Browser only",
-    ttsAzureKeyLabel: "Subscription Key",
-    ttsAzureRegionLabel: "Region",
-    ttsAzureFetchVoices: "Fetch voices",
-    ttsAzureVoiceLabel: "— choose —",
-    ttsBrowserVoiceLabel: "Browser voice",
-    ttsRateLabel: "Rate",
+    browserVoice: "Browser (fallback)",
+    azure: "Azure Speech",
+    subKey: "Subscription Key",
+    region: "Region",
+    voice: "Voice",
+    fetchVoices: "Fetch voices",
+    choose: "— choose —",
+    direction: "Learning direction",
+    en2lt: "I’m learning Lithuanian (EN → LT)",
+    lt2en: "I’m learning English (LT → EN)",
+    settings: "Settings",
+    libraryTitle: "Library",
+    installEN: 'Install "Learn Lithuanian" starter (EN → LT)',
+    installLT: 'Install "Learn English" starter (LT → EN)',
+    installNums: "Install Numbers pack",
+    importJSON: "Import JSON",
+    clearAll: "Clear library",
+    confirm: "Are you sure?",
+    dupFinder: "Duplicate finder",
+    scan: "Scan duplicates",
+    exactGroups: "Exact duplicates",
+    closeMatches: "Close matches",
+    removeSelected: "Remove selected",
+    similarity: "Similarity",
+    prompt: "Prompt",
+    chooseLT: "Choose the Lithuanian",
+    correct: "Correct!",
+    notQuite: "Not quite.",
+    nextQuestion: "Next Question",
+    score: "Score",
+    done: "Done",
+    retry: "Retry",
     providerNote: "Using your browser’s built-in voices. No key needed.",
   },
   LT2EN: {
-    appTitle1: "Lithuanian",
-    appTitle2: "Trainer",
-    subtitle: "Tap to play. Long-press to savour.",
-    navHome: "Home",
-    navLibrary: "Library",
-    navSettings: "Settings",
-
-    heroTitle: "Pasakyk teisingai — tada išsaugok.",
-    heroBody:
-      "Sukurk frazę, parink toną, išgirsk, kaip ji skamba, ir išsaugok savo bibliotekoje.",
-    learningDirection: "Mokymosi kryptis",
-    enToLt: "Anglų → Lietuvių",
-    ltToEn: "Lietuvių → Anglų",
-    speakingTo: "Su kuo kalbi…",
-    speakingNeutral: "Neutraliai",
-    speakingMale: "Vyrui",
-    speakingFemale: "Moteriai",
-    tone: "Tonas",
-    toneFriendly: "Draugiškas",
-    toneNeutral: "Neutralus",
-    tonePolite: "Mandagus",
-    inputLabelEn: "Ką nori pasakyti angliškai?",
-    inputLabelLt: "Ką nori pasakyti lietuviškai?",
-    translate: "Versti",
-    clear: "Išvalyti",
-    addToLibrary: "Pridėti į biblioteką",
-    copiedToForm: "Nukopijuota į pridėjimo formą",
-    addedToLibrary: "Pridėta į biblioteką",
-    fieldRequired: "Pirmiausia įrašyk frazę.",
-
-    libraryTitle: "Biblioteka",
-    libraryCount: (n) => `${n} frazės`,
-    search: "Paieška...",
-    sort: "Rikiuoti:",
-    newest: "Naujausios",
-    oldest: "Seniausios",
+    appTitle1: "Anglų",
+    appTitle2: "kalbos treniruoklis",
+    subtitle: "Paliesk, kad klausytum. Ilgai spausk – lėčiau.",
+    navHome: "Pagrindinis",
+    navLibrary: "Biblioteka",
+    navSettings: "Nustatymai",
+    startQuiz: "Pradėti viktoriną",
+    search: "Paieška…",
+    sort: "Rūšiuoti:",
+    newest: "Naujausi",
+    oldest: "Seniausi",
     rag: "RAG",
-    noResults: "Rezultatų nėra.",
-    playLt: "LT",
-    playEn: "EN",
+    streak: "Serija",
+    level: "Lygis",
+    phrases: "Frazės",
+    questions: "Klausimai",
+    words: "Žodžiai",
+    numbers: "Skaičiai",
+    showDetails: "Rodyti informaciją",
+    hideDetails: "Slėpti informaciją",
     edit: "Redaguoti",
-    delete: "Ištrinti",
-
-    addEntry: "Pridėti frazę",
-    editEntry: "Redaguoti frazę",
-    enLabel: "Angliškai",
-    ltLabel: "Lietuviškai",
-    phoneticsLabel: "Tarimas",
-    tagLabel: "Žyma / Pastaba",
-    ragLabel: "RAG būsena",
+    delete: "Šalinti",
+    addEntry: "+ Pridėti įrašą",
+    english: "Angliškai",
+    lithuanian: "Lietuviškai",
+    phonetic: "Tarimas",
+    category: "Kategorija",
+    usage: "Panaudojimas",
+    notes: "Pastabos",
+    ragLabel: "RAG",
+    sheet: "Skiltis",
     save: "Išsaugoti",
     cancel: "Atšaukti",
-
-    settingsTitle: "Nustatymai",
-    directionHeading: "Mokymosi kryptis",
-    directionEnToLt: "Mokausi lietuvių kalbos (EN → LT)",
-    directionLtToEn: "Mokausi anglų kalbos (LT → EN)",
-
-    starterHeading: "Pradinis rinkinys",
-    starterButton: "Įdiegti pradžios rinkinį",
-
-    ttsHeading: "Azure Speech / Naršyklė (atsarginis)",
-    ttsProviderLabel: "Tiekėjas",
-    ttsProviderAzure: "Azure Speech",
-    ttsProviderBrowser: "Tik naršyklė",
-    ttsAzureKeyLabel: "Prenumeratos raktas",
-    ttsAzureRegionLabel: "Regionas",
-    ttsAzureFetchVoices: "Gauti balsus",
-    ttsAzureVoiceLabel: "— pasirink —",
-    ttsBrowserVoiceLabel: "Naršyklės balsas",
-    ttsRateLabel: "Greitis",
+    browserVoice: "Naršyklė (atsarginis)",
+    azure: "Azure kalba",
+    subKey: "Prenumeratos raktas",
+    region: "Regionas",
+    voice: "Balsas",
+    fetchVoices: "Gauti balsus",
+    choose: "— pasirinkite —",
+    direction: "Mokymosi kryptis",
+    en2lt: "Mokausi lietuvių (EN → LT)",
+    lt2en: "Mokausi anglų (LT → EN)",
+    settings: "Nustatymai",
+    libraryTitle: "Biblioteka",
+    installEN: 'Įdiegti rinkinį „Mokausi lietuvių“ (EN → LT)',
+    installLT: 'Įdiegti rinkinį „Mokausi anglų“ (LT → EN)',
+    installNums: "Įdiegti skaičių paketą",
+    importJSON: "Importuoti JSON",
+    clearAll: "Išvalyti biblioteką",
+    confirm: "Ar tikrai?",
+    dupFinder: "Dublikatų paieška",
+    scan: "Skenuoti dublikatus",
+    exactGroups: "Tikslūs dublikatai",
+    closeMatches: "Artimos atitiktis",
+    removeSelected: "Pašalinti pažymėtus",
+    similarity: "Panašumas",
+    prompt: "Klausimas",
+    chooseLT: "Pasirinkite lietuvišką variantą",
+    correct: "Teisingai!",
+    notQuite: "Ne visai.",
+    nextQuestion: "Kitas klausimas",
+    score: "Rezultatas",
+    done: "Baigti",
+    retry: "Kartoti",
     providerNote: "Naudojami naršyklės balsai. Raktas nereikalingas.",
   },
 };
@@ -192,27 +185,107 @@ const STR = {
 /* ============================================================================
    HELPERS
    ========================================================================== */
+
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+const loadXP = () => {
+  try {
+    const v = Number(localStorage.getItem(LSK_XP) ?? "0");
+    return Number.isFinite(v) ? v : 0;
+  } catch {
+    return 0;
+  }
+};
+const saveXP = (xp) =>
+  localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
+
+const todayKey = () => new Date().toISOString().slice(0, 10);
+
+const loadStreak = () => {
+  try {
+    const s = JSON.parse(localStorage.getItem(LSK_STREAK) || "null");
+    return s && typeof s.streak === "number"
+      ? s
+      : { streak: 0, lastDate: "" };
+  } catch {
+    return { streak: 0, lastDate: "" };
+  }
+};
+const saveStreak = (s) =>
+  localStorage.setItem(LSK_STREAK, JSON.stringify(s));
+
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
 
 function normalizeRag(icon = "") {
-  const s = String(icon).toLowerCase();
-  if (s.includes("🔴") || s === "red") return "🔴";
-  if (s.includes("🟠") || ["amber", "orange", "yellow"].includes(s)) return "🟠";
-  if (s.includes("🟢") || s === "green") return "🟢";
+  const s = String(icon).trim().toLowerCase();
+  if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
+    return "🟠";
+  if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
+}
+
+function daysBetween(d1, d2) {
+  const a = new Date(d1 + "T00:00:00");
+  const b = new Date(d2 + "T00:00:00");
+  return Math.round((b - a) / 86400000);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function sample(arr, n) {
+  if (!arr.length || n <= 0) return [];
+  if (n >= arr.length) return shuffle(arr);
+  const idxs = new Set();
+  while (idxs.size < n) idxs.add((Math.random() * arr.length) | 0);
+  return [...idxs].map((i) => arr[i]);
+}
+
+function sim2(a = "", b = "") {
+  const s1 = (a + "").toLowerCase().trim();
+  const s2 = (b + "").toLowerCase().trim();
+  if (!s1 || !s2) return 0;
+  if (s1 === s2) return 1;
+  const grams = (s) => {
+    const g = [];
+    for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
+    return g;
+  };
+  const g1 = grams(s1);
+  const g2 = grams(s2);
+  const map = new Map();
+  g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
+  let inter = 0;
+  g2.forEach((x) => {
+    if (map.get(x)) {
+      inter++;
+      map.set(x, map.get(x) - 1);
+    }
+  });
+  return (2 * inter) / (g1.length + g2.length);
 }
 
 /* ============================================================================
    TTS
    ========================================================================== */
+
 function useVoices() {
   const [voices, setVoices] = useState([]);
   useEffect(() => {
     const refresh = () => {
       const v = window.speechSynthesis?.getVoices?.() || [];
-      setVoices([...v]);
+      setVoices([...v].sort((a, b) => a.name.localeCompare(b.name)));
     };
     refresh();
     window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
@@ -225,36 +298,39 @@ function useVoices() {
 function escapeXml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
+    .replace(/</g, "&lt/")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 
 function speakBrowser(text, voice, rate = 1) {
+  if (!window.speechSynthesis) {
+    alert("Speech synthesis not supported.");
+    return;
+  }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   if (voice) u.voice = voice;
+  u.lang = voice?.lang || "lt-LT";
   u.rate = rate;
   window.speechSynthesis.speak(u);
 }
 
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
-  const ssml = `<speak><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
+  const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+  const ssml = `<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
     text
   )}</prosody></voice></speak>`;
-  const res = await fetch(
-    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-    {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
-      },
-      body: ssml,
-    }
-  );
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": key,
+      "Content-Type": "application/ssml+xml",
+      "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+    },
+    body: ssml,
+  });
   if (!res.ok) throw new Error("Azure TTS failed");
   const blob = await res.blob();
   return URL.createObjectURL(blob);
@@ -263,11 +339,11 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 /* ============================================================================
    SEARCH BOX
    ========================================================================== */
+
 const SearchBox = memo(
   forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
-    const inputRef = useRef(null);
     const composingRef = useRef(false);
-
+    const inputRef = useRef(null);
     useImperativeHandle(ref, () => inputRef.current);
 
     useEffect(() => {
@@ -279,35 +355,49 @@ const SearchBox = memo(
 
     return (
       <div className="relative flex-1">
+        <label htmlFor="main-search" className="sr-only">
+          Search phrases
+        </label>
         <input
+          id="main-search"
           ref={inputRef}
+          defaultValue=""
           type="text"
+          inputMode="search"
+          enterKeyHint="search"
           placeholder={placeholder}
           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none select-none"
           autoComplete="off"
-          onCompositionStart={() => (composingRef.current = true)}
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          onCompositionStart={() => {
+            composingRef.current = true;
+          }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
-            startTransition(() => searchStore.setRaw(e.target.value));
+            startTransition(() => searchStore.setRaw(e.currentTarget.value));
           }}
           onInput={(e) => {
             if (!composingRef.current)
-              startTransition(() => searchStore.setRaw(e.target.value));
+              startTransition(() => searchStore.setRaw(e.currentTarget.value));
           }}
         />
-
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400"
+          tabIndex={-1}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 select-none"
           onMouseDown={(e) => e.preventDefault()}
           onTouchStart={(e) => e.preventDefault()}
           onClick={() => {
             const el = inputRef.current;
-            if (!el) return;
-            el.value = "";
-            el.focus();
-            startTransition(() => searchStore.clear());
+            if (el) {
+              el.value = "";
+              el.focus();
+              startTransition(() => searchStore.clear());
+            }
           }}
+          aria-label="Clear"
         >
           ×
         </button>
@@ -319,16 +409,32 @@ const SearchBox = memo(
 /* ============================================================================
    APP
    ========================================================================== */
+
 export default function App() {
   const [page, setPage] = useState("home");
 
-  // width tracking
+  // dynamic header measurement
+  const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const measure = () => {
+      const h = headerRef.current.getBoundingClientRect().height || 0;
+      setHeaderHeight(h);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
   const [width, setWidth] = useState(() => window.innerWidth);
   useEffect(() => {
     const onR = () => setWidth(window.innerWidth);
     window.addEventListener("resize", onR);
     return () => window.removeEventListener("resize", onR);
   }, []);
+  const WIDE = width >= 1024; // kept for future layout decisions, even if not used yet
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
@@ -341,42 +447,48 @@ export default function App() {
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
-  const qNorm = (qFilter || "").trim().toLowerCase();
 
-  // sort mode
   const [sortMode, setSortMode] = useState(
     () => localStorage.getItem(LSK_SORT) || "RAG"
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  // direction
   const [direction, setDirection] = useState(
     () => localStorage.getItem(LSK_DIR) || "EN2LT"
   );
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
-
   const T = STR[direction];
 
-  // TTS provider
+  const [xp, setXp] = useState(loadXP());
+  useEffect(() => saveXP(xp), [xp]);
+  useEffect(() => {
+    if (!Number.isFinite(xp)) setXp(0);
+  }, [xp]);
+  const level = Math.floor((Number.isFinite(xp) ? xp : 0) / LEVEL_STEP) + 1;
+  const levelProgress = (Number.isFinite(xp) ? xp : 0) % LEVEL_STEP;
+
+  const [streak, setStreak] = useState(loadStreak());
+  useEffect(() => saveStreak(streak), [streak]);
+
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
-  useEffect(() => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider), [
-    ttsProvider,
-  ]);
+  useEffect(
+    () => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider),
+    [ttsProvider]
+  );
 
-  // Azure config
   const [azureKey, setAzureKey] = useState(
     () => localStorage.getItem(LSK_AZURE_KEY) || ""
   );
   const [azureRegion, setAzureRegion] = useState(
-    () => localStorage.getItem(LSK_AZURE_REGION) || "westeurope"
+    () => localStorage.getItem(LSK_AZURE_REGION) || ""
   );
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
       return (
-        JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "{}")
+        JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
           ?.shortName || ""
       );
     } catch {
@@ -384,57 +496,51 @@ export default function App() {
     }
   });
 
-  useEffect(() => localStorage.setItem(LSK_AZURE_KEY, azureKey), [azureKey]);
-  useEffect(
-    () => localStorage.setItem(LSK_AZURE_REGION, azureRegion),
-    [azureRegion]
-  );
-  useEffect(
-    () =>
-      localStorage.setItem(
-        LSK_AZURE_VOICE,
-        JSON.stringify({ shortName: azureVoiceShortName })
-      ),
-    [azureVoiceShortName]
-  );
+  useEffect(() => {
+    localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
+  }, [azureKey]);
+  useEffect(() => {
+    localStorage.setItem(LSK_AZURE_REGION, azureRegion ?? "");
+  }, [azureRegion]);
+  useEffect(() => {
+    localStorage.setItem(
+      LSK_AZURE_VOICE,
+      JSON.stringify({ shortName: azureVoiceShortName })
+    );
+  }, [azureVoiceShortName]);
 
-  // browser voices
   const voices = useVoices();
   const [browserVoiceName, setBrowserVoiceName] = useState("");
-  const browserVoice = useMemo(() => {
-    if (browserVoiceName) {
-      return voices.find((v) => v.name === browserVoiceName) || voices[0];
-    }
-    return voices[0];
-  }, [voices, browserVoiceName]);
+  const browserVoice = useMemo(
+    () => voices.find((v) => v.name === browserVoiceName) || voices[0],
+    [voices, browserVoiceName]
+  );
 
-  // audio playback
+  // audio
   const audioRef = useRef(null);
-
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
         try {
           audioRef.current.pause();
-          if (audioRef.current.src?.startsWith("blob:"))
-            URL.revokeObjectURL(audioRef.current.src);
+          const src = audioRef.current.src || "";
+          if (src.startsWith("blob:")) URL.revokeObjectURL(src);
         } catch {}
         audioRef.current = null;
       }
-
       if (
         ttsProvider === "azure" &&
         azureKey &&
         azureRegion &&
         azureVoiceShortName
       ) {
-        const speed = slow ? "-40%" : "0%";
+        const delta = slow ? "-40%" : "0%";
         const url = await speakAzureHTTP(
           text,
           azureVoiceShortName,
           azureKey,
           azureRegion,
-          speed
+          delta
         );
         const a = new Audio(url);
         audioRef.current = a;
@@ -448,65 +554,76 @@ export default function App() {
       } else {
         speakBrowser(text, browserVoice, slow ? 0.6 : 1.0);
       }
-    } catch (err) {
-      alert("Voice error: " + err.message);
+    } catch (e) {
+      console.error(e);
+      alert("Voice error: " + (e?.message || e));
     }
   }
 
   /* ============================================================================
-     FILTERED LIBRARY
+     LIBRARY FILTERING (for future reuse, quiz, etc.)
      ========================================================================== */
+
+  const qNorm = (qFilter || "").trim().toLowerCase();
+  const entryMatchesQuery = (r) =>
+    !!qNorm &&
+    ((r.English || "").toLowerCase().includes(qNorm) ||
+      (r.Lithuanian || "").toLowerCase().includes(qNorm));
+
   const filtered = useMemo(() => {
     const base = qNorm
-      ? rows.filter(
-          (r) =>
-            r.English?.toLowerCase().includes(qNorm) ||
-            r.Lithuanian?.toLowerCase().includes(qNorm)
-        )
-      : rows;
-
-    const withMeta = base.map((r, i) => ({
-      ...r,
-      _idx: i,
-      _ts: r._ts || 0,
-      _rag: normalizeRag(r["RAG Icon"]),
-    }));
+      ? rows.filter(entryMatchesQuery)
+      : rows.filter((r) => r.Sheet === tab);
 
     if (sortMode === "Newest")
-      return [...withMeta].sort((a, b) => b._ts - a._ts);
+      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
     if (sortMode === "Oldest")
-      return [...withMeta].sort((a, b) => a._ts - b._ts);
+      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
 
-    const rank = { "🔴": 0, "🟠": 1, "🟢": 2 };
-    return [...withMeta].sort((a, b) => {
-      if (rank[a._rag] !== rank[b._rag]) return rank[a._rag] - rank[b._rag];
-      return a._idx - b._idx;
-    });
-  }, [rows, qNorm, sortMode]);
+    const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
+    return [...base].sort(
+      (a, b) =>
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
+        (order[normalizeRag(b["RAG Icon"])] ?? 1)
+    );
+  }, [rows, qNorm, sortMode, tab]);
 
   /* ============================================================================
-     IMPORT / STARTERS
+     IMPORT / STARTERS / DUPES
      ========================================================================== */
 
   async function mergeRows(newRows) {
-    const mapped = newRows
-      .map((r) => ({
-        English: r.English || "",
-        Lithuanian: r.Lithuanian || "",
-        Phonetic: r.Phonetic || "",
-        Category: r.Category || "",
-        Usage: r.Usage || "",
-        Notes: r.Notes || "",
-        "RAG Icon": normalizeRag(r["RAG Icon"]),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-          ? r.Sheet
-          : "Phrases",
-        _id: r._id || genId(),
-        _ts: r._ts || nowTs(),
-      }))
+    const cleaned = newRows
+      .map((r) => {
+        const safe = (v) => {
+          if (v == null) return "";
+          if (typeof v === "number" && !Number.isFinite(v)) return "";
+          return String(v).trim();
+        };
+        return {
+          English: safe(r.English),
+          Lithuanian: safe(r.Lithuanian),
+          Phonetic: safe(r.Phonetic),
+          Category: safe(r.Category),
+          Usage: safe(r.Usage),
+          Notes: safe(r.Notes),
+          "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
+          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+            ? r.Sheet
+            : "Phrases",
+          _id: r._id || genId(),
+          _ts: r._ts || nowTs(),
+          _qstat:
+            r._qstat || {
+              red: { ok: 0, bad: 0 },
+              amb: { ok: 0, bad: 0 },
+              grn: { ok: 0, bad: 0 },
+            },
+        };
+      })
       .filter((r) => r.English || r.Lithuanian);
 
-    setRows((prev) => [...mapped, ...prev]);
+    setRows((prev) => [...cleaned, ...prev]);
   }
 
   async function fetchStarter(kind) {
@@ -520,6 +637,32 @@ export default function App() {
     } catch (e) {
       alert("Starter error: " + e.message);
     }
+  }
+
+  async function installNumbersOnly() {
+    const urls = [
+      STARTERS.COMBINED_OPTIONAL,
+      STARTERS.EN2LT,
+      STARTERS.LT2EN,
+    ].filter(Boolean);
+    let found = [];
+    for (const url of urls) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const nums = data.filter((r) => String(r.Sheet) === "Numbers");
+          found = found.concat(nums);
+        }
+      } catch {}
+    }
+    if (!found.length) {
+      alert("No Numbers entries found in starter files.");
+      return;
+    }
+    await mergeRows(found);
+    alert(`Installed ${found.length} Numbers item(s).`);
   }
 
   async function importJsonFile(file) {
@@ -538,48 +681,210 @@ export default function App() {
     setRows([]);
   }
 
-  /* ============================================================================
-     DUPLICATE FINDER
-     ========================================================================== */
-
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
 
   function scanDupes() {
-    const exact = [];
     const map = new Map();
-
     rows.forEach((r, i) => {
       const key = `${r.English}|||${r.Lithuanian}`.toLowerCase().trim();
       map.set(key, (map.get(key) || []).concat(i));
     });
-
+    const exact = [];
     for (const arr of map.values()) {
       if (arr.length > 1) exact.push(arr);
     }
 
     const close = [];
-    for (let a = 0; a < rows.length; a++) {
-      for (let b = a + 1; b < rows.length; b++) {
-        const A = rows[a];
-        const B = rows[b];
-        const sim =
-          (sim2(A.English, B.English) +
-            sim2(A.Lithuanian, B.Lithuanian)) /
-          2;
-        if (sim >= 0.85) close.push([a, b, sim]);
+    const bySheet = rows.reduce((acc, r, i) => {
+      (acc[r.Sheet] ||= []).push({ r, i });
+      return acc;
+    }, {});
+    for (const list of Object.values(bySheet)) {
+      for (let a = 0; a < list.length; a++) {
+        for (let b = a + 1; b < list.length; b++) {
+          const A = list[a];
+          const B = list[b];
+          const s =
+            (sim2(A.r.English, B.r.English) +
+              sim2(A.r.Lithuanian, B.r.Lithuanian)) /
+            2;
+          if (s >= 0.85) close.push([A.i, B.i, s]);
+        }
       }
     }
-
     setDupeResults({ exact, close });
   }
 
   /* ============================================================================
-     ADD / EDIT + TOAST
+     QUIZ
      ========================================================================== */
+
+  const [quizOn, setQuizOn] = useState(false);
+  const [quizQs, setQuizQs] = useState([]);
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizAnswered, setQuizAnswered] = useState(false);
+  const [quizChoice, setQuizChoice] = useState(null);
+  const [quizOptions, setQuizOptions] = useState([]);
+
+  function computeQuizPool(allRows, targetSize = 10) {
+    const withPairs = allRows.filter((r) => r.English && r.Lithuanian);
+    const red = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🔴"
+    );
+    const amb = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🟠"
+    );
+    const grn = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🟢"
+    );
+
+    const needR = Math.min(
+      Math.max(5, Math.floor(targetSize * 0.5)),
+      red.length || 0
+    );
+    const needA = Math.min(
+      Math.max(4, Math.floor(targetSize * 0.4)),
+      amb.length || 0
+    );
+    const needG = Math.min(
+      Math.max(1, Math.floor(targetSize * 0.1)),
+      grn.length || 0
+    );
+
+    let picked = [
+      ...sample(red, needR),
+      ...sample(amb, needA),
+      ...sample(grn, needG),
+    ];
+    while (picked.length < targetSize) {
+      const leftovers = withPairs.filter((r) => !picked.includes(r));
+      if (!leftovers.length) break;
+      picked.push(leftovers[(Math.random() * leftovers.length) | 0]);
+    }
+    return shuffle(picked).slice(0, targetSize);
+  }
+
+  function startQuiz() {
+    if (rows.length < 4) {
+      alert("Add more entries first (need at least 4).");
+      return;
+    }
+    const pool = computeQuizPool(rows, 10);
+    if (!pool.length) {
+      alert("No quiz candidates found.");
+      return;
+    }
+    setQuizQs(pool);
+    setQuizIdx(0);
+    setQuizAnswered(false);
+    setQuizChoice(null);
+    const first = pool[0];
+    const correctLt = first.Lithuanian;
+    const distractors = sample(
+      pool.filter((r) => r !== first && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
+    setQuizOptions(shuffle([correctLt, ...distractors]));
+    setQuizOn(true);
+  }
+
+  function bumpRagAfterAnswer(item, correct) {
+    const rag = normalizeRag(item["RAG Icon"]);
+    const st =
+      (item._qstat ||= {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      });
+
+    if (rag === "🔴") {
+      if (correct) {
+        st.red.ok = (st.red.ok || 0) + 1;
+        if (st.red.ok >= 5) {
+          item["RAG Icon"] = "🟠";
+          st.red.ok = st.red.bad = 0;
+        }
+      } else {
+        st.red.bad = (st.red.bad || 0) + 1;
+      }
+    } else if (rag === "🟠") {
+      if (correct) {
+        st.amb.ok = (st.amb.ok || 0) + 1;
+        if (st.amb.ok >= 5) {
+          item["RAG Icon"] = "🟢";
+          st.amb.ok = st.amb.bad = 0;
+        }
+      } else {
+        st.amb.bad = (st.amb.bad || 0) + 1;
+        if (st.amb.bad >= 3) {
+          item["RAG Icon"] = "🔴";
+          st.amb.ok = st.amb.bad = 0;
+        }
+      }
+    } else if (rag === "🟢") {
+      if (!correct) {
+        st.grn.bad = (st.grn.bad || 0) + 1;
+        item["RAG Icon"] = "🟠";
+        st.grn.ok = st.grn.bad = 0;
+      } else {
+        st.grn.ok = (st.grn.ok || 0) + 1;
+      }
+    }
+  }
+
+  async function answerQuiz(option) {
+    if (quizAnswered) return;
+    const item = quizQs[quizIdx];
+    const correct = option === item.Lithuanian;
+    setQuizChoice(option);
+    setQuizAnswered(true);
+    if (correct)
+      setXp((x) => (Number.isFinite(x) ? x : 0) + XP_PER_CORRECT);
+    await playText(item.Lithuanian, { slow: false });
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r === item || (r._id && item._id && r._id === item._id)) {
+          const clone = { ...r };
+          bumpRagAfterAnswer(clone, correct);
+          return clone;
+        }
+        return r;
+      })
+    );
+  }
+
+  function afterAnswerAdvance() {
+    const nextIdx = quizIdx + 1;
+    if (nextIdx >= quizQs.length) {
+      const today = todayKey();
+      if (streak.lastDate !== today) {
+        const inc =
+          streak.lastDate && daysBetween(streak.lastDate, today) === 1
+            ? streak.streak + 1
+            : 1;
+        setStreak({ streak: inc, lastDate: today });
+      }
+      setQuizOn(false);
+      return;
+    }
+    setQuizIdx(nextIdx);
+    setQuizAnswered(false);
+    setQuizChoice(null);
+    const item = quizQs[nextIdx];
+    const correctLt = item.Lithuanian;
+    const distractors = sample(
+      quizQs.filter((r) => r !== item && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
+    setQuizOptions(shuffle([correctLt, ...distractors]));
+  }
+
+  /* ============================================================================
+     ADD / EDIT MODAL + TOAST
+     ========================================================================== */
+
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
-  const editingRow = rows.find((r) => r._id === editRowId) || null;
-
   const [toast, setToast] = useState("");
 
   function showToast(msg) {
@@ -587,7 +892,14 @@ export default function App() {
     setTimeout(() => setToast(""), 2200);
   }
 
+  const editingRow = useMemo(
+    () => rows.find((r) => r._id === editRowId) || null,
+    [rows, editRowId]
+  );
+  const isEditing = !!editingRow;
+
   useEffect(() => {
+    if (!addOpen) return;
     const onKey = (e) => {
       if (e.key === "Escape") {
         setAddOpen(false);
@@ -596,23 +908,28 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [addOpen]);
 
   useEffect(() => {
     if (!addOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => (document.body.style.overflow = prev);
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [addOpen]);
 
-  /* ============================================================================
-     RENDER
-     ========================================================================== */
+  /* ------------------------------ RENDER --------------------------------- */
+
+  // Header is sticky; we push content down by its actual measured height.
+  // SearchDock is rendered INSIDE <main> so Library content naturally sits under it.
+  const contentOffset = headerHeight || 0;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header T={T} page={page} setPage={setPage} />
+      <Header ref={headerRef} T={T} page={page} setPage={setPage} />
 
-      <main className="">
+      <main style={{ paddingTop: contentOffset }}>
         {page === "library" && (
           <SearchDock
             SearchBox={SearchBox}
@@ -620,7 +937,9 @@ export default function App() {
             setSortMode={setSortMode}
             placeholder={T.search}
             T={T}
+            offsetTop={headerHeight}
             page={page}
+            // setPage still passed, in case you ever re-add nav there
             setPage={setPage}
           />
         )}
@@ -628,15 +947,22 @@ export default function App() {
         {page === "library" ? (
           <LibraryView
             T={T}
-            rows={filtered}
+            rows={rows}
             setRows={setRows}
             normalizeRag={normalizeRag}
             sortMode={sortMode}
             direction={direction}
             playText={playText}
-            removePhrase={(id) =>
-              setRows((prev) => prev.filter((r) => r._id !== id))
-            }
+            removePhrase={(id) => {
+              const idx = rows.findIndex((r) => r._id === id);
+              if (idx !== -1) {
+                const removeFromStore =
+                  usePhraseStore.getState().removePhrase;
+                removeFromStore(idx);
+              } else {
+                setRows((prev) => prev.filter((r) => r._id !== id));
+              }
+            }}
             onEditRow={(id) => {
               setEditRowId(id);
               setAddOpen(true);
@@ -662,12 +988,6 @@ export default function App() {
             voices={voices}
             playText={playText}
             fetchStarter={fetchStarter}
-            importJsonFile={importJsonFile}
-            clearLibrary={clearLibrary}
-            scanDupes={scanDupes}
-            dupeResults={dupeResults}
-            installNumbersOnly={() => {}}
-            rows={rows}
           />
         ) : (
           <>
@@ -683,7 +1003,6 @@ export default function App() {
               rows={rows}
               showToast={showToast}
             />
-
             {toast && (
               <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
                 {toast}
@@ -698,10 +1017,12 @@ export default function App() {
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
+          aria-label={isEditing ? T.edit : T.addEntry}
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
-            document.activeElement?.blur?.();
+            if (document.activeElement instanceof HTMLElement)
+              document.activeElement.blur();
           }}
         >
           <div
@@ -710,7 +1031,7 @@ export default function App() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">
-                {editingRow ? T.editEntry : T.addEntry}
+                {isEditing ? T.edit : T.addEntry}
               </div>
               <button
                 className="px-2 py-1 rounded-md bg-zinc-800 select-none"
@@ -721,10 +1042,9 @@ export default function App() {
                 onMouseDown={(e) => e.preventDefault()}
                 onTouchStart={(e) => e.preventDefault()}
               >
-                ×
+                Close
               </button>
             </div>
-
             <AddForm
               tab={tab}
               T={T}
@@ -732,18 +1052,15 @@ export default function App() {
               nowTs={nowTs}
               normalizeRag={normalizeRag}
               direction={direction}
-              mode={editingRow ? "edit" : "add"}
+              mode={isEditing ? "edit" : "add"}
               initialRow={editingRow || undefined}
               onSubmit={(row) => {
-                if (editingRow) {
+                if (isEditing) {
                   setRows((prev) =>
                     prev.map((r) => (r._id === row._id ? row : r))
                   );
                 } else {
-                  setRows((prev) => [
-                    { ...row, _ts: nowTs() },
-                    ...prev,
-                  ]);
+                  setRows((prev) => [row, ...prev]);
                   setSortMode("Newest");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                   setTimeout(() => setSortMode("RAG"), 0);
