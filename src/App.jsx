@@ -480,6 +480,12 @@ export default function App() {
     };
   }, [addOpen]);
 
+  // NEW: shared open-add-form handler for Home + Library
+  function onOpenAddForm() {
+    setEditRowId(null);
+    setAddOpen(true);
+  }
+
   /* ============================================================================
      REMOVE PHRASE (shared)
      ========================================================================== */
@@ -540,6 +546,7 @@ export default function App() {
               setEditRowId(id);
               setAddOpen(true);
             }}
+            onOpenAddForm={onOpenAddForm}
           />
         ) : page === "settings" ? (
           <SettingsView
@@ -584,6 +591,7 @@ export default function App() {
               nowTs={nowTs}
               rows={rows}
               showToast={showToast}
+              onOpenAddForm={onOpenAddForm}
             />
             {toast && (
               <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
