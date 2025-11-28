@@ -18,6 +18,7 @@ import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
+import ChangeLogModal from "./components/ChangeLogModal";   // NEW
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
@@ -39,7 +40,7 @@ const STARTERS = {
 };
 
 /* ============================================================================
-   UI STRINGS
+   STRINGS
    ========================================================================== */
 const STR = {
   appTitle1: "Lithuanian",
@@ -53,7 +54,6 @@ const STR = {
   newest: "Newest",
   oldest: "Oldest",
   rag: "RAG",
-  phrases: "Phrases",
   confirm: "Are you sure?",
   english: "English",
   lithuanian: "Lithuanian",
@@ -174,9 +174,8 @@ const SearchBox = memo(
 
     useEffect(() => {
       const el = inputRef.current;
-      if (!el) return;
       const raw = searchStore.getRaw();
-      if (raw && el.value !== raw) el.value = raw;
+      if (el && raw && el.value !== raw) el.value = raw;
     }, []);
 
     return (
@@ -224,7 +223,7 @@ const SearchBox = memo(
    MAIN APP
    ========================================================================== */
 export default function App() {
-  /* ================= PAGE STATE ================= */
+  /* PAGE */
   const [page, setPage] = useState(
     () => localStorage.getItem(LSK_PAGE) || "home"
   );
@@ -242,22 +241,20 @@ export default function App() {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  /* ================= ROWS ================= */
+  /* ROWS */
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
-  /* ================= SORT ================= */
+  /* SORT */
   const [sortMode, setSortMode] = useState(
     () => localStorage.getItem(LSK_SORT) || "RAG"
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  /* ================= UI STRINGS ================= */
+  /* STRING BUNDLE */
   const T = STR;
 
-  /* ============================================================================
-     TTS PROVIDERS
-     ========================================================================== */
+  /* TTS */
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
@@ -284,7 +281,6 @@ export default function App() {
     }
   });
 
-  /* Persist Azure fields */
   useEffect(() => {
     localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
   }, [azureKey]);
@@ -352,17 +348,14 @@ export default function App() {
     }
   }
 
-  /* keep search store alive */
-  const qSub = useSyncExternalStore(
+  /* SEARCH SUBSCRIPTION */
+  useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
-  void qSub;
 
-  /* ============================================================================
-     IMPORT / STARTERS / MERGE
-     ========================================================================== */
+  /* IMPORT / STARTERS */
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -419,9 +412,7 @@ export default function App() {
     }
   }
 
-  /* ============================================================================
-     ADD / EDIT MODAL
-     ========================================================================== */
+  /* ADD / EDIT FORM */
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
   const [toast, setToast] = useState("");
@@ -458,15 +449,11 @@ export default function App() {
     };
   }, [addOpen]);
 
-  // NEW: open form
   function onOpenAddForm() {
     setEditRowId(null);
     setAddOpen(true);
   }
 
-  /* ============================================================================
-     DELETING
-     ========================================================================== */
   function removePhraseById(id) {
     const idx = rows.findIndex((r) => r._id === id);
     if (idx !== -1) {
@@ -477,9 +464,7 @@ export default function App() {
     }
   }
 
-  /* ============================================================================
-     RESTORE FROM DUPES
-     ========================================================================== */
+  /* DUPES RESTORE */
   useEffect(() => {
     function onRestore(e) {
       const { item } = e.detail;
@@ -489,9 +474,10 @@ export default function App() {
     return () => window.removeEventListener("restorePhrase", onRestore);
   }, [setRows]);
 
-  /* ============================================================================
-     RENDER
-     ========================================================================== */
+  /* CHANGE LOG MODAL */
+  const [showChangeLog, setShowChangeLog] = useState(false);
+
+  /* RENDER */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={setPage} />
@@ -547,6 +533,7 @@ export default function App() {
             importJsonFile={importJsonFile}
             rows={rows}
             onOpenDuplicateScanner={() => setPage("dupes")}
+            onOpenChangeLog={() => setShowChangeLog(true)}   // NEW
           />
         ) : page === "dupes" ? (
           <DuplicateScannerView
@@ -581,8 +568,7 @@ export default function App() {
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
-            if (document.activeElement instanceof HTMLElement)
-              document.activeElement.blur();
+            document.activeElement?.blur?.();
           }}
         >
           <div
@@ -624,7 +610,6 @@ export default function App() {
                 setAddOpen(false);
                 setEditRowId(null);
 
-                // NEW: TOAST
                 setToast("Entry saved to library");
                 setTimeout(() => setToast(""), 2000);
               }}
@@ -635,6 +620,11 @@ export default function App() {
             />
           </div>
         </div>
+      )}
+
+      {/* NEW: CHANGE LOG MODAL */}
+      {showChangeLog && (
+        <ChangeLogModal onClose={() => setShowChangeLog(false)} />
       )}
     </div>
   );
