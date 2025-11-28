@@ -1,0 +1,34 @@
+[
+  {
+    "title": "Translate and Learn",
+    "subtitle": "Type what you want to say, tune the tone, and get a natural Lithuanian translation.",
+    "points": [
+      "Enter any English phrase you want to express.",
+      "Choose who you're speaking to (neutral / male / female).",
+      "Pick the tone: friendly, neutral, or polite.",
+      "Tap Translate to get Lithuanian, meaning, and phonetics."
+    ],
+    "icon": "speech"
+  },
+  {
+    "title": "Listen and Pronounce",
+    "subtitle": "Hear Lithuanian spoken naturally — then slow it down to master pronunciation.",
+    "points": [
+      "On Home: tap ▶ for normal speed, tap 🐢 for slow and clear.",
+      "In the Library: tap for normal, long-press to hear the slow version.",
+      "Use the phonetic line to shadow the pronunciation."
+    ],
+    "icon": "speaker"
+  },
+  {
+    "title": "Save and Organise",
+    "subtitle": "Build your own library of useful phrases.",
+    "points": [
+      "Tap Save to store translations in your library.",
+      "Add entries manually from Home or Library.",
+      "Edit or delete phrases using the action buttons.",
+      "Use tabs to sort by Phrases, Questions, Words, or Numbers."
+    ],
+    "icon": "folder"
+  }
+]
