@@ -145,44 +145,58 @@ export default function DuplicateScannerView({
      Undo Restore (Item + Group Index Exact Restore)
      ============================================================ */
   function restoreLastDelete() {
-    const undo = undoRef.current;
-    if (!undo) return;
+  const undo = undoRef.current;
+  if (!undo) return;
 
-    const { item, groupKey, itemIndex, groupIndex } = undo;
+  const { item, groupKey, itemIndex, groupIndex } = undo;
 
-    // Restore globally
-    window.dispatchEvent(
-      new CustomEvent("restorePhrase", { detail: { item } })
-    );
+  // restore globally
+  window.dispatchEvent(
+    new CustomEvent("restorePhrase", { detail: { item } })
+  );
 
-    // Restore into local duplicate groups
-    setGroups((prev) => {
-      // If group doesn't exist anymore, recreate it
-      let group = prev.find((g) => g.key === groupKey);
-      let newGroups = [...prev];
+  setGroups((prev) => {
+    let group = prev.find((g) => g.key === groupKey);
+    let newGroups = [...prev];
 
-      if (!group) {
-        // Recreate empty group
-        group = { key: groupKey, items: [] };
-        newGroups.splice(groupIndex, 0, group);
-      }
+    // 1) Ensure the group slot exists
+    if (!group) {
+      group = { key: groupKey, items: [] };
+      newGroups.splice(groupIndex, 0, group);
+    }
 
-      // Insert item inside group at correct index
-      const items = [...group.items];
-      const pos = Math.min(itemIndex, items.length);
-      items.splice(pos, 0, item);
+    // 2) Restore the item inside the group
+    const items = [...group.items];
+    const insertPos = Math.min(itemIndex, items.length);
+    items.splice(insertPos, 0, item);
 
-      // Replace the group in list
-      const updatedGroup = { ...group, items };
-      newGroups = newGroups.filter((g) => g.key !== groupKey);
-      newGroups.splice(groupIndex, 0, updatedGroup);
+    // 3) Completely rebuild and reinsert the group
+    const updatedGroup = { ...group, items };
 
-      return newGroups;
-    });
+    newGroups = newGroups.filter((g) => g.key !== groupKey);
+    newGroups.splice(groupIndex, 0, updatedGroup);
 
-    undoRef.current = null;
-  }
+    return newGroups;
+  });
 
+  // 4) Clear skip/exiting if present
+  setSkipped((pr) => {
+    if (!pr[groupKey]) return pr;
+    const next = { ...pr };
+    delete next[groupKey];
+    return next;
+  });
+
+  setExitingGroups((pr) => {
+    if (!pr[groupKey]) return pr;
+    const next = { ...pr };
+    delete next[groupKey];
+    return next;
+  });
+
+  // clear undo memory
+  undoRef.current = null;
+}
   /* ============================================================
      Skip group + Undo
      ============================================================ */
