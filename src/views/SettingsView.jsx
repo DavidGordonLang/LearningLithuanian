@@ -3,8 +3,6 @@ import React, { useState } from "react";
 
 export default function SettingsView({
   T,
-  direction,
-  setDirection,
   ttsProvider,
   setTtsProvider,
   azureKey,
@@ -23,7 +21,7 @@ export default function SettingsView({
   clearLibrary,
   importJsonFile,
   rows,
-  onOpenDuplicateScanner, // NEW
+  onOpenDuplicateScanner,
 }) {
   const [showKey, setShowKey] = useState(false);
 
@@ -34,6 +32,7 @@ export default function SettingsView({
       const blob = new Blob([dataStr], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+
       a.href = url;
       a.download = "lithuanian-trainer-export.json";
       a.click();
@@ -53,39 +52,12 @@ export default function SettingsView({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
-      {/* LEARNING DIRECTION */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-        <div className="text-lg font-semibold mb-3">{T.direction}</div>
-
-        <div className="space-y-2 text-sm">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={direction === "EN2LT"}
-              onChange={() => setDirection("EN2LT")}
-            />
-            {T.en2lt}
-          </label>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={direction === "LT2EN"}
-              onChange={() => setDirection("LT2EN")}
-            />
-            {T.lt2en}
-          </label>
-        </div>
-      </section>
-
       {/* STARTER PACK */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
         <div className="text-lg font-semibold">Starter Pack</div>
         <button
           className="px-4 py-2 bg-emerald-600 text-black rounded-md font-semibold hover:bg-emerald-500"
-          onClick={() =>
-            fetchStarter(direction === "EN2LT" ? "EN2LT" : "LT2EN")
-          }
+          onClick={() => fetchStarter("EN2LT")}
         >
           Install starter pack
         </button>
@@ -182,6 +154,32 @@ export default function SettingsView({
               )}
             </div>
           </>
+        )}
+
+        {ttsProvider === "browser" && (
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <label className="text-sm">Browser voice</label>
+              <select
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                value={browserVoiceName}
+                onChange={(e) => setBrowserVoiceName(e.target.value)}
+              >
+                {voices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-500"
+              onClick={() => playText("Sveiki!", { slow: false })}
+            >
+              Play sample
+            </button>
+          </div>
         )}
       </section>
 
