@@ -1,4 +1,3 @@
-// src/components/UserGuideModal.jsx
 import React, { useEffect, useState } from "react";
 
 export default function UserGuideModal({ onClose, firstLaunch = false }) {
@@ -34,7 +33,6 @@ export default function UserGuideModal({ onClose, firstLaunch = false }) {
   }
 
   function finish() {
-    // Mark onboarding as completed
     if (firstLaunch) {
       localStorage.setItem("lt_seen_user_guide", "1");
     }
@@ -46,59 +44,25 @@ export default function UserGuideModal({ onClose, firstLaunch = false }) {
 
     if (type === "speech") {
       return (
-        <svg
-          className={cls}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M7 8h10M7 12h6m-6 4h3M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H7"
-          />
+        <svg className={cls} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-6 4h3M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H7" />
         </svg>
       );
     }
 
     if (type === "speaker") {
       return (
-        <svg
-          className={cls}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 9v6h4l5 5V4L7 9H3z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M16 9c1.333.667 2 1.667 2 3s-.667 2.333-2 3m3-9c2 1.333 3 3.667 3 6s-1 4.667-3 6"
-          />
+        <svg className={cls} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 9v6h4l5 5V4L7 9H3z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 9c1.333.667 2 1.667 2 3s-.667 2.333-2 3m3-9c2 1.333 3 3.667 3 6s-1 4.667-3 6" />
         </svg>
       );
     }
 
     if (type === "folder") {
       return (
-        <svg
-          className={cls}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"
-          />
+        <svg className={cls} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
         </svg>
       );
     }
@@ -112,7 +76,12 @@ export default function UserGuideModal({ onClose, firstLaunch = false }) {
       onPointerDown={() => onClose()}
     >
       <div
-        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
+        className="
+          w-full max-w-2xl max-h-[85vh] overflow-y-auto
+          bg-zinc-900/95 border border-zinc-800 rounded-2xl 
+          shadow-[0_0_20px_rgba(0,0,0,0.25)]
+          p-5
+        "
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
