@@ -235,42 +235,42 @@ export default function LibraryView({
                     )}
                   </div>
 
-                  {/* Buttons */}
-                  <div className="flex flex-col gap-1 items-end">
-                    <button
-                      type="button"
-                      className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-medium select-none"
-                      {...pressHandlers(textToPlay)}
-                      onMouseDown={(e) => e.preventDefault()}
-                    >
-                      ▶ {showLtAudio ? "LT" : "EN"}
-                    </button>
+                  {/* ACTION BAR — NEW, HORIZONTAL, ICONS ONLY */}
+<div className="flex items-center gap-2 shrink-0">
 
-                    <button
-                      type="button"
-                      className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium select-none"
-                      onClick={() => onEditRow && onEditRow(r._id)}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onTouchStart={(e) => e.preventDefault()}
-                    >
-                      {T.edit}
-                    </button>
+  {/* Play Button */}
+  <button
+    type="button"
+    className="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black text-lg select-none"
+    {...pressHandlers(textToPlay)}
+    onMouseDown={(e) => e.preventDefault()}
+  >
+    ▶
+  </button>
 
-                    <button
-                      type="button"
-                      className="px-2.5 py-1 rounded-md bg-red-600/80 hover:bg-red-500 text-xs font-medium select-none"
-                      onClick={() => {
-                        if (window.confirm(T.confirm)) {
-                          removePhrase(r._id);
-                        }
-                      }}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onTouchStart={(e) => e.preventDefault()}
-                    >
-                      {T.delete}
-                    </button>
-                  </div>
-                </div>
+  {/* Edit Button */}
+  <button
+    type="button"
+    className="w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-base select-none"
+    onClick={() => onEditRow && onEditRow(r._id)}
+    onMouseDown={(e) => e.preventDefault()}
+  >
+    ✏️
+  </button>
+
+  {/* Delete Button */}
+  <button
+    type="button"
+    className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-600/80 hover:bg-red-500 text-white text-lg select-none"
+    onClick={() => {
+      if (window.confirm(T.confirm)) removePhrase(r._id);
+    }}
+    onMouseDown={(e) => e.preventDefault()}
+  >
+    🗑️
+  </button>
+
+</div>
 
                 {/* Expanded fields */}
                 {isOpen && (
