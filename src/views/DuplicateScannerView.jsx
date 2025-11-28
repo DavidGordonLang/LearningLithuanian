@@ -13,7 +13,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   const [hasScanned, setHasScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
-  // Single undo snapshot: either a delete or a skipped group
+  // Single undo snapshot (either delete or skip)
   const undoRef = useRef(null);
 
   // Toast state
@@ -24,70 +24,82 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
      Toast helpers
      ============================================================ */
   function showToast({ message, durationMs = 2000 }) {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-    setToast({ message });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, undo: false });
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
     }, durationMs);
   }
 
   function showUndoToast(message) {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, undo: true });
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
-      // if user does nothing, we just forget the undo ref
+      // if user ignores it, forget the undo snapshot
       undoRef.current = null;
     }, 3000);
   }
 
   function handleToastUndo() {
-    if (!undoRef.current) {
+    const snapshot = undoRef.current;
+    if (!snapshot) {
       setToast(null);
       return;
     }
-
-    const snapshot = undoRef.current;
     undoRef.current = null;
     setToast(null);
 
     if (snapshot.type === "delete") {
-      const { item, groupKey, itemIndex, groupIndex } = snapshot;
-
-      // Restore globally (if app listens for this)
+      // Restore one deleted item globally
       window.dispatchEvent(
-        new CustomEvent("restorePhrase", { detail: { item } })
+        new CustomEvent("restorePhrase", {
+          detail: { item: snapshot.deletedItem },
+        })
       );
 
-      // Restore into local groups
+      // Restore the entire group snapshot exactly as it was before deletion
       setGroups((prev) => {
         const next = [...prev];
-        let gIndex = next.findIndex((g) => g.key === groupKey);
 
-        if (gIndex === -1) {
-          // Recreate group shell at its original index
-          const insertIndex = Math.min(groupIndex, Math.max(next.length, 0));
-          next.splice(insertIndex, 0, { key: groupKey, items: [] });
-          gIndex = insertIndex;
+        // remove any current group with same key
+        const existingIndex = next.findIndex(
+          (g) => g.key === snapshot.groupSnapshot.key
+        );
+        if (existingIndex !== -1) {
+          next.splice(existingIndex, 1);
         }
 
-        const group = next[gIndex];
-        const items = group.items ? [...group.items] : [];
-        const pos = Math.min(itemIndex, items.length);
-        items.splice(pos, 0, item);
-        next[gIndex] = { ...group, items };
+        const insertIndex = Math.min(
+          snapshot.groupIndex,
+          Math.max(next.length, 0)
+        );
+        next.splice(insertIndex, 0, {
+          key: snapshot.groupSnapshot.key,
+          // clone items to avoid accidental mutation
+          items: [...snapshot.groupSnapshot.items],
+        });
+
         return next;
       });
     } else if (snapshot.type === "skip") {
-      const { group, groupIndex } = snapshot;
+      // Restore the skipped group
       setGroups((prev) => {
         const next = [...prev];
-        const insertIndex = Math.min(groupIndex, next.length);
-        next.splice(insertIndex, 0, group);
+        const existingIndex = next.findIndex(
+          (g) => g.key === snapshot.group.key
+        );
+        if (existingIndex !== -1) {
+          next.splice(existingIndex, 1);
+        }
+        const insertIndex = Math.min(
+          snapshot.groupIndex,
+          Math.max(next.length, 0)
+        );
+        next.splice(insertIndex, 0, {
+          key: snapshot.group.key,
+          items: [...snapshot.group.items],
+        });
         return next;
       });
     }
@@ -129,36 +141,42 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Delete + Skip handlers
+     Delete + Skip handlers (with full-group snapshot for delete)
      ============================================================ */
   function handleDelete(item, groupKey, itemIndex) {
     const groupIndex = groups.findIndex((g) => g.key === groupKey);
     if (groupIndex === -1) return;
 
-    // Snapshot for undo
+    const groupSnapshot = groups[groupIndex];
+
+    // Save full snapshot of the group as it was before deletion
     undoRef.current = {
       type: "delete",
-      item,
-      groupKey,
-      itemIndex,
+      deletedItem: item,
+      groupSnapshot: {
+        key: groupSnapshot.key,
+        items: [...groupSnapshot.items],
+      },
       groupIndex,
     };
 
     // Remove globally
     removePhrase(item._id);
 
-    // Update local groups
+    // Update local groups: remove just this item,
+    // and if only 1 left, drop the group entirely.
     setGroups((prev) => {
       const next = [...prev];
       const gIndex = next.findIndex((g) => g.key === groupKey);
       if (gIndex === -1) return prev;
+
       const group = next[gIndex];
       const items = group.items.filter((_, i) => i !== itemIndex);
 
       if (items.length > 1) {
         next[gIndex] = { ...group, items };
       } else {
-        // Group no longer a duplicate set -> remove from list
+        // no longer a duplicate group
         next.splice(gIndex, 1);
       }
       return next;
@@ -175,10 +193,12 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
     const group = groups[idx];
 
-    // Snapshot for undo
     undoRef.current = {
       type: "skip",
-      group,
+      group: {
+        key: group.key,
+        items: [...group.items],
+      },
       groupIndex: idx,
     };
 
@@ -217,6 +237,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
     function onPointerMove(e) {
       if (!draggingRef.current) return;
+
       const dx = e.clientX - startX.current;
       lastX.current = e.clientX;
 
@@ -238,7 +259,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
       const dx = lastX.current - startX.current;
       const width = ref.current?.offsetWidth || 300;
-      const threshold = width * 0.25; // medium sensitivity
+      const threshold = width * 0.25; // 25% swipe → delete
 
       if (Math.abs(dx) >= threshold) {
         const dir = dx > 0 ? 1 : -1;
