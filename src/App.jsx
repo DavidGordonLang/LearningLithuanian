@@ -546,6 +546,7 @@ export default function App() {
             fetchStarter={fetchStarter}
             clearLibrary={clearLibrary}
             importJsonFile={importJsonFile}
+            rows={rows}
           />
         ) : (
           <>
