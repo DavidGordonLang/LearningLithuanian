@@ -38,9 +38,7 @@ export default function AddForm({
   const [notes, setNotes] = useState(initialRow?.Notes || "");
   const [rag, setRag] = useState(normalizeRag(initialRow?.["RAG Icon"] || "🟠"));
 
-  // -------------------------
-  // NEW: sheet dropdown state
-  // -------------------------
+  // Determine initial sheet value
   const sheetValue = useMemo(() => {
     const allowed = ["Phrases", "Questions", "Words", "Numbers"];
     if (initialRow && allowed.includes(initialRow.Sheet)) return initialRow.Sheet;
@@ -48,14 +46,20 @@ export default function AddForm({
     return "Phrases";
   }, [initialRow, tab]);
 
+  // NEW: editable sheet dropdown
   const [sheet, setSheet] = useState(sheetValue);
 
-  // Sync sheet when editing row changes
   useEffect(() => {
-    if (isEdit && initialRow?.Sheet) {
-      setSheet(initialRow.Sheet);
-    }
-  }, [isEdit, initialRow]);
+    if (!isEdit || !initialRow) return;
+    setEnglish(initialRow.English || "");
+    setLithuanian(initialRow.Lithuanian || "");
+    setPhonetic(initialRow.Phonetic || "");
+    setCategory(initialRow.Category || "");
+    setUsage(initialRow.Usage || "");
+    setNotes(initialRow.Notes || "");
+    setRag(normalizeRag(initialRow["RAG Icon"] || "🟠"));
+    setSheet(initialRow.Sheet || "Phrases");
+  }, [isEdit, initialRow, normalizeRag]);
 
   const canSave = useMemo(
     () =>
@@ -77,7 +81,6 @@ export default function AddForm({
 
   function buildRow() {
     const base = initialRow || {};
-
     const _id = isEdit && base._id ? base._id : genId();
     const _ts = nowTs();
     const _qstat =
@@ -98,10 +101,7 @@ export default function AddForm({
       Usage: String(usage || "").trim(),
       Notes: String(notes || "").trim(),
       "RAG Icon": normalizeRag(rag || base["RAG Icon"] || "🟠"),
-
-      // NEW: actual selected sheet
-      Sheet: sheet,
-
+      Sheet: sheet, // NEW: editable sheet
       _id,
       _ts,
       _qstat,
@@ -128,74 +128,94 @@ export default function AddForm({
         {direction === "EN2LT" ? T.en2lt : T.lt2en}
       </div>
 
-      {/* ENGLISH */}
+      {/* English */}
       <div>
-        <label className="block text-xs mb-1">{T.english} *</label>
+        <label className="block text-xs mb-1" htmlFor="add-en">
+          {T.english} <span className="text-red-400">*</span>
+        </label>
         <input
+          id="add-en"
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           value={english}
           onChange={(e) => setEnglish(e.target.value)}
         />
       </div>
 
-      {/* LITHUANIAN */}
+      {/* Lithuanian */}
       <div>
-        <label className="block text-xs mb-1">{T.lithuanian} *</label>
+        <label className="block text-xs mb-1" htmlFor="add-lt">
+          {T.lithuanian} <span className="text-red-400">*</span>
+        </label>
         <input
+          id="add-lt"
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           value={lithuanian}
           onChange={(e) => setLithuanian(e.target.value)}
         />
       </div>
 
-      {/* PHONETIC */}
+      {/* Phonetic */}
       <div>
-        <label className="block text-xs mb-1">{T.phonetic}</label>
+        <label className="block text-xs mb-1" htmlFor="add-ph">
+          {T.phonetic}
+        </label>
         <input
+          id="add-ph"
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           value={phonetic}
           onChange={(e) => setPhonetic(e.target.value)}
         />
       </div>
 
-      {/* CATEGORY */}
+      {/* Category */}
       <div>
-        <label className="block text-xs mb-1">{T.category}</label>
+        <label className="block text-xs mb-1" htmlFor="add-cat">
+          {T.category}
+        </label>
         <input
+          id="add-cat"
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         />
       </div>
 
-      {/* USAGE */}
+      {/* Usage */}
       <div>
-        <label className="block text-xs mb-1">{T.usage}</label>
+        <label className="block text-xs mb-1" htmlFor="add-usage">
+          {T.usage}
+        </label>
         <textarea
-          rows={3}
+          id="add-usage"
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          rows={3}
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
         />
       </div>
 
-      {/* NOTES */}
+      {/* Notes */}
       <div>
-        <label className="block text-xs mb-1">{T.notes}</label>
+        <label className="block text-xs mb-1" htmlFor="add-notes">
+          {T.notes}
+        </label>
         <textarea
-          rows={3}
+          id="add-notes"
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
       </div>
 
-      {/* RAG + SHEET */}
       <div className="grid grid-cols-2 gap-3">
-        {/* RAG SELECTOR */}
+        {/* RAG */}
         <div>
-          <label className="block text-xs mb-1">{T.ragLabel}</label>
+          <label className="block text-xs mb-1" htmlFor="add-rag">
+            {T.ragLabel}
+          </label>
           <select
+            id="add-rag"
             className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
             value={rag}
             onChange={(e) => setRag(e.target.value)}
@@ -206,10 +226,13 @@ export default function AddForm({
           </select>
         </div>
 
-        {/* NEW — SHEET DROPDOWN */}
+        {/* Sheet dropdown (NEW) */}
         <div>
-          <label className="block text-xs mb-1">{T.sheet}</label>
+          <label className="block text-xs mb-1" htmlFor="add-sheet">
+            {T.sheet}
+          </label>
           <select
+            id="add-sheet"
             className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
             value={sheet}
             onChange={(e) => setSheet(e.target.value)}
@@ -222,7 +245,6 @@ export default function AddForm({
         </div>
       </div>
 
-      {/* ACTION BUTTONS */}
       <div className="flex items-center gap-2 pt-1">
         <button
           type="button"
@@ -234,11 +256,10 @@ export default function AddForm({
         >
           {T.cancel}
         </button>
-
         <button
           type="submit"
-          disabled={!canSave}
           className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold disabled:opacity-60"
+          disabled={!canSave}
         >
           {T.save}
         </button>
