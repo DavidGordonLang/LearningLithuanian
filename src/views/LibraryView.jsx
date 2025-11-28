@@ -14,6 +14,9 @@ export default function LibraryView({
 }) {
   const [expanded, setExpanded] = useState(new Set());
 
+  // NEW: local tab state
+  const [tab, setTab] = useState("Phrases");
+
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
@@ -21,9 +24,13 @@ export default function LibraryView({
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
 
+  /* ============================================================================
+     FILTERING: search → sheet tab → sort
+     ========================================================================== */
   const filteredRows = useMemo(() => {
     let base = rows;
 
+    // 1. Search
     if (qNorm) {
       base = base.filter((r) => {
         const en = (r.English || "").toLowerCase();
@@ -32,6 +39,10 @@ export default function LibraryView({
       });
     }
 
+    // 2. Tab filter (Sheet)
+    base = base.filter((r) => r.Sheet === tab);
+
+    // 3. Sorting
     if (sortMode === "Newest")
       return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
 
@@ -44,28 +55,46 @@ export default function LibraryView({
         (order[normalizeRag(a["RAG Icon"])] ?? 1) -
         (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, qNorm, sortMode, normalizeRag]);
+  }, [rows, qNorm, sortMode, tab, normalizeRag]);
 
-  function toggleExpand(id) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  /* ============================================================================
+     TAB COMPONENT
+     ========================================================================== */
+  function TabControl() {
+    const options = ["Phrases", "Questions", "Words", "Numbers"];
 
-  function cycleRag(id) {
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r._id !== id) return r;
-        const current = normalizeRag(r["RAG Icon"]);
-        const next = current === "🔴" ? "🟠" : current === "🟠" ? "🟢" : "🔴";
-        return { ...r, "RAG Icon": next };
-      })
+    return (
+      <div className="flex w-full bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+        {options.map((opt, idx) => {
+          const active = tab === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setTab(opt)}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
+              className={
+                "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none " +
+                (active
+                  ? "bg-emerald-600 text-black"
+                  : "bg-zinc-950 text-zinc-200 hover:bg-zinc-800") +
+                (idx !== options.length - 1
+                  ? " border-r border-zinc-800"
+                  : "")
+              }
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
     );
   }
 
+  /* ============================================================================
+     AUDIO PRESS HANDLERS
+     ========================================================================== */
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -115,14 +144,22 @@ export default function LibraryView({
 
   const showLtAudio = direction === "EN2LT";
 
+  /* ============================================================================
+     RENDER
+     ========================================================================== */
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-
-      {/* REMOVED THE DEFAULT TOP MARGIN */}
+      {/* Title */}
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
 
+      {/* Count */}
       <div className="mt-1 mb-3 text-sm text-zinc-400">
         {filteredRows.length} / {rows.length} {T.phrases.toLowerCase()}
+      </div>
+
+      {/* NEW: Sheet Tabs */}
+      <div className="mb-4">
+        <TabControl />
       </div>
 
       {filteredRows.length === 0 ? (
@@ -140,21 +177,45 @@ export default function LibraryView({
                 key={r._id}
                 className="bg-zinc-900 border border-zinc-800 rounded-xl p-3"
               >
-                {/* Top Row */}
+                {/* Row Top */}
                 <div className="flex items-start gap-3">
                   <button
                     type="button"
                     className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none"
-                    onClick={() => cycleRag(r._id)}
+                    onClick={() => {
+                      setRows((prev) =>
+                        prev.map((x) =>
+                          x._id === r._id
+                            ? {
+                                ...x,
+                                "RAG Icon":
+                                  normalizeRag(x["RAG Icon"]) === "🔴"
+                                    ? "🟠"
+                                    : normalizeRag(x["RAG Icon"]) === "🟠"
+                                    ? "🟢"
+                                    : "🔴",
+                              }
+                            : x
+                        )
+                      );
+                    }}
                     onMouseDown={(e) => e.preventDefault()}
                     onTouchStart={(e) => e.preventDefault()}
                   >
                     {normalizeRag(r["RAG Icon"])}
                   </button>
 
+                  {/* Click to expand */}
                   <div
                     className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => toggleExpand(r._id)}
+                    onClick={() => {
+                      setExpanded((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(r._id)) next.delete(r._id);
+                        else next.add(r._id);
+                        return next;
+                      });
+                    }}
                   >
                     <div className="text-sm font-semibold truncate">
                       {r.English || "—"}
@@ -174,15 +235,17 @@ export default function LibraryView({
                     )}
                   </div>
 
+                  {/* Buttons */}
                   <div className="flex flex-col gap-1 items-end">
                     <button
                       type="button"
                       className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-xs font-medium select-none"
-                      onMouseDown={(e) => e.preventDefault()}
                       {...pressHandlers(textToPlay)}
+                      onMouseDown={(e) => e.preventDefault()}
                     >
                       ▶ {showLtAudio ? "LT" : "EN"}
                     </button>
+
                     <button
                       type="button"
                       className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium select-none"
@@ -192,6 +255,7 @@ export default function LibraryView({
                     >
                       {T.edit}
                     </button>
+
                     <button
                       type="button"
                       className="px-2.5 py-1 rounded-md bg-red-600/80 hover:bg-red-500 text-xs font-medium select-none"
@@ -208,6 +272,7 @@ export default function LibraryView({
                   </div>
                 </div>
 
+                {/* Expanded fields */}
                 {isOpen && (
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
