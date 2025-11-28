@@ -1,3 +1,4 @@
+// src/views/HomeView.jsx
 import React, { useState } from "react";
 
 export default function HomeView({
