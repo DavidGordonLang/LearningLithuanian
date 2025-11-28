@@ -196,7 +196,8 @@ export default function HomeView({
             className="
               bg-emerald-500 text-black rounded-full px-5 py-2 
               font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 
-              transition-all select-none
+              transition-transform duration-150 active:scale-95
+              select-none
             "
             onClick={handleTranslate}
             disabled={translating || !input.trim()}
@@ -210,7 +211,8 @@ export default function HomeView({
             className="
               bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 
               font-medium hover:bg-zinc-700 active:bg-zinc-600 
-              transition-all select-none
+              transition-transform duration-150 active:scale-95
+              select-none
             "
             onClick={handleClear}
           >
@@ -251,6 +253,7 @@ export default function HomeView({
                 bg-emerald-500 text-black rounded-full 
                 px-5 py-2 text-[18px] shadow 
                 hover:bg-emerald-400 active:bg-emerald-300 
+                transition-transform duration-150 active:scale-95
                 select-none
               "
               onClick={() => playText(ltOut)}
@@ -265,6 +268,7 @@ export default function HomeView({
                 bg-emerald-700 text-black rounded-full 
                 px-5 py-2 text-[18px] shadow 
                 hover:bg-emerald-600 active:bg-emerald-500 
+                transition-transform duration-150 active:scale-95
                 select-none
               "
               onClick={() => playText(ltOut, { slow: true })}
@@ -279,6 +283,7 @@ export default function HomeView({
                 bg-zinc-800 text-zinc-200 rounded-full 
                 px-5 py-2 text-sm font-medium
                 hover:bg-zinc-700 active:bg-zinc-600
+                transition-transform duration-150 active:scale-95
                 select-none
               "
               onClick={handleSaveToLibrary}
@@ -296,6 +301,7 @@ export default function HomeView({
             w-full mt-6 bg-emerald-500 text-black rounded-full 
             px-5 py-3 font-semibold shadow text-center
             hover:bg-emerald-400 active:bg-emerald-300 
+            transition-transform duration-150 active:scale-95
             select-none
           "
           onClick={onOpenAddForm}
