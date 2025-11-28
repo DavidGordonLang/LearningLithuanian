@@ -5,24 +5,20 @@ import React, { useEffect, useMemo, useState } from "react";
  * AddForm
  *
  * Props:
- *  - tab
  *  - T
  *  - genId
  *  - nowTs
  *  - normalizeRag
- *  - direction
  *  - mode: "add" | "edit"
  *  - initialRow?: phrase row (when editing)
  *  - onSubmit: (row) => void
  *  - onCancel: () => void
  */
 export default function AddForm({
-  tab,
   T,
   genId,
   nowTs,
   normalizeRag,
-  direction,
   mode = "add",
   initialRow,
   onSubmit,
@@ -38,15 +34,13 @@ export default function AddForm({
   const [notes, setNotes] = useState(initialRow?.Notes || "");
   const [rag, setRag] = useState(normalizeRag(initialRow?.["RAG Icon"] || "🟠"));
 
-  // Determine initial sheet value
+  // Determine initial sheet value (no direction, no tabs passed in)
   const sheetValue = useMemo(() => {
     const allowed = ["Phrases", "Questions", "Words", "Numbers"];
     if (initialRow && allowed.includes(initialRow.Sheet)) return initialRow.Sheet;
-    if (allowed.includes(tab)) return tab;
     return "Phrases";
-  }, [initialRow, tab]);
+  }, [initialRow]);
 
-  // NEW: editable sheet dropdown
   const [sheet, setSheet] = useState(sheetValue);
 
   useEffect(() => {
@@ -63,8 +57,8 @@ export default function AddForm({
 
   const canSave = useMemo(
     () =>
-      String(english).trim() !== "" &&
-      String(lithuanian).trim() !== "",
+      english.trim() !== "" &&
+      lithuanian.trim() !== "",
     [english, lithuanian]
   );
 
@@ -83,6 +77,7 @@ export default function AddForm({
     const base = initialRow || {};
     const _id = isEdit && base._id ? base._id : genId();
     const _ts = nowTs();
+
     const _qstat =
       isEdit && base._qstat
         ? base._qstat
@@ -94,14 +89,14 @@ export default function AddForm({
 
     return {
       ...base,
-      English: String(english || "").trim(),
-      Lithuanian: String(lithuanian || "").trim(),
-      Phonetic: String(phonetic || "").trim(),
-      Category: String(category || "").trim(),
-      Usage: String(usage || "").trim(),
-      Notes: String(notes || "").trim(),
-      "RAG Icon": normalizeRag(rag || base["RAG Icon"] || "🟠"),
-      Sheet: sheet, // NEW: editable sheet
+      English: english.trim(),
+      Lithuanian: lithuanian.trim(),
+      Phonetic: phonetic.trim(),
+      Category: category.trim(),
+      Usage: usage.trim(),
+      Notes: notes.trim(),
+      "RAG Icon": normalizeRag(rag),
+      Sheet: sheet,
       _id,
       _ts,
       _qstat,
@@ -124,10 +119,6 @@ export default function AddForm({
         handleSave(e);
       }}
     >
-      <div className="text-xs text-zinc-400">
-        {direction === "EN2LT" ? T.en2lt : T.lt2en}
-      </div>
-
       {/* English */}
       <div>
         <label className="block text-xs mb-1" htmlFor="add-en">
@@ -226,7 +217,7 @@ export default function AddForm({
           </select>
         </div>
 
-        {/* Sheet dropdown (NEW) */}
+        {/* Sheet dropdown */}
         <div>
           <label className="block text-xs mb-1" htmlFor="add-sheet">
             {T.sheet}
