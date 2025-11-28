@@ -11,11 +11,10 @@ export default function DuplicateScannerView({
   const [hasScanned, setHasScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
-  // Map of skipped group keys -> item count (for summary)
   const [skipped, setSkipped] = useState({});
 
-  // Toast state (shared for delete + skip)
-  const [toast, setToast] = useState(null); // { message, onUndo }
+  // Toast { message, onUndo }
+  const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
 
   /* ============================================================
@@ -23,17 +22,16 @@ export default function DuplicateScannerView({
      ============================================================ */
   function showToast({ message, onUndo, durationMs }) {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ message, onUndo: onUndo || null });
+
+    setToast({ message, onUndo });
 
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
-    }, durationMs ?? 2000);
+    }, durationMs);
   }
 
   function handleToastUndo() {
-    if (toast?.onUndo) {
-      toast.onUndo();
-    }
+    if (toast?.onUndo) toast.onUndo();
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(null);
   }
@@ -45,7 +43,7 @@ export default function DuplicateScannerView({
   }, []);
 
   /* ============================================================
-     Duplicate Scan
+     Duplicate scan
      ============================================================ */
   function scanDuplicates() {
     setIsScanning(true);
@@ -55,8 +53,6 @@ export default function DuplicateScannerView({
     for (const r of rows) {
       const en = (r.English || "").trim().toLowerCase();
       const lt = (r.Lithuanian || "").trim().toLowerCase();
-      if (!en && !lt) continue;
-
       const key = `${en}||${lt}`;
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(r);
@@ -74,7 +70,7 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Delete logic (with undo)
+     Delete + Undo
      ============================================================ */
   function performDelete(item, groupKey, indexInGroup) {
     // Remove from global store
@@ -92,7 +88,7 @@ export default function DuplicateScannerView({
       )
     );
 
-    // Toast + undo
+    // Toast + Undo logic
     showToast({
       message: `Deleted “${item.English || "—"} / ${
         item.Lithuanian || "—"
@@ -104,14 +100,14 @@ export default function DuplicateScannerView({
           new CustomEvent("restorePhrase", { detail: { item } })
         );
 
-        // Restore into local duplicate groups at the same position
+        // Restore locally
         setGroups((prev) =>
           prev.map((g) => {
             if (g.key !== groupKey) return g;
             const insertPos = Math.min(indexInGroup, g.items.length);
-            const newItems = [...g.items];
-            newItems.splice(insertPos, 0, item);
-            return { ...g, items: newItems };
+            const items = [...g.items];
+            items.splice(insertPos, 0, item);
+            return { ...g, items };
           })
         );
       },
@@ -119,7 +115,7 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Skip group logic (collapsed summary)
+     Skip group logic
      ============================================================ */
   function skipGroup(groupKey) {
     const group = groups.find((g) => g.key === groupKey);
@@ -142,24 +138,25 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Swipeable Row Component
+     Swipeable row component
      ============================================================ */
   function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
     const startX = useRef(0);
     const currentX = useRef(0);
     const isDragging = useRef(false);
+
     const [translateX, setTranslateX] = useState(0);
+    const [isFading, setIsFading] = useState(false);
 
     function onPointerDown(e) {
       startX.current = e.clientX;
       currentX.current = e.clientX;
       isDragging.current = true;
-      if (ref.current?.setPointerCapture) {
+      if (ref.current?.setPointerCapture)
         try {
           ref.current.setPointerCapture(e.pointerId);
         } catch {}
-      }
     }
 
     function onPointerMove(e) {
@@ -167,11 +164,8 @@ export default function DuplicateScannerView({
       const dx = e.clientX - startX.current;
       currentX.current = e.clientX;
 
-      // Allow both left and right swipes
-      if (!ref.current) return;
-      const max = ref.current.offsetWidth || 260;
-      const limit = Math.min(max, 260);
-
+      const width = ref.current?.offsetWidth || 300;
+      const limit = width * 0.9;
       const clamped = Math.max(-limit, Math.min(limit, dx));
       setTranslateX(clamped);
     }
@@ -180,32 +174,66 @@ export default function DuplicateScannerView({
       if (!isDragging.current) return;
       isDragging.current = false;
 
-      if (ref.current?.releasePointerCapture) {
+      if (ref.current?.releasePointerCapture)
         try {
           ref.current.releasePointerCapture(e.pointerId);
         } catch {}
-      }
 
       const dx = currentX.current - startX.current;
       const width = ref.current?.offsetWidth || 300;
-      const threshold = width * 0.25; // 25% for delete
+      const threshold = width * 0.25;
 
       if (Math.abs(dx) >= threshold) {
-        // Auto delete in direction of swipe
+        // Auto-delete: slide + fade + shrink
         const dir = dx > 0 ? 1 : -1;
+
+        // Trigger fade + shrink
+        setIsFading(true);
+
+        // Slide away
         setTranslateX(dir * width);
-        setTimeout(() => onDelete(), 140);
+
+        // Delay removal until fade completes (1 second)
+        setTimeout(() => onDelete(), 1000);
       } else {
-        // Snap back
-        setTranslateX(0);
+        setTranslateX(0); // snap back
       }
     }
 
+    // Calculate animation visuals
+    const absX = Math.abs(translateX);
+    const fadeFactor = isFading
+      ? 0
+      : 1 - Math.min(absX / 260, 1); // fading with swipe
+
+    const scale = isFading
+      ? 0.96
+      : 1 - Math.min(absX / 260, 0.04); // shrink slightly
+
+    const blur = isFading
+      ? "blur(4px)"
+      : `blur(${Math.min(absX / 200, 4)}px)`;
+
     return (
       <div className="relative overflow-hidden rounded-lg border border-zinc-800">
-        {/* DELETE track */}
-        <div className="absolute inset-0 bg-zinc-800 flex items-center justify-center">
-          <span className="text-red-500 text-sm font-semibold">
+        {/* DELETE track: with fade/slide in */}
+        <div
+          className="absolute inset-0 bg-zinc-800 flex items-center justify-center"
+          style={{
+            opacity: isFading ? 1 : 0.35 + Math.min(absX / 300, 0.65),
+            transition: "opacity 0.3s ease",
+          }}
+        >
+          <span
+            className="text-red-500 text-sm font-semibold"
+            style={{
+              transform: isFading
+                ? "translateY(0px)"
+                : "translateY(8px)",
+              opacity: isFading ? 1 : 0,
+              transition: "opacity 0.4s ease, transform 0.4s ease",
+            }}
+          >
             Deleting…
           </span>
         </div>
@@ -215,9 +243,13 @@ export default function DuplicateScannerView({
           ref={ref}
           className="relative z-10 bg-zinc-950 p-3 touch-pan-y"
           style={{
-            transform: `translateX(${translateX}px)`,
+            transform: `translateX(${translateX}px) scale(${scale})`,
+            opacity: fadeFactor,
+            filter: blur,
             transition:
-              translateX === 0 ? "transform 0.18s ease-out" : "none",
+              translateX === 0 && !isFading
+                ? "transform 0.18s ease-out, opacity 0.18s ease-out"
+                : "opacity 1s ease, transform 1s ease, filter 1s ease",
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -265,13 +297,7 @@ export default function DuplicateScannerView({
   /* ============================================================
      RENDER
      ============================================================ */
-  const visibleGroups = groups.filter(
-    (g) => g.items.length > 1 // hide solved groups
-  );
-
-  const visibleNotSkippedCount = visibleGroups.filter(
-    (g) => !skipped[g.key]
-  ).length;
+  const visibleGroups = groups.filter((g) => g.items.length > 1);
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-28 relative">
@@ -312,38 +338,28 @@ export default function DuplicateScannerView({
 
       <h2 className="text-2xl font-bold mb-1">Duplicate scanner</h2>
       <p className="text-sm text-zinc-400 mb-4">
-        Finds exact duplicates where both{" "}
+        Finds exact duplicates where{" "}
         <span className="font-semibold">{T.english}</span> and{" "}
         <span className="font-semibold">{T.lithuanian}</span> match.
       </p>
 
       {hasScanned && (
         <div className="mb-4 text-sm text-zinc-300">
-          {visibleGroups.length === 0 ? (
-            "No duplicates found."
-          ) : (
-            <>
-              Found{" "}
-              <strong>{visibleGroups.length}</strong> duplicate group
-              {visibleGroups.length > 1 ? "s" : ""}.{" "}
-              {visibleNotSkippedCount !== visibleGroups.length && (
-                <>
-                  ({visibleNotSkippedCount} active,{" "}
-                  {visibleGroups.length - visibleNotSkippedCount} skipped)
-                </>
-              )}
-            </>
-          )}
+          {visibleGroups.length === 0
+            ? "No duplicates found."
+            : `Found ${visibleGroups.length} duplicate group${
+                visibleGroups.length > 1 ? "s" : ""
+              }.`}
         </div>
       )}
 
-      {/* Groups */}
+      {/* Group list */}
       <div className="space-y-4 mt-4">
         {visibleGroups.map((g, idx) => {
           const isSkipped = !!skipped[g.key];
 
           if (isSkipped) {
-            const count = skipped[g.key] ?? g.items.length;
+            const count = skipped[g.key];
             return (
               <section
                 key={g.key}
@@ -351,8 +367,8 @@ export default function DuplicateScannerView({
               >
                 <div className="text-sm text-zinc-300">
                   Group {idx + 1} —{" "}
-                  <span className="font-semibold">skipped</span> (
-                  {count} item{count > 1 ? "s" : ""} kept)
+                  <span className="font-semibold">skipped</span> ({count}{" "}
+                  item{count > 1 ? "s" : ""})
                 </div>
                 <button
                   className="text-xs px-3 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700"
@@ -380,7 +396,6 @@ export default function DuplicateScannerView({
                   Group {idx + 1} • {g.items.length} items
                 </div>
                 <button
-                  type="button"
                   className="text-xs px-3 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700"
                   onClick={() => skipGroup(g.key)}
                 >
@@ -394,9 +409,7 @@ export default function DuplicateScannerView({
                     key={item._id}
                     item={item}
                     T={T}
-                    onDelete={() =>
-                      performDelete(item, g.key, itemIdx)
-                    }
+                    onDelete={() => performDelete(item, g.key, itemIdx)}
                   />
                 ))}
               </div>
