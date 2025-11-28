@@ -1,3 +1,4 @@
+// src/views/LibraryView.jsx
 import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { searchStore } from "../searchStore";
 
@@ -11,6 +12,7 @@ export default function LibraryView({
   playText,
   removePhrase,
   onEditRow,
+  onOpenAddForm, // NEW
 }) {
   const [expanded, setExpanded] = useState(new Set());
   const [tab, setTab] = useState("Phrases");
@@ -135,6 +137,18 @@ export default function LibraryView({
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
+
+      {/* NEW: manual add entry button near the top */}
+      {typeof onOpenAddForm === "function" && (
+        <button
+          className="mt-3 mb-3 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none"
+          onClick={() => onOpenAddForm()}
+          onMouseDown={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
+        >
+          + Add Entry
+        </button>
+      )}
 
       <div className="mt-1 mb-3 text-sm text-zinc-400">
         {filteredRows.length} / {rows.length} {T.phrases.toLowerCase()}
