@@ -1,4 +1,3 @@
-// src/views/LibraryView.jsx
 import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { searchStore } from "../searchStore";
 
@@ -55,7 +54,7 @@ export default function LibraryView({
   function TabControl() {
     const options = ["Phrases", "Questions", "Words", "Numbers"];
     return (
-      <div className="flex w-full bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-1 flex">
         {options.map((opt, idx) => {
           const active = tab === opt;
           return (
@@ -66,13 +65,10 @@ export default function LibraryView({
               onMouseDown={(e) => e.preventDefault()}
               onTouchStart={(e) => e.preventDefault()}
               className={
-                "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none " +
+                "flex-1 px-3 py-2 rounded-xl text-sm font-medium transition select-none " +
                 (active
-                  ? "bg-emerald-600 text-black"
-                  : "bg-zinc-950 text-zinc-200 hover:bg-zinc-800") +
-                (idx !== options.length - 1
-                  ? " border-r border-zinc-800"
-                  : "")
+                  ? "bg-emerald-600 text-black shadow"
+                  : "text-zinc-300 hover:bg-zinc-800/60")
               }
             >
               {opt}
@@ -83,7 +79,7 @@ export default function LibraryView({
     );
   }
 
-  /* AUDIO PRESS HANDLERS (tap = normal, long press = slow) */
+  /* AUDIO HANDLERS (tap = normal, long press = slow) */
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -130,12 +126,10 @@ export default function LibraryView({
     };
   }
 
-  /* Always play Lithuanian */
   function getAudioText(r) {
     return r.Lithuanian || "";
   }
 
-  /* RENDER */
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
@@ -143,7 +137,7 @@ export default function LibraryView({
       {/* Add Entry button */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="mt-3 mb-3 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none"
+          className="mt-3 mb-3 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none shadow"
           onClick={() => onOpenAddForm()}
           onMouseDown={(e) => e.preventDefault()}
           onTouchStart={(e) => e.preventDefault()}
@@ -156,6 +150,7 @@ export default function LibraryView({
         {filteredRows.length} / {rows.length} entries
       </div>
 
+      {/* Tabs */}
       <div className="mb-4">
         <TabControl />
       </div>
@@ -163,7 +158,7 @@ export default function LibraryView({
       {filteredRows.length === 0 ? (
         <p className="text-sm text-zinc-400">No entries match your search.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {filteredRows.map((r) => {
             const isOpen = expanded.has(r._id);
             const textToPlay = getAudioText(r);
@@ -171,13 +166,19 @@ export default function LibraryView({
             return (
               <article
                 key={r._id}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-3"
+                className="
+                  bg-zinc-900/95 
+                  border border-zinc-800 
+                  rounded-2xl 
+                  p-3 
+                  shadow-[0_0_12px_rgba(0,0,0,0.15)]
+                "
               >
                 <div className="flex items-start gap-3">
                   {/* RAG ICON */}
                   <button
                     type="button"
-                    className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none"
+                    className="w-7 h-7 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none bg-zinc-950/60 hover:bg-zinc-800/60"
                     onClick={() =>
                       setRows((prev) =>
                         prev.map((x) =>
@@ -199,7 +200,7 @@ export default function LibraryView({
                     {normalizeRag(r["RAG Icon"])}
                   </button>
 
-                  {/* TEXT CONTENT */}
+                  {/* TEXT */}
                   <div
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() =>
@@ -231,12 +232,12 @@ export default function LibraryView({
                     )}
                   </div>
 
-                  {/* ACTION BAR */}
+                  {/* ACTIONS */}
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Play */}
                     <button
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black text-lg select-none"
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black text-lg select-none shadow-sm"
                       {...pressHandlers(textToPlay)}
                     >
                       ▶
@@ -245,7 +246,7 @@ export default function LibraryView({
                     {/* Edit */}
                     <button
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-base select-none"
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-base select-none"
                       onClick={() => onEditRow(r._id)}
                     >
                       ✏️
@@ -254,7 +255,7 @@ export default function LibraryView({
                     {/* Delete */}
                     <button
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-600/80 hover:bg-red-500 text-white text-lg select-none"
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-600/80 hover:bg-red-500 text-white text-lg select-none"
                       onClick={() => {
                         if (window.confirm(T.confirm)) removePhrase(r._id);
                       }}
@@ -264,7 +265,7 @@ export default function LibraryView({
                   </div>
                 </div>
 
-                {/* EXPANDED DETAILS */}
+                {/* EXPANDED CONTENT */}
                 {isOpen && (
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
