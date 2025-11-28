@@ -1,5 +1,5 @@
 // src/views/DuplicateScannerView.jsx
-import React, { useMemo, useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 export default function DuplicateScannerView({
   T,
@@ -17,13 +17,13 @@ export default function DuplicateScannerView({
   const lastDeletedRef = useRef(null);
 
   /* ============================================================
-     Toast / Undo
+     Toast + Undo
      ============================================================ */
   function showUndoToast(item) {
     lastDeletedRef.current = item;
 
     setToast({
-      message: `Deleted "${item.English || "—"} / ${item.Lithuanian || "—"}"`,
+      message: `Deleted “${item.English || "—"} / ${item.Lithuanian || "—"}”`,
     });
 
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
@@ -38,24 +38,19 @@ export default function DuplicateScannerView({
     const item = lastDeletedRef.current;
     if (!item) return;
 
-    // restore into the global store
-    // reinsert exactly as before
-    setGroups((prev) => {
-      // Restore item into the correct group
-      const key = `${(item.English || "").toLowerCase()}||${(item.Lithuanian ||
-        "").toLowerCase()}`;
+    // Restore into duplicate groups
+    const key = `${(item.English || "").toLowerCase()}||${(item.Lithuanian ||
+      "").toLowerCase()}`;
 
-      return prev.map((g) => {
-        if (g.key !== key) return g;
-        return { ...g, items: [...g.items, item] };
-      });
-    });
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.key === key
+          ? { ...g, items: [...g.items, item] }
+          : g
+      )
+    );
 
-    // Put back into phraseStore via callback
-    // `removePhrase` only removes; we need to reinsert manually here
-
-    // Because removePhrase is one-way, we patch rows directly using an event
-    // We'll dispatch a custom event the App listens to — cleaner separation
+    // Restore into global store
     window.dispatchEvent(
       new CustomEvent("restorePhrase", { detail: { item } })
     );
@@ -85,9 +80,7 @@ export default function DuplicateScannerView({
 
     const grouped = [];
     for (const [key, items] of map.entries()) {
-      if (items.length > 1) {
-        grouped.push({ key, items });
-      }
+      if (items.length > 1) grouped.push({ key, items });
     }
 
     setGroups(grouped);
@@ -96,13 +89,13 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Delete + Undoable Logic
+     Delete Logic
      ============================================================ */
   function performDelete(item) {
-    // Remove from global store
+    // Remove globally
     removePhrase(item._id);
 
-    // Remove from local stale snapshot
+    // Remove from local duplicate groups
     setGroups((prev) =>
       prev
         .map((g) => ({
@@ -116,9 +109,9 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Swipe System
+     Swipeable Row Component
      ============================================================ */
-  function useSwipeableRow(item) {
+  function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
     const startX = useRef(0);
     const currentX = useRef(0);
@@ -129,11 +122,12 @@ export default function DuplicateScannerView({
       startX.current = e.clientX;
       currentX.current = e.clientX;
       isDragging.current = true;
-      ref.current.setPointerCapture(e.pointerId);
+      if (ref.current) ref.current.setPointerCapture(e.pointerId);
     }
 
     function onPointerMove(e) {
       if (!isDragging.current) return;
+
       const dx = e.clientX - startX.current;
       currentX.current = e.clientX;
 
@@ -143,9 +137,8 @@ export default function DuplicateScannerView({
         return;
       }
 
-      // Cap swipe distance
-      const maxSwipe = -200;
-      setTranslateX(Math.max(dx, maxSwipe));
+      const max = -220;
+      setTranslateX(Math.max(dx, max));
     }
 
     function onPointerUp(e) {
@@ -153,45 +146,95 @@ export default function DuplicateScannerView({
       isDragging.current = false;
 
       const dx = currentX.current - startX.current;
-
       const rowWidth = ref.current?.offsetWidth || 300;
-      const threshold = -rowWidth * 0.4; // 40% swipe = auto-delete
-      const reveal = -rowWidth * 0.25; // reveal delete zone
 
-      if (dx <= threshold) {
-        // HARD DELETE (auto-delete)
+      const hardDelete = -rowWidth * 0.4; // 40%
+      const revealZone = -rowWidth * 0.25; // reveal zone
+
+      if (dx <= hardDelete) {
+        // Auto-delete
         setTranslateX(-rowWidth);
-        setTimeout(() => performDelete(item), 150);
-      } else if (dx <= reveal) {
-        // Keep row partially open, showing delete area
+        setTimeout(() => onDelete(item), 150);
+      } else if (dx <= revealZone) {
+        // Keep the delete zone exposed
         setTranslateX(-100);
       } else {
         // Snap closed
         setTranslateX(0);
       }
 
-      try {
-        ref.current.releasePointerCapture(e.pointerId);
-      } catch {}
+      if (ref.current) {
+        try {
+          ref.current.releasePointerCapture(e.pointerId);
+        } catch {}
+      }
     }
 
-    function close() {
-      setTranslateX(0);
-    }
+    return (
+      <div className="relative overflow-hidden">
+        {/* DELETE background */}
+        <div className="absolute inset-0 bg-red-600 flex items-center pl-4 text-white font-semibold text-sm">
+          DELETE
+        </div>
 
-    // When tapping DELETE area
-    function onDeleteTap() {
-      performDelete(item);
-    }
+        {/* Swipeable Foreground */}
+        <article
+          ref={ref}
+          className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 relative z-10 touch-pan-y"
+          style={{
+            transform: `translateX(${translateX}px)`,
+            transition:
+              translateX === 0 ? "transform 0.2s ease-out" : "none",
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        >
+          <div className="text-sm font-semibold truncate">
+            {item.English || "—"}
+          </div>
+          <div className="text-sm text-emerald-300 truncate">
+            {item.Lithuanian || "—"}
+          </div>
 
-    return {
-      ref,
-      translateX,
-      onPointerDown,
-      onPointerMove,
-      onPointerUp,
-      onDeleteTap,
-    };
+          {item.Phonetic && (
+            <div className="text-[11px] text-zinc-400 italic truncate">
+              {item.Phonetic}
+            </div>
+          )}
+
+          <div className="mt-1 space-y-1 text-[11px] text-zinc-300">
+            {item.Usage && (
+              <div>
+                <span className="text-zinc-500">{T.usage}: </span>
+                {item.Usage}
+              </div>
+            )}
+            {item.Notes && (
+              <div>
+                <span className="text-zinc-500">{T.notes}: </span>
+                {item.Notes}
+              </div>
+            )}
+            {item.Category && (
+              <div>
+                <span className="text-zinc-500">{T.category}: </span>
+                {item.Category}
+              </div>
+            )}
+          </div>
+        </article>
+
+        {/* DELETE tap zone when exposed */}
+        {translateX <= -100 && translateX > -800 && (
+          <button
+            className="absolute inset-0 z-20"
+            onClick={() => onDelete(item)}
+          />
+        )}
+      </div>
+    );
   }
 
   /* ============================================================
@@ -212,7 +255,7 @@ export default function DuplicateScannerView({
         </div>
       )}
 
-      {/* Top Controls */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-4 mt-2">
         <button
           type="button"
@@ -234,18 +277,20 @@ export default function DuplicateScannerView({
 
       <h2 className="text-2xl font-bold mb-1">Duplicate scanner</h2>
       <p className="text-sm text-zinc-400 mb-4">
-        Looks for exact duplicates where both <span className="font-semibold">{T.english}</span> and{" "}
+        Finds exact duplicates where both{" "}
+        <span className="font-semibold">{T.english}</span> and{" "}
         <span className="font-semibold">{T.lithuanian}</span> match.
       </p>
 
-      {/* Summary */}
+      {/* Results summary */}
       {hasScanned && (
         <div className="mb-4 text-sm text-zinc-300">
           {groups.length === 0 ? (
-            <span>No duplicates found.</span>
+            "No duplicates found."
           ) : (
             <>
-              Found <strong>{groups.length}</strong> duplicate groups.
+              Found <strong>{groups.length}</strong> duplicate
+              groups.
             </>
           )}
         </div>
@@ -263,82 +308,14 @@ export default function DuplicateScannerView({
             </div>
 
             <div className="space-y-2">
-              {g.items.map((item) => {
-                const swipe = useSwipeableRow(item);
-
-                return (
-                  <div key={item._id} className="relative overflow-hidden">
-                    {/* DELETE background */}
-                    <div className="absolute inset-0 bg-red-600 flex items-center pl-4 text-white font-semibold text-sm">
-                      DELETE
-                    </div>
-
-                    {/* Swipeable foreground */}
-                    <article
-                      ref={swipe.ref}
-                      className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 relative z-10 touch-pan-y"
-                      style={{
-                        transform: `translateX(${swipe.translateX}px)`,
-                        transition:
-                          swipe.translateX === 0
-                            ? "transform 0.2s ease-out"
-                            : "none",
-                      }}
-                      onPointerDown={swipe.onPointerDown}
-                      onPointerMove={swipe.onPointerMove}
-                      onPointerUp={swipe.onPointerUp}
-                      onPointerCancel={swipe.onPointerUp}
-                    >
-                      <div className="text-sm font-semibold truncate">
-                        {item.English || "—"}
-                      </div>
-                      <div className="text-sm text-emerald-300 truncate">
-                        {item.Lithuanian || "—"}
-                      </div>
-                      {item.Phonetic && (
-                        <div className="text-[11px] text-zinc-400 italic truncate">
-                          {item.Phonetic}
-                        </div>
-                      )}
-
-                      <div className="mt-1 space-y-1 text-[11px] text-zinc-300">
-                        {item.Usage && (
-                          <div>
-                            <span className="text-zinc-500">
-                              {T.usage}:{" "}
-                            </span>
-                            {item.Usage}
-                          </div>
-                        )}
-                        {item.Notes && (
-                          <div>
-                            <span className="text-zinc-500">
-                              {T.notes}:{" "}
-                            </span>
-                            {item.Notes}
-                          </div>
-                        )}
-                        {item.Category && (
-                          <div>
-                            <span className="text-zinc-500">
-                              {T.category}:{" "}
-                            </span>
-                            {item.Category}
-                          </div>
-                        )}
-                      </div>
-                    </article>
-
-                    {/* Tap delete manually if partially open */}
-                    {swipe.translateX <= -100 && swipe.translateX > -400 && (
-                      <button
-                        className="absolute inset-0 z-20"
-                        onClick={swipe.onDeleteTap}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              {g.items.map((item) => (
+                <SwipeableDuplicateItem
+                  key={item._id}
+                  item={item}
+                  T={T}
+                  onDelete={performDelete}
+                />
+              ))}
             </div>
           </section>
         ))}
