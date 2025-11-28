@@ -1,4 +1,3 @@
-// src/views/HomeView.jsx
 import React, { useState } from "react";
 
 export default function HomeView({
@@ -113,7 +112,7 @@ export default function HomeView({
 
   function Segmented({ value, onChange, options }) {
     return (
-      <div className="flex w-full bg-zinc-800 border border-zinc-700 rounded-xl overflow-hidden">
+      <div className="flex w-full bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] overflow-hidden">
         {options.map((opt, idx) => {
           const active = value === opt.value;
           return (
@@ -127,9 +126,9 @@ export default function HomeView({
                 "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none " +
                 (active
                   ? "bg-emerald-600 text-black"
-                  : "bg-zinc-900 text-zinc-200 hover:bg-zinc-700") +
+                  : "bg-zinc-950/60 text-zinc-200 hover:bg-zinc-800/60") +
                 (idx !== options.length - 1
-                  ? " border-r border-zinc-700"
+                  ? " border-r border-zinc-800"
                   : "")
               }
             >
@@ -145,7 +144,7 @@ export default function HomeView({
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
 
       {/* Header */}
-      <div>
+      <div className="mb-4">
         <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
         <p className="text-sm text-zinc-400 mt-1">
           Draft the phrase, tune the tone, hear it spoken, then save it to your
@@ -154,7 +153,7 @@ export default function HomeView({
       </div>
 
       {/* Speaking to */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <Segmented
           value={gender}
@@ -168,7 +167,7 @@ export default function HomeView({
       </div>
 
       {/* Tone */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
         <div className="text-sm font-semibold mb-2">Tone</div>
         <Segmented
           value={tone}
@@ -182,10 +181,9 @@ export default function HomeView({
       </div>
 
       {/* Input */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
-        <label className="block text-sm mb-2">
-          What would you like to say?
-        </label>
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
+        <label className="block text-sm mb-2">What would you like to say?</label>
+
         <textarea
           rows={3}
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-sm mb-3"
@@ -215,7 +213,7 @@ export default function HomeView({
 
       {/* Output */}
       {ltOut && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
+        <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 space-y-3">
           <div>
             <label className="block text-sm mb-1">Lithuanian</label>
             <div className="text-lg font-semibold break-words">{ltOut}</div>
@@ -262,7 +260,7 @@ export default function HomeView({
         </div>
       )}
 
-      {/* NEW: Full-width Add Entry button under translation */}
+      {/* Full-width Add Entry button */}
       {typeof onOpenAddForm === "function" && (
         <button
           className="w-full mt-6 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black font-semibold text-center select-none"
