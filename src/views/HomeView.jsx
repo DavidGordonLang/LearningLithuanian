@@ -2,8 +2,6 @@
 import React, { useState } from "react";
 
 export default function HomeView({
-  direction,
-  setDirection,
   playText,
   onOpenAddForm,
   setRows,
@@ -23,8 +21,6 @@ export default function HomeView({
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
 
-  const isEnToLt = direction === "EN2LT";
-
   async function handleTranslate() {
     const text = input.trim();
     if (!text) return;
@@ -41,7 +37,6 @@ export default function HomeView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text,
-          direction,
           tone,
           gender,
         }),
@@ -75,7 +70,6 @@ export default function HomeView({
 
   function handleSaveToLibrary() {
     if (!ltOut || !enLiteral) return;
-    if (!setRows || !genId || !nowTs) return;
 
     const englishInput = input.trim();
     if (!englishInput) return;
@@ -190,9 +184,7 @@ export default function HomeView({
       {/* Input */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
         <label className="block text-sm mb-2">
-          {isEnToLt
-            ? "What do you want to say in English?"
-            : "Ką norite pasakyti lietuviškai?"}
+          What would you like to say?
         </label>
         <textarea
           rows={3}
@@ -225,9 +217,7 @@ export default function HomeView({
       {ltOut && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
           <div>
-            <label className="block text-sm mb-1">
-              {isEnToLt ? "Lithuanian" : "Lithuanian (base phrase)"}
-            </label>
+            <label className="block text-sm mb-1">Lithuanian</label>
             <div className="text-lg font-semibold break-words">{ltOut}</div>
 
             {phonetics && (
