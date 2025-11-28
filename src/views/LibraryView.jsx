@@ -22,7 +22,7 @@ export default function LibraryView({
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
 
-  /* FILTERING */
+  /* FILTERING LOGIC */
   const filteredRows = useMemo(() => {
     let base = rows;
 
@@ -36,11 +36,12 @@ export default function LibraryView({
 
     base = base.filter((r) => r.Sheet === tab);
 
-    if (sortMode === "Newest")
+    if (sortMode === "Newest") {
       return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
-
-    if (sortMode === "Oldest")
+    }
+    if (sortMode === "Oldest") {
       return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+    }
 
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...base].sort(
@@ -50,31 +51,31 @@ export default function LibraryView({
     );
   }, [rows, qNorm, sortMode, tab, normalizeRag]);
 
-  /* TAB CONTROL */
+  /* MOBILE + DESKTOP–FRIENDLY TABS */
   function TabControl() {
     const options = ["Phrases", "Questions", "Words", "Numbers"];
 
     return (
-      <div className="
-        bg-zinc-900/95 border border-zinc-800 
-        rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
-        p-1 flex
-      ">
+      <div
+        className="
+          bg-zinc-900/95 border border-zinc-800 rounded-2xl 
+          shadow-[0_0_20px_rgba(0,0,0,0.25)] p-1 
+          flex
+        "
+      >
         {options.map((opt) => {
           const active = tab === opt;
           return (
             <button
               key={opt}
               type="button"
-              onClick={() => setTab(opt)}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
               className={
                 "flex-1 px-3 py-2 text-sm font-medium rounded-full transition select-none " +
                 (active
                   ? "bg-emerald-500 text-black shadow"
                   : "text-zinc-300 hover:bg-zinc-800/60")
               }
+              onClick={() => setTab(opt)}
             >
               {opt}
             </button>
@@ -93,9 +94,6 @@ export default function LibraryView({
     const start = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      try {
-        document.activeElement?.blur?.();
-      } catch {}
       pressed = true;
       firedSlow = false;
       timer = setTimeout(() => {
@@ -115,8 +113,6 @@ export default function LibraryView({
     };
 
     const cancel = (e) => {
-      e.preventDefault?.();
-      e.stopPropagation?.();
       pressed = false;
       if (timer) clearTimeout(timer);
       timer = null;
@@ -149,8 +145,6 @@ export default function LibraryView({
             select-none
           "
           onClick={onOpenAddForm}
-          onMouseDown={(e) => e.preventDefault()}
-          onTouchStart={(e) => e.preventDefault()}
         >
           + Add Entry
         </button>
@@ -178,12 +172,21 @@ export default function LibraryView({
                 key={r._id}
                 className="
                   bg-zinc-900/95 border border-zinc-800 
-                  rounded-2xl p-3 
+                  rounded-2xl p-4 
                   shadow-[0_0_12px_rgba(0,0,0,0.15)]
                 "
               >
-                <div className="flex items-start gap-3">
-
+                {/* TEXT + EXPANSION */}
+                <div
+                  className="flex flex-col md:flex-row md:items-start gap-3 cursor-pointer"
+                  onClick={() =>
+                    setExpanded((prev) => {
+                      const next = new Set(prev);
+                      next.has(r._id) ? next.delete(r._id) : next.add(r._id);
+                      return next;
+                    })
+                  }
+                >
                   {/* RAG ICON */}
                   <button
                     type="button"
@@ -191,9 +194,10 @@ export default function LibraryView({
                       w-8 h-8 rounded-full border border-zinc-700 
                       text-sm flex items-center justify-center 
                       bg-zinc-950/60 hover:bg-zinc-800/60 
-                      select-none
+                      select-none shrink-0
                     "
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setRows((prev) =>
                         prev.map((x) =>
                           x._id === r._id
@@ -208,48 +212,37 @@ export default function LibraryView({
                               }
                             : x
                         )
-                      )
-                    }
+                      );
+                    }}
                   >
                     {normalizeRag(r["RAG Icon"])}
                   </button>
 
-                  {/* TEXT */}
-                  <div
-                    className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() =>
-                      setExpanded((prev) => {
-                        const next = new Set(prev);
-                        next.has(r._id) ? next.delete(r._id) : next.add(r._id);
-                        return next;
-                      })
-                    }
-                  >
-                    <div className="text-sm font-semibold truncate">
+                  {/* TEXT BLOCK */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold break-words">
                       {r.English || "—"}
                     </div>
 
-                    <div className="text-sm text-emerald-300 truncate">
+                    <div className="text-sm text-emerald-300 break-words">
                       {r.Lithuanian || "—"}
                     </div>
 
                     {r.Phonetic && (
-                      <div className="text-[11px] text-zinc-400 italic truncate">
+                      <div className="text-[11px] text-zinc-400 italic break-words mt-1">
                         {r.Phonetic}
                       </div>
                     )}
 
                     {(r.Usage || r.Notes) && !isOpen && (
-                      <div className="text-[11px] text-zinc-500 mt-0.5 line-clamp-1">
+                      <div className="text-[11px] text-zinc-500 mt-1 break-words">
                         {r.Usage || r.Notes}
                       </div>
                     )}
                   </div>
 
-                  {/* ACTION BUTTONS */}
-                  <div className="flex items-center gap-2 shrink-0">
-
-                    {/* Play pill */}
+                  {/* DESKTOP ACTIONS (hidden on mobile) */}
+                  <div className="hidden md:flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       className="
@@ -260,11 +253,11 @@ export default function LibraryView({
                         select-none
                       "
                       {...pressHandlers(textToPlay)}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       ▶
                     </button>
 
-                    {/* Edit pill */}
                     <button
                       type="button"
                       className="
@@ -274,12 +267,14 @@ export default function LibraryView({
                         hover:bg-zinc-700 active:bg-zinc-600 
                         select-none
                       "
-                      onClick={() => onEditRow(r._id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditRow(r._id);
+                      }}
                     >
                       Edit
                     </button>
 
-                    {/* Delete pill */}
                     <button
                       type="button"
                       className="
@@ -288,7 +283,8 @@ export default function LibraryView({
                         hover:bg-red-400 active:bg-red-300
                         select-none
                       "
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (window.confirm(T.confirm)) removePhrase(r._id);
                       }}
                     >
@@ -320,6 +316,52 @@ export default function LibraryView({
                     )}
                   </div>
                 )}
+
+                {/* MOBILE ACTION BAR (centered) */}
+                <div className="md:hidden flex justify-center gap-4 mt-5">
+                  <button
+                    type="button"
+                    className="
+                      bg-emerald-500 text-black 
+                      rounded-full px-5 py-2 
+                      text-[18px] shadow 
+                      hover:bg-emerald-400 active:bg-emerald-300 
+                      select-none
+                    "
+                    {...pressHandlers(textToPlay)}
+                  >
+                    ▶
+                  </button>
+
+                  <button
+                    type="button"
+                    className="
+                      bg-zinc-800 text-zinc-200 
+                      rounded-full px-4 py-2 
+                      text-sm shadow-sm
+                      hover:bg-zinc-700 active:bg-zinc-600 
+                      select-none
+                    "
+                    onClick={() => onEditRow(r._id)}
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    className="
+                      bg-red-500 text-white rounded-full 
+                      px-4 py-2 text-sm font-medium
+                      hover:bg-red-400 active:bg-red-300
+                      select-none
+                    "
+                    onClick={() => {
+                      if (window.confirm(T.confirm)) removePhrase(r._id);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </article>
             );
           })}
