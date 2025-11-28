@@ -8,29 +8,33 @@ export default function DuplicateScannerView({
   removePhrase,
   onBack,
 }) {
-  const toastRoot = typeof document !== "undefined"
-    ? document.getElementById("toast-root")
-    : null;
+  const toastRoot =
+    typeof document !== "undefined"
+      ? document.getElementById("toast-root")
+      : null;
 
   const [groups, setGroups] = useState([]);
   const [hasScanned, setHasScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
-  // groupKey -> skipped count
+  // Skip + exit
   const [skipped, setSkipped] = useState({});
-  // groupKey -> true while fading out
   const [exitingGroups, setExitingGroups] = useState({});
 
-  // Toast { message, onUndo }
+  // Single Undo memory
+  const undoRef = useRef(null);
+
+  // Toast
   const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
 
   /* ============================================================
-     Toast helpers (portal)
+     Toast Helpers (Portal)
      ============================================================ */
   function showToast({ message, onUndo, durationMs }) {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ message, onUndo: onUndo || null });
+
+    setToast({ message, onUndo });
 
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
@@ -40,7 +44,12 @@ export default function DuplicateScannerView({
   function handleToastUndo() {
     if (toast?.onUndo) toast.onUndo();
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastRefNull();
     setToast(null);
+  }
+
+  function toastRefNull() {
+    undoRef.current = null;
   }
 
   useEffect(() => {
@@ -66,40 +75,49 @@ export default function DuplicateScannerView({
       map.get(key).push(r);
     }
 
-    const grouped = [];
+    const groupsOut = [];
     for (const [key, items] of map.entries()) {
-      if (items.length > 1) grouped.push({ key, items });
+      if (items.length > 1) groupsOut.push({ key, items });
     }
 
-    setGroups(grouped);
+    setGroups(groupsOut);
     setSkipped({});
     setExitingGroups({});
+    undoRef.current = null;
     setHasScanned(true);
     setIsScanning(false);
   }
 
   /* ============================================================
-     Delete + Undo
+     Delete + Undo (with group-index restore)
      ============================================================ */
-  function performDelete(item, groupKey, indexInGroup) {
-    // remove from global store
+  function performDelete(item, groupKey, itemIndex) {
+    const groupIndex = groups.findIndex((g) => g.key === groupKey);
+
+    // Save undo snapshot
+    undoRef.current = {
+      item,
+      groupKey,
+      itemIndex,
+      groupIndex,
+    };
+
     removePhrase(item._id);
 
-    // update local snapshot
     setGroups((prev) => {
-      const newGroups = prev.map((g) => {
+      const updated = prev.map((g) => {
         if (g.key !== groupKey) return g;
-        const items = g.items.filter((_, i) => i !== indexInGroup);
+        const items = g.items.filter((_, i) => i !== itemIndex);
         return { ...g, items };
       });
 
-      const updated = newGroups.find((g) => g.key === groupKey);
-      if (updated && updated.items.length <= 1) {
-        // fade out this group
+      const targetGroup = updated.find((g) => g.key === groupKey);
+
+      if (targetGroup && targetGroup.items.length <= 1) {
         setExitingGroups((pr) => ({ ...pr, [groupKey]: true }));
 
         setTimeout(() => {
-          setGroups((cur) => cur.filter((g) => g.key !== groupKey));
+          setGroups((current) => current.filter((g) => g.key !== groupKey));
           setExitingGroups((pr) => {
             const next = { ...pr };
             delete next[groupKey];
@@ -113,31 +131,56 @@ export default function DuplicateScannerView({
         }, 300);
       }
 
-      return newGroups;
+      return updated;
     });
 
-    // toast + undo
     showToast({
       message: `Deleted “${item.English || "—"} / ${item.Lithuanian || "—"}”`,
       durationMs: 3000,
-      onUndo: () => {
-        // restore global
-        window.dispatchEvent(
-          new CustomEvent("restorePhrase", { detail: { item } })
-        );
-
-        // restore locally
-        setGroups((prev) =>
-          prev.map((g) => {
-            if (g.key !== groupKey) return g;
-            const items = [...g.items];
-            const insertPos = Math.min(indexInGroup, items.length);
-            items.splice(insertPos, 0, item);
-            return { ...g, items };
-          })
-        );
-      },
+      onUndo: restoreLastDelete,
     });
+  }
+
+  /* ============================================================
+     Undo Restore (Item + Group Index Exact Restore)
+     ============================================================ */
+  function restoreLastDelete() {
+    const undo = undoRef.current;
+    if (!undo) return;
+
+    const { item, groupKey, itemIndex, groupIndex } = undo;
+
+    // Restore globally
+    window.dispatchEvent(
+      new CustomEvent("restorePhrase", { detail: { item } })
+    );
+
+    // Restore into local duplicate groups
+    setGroups((prev) => {
+      // If group doesn't exist anymore, recreate it
+      let group = prev.find((g) => g.key === groupKey);
+      let newGroups = [...prev];
+
+      if (!group) {
+        // Recreate empty group
+        group = { key: groupKey, items: [] };
+        newGroups.splice(groupIndex, 0, group);
+      }
+
+      // Insert item inside group at correct index
+      const items = [...group.items];
+      const pos = Math.min(itemIndex, items.length);
+      items.splice(pos, 0, item);
+
+      // Replace the group in list
+      const updatedGroup = { ...group, items };
+      newGroups = newGroups.filter((g) => g.key !== groupKey);
+      newGroups.splice(groupIndex, 0, updatedGroup);
+
+      return newGroups;
+    });
+
+    undoRef.current = null;
   }
 
   /* ============================================================
@@ -145,7 +188,6 @@ export default function DuplicateScannerView({
      ============================================================ */
   function skipGroup(groupKey) {
     const group = groups.find((g) => g.key === groupKey);
-    if (!group) return;
     const count = group.items.length;
 
     setSkipped((pr) => ({ ...pr, [groupKey]: count }));
@@ -153,35 +195,31 @@ export default function DuplicateScannerView({
     showToast({
       message: `Skipped group (${count} item${count > 1 ? "s" : ""})`,
       durationMs: 2000,
-      onUndo: () => {
+      onUndo: () =>
         setSkipped((pr) => {
           const next = { ...pr };
           delete next[groupKey];
           return next;
-        });
-      },
+        }),
     });
   }
 
   /* ============================================================
-     Swipeable row — medium sensitivity, distance-only
+     Swipeable row — distance-only, stable
      ============================================================ */
   function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
     const startX = useRef(0);
     const lastX = useRef(0);
-    const isDraggingRef = useRef(false);
+    const draggingRef = useRef(false);
 
     const [translateX, setTranslateX] = useState(0);
     const [isFading, setIsFading] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
 
-    function onPointerDown(e) {
+    function pointerDown(e) {
+      draggingRef.current = true;
       startX.current = e.clientX;
       lastX.current = e.clientX;
-      isDraggingRef.current = true;
-      setIsDragging(true);
-      setIsFading(false);
 
       if (ref.current?.setPointerCapture) {
         try {
@@ -190,77 +228,48 @@ export default function DuplicateScannerView({
       }
     }
 
-    function onPointerMove(e) {
-      if (!isDraggingRef.current) return;
-      const x = e.clientX;
-      const dx = x - startX.current;
-      lastX.current = x;
+    function pointerMove(e) {
+      if (!draggingRef.current) return;
+
+      const dx = e.clientX - startX.current;
+      lastX.current = e.clientX;
 
       const width = ref.current?.offsetWidth || 300;
-      const limit = width * 1.2;
-      const clamped = Math.max(-limit, Math.min(limit, dx));
-      setTranslateX(clamped);
+      const max = width * 1.2;
+
+      setTranslateX(Math.max(-max, Math.min(max, dx)));
     }
 
-    function triggerDelete(dx) {
-      const width = ref.current?.offsetWidth || 300;
-      const dir = dx >= 0 ? 1 : -1;
-
-      setIsFading(true);
-      setIsDragging(false);
-      setTranslateX(dir * width * 1.1);
-
-      // let the animation play, then remove
-      setTimeout(() => onDelete(), 500);
-    }
-
-    function onPointerEnd(e) {
-      if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-      setIsDragging(false);
-
-      if (ref.current?.releasePointerCapture) {
-        try {
-          ref.current.releasePointerCapture(e.pointerId);
-        } catch {}
-      }
+    function pointerEnd(e) {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
 
       const dx = lastX.current - startX.current;
       const width = ref.current?.offsetWidth || 300;
-      const threshold = width * 0.25; // 25% → medium sensitivity
+      const threshold = width * 0.25;
 
       if (Math.abs(dx) >= threshold) {
-        triggerDelete(dx);
+        // delete
+        const dir = dx > 0 ? 1 : -1;
+        setIsFading(true);
+        setTranslateX(dir * width * 1.2);
+        setTimeout(() => onDelete(), 400);
       } else {
-        setTranslateX(0); // snap back
+        // restore
+        setTranslateX(0);
       }
     }
 
     const absX = Math.abs(translateX);
 
-    const style = {
-      transform: `translateX(${translateX}px) scale(${isFading ? 0.96 : 1})`,
-      opacity: isFading ? 0 : 1,
-      filter: isFading ? "blur(4px)" : "blur(0px)",
-      transition: isFading
-        ? "transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease"
-        : isDragging
-        ? "none"
-        : "transform 0.18s ease-out",
-    };
-
-    const trackOpacity =
-      isDragging || isFading
-        ? 0.4 + Math.min(absX / 300, 0.6)
-        : 0;
-
     return (
       <div className="relative overflow-hidden rounded-lg border border-zinc-800">
-        {/* DELETE track */}
+        {/* Delete track */}
         <div
           className="absolute inset-0 bg-zinc-800 flex items-center justify-center"
           style={{
-            opacity: trackOpacity,
+            opacity:
+              isFading || absX > 10 ? 0.4 + Math.min(absX / 300, 0.6) : 0,
             transition: "opacity 0.25s ease",
           }}
         >
@@ -282,11 +291,20 @@ export default function DuplicateScannerView({
         <article
           ref={ref}
           className="relative z-10 bg-zinc-950 p-3 touch-pan-y"
-          style={style}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
+          style={{
+            transform: `translateX(${translateX}px) scale(${
+              isFading ? 0.96 : 1
+            })`,
+            opacity: isFading ? 0 : 1,
+            filter: isFading ? "blur(4px)" : "blur(0px)",
+            transition: isFading
+              ? "transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease"
+              : "transform 0.18s ease-out",
+          }}
+          onPointerDown={pointerDown}
+          onPointerMove={pointerMove}
+          onPointerUp={pointerEnd}
+          onPointerCancel={pointerEnd}
         >
           <div className="text-sm font-semibold truncate">
             {item.English || "—"}
@@ -294,40 +312,34 @@ export default function DuplicateScannerView({
           <div className="text-sm text-emerald-300 truncate">
             {item.Lithuanian || "—"}
           </div>
-
           {item.Phonetic && (
             <div className="text-[11px] text-zinc-400 italic truncate">
               {item.Phonetic}
             </div>
           )}
-
-          <div className="mt-1 space-y-1 text-[11px] text-zinc-300">
-            {item.Usage && (
-              <div>
-                <span className="text-zinc-500">{T.usage}: </span>
-                {item.Usage}
-              </div>
-            )}
-            {item.Notes && (
-              <div>
-                <span className="text-zinc-500">{T.notes}: </span>
-                {item.Notes}
-              </div>
-            )}
-            {item.Category && (
-              <div>
-                <span className="text-zinc-500">{T.category}: </span>
-                {item.Category}
-              </div>
-            )}
-          </div>
+          {(item.Usage || item.Notes) && (
+            <div className="mt-1 text-[11px] text-zinc-300 space-y-1">
+              {item.Usage && (
+                <div>
+                  <span className="text-zinc-500">{T.usage}: </span>
+                  {item.Usage}
+                </div>
+              )}
+              {item.Notes && (
+                <div>
+                  <span className="text-zinc-500">{T.notes}: </span>
+                  {item.Notes}
+                </div>
+              )}
+            </div>
+          )}
         </article>
       </div>
     );
   }
 
   /* ============================================================
-     Group section — fade-out only when exiting
+     Group Section — stable, fade-out only
      ============================================================ */
   function DuplicateGroupSection({
     group,
@@ -371,7 +383,7 @@ export default function DuplicateScannerView({
       return (
         <section
           style={style}
-          className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-400 text-xs italic"
+          className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-xs text-zinc-500 italic"
         >
           Group resolved.
         </section>
@@ -410,15 +422,11 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     RENDER
+     Render
      ============================================================ */
-  const activeGroups = groups.filter(
-    (g) => g.items.length > 1 && !exitingGroups[g.key]
-  );
-
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-28 relative">
-      {/* Toast via portal */}
+      {/* Toast Portal */}
       {toast &&
         toastRoot &&
         createPortal(
@@ -467,9 +475,7 @@ export default function DuplicateScannerView({
         <div className="mb-4 text-sm text-zinc-300">
           {groups.length === 0
             ? "No duplicates found."
-            : `Found ${activeGroups.length} active duplicate group${
-                activeGroups.length !== 1 ? "s" : ""
-              }.`}
+            : `Found ${groups.filter((g) => g.items.length > 1).length} active groups.`}
         </div>
       )}
 
