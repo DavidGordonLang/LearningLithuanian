@@ -18,7 +18,8 @@ import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
-import ChangeLogModal from "./components/ChangeLogModal";   // NEW
+import ChangeLogModal from "./components/ChangeLogModal";
+import UserGuideModal from "./components/UserGuideModal";
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
@@ -32,11 +33,10 @@ const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice";
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
+const LSK_USER_GUIDE = "lt_seen_user_guide";
 
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
-  LT2EN: "/data/starter_lt_to_en.json",
-  COMBINED_OPTIONAL: "/data/starter_combined_dedup.json",
 };
 
 /* ============================================================================
@@ -133,6 +133,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   const ssml = `<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
     text
   )}</prosody></voice></speak>`;
+
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -143,6 +144,7 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
     body: ssml,
   });
   if (!res.ok) throw new Error("Azure TTS failed");
+
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
@@ -164,7 +166,7 @@ function speakBrowser(text, voice, rate = 1) {
 }
 
 /* ============================================================================
-   SEARCH INPUT
+   SEARCH
    ========================================================================== */
 const SearchBox = memo(
   forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
@@ -270,6 +272,7 @@ export default function App() {
     () => localStorage.getItem(LSK_AZURE_REGION) || ""
   );
   const [azureVoices, setAzureVoices] = useState([]);
+
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
       return (
@@ -343,7 +346,6 @@ export default function App() {
         speakBrowser(text, browserVoice, slow ? 0.6 : 1.0);
       }
     } catch (e) {
-      console.error(e);
       alert("Voice error: " + e?.message);
     }
   }
@@ -355,7 +357,7 @@ export default function App() {
     searchStore.getServerSnapshot
   );
 
-  /* IMPORT / STARTERS */
+  /* IMPORT / MERGE */
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -412,7 +414,7 @@ export default function App() {
     }
   }
 
-  /* ADD / EDIT FORM */
+  /* ADD / EDIT MODAL */
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
   const [toast, setToast] = useState("");
@@ -477,6 +479,17 @@ export default function App() {
   /* CHANGE LOG MODAL */
   const [showChangeLog, setShowChangeLog] = useState(false);
 
+  /* USER GUIDE MODAL */
+  const [showUserGuide, setShowUserGuide] = useState(false);
+
+  /* FIRST LAUNCH USER GUIDE */
+  useEffect(() => {
+    const seen = localStorage.getItem(LSK_USER_GUIDE);
+    if (!seen) {
+      setShowUserGuide(true);
+    }
+  }, []);
+
   /* RENDER */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -533,7 +546,8 @@ export default function App() {
             importJsonFile={importJsonFile}
             rows={rows}
             onOpenDuplicateScanner={() => setPage("dupes")}
-            onOpenChangeLog={() => setShowChangeLog(true)}   // NEW
+            onOpenChangeLog={() => setShowChangeLog(true)}
+            onOpenUserGuide={() => setShowUserGuide(true)}
           />
         ) : page === "dupes" ? (
           <DuplicateScannerView
@@ -553,6 +567,7 @@ export default function App() {
               showToast={showToast}
               onOpenAddForm={onOpenAddForm}
             />
+
             {toast && (
               <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
                 {toast}
@@ -562,6 +577,7 @@ export default function App() {
         )}
       </main>
 
+      {/* ADD FORM MODAL */}
       {addOpen && (
         <div
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
@@ -622,9 +638,17 @@ export default function App() {
         </div>
       )}
 
-      {/* NEW: CHANGE LOG MODAL */}
+      {/* CHANGE LOG MODAL */}
       {showChangeLog && (
         <ChangeLogModal onClose={() => setShowChangeLog(false)} />
+      )}
+
+      {/* USER GUIDE MODAL */}
+      {showUserGuide && (
+        <UserGuideModal
+          onClose={() => setShowUserGuide(false)}
+          firstLaunch={!localStorage.getItem(LSK_USER_GUIDE)}
+        />
       )}
     </div>
   );
