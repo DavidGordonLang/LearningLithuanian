@@ -1,4 +1,3 @@
-// src/components/ChangeLogModal.jsx
 import React, { useEffect, useState } from "react";
 
 export default function ChangeLogModal({ onClose }) {
@@ -26,7 +25,12 @@ export default function ChangeLogModal({ onClose }) {
       onPointerDown={() => onClose()}
     >
       <div
-        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
+        className="
+          w-full max-w-2xl max-h-[85vh] overflow-y-auto 
+          bg-zinc-900/95 border border-zinc-800 rounded-2xl 
+          shadow-[0_0_20px_rgba(0,0,0,0.25)]
+          p-5
+        "
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -45,7 +49,9 @@ export default function ChangeLogModal({ onClose }) {
         )}
 
         {!loading && entries.length === 0 && (
-          <div className="text-sm text-zinc-400">No changelog entries found.</div>
+          <div className="text-sm text-zinc-400">
+            No changelog entries found.
+          </div>
         )}
 
         {!loading && entries.length > 0 && (
@@ -53,14 +59,20 @@ export default function ChangeLogModal({ onClose }) {
             {entries.map((entry, index) => (
               <section
                 key={index}
-                className="bg-zinc-950 border border-zinc-800 rounded-xl p-4"
+                className="
+                  bg-zinc-950/60 
+                  border border-zinc-800 
+                  rounded-2xl 
+                  p-4 
+                  shadow-sm
+                "
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold">{entry.version}</h3>
                   <span className="text-xs text-zinc-400">{entry.date}</span>
                 </div>
 
-                <ul classname="list-disc list-inside space-y-1 text-sm text-zinc-300">
+                <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300">
                   {entry.changes.map((change, idx) => (
                     <li key={idx}>{change}</li>
                   ))}
