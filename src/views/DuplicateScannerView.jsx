@@ -8,15 +8,17 @@ export default function DuplicateScannerView({
   removePhrase,
   onBack,
 }) {
-  const toastRoot = document.getElementById("toast-root");
+  const toastRoot = typeof document !== "undefined"
+    ? document.getElementById("toast-root")
+    : null;
 
   const [groups, setGroups] = useState([]);
   const [hasScanned, setHasScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
-  // groupKey -> count
+  // groupKey -> skipped count
   const [skipped, setSkipped] = useState({});
-  // group fade-out store
+  // groupKey -> true while fading out
   const [exitingGroups, setExitingGroups] = useState({});
 
   // Toast { message, onUndo }
@@ -24,12 +26,11 @@ export default function DuplicateScannerView({
   const toastTimerRef = useRef(null);
 
   /* ============================================================
-     Toast Helpers (PORTAL)
+     Toast helpers (portal)
      ============================================================ */
   function showToast({ message, onUndo, durationMs }) {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-
-    setToast({ message, onUndo });
+    setToast({ message, onUndo: onUndo || null });
 
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
@@ -49,7 +50,7 @@ export default function DuplicateScannerView({
   }, []);
 
   /* ============================================================
-     Duplicate Scan
+     Duplicate scan
      ============================================================ */
   function scanDuplicates() {
     setIsScanning(true);
@@ -60,7 +61,6 @@ export default function DuplicateScannerView({
       const en = (r.English || "").trim().toLowerCase();
       const lt = (r.Lithuanian || "").trim().toLowerCase();
       if (!en && !lt) continue;
-
       const key = `${en}||${lt}`;
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(r);
@@ -82,8 +82,10 @@ export default function DuplicateScannerView({
      Delete + Undo
      ============================================================ */
   function performDelete(item, groupKey, indexInGroup) {
+    // remove from global store
     removePhrase(item._id);
 
+    // update local snapshot
     setGroups((prev) => {
       const newGroups = prev.map((g) => {
         if (g.key !== groupKey) return g;
@@ -91,18 +93,13 @@ export default function DuplicateScannerView({
         return { ...g, items };
       });
 
-      const updatedGroup = newGroups.find((g) => g.key === groupKey);
-
-      if (updatedGroup && updatedGroup.items.length <= 1) {
-        // trigger fade-out
-        setExitingGroups((prevExit) => ({
-          ...prevExit,
-          [groupKey]: true,
-        }));
+      const updated = newGroups.find((g) => g.key === groupKey);
+      if (updated && updated.items.length <= 1) {
+        // fade out this group
+        setExitingGroups((pr) => ({ ...pr, [groupKey]: true }));
 
         setTimeout(() => {
-          // fully remove after fade
-          setGroups((curr) => curr.filter((g) => g.key !== groupKey));
+          setGroups((cur) => cur.filter((g) => g.key !== groupKey));
           setExitingGroups((pr) => {
             const next = { ...pr };
             delete next[groupKey];
@@ -129,7 +126,7 @@ export default function DuplicateScannerView({
           new CustomEvent("restorePhrase", { detail: { item } })
         );
 
-        // local restore
+        // restore locally
         setGroups((prev) =>
           prev.map((g) => {
             if (g.key !== groupKey) return g;
@@ -144,7 +141,7 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Skip Group + Undo
+     Skip group + Undo
      ============================================================ */
   function skipGroup(groupKey) {
     const group = groups.find((g) => g.key === groupKey);
@@ -167,25 +164,24 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Swipeable Row (Fast + Hybrid Delete)
+     Swipeable row — medium sensitivity, distance-only
      ============================================================ */
   function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
     const startX = useRef(0);
     const lastX = useRef(0);
-    const startTime = useRef(0);
-    const isDragging = useRef(false);
+    const isDraggingRef = useRef(false);
 
     const [translateX, setTranslateX] = useState(0);
     const [isFading, setIsFading] = useState(false);
-    const [dragging, setDragging] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
 
     function onPointerDown(e) {
       startX.current = e.clientX;
       lastX.current = e.clientX;
-      startTime.current = e.timeStamp || performance.now();
-      isDragging.current = true;
-      setDragging(true);
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      setIsFading(false);
 
       if (ref.current?.setPointerCapture) {
         try {
@@ -195,14 +191,14 @@ export default function DuplicateScannerView({
     }
 
     function onPointerMove(e) {
-      if (!isDragging.current) return;
-
+      if (!isDraggingRef.current) return;
       const x = e.clientX;
       const dx = x - startX.current;
       lastX.current = x;
 
       const width = ref.current?.offsetWidth || 300;
-      const clamped = Math.max(-width * 1.2, Math.min(width * 1.2, dx));
+      const limit = width * 1.2;
+      const clamped = Math.max(-limit, Math.min(limit, dx));
       setTranslateX(clamped);
     }
 
@@ -211,15 +207,17 @@ export default function DuplicateScannerView({
       const dir = dx >= 0 ? 1 : -1;
 
       setIsFading(true);
+      setIsDragging(false);
       setTranslateX(dir * width * 1.1);
 
-      setTimeout(() => onDelete(), 700);
+      // let the animation play, then remove
+      setTimeout(() => onDelete(), 500);
     }
 
     function onPointerEnd(e) {
-      if (!isDragging.current) return;
-      isDragging.current = false;
-      setDragging(false);
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      setIsDragging(false);
 
       if (ref.current?.releasePointerCapture) {
         try {
@@ -227,51 +225,42 @@ export default function DuplicateScannerView({
         } catch {}
       }
 
-      const endTime = e.timeStamp || performance.now();
-      const dt = Math.max(endTime - startTime.current, 1);
       const dx = lastX.current - startX.current;
       const width = ref.current?.offsetWidth || 300;
-      const threshold = width * 0.25;
-      const velocity = Math.abs(dx) / dt;
+      const threshold = width * 0.25; // 25% → medium sensitivity
 
-      const beyondDistance = Math.abs(dx) >= threshold;
-      const fastSwipe = velocity > 1.0 && Math.abs(dx) > 20;
-
-      if (beyondDistance || fastSwipe) {
+      if (Math.abs(dx) >= threshold) {
         triggerDelete(dx);
       } else {
-        setTranslateX(0);
+        setTranslateX(0); // snap back
       }
     }
 
     const absX = Math.abs(translateX);
-    const swipeOpacity = dragging ? 0 : 1;
 
     const style = {
-      transform: `translateX(${translateX}px) scale(${
-        isFading ? 0.96 : 1
-      })`,
-      opacity: isFading ? 0 : swipeOpacity,
+      transform: `translateX(${translateX}px) scale(${isFading ? 0.96 : 1})`,
+      opacity: isFading ? 0 : 1,
       filter: isFading ? "blur(4px)" : "blur(0px)",
-      transition:
-        dragging || isFading
-          ? isFading
-            ? "transform 0.7s ease, opacity 0.7s ease, filter 0.7s ease"
-            : "none"
-          : "transform 0.18s ease-out",
+      transition: isFading
+        ? "transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease"
+        : isDragging
+        ? "none"
+        : "transform 0.18s ease-out",
     };
+
+    const trackOpacity =
+      isDragging || isFading
+        ? 0.4 + Math.min(absX / 300, 0.6)
+        : 0;
 
     return (
       <div className="relative overflow-hidden rounded-lg border border-zinc-800">
-        {/* DELETE TRACK */}
+        {/* DELETE track */}
         <div
           className="absolute inset-0 bg-zinc-800 flex items-center justify-center"
           style={{
-            opacity: dragging
-              ? 0.4 + Math.min(absX / 300, 0.6)
-              : isFading
-              ? 1
-              : 0,
+            opacity: trackOpacity,
             transition: "opacity 0.25s ease",
           }}
         >
@@ -282,14 +271,14 @@ export default function DuplicateScannerView({
               transform: isFading
                 ? "translateY(0px)"
                 : "translateY(6px)",
-              transition: "opacity 0.4s ease, transform 0.4s ease",
+              transition: "opacity 0.3s ease, transform 0.3s ease",
             }}
           >
             Deleting…
           </span>
         </div>
 
-        {/* FOREGROUND CARD */}
+        {/* Foreground card */}
         <article
           ref={ref}
           className="relative z-10 bg-zinc-950 p-3 touch-pan-y"
@@ -338,7 +327,7 @@ export default function DuplicateScannerView({
   }
 
   /* ============================================================
-     Group Section with Fade-in / Fade-out
+     Group section — fade-out only when exiting
      ============================================================ */
   function DuplicateGroupSection({
     group,
@@ -350,20 +339,9 @@ export default function DuplicateScannerView({
     onDeleteItem,
     isExiting,
   }) {
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-      const id = requestAnimationFrame(() => setMounted(true));
-      return () => cancelAnimationFrame(id);
-    }, []);
-
     const style = {
-      opacity: isExiting ? 0 : mounted ? 1 : 0,
-      transform: isExiting
-        ? "scale(0.98)"
-        : mounted
-        ? "scale(1)"
-        : "scale(0.98)",
+      opacity: isExiting ? 0 : 1,
+      transform: isExiting ? "scale(0.98)" : "scale(1)",
       transition: "opacity 0.3s ease, transform 0.3s ease",
     };
 
@@ -440,7 +418,7 @@ export default function DuplicateScannerView({
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-28 relative">
-      {/* PORTAL TOAST */}
+      {/* Toast via portal */}
       {toast &&
         toastRoot &&
         createPortal(
