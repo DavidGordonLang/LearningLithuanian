@@ -1,4 +1,3 @@
-// src/components/AddForm.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
 /**
@@ -34,7 +33,6 @@ export default function AddForm({
   const [notes, setNotes] = useState(initialRow?.Notes || "");
   const [rag, setRag] = useState(normalizeRag(initialRow?.["RAG Icon"] || "🟠"));
 
-  // Determine initial sheet value (no direction, no tabs passed in)
   const sheetValue = useMemo(() => {
     const allowed = ["Phrases", "Questions", "Words", "Numbers"];
     if (initialRow && allowed.includes(initialRow.Sheet)) return initialRow.Sheet;
@@ -56,9 +54,7 @@ export default function AddForm({
   }, [isEdit, initialRow, normalizeRag]);
 
   const canSave = useMemo(
-    () =>
-      english.trim() !== "" &&
-      lithuanian.trim() !== "",
+    () => english.trim() !== "" && lithuanian.trim() !== "",
     [english, lithuanian]
   );
 
@@ -113,7 +109,7 @@ export default function AddForm({
 
   return (
     <form
-      className="space-y-3"
+      className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
         handleSave(e);
@@ -126,7 +122,13 @@ export default function AddForm({
         </label>
         <input
           id="add-en"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="
+            w-full 
+            bg-zinc-950/60 
+            border border-zinc-800 
+            rounded-2xl 
+            px-3 py-2 text-sm
+          "
           value={english}
           onChange={(e) => setEnglish(e.target.value)}
         />
@@ -139,7 +141,13 @@ export default function AddForm({
         </label>
         <input
           id="add-lt"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="
+            w-full 
+            bg-zinc-950/60 
+            border border-zinc-800 
+            rounded-2xl 
+            px-3 py-2 text-sm
+          "
           value={lithuanian}
           onChange={(e) => setLithuanian(e.target.value)}
         />
@@ -152,7 +160,13 @@ export default function AddForm({
         </label>
         <input
           id="add-ph"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="
+            w-full 
+            bg-zinc-950/60 
+            border border-zinc-800 
+            rounded-2xl 
+            px-3 py-2 text-sm
+          "
           value={phonetic}
           onChange={(e) => setPhonetic(e.target.value)}
         />
@@ -165,7 +179,13 @@ export default function AddForm({
         </label>
         <input
           id="add-cat"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="
+            w-full 
+            bg-zinc-950/60 
+            border border-zinc-800 
+            rounded-2xl 
+            px-3 py-2 text-sm
+          "
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         />
@@ -178,7 +198,13 @@ export default function AddForm({
         </label>
         <textarea
           id="add-usage"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="
+            w-full 
+            bg-zinc-950/60 
+            border border-zinc-800 
+            rounded-2xl 
+            px-3 py-2 text-sm
+          "
           rows={3}
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
@@ -192,7 +218,13 @@ export default function AddForm({
         </label>
         <textarea
           id="add-notes"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="
+            w-full 
+            bg-zinc-950/60 
+            border border-zinc-800 
+            rounded-2xl 
+            px-3 py-2 text-sm
+          "
           rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -207,7 +239,13 @@ export default function AddForm({
           </label>
           <select
             id="add-rag"
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+            className="
+              w-full 
+              bg-zinc-950/60 
+              border border-zinc-800 
+              rounded-2xl 
+              px-3 py-2 text-sm
+            "
             value={rag}
             onChange={(e) => setRag(e.target.value)}
           >
@@ -217,14 +255,20 @@ export default function AddForm({
           </select>
         </div>
 
-        {/* Sheet dropdown */}
+        {/* Sheet */}
         <div>
           <label className="block text-xs mb-1" htmlFor="add-sheet">
             {T.sheet}
           </label>
           <select
             id="add-sheet"
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+            className="
+              w-full 
+              bg-zinc-950/60 
+              border border-zinc-800 
+              rounded-2xl 
+              px-3 py-2 text-sm
+            "
             value={sheet}
             onChange={(e) => setSheet(e.target.value)}
           >
@@ -236,10 +280,18 @@ export default function AddForm({
         </div>
       </div>
 
+      {/* Buttons */}
       <div className="flex items-center gap-2 pt-1">
         <button
           type="button"
-          className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
+          className="
+            px-3 py-2 
+            rounded-xl 
+            bg-zinc-800 
+            hover:bg-zinc-700 
+            border border-zinc-700 
+            text-sm
+          "
           onClick={() => {
             if (!isEdit) reset();
             onCancel?.();
@@ -247,9 +299,19 @@ export default function AddForm({
         >
           {T.cancel}
         </button>
+
         <button
           type="submit"
-          className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold disabled:opacity-60"
+          className="
+            px-3 py-2 
+            rounded-xl 
+            bg-emerald-600 
+            hover:bg-emerald-500 
+            text-black 
+            font-semibold 
+            text-sm 
+            disabled:opacity-60
+          "
           disabled={!canSave}
         >
           {T.save}
