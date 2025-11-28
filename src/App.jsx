@@ -43,7 +43,6 @@ const XP_PER_CORRECT = 50;
 /* ============================================================================
    UI STRINGS
    ========================================================================== */
-
 const STR = {
   EN2LT: {
     appTitle1: "Lithuanian",
@@ -52,170 +51,134 @@ const STR = {
     navHome: "Home",
     navLibrary: "Library",
     navSettings: "Settings",
-
-    // HOME VIEW
-    heroTitle: "Say it right — then save it.",
-    heroBody:
-      "Draft the phrase, tune the tone, hear it spoken, then save it to your library.",
-    learningDirection: "Learning direction",
-    enToLt: "English → Lithuanian",
-    ltToEn: "Lithuanian → English",
-    speakingTo: "Speaking to…",
-    speakingNeutral: "Neutral",
-    speakingMale: "Male",
-    speakingFemale: "Female",
-    tone: "Tone",
-    toneFriendly: "Friendly",
-    toneNeutral: "Neutral",
-    tonePolite: "Polite",
-    inputLabelEn: "What do you want to say in English?",
-    inputLabelLt: "What do you want to say in Lithuanian?",
-    translate: "Translate",
-    clear: "Clear",
-    addToLibrary: "Add to library",
-    copiedToForm: "Copied to Add form",
-    addedToLibrary: "Added to library",
-    fieldRequired: "Please add a phrase first.",
-
-    // LIBRARY VIEW
-    libraryTitle: "Library",
-    libraryCount: (n) => `${n} / ${n} phrases`,
-    search: "Search...",
+    startQuiz: "Start Quiz",
+    search: "Search…",
     sort: "Sort:",
     newest: "Newest",
     oldest: "Oldest",
     rag: "RAG",
-    noResults: "No results found.",
-    playLt: "LT",
-    playEn: "EN",
+    streak: "Streak",
+    level: "Level",
+    phrases: "Phrases",
+    questions: "Questions",
+    words: "Words",
+    numbers: "Numbers",
+    showDetails: "Show details",
+    hideDetails: "Hide details",
     edit: "Edit",
     delete: "Delete",
-    confirmDeleteTitle: "Delete phrase?",
-    confirmDeleteBody: "This cannot be undone.",
-    confirmDeleteYes: "Delete",
-    confirmDeleteNo: "Cancel",
-
-    // ADD / EDIT FORM
-    addEntry: "Add phrase",
-    editEntry: "Edit phrase",
-    enLabel: "English",
-    ltLabel: "Lithuanian",
-    phoneticsLabel: "Phonetics",
-    tagLabel: "Tag / Note",
-    ragLabel: "RAG status",
-    ragRed: "🔴 Needs work",
-    ragAmber: "🟠 In progress",
-    ragGreen: "🟢 Solid",
+    addEntry: "+ Add entry",
+    english: "English",
+    lithuanian: "Lithuanian",
+    phonetic: "Phonetic",
+    category: "Category",
+    usage: "Usage",
+    notes: "Notes",
+    ragLabel: "RAG",
+    sheet: "Sheet",
     save: "Save",
     cancel: "Cancel",
-
-    // SETTINGS
-    settingsTitle: "Settings",
-    directionHeading: "Learning direction",
-    directionEnToLt: "I’m learning Lithuanian (EN → LT)",
-    directionLtToEn: "I’m learning English (LT → EN)",
-    starterHeading: "Starter Pack",
-    starterBody: "Quickly install example phrases for English → Lithuanian learning.",
-    starterButton: "Install starter pack",
-    ttsHeading: "Azure Speech / Browser (fallback)",
-    ttsProviderLabel: "Provider",
-    ttsProviderAzure: "Azure Speech",
-    ttsProviderBrowser: "Browser only",
-    ttsAzureKeyLabel: "Subscription Key",
-    ttsAzureRegionLabel: "Region",
-    ttsAzureRegionPlaceholder: "westeurope",
-    ttsAzureFetchVoices: "Fetch voices",
-    ttsAzureVoiceLabel: "— choose —",
-    ttsTestVoice: "Test voice",
-    ttsBrowserVoiceLabel: "Browser voice",
-    ttsRateLabel: "Rate",
-    ttsSave: "Save",
-    ttsShow: "Show",
-    ttsHide: "Hide",
+    browserVoice: "Browser (fallback)",
+    azure: "Azure Speech",
+    subKey: "Subscription Key",
+    region: "Region",
+    voice: "Voice",
+    fetchVoices: "Fetch voices",
+    choose: "— choose —",
+    direction: "Learning direction",
+    en2lt: "I’m learning Lithuanian (EN → LT)",
+    lt2en: "I’m learning English (LT → EN)",
+    settings: "Settings",
+    libraryTitle: "Library",
+    installEN: 'Install "Learn Lithuanian" starter (EN → LT)',
+    installLT: 'Install "Learn English" starter (LT → EN)',
+    installNums: "Install Numbers pack",
+    importJSON: "Import JSON",
+    clearAll: "Clear library",
+    confirm: "Are you sure?",
+    dupFinder: "Duplicate finder",
+    scan: "Scan duplicates",
+    exactGroups: "Exact duplicates",
+    closeMatches: "Close matches",
+    removeSelected: "Remove selected",
+    similarity: "Similarity",
+    prompt: "Prompt",
+    chooseLT: "Choose the Lithuanian",
+    correct: "Correct!",
+    notQuite: "Not quite.",
+    nextQuestion: "Next Question",
+    score: "Score",
+    done: "Done",
+    retry: "Retry",
+    providerNote: "Using your browser’s built-in voices. No key needed.",
   },
   LT2EN: {
-    appTitle1: "Lithuanian",
-    appTitle2: "Trainer",
-    subtitle: "Tap to play. Long-press to savour.",
-    navHome: "Home",
-    navLibrary: "Library",
-    navSettings: "Settings",
-
-    heroTitle: "Pasakyk teisingai — tada išsaugok.",
-    heroBody:
-      "Sukurk frazę, parink toną, išgirsk, kaip ji skamba, ir išsaugok savo bibliotekoje.",
-    learningDirection: "Mokymosi kryptis",
-    enToLt: "Anglų → Lietuvių",
-    ltToEn: "Lietuvių → Anglų",
-    speakingTo: "Su kuo kalbi…",
-    speakingNeutral: "Neutraliai",
-    speakingMale: "Vyrui",
-    speakingFemale: "Moteriai",
-    tone: "Tonas",
-    toneFriendly: "Draugiškas",
-    toneNeutral: "Neutralus",
-    tonePolite: "Mandagus",
-    inputLabelEn: "Ką nori pasakyti angliškai?",
-    inputLabelLt: "Ką nori pasakyti lietuviškai?",
-    translate: "Versti",
-    clear: "Išvalyti",
-    addToLibrary: "Pridėti į biblioteką",
-    copiedToForm: "Nukopijuota į pridėjimo formą",
-    addedToLibrary: "Pridėta į biblioteką",
-    fieldRequired: "Pirmiausia įrašyk frazę.",
-
-    libraryTitle: "Biblioteka",
-    libraryCount: (n) => `${n} / ${n} frazės`,
-    search: "Paieška...",
-    sort: "Rikiuoti:",
-    newest: "Naujausios",
-    oldest: "Seniausios",
+    appTitle1: "Anglų",
+    appTitle2: "kalbos treniruoklis",
+    subtitle: "Paliesk, kad klausytum. Ilgai spausk – lėčiau.",
+    navHome: "Pagrindinis",
+    navLibrary: "Biblioteka",
+    navSettings: "Nustatymai",
+    startQuiz: "Pradėti viktoriną",
+    search: "Paieška…",
+    sort: "Rūšiuoti:",
+    newest: "Naujausi",
+    oldest: "Seniausi",
     rag: "RAG",
-    noResults: "Rezultatų nėra.",
-    playLt: "LT",
-    playEn: "EN",
+    streak: "Serija",
+    level: "Lygis",
+    phrases: "Frazės",
+    questions: "Klausimai",
+    words: "Žodžiai",
+    numbers: "Skaičiai",
+    showDetails: "Rodyti informaciją",
+    hideDetails: "Slėpti informaciją",
     edit: "Redaguoti",
-    delete: "Ištrinti",
-    confirmDeleteTitle: "Ištrinti frazę?",
-    confirmDeleteBody: "Šio veiksmo nebegalėsi atšaukti.",
-    confirmDeleteYes: "Ištrinti",
-    confirmDeleteNo: "Atšaukti",
-
-    addEntry: "Pridėti frazę",
-    editEntry: "Redaguoti frazę",
-    enLabel: "Angliškai",
-    ltLabel: "Lietuviškai",
-    phoneticsLabel: "Tarimas",
-    tagLabel: "Žyma / Pastaba",
-    ragLabel: "RAG būsena",
-    ragRed: "🔴 Reikia daug darbo",
-    ragAmber: "🟠 Dar mokausi",
-    ragGreen: "🟢 Tvirta",
+    delete: "Šalinti",
+    addEntry: "+ Pridėti įrašą",
+    english: "Angliškai",
+    lithuanian: "Lietuviškai",
+    phonetic: "Tarimas",
+    category: "Kategorija",
+    usage: "Panaudojimas",
+    notes: "Pastabos",
+    ragLabel: "RAG",
+    sheet: "Skiltis",
     save: "Išsaugoti",
     cancel: "Atšaukti",
-
-    settingsTitle: "Nustatymai",
-    directionHeading: "Mokymosi kryptis",
-    directionEnToLt: "Mokausi lietuvių kalbos (EN → LT)",
-    directionLtToEn: "Mokausi anglų kalbos (LT → EN)",
-    starterHeading: "Pradinis rinkinys",
-    starterBody: "Greitai įsidiek pavyzdines frazes anglų → lietuvių kalbai.",
-    starterButton: "Įdiegti pradžios rinkinį",
-    ttsHeading: "Azure Speech / Naršyklė (atsarginis)",
-    ttsProviderLabel: "Tiekėjas",
-    ttsProviderAzure: "Azure Speech",
-    ttsProviderBrowser: "Tik naršyklė",
-    ttsAzureKeyLabel: "Prenumeratos raktas",
-    ttsAzureRegionLabel: "Regionas",
-    ttsAzureRegionPlaceholder: "westeurope",
-    ttsAzureFetchVoices: "Gauti balsus",
-    ttsAzureVoiceLabel: "— pasirink —",
-    ttsTestVoice: "Išbandyti balsą",
-    ttsBrowserVoiceLabel: "Naršyklės balsas",
-    ttsRateLabel: "Greitis",
-    ttsSave: "Išsaugoti",
-    ttsShow: "Rodyti",
-    ttsHide: "Slėpti",
+    browserVoice: "Naršyklė (atsarginis)",
+    azure: "Azure kalba",
+    subKey: "Prenumeratos raktas",
+    region: "Regionas",
+    voice: "Balsas",
+    fetchVoices: "Gauti balsus",
+    choose: "— pasirinkite —",
+    direction: "Mokymosi kryptis",
+    en2lt: "Mokausi lietuvių (EN → LT)",
+    lt2en: "Mokausi anglų (LT → EN)",
+    settings: "Nustatymai",
+    libraryTitle: "Biblioteka",
+    installEN: 'Įdiegti rinkinį „Mokausi lietuvių“ (EN → LT)',
+    installLT: 'Įdiegti rinkinį „Mokausi anglų“ (LT → EN)',
+    installNums: "Įdiegti skaičių paketą",
+    importJSON: "Importuoti JSON",
+    clearAll: "Išvalyti biblioteką",
+    confirm: "Ar tikrai?",
+    dupFinder: "Dublikatų paieška",
+    scan: "Skenuoti dublikatus",
+    exactGroups: "Tikslūs dublikatai",
+    closeMatches: "Artimos atitiktis",
+    removeSelected: "Pašalinti pažymėtus",
+    similarity: "Panašumas",
+    prompt: "Klausimas",
+    chooseLT: "Pasirinkite lietuvišką variantą",
+    correct: "Teisingai!",
+    notQuite: "Ne visai.",
+    nextQuestion: "Kitas klausimas",
+    score: "Rezultatas",
+    done: "Baigti",
+    retry: "Kartoti",
+    providerNote: "Naudojami naršyklės balsai. Raktas nereikalingas.",
   },
 };
 
@@ -233,48 +196,43 @@ const loadXP = () => {
     return 0;
   }
 };
-
-const saveXP = (xp) => {
+const saveXP = (xp) =>
   localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
-};
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const loadStreak = () => {
   try {
-    const raw = localStorage.getItem(LSK_STREAK);
-    if (!raw) return { streak: 0, lastDate: "" };
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed.streak !== "number") {
-      return { streak: 0, lastDate: "" };
-    }
-    return parsed;
+    const s = JSON.parse(localStorage.getItem(LSK_STREAK) || "null");
+    return s && typeof s.streak === "number"
+      ? s
+      : { streak: 0, lastDate: "" };
   } catch {
     return { streak: 0, lastDate: "" };
   }
 };
-
-const saveStreak = (s) => {
+const saveStreak = (s) =>
   localStorage.setItem(LSK_STREAK, JSON.stringify(s));
-};
 
 const nowTs = () => Date.now();
-
 const genId = () => Math.random().toString(36).slice(2);
 
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s))
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
     return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
 
-function daysBetween(a, b) {
-  return Math.round(
-    (new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000
-  );
+function daysBetween(d1, d2) {
+  const a = new Date(d1 + "T00:00:00");
+  const b = new Date(d2 + "T00:00:00");
+  return Math.round((b - a) / 86400000);
 }
 
 function shuffle(arr) {
@@ -323,96 +281,59 @@ function sim2(a = "", b = "") {
    ========================================================================== */
 
 function useVoices() {
-  const [voices, setVoices] = useState(() => {
-    if (typeof window === "undefined") return [];
-    const synth = window.speechSynthesis;
-    if (!synth) return [];
-    const vs = synth.getVoices();
-    return vs || [];
-  });
-
+  const [voices, setVoices] = useState([]);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-
-    const handler = () => {
-      const vs = synth.getVoices();
-      setVoices(vs || []);
+    const refresh = () => {
+      const v = window.speechSynthesis?.getVoices?.() || [];
+      setVoices([...v].sort((a, b) => a.name.localeCompare(b.name)));
     };
-
-    handler();
-    synth.addEventListener("voiceschanged", handler);
-    return () => synth.removeEventListener("voiceschanged", handler);
+    refresh();
+    window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
+    return () =>
+      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
   }, []);
-
   return voices;
 }
 
 function escapeXml(s) {
-  return s
+  return String(s)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
+    .replace(/</g, "&lt/")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 
 function speakBrowser(text, voice, rate = 1) {
-  return new Promise((resolve, reject) => {
-    try {
-      if (typeof window === "undefined" || !window.speechSynthesis) {
-        reject(new Error("Browser speech synthesis not available"));
-        return;
-      }
-      const synth = window.speechSynthesis;
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      if (voice) u.voice = voice;
-      u.rate = rate;
-      u.onend = () => resolve();
-      u.onerror = (e) => reject(e.error || e);
-      synth.speak(u);
-    } catch (err) {
-      reject(err);
-    }
-  });
+  if (!window.speechSynthesis) {
+    alert("Speech synthesis not supported.");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  if (voice) u.voice = voice;
+  u.lang = voice?.lang || "lt-LT";
+  u.rate = rate;
+  window.speechSynthesis.speak(u);
 }
 
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
-  const ssml = `
-    <speak version="1.0" xml:lang="en-US">
-      <voice name="${shortName}">
-        <prosody rate="${rateDelta}">
-          ${escapeXml(text)}
-        </prosody>
-      </voice>
-    </speak>
-  `.trim();
-
-  const res = await fetch(
-    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-    {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3",
-      },
-      body: ssml,
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(
-      `Azure TTS failed: ${res.status} ${res.statusText}. Body: ${text}`
-    );
-  }
-
+  const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+  const ssml = `<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
+    text
+  )}</prosody></voice></speak>`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": key,
+      "Content-Type": "application/ssml+xml",
+      "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+    },
+    body: ssml,
+  });
+  if (!res.ok) throw new Error("Azure TTS failed");
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  return url;
+  return URL.createObjectURL(blob);
 }
 
 /* ============================================================================
@@ -421,67 +342,65 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
 
 const SearchBox = memo(
   forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
+    const composingRef = useRef(false);
     const inputRef = useRef(null);
-
-    useImperativeHandle(ref, () => ({
-      focus: () => {
-        inputRef.current?.focus();
-      },
-      clear: () => {
-        searchStore.setQuery("");
-        if (inputRef.current) inputRef.current.value = "";
-      },
-    }));
-
-    const q = useSyncExternalStore(
-      searchStore.subscribe,
-      searchStore.getSnapshot,
-      searchStore.getServerSnapshot
-    );
-
-    const [localValue, setLocalValue] = useState(q || "");
+    useImperativeHandle(ref, () => inputRef.current);
 
     useEffect(() => {
-      setLocalValue(q || "");
-    }, [q]);
-
-    const onChange = (e) => {
-      const v = e.target.value;
-      setLocalValue(v);
-      startTransition(() => {
-        searchStore.setQuery(v);
-      });
-    };
-
-    const onClear = () => {
-      setLocalValue("");
-      startTransition(() => {
-        searchStore.setQuery("");
-      });
-      inputRef.current?.focus();
-    };
+      const el = inputRef.current;
+      if (!el) return;
+      const raw = searchStore.getRaw();
+      if (raw && el.value !== raw) el.value = raw;
+    }, []);
 
     return (
-      <div className="flex w-full items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2">
+      <div className="relative flex-1">
+        <label htmlFor="main-search" className="sr-only">
+          Search phrases
+        </label>
         <input
+          id="main-search"
           ref={inputRef}
+          defaultValue=""
           type="text"
-          className="w-full bg-transparent text-sm sm:text-base text-zinc-100 placeholder:text-zinc-500 outline-none select-none"
+          inputMode="search"
+          enterKeyHint="search"
           placeholder={placeholder}
-          value={localValue}
-          onChange={onChange}
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none select-none"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          onCompositionStart={() => {
+            composingRef.current = true;
+          }}
+          onCompositionEnd={(e) => {
+            composingRef.current = false;
+            startTransition(() => searchStore.setRaw(e.currentTarget.value));
+          }}
+          onInput={(e) => {
+            if (!composingRef.current)
+              startTransition(() => searchStore.setRaw(e.currentTarget.value));
+          }}
         />
-        {localValue ? (
-          <button
-            type="button"
-            className="text-zinc-400 text-xs sm:text-sm"
-            onClick={onClear}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-          >
-            {STR.EN2LT.clear}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          tabIndex={-1}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 select-none"
+          onMouseDown={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
+          onClick={() => {
+            const el = inputRef.current;
+            if (el) {
+              el.value = "";
+              el.focus();
+              startTransition(() => searchStore.clear());
+            }
+          }}
+          aria-label="Clear"
+        >
+          ×
+        </button>
       </div>
     );
   })
@@ -529,321 +448,276 @@ export default function App() {
     searchStore.getServerSnapshot
   );
 
-  const [sortMode, setSortMode] = useState(() => {
-    try {
-      return localStorage.getItem(LSK_SORT) || "RAG";
-    } catch {
-      return "RAG";
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(LSK_SORT, sortMode);
-    } catch {}
-  }, [sortMode]);
+  const [sortMode, setSortMode] = useState(
+    () => localStorage.getItem(LSK_SORT) || "RAG"
+  );
+  useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  const [direction, setDirection] = useState(() => {
-    try {
-      return localStorage.getItem(LSK_DIR) || "EN2LT";
-    } catch {
-      return "EN2LT";
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(LSK_DIR, direction);
-    } catch {}
-  }, [direction]);
-
+  const [direction, setDirection] = useState(
+    () => localStorage.getItem(LSK_DIR) || "EN2LT"
+  );
+  useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
 
-  const [xp, setXp] = useState(loadXP);
+  const [xp, setXp] = useState(loadXP());
+  useEffect(() => saveXP(xp), [xp]);
   useEffect(() => {
-    saveXP(xp);
+    if (!Number.isFinite(xp)) setXp(0);
   }, [xp]);
+  const level = Math.floor((Number.isFinite(xp) ? xp : 0) / LEVEL_STEP) + 1;
+  const levelProgress = (Number.isFinite(xp) ? xp : 0) % LEVEL_STEP;
 
-  const [streak, setStreak] = useState(loadStreak);
-  useEffect(() => {
-    saveStreak(streak);
-  }, [streak]);
+  const [streak, setStreak] = useState(loadStreak());
+  useEffect(() => saveStreak(streak), [streak]);
 
-  const [ttsProvider, setTtsProvider] = useState(() => {
-    try {
-      return localStorage.getItem(LSK_TTS_PROVIDER) || "azure";
-    } catch {
-      return "azure";
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider);
-    } catch {}
-  }, [ttsProvider]);
+  const [ttsProvider, setTtsProvider] = useState(
+    () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
+  );
+  useEffect(
+    () => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider),
+    [ttsProvider]
+  );
 
-  const [azureKey, setAzureKey] = useState(() => {
-    try {
-      return localStorage.getItem(LSK_AZURE_KEY) || "";
-    } catch {
-      return "";
-    }
-  });
-
-  const [azureRegion, setAzureRegion] = useState(() => {
-    try {
-      return localStorage.getItem(LSK_AZURE_REGION) || "westeurope";
-    } catch {
-      return "westeurope";
-    }
-  });
-
+  const [azureKey, setAzureKey] = useState(
+    () => localStorage.getItem(LSK_AZURE_KEY) || ""
+  );
+  const [azureRegion, setAzureRegion] = useState(
+    () => localStorage.getItem(LSK_AZURE_REGION) || ""
+  );
   const [azureVoices, setAzureVoices] = useState([]);
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
     try {
-      const raw = localStorage.getItem(LSK_AZURE_VOICE);
-      if (!raw) return "";
-      const parsed = JSON.parse(raw);
-      return parsed?.shortName || "";
+      return (
+        JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
+          ?.shortName || ""
+      );
     } catch {
       return "";
     }
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(LSK_AZURE_KEY, azureKey || "");
-    } catch {}
+    localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
   }, [azureKey]);
-
   useEffect(() => {
-    try {
-      localStorage.setItem(LSK_AZURE_REGION, azureRegion || "");
-    } catch {}
+    localStorage.setItem(LSK_AZURE_REGION, azureRegion ?? "");
   }, [azureRegion]);
-
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        LSK_AZURE_VOICE,
-        JSON.stringify({ shortName: azureVoiceShortName || "" })
-      );
-    } catch {}
+    localStorage.setItem(
+      LSK_AZURE_VOICE,
+      JSON.stringify({ shortName: azureVoiceShortName })
+    );
   }, [azureVoiceShortName]);
 
   const voices = useVoices();
   const [browserVoiceName, setBrowserVoiceName] = useState("");
-  const browserVoice = useMemo(() => {
-    if (!voices.length) return null;
-    if (browserVoiceName) {
-      const found = voices.find((v) => v.name === browserVoiceName);
-      if (found) return found;
-    }
-    return voices[0] || null;
-  }, [voices, browserVoiceName]);
+  const browserVoice = useMemo(
+    () => voices.find((v) => v.name === browserVoiceName) || voices[0],
+    [voices, browserVoiceName]
+  );
 
+  // audio
   const audioRef = useRef(null);
-
   async function playText(text, { slow = false } = {}) {
-    if (!text) return;
     try {
       if (audioRef.current) {
-        audioRef.current.pause();
+        try {
+          audioRef.current.pause();
+          const src = audioRef.current.src || "";
+          if (src.startsWith("blob:")) URL.revokeObjectURL(src);
+        } catch {}
         audioRef.current = null;
       }
-
-      if (ttsProvider === "browser" || !azureKey || !azureRegion || !azureVoiceShortName) {
-        const rate = slow ? 0.7 : 1.0;
-        await speakBrowser(text, browserVoice, rate);
-        return;
-      }
-
-      const rateDelta = slow ? "-20%" : "0%";
-      const url = await speakAzureHTTP(
-        text,
-        azureVoiceShortName,
-        azureKey,
-        azureRegion,
-        rateDelta
-      );
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      await new Promise((resolve, reject) => {
-        audio.onended = () => {
-          URL.revokeObjectURL(url);
-          resolve();
+      if (
+        ttsProvider === "azure" &&
+        azureKey &&
+        azureRegion &&
+        azureVoiceShortName
+      ) {
+        const delta = slow ? "-40%" : "0%";
+        const url = await speakAzureHTTP(
+          text,
+          azureVoiceShortName,
+          azureKey,
+          azureRegion,
+          delta
+        );
+        const a = new Audio(url);
+        audioRef.current = a;
+        a.onended = () => {
+          try {
+            URL.revokeObjectURL(url);
+          } catch {}
+          if (audioRef.current === a) audioRef.current = null;
         };
-        audio.onerror = () => {
-          URL.revokeObjectURL(url);
-          reject(new Error("Audio playback error"));
-        };
-        audio.play().catch(reject);
-      });
-    } catch (err) {
-      console.error("Playback failed:", err);
-      try {
-        const rate = slow ? 0.7 : 1.0;
-        await speakBrowser(text, browserVoice, rate);
-      } catch (err2) {
-        console.error("Fallback TTS failed:", err2);
+        await a.play();
+      } else {
+        speakBrowser(text, browserVoice, slow ? 0.6 : 1.0);
       }
+    } catch (e) {
+      console.error(e);
+      alert("Voice error: " + (e?.message || e));
     }
   }
 
-  const qNorm = (qFilter || "").trim().toLowerCase();
+  /* ============================================================================
+     LIBRARY FILTERING (for future reuse, quiz, etc.)
+     ========================================================================== */
 
-  const entryMatchesQuery = (r) => {
-    if (!qNorm) return true;
-    const en = (r.English || "").toLowerCase();
-    const lt = (r.Lithuanian || "").toLowerCase();
-    const tag = (r.Tag || "").toLowerCase();
-    return (
-      en.includes(qNorm) ||
-      lt.includes(qNorm) ||
-      tag.includes(qNorm)
-    );
-  };
+  const qNorm = (qFilter || "").trim().toLowerCase();
+  const entryMatchesQuery = (r) =>
+    !!qNorm &&
+    ((r.English || "").toLowerCase().includes(qNorm) ||
+      (r.Lithuanian || "").toLowerCase().includes(qNorm));
 
   const filtered = useMemo(() => {
-    const base = rows.filter(entryMatchesQuery);
-    const withMeta = base.map((r, idx) => ({
-      ...r,
-      _idx: idx,
-      _createdTs: r.createdTs || r.createdAt || 0,
-      _ragRank:
-        r.RAG === "🟢" ? 0 :
-        r.RAG === "🟠" ? 1 : 2,
-    }));
+    const base = qNorm
+      ? rows.filter(entryMatchesQuery)
+      : rows.filter((r) => r.Sheet === tab);
 
-    if (sortMode === "Newest") {
-      return [...withMeta].sort((a, b) => b._createdTs - a._createdTs);
-    }
-    if (sortMode === "Oldest") {
-      return [...withMeta].sort((a, b) => a._createdTs - b._createdTs);
-    }
-    return [...withMeta].sort((a, b) => {
-      if (a._ragRank !== b._ragRank) return a._ragRank - b._ragRank;
-      return a._idx - b._idx;
-    });
-  }, [rows, qNorm, sortMode]);
+    if (sortMode === "Newest")
+      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+    if (sortMode === "Oldest")
+      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+
+    const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
+    return [...base].sort(
+      (a, b) =>
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
+        (order[normalizeRag(b["RAG Icon"])] ?? 1)
+    );
+  }, [rows, qNorm, sortMode, tab]);
+
+  /* ============================================================================
+     IMPORT / STARTERS / DUPES
+     ========================================================================== */
 
   async function mergeRows(newRows) {
-    if (!Array.isArray(newRows) || !newRows.length) return;
+    const cleaned = newRows
+      .map((r) => {
+        const safe = (v) => {
+          if (v == null) return "";
+          if (typeof v === "number" && !Number.isFinite(v)) return "";
+          return String(v).trim();
+        };
+        return {
+          English: safe(r.English),
+          Lithuanian: safe(r.Lithuanian),
+          Phonetic: safe(r.Phonetic),
+          Category: safe(r.Category),
+          Usage: safe(r.Usage),
+          Notes: safe(r.Notes),
+          "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
+          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+            ? r.Sheet
+            : "Phrases",
+          _id: r._id || genId(),
+          _ts: r._ts || nowTs(),
+          _qstat:
+            r._qstat || {
+              red: { ok: 0, bad: 0 },
+              amb: { ok: 0, bad: 0 },
+              grn: { ok: 0, bad: 0 },
+            },
+        };
+      })
+      .filter((r) => r.English || r.Lithuanian);
 
-    const byKey = new Map();
-    const all = [...rows, ...newRows].map((r) => {
-      const key = `${(r.English || "").trim()}|||${(r.Lithuanian || "").trim()}`;
-      if (!byKey.has(key)) byKey.set(key, r);
-      return r;
-    });
-
-    const deduped = Array.from(byKey.values()).map((r) => ({
-      ...r,
-      _id: r._id || genId(),
-      RAG: normalizeRag(r.RAG || r.icon),
-    }));
-
-    setRows(deduped);
+    setRows((prev) => [...cleaned, ...prev]);
   }
 
   async function fetchStarter(kind) {
-    const url = STARTERS[kind || "EN2LT"];
-    if (!url) return;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch starter");
-    const data = await res.json();
-    if (!Array.isArray(data)) return;
-
-    const mapped = data.map((r) => ({
-      _id: genId(),
-      English: r.English || r.en || "",
-      Lithuanian: r.Lithuanian || r.lt || "",
-      Phonetics: r.Phonetics || r.phonetics || "",
-      Tag: r.Tag || r.tag || "",
-      RAG: normalizeRag(r.RAG || r.icon),
-      createdTs: r.createdTs || nowTs(),
-    }));
-
-    await mergeRows(mapped);
-  }
-
-  async function installNumbersOnly() {
     try {
-      const res = await fetch("/data/starter_numbers_only.json");
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!Array.isArray(data)) return;
-      const mapped = data.map((r) => ({
-        _id: genId(),
-        English: r.English || "",
-        Lithuanian: r.Lithuanian || "",
-        Phonetics: r.Phonetics || "",
-        Tag: r.Tag || "",
-        RAG: normalizeRag(r.RAG || r.icon),
-        createdTs: r.createdTs || nowTs(),
-      }));
-      await mergeRows(mapped);
-    } catch (err) {
-      console.error("Failed to install numbers-only starter:", err);
+      const url = STARTERS[kind];
+      if (!url) throw new Error("Starter not found");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch starter");
+      await mergeRows(await res.json());
+      alert("Installed.");
+    } catch (e) {
+      alert("Starter error: " + e.message);
     }
   }
 
+  async function installNumbersOnly() {
+    const urls = [
+      STARTERS.COMBINED_OPTIONAL,
+      STARTERS.EN2LT,
+      STARTERS.LT2EN,
+    ].filter(Boolean);
+    let found = [];
+    for (const url of urls) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const nums = data.filter((r) => String(r.Sheet) === "Numbers");
+          found = found.concat(nums);
+        }
+      } catch {}
+    }
+    if (!found.length) {
+      alert("No Numbers entries found in starter files.");
+      return;
+    }
+    await mergeRows(found);
+    alert(`Installed ${found.length} Numbers item(s).`);
+  }
+
   async function importJsonFile(file) {
-    if (!file) return;
     try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      if (!Array.isArray(data)) throw new Error("Expected array data.");
-      const mapped = data.map((r) => ({
-        _id: r._id || genId(),
-        English: r.English || "",
-        Lithuanian: r.Lithuanian || "",
-        Phonetics: r.Phonetics || "",
-        Tag: r.Tag || "",
-        RAG: normalizeRag(r.RAG || r.icon),
-        createdTs: r.createdTs || nowTs(),
-      }));
-      await mergeRows(mapped);
-    } catch (err) {
-      console.error("Import failed:", err);
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data)) throw new Error("JSON must be an array");
+      await mergeRows(data);
+      alert("Imported.");
+    } catch (e) {
+      alert("Import failed: " + e.message);
     }
   }
 
   function clearLibrary() {
-    if (!window.confirm("Clear entire library? This cannot be undone.")) return;
+    if (!confirm(T.confirm)) return;
     setRows([]);
   }
 
   const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
 
   function scanDupes() {
-    const list = rows;
+    const map = new Map();
+    rows.forEach((r, i) => {
+      const key = `${r.English}|||${r.Lithuanian}`.toLowerCase().trim();
+      map.set(key, (map.get(key) || []).concat(i));
+    });
     const exact = [];
+    for (const arr of map.values()) {
+      if (arr.length > 1) exact.push(arr);
+    }
+
     const close = [];
-
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i];
-        const b = list[j];
-        const sameEn =
-          (a.English || "").trim().toLowerCase() ===
-          (b.English || "").trim().toLowerCase();
-        const sameLt =
-          (a.Lithuanian || "").trim().toLowerCase() ===
-          (b.Lithuanian || "").trim().toLowerCase();
-
-        if (sameEn && sameLt) {
-          exact.push([a, b]);
-        } else {
-          const simEn = sim2(a.English || "", b.English || "");
-          const simLt = sim2(a.Lithuanian || "", b.Lithuanian || "");
-          if (simEn >= 0.85 || simLt >= 0.85) {
-            close.push({ a, b, simEn, simLt });
-          }
+    const bySheet = rows.reduce((acc, r, i) => {
+      (acc[r.Sheet] ||= []).push({ r, i });
+      return acc;
+    }, {});
+    for (const list of Object.values(bySheet)) {
+      for (let a = 0; a < list.length; a++) {
+        for (let b = a + 1; b < list.length; b++) {
+          const A = list[a];
+          const B = list[b];
+          const s =
+            (sim2(A.r.English, B.r.English) +
+              sim2(A.r.Lithuanian, B.r.Lithuanian)) /
+            2;
+          if (s >= 0.85) close.push([A.i, B.i, s]);
         }
       }
     }
-
     setDupeResults({ exact, close });
   }
+
+  /* ============================================================================
+     QUIZ
+     ========================================================================== */
 
   const [quizOn, setQuizOn] = useState(false);
   const [quizQs, setQuizQs] = useState([]);
@@ -853,127 +727,161 @@ export default function App() {
   const [quizOptions, setQuizOptions] = useState([]);
 
   function computeQuizPool(allRows, targetSize = 10) {
-    if (!allRows.length) return [];
-    const today = todayKey();
-    const withMeta = allRows.map((r, idx) => {
-      const d = r.lastQuizDate || "";
-      const streakWeight =
-        d && daysBetween(d, today) <= 2 ? 1 : 0;
-      const ragWeight = r.RAG === "🟢" ? 3 : r.RAG === "🟠" ? 2 : 1;
-      const spacingFactor = 1 + streakWeight + ragWeight;
-      return { r, idx, spacingFactor };
-    });
+    const withPairs = allRows.filter((r) => r.English && r.Lithuanian);
+    const red = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🔴"
+    );
+    const amb = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🟠"
+    );
+    const grn = withPairs.filter(
+      (r) => normalizeRag(r["RAG Icon"]) === "🟢"
+    );
 
-    const expanded = [];
-    withMeta.forEach((x) => {
-      const n = x.spacingFactor;
-      for (let i = 0; i < n; i++) {
-        expanded.push(x.r);
-      }
-    });
+    const needR = Math.min(
+      Math.max(5, Math.floor(targetSize * 0.5)),
+      red.length || 0
+    );
+    const needA = Math.min(
+      Math.max(4, Math.floor(targetSize * 0.4)),
+      amb.length || 0
+    );
+    const needG = Math.min(
+      Math.max(1, Math.floor(targetSize * 0.1)),
+      grn.length || 0
+    );
 
-    if (!expanded.length) return sample(allRows, Math.min(targetSize, allRows.length));
-    return sample(expanded, Math.min(targetSize, expanded.length));
+    let picked = [
+      ...sample(red, needR),
+      ...sample(amb, needA),
+      ...sample(grn, needG),
+    ];
+    while (picked.length < targetSize) {
+      const leftovers = withPairs.filter((r) => !picked.includes(r));
+      if (!leftovers.length) break;
+      picked.push(leftovers[(Math.random() * leftovers.length) | 0]);
+    }
+    return shuffle(picked).slice(0, targetSize);
   }
 
   function startQuiz() {
-    if (!rows.length) return;
-    const pool = computeQuizPool(rows, 12);
-    if (!pool.length) return;
+    if (rows.length < 4) {
+      alert("Add more entries first (need at least 4).");
+      return;
+    }
+    const pool = computeQuizPool(rows, 10);
+    if (!pool.length) {
+      alert("No quiz candidates found.");
+      return;
+    }
     setQuizQs(pool);
     setQuizIdx(0);
     setQuizAnswered(false);
     setQuizChoice(null);
-
     const first = pool[0];
-    const others = rows.filter((r) => r._id !== first._id);
-    const distractors = sample(others, 3);
-    setQuizOptions(shuffle([first, ...distractors]));
+    const correctLt = first.Lithuanian;
+    const distractors = sample(
+      pool.filter((r) => r !== first && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
+    setQuizOptions(shuffle([correctLt, ...distractors]));
     setQuizOn(true);
   }
 
   function bumpRagAfterAnswer(item, correct) {
-    const prevIdx = rows.findIndex((r) => r._id === item._id);
-    if (prevIdx === -1) return;
+    const rag = normalizeRag(item["RAG Icon"]);
+    const st =
+      (item._qstat ||= {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      });
 
-    const prev = rows[prevIdx];
-    let nextRag = prev.RAG || "🟠";
-    if (correct) {
-      if (nextRag === "🔴") nextRag = "🟠";
-      else if (nextRag === "🟠") nextRag = "🟢";
-    } else {
-      if (nextRag === "🟢") nextRag = "🟠";
-      else if (nextRag === "🟠") nextRag = "🔴";
+    if (rag === "🔴") {
+      if (correct) {
+        st.red.ok = (st.red.ok || 0) + 1;
+        if (st.red.ok >= 5) {
+          item["RAG Icon"] = "🟠";
+          st.red.ok = st.red.bad = 0;
+        }
+      } else {
+        st.red.bad = (st.red.bad || 0) + 1;
+      }
+    } else if (rag === "🟠") {
+      if (correct) {
+        st.amb.ok = (st.amb.ok || 0) + 1;
+        if (st.amb.ok >= 5) {
+          item["RAG Icon"] = "🟢";
+          st.amb.ok = st.amb.bad = 0;
+        }
+      } else {
+        st.amb.bad = (st.amb.bad || 0) + 1;
+        if (st.amb.bad >= 3) {
+          item["RAG Icon"] = "🔴";
+          st.amb.ok = st.amb.bad = 0;
+        }
+      }
+    } else if (rag === "🟢") {
+      if (!correct) {
+        st.grn.bad = (st.grn.bad || 0) + 1;
+        item["RAG Icon"] = "🟠";
+        st.grn.ok = st.grn.bad = 0;
+      } else {
+        st.grn.ok = (st.grn.ok || 0) + 1;
+      }
     }
-
-    const updated = {
-      ...prev,
-      RAG: nextRag,
-      lastQuizDate: todayKey(),
-    };
-
-    setRows((prevRows) => {
-      const copy = [...prevRows];
-      copy[prevIdx] = updated;
-      return copy;
-    });
   }
 
   async function answerQuiz(option) {
     if (quizAnswered) return;
+    const item = quizQs[quizIdx];
+    const correct = option === item.Lithuanian;
+    setQuizChoice(option);
     setQuizAnswered(true);
-    setQuizChoice(option._id);
-
-    const current = quizQs[quizIdx];
-    const correct = option._id === current._id;
-
-    bumpRagAfterAnswer(current, correct);
-
-    if (correct) {
-      const gainedXP = XP_PER_CORRECT;
-      setXp((prev) => prev + gainedXP);
-
-      const today = todayKey();
-      setStreak((prev) => {
-        const last = prev.lastDate || "";
-        if (!last) return { streak: 1, lastDate: today };
-        const diff = daysBetween(last, today);
-        if (diff === 0) return prev;
-        if (diff === 1) {
-          return { streak: prev.streak + 1, lastDate: today };
+    if (correct)
+      setXp((x) => (Number.isFinite(x) ? x : 0) + XP_PER_CORRECT);
+    await playText(item.Lithuanian, { slow: false });
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r === item || (r._id && item._id && r._id === item._id)) {
+          const clone = { ...r };
+          bumpRagAfterAnswer(clone, correct);
+          return clone;
         }
-        return { streak: 1, lastDate: today };
-      });
-    }
-
-    try {
-      const text =
-        direction === "EN2LT"
-          ? option.Lithuanian || ""
-          : option.English || "";
-      await playText(text, { slow: false });
-    } catch (err) {
-      console.error("Quiz playback failed:", err);
-    }
+        return r;
+      })
+    );
   }
 
   function afterAnswerAdvance() {
-    if (!quizAnswered) return;
-    const nextIndex = quizIdx + 1;
-    if (nextIndex >= quizQs.length) {
+    const nextIdx = quizIdx + 1;
+    if (nextIdx >= quizQs.length) {
+      const today = todayKey();
+      if (streak.lastDate !== today) {
+        const inc =
+          streak.lastDate && daysBetween(streak.lastDate, today) === 1
+            ? streak.streak + 1
+            : 1;
+        setStreak({ streak: inc, lastDate: today });
+      }
       setQuizOn(false);
       return;
     }
-
-    setQuizIdx(nextIndex);
+    setQuizIdx(nextIdx);
     setQuizAnswered(false);
     setQuizChoice(null);
-
-    const current = quizQs[nextIndex];
-    const others = rows.filter((r) => r._id !== current._id);
-    const distractors = sample(others, 3);
-    setQuizOptions(shuffle([current, ...distractors]));
+    const item = quizQs[nextIdx];
+    const correctLt = item.Lithuanian;
+    const distractors = sample(
+      quizQs.filter((r) => r !== item && r.Lithuanian),
+      3
+    ).map((r) => r.Lithuanian);
+    setQuizOptions(shuffle([correctLt, ...distractors]));
   }
+
+  /* ============================================================================
+     ADD / EDIT MODAL + TOAST
+     ========================================================================== */
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
@@ -988,10 +896,10 @@ export default function App() {
     () => rows.find((r) => r._id === editRowId) || null,
     [rows, editRowId]
   );
-
   const isEditing = !!editingRow;
 
   useEffect(() => {
+    if (!addOpen) return;
     const onKey = (e) => {
       if (e.key === "Escape") {
         setAddOpen(false);
@@ -1013,11 +921,15 @@ export default function App() {
 
   /* ------------------------------ RENDER --------------------------------- */
 
+  // Header is sticky; we push content down by its actual measured height.
+  // SearchDock is rendered INSIDE <main> so Library content naturally sits under it.
+  const contentOffset = headerHeight || 0;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={setPage} />
 
-      <main>
+      <main style={{ paddingTop: contentOffset }}>
         {page === "library" && (
           <SearchDock
             SearchBox={SearchBox}
@@ -1076,25 +988,6 @@ export default function App() {
             voices={voices}
             playText={playText}
             fetchStarter={fetchStarter}
-            importJsonFile={importJsonFile}
-            clearLibrary={clearLibrary}
-            scanDupes={scanDupes}
-            dupeResults={dupeResults}
-            installNumbersOnly={installNumbersOnly}
-            rows={rows}
-            xp={xp}
-            streak={streak}
-            quizOn={quizOn}
-            quizQs={quizQs}
-            quizIdx={quizIdx}
-            quizAnswered={quizAnswered}
-            quizChoice={quizChoice}
-            quizOptions={quizOptions}
-            startQuiz={startQuiz}
-            answerQuiz={answerQuiz}
-            afterAnswerAdvance={afterAnswerAdvance}
-            LEVEL_STEP={LEVEL_STEP}
-            XP_PER_CORRECT={XP_PER_CORRECT}
           />
         ) : (
           <>
@@ -1110,7 +1003,6 @@ export default function App() {
               rows={rows}
               showToast={showToast}
             />
-
             {toast && (
               <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
                 {toast}
@@ -1125,10 +1017,12 @@ export default function App() {
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
+          aria-label={isEditing ? T.edit : T.addEntry}
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
-            document.activeElement?.blur?.();
+            if (document.activeElement instanceof HTMLElement)
+              document.activeElement.blur();
           }}
         >
           <div
@@ -1137,7 +1031,7 @@ export default function App() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">
-                {isEditing ? T.editEntry : T.addEntry}
+                {isEditing ? T.edit : T.addEntry}
               </div>
               <button
                 className="px-2 py-1 rounded-md bg-zinc-800 select-none"
@@ -1148,10 +1042,9 @@ export default function App() {
                 onMouseDown={(e) => e.preventDefault()}
                 onTouchStart={(e) => e.preventDefault()}
               >
-                ×
+                Close
               </button>
             </div>
-
             <AddForm
               tab={tab}
               T={T}
@@ -1167,13 +1060,7 @@ export default function App() {
                     prev.map((r) => (r._id === row._id ? row : r))
                   );
                 } else {
-                  setRows((prev) => [
-                    {
-                      ...row,
-                      createdTs: nowTs(),
-                    },
-                    ...prev,
-                  ]);
+                  setRows((prev) => [row, ...prev]);
                   setSortMode("Newest");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                   setTimeout(() => setSortMode("RAG"), 0);
