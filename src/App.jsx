@@ -30,7 +30,6 @@ const LSK_AZURE_KEY = "lt_azure_key";
 const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice";
 const LSK_SORT = "lt_sort_v1";
-const LSK_DIR = "lt_direction_v1";
 const LSK_PAGE = "lt_page";
 
 const STARTERS = {
@@ -43,80 +42,39 @@ const STARTERS = {
    UI STRINGS
    ========================================================================== */
 const STR = {
-  EN2LT: {
-    appTitle1: "Lithuanian",
-    appTitle2: "Trainer",
-    subtitle: "Tap to play. Long-press to savour.",
-    navHome: "Home",
-    navLibrary: "Library",
-    navSettings: "Settings",
-    search: "Search…",
-    sort: "Sort:",
-    newest: "Newest",
-    oldest: "Oldest",
-    rag: "RAG",
-    phrases: "Phrases",
-    confirm: "Are you sure?",
-    english: "English",
-    lithuanian: "Lithuanian",
-    phonetic: "Phonetic",
-    category: "Category",
-    usage: "Usage",
-    notes: "Notes",
-    ragLabel: "RAG",
-    sheet: "Sheet",
-    save: "Save",
-    cancel: "Cancel",
-    settings: "Settings",
-    libraryTitle: "Library",
-    fetchVoices: "Fetch voices",
-    subKey: "Subscription Key",
-    region: "Region",
-    choose: "— choose —",
-    browserVoice: "Browser (fallback)",
-    azure: "Azure Speech",
-    en2lt: "I’m learning Lithuanian (EN → LT)",
-    lt2en: "I’m learning English (LT → EN)",
-    addEntry: "Add Entry",
-    edit: "Edit Entry",
-  },
-  LT2EN: {
-    appTitle1: "Anglų",
-    appTitle2: "kalbos treniruoklis",
-    subtitle: "Paliesk, kad klausytum. Ilgai spausk – lėčiau.",
-    navHome: "Pagrindinis",
-    navLibrary: "Biblioteka",
-    navSettings: "Nustatymai",
-    search: "Paieška…",
-    sort: "Rūšiuoti:",
-    newest: "Naujausi",
-    oldest: "Seniausi",
-    rag: "RAG",
-    phrases: "Frazės",
-    confirm: "Ar tikrai?",
-    english: "Angliškai",
-    lithuanian: "Lietuviškai",
-    phonetic: "Tarimas",
-    category: "Kategorija",
-    usage: "Panaudojimas",
-    notes: "Pastabos",
-    ragLabel: "RAG",
-    sheet: "Skiltis",
-    save: "Išsaugoti",
-    cancel: "Atšaukti",
-    settings: "Nustatymai",
-    libraryTitle: "Biblioteka",
-    fetchVoices: "Gauti balsus",
-    subKey: "Prenumeratos raktas",
-    region: "Regionas",
-    choose: "— pasirinkite —",
-    browserVoice: "Naršyklė (atsarginis)",
-    azure: "Azure kalba",
-    en2lt: "Mokausi lietuvių (EN → LT)",
-    lt2en: "Mokausi anglų (LT → EN)",
-    addEntry: "Pridėti įrašą",
-    edit: "Redaguoti įrašą",
-  },
+  appTitle1: "Lithuanian",
+  appTitle2: "Trainer",
+  subtitle: "Tap to play. Long-press to savour.",
+  navHome: "Home",
+  navLibrary: "Library",
+  navSettings: "Settings",
+  search: "Search…",
+  sort: "Sort:",
+  newest: "Newest",
+  oldest: "Oldest",
+  rag: "RAG",
+  phrases: "Phrases",
+  confirm: "Are you sure?",
+  english: "English",
+  lithuanian: "Lithuanian",
+  phonetic: "Phonetic",
+  category: "Category",
+  usage: "Usage",
+  notes: "Notes",
+  ragLabel: "RAG",
+  sheet: "Sheet",
+  save: "Save",
+  cancel: "Cancel",
+  settings: "Settings",
+  libraryTitle: "Library",
+  fetchVoices: "Fetch voices",
+  subKey: "Subscription Key",
+  region: "Region",
+  choose: "— choose —",
+  browserVoice: "Browser (fallback)",
+  azure: "Azure Speech",
+  addEntry: "Add Entry",
+  edit: "Edit Entry",
 };
 
 /* ============================================================================
@@ -128,7 +86,11 @@ const genId = () => Math.random().toString(36).slice(2);
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s)) return "🟠";
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
+    return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
@@ -290,12 +252,8 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  /* ================= DIRECTION ================= */
-  const [direction, setDirection] = useState(
-    () => localStorage.getItem(LSK_DIR) || "EN2LT"
-  );
-  useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
-  const T = STR[direction];
+  /* ================= UI STRINGS ================= */
+  const T = STR;
 
   /* ============================================================================
      TTS PROVIDERS
@@ -559,7 +517,6 @@ export default function App() {
             setRows={setRows}
             normalizeRag={normalizeRag}
             sortMode={sortMode}
-            direction={direction}
             playText={playText}
             removePhrase={removePhraseById}
             onEditRow={(id) => {
@@ -571,8 +528,6 @@ export default function App() {
         ) : page === "settings" ? (
           <SettingsView
             T={T}
-            direction={direction}
-            setDirection={setDirection}
             ttsProvider={ttsProvider}
             setTtsProvider={setTtsProvider}
             azureKey={azureKey}
@@ -603,8 +558,6 @@ export default function App() {
         ) : (
           <>
             <HomeView
-              direction={direction}
-              setDirection={setDirection}
               playText={playText}
               setRows={setRows}
               genId={genId}
@@ -651,15 +604,11 @@ export default function App() {
               </button>
             </div>
 
-            {/* =======================
-                UPDATED onSubmit (toast)
-                ======================= */}
             <AddForm
               T={T}
               genId={genId}
               nowTs={nowTs}
               normalizeRag={normalizeRag}
-              direction={direction}
               mode={isEditing ? "edit" : "add"}
               initialRow={editingRow || undefined}
               onSubmit={(row) => {
