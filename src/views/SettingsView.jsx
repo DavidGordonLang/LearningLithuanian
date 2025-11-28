@@ -22,6 +22,7 @@ export default function SettingsView({
   importJsonFile,
   rows,
   onOpenDuplicateScanner,
+  onOpenChangeLog    // NEW
 }) {
   const [showKey, setShowKey] = useState(false);
 
@@ -52,6 +53,7 @@ export default function SettingsView({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
+
       {/* STARTER PACK */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
         <div className="text-lg font-semibold">Starter Pack</div>
@@ -183,7 +185,7 @@ export default function SettingsView({
         )}
       </section>
 
-      {/* YOUR DATA: import / export / duplicates / clear */}
+      {/* YOUR DATA */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
@@ -208,7 +210,7 @@ export default function SettingsView({
           Export current library
         </button>
 
-        {/* Duplicate scanner entry */}
+        {/* Duplicate Scanner */}
         <button
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
           onClick={onOpenDuplicateScanner}
@@ -224,6 +226,23 @@ export default function SettingsView({
           Clear entire library
         </button>
       </section>
+
+      {/* ABOUT SECTION (NEW) */}
+      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
+        <div className="text-lg font-semibold">About</div>
+
+        <div className="text-sm text-zinc-400">
+          App Version: <span className="text-zinc-200">1.0.0-beta</span>
+        </div>
+
+        <button
+          className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700"
+          onClick={onOpenChangeLog}
+        >
+          View Change Log
+        </button>
+      </section>
+
     </div>
   );
 }
