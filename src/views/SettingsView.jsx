@@ -22,7 +22,8 @@ export default function SettingsView({
   importJsonFile,
   rows,
   onOpenDuplicateScanner,
-  onOpenChangeLog    // NEW
+  onOpenChangeLog,
+  onOpenUserGuide          // NEW
 }) {
   const [showKey, setShowKey] = useState(false);
 
@@ -227,13 +228,20 @@ export default function SettingsView({
         </button>
       </section>
 
-      {/* ABOUT SECTION (NEW) */}
+      {/* ABOUT SECTION */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
         <div className="text-lg font-semibold">About</div>
 
         <div className="text-sm text-zinc-400">
           App Version: <span className="text-zinc-200">1.0.0-beta</span>
         </div>
+
+        <button
+          className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700"
+          onClick={onOpenUserGuide}
+        >
+          User Guide
+        </button>
 
         <button
           className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700"
