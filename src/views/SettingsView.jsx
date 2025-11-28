@@ -1,4 +1,3 @@
-// src/views/SettingsView.jsx
 import React from "react";
 
 export default function SettingsView({
@@ -46,7 +45,14 @@ export default function SettingsView({
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
 
       {/* STARTER PACK */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
+      <section className="
+        bg-zinc-900/95 
+        border border-zinc-800 
+        rounded-2xl 
+        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+        p-4 
+        space-y-3
+      ">
         <div className="text-lg font-semibold">Starter Pack</div>
         <button
           className="px-4 py-2 bg-emerald-600 text-black rounded-md font-semibold hover:bg-emerald-500"
@@ -57,10 +63,17 @@ export default function SettingsView({
       </section>
 
       {/* AZURE SPEECH ONLY */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
+      <section className="
+        bg-zinc-900/95 
+        border border-zinc-800 
+        rounded-2xl 
+        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+        p-4 
+        space-y-4
+      ">
         <div className="text-lg font-semibold">Voice Settings</div>
 
-        {/* Provider locked to Azure */}
+        {/* Provider (locked to Azure) */}
         <div className="space-y-1">
           <label className="text-sm">{T.azure}</label>
           <select
@@ -94,7 +107,14 @@ export default function SettingsView({
       </section>
 
       {/* YOUR DATA */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
+      <section className="
+        bg-zinc-900/95 
+        border border-zinc-800 
+        rounded-2xl 
+        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+        p-4 
+        space-y-4
+      ">
         <div className="text-lg font-semibold">Your Data</div>
 
         {/* Import JSON */}
@@ -136,7 +156,14 @@ export default function SettingsView({
       </section>
 
       {/* ABOUT SECTION */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
+      <section className="
+        bg-zinc-900/95 
+        border border-zinc-800 
+        rounded-2xl 
+        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+        p-4 
+        space-y-4
+      ">
         <div className="text-lg font-semibold">About</div>
 
         <div className="text-sm text-zinc-400">
