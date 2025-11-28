@@ -10,6 +10,7 @@ import React, {
   useImperativeHandle,
   useSyncExternalStore,
 } from "react";
+
 import Header from "./components/Header";
 import AddForm from "./components/AddForm";
 import SearchDock from "./components/SearchDock";
@@ -17,6 +18,7 @@ import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
+
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
 
@@ -122,17 +124,13 @@ const genId = () => Math.random().toString(36).slice(2);
 function normalizeRag(icon = "") {
   const s = String(icon).trim().toLowerCase();
   if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (
-    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
-    ["amber", "orange", "yellow"].includes(s)
-  )
-    return "🟠";
+  if (["🟠", "amber", "orange", "yellow"].includes(icon) || ["amber", "orange", "yellow"].includes(s)) return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
 }
 
 /* ============================================================================
-   TTS SYSTEM
+   TEXT-TO-SPEECH SYSTEM
    ========================================================================== */
 function useVoices() {
   const [voices, setVoices] = useState([]);
@@ -142,9 +140,9 @@ function useVoices() {
       setVoices([...v].sort((a, b) => a.name.localeCompare(b.name)));
     };
     refresh();
-    window.speechSynthesis?.addEventListener?.("voiceschanged", refresh);
+    window.speechSynthesis?.addEventListener("voiceschanged", refresh);
     return () =>
-      window.speechSynthesis?.removeEventListener?.("voiceschanged", refresh);
+      window.speechSynthesis?.removeEventListener("voiceschanged", refresh);
   }, []);
   return voices;
 }
@@ -156,19 +154,6 @@ function escapeXml(s) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
-}
-
-function speakBrowser(text, voice, rate = 1) {
-  if (!window.speechSynthesis) {
-    alert("Speech synthesis not supported.");
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  if (voice) u.voice = voice;
-  u.lang = voice?.lang || "lt-LT";
-  u.rate = rate;
-  window.speechSynthesis.speak(u);
 }
 
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
@@ -188,6 +173,19 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   if (!res.ok) throw new Error("Azure TTS failed");
   const blob = await res.blob();
   return URL.createObjectURL(blob);
+}
+
+function speakBrowser(text, voice, rate = 1) {
+  if (!window.speechSynthesis) {
+    alert("Speech synthesis not supported.");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  if (voice) u.voice = voice;
+  u.lang = voice?.lang || "lt-LT";
+  u.rate = rate;
+  window.speechSynthesis.speak(u);
 }
 
 /* ============================================================================
@@ -211,10 +209,10 @@ const SearchBox = memo(
         <input
           id="main-search"
           ref={inputRef}
-          defaultValue=""
           type="text"
           placeholder={placeholder}
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none select-none"
+          defaultValue=""
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
           onCompositionStart={() => {
             composingRef.current = true;
           }}
@@ -227,9 +225,10 @@ const SearchBox = memo(
               startTransition(() => searchStore.setRaw(e.currentTarget.value));
           }}
         />
+
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 select-none"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
           onClick={() => {
             const el = inputRef.current;
             if (el) {
@@ -257,12 +256,11 @@ export default function App() {
 
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
+
   useEffect(() => {
     if (!headerRef.current) return;
-    const measure = () => {
-      const h = headerRef.current.getBoundingClientRect().height || 0;
-      setHeaderHeight(h);
-    };
+    const measure = () =>
+      setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
@@ -282,6 +280,7 @@ export default function App() {
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
 
+  // TTS
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
@@ -308,12 +307,15 @@ export default function App() {
     }
   });
 
+  // Persist Azure fields
   useEffect(() => {
     localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
   }, [azureKey]);
+
   useEffect(() => {
     localStorage.setItem(LSK_AZURE_REGION, azureRegion ?? "");
   }, [azureRegion]);
+
   useEffect(() => {
     localStorage.setItem(
       LSK_AZURE_VOICE,
@@ -339,6 +341,7 @@ export default function App() {
         } catch {}
         audioRef.current = null;
       }
+
       if (
         ttsProvider === "azure" &&
         azureKey &&
@@ -367,20 +370,21 @@ export default function App() {
       }
     } catch (e) {
       console.error(e);
-      alert("Voice error: " + (e?.message || e));
+      alert("Voice error: " + e?.message);
     }
   }
 
-  // Keep subscription alive; value not needed here
-  const qFilter = useSyncExternalStore(
+  // Keep searchStore subscription alive
+  const qSub = useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
-  void qFilter;
+  void qSub;
 
-  /* IMPORT / STARTERS / LIBRARY MANAGEMENT */
-
+  /* ============================================================================
+     IMPORT / STARTERS / LIBRARY MANAGEMENT
+     ========================================================================== */
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -437,8 +441,9 @@ export default function App() {
     }
   }
 
-  /* ADD / EDIT MODAL */
-
+  /* ============================================================================
+     ADD / EDIT MODAL
+     ========================================================================== */
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
   const [toast, setToast] = useState("");
@@ -475,7 +480,9 @@ export default function App() {
     };
   }, [addOpen]);
 
-  /* REMOVE PHRASE BY ID (shared) */
+  /* ============================================================================
+     REMOVE PHRASE (shared)
+     ========================================================================== */
   function removePhraseById(id) {
     const idx = rows.findIndex((r) => r._id === id);
     if (idx !== -1) {
@@ -486,8 +493,21 @@ export default function App() {
     }
   }
 
-  /* RENDER */
+  /* ============================================================================
+     RESTORE PHRASE (for Duplicate Scanner undo)
+     ========================================================================== */
+  useEffect(() => {
+    function onRestore(e) {
+      const { item } = e.detail;
+      setRows((prev) => [item, ...prev]);
+    }
+    window.addEventListener("restorePhrase", onRestore);
+    return () => window.removeEventListener("restorePhrase", onRestore);
+  }, [setRows]);
 
+  /* ============================================================================
+     RENDER
+     ========================================================================== */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={setPage} />
