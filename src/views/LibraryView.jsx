@@ -22,7 +22,7 @@ export default function LibraryView({
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
 
-  /* FILTERING: search → sheet → sort */
+  /* FILTERING */
   const filteredRows = useMemo(() => {
     let base = rows;
 
@@ -53,9 +53,14 @@ export default function LibraryView({
   /* TAB CONTROL */
   function TabControl() {
     const options = ["Phrases", "Questions", "Words", "Numbers"];
+
     return (
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-1 flex">
-        {options.map((opt, idx) => {
+      <div className="
+        bg-zinc-900/95 border border-zinc-800 
+        rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
+        p-1 flex
+      ">
+        {options.map((opt) => {
           const active = tab === opt;
           return (
             <button
@@ -65,9 +70,9 @@ export default function LibraryView({
               onMouseDown={(e) => e.preventDefault()}
               onTouchStart={(e) => e.preventDefault()}
               className={
-                "flex-1 px-3 py-2 rounded-xl text-sm font-medium transition select-none " +
+                "flex-1 px-3 py-2 text-sm font-medium rounded-full transition select-none " +
                 (active
-                  ? "bg-emerald-600 text-black shadow"
+                  ? "bg-emerald-500 text-black shadow"
                   : "text-zinc-300 hover:bg-zinc-800/60")
               }
             >
@@ -79,7 +84,7 @@ export default function LibraryView({
     );
   }
 
-  /* AUDIO HANDLERS (tap = normal, long press = slow) */
+  /* AUDIO HANDLERS */
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -134,11 +139,16 @@ export default function LibraryView({
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
 
-      {/* Add Entry button */}
+      {/* Add Entry */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="mt-3 mb-3 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none shadow"
-          onClick={() => onOpenAddForm()}
+          className="
+            mt-3 mb-3 bg-emerald-500 text-black rounded-full 
+            px-5 py-2 font-semibold shadow
+            hover:bg-emerald-400 active:bg-emerald-300 
+            select-none
+          "
+          onClick={onOpenAddForm}
           onMouseDown={(e) => e.preventDefault()}
           onTouchStart={(e) => e.preventDefault()}
         >
@@ -167,18 +177,22 @@ export default function LibraryView({
               <article
                 key={r._id}
                 className="
-                  bg-zinc-900/95 
-                  border border-zinc-800 
-                  rounded-2xl 
-                  p-3 
+                  bg-zinc-900/95 border border-zinc-800 
+                  rounded-2xl p-3 
                   shadow-[0_0_12px_rgba(0,0,0,0.15)]
                 "
               >
                 <div className="flex items-start gap-3">
+
                   {/* RAG ICON */}
                   <button
                     type="button"
-                    className="w-7 h-7 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none bg-zinc-950/60 hover:bg-zinc-800/60"
+                    className="
+                      w-8 h-8 rounded-full border border-zinc-700 
+                      text-sm flex items-center justify-center 
+                      bg-zinc-950/60 hover:bg-zinc-800/60 
+                      select-none
+                    "
                     onClick={() =>
                       setRows((prev) =>
                         prev.map((x) =>
@@ -232,35 +246,53 @@ export default function LibraryView({
                     )}
                   </div>
 
-                  {/* ACTIONS */}
+                  {/* ACTION BUTTONS */}
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Play */}
+
+                    {/* Play pill */}
                     <button
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black text-lg select-none shadow-sm"
+                      className="
+                        bg-emerald-500 text-black 
+                        rounded-full px-5 py-2 
+                        text-[18px] shadow 
+                        hover:bg-emerald-400 active:bg-emerald-300 
+                        select-none
+                      "
                       {...pressHandlers(textToPlay)}
                     >
                       ▶
                     </button>
 
-                    {/* Edit */}
+                    {/* Edit pill */}
                     <button
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-base select-none"
+                      className="
+                        bg-zinc-800 text-zinc-200 
+                        rounded-full px-4 py-2 
+                        text-sm shadow-sm
+                        hover:bg-zinc-700 active:bg-zinc-600 
+                        select-none
+                      "
                       onClick={() => onEditRow(r._id)}
                     >
-                      ✏️
+                      Edit
                     </button>
 
-                    {/* Delete */}
+                    {/* Delete pill */}
                     <button
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-600/80 hover:bg-red-500 text-white text-lg select-none"
+                      className="
+                        bg-red-500 text-white rounded-full 
+                        px-4 py-2 text-sm font-medium
+                        hover:bg-red-400 active:bg-red-300
+                        select-none
+                      "
                       onClick={() => {
                         if (window.confirm(T.confirm)) removePhrase(r._id);
                       }}
                     >
-                      🗑️
+                      Delete
                     </button>
                   </div>
                 </div>
