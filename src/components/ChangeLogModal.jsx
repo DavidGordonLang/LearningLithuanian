@@ -21,50 +21,59 @@ export default function ChangeLogModal({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="
+        fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm 
+        flex items-center justify-center p-4
+      "
       onPointerDown={() => onClose()}
     >
       <div
         className="
-          w-full max-w-2xl max-h-[85vh] overflow-y-auto 
-          bg-zinc-900/95 border border-zinc-800 rounded-2xl 
-          shadow-[0_0_20px_rgba(0,0,0,0.25)]
+          w-full max-w-2xl max-h-[85vh] overflow-y-auto
+          bg-zinc-900/95 border border-zinc-800 
+          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
           p-5
         "
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* HEADER */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Change Log</h2>
+
           <button
-            className="px-3 py-1 bg-zinc-800 rounded-md hover:bg-zinc-700 select-none"
-            onClick={() => onClose()}
+            className="
+              bg-zinc-800 text-zinc-200 rounded-full 
+              px-4 py-1.5 text-sm font-medium
+              hover:bg-zinc-700 active:bg-zinc-600
+              select-none
+            "
+            onClick={onClose}
           >
             Close
           </button>
         </div>
 
+        {/* LOADING */}
         {loading && (
           <div className="text-sm text-zinc-400">Loading…</div>
         )}
 
+        {/* NO ENTRIES */}
         {!loading && entries.length === 0 && (
           <div className="text-sm text-zinc-400">
             No changelog entries found.
           </div>
         )}
 
+        {/* ENTRIES */}
         {!loading && entries.length > 0 && (
           <div className="space-y-6">
             {entries.map((entry, index) => (
               <section
                 key={index}
                 className="
-                  bg-zinc-950/60 
-                  border border-zinc-800 
-                  rounded-2xl 
-                  p-4 
-                  shadow-sm
+                  bg-zinc-950/60 border border-zinc-800 
+                  rounded-2xl p-4 shadow-sm
                 "
               >
                 <div className="flex items-center justify-between mb-2">
