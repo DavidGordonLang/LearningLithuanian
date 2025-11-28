@@ -1,21 +1,12 @@
 // src/views/SettingsView.jsx
-import React, { useState } from "react";
+import React from "react";
 
 export default function SettingsView({
   T,
   ttsProvider,
   setTtsProvider,
-  azureKey,
-  setAzureKey,
-  azureRegion,
-  setAzureRegion,
-  azureVoices,
-  setAzureVoices,
   azureVoiceShortName,
   setAzureVoiceShortName,
-  browserVoiceName,
-  setBrowserVoiceName,
-  voices,
   playText,
   fetchStarter,
   clearLibrary,
@@ -23,9 +14,8 @@ export default function SettingsView({
   rows,
   onOpenDuplicateScanner,
   onOpenChangeLog,
-  onOpenUserGuide          // NEW
+  onOpenUserGuide
 }) {
-  const [showKey, setShowKey] = useState(false);
 
   /* EXPORT JSON */
   function exportJson() {
@@ -66,124 +56,41 @@ export default function SettingsView({
         </button>
       </section>
 
-      {/* AZURE SPEECH SETTINGS */}
+      {/* AZURE SPEECH ONLY */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Azure Speech / Browser</div>
+        <div className="text-lg font-semibold">Voice Settings</div>
 
-        {/* Provider */}
+        {/* Provider locked to Azure */}
         <div className="space-y-1">
           <label className="text-sm">{T.azure}</label>
           <select
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-            value={ttsProvider}
-            onChange={(e) => setTtsProvider(e.target.value)}
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 cursor-not-allowed opacity-60"
+            value="azure"
+            disabled
           >
-            <option value="azure">Azure Speech</option>
-            <option value="browser">Browser (fallback)</option>
+            <option>Azure Speech (recommended)</option>
           </select>
         </div>
 
-        {ttsProvider === "azure" && (
-          <>
-            {/* Region */}
-            <div className="space-y-1">
-              <label className="text-sm">{T.region}</label>
-              <input
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={azureRegion}
-                onChange={(e) => setAzureRegion(e.target.value)}
-              />
-            </div>
+        {/* Voice Selection */}
+        <div className="space-y-1 pt-2">
+          <label className="text-sm">Select Voice</label>
+          <select
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+            value={azureVoiceShortName}
+            onChange={(e) => setAzureVoiceShortName(e.target.value)}
+          >
+            <option value="lt-LT-LeonasNeural">Leonas (male)</option>
+            <option value="lt-LT-OnaNeural">Ona (female)</option>
+          </select>
+        </div>
 
-            {/* Subscription Key */}
-            <div className="space-y-1">
-              <label className="text-sm">{T.subKey}</label>
-              <div className="flex gap-2">
-                <input
-                  type={showKey ? "text" : "password"}
-                  className="flex-1 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                  value={azureKey}
-                  onChange={(e) => setAzureKey(e.target.value)}
-                />
-                <button
-                  className="px-3 py-2 rounded-md bg-zinc-800"
-                  onClick={() => setShowKey(!showKey)}
-                >
-                  {showKey ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-
-            {/* Voices */}
-            <div className="space-y-2">
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
-                onClick={async () => {
-                  try {
-                    const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
-                    const res = await fetch(url, {
-                      headers: { "Ocp-Apim-Subscription-Key": azureKey },
-                    });
-                    const data = await res.json();
-                    setAzureVoices(data);
-                  } catch (e) {
-                    alert("Failed to fetch voices");
-                  }
-                }}
-              >
-                {T.fetchVoices}
-              </button>
-
-              <select
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={azureVoiceShortName}
-                onChange={(e) => setAzureVoiceShortName(e.target.value)}
-              >
-                <option value="">{T.choose}</option>
-                {azureVoices.map((v) => (
-                  <option key={v.ShortName} value={v.ShortName}>
-                    {v.ShortName}
-                  </option>
-                ))}
-              </select>
-
-              {azureVoiceShortName && (
-                <button
-                  className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-500"
-                  onClick={() => playText("Sveiki!", { slow: false })}
-                >
-                  Play sample
-                </button>
-              )}
-            </div>
-          </>
-        )}
-
-        {ttsProvider === "browser" && (
-          <div className="space-y-2">
-            <div className="space-y-1">
-              <label className="text-sm">Browser voice</label>
-              <select
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-                value={browserVoiceName}
-                onChange={(e) => setBrowserVoiceName(e.target.value)}
-              >
-                {voices.map((v) => (
-                  <option key={v.name} value={v.name}>
-                    {v.name} ({v.lang})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-500"
-              onClick={() => playText("Sveiki!", { slow: false })}
-            >
-              Play sample
-            </button>
-          </div>
-        )}
+        <button
+          className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-500"
+          onClick={() => playText("Sveiki!", { slow: false })}
+        >
+          Play sample
+        </button>
       </section>
 
       {/* YOUR DATA */}
