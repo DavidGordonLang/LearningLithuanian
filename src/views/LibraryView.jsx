@@ -112,7 +112,7 @@ export default function LibraryView({
       if (!firedSlow) playText(text);
     };
 
-    const cancel = (e) => {
+    const cancel = () => {
       pressed = false;
       if (timer) clearTimeout(timer);
       timer = null;
@@ -142,6 +142,7 @@ export default function LibraryView({
             mt-3 mb-3 bg-emerald-500 text-black rounded-full 
             px-5 py-2 font-semibold shadow
             hover:bg-emerald-400 active:bg-emerald-300 
+            transition-transform duration-150 active:scale-95
             select-none
           "
           onClick={onOpenAddForm}
@@ -194,6 +195,7 @@ export default function LibraryView({
                       w-8 h-8 rounded-full border border-zinc-700 
                       text-sm flex items-center justify-center 
                       bg-zinc-950/60 hover:bg-zinc-800/60 
+                      transition-transform duration-150 active:scale-95
                       select-none shrink-0
                     "
                     onClick={(e) => {
@@ -250,6 +252,7 @@ export default function LibraryView({
                         rounded-full px-5 py-2 
                         text-[18px] shadow 
                         hover:bg-emerald-400 active:bg-emerald-300 
+                        transition-transform duration-150 active:scale-95
                         select-none
                       "
                       {...pressHandlers(textToPlay)}
@@ -265,6 +268,7 @@ export default function LibraryView({
                         rounded-full px-4 py-2 
                         text-sm shadow-sm
                         hover:bg-zinc-700 active:bg-zinc-600 
+                        transition-transform duration-150 active:scale-95
                         select-none
                       "
                       onClick={(e) => {
@@ -281,6 +285,7 @@ export default function LibraryView({
                         bg-red-500 text-white rounded-full 
                         px-4 py-2 text-sm font-medium
                         hover:bg-red-400 active:bg-red-300
+                        transition-transform duration-150 active:scale-95
                         select-none
                       "
                       onClick={(e) => {
@@ -326,6 +331,7 @@ export default function LibraryView({
                       rounded-full px-5 py-2 
                       text-[18px] shadow 
                       hover:bg-emerald-400 active:bg-emerald-300 
+                      transition-transform duration-150 active:scale-95
                       select-none
                     "
                     {...pressHandlers(textToPlay)}
@@ -340,6 +346,7 @@ export default function LibraryView({
                       rounded-full px-4 py-2 
                       text-sm shadow-sm
                       hover:bg-zinc-700 active:bg-zinc-600 
+                      transition-transform duration-150 active:scale-95
                       select-none
                     "
                     onClick={() => onEditRow(r._id)}
@@ -353,6 +360,7 @@ export default function LibraryView({
                       bg-red-500 text-white rounded-full 
                       px-4 py-2 text-sm font-medium
                       hover:bg-red-400 active:bg-red-300
+                      transition-transform duration-150 active:scale-95
                       select-none
                     "
                     onClick={() => {
