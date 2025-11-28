@@ -150,8 +150,8 @@ export default function HomeView({
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
 
-      {/* REMOVED TOP MARGIN HERE */}
-      <div className="">
+      {/* Header */}
+      <div>
         <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
         <p className="text-sm text-zinc-400 mt-1">
           Draft the phrase, tune the tone, hear it spoken, then save it to your
@@ -170,43 +170,9 @@ export default function HomeView({
         </button>
       )}
 
-      {/* Everything else unchanged */}
-      {/* Learning direction */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mt-4 mb-4">
-        <div className="text-sm font-semibold mb-2">Learning direction</div>
-        <div className="flex gap-3 flex-wrap">
-          <button
-            type="button"
-            className={
-              "px-3 py-1.5 rounded-md text-sm border select-none " +
-              (direction === "EN2LT"
-                ? "bg-emerald-600 border-emerald-500 text-black font-semibold"
-                : "bg-zinc-950 border-zinc-700 text-zinc-200")
-            }
-            onClick={() => setDirection("EN2LT")}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-          >
-            English → Lithuanian
-          </button>
-          <button
-            type="button"
-            className={
-              "px-3 py-1.5 rounded-md text-sm border select-none " +
-              (direction === "LT2EN"
-                ? "bg-emerald-600 border-emerald-500 text-black font-semibold"
-                : "bg-zinc-950 border-zinc-700 text-zinc-200")
-            }
-            onClick={() => setDirection("LT2EN")}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-          >
-            Lithuanian → English
-          </button>
-        </div>
-      </div>
+      {/* Removed learning direction block entirely */}
 
-      {/* Speaking to */}
+      {/* Speaking to… */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <Segmented
