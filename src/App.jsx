@@ -1,4 +1,4 @@
-// src/App.jsx
+// FULL FILE STARTS HERE
 import React, {
   useEffect,
   useMemo,
@@ -77,6 +77,8 @@ const STR = {
     azure: "Azure Speech",
     en2lt: "I’m learning Lithuanian (EN → LT)",
     lt2en: "I’m learning English (LT → EN)",
+    addEntry: "Add Entry",
+    edit: "Edit Entry",
   },
   LT2EN: {
     appTitle1: "Anglų",
@@ -112,6 +114,8 @@ const STR = {
     azure: "Azure kalba",
     en2lt: "Mokausi lietuvių (EN → LT)",
     lt2en: "Mokausi anglų (LT → EN)",
+    addEntry: "Pridėti įrašą",
+    edit: "Redaguoti įrašą",
   },
 };
 
@@ -130,7 +134,7 @@ function normalizeRag(icon = "") {
 }
 
 /* ============================================================================
-   TEXT-TO-SPEECH SYSTEM
+   VOICES
    ========================================================================== */
 function useVoices() {
   const [voices, setVoices] = useState([]);
@@ -147,15 +151,21 @@ function useVoices() {
   return voices;
 }
 
+/* ============================================================================
+   ESCAPE XML
+   ========================================================================== */
 function escapeXml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt/")
+    .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 
+/* ============================================================================
+   AZURE TTS
+   ========================================================================== */
 async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const ssml = `<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
@@ -175,6 +185,9 @@ async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
   return URL.createObjectURL(blob);
 }
 
+/* ============================================================================
+   BROWSER TTS
+   ========================================================================== */
 function speakBrowser(text, voice, rate = 1) {
   if (!window.speechSynthesis) {
     alert("Speech synthesis not supported.");
@@ -189,7 +202,7 @@ function speakBrowser(text, voice, rate = 1) {
 }
 
 /* ============================================================================
-   SEARCH BOX
+   SEARCH INPUT
    ========================================================================== */
 const SearchBox = memo(
   forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
@@ -246,9 +259,10 @@ const SearchBox = memo(
 );
 
 /* ============================================================================
-   APP ROOT
+   MAIN APP
    ========================================================================== */
 export default function App() {
+  /* ================= PAGE STATE ================= */
   const [page, setPage] = useState(
     () => localStorage.getItem(LSK_PAGE) || "home"
   );
@@ -266,21 +280,26 @@ export default function App() {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
+  /* ================= ROWS ================= */
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
+  /* ================= SORT ================= */
   const [sortMode, setSortMode] = useState(
     () => localStorage.getItem(LSK_SORT) || "RAG"
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
+  /* ================= DIRECTION ================= */
   const [direction, setDirection] = useState(
     () => localStorage.getItem(LSK_DIR) || "EN2LT"
   );
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
 
-  // TTS
+  /* ============================================================================
+     TTS PROVIDERS
+     ========================================================================== */
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
@@ -307,7 +326,7 @@ export default function App() {
     }
   });
 
-  // Persist Azure fields
+  /* Persist Azure fields */
   useEffect(() => {
     localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
   }, [azureKey]);
@@ -331,6 +350,7 @@ export default function App() {
   );
 
   const audioRef = useRef(null);
+
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
@@ -374,7 +394,7 @@ export default function App() {
     }
   }
 
-  // Keep searchStore subscription alive
+  /* keep search store alive */
   const qSub = useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
@@ -383,7 +403,7 @@ export default function App() {
   void qSub;
 
   /* ============================================================================
-     IMPORT / STARTERS / LIBRARY MANAGEMENT
+     IMPORT / STARTERS / MERGE
      ========================================================================== */
   async function mergeRows(newRows) {
     const cleaned = newRows
@@ -480,14 +500,14 @@ export default function App() {
     };
   }, [addOpen]);
 
-  // NEW: shared open-add-form handler for Home + Library
+  // NEW: open form
   function onOpenAddForm() {
     setEditRowId(null);
     setAddOpen(true);
   }
 
   /* ============================================================================
-     REMOVE PHRASE (shared)
+     DELETING
      ========================================================================== */
   function removePhraseById(id) {
     const idx = rows.findIndex((r) => r._id === id);
@@ -500,7 +520,7 @@ export default function App() {
   }
 
   /* ============================================================================
-     RESTORE PHRASE (for Duplicate Scanner undo)
+     RESTORE FROM DUPES
      ========================================================================== */
   useEffect(() => {
     function onRestore(e) {
@@ -631,6 +651,9 @@ export default function App() {
               </button>
             </div>
 
+            {/* =======================
+                UPDATED onSubmit (toast)
+                ======================= */}
             <AddForm
               T={T}
               genId={genId}
@@ -648,8 +671,13 @@ export default function App() {
                   setRows((prev) => [row, ...prev]);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }
+
                 setAddOpen(false);
                 setEditRowId(null);
+
+                // NEW: TOAST
+                setToast("Entry saved to library");
+                setTimeout(() => setToast(""), 2000);
               }}
               onCancel={() => {
                 setAddOpen(false);
@@ -662,3 +690,4 @@ export default function App() {
     </div>
   );
 }
+// END FILE
