@@ -72,14 +72,17 @@ export default function UserGuideModal({ onClose, firstLaunch = false }) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="
+        fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm 
+        flex items-center justify-center p-4
+      "
       onPointerDown={() => onClose()}
     >
       <div
         className="
           w-full max-w-2xl max-h-[85vh] overflow-y-auto
-          bg-zinc-900/95 border border-zinc-800 rounded-2xl 
-          shadow-[0_0_20px_rgba(0,0,0,0.25)]
+          bg-zinc-900/95 border border-zinc-800 
+          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
           p-5
         "
         onPointerDown={(e) => e.stopPropagation()}
@@ -87,63 +90,81 @@ export default function UserGuideModal({ onClose, firstLaunch = false }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">User Guide</h2>
+
           {!firstLaunch && (
             <button
-              className="px-3 py-1 bg-zinc-800 rounded-md hover:bg-zinc-700 select-none"
-              onClick={() => onClose()}
+              className="
+                bg-zinc-800 text-zinc-200 rounded-full 
+                px-4 py-1.5 text-sm font-medium
+                hover:bg-zinc-700 active:bg-zinc-600
+                select-none
+              "
+              onClick={onClose}
             >
               Close
             </button>
           )}
         </div>
 
-        {loading && (
-          <div className="text-sm text-zinc-400">Loading…</div>
-        )}
+        {loading && <div className="text-sm text-zinc-400">Loading…</div>}
 
         {!loading && slides.length > 0 && (
           <div className="text-center select-none">
 
-            {/* Icon */}
             <Icon type={slides[index].icon} />
 
-            {/* Title */}
             <h3 className="text-lg font-semibold mb-1">
               {slides[index].title}
             </h3>
 
-            {/* Subtitle */}
             <p className="text-sm text-zinc-400 mb-4">
               {slides[index].subtitle}
             </p>
 
-            {/* Bullet Points */}
             <ul className="text-left list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
               {slides[index].points.map((p, i) => (
                 <li key={i}>{p}</li>
               ))}
             </ul>
 
-            {/* Navigation */}
+            {/* NAVIGATION BUTTONS */}
             <div className="flex items-center justify-between mt-6">
+
+              {/* Prev (secondary pill) */}
               <button
-                className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700 disabled:opacity-40 select-none"
+                className="
+                  bg-zinc-800 text-zinc-200 rounded-full 
+                  px-5 py-2 text-sm font-medium 
+                  hover:bg-zinc-700 active:bg-zinc-600
+                  disabled:opacity-40 select-none
+                "
                 onClick={prev}
                 disabled={index === 0}
               >
                 Prev
               </button>
 
+              {/* Next / Finish */}
               {index < slides.length - 1 ? (
                 <button
-                  className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-500 select-none"
+                  className="
+                    bg-emerald-500 text-black rounded-full 
+                    px-5 py-2 font-semibold shadow
+                    hover:bg-emerald-400 active:bg-emerald-300
+                    select-none
+                  "
                   onClick={next}
                 >
                   Next
                 </button>
               ) : (
                 <button
-                  className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-500 select-none"
+                  className="
+                    bg-emerald-500 text-black rounded-full 
+                    px-5 py-2 font-semibold shadow
+                    hover:bg-emerald-400 active:bg-emerald-300
+                    select-none
+                  "
                   onClick={finish}
                 >
                   Finish
