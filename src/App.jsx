@@ -180,7 +180,7 @@ export default function App() {
 
   /* VOICE SETTINGS (Azure-only) */
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(
-    () => "lt-LT-LeonasNeural" // Default
+    () => "lt-LT-LeonasNeural"
   );
 
   const audioRef = useRef(null);
@@ -352,13 +352,10 @@ export default function App() {
     return () => window.removeEventListener("restorePhrase", onRestore);
   }, [setRows]);
 
-  /* CHANGE LOG MODAL */
+  /* MODALS */
   const [showChangeLog, setShowChangeLog] = useState(false);
-
-  /* USER GUIDE MODAL */
   const [showUserGuide, setShowUserGuide] = useState(false);
 
-  /* FIRST LAUNCH USER GUIDE */
   useEffect(() => {
     const seen = localStorage.getItem(LSK_USER_GUIDE);
     if (!seen) {
@@ -455,7 +452,9 @@ export default function App() {
           }}
         >
           <div
-            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-4"
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto
+            bg-zinc-900/95 border border-zinc-800 rounded-2xl 
+            shadow-[0_0_20px_rgba(0,0,0,0.25)] backdrop-blur-sm p-4"
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
