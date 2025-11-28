@@ -10,28 +10,26 @@ import React, {
   useImperativeHandle,
   useSyncExternalStore,
 } from "react";
+
 import Header from "./components/Header";
 import AddForm from "./components/AddForm";
 import SearchDock from "./components/SearchDock";
 import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
-import { searchStore } from "./searchStore";
-import { usePhraseStore } from "./stores/phraseStore";
 import LibraryView from "./views/LibraryView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
-import UserGuideModal from "./components/UserGuideModal";
 import ChangeLogModal from "./components/ChangeLogModal";
+import UserGuideModal from "./components/UserGuideModal";
+
+import { searchStore } from "./searchStore";
+import { usePhraseStore } from "./stores/phraseStore";
 
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
 const LSK_TTS_PROVIDER = "lt_tts_provider";
-const LSK_AZURE_KEY = "lt_azure_key";
-const LSK_AZURE_REGION = "lt_azure_region";
-const LSK_AZURE_VOICE = "lt_azure_voice";
-const LSK_STREAK = "lt_quiz_streak_v1";
-const LSK_XP = "lt_xp_v1";
 const LSK_SORT = "lt_sort_v1";
+const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
 
 const STARTERS = {
@@ -39,262 +37,225 @@ const STARTERS = {
 };
 
 /* ============================================================================
-   TRANSLATIONS
+   STRINGS
    ========================================================================== */
-const T_EN = {
-  libraryTitle: "Library",
+const STR = {
+  appTitle1: "Lithuanian",
+  appTitle2: "Trainer",
+  subtitle: "Tap to play. Long-press to savour.",
+  navHome: "Home",
+  navLibrary: "Library",
+  navSettings: "Settings",
+  search: "Search…",
+  sort: "Sort:",
+  newest: "Newest",
+  oldest: "Oldest",
+  rag: "RAG",
+  confirm: "Are you sure?",
   english: "English",
   lithuanian: "Lithuanian",
   phonetic: "Phonetic",
+  category: "Category",
   usage: "Usage",
   notes: "Notes",
-  category: "Category",
-  sortLabel: "Sort:",
-  sortRag: "RAG",
-  sortNewest: "Newest",
-  sortOldest: "Oldest",
-  confirm: "Delete this entry?",
-  ragLabel: "Familiarity (RAG)",
+  ragLabel: "RAG",
   sheet: "Sheet",
+  save: "Save",
+  cancel: "Cancel",
+  settings: "Settings",
+  libraryTitle: "Library",
+  azure: "Azure Speech",
   addEntry: "Add Entry",
   edit: "Edit Entry",
-  cancel: "Cancel",
-  save: "Save",
-  azure: "Azure Speech",
 };
 
 /* ============================================================================
-   TTS: react hook & azure helper
+   HELPERS
    ========================================================================== */
-function useTts(initProvider = "azure", initAzureVoice = "lt-LT-LeonasNeural") {
-  const [ttsProvider, setTtsProvider] = useState(initProvider);
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState(initAzureVoice);
-  const [busy, setBusy] = useState(false);
+const nowTs = () => Date.now();
+const genId = () => Math.random().toString(36).slice(2);
+
+function normalizeRag(icon = "") {
+  const s = String(icon).trim().toLowerCase();
+  if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
+  if (
+    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
+    ["amber", "orange", "yellow"].includes(s)
+  )
+    return "🟠";
+  if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
+  return "🟠";
+}
+
+/* ============================================================================
+   SEARCH BOX
+   ========================================================================== */
+const SearchBox = memo(
+  forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
+    const composingRef = useRef(false);
+    const inputRef = useRef(null);
+    useImperativeHandle(ref, () => inputRef.current);
+
+    useEffect(() => {
+      const el = inputRef.current;
+      const raw = searchStore.getRaw();
+      if (el && raw && el.value !== raw) el.value = raw;
+    }, []);
+
+    return (
+      <div className="relative flex-1">
+        <input
+          id="main-search"
+          ref={inputRef}
+          type="text"
+          placeholder={placeholder}
+          defaultValue=""
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+          onCompositionStart={() => {
+            composingRef.current = true;
+          }}
+          onCompositionEnd={(e) => {
+            composingRef.current = false;
+            startTransition(() => searchStore.setRaw(e.currentTarget.value));
+          }}
+          onInput={(e) => {
+            if (!composingRef.current)
+              startTransition(() => searchStore.setRaw(e.currentTarget.value));
+          }}
+        />
+
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
+          onClick={() => {
+            const el = inputRef.current;
+            if (el) {
+              el.value = "";
+              el.focus();
+              startTransition(() => searchStore.clear());
+            }
+          }}
+        >
+          ×
+        </button>
+      </div>
+    );
+  })
+);
+
+/* ============================================================================
+   MAIN APP
+   ========================================================================== */
+export default function App() {
+  /* PAGE */
+  const [page, setPage] = useState(
+    () => localStorage.getItem(LSK_PAGE) || "home"
+  );
+  useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
+
+  const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   useEffect(() => {
-    localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider);
-  }, [ttsProvider]);
+    if (!headerRef.current) return;
+    const measure = () =>
+      setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem(LSK_AZURE_VOICE, azureVoiceShortName);
-  }, [azureVoiceShortName]);
+  /* ROWS */
+  const rows = usePhraseStore((s) => s.phrases);
+  const setRows = usePhraseStore((s) => s.setPhrases);
 
-  async function playWithAzure(text, opts = {}) {
-    const voiceName = azureVoiceShortName;
-    if (!voiceName) {
-      alert("Azure voice not configured.");
-      return;
-    }
+  /* SORT */
+  const [sortMode, setSortMode] = useState(
+    () => localStorage.getItem(LSK_SORT) || "RAG"
+  );
+  useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-    setBusy(true);
+  /* STRING BUNDLE */
+  const T = STR;
+
+  /* VOICE SETTINGS (Azure-only) */
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
+    () => "lt-LT-LeonasNeural"
+  );
+
+  const audioRef = useRef(null);
+
+  /* ============================================================================
+     PLAY TEXT VIA SECURE API
+     ========================================================================== */
+  async function playText(text, { slow = false } = {}) {
     try {
-      const res = await fetch("/api/azure-tts", {
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {}
+        audioRef.current = null;
+      }
+
+      const resp = await fetch("/api/azure-tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text,
-          voiceShortName: voiceName,
-          speakingRate: opts.slow ? 0.8 : 1.0,
+          voice: azureVoiceShortName,
+          slow,
         }),
       });
 
-      if (!res.ok) {
-        const body = await res.text();
-        console.error("TTS error:", body);
-        throw new Error("Azure TTS failed");
-      }
+      if (!resp.ok) throw new Error("Azure TTS failed");
 
-      const blob = await res.blob();
+      const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
+
       const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (audioRef.current === audio) audioRef.current = null;
+      };
+
       await audio.play();
-    } catch (err) {
-      console.error(err);
-      alert("Speech error.");
-    } finally {
-      setBusy(false);
+    } catch (e) {
+      alert("Voice error: " + e.message);
     }
   }
 
-  const playText = (text, opts = {}) => {
-    if (!text) return;
-    if (ttsProvider === "azure") {
-      playWithAzure(text, opts);
-    } else {
-      playWithAzure(text, opts);
-    }
-  };
-
-  return {
-    ttsProvider,
-    setTtsProvider,
-    azureVoiceShortName,
-    setAzureVoiceShortName,
-    playText,
-    busy,
-  };
-}
-
-/* ============================================================================
-   SEARCH DOCK WRAPPER
-   ========================================================================== */
-const SearchDockWrapper = memo(function SearchDockWrapper({
-  sortMode,
-  setSortMode,
-}) {
-  return <SearchDock sortMode={sortMode} setSortMode={setSortMode} />;
-});
-
-/* ============================================================================
-   APP
-   ========================================================================== */
-export default function App() {
-  const {
-    rows,
-    setRows,
-    streak,
-    xp,
-    setStreak,
-    setXp,
-    hydrateFromLocalStorage,
-  } = usePhraseStore();
-
-  const [activeRoute, setActiveRoute] = useState("home");
-  const [sortMode, setSortMode] = useState(
-    () => localStorage.getItem(LSK_SORT) || "RAG"
-  );
-  const [toast, setToast] = useState("");
-  const [addOpen, setAddOpen] = useState(false);
-  const [editRowId, setEditRowId] = useState(null);
-  const [showDuplicateScanner, setShowDuplicateScanner] = useState(false);
-  const [showChangeLog, setShowChangeLog] = useState(false);
-  const [showUserGuide, setShowUserGuide] = useState(false);
-
-  const {
-    ttsProvider,
-    setTtsProvider,
-    azureVoiceShortName,
-    setAzureVoiceShortName,
-    playText,
-    busy: ttsBusy,
-  } = useTts(
-    localStorage.getItem(LSK_TTS_PROVIDER) || "azure",
-    localStorage.getItem(LSK_AZURE_VOICE) || "lt-LT-LeonasNeural"
+  /* SEARCH SUBSCRIPTION */
+  useSyncExternalStore(
+    searchStore.subscribe,
+    searchStore.getSnapshot,
+    searchStore.getServerSnapshot
   );
 
-  const T = T_EN;
-
-  useEffect(() => {
-    hydrateFromLocalStorage();
-  }, [hydrateFromLocalStorage]);
-
-  useEffect(() => {
-    localStorage.setItem(LSK_SORT, sortMode);
-  }, [sortMode]);
-
-  const genId = () => crypto.randomUUID();
-  const nowTs = () => Date.now();
-
-  const computingQuizStatsRef = useRef(false);
-  const [quizStats, setQuizStats] = useState(null);
-
-  const normalizeRag = (val) => {
-    if (!val) return "🟠";
-    if (val === "🔴" || val === "🟠" || val === "🟢") return val;
-    if (typeof val === "string") {
-      const lower = val.toLowerCase();
-      if (lower.includes("red")) return "🔴";
-      if (lower.includes("amber") || lower.includes("orange")) return "🟠";
-      if (lower.includes("green")) return "🟢";
-    }
-    return "🟠";
-  };
-
-  useEffect(() => {
-    if (computingQuizStatsRef.current) return;
-    computingQuizStatsRef.current = true;
-
-    startTransition(() => {
-      try {
-        const base = rows || [];
-        let red = 0;
-        let amb = 0;
-        let grn = 0;
-
-        for (const r of base) {
-          const rag = normalizeRag(r["RAG Icon"]);
-          if (rag === "🔴") red++;
-          else if (rag === "🟢") grn++;
-          else amb++;
-        }
-
-        setQuizStats({ red, amb, grn, total: base.length });
-      } finally {
-        computingQuizStatsRef.current = false;
-      }
-    });
-  }, [rows]);
-
-  useEffect(() => {
-    try {
-      const rawStreak = localStorage.getItem(LSK_STREAK);
-      const rawXp = localStorage.getItem(LSK_XP);
-      if (rawStreak) setStreak(JSON.parse(rawStreak));
-      if (rawXp) setXp(JSON.parse(rawXp));
-    } catch (err) {
-      console.error("Failed to load streak/xp:", err);
-    }
-  }, [setStreak, setXp]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LSK_STREAK, JSON.stringify(streak));
-      localStorage.setItem(LSK_XP, JSON.stringify(xp));
-    } catch (err) {
-      console.error("Failed to persist streak/xp:", err);
-    }
-  }, [streak, xp]);
-
-  const [searchMounted, setSearchMounted] = useState(false);
-  const routeRef = useRef(activeRoute);
-  useEffect(() => {
-    routeRef.current = activeRoute;
-  }, [activeRoute]);
-
-  function mergeRows(imported) {
-    if (!Array.isArray(imported)) return;
-    const existingByKey = new Map();
-    for (const r of rows) {
-      const key = `${(r.English || "").trim().toLowerCase()}||${(r.Lithuanian || "")
-        .trim()
-        .toLowerCase()}`;
-      existingByKey.set(key, r);
-    }
-
-    const cleaned = imported
-      .map((r) => {
-        const e = (r.English || "").trim();
-        const l = (r.Lithuanian || "").trim();
-        if (!e && !l) return null;
-
-        const key = `${e.toLowerCase()}||${l.toLowerCase()}`;
-        if (existingByKey.has(key)) return null;
-
-        return {
-          ...r,
-          English: e,
-          Lithuanian: l,
-          _id: r._id || genId(),
-          _ts: r._ts || nowTs(),
-          _qstat:
-            r._qstat ||
-            {
-              red: { ok: 0, bad: 0 },
-              amb: { ok: 0, bad: 0 },
-              grn: { ok: 0, bad: 0 },
-            },
-        };
-      })
+  /* IMPORT / MERGE */
+  async function mergeRows(newRows) {
+    const cleaned = newRows
+      .map((r) => ({
+        English: r.English?.trim() || "",
+        Lithuanian: r.Lithuanian?.trim() || "",
+        Phonetic: r.Phonetic?.trim() || "",
+        Category: r.Category?.trim() || "",
+        Usage: r.Usage?.trim() || "",
+        Notes: r.Notes?.trim() || "",
+        "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+          ? r.Sheet
+          : "Phrases",
+        _id: r._id || genId(),
+        _ts: r._ts || nowTs(),
+        _qstat:
+          r._qstat || {
+            red: { ok: 0, bad: 0 },
+            amb: { ok: 0, bad: 0 },
+            grn: { ok: 0, bad: 0 },
+          },
+      }))
       .filter((r) => r.English || r.Lithuanian);
 
     setRows((prev) => [...cleaned, ...prev]);
@@ -314,27 +275,74 @@ export default function App() {
   }
 
   function clearLibrary() {
-    if (!window.confirm("Clear ALL phrases?")) return;
+    if (!confirm(T.confirm)) return;
     setRows([]);
-    setToast("Library cleared");
-    setTimeout(() => setToast(""), 2000);
   }
 
-  function importJsonFile(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const json = JSON.parse(e.target.result);
-        mergeRows(json);
-        setToast("Import complete");
-        setTimeout(() => setToast(""), 2000);
-      } catch (err) {
-        alert("Import error: " + err.message);
+  async function importJsonFile(file) {
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data)) throw new Error("JSON must be an array");
+      await mergeRows(data);
+      alert("Imported.");
+    } catch (e) {
+      alert("Import failed: " + e.message);
+    }
+  }
+
+  /* ADD / EDIT MODAL */
+  const [addOpen, setAddOpen] = useState(false);
+  const [editRowId, setEditRowId] = useState(null);
+  const [toast, setToast] = useState("");
+
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2200);
+  }
+
+  const editingRow = useMemo(
+    () => rows.find((r) => r._id === editRowId) || null,
+    [rows, editRowId]
+  );
+  const isEditing = !!editingRow;
+
+  useEffect(() => {
+    if (!addOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setAddOpen(false);
+        setEditRowId(null);
       }
     };
-    reader.readAsText(file);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [addOpen]);
+
+  useEffect(() => {
+    if (!addOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [addOpen]);
+
+  function onOpenAddForm() {
+    setEditRowId(null);
+    setAddOpen(true);
   }
 
+  function removePhraseById(id) {
+    const idx = rows.findIndex((r) => r._id === id);
+    if (idx !== -1) {
+      const removeFromStore = usePhraseStore.getState().removePhrase;
+      removeFromStore(idx);
+    } else {
+      setRows((prev) => prev.filter((r) => r._id !== id));
+    }
+  }
+
+  /* DUPES RESTORE */
   useEffect(() => {
     function onRestore(e) {
       const { item } = e.detail;
@@ -344,79 +352,37 @@ export default function App() {
     return () => window.removeEventListener("restorePhrase", onRestore);
   }, [setRows]);
 
-  const [currentTab, setCurrentTab] = useState("Phrases");
-  const filteredRows = useMemo(
-    () => rows.filter((r) => r.Sheet === currentTab),
-    [rows, currentTab]
-  );
-
-  const breadcrumb = useMemo(() => {
-    if (activeRoute === "home") return "Home";
-    if (activeRoute === "library") return "Library";
-    if (activeRoute === "settings") return "Settings";
-    if (activeRoute === "duplicates") return "Duplicate Scanner";
-    return "";
-  }, [activeRoute]);
+  /* MODALS */
+  const [showChangeLog, setShowChangeLog] = useState(false);
+  const [showUserGuide, setShowUserGuide] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem(LSK_USER_GUIDE)) {
+    const seen = localStorage.getItem(LSK_USER_GUIDE);
+    if (!seen) {
       setShowUserGuide(true);
     }
   }, []);
 
-  const editingRow = editRowId
-    ? rows.find((r) => r._id === editRowId) || null
-    : null;
-  const isEditing = !!editingRow;
-
-  const layoutClasses =
-    "min-h-screen bg-zinc-950 text-zinc-100 flex flex-col";
-
+  /* RENDER */
   return (
-    <div className={layoutClasses}>
-      <div id="toast-root" />
-      <Header
-        activeRoute={activeRoute}
-        setActiveRoute={setActiveRoute}
-        breadcrumb={breadcrumb}
-        quizStats={quizStats}
-        streak={streak}
-        xp={xp}
-        ttsBusy={ttsBusy}
-        onOpenUserGuide={() => setShowUserGuide(true)}
-      />
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <Header ref={headerRef} T={T} page={page} setPage={setPage} />
 
-      {/* SEARCH DOCK */}
-      <div className="border-b border-zinc-900/80 bg-zinc-950/95 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2">
-          <SearchDockWrapper
+      <main className="pt-3">
+        {page === "library" && (
+          <SearchDock
+            SearchBox={SearchBox}
             sortMode={sortMode}
             setSortMode={setSortMode}
-          />
-        </div>
-      </div>
-
-      {/* MAIN ROUTES */}
-      <main className="flex-1 overflow-y-auto">
-        {activeRoute === "home" && (
-          <HomeView
-            playText={playText}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
-            }}
-            setRows={setRows}
-            genId={genId}
-            nowTs={nowTs}
-            showToast={(msg) => {
-              setToast(msg);
-              setTimeout(() => setToast(""), 2000);
-            }}
-            rows={rows}
+            placeholder={T.search}
+            T={T}
+            offsetTop={headerHeight + 12}
+            page={page}
+            setPage={setPage}
           />
         )}
 
-        {activeRoute === "library" && (
+        {page === "library" ? (
           <LibraryView
             T={T}
             rows={rows}
@@ -424,25 +390,18 @@ export default function App() {
             normalizeRag={normalizeRag}
             sortMode={sortMode}
             playText={playText}
-            removePhrase={(id) =>
-              setRows((prev) => prev.filter((r) => r._id !== id))
-            }
+            removePhrase={removePhraseById}
             onEditRow={(id) => {
               setEditRowId(id);
               setAddOpen(true);
             }}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
-            }}
+            onOpenAddForm={onOpenAddForm}
           />
-        )}
-
-        {activeRoute === "settings" && !showDuplicateScanner && (
+        ) : page === "settings" ? (
           <SettingsView
             T={T}
-            ttsProvider={ttsProvider}
-            setTtsProvider={setTtsProvider}
+            ttsProvider="azure"
+            setTtsProvider={() => {}}
             azureVoiceShortName={azureVoiceShortName}
             setAzureVoiceShortName={setAzureVoiceShortName}
             playText={playText}
@@ -450,40 +409,42 @@ export default function App() {
             clearLibrary={clearLibrary}
             importJsonFile={importJsonFile}
             rows={rows}
-            onOpenDuplicateScanner={() => setShowDuplicateScanner(true)}
+            onOpenDuplicateScanner={() => setPage("dupes")}
             onOpenChangeLog={() => setShowChangeLog(true)}
             onOpenUserGuide={() => setShowUserGuide(true)}
           />
-        )}
-
-        {activeRoute === "settings" && showDuplicateScanner && (
+        ) : page === "dupes" ? (
           <DuplicateScannerView
             T={T}
             rows={rows}
-            removePhrase={(id) =>
-              setRows((prev) => prev.filter((r) => r._id !== id))
-            }
-            onBack={() => setShowDuplicateScanner(false)}
+            removePhrase={removePhraseById}
+            onBack={() => setPage("settings")}
           />
+        ) : (
+          <>
+            <HomeView
+              playText={playText}
+              setRows={setRows}
+              genId={genId}
+              nowTs={nowTs}
+              rows={rows}
+              showToast={showToast}
+              onOpenAddForm={onOpenAddForm}
+            />
+
+            {toast && (
+              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
+                {toast}
+              </div>
+            )}
+          </>
         )}
       </main>
-
-      {/* TOAST */}
-      {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-zinc-900/95 border border-zinc-800 rounded-full px-4 py-2 text-sm shadow-lg z-[999]">
-          {toast}
-        </div>
-      )}
 
       {/* ADD FORM MODAL */}
       {addOpen && (
         <div
-          className="
-            fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm
-            p-4 
-            flex items-start justify-center
-            overflow-y-auto
-          "
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
@@ -491,12 +452,9 @@ export default function App() {
           }}
         >
           <div
-            className="
-              w-full max-w-2xl max-h-[85vh] overflow-y-auto
-              bg-zinc-900/95 border border-zinc-800 rounded-2xl
-              shadow-[0_0_20px_rgba(0,0,0,0.25)] backdrop-blur-sm
-              p-4 mt-10
-            "
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto
+            bg-zinc-900/95 border border-zinc-800 rounded-2xl 
+            shadow-[0_0_20px_rgba(0,0,0,0.25)] backdrop-blur-sm p-4"
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
