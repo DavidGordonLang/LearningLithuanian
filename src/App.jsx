@@ -1,4 +1,4 @@
-// FULL FILE STARTS HERE
+// src/App.jsx
 import React, {
   useEffect,
   useMemo,
@@ -28,9 +28,6 @@ import { usePhraseStore } from "./stores/phraseStore";
    CONSTANTS
    ========================================================================== */
 const LSK_TTS_PROVIDER = "lt_tts_provider";
-const LSK_AZURE_KEY = "lt_azure_key";
-const LSK_AZURE_REGION = "lt_azure_region";
-const LSK_AZURE_VOICE = "lt_azure_voice";
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
@@ -67,11 +64,6 @@ const STR = {
   cancel: "Cancel",
   settings: "Settings",
   libraryTitle: "Library",
-  fetchVoices: "Fetch voices",
-  subKey: "Subscription Key",
-  region: "Region",
-  choose: "— choose —",
-  browserVoice: "Browser (fallback)",
   azure: "Azure Speech",
   addEntry: "Add Entry",
   edit: "Edit Entry",
@@ -96,77 +88,7 @@ function normalizeRag(icon = "") {
 }
 
 /* ============================================================================
-   VOICES
-   ========================================================================== */
-function useVoices() {
-  const [voices, setVoices] = useState([]);
-  useEffect(() => {
-    const refresh = () => {
-      const v = window.speechSynthesis?.getVoices?.() || [];
-      setVoices([...v].sort((a, b) => a.name.localeCompare(b.name)));
-    };
-    refresh();
-    window.speechSynthesis?.addEventListener("voiceschanged", refresh);
-    return () =>
-      window.speechSynthesis?.removeEventListener("voiceschanged", refresh);
-  }, []);
-  return voices;
-}
-
-/* ============================================================================
-   ESCAPE XML
-   ========================================================================== */
-function escapeXml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-/* ============================================================================
-   AZURE TTS
-   ========================================================================== */
-async function speakAzureHTTP(text, shortName, key, region, rateDelta = "0%") {
-  const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
-  const ssml = `<speak version="1.0" xml:lang="lt-LT"><voice name="${shortName}"><prosody rate="${rateDelta}">${escapeXml(
-    text
-  )}</prosody></voice></speak>`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Ocp-Apim-Subscription-Key": key,
-      "Content-Type": "application/ssml+xml",
-      "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
-    },
-    body: ssml,
-  });
-  if (!res.ok) throw new Error("Azure TTS failed");
-
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
-}
-
-/* ============================================================================
-   BROWSER TTS
-   ========================================================================== */
-function speakBrowser(text, voice, rate = 1) {
-  if (!window.speechSynthesis) {
-    alert("Speech synthesis not supported.");
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  if (voice) u.voice = voice;
-  u.lang = voice?.lang || "lt-LT";
-  u.rate = rate;
-  window.speechSynthesis.speak(u);
-}
-
-/* ============================================================================
-   SEARCH
+   SEARCH BOX
    ========================================================================== */
 const SearchBox = memo(
   forwardRef(function SearchBox({ placeholder = "Search…" }, ref) {
@@ -256,97 +178,49 @@ export default function App() {
   /* STRING BUNDLE */
   const T = STR;
 
-  /* TTS */
-  const [ttsProvider, setTtsProvider] = useState(
-    () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
-  );
-  useEffect(
-    () => localStorage.setItem(LSK_TTS_PROVIDER, ttsProvider),
-    [ttsProvider]
-  );
-
-  const [azureKey, setAzureKey] = useState(
-    () => localStorage.getItem(LSK_AZURE_KEY) || ""
-  );
-  const [azureRegion, setAzureRegion] = useState(
-    () => localStorage.getItem(LSK_AZURE_REGION) || ""
-  );
-  const [azureVoices, setAzureVoices] = useState([]);
-
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState(() => {
-    try {
-      return (
-        JSON.parse(localStorage.getItem(LSK_AZURE_VOICE) || "null")
-          ?.shortName || ""
-      );
-    } catch {
-      return "";
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem(LSK_AZURE_KEY, azureKey ?? "");
-  }, [azureKey]);
-
-  useEffect(() => {
-    localStorage.setItem(LSK_AZURE_REGION, azureRegion ?? "");
-  }, [azureRegion]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      LSK_AZURE_VOICE,
-      JSON.stringify({ shortName: azureVoiceShortName })
-    );
-  }, [azureVoiceShortName]);
-
-  const voices = useVoices();
-  const [browserVoiceName, setBrowserVoiceName] = useState("");
-  const browserVoice = useMemo(
-    () => voices.find((v) => v.name === browserVoiceName) || voices[0],
-    [voices, browserVoiceName]
+  /* VOICE SETTINGS (Azure-only) */
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
+    () => "lt-LT-LeonasNeural"   // Default
   );
 
   const audioRef = useRef(null);
 
+  /* ============================================================================
+     PLAY TEXT VIA SECURE API
+     ========================================================================== */
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-          const src = audioRef.current.src || "";
-          if (src.startsWith("blob:")) URL.revokeObjectURL(src);
-        } catch {}
+        try { audioRef.current.pause(); } catch {}
         audioRef.current = null;
       }
 
-      if (
-        ttsProvider === "azure" &&
-        azureKey &&
-        azureRegion &&
-        azureVoiceShortName
-      ) {
-        const delta = slow ? "-40%" : "0%";
-        const url = await speakAzureHTTP(
+      const resp = await fetch("/api/azure-tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           text,
-          azureVoiceShortName,
-          azureKey,
-          azureRegion,
-          delta
-        );
-        const a = new Audio(url);
-        audioRef.current = a;
-        a.onended = () => {
-          try {
-            URL.revokeObjectURL(url);
-          } catch {}
-          if (audioRef.current === a) audioRef.current = null;
-        };
-        await a.play();
-      } else {
-        speakBrowser(text, browserVoice, slow ? 0.6 : 1.0);
-      }
+          voice: azureVoiceShortName,
+          slow
+        })
+      });
+
+      if (!resp.ok) throw new Error("Azure TTS failed");
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (audioRef.current === audio) audioRef.current = null;
+      };
+
+      await audio.play();
     } catch (e) {
-      alert("Voice error: " + e?.message);
+      alert("Voice error: " + e.message);
     }
   }
 
@@ -527,19 +401,10 @@ export default function App() {
         ) : page === "settings" ? (
           <SettingsView
             T={T}
-            ttsProvider={ttsProvider}
-            setTtsProvider={setTtsProvider}
-            azureKey={azureKey}
-            setAzureKey={setAzureKey}
-            azureRegion={azureRegion}
-            setAzureRegion={setAzureRegion}
-            azureVoices={azureVoices}
-            setAzureVoices={setAzureVoices}
+            ttsProvider="azure"
+            setTtsProvider={() => {}}
             azureVoiceShortName={azureVoiceShortName}
             setAzureVoiceShortName={setAzureVoiceShortName}
-            browserVoiceName={browserVoiceName}
-            setBrowserVoiceName={setBrowserVoiceName}
-            voices={voices}
             playText={playText}
             fetchStarter={fetchStarter}
             clearLibrary={clearLibrary}
@@ -653,4 +518,3 @@ export default function App() {
     </div>
   );
 }
-// END FILE
