@@ -13,8 +13,6 @@ export default function LibraryView({
   onEditRow,
 }) {
   const [expanded, setExpanded] = useState(new Set());
-
-  // NEW: local tab state
   const [tab, setTab] = useState("Phrases");
 
   const qFilter = useSyncExternalStore(
@@ -24,13 +22,10 @@ export default function LibraryView({
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
 
-  /* ============================================================================
-     FILTERING: search → sheet tab → sort
-     ========================================================================== */
+  /* FILTERING: search → sheet → sort */
   const filteredRows = useMemo(() => {
     let base = rows;
 
-    // 1. Search
     if (qNorm) {
       base = base.filter((r) => {
         const en = (r.English || "").toLowerCase();
@@ -39,10 +34,8 @@ export default function LibraryView({
       });
     }
 
-    // 2. Tab filter (Sheet)
     base = base.filter((r) => r.Sheet === tab);
 
-    // 3. Sorting
     if (sortMode === "Newest")
       return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
 
@@ -57,12 +50,9 @@ export default function LibraryView({
     );
   }, [rows, qNorm, sortMode, tab, normalizeRag]);
 
-  /* ============================================================================
-     TAB COMPONENT
-     ========================================================================== */
+  /* TAB CONTROL */
   function TabControl() {
     const options = ["Phrases", "Questions", "Words", "Numbers"];
-
     return (
       <div className="flex w-full bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         {options.map((opt, idx) => {
@@ -92,9 +82,7 @@ export default function LibraryView({
     );
   }
 
-  /* ============================================================================
-     AUDIO PRESS HANDLERS
-     ========================================================================== */
+  /* AUDIO PRESS HANDLERS */
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -104,11 +92,10 @@ export default function LibraryView({
       e.preventDefault();
       e.stopPropagation();
       try {
-        const ae = document.activeElement;
-        if (ae && typeof ae.blur === "function") ae.blur();
+        document.activeElement?.blur?.();
       } catch {}
-      firedSlow = false;
       pressed = true;
+      firedSlow = false;
       timer = setTimeout(() => {
         if (!pressed) return;
         firedSlow = true;
@@ -144,20 +131,15 @@ export default function LibraryView({
 
   const showLtAudio = direction === "EN2LT";
 
-  /* ============================================================================
-     RENDER
-     ========================================================================== */
+  /* RENDER */
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-      {/* Title */}
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
 
-      {/* Count */}
       <div className="mt-1 mb-3 text-sm text-zinc-400">
         {filteredRows.length} / {rows.length} {T.phrases.toLowerCase()}
       </div>
 
-      {/* NEW: Sheet Tabs */}
       <div className="mb-4">
         <TabControl />
       </div>
@@ -177,12 +159,12 @@ export default function LibraryView({
                 key={r._id}
                 className="bg-zinc-900 border border-zinc-800 rounded-xl p-3"
               >
-                {/* Row Top */}
                 <div className="flex items-start gap-3">
+                  {/* RAG ICON */}
                   <button
                     type="button"
                     className="w-6 h-6 rounded-full border border-zinc-700 text-sm flex items-center justify-center select-none"
-                    onClick={() => {
+                    onClick={() =>
                       setRows((prev) =>
                         prev.map((x) =>
                           x._id === r._id
@@ -197,25 +179,22 @@ export default function LibraryView({
                               }
                             : x
                         )
-                      );
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onTouchStart={(e) => e.preventDefault()}
+                      )
+                    }
                   >
                     {normalizeRag(r["RAG Icon"])}
                   </button>
 
-                  {/* Click to expand */}
+                  {/* TEXT CONTENT */}
                   <div
                     className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => {
+                    onClick={() =>
                       setExpanded((prev) => {
                         const next = new Set(prev);
-                        if (next.has(r._id)) next.delete(r._id);
-                        else next.add(r._id);
+                        next.has(r._id) ? next.delete(r._id) : next.add(r._id);
                         return next;
-                      });
-                    }}
+                      })
+                    }
                   >
                     <div className="text-sm font-semibold truncate">
                       {r.English || "—"}
@@ -235,44 +214,41 @@ export default function LibraryView({
                     )}
                   </div>
 
-                  {/* ACTION BAR — NEW, HORIZONTAL, ICONS ONLY */}
-<div className="flex items-center gap-2 shrink-0">
+                  {/* ACTION BAR — CLEAN, MOBILE-FRIENDLY */}
+                  <div className="flex items-center gap-2 shrink-0">
 
-  {/* Play Button */}
-  <button
-    type="button"
-    className="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black text-lg select-none"
-    {...pressHandlers(textToPlay)}
-    onMouseDown={(e) => e.preventDefault()}
-  >
-    ▶
-  </button>
+                    {/* Play */}
+                    <button
+                      type="button"
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black text-lg select-none"
+                      {...pressHandlers(textToPlay)}
+                    >
+                      ▶
+                    </button>
 
-  {/* Edit Button */}
-  <button
-    type="button"
-    className="w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-base select-none"
-    onClick={() => onEditRow && onEditRow(r._id)}
-    onMouseDown={(e) => e.preventDefault()}
-  >
-    ✏️
-  </button>
+                    {/* Edit */}
+                    <button
+                      type="button"
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-base select-none"
+                      onClick={() => onEditRow(r._id)}
+                    >
+                      ✏️
+                    </button>
 
-  {/* Delete Button */}
-  <button
-    type="button"
-    className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-600/80 hover:bg-red-500 text-white text-lg select-none"
-    onClick={() => {
-      if (window.confirm(T.confirm)) removePhrase(r._id);
-    }}
-    onMouseDown={(e) => e.preventDefault()}
-  >
-    🗑️
-  </button>
+                    {/* Delete */}
+                    <button
+                      type="button"
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-600/80 hover:bg-red-500 text-white text-lg select-none"
+                      onClick={() => {
+                        if (window.confirm(T.confirm)) removePhrase(r._id);
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
 
-</div>
-
-                {/* Expanded fields */}
+                {/* EXPANDED INFO */}
                 {isOpen && (
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
