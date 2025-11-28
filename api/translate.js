@@ -1,11 +1,10 @@
 // /api/translate.js
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Vercel sometimes passes body as string
+  // Vercel sometimes passes body as a string
   let body = req.body;
   if (!body || typeof body === "string") {
     try {
@@ -15,10 +14,10 @@ export default async function handler(req, res) {
     }
   }
 
-  const { text, direction, tone, gender } = body;
+  const { text, tone, gender } = body;
 
-  if (!text || !direction) {
-    return res.status(400).json({ error: "Missing text or direction" });
+  if (!text) {
+    return res.status(400).json({ error: "Missing text" });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -27,11 +26,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Server config error" });
   }
 
-  // -------------------------------
-  // Build system prompt
-  // -------------------------------
+  // ---------------------------------------------------------------------------
+  // SYSTEM PROMPT — EN → LT ONLY (DIRECTION REMOVED)
+  // ---------------------------------------------------------------------------
   let systemPrompt = `
-You are a translation assistant for learners of Lithuanian and English.
+You are a translation assistant for English speakers learning Lithuanian.
 
 You MUST always respond with a single JSON object in this shape:
 
@@ -43,58 +42,59 @@ You MUST always respond with a single JSON object in this shape:
 }
 
 Rules:
-- Always return VALID JSON. No extra text.
+- Always return VALID JSON. No extra text before or after.
 - "lt": the natural, grammatically correct Lithuanian phrase.
-- "en_literal": as close as possible literal English meaning of the Lithuanian phrase.
-- "en_natural": a natural English version that could be used in conversation. It may be identical to "en_literal" if the phrase is simple.
-- "phonetics": the Lithuanian phrase written using simple English syllables (no IPA), so an English speaker can approximate pronunciation.
-- Do NOT add extra sentences, greetings, or explanations.
-- Do NOT change the meaning or add information that is not in the user's text.
-- Keep the translation roughly as short as the source text, except where Lithuanian grammar strictly requires extra words.
+- "en_literal": a literal English meaning of the Lithuanian phrase.
+- "en_natural": a more natural English version (may be identical).
+- "phonetics": Lithuanian written roughly in English-style pronunciation (no IPA).
+- No chit-chat. No explanations. No markdown. Only JSON.
+- Keep the translation short and natural unless Lithuanian grammar requires more words.
 `.trim();
 
-  if (direction === "EN2LT") {
-    // English → Lithuanian: apply tone + gender
-    let toneInstruction = "";
-    let pronounInstruction = "";
-    let genderInstruction = "";
+  // ---------------------------------------------------------------------------
+  // STYLE PARAMETERS (tone + gender)
+  // ---------------------------------------------------------------------------
+  let toneInstruction = "";
+  let pronounInstruction = "";
+  let genderInstruction = "";
 
-    switch (tone) {
-      case "friendly":
-        toneInstruction = "Use a warm, friendly tone.";
-        pronounInstruction = "Use informal address (“tu”).";
-        break;
-      case "neutral":
-        toneInstruction = "Use a neutral, clear tone.";
-        pronounInstruction = "Use informal address (“tu”).";
-        break;
-      case "formal":
-        toneInstruction = "Use a polite, respectful tone.";
-        pronounInstruction = "Use formal address (“jūs”).";
-        break;
-      default:
-        toneInstruction = "Use a natural tone.";
-        pronounInstruction = "Use informal address (“tu”).";
-    }
+  switch (tone) {
+    case "friendly":
+      toneInstruction = "Use a warm, friendly Lithuanian tone.";
+      pronounInstruction = "Use informal address (“tu”).";
+      break;
+    case "neutral":
+      toneInstruction = "Use a neutral tone.";
+      pronounInstruction = "Use informal address (“tu”).";
+      break;
+    case "polite":
+    case "formal":
+      toneInstruction = "Use a polite, formal Lithuanian tone.";
+      pronounInstruction = "Use formal address (“jūs”).";
+      break;
+    default:
+      toneInstruction = "Use a natural tone.";
+      pronounInstruction = "Use informal address (“tu”).";
+  }
 
-    if (tone !== "formal") {
-      if (gender === "male") {
-        genderInstruction = "Imagine you are speaking to a male listener.";
-      } else if (gender === "female") {
-        genderInstruction = "Imagine you are speaking to a female listener.";
-      } else {
-        genderInstruction =
-          "Do not assume the listener's gender unless the English text clearly implies it.";
-      }
+  if (tone === "formal") {
+    genderInstruction =
+      "Do not express gender; formal Lithuanian does not change based on listener gender.";
+  } else {
+    if (gender === "male") {
+      genderInstruction = "Imagine you are speaking to a male listener.";
+    } else if (gender === "female") {
+      genderInstruction = "Imagine you are speaking to a female listener.";
     } else {
       genderInstruction =
-        "Do not express gender; formal Lithuanian does not change based on listener gender.";
+        "Do not assume the listener's gender unless the English text clearly implies it.";
     }
+  }
 
-    systemPrompt += `
+  systemPrompt += `
 
 The user will provide ENGLISH text. You must:
-- Translate it into Lithuanian according to the rules above.
+- Translate it into Lithuanian using the rules above.
 - Apply these style rules:
 
 ${toneInstruction}
@@ -102,44 +102,32 @@ ${pronounInstruction}
 ${genderInstruction}
 
 - Put the Lithuanian result into "lt".
-- Put the English meaning into "en_literal" and "en_natural" (fixing any mistakes in the original English).
+- Put the literal English meaning into "en_literal".
+- Put the natural English version into "en_natural".
 - Generate "phonetics" for the Lithuanian phrase.
 `.trim();
-  } else {
-    // LT2EN
-    systemPrompt += `
 
-The user will provide LITHUANIAN text. You must:
-- Treat the user's Lithuanian as the base phrase.
-- If needed, correct minor errors and place the corrected Lithuanian into "lt".
-- Translate that Lithuanian into English and place the literal version in "en_literal".
-- Place a more natural English version in "en_natural".
-- Generate "phonetics" for the Lithuanian phrase.
-- Ignore tone and gender settings; they do not apply when translating TO English.
-`.trim();
-  }
-
+  // ---------------------------------------------------------------------------
+  // CALL OPENAI
+  // ---------------------------------------------------------------------------
   try {
-    const response = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4.1-mini",
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: text },
-          ],
-          temperature: 0.2,
-          max_tokens: 200,
-        }),
-      }
-    );
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: text },
+        ],
+        temperature: 0.2,
+        max_tokens: 200,
+      }),
+    });
 
     if (!response.ok) {
       const errText = await response.text();
