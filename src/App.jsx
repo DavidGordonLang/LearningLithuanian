@@ -26,8 +26,6 @@ const LSK_TTS_PROVIDER = "lt_tts_provider";
 const LSK_AZURE_KEY = "lt_azure_key";
 const LSK_AZURE_REGION = "lt_azure_region";
 const LSK_AZURE_VOICE = "lt_azure_voice";
-const LSK_STREAK = "lt_quiz_streak_v1";
-const LSK_XP = "lt_xp_v1";
 const LSK_SORT = "lt_sort_v1";
 const LSK_DIR = "lt_direction_v1";
 
@@ -36,9 +34,6 @@ const STARTERS = {
   LT2EN: "/data/starter_lt_to_en.json",
   COMBINED_OPTIONAL: "/data/starter_combined_dedup.json",
 };
-
-const LEVEL_STEP = 2500;
-const XP_PER_CORRECT = 50;
 
 /* ============================================================================
    UI STRINGS
@@ -188,32 +183,6 @@ const STR = {
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-const loadXP = () => {
-  try {
-    const v = Number(localStorage.getItem(LSK_XP) ?? "0");
-    return Number.isFinite(v) ? v : 0;
-  } catch {
-    return 0;
-  }
-};
-const saveXP = (xp) =>
-  localStorage.setItem(LSK_XP, String(Number.isFinite(xp) ? xp : 0));
-
-const todayKey = () => new Date().toISOString().slice(0, 10);
-
-const loadStreak = () => {
-  try {
-    const s = JSON.parse(localStorage.getItem(LSK_STREAK) || "null");
-    return s && typeof s.streak === "number"
-      ? s
-      : { streak: 0, lastDate: "" };
-  } catch {
-    return { streak: 0, lastDate: "" };
-  }
-};
-const saveStreak = (s) =>
-  localStorage.setItem(LSK_STREAK, JSON.stringify(s));
-
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
 
@@ -227,53 +196,6 @@ function normalizeRag(icon = "") {
     return "🟠";
   if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
   return "🟠";
-}
-
-function daysBetween(d1, d2) {
-  const a = new Date(d1 + "T00:00:00");
-  const b = new Date(d2 + "T00:00:00");
-  return Math.round((b - a) / 86400000);
-}
-
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function sample(arr, n) {
-  if (!arr.length || n <= 0) return [];
-  if (n >= arr.length) return shuffle(arr);
-  const idxs = new Set();
-  while (idxs.size < n) idxs.add((Math.random() * arr.length) | 0);
-  return [...idxs].map((i) => arr[i]);
-}
-
-function sim2(a = "", b = "") {
-  const s1 = (a + "").toLowerCase().trim();
-  const s2 = (b + "").toLowerCase().trim();
-  if (!s1 || !s2) return 0;
-  if (s1 === s2) return 1;
-  const grams = (s) => {
-    const g = [];
-    for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2));
-    return g;
-  };
-  const g1 = grams(s1);
-  const g2 = grams(s2);
-  const map = new Map();
-  g1.forEach((x) => map.set(x, (map.get(x) || 0) + 1));
-  let inter = 0;
-  g2.forEach((x) => {
-    if (map.get(x)) {
-      inter++;
-      map.set(x, map.get(x) - 1);
-    }
-  });
-  return (2 * inter) / (g1.length + g2.length);
 }
 
 /* ============================================================================
@@ -434,7 +356,7 @@ export default function App() {
     window.addEventListener("resize", onR);
     return () => window.removeEventListener("resize", onR);
   }, []);
-  const WIDE = width >= 1024; // kept for future layout decisions, even if not used yet
+  const WIDE = width >= 1024; // reserved for future layout decisions
 
   // store
   const rows = usePhraseStore((s) => s.phrases);
@@ -458,17 +380,6 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
   const T = STR[direction];
-
-  const [xp, setXp] = useState(loadXP());
-  useEffect(() => saveXP(xp), [xp]);
-  useEffect(() => {
-    if (!Number.isFinite(xp)) setXp(0);
-  }, [xp]);
-  const level = Math.floor((Number.isFinite(xp) ? xp : 0) / LEVEL_STEP) + 1;
-  const levelProgress = (Number.isFinite(xp) ? xp : 0) % LEVEL_STEP;
-
-  const [streak, setStreak] = useState(loadStreak());
-  useEffect(() => saveStreak(streak), [streak]);
 
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
@@ -561,7 +472,7 @@ export default function App() {
   }
 
   /* ============================================================================
-     LIBRARY FILTERING (for future reuse, quiz, etc.)
+     LIBRARY FILTERING
      ========================================================================== */
 
   const qNorm = (qFilter || "").trim().toLowerCase();
@@ -589,7 +500,7 @@ export default function App() {
   }, [rows, qNorm, sortMode, tab]);
 
   /* ============================================================================
-     IMPORT / STARTERS / DUPES
+     IMPORT / STARTERS
      ========================================================================== */
 
   async function mergeRows(newRows) {
@@ -681,204 +592,6 @@ export default function App() {
     setRows([]);
   }
 
-  const [dupeResults, setDupeResults] = useState({ exact: [], close: [] });
-
-  function scanDupes() {
-    const map = new Map();
-    rows.forEach((r, i) => {
-      const key = `${r.English}|||${r.Lithuanian}`.toLowerCase().trim();
-      map.set(key, (map.get(key) || []).concat(i));
-    });
-    const exact = [];
-    for (const arr of map.values()) {
-      if (arr.length > 1) exact.push(arr);
-    }
-
-    const close = [];
-    const bySheet = rows.reduce((acc, r, i) => {
-      (acc[r.Sheet] ||= []).push({ r, i });
-      return acc;
-    }, {});
-    for (const list of Object.values(bySheet)) {
-      for (let a = 0; a < list.length; a++) {
-        for (let b = a + 1; b < list.length; b++) {
-          const A = list[a];
-          const B = list[b];
-          const s =
-            (sim2(A.r.English, B.r.English) +
-              sim2(A.r.Lithuanian, B.r.Lithuanian)) /
-            2;
-          if (s >= 0.85) close.push([A.i, B.i, s]);
-        }
-      }
-    }
-    setDupeResults({ exact, close });
-  }
-
-  /* ============================================================================
-     QUIZ
-     ========================================================================== */
-
-  const [quizOn, setQuizOn] = useState(false);
-  const [quizQs, setQuizQs] = useState([]);
-  const [quizIdx, setQuizIdx] = useState(0);
-  const [quizAnswered, setQuizAnswered] = useState(false);
-  const [quizChoice, setQuizChoice] = useState(null);
-  const [quizOptions, setQuizOptions] = useState([]);
-
-  function computeQuizPool(allRows, targetSize = 10) {
-    const withPairs = allRows.filter((r) => r.English && r.Lithuanian);
-    const red = withPairs.filter(
-      (r) => normalizeRag(r["RAG Icon"]) === "🔴"
-    );
-    const amb = withPairs.filter(
-      (r) => normalizeRag(r["RAG Icon"]) === "🟠"
-    );
-    const grn = withPairs.filter(
-      (r) => normalizeRag(r["RAG Icon"]) === "🟢"
-    );
-
-    const needR = Math.min(
-      Math.max(5, Math.floor(targetSize * 0.5)),
-      red.length || 0
-    );
-    const needA = Math.min(
-      Math.max(4, Math.floor(targetSize * 0.4)),
-      amb.length || 0
-    );
-    const needG = Math.min(
-      Math.max(1, Math.floor(targetSize * 0.1)),
-      grn.length || 0
-    );
-
-    let picked = [
-      ...sample(red, needR),
-      ...sample(amb, needA),
-      ...sample(grn, needG),
-    ];
-    while (picked.length < targetSize) {
-      const leftovers = withPairs.filter((r) => !picked.includes(r));
-      if (!leftovers.length) break;
-      picked.push(leftovers[(Math.random() * leftovers.length) | 0]);
-    }
-    return shuffle(picked).slice(0, targetSize);
-  }
-
-  function startQuiz() {
-    if (rows.length < 4) {
-      alert("Add more entries first (need at least 4).");
-      return;
-    }
-    const pool = computeQuizPool(rows, 10);
-    if (!pool.length) {
-      alert("No quiz candidates found.");
-      return;
-    }
-    setQuizQs(pool);
-    setQuizIdx(0);
-    setQuizAnswered(false);
-    setQuizChoice(null);
-    const first = pool[0];
-    const correctLt = first.Lithuanian;
-    const distractors = sample(
-      pool.filter((r) => r !== first && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
-    setQuizOptions(shuffle([correctLt, ...distractors]));
-    setQuizOn(true);
-  }
-
-  function bumpRagAfterAnswer(item, correct) {
-    const rag = normalizeRag(item["RAG Icon"]);
-    const st =
-      (item._qstat ||= {
-        red: { ok: 0, bad: 0 },
-        amb: { ok: 0, bad: 0 },
-        grn: { ok: 0, bad: 0 },
-      });
-
-    if (rag === "🔴") {
-      if (correct) {
-        st.red.ok = (st.red.ok || 0) + 1;
-        if (st.red.ok >= 5) {
-          item["RAG Icon"] = "🟠";
-          st.red.ok = st.red.bad = 0;
-        }
-      } else {
-        st.red.bad = (st.red.bad || 0) + 1;
-      }
-    } else if (rag === "🟠") {
-      if (correct) {
-        st.amb.ok = (st.amb.ok || 0) + 1;
-        if (st.amb.ok >= 5) {
-          item["RAG Icon"] = "🟢";
-          st.amb.ok = st.amb.bad = 0;
-        }
-      } else {
-        st.amb.bad = (st.amb.bad || 0) + 1;
-        if (st.amb.bad >= 3) {
-          item["RAG Icon"] = "🔴";
-          st.amb.ok = st.amb.bad = 0;
-        }
-      }
-    } else if (rag === "🟢") {
-      if (!correct) {
-        st.grn.bad = (st.grn.bad || 0) + 1;
-        item["RAG Icon"] = "🟠";
-        st.grn.ok = st.grn.bad = 0;
-      } else {
-        st.grn.ok = (st.grn.ok || 0) + 1;
-      }
-    }
-  }
-
-  async function answerQuiz(option) {
-    if (quizAnswered) return;
-    const item = quizQs[quizIdx];
-    const correct = option === item.Lithuanian;
-    setQuizChoice(option);
-    setQuizAnswered(true);
-    if (correct)
-      setXp((x) => (Number.isFinite(x) ? x : 0) + XP_PER_CORRECT);
-    await playText(item.Lithuanian, { slow: false });
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r === item || (r._id && item._id && r._id === item._id)) {
-          const clone = { ...r };
-          bumpRagAfterAnswer(clone, correct);
-          return clone;
-        }
-        return r;
-      })
-    );
-  }
-
-  function afterAnswerAdvance() {
-    const nextIdx = quizIdx + 1;
-    if (nextIdx >= quizQs.length) {
-      const today = todayKey();
-      if (streak.lastDate !== today) {
-        const inc =
-          streak.lastDate && daysBetween(streak.lastDate, today) === 1
-            ? streak.streak + 1
-            : 1;
-        setStreak({ streak: inc, lastDate: today });
-      }
-      setQuizOn(false);
-      return;
-    }
-    setQuizIdx(nextIdx);
-    setQuizAnswered(false);
-    setQuizChoice(null);
-    const item = quizQs[nextIdx];
-    const correctLt = item.Lithuanian;
-    const distractors = sample(
-      quizQs.filter((r) => r !== item && r.Lithuanian),
-      3
-    ).map((r) => r.Lithuanian);
-    setQuizOptions(shuffle([correctLt, ...distractors]));
-  }
-
   /* ============================================================================
      ADD / EDIT MODAL + TOAST
      ========================================================================== */
@@ -939,7 +652,6 @@ export default function App() {
             T={T}
             offsetTop={headerHeight}
             page={page}
-            // setPage still passed, in case you ever re-add nav there
             setPage={setPage}
           />
         )}
@@ -998,8 +710,6 @@ export default function App() {
               setRows={setRows}
               genId={genId}
               nowTs={nowTs}
-              STR={STR}
-              cn={cn}
               rows={rows}
               showToast={showToast}
             />
