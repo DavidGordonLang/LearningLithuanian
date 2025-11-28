@@ -642,7 +642,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={setPage} />
 
-      <main style={{ paddingTop: contentOffset }}>
+      <main>
         {page === "library" && (
           <SearchDock
             SearchBox={SearchBox}
