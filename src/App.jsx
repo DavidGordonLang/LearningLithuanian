@@ -15,9 +15,10 @@ import AddForm from "./components/AddForm";
 import SearchDock from "./components/SearchDock";
 import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
+import LibraryView from "./views/LibraryView";
+import DuplicateScannerView from "./views/DuplicateScannerView";
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
-import LibraryView from "./views/LibraryView";
 
 /* ============================================================================
    CONSTANTS
@@ -115,7 +116,6 @@ const STR = {
 /* ============================================================================
    HELPERS
    ========================================================================== */
-const cn = (...xs) => xs.filter(Boolean).join(" ");
 const nowTs = () => Date.now();
 const genId = () => Math.random().toString(36).slice(2);
 
@@ -215,6 +215,13 @@ const SearchBox = memo(
           type="text"
           placeholder={placeholder}
           className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none select-none"
+          onCompositionStart={() => {
+            composingRef.current = true;
+          }}
+          onCompositionEnd={(e) => {
+            composingRef.current = false;
+            startTransition(() => searchStore.setRaw(e.currentTarget.value));
+          }}
           onInput={(e) => {
             if (!composingRef.current)
               startTransition(() => searchStore.setRaw(e.currentTarget.value));
@@ -248,39 +255,33 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
 
-  // Measure header height
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
   useEffect(() => {
     if (!headerRef.current) return;
-    const measure = () =>
-      setHeaderHeight(
-        headerRef.current.getBoundingClientRect().height || 0
-      );
+    const measure = () => {
+      const h = headerRef.current.getBoundingClientRect().height || 0;
+      setHeaderHeight(h);
+    };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  // Rows
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
-  // Global sort
   const [sortMode, setSortMode] = useState(
     () => localStorage.getItem(LSK_SORT) || "RAG"
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  // Direction
   const [direction, setDirection] = useState(
     () => localStorage.getItem(LSK_DIR) || "EN2LT"
   );
   useEffect(() => localStorage.setItem(LSK_DIR, direction), [direction]);
-
   const T = STR[direction];
 
-  // TTS provider + Azure
   const [ttsProvider, setTtsProvider] = useState(
     () => localStorage.getItem(LSK_TTS_PROVIDER) || "azure"
   );
@@ -320,7 +321,6 @@ export default function App() {
     );
   }, [azureVoiceShortName]);
 
-  // Voices
   const voices = useVoices();
   const [browserVoiceName, setBrowserVoiceName] = useState("");
   const browserVoice = useMemo(
@@ -328,7 +328,6 @@ export default function App() {
     [voices, browserVoiceName]
   );
 
-  // TTS playback
   const audioRef = useRef(null);
   async function playText(text, { slow = false } = {}) {
     try {
@@ -372,16 +371,16 @@ export default function App() {
     }
   }
 
-  // Search subscription (for Library)
+  // Keep subscription alive; value not needed here
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
+  void qFilter;
 
-  /* ============================================================================
-     IMPORT / STARTERS
-     ========================================================================== */
+  /* IMPORT / STARTERS / LIBRARY MANAGEMENT */
+
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -438,9 +437,7 @@ export default function App() {
     }
   }
 
-  /* ============================================================================
-     ADD / EDIT MODAL
-     ========================================================================== */
+  /* ADD / EDIT MODAL */
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
@@ -478,9 +475,18 @@ export default function App() {
     };
   }, [addOpen]);
 
-  /* ============================================================================
-     RENDER
-     ========================================================================== */
+  /* REMOVE PHRASE BY ID (shared) */
+  function removePhraseById(id) {
+    const idx = rows.findIndex((r) => r._id === id);
+    if (idx !== -1) {
+      const removeFromStore = usePhraseStore.getState().removePhrase;
+      removeFromStore(idx);
+    } else {
+      setRows((prev) => prev.filter((r) => r._id !== id));
+    }
+  }
+
+  /* RENDER */
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -509,16 +515,7 @@ export default function App() {
             sortMode={sortMode}
             direction={direction}
             playText={playText}
-            removePhrase={(id) => {
-              const idx = rows.findIndex((r) => r._id === id);
-              if (idx !== -1) {
-                const removeFromStore =
-                  usePhraseStore.getState().removePhrase;
-                removeFromStore(idx);
-              } else {
-                setRows((prev) => prev.filter((r) => r._id !== id));
-              }
-            }}
+            removePhrase={removePhraseById}
             onEditRow={(id) => {
               setEditRowId(id);
               setAddOpen(true);
@@ -547,6 +544,14 @@ export default function App() {
             clearLibrary={clearLibrary}
             importJsonFile={importJsonFile}
             rows={rows}
+            onOpenDuplicateScanner={() => setPage("dupes")}
+          />
+        ) : page === "dupes" ? (
+          <DuplicateScannerView
+            T={T}
+            rows={rows}
+            removePhrase={removePhraseById}
+            onBack={() => setPage("settings")}
           />
         ) : (
           <>
