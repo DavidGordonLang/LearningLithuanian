@@ -162,6 +162,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       } else {
         next.splice(gIndex, 1);
       }
+
       return next;
     });
 
@@ -188,14 +189,12 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     setGroups((prev) => prev.filter((g) => g.key !== groupKey));
 
     showUndoToast(
-      `Skipped group (${group.items.length} item${
-        group.items.length > 1 ? "s" : ""
-      } kept)`
+      `Skipped group (${group.items.length} item${group.items.length > 1 ? "s" : ""} kept)`
     );
   }
 
   /* ============================================================
-     Swipeable item (lighter shadow version)
+     Swipeable item
      ============================================================ */
   function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
@@ -254,8 +253,12 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       }
     }
 
-    const absX = Math.abs(translateX);
+    function onPointerCancelHandler() {
+      draggingRef.current = false;
+      setTranslateX(0);
+    }
 
+    const absX = Math.abs(translateX);
     const cardStyle = {
       transform: `translateX(${translateX}px) scale(${isFading ? 0.96 : 1})`,
       opacity: isFading ? 0 : 1,
@@ -266,13 +269,11 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     };
 
     const trackOpacity =
-      isFading || absX > 10
-        ? 0.4 + Math.min(absX / 300, 0.6)
-        : 0;
+      isFading || absX > 10 ? 0.4 + Math.min(absX / 300, 0.6) : 0;
 
     return (
       <div className="relative overflow-hidden rounded-2xl border border-zinc-800">
-        {/* Delete track */}
+        {/* Track */}
         <div
           className="absolute inset-0 bg-zinc-800 flex items-center justify-center"
           style={{
@@ -297,18 +298,16 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
           ref={ref}
           className="
             relative z-10 
-            bg-zinc-900/95 
-            border border-zinc-800 
-            rounded-2xl 
-            p-3 
-            shadow-[0_0_12px_rgba(0,0,0,0.15)]
+            bg-zinc-900/95 border border-zinc-800 rounded-2xl 
+            p-3 shadow-[0_0_12px_rgba(0,0,0,0.15)]
             touch-pan-y
           "
           style={cardStyle}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
+          onPointerLeave={onPointerCancelHandler}
+          onPointerCancel={onPointerCancelHandler}
         >
           <div className="text-sm font-semibold truncate">
             {item.English || "—"}
@@ -351,23 +350,23 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     return (
       <section
         className="
-          bg-zinc-900/95 
-          border border-zinc-800 
-          rounded-2xl 
-          p-4 
-          shadow-[0_0_20px_rgba(0,0,0,0.25)]
+          bg-zinc-900/95 border border-zinc-800 
+          rounded-2xl p-4 shadow-[0_0_20px_rgba(0,0,0,0.25)]
         "
       >
         <div className="flex items-center justify-between mb-2">
           <div className="text-sm font-semibold">
             Group {index + 1} • {group.items.length} items
           </div>
+
+          {/* SKIP GROUP — secondary pill */}
           <button
             type="button"
             className="
-              text-xs px-3 py-1 
-              rounded-xl 
-              bg-zinc-800 hover:bg-zinc-700
+              bg-zinc-800 text-zinc-200 rounded-full 
+              px-4 py-1.5 text-xs font-medium
+              hover:bg-zinc-700 active:bg-zinc-600
+              select-none
             "
             onClick={() => handleSkipGroup(group.key)}
           >
@@ -398,17 +397,24 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       {toast &&
         toastRoot &&
         createPortal(
-          <div className="
-            fixed bottom-24 left-1/2 -translate-x-1/2 
-            bg-zinc-900/95 border border-zinc-800 
-            text-zinc-100 px-4 py-2 
-            rounded-2xl shadow-lg z-[9999] 
-            flex items-center gap-3
-          ">
+          <div
+            className="
+              fixed bottom-24 left-1/2 -translate-x-1/2 
+              bg-zinc-900/95 border border-zinc-800 
+              text-zinc-100 px-4 py-2 
+              rounded-2xl shadow-lg z-[9999] 
+              flex items-center gap-3
+            "
+          >
             <span className="text-sm">{toast.message}</span>
+
             {toast.undo && (
               <button
-                className="text-emerald-400 text-sm font-semibold"
+                className="
+                  text-emerald-400 text-sm font-semibold 
+                  hover:text-emerald-300 active:text-emerald-200
+                  select-none
+                "
                 onClick={handleToastUndo}
               >
                 Undo
@@ -418,25 +424,30 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
           toastRoot
         )}
 
-      {/* Header */}
+      {/* Header + Scan */}
       <div className="flex items-center justify-between gap-2 mb-4 mt-2">
+        {/* Back — secondary pill */}
         <button
           type="button"
           className="
-            px-3 py-2 rounded-xl 
-            bg-zinc-800 hover:bg-zinc-700 text-sm
+            bg-zinc-800 text-zinc-200 rounded-full 
+            px-4 py-2 text-sm font-medium
+            hover:bg-zinc-700 active:bg-zinc-600
+            select-none
           "
           onClick={onBack}
         >
           ← Back to settings
         </button>
 
+        {/* Scan — primary pill */}
         <button
           type="button"
           className="
-            px-3 py-2 rounded-xl 
-            bg-emerald-600 hover:bg-emerald-500 
-            text-black text-sm font-semibold
+            bg-emerald-500 text-black rounded-full 
+            px-5 py-2 font-semibold shadow 
+            hover:bg-emerald-400 active:bg-emerald-300
+            select-none
           "
           onClick={scanDuplicates}
           disabled={isScanning}
@@ -460,6 +471,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
         </div>
       )}
 
+      {/* GROUPS */}
       <div className="space-y-4 mt-4">
         {groups.map((g, idx) => (
           <DuplicateGroupSection key={g.key} group={g} index={idx} />
