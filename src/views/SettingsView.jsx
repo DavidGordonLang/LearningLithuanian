@@ -13,9 +13,8 @@ export default function SettingsView({
   rows,
   onOpenDuplicateScanner,
   onOpenChangeLog,
-  onOpenUserGuide
+  onOpenUserGuide,
 }) {
-
   /* EXPORT JSON */
   function exportJson() {
     try {
@@ -33,7 +32,7 @@ export default function SettingsView({
     }
   }
 
-  /* IMPORT HANDLER */
+  /* IMPORT JSON HANDLER */
   function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -45,51 +44,61 @@ export default function SettingsView({
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
 
       {/* STARTER PACK */}
-      <section className="
-        bg-zinc-900/95 
-        border border-zinc-800 
-        rounded-2xl 
-        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-        p-4 
-        space-y-3
-      ">
+      <section
+        className="
+          bg-zinc-900/95 border border-zinc-800 
+          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+          p-4 space-y-4
+        "
+      >
         <div className="text-lg font-semibold">Starter Pack</div>
+
         <button
-          className="px-4 py-2 bg-emerald-600 text-black rounded-md font-semibold hover:bg-emerald-500"
+          className="
+            bg-emerald-500 text-black 
+            rounded-full px-5 py-2 font-semibold shadow 
+            hover:bg-emerald-400 active:bg-emerald-300
+            select-none
+          "
           onClick={() => fetchStarter("EN2LT")}
         >
           Install starter pack
         </button>
       </section>
 
-      {/* AZURE SPEECH ONLY */}
-      <section className="
-        bg-zinc-900/95 
-        border border-zinc-800 
-        rounded-2xl 
-        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-        p-4 
-        space-y-4
-      ">
+      {/* AZURE SPEECH */}
+      <section
+        className="
+          bg-zinc-900/95 border border-zinc-800 
+          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+          p-4 space-y-4
+        "
+      >
         <div className="text-lg font-semibold">Voice Settings</div>
 
-        {/* Provider (locked to Azure) */}
+        {/* Provider (locked) */}
         <div className="space-y-1">
           <label className="text-sm">{T.azure}</label>
           <select
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 cursor-not-allowed opacity-60"
-            value="azure"
+            className="
+              w-full bg-zinc-950 border border-zinc-700 
+              rounded-md px-3 py-2 cursor-not-allowed opacity-60
+            "
             disabled
+            value="azure"
           >
             <option>Azure Speech (recommended)</option>
           </select>
         </div>
 
         {/* Voice Selection */}
-        <div className="space-y-1 pt-2">
+        <div className="space-y-1">
           <label className="text-sm">Select Voice</label>
           <select
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+            className="
+              w-full bg-zinc-950 border border-zinc-700 
+              rounded-md px-3 py-2
+            "
             value={azureVoiceShortName}
             onChange={(e) => setAzureVoiceShortName(e.target.value)}
           >
@@ -98,8 +107,14 @@ export default function SettingsView({
           </select>
         </div>
 
+        {/* Play sample */}
         <button
-          className="px-4 py-2 bg-emerald-600 text-black rounded-md hover:bg-emerald-500"
+          className="
+            bg-emerald-500 text-black rounded-full 
+            px-5 py-2 font-semibold shadow 
+            hover:bg-emerald-400 active:bg-emerald-300
+            select-none
+          "
           onClick={() => playText("Sveiki!", { slow: false })}
         >
           Play sample
@@ -107,14 +122,13 @@ export default function SettingsView({
       </section>
 
       {/* YOUR DATA */}
-      <section className="
-        bg-zinc-900/95 
-        border border-zinc-800 
-        rounded-2xl 
-        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-        p-4 
-        space-y-4
-      ">
+      <section
+        className="
+          bg-zinc-900/95 border border-zinc-800 
+          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+          p-4 space-y-5
+        "
+      >
         <div className="text-lg font-semibold">Your Data</div>
 
         {/* Import JSON */}
@@ -130,9 +144,14 @@ export default function SettingsView({
           </span>
         </div>
 
-        {/* Export JSON */}
+        {/* Export */}
         <button
-          className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700"
+          className="
+            bg-zinc-800 text-zinc-200 rounded-full 
+            px-5 py-2 font-medium
+            hover:bg-zinc-700 active:bg-zinc-600
+            select-none
+          "
           onClick={exportJson}
         >
           Export current library
@@ -140,51 +159,72 @@ export default function SettingsView({
 
         {/* Duplicate Scanner */}
         <button
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
+          className="
+            bg-blue-600 text-white rounded-full
+            px-5 py-2 font-medium shadow
+            hover:bg-blue-500 active:bg-blue-400
+            select-none
+          "
           onClick={onOpenDuplicateScanner}
         >
           Open duplicate scanner
         </button>
 
-        {/* Clear library */}
+        {/* Clear Library */}
         <button
-          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500"
+          className="
+            bg-red-500 text-white rounded-full 
+            px-5 py-2 font-medium shadow
+            hover:bg-red-400 active:bg-red-300
+            select-none
+          "
           onClick={clearLibrary}
         >
           Clear entire library
         </button>
       </section>
 
-      {/* ABOUT SECTION */}
-      <section className="
-        bg-zinc-900/95 
-        border border-zinc-800 
-        rounded-2xl 
-        shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-        p-4 
-        space-y-4
-      ">
+      {/* ABOUT */}
+      <section
+        className="
+          bg-zinc-900/95 border border-zinc-800 
+          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
+          p-4 space-y-4
+        "
+      >
         <div className="text-lg font-semibold">About</div>
 
         <div className="text-sm text-zinc-400">
-          App Version: <span className="text-zinc-200">1.0.0-beta</span>
+          App Version:{" "}
+          <span className="text-zinc-200">1.0.0-beta</span>
         </div>
 
+        {/* User Guide */}
         <button
-          className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700"
+          className="
+            bg-zinc-800 text-zinc-200 rounded-full 
+            px-5 py-2 font-medium
+            hover:bg-zinc-700 active:bg-zinc-600
+            select-none
+          "
           onClick={onOpenUserGuide}
         >
           User Guide
         </button>
 
+        {/* Change Log */}
         <button
-          className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700"
+          className="
+            bg-zinc-800 text-zinc-200 rounded-full 
+            px-5 py-2 font-medium
+            hover:bg-zinc-700 active:bg-zinc-600
+            select-none
+          "
           onClick={onOpenChangeLog}
         >
           View Change Log
         </button>
       </section>
-
     </div>
   );
 }
