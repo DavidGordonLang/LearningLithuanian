@@ -180,7 +180,7 @@ export default function App() {
 
   /* VOICE SETTINGS (Azure-only) */
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(
-    () => "lt-LT-LeonasNeural"   // Default
+    () => "lt-LT-LeonasNeural" // Default
   );
 
   const audioRef = useRef(null);
@@ -191,7 +191,9 @@ export default function App() {
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
-        try { audioRef.current.pause(); } catch {}
+        try {
+          audioRef.current.pause();
+        } catch {}
         audioRef.current = null;
       }
 
@@ -201,8 +203,8 @@ export default function App() {
         body: JSON.stringify({
           text,
           voice: azureVoiceShortName,
-          slow
-        })
+          slow,
+        }),
       });
 
       if (!resp.ok) throw new Error("Azure TTS failed");
@@ -369,7 +371,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={setPage} />
 
-      <main>
+      <main className="pt-3">
         {page === "library" && (
           <SearchDock
             SearchBox={SearchBox}
@@ -377,7 +379,7 @@ export default function App() {
             setSortMode={setSortMode}
             placeholder={T.search}
             T={T}
-            offsetTop={headerHeight}
+            offsetTop={headerHeight + 12}
             page={page}
             setPage={setPage}
           />
