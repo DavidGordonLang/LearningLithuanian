@@ -9,7 +9,7 @@ import React, { useEffect, useMemo, useState } from "react";
  *  - nowTs
  *  - normalizeRag
  *  - mode: "add" | "edit"
- *  - initialRow?: phrase row (when editing)
+ *  - initialRow?: phrase row
  *  - onSubmit: (row) => void
  *  - onCancel: () => void
  */
@@ -123,11 +123,8 @@ export default function AddForm({
         <input
           id="add-en"
           className="
-            w-full 
-            bg-zinc-950/60 
-            border border-zinc-800 
-            rounded-2xl 
-            px-3 py-2 text-sm
+            w-full bg-zinc-950/60 border border-zinc-800 
+            rounded-2xl px-3 py-2 text-sm
           "
           value={english}
           onChange={(e) => setEnglish(e.target.value)}
@@ -142,11 +139,8 @@ export default function AddForm({
         <input
           id="add-lt"
           className="
-            w-full 
-            bg-zinc-950/60 
-            border border-zinc-800 
-            rounded-2xl 
-            px-3 py-2 text-sm
+            w-full bg-zinc-950/60 border border-zinc-800 
+            rounded-2xl px-3 py-2 text-sm
           "
           value={lithuanian}
           onChange={(e) => setLithuanian(e.target.value)}
@@ -161,11 +155,8 @@ export default function AddForm({
         <input
           id="add-ph"
           className="
-            w-full 
-            bg-zinc-950/60 
-            border border-zinc-800 
-            rounded-2xl 
-            px-3 py-2 text-sm
+            w-full bg-zinc-950/60 border border-zinc-800 
+            rounded-2xl px-3 py-2 text-sm
           "
           value={phonetic}
           onChange={(e) => setPhonetic(e.target.value)}
@@ -180,11 +171,8 @@ export default function AddForm({
         <input
           id="add-cat"
           className="
-            w-full 
-            bg-zinc-950/60 
-            border border-zinc-800 
-            rounded-2xl 
-            px-3 py-2 text-sm
+            w-full bg-zinc-950/60 border border-zinc-800 
+            rounded-2xl px-3 py-2 text-sm
           "
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -199,11 +187,8 @@ export default function AddForm({
         <textarea
           id="add-usage"
           className="
-            w-full 
-            bg-zinc-950/60 
-            border border-zinc-800 
-            rounded-2xl 
-            px-3 py-2 text-sm
+            w-full bg-zinc-950/60 border border-zinc-800 
+            rounded-2xl px-3 py-2 text-sm
           "
           rows={3}
           value={usage}
@@ -219,11 +204,8 @@ export default function AddForm({
         <textarea
           id="add-notes"
           className="
-            w-full 
-            bg-zinc-950/60 
-            border border-zinc-800 
-            rounded-2xl 
-            px-3 py-2 text-sm
+            w-full bg-zinc-950/60 border border-zinc-800 
+            rounded-2xl px-3 py-2 text-sm
           "
           rows={3}
           value={notes}
@@ -240,11 +222,8 @@ export default function AddForm({
           <select
             id="add-rag"
             className="
-              w-full 
-              bg-zinc-950/60 
-              border border-zinc-800 
-              rounded-2xl 
-              px-3 py-2 text-sm
+              w-full bg-zinc-950/60 border border-zinc-800 
+              rounded-2xl px-3 py-2 text-sm
             "
             value={rag}
             onChange={(e) => setRag(e.target.value)}
@@ -263,11 +242,8 @@ export default function AddForm({
           <select
             id="add-sheet"
             className="
-              w-full 
-              bg-zinc-950/60 
-              border border-zinc-800 
-              rounded-2xl 
-              px-3 py-2 text-sm
+              w-full bg-zinc-950/60 border border-zinc-800 
+              rounded-2xl px-3 py-2 text-sm
             "
             value={sheet}
             onChange={(e) => setSheet(e.target.value)}
@@ -280,17 +256,17 @@ export default function AddForm({
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="flex items-center gap-2 pt-1">
+      {/* Button row */}
+      <div className="flex items-center gap-3 pt-1">
+
+        {/* Cancel (secondary pill) */}
         <button
           type="button"
           className="
-            px-3 py-2 
-            rounded-xl 
-            bg-zinc-800 
-            hover:bg-zinc-700 
-            border border-zinc-700 
-            text-sm
+            bg-zinc-800 text-zinc-200 
+            rounded-full px-5 py-2 
+            font-medium hover:bg-zinc-700 active:bg-zinc-600
+            transition-all select-none
           "
           onClick={() => {
             if (!isEdit) reset();
@@ -300,17 +276,14 @@ export default function AddForm({
           {T.cancel}
         </button>
 
+        {/* Save (primary pill) */}
         <button
           type="submit"
           className="
-            px-3 py-2 
-            rounded-xl 
-            bg-emerald-600 
-            hover:bg-emerald-500 
-            text-black 
-            font-semibold 
-            text-sm 
-            disabled:opacity-60
+            bg-emerald-500 text-black rounded-full 
+            px-5 py-2 font-semibold shadow
+            hover:bg-emerald-400 active:bg-emerald-300
+            disabled:opacity-60 select-none transition-all
           "
           disabled={!canSave}
         >
