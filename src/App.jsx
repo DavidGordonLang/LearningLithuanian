@@ -333,7 +333,10 @@ const SearchBox = memo(
    ========================================================================== */
 
 export default function App() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(() => localStorage.getItem("lt_page") || "home");
+useEffect(() => {
+  localStorage.setItem("lt_page", page);
+}, [page]);
 
   // dynamic header measurement
   const headerRef = useRef(null);
