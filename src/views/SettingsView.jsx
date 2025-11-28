@@ -1,3 +1,4 @@
+// src/views/SettingsView.jsx
 import React, { useState } from "react";
 
 export default function SettingsView({
@@ -21,19 +22,17 @@ export default function SettingsView({
   fetchStarter,
   clearLibrary,
   importJsonFile,
-  rows, // NEW for export
+  rows,
+  onOpenDuplicateScanner, // NEW
 }) {
   const [showKey, setShowKey] = useState(false);
 
-  /* ============================================================
-     EXPORT JSON
-     ============================================================ */
+  /* EXPORT JSON */
   function exportJson() {
     try {
       const dataStr = JSON.stringify(rows, null, 2);
       const blob = new Blob([dataStr], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = url;
       a.download = "lithuanian-trainer-export.json";
@@ -44,9 +43,7 @@ export default function SettingsView({
     }
   }
 
-  /* ============================================================
-     IMPORT HANDLER
-     ============================================================ */
+  /* IMPORT HANDLER */
   function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -54,17 +51,11 @@ export default function SettingsView({
     e.target.value = "";
   }
 
-  /* ============================================================
-     RENDER
-     ============================================================ */
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
-
       {/* LEARNING DIRECTION */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-        <div className="text-lg font-semibold mb-3">
-          {T.direction}
-        </div>
+        <div className="text-lg font-semibold mb-3">{T.direction}</div>
 
         <div className="space-y-2 text-sm">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -117,9 +108,9 @@ export default function SettingsView({
           </select>
         </div>
 
-        {/* Region */}
         {ttsProvider === "azure" && (
           <>
+            {/* Region */}
             <div className="space-y-1">
               <label className="text-sm">{T.region}</label>
               <input
@@ -154,11 +145,9 @@ export default function SettingsView({
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
                 onClick={async () => {
                   try {
-                    const region = azureRegion;
-                    const key = azureKey;
-                    const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+                    const url = `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
                     const res = await fetch(url, {
-                      headers: { "Ocp-Apim-Subscription-Key": key },
+                      headers: { "Ocp-Apim-Subscription-Key": azureKey },
                     });
                     const data = await res.json();
                     setAzureVoices(data);
@@ -196,13 +185,11 @@ export default function SettingsView({
         )}
       </section>
 
-      {/* ============================================================
-          NEW: Your Data (Import / Export)
-         ============================================================ */}
+      {/* YOUR DATA: import / export / duplicates / clear */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
-        {/* IMPORT JSON */}
+        {/* Import JSON */}
         <div className="flex items-center gap-3">
           <input
             type="file"
@@ -210,10 +197,12 @@ export default function SettingsView({
             className="text-sm"
             onChange={handleImportFile}
           />
-          <span className="text-xs text-zinc-400">Import phrases from a JSON file</span>
+          <span className="text-xs text-zinc-400">
+            Import phrases from a JSON file
+          </span>
         </div>
 
-        {/* EXPORT JSON */}
+        {/* Export JSON */}
         <button
           className="px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700"
           onClick={exportJson}
@@ -221,7 +210,15 @@ export default function SettingsView({
           Export current library
         </button>
 
-        {/* CLEAR LIBRARY */}
+        {/* Duplicate scanner entry */}
+        <button
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
+          onClick={onOpenDuplicateScanner}
+        >
+          Open duplicate scanner
+        </button>
+
+        {/* Clear library */}
         <button
           className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500"
           onClick={clearLibrary}
