@@ -142,13 +142,11 @@ export default function HomeView({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
-
       {/* Header */}
       <div className="mb-4">
         <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
         <p className="text-sm text-zinc-400 mt-1">
-          Draft the phrase, tune the tone, hear it spoken, then save it to your
-          library.
+          Draft the phrase, tune the tone, hear it spoken, then save it to your library.
         </p>
       </div>
 
@@ -192,18 +190,28 @@ export default function HomeView({
         />
 
         <div className="flex gap-3 flex-wrap">
+          {/* Translate (PRIMARY PILL) */}
           <button
             type="button"
-            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 font-semibold disabled:opacity-60 select-none"
+            className="
+              bg-emerald-500 text-black rounded-full px-5 py-2 
+              font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 
+              transition-all select-none
+            "
             onClick={handleTranslate}
             disabled={translating || !input.trim()}
           >
             {translating ? "Translating…" : "Translate"}
           </button>
 
+          {/* Clear (SECONDARY PILL) */}
           <button
             type="button"
-            className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 font-semibold select-none"
+            className="
+              bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 
+              font-medium hover:bg-zinc-700 active:bg-zinc-600 
+              transition-all select-none
+            "
             onClick={handleClear}
           >
             Clear
@@ -234,24 +242,45 @@ export default function HomeView({
             </div>
           </div>
 
+          {/* Play buttons */}
           <div className="flex items-center gap-3 flex-wrap pt-2">
+            {/* Normal play */}
             <button
               type="button"
-              className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black select-none"
+              className="
+                bg-emerald-500 text-black rounded-full 
+                px-5 py-2 text-[18px] shadow 
+                hover:bg-emerald-400 active:bg-emerald-300 
+                select-none
+              "
               onClick={() => playText(ltOut)}
             >
               ▶ Normal
             </button>
+
+            {/* Slow play */}
             <button
               type="button"
-              className="px-3 py-2 rounded-md bg-emerald-700 hover:bg-emerald-600 text-black select-none"
+              className="
+                bg-emerald-700 text-black rounded-full 
+                px-5 py-2 text-[18px] shadow 
+                hover:bg-emerald-600 active:bg-emerald-500 
+                select-none
+              "
               onClick={() => playText(ltOut, { slow: true })}
             >
               🐢 Slow
             </button>
+
+            {/* Save to Library */}
             <button
               type="button"
-              className="px-3 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 text-sm select-none"
+              className="
+                bg-zinc-800 text-zinc-200 rounded-full 
+                px-5 py-2 text-sm font-medium
+                hover:bg-zinc-700 active:bg-zinc-600
+                select-none
+              "
               onClick={handleSaveToLibrary}
             >
               Save to library
@@ -260,10 +289,15 @@ export default function HomeView({
         </div>
       )}
 
-      {/* Full-width Add Entry button */}
+      {/* Add Entry manually */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="w-full mt-6 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black font-semibold text-center select-none"
+          className="
+            w-full mt-6 bg-emerald-500 text-black rounded-full 
+            px-5 py-3 font-semibold shadow text-center
+            hover:bg-emerald-400 active:bg-emerald-300 
+            select-none
+          "
           onClick={onOpenAddForm}
         >
           + Add Entry Manually
