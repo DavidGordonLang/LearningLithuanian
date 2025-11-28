@@ -84,8 +84,7 @@ export default function HomeView({
       (r) =>
         (r.EnglishOriginal || r.English || "").trim().toLowerCase() ===
           englishInput.toLowerCase() &&
-        (r.Lithuanian || "").trim().toLowerCase() ===
-          ltOut.trim().toLowerCase()
+        (r.Lithuanian || "").trim().toLowerCase() === ltOut.trim().toLowerCase()
     );
 
     if (already) {
@@ -115,7 +114,7 @@ export default function HomeView({
     };
 
     setRows((prev) => [row, ...prev]);
-    showToast?.("Saved to library ✓");
+    showToast?.("Entry saved to library");
   }
 
   function Segmented({ value, onChange, options }) {
@@ -160,20 +159,7 @@ export default function HomeView({
         </p>
       </div>
 
-      {typeof onOpenAddForm === "function" && (
-        <button
-          className="mt-4 mb-6 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none"
-          onClick={() => onOpenAddForm()}
-          onMouseDown={(e) => e.preventDefault()}
-          onTouchStart={(e) => e.preventDefault()}
-        >
-          + Add Phrase
-        </button>
-      )}
-
-      {/* Removed learning direction block entirely */}
-
-      {/* Speaking to… */}
+      {/* Speaking to */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <Segmented
@@ -221,8 +207,6 @@ export default function HomeView({
             className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 font-semibold disabled:opacity-60 select-none"
             onClick={handleTranslate}
             disabled={translating || !input.trim()}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
           >
             {translating ? "Translating…" : "Translate"}
           </button>
@@ -231,8 +215,6 @@ export default function HomeView({
             type="button"
             className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 font-semibold select-none"
             onClick={handleClear}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
           >
             Clear
           </button>
@@ -249,23 +231,17 @@ export default function HomeView({
             <div className="text-lg font-semibold break-words">{ltOut}</div>
 
             {phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">
-                {phonetics}
-              </div>
+              <div className="text-sm text-zinc-400 mt-1">{phonetics}</div>
             )}
           </div>
 
           <div className="border-t border-zinc-800 pt-3 space-y-1 text-sm">
             <div>
-              <span className="font-semibold">
-                English meaning (literal):{" "}
-              </span>
+              <span className="font-semibold">English meaning (literal): </span>
               <span>{enLiteral}</span>
             </div>
             <div>
-              <span className="font-semibold">
-                English meaning (natural):{" "}
-              </span>
+              <span className="font-semibold">English meaning (natural): </span>
               <span>{enNatural}</span>
             </div>
           </div>
@@ -275,8 +251,6 @@ export default function HomeView({
               type="button"
               className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black select-none"
               onClick={() => playText(ltOut)}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
             >
               ▶ Normal
             </button>
@@ -284,8 +258,6 @@ export default function HomeView({
               type="button"
               className="px-3 py-2 rounded-md bg-emerald-700 hover:bg-emerald-600 text-black select-none"
               onClick={() => playText(ltOut, { slow: true })}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
             >
               🐢 Slow
             </button>
@@ -293,13 +265,21 @@ export default function HomeView({
               type="button"
               className="px-3 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 text-sm select-none"
               onClick={handleSaveToLibrary}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
             >
               Save to library
             </button>
           </div>
         </div>
+      )}
+
+      {/* NEW: Full-width Add Entry button under translation */}
+      {typeof onOpenAddForm === "function" && (
+        <button
+          className="w-full mt-6 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black font-semibold text-center select-none"
+          onClick={onOpenAddForm}
+        >
+          + Add Entry Manually
+        </button>
       )}
     </div>
   );
