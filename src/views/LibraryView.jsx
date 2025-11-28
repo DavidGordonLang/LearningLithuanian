@@ -8,11 +8,10 @@ export default function LibraryView({
   setRows,
   normalizeRag,
   sortMode,
-  direction,
   playText,
   removePhrase,
   onEditRow,
-  onOpenAddForm, // NEW
+  onOpenAddForm,
 }) {
   const [expanded, setExpanded] = useState(new Set());
   const [tab, setTab] = useState("Phrases");
@@ -84,7 +83,7 @@ export default function LibraryView({
     );
   }
 
-  /* AUDIO PRESS HANDLERS */
+  /* AUDIO PRESS HANDLERS (tap = normal, long press = slow) */
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -131,14 +130,17 @@ export default function LibraryView({
     };
   }
 
-  const showLtAudio = direction === "EN2LT";
+  /* Always play Lithuanian */
+  function getAudioText(r) {
+    return r.Lithuanian || "";
+  }
 
   /* RENDER */
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
 
-      {/* NEW: manual add entry button near the top */}
+      {/* Add Entry button */}
       {typeof onOpenAddForm === "function" && (
         <button
           className="mt-3 mb-3 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold select-none"
@@ -151,7 +153,7 @@ export default function LibraryView({
       )}
 
       <div className="mt-1 mb-3 text-sm text-zinc-400">
-        {filteredRows.length} / {rows.length} {T.phrases.toLowerCase()}
+        {filteredRows.length} / {rows.length} entries
       </div>
 
       <div className="mb-4">
@@ -164,9 +166,7 @@ export default function LibraryView({
         <div className="space-y-2">
           {filteredRows.map((r) => {
             const isOpen = expanded.has(r._id);
-            const textToPlay = showLtAudio
-              ? r.Lithuanian || ""
-              : r.English || "";
+            const textToPlay = getAudioText(r);
 
             return (
               <article
@@ -213,14 +213,17 @@ export default function LibraryView({
                     <div className="text-sm font-semibold truncate">
                       {r.English || "—"}
                     </div>
+
                     <div className="text-sm text-emerald-300 truncate">
                       {r.Lithuanian || "—"}
                     </div>
+
                     {r.Phonetic && (
                       <div className="text-[11px] text-zinc-400 italic truncate">
                         {r.Phonetic}
                       </div>
                     )}
+
                     {(r.Usage || r.Notes) && !isOpen && (
                       <div className="text-[11px] text-zinc-500 mt-0.5 line-clamp-1">
                         {r.Usage || r.Notes}
@@ -228,9 +231,8 @@ export default function LibraryView({
                     )}
                   </div>
 
-                  {/* ACTION BAR — CLEAN, MOBILE-FRIENDLY */}
+                  {/* ACTION BAR */}
                   <div className="flex items-center gap-2 shrink-0">
-
                     {/* Play */}
                     <button
                       type="button"
@@ -262,7 +264,7 @@ export default function LibraryView({
                   </div>
                 </div>
 
-                {/* EXPANDED INFO */}
+                {/* EXPANDED DETAILS */}
                 {isOpen && (
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
