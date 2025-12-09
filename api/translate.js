@@ -101,6 +101,17 @@ ${toneInstruction}
 ${pronounInstruction}
 ${genderInstruction}
 
+Special rules for greetings:
+- If the English text begins with or is exactly a casual greeting such as "hey", "hi", "hey there", "yo", or a similar short greeting, you MUST NOT transliterate the greeting.
+- Lithuanian does NOT use “ei” as a conversational greeting. Never output “ei” (or similar) as the greeting itself.
+- Map the English greeting to the correct Lithuanian one based on the listener's gender:
+  - If the listener is male → use the base Lithuanian greeting "Sveikas".
+  - If the listener is female → use the base Lithuanian greeting "Sveika".
+  - If the listener's gender is neutral or unknown → use the base Lithuanian greeting "Labas".
+- Preserve any punctuation directly attached to the greeting exactly as the user wrote it (e.g. "hey!!" → "Labas!!", "hi?" → "Labas?").
+- Do NOT invent new punctuation on the greeting that was not present in the English text. If the English greeting has no punctuation, output the greeting without punctuation.
+- If the greeting is followed by the rest of a sentence (e.g. "hey, how are you?"), only replace the greeting word/phrase with the appropriate Lithuanian greeting (plus the user's punctuation), then translate the rest of the sentence normally into natural Lithuanian.
+
 - Put the Lithuanian result into "lt".
 - Put the literal English meaning into "en_literal".
 - Put the natural English version into "en_natural".
