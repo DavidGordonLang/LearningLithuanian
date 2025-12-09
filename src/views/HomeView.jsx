@@ -14,7 +14,7 @@ export default function HomeView({
 
   const [ltOut, setLtOut] = useState("");
   const [enLiteral, setEnLiteral] = useState("");
-  const [enNatural, setEnNatural] = useState("");
+  the have [enNatural, setEnNatural] = useState("");
   const [phonetics, setPhonetics] = useState("");
 
   const [gender, setGender] = useState("neutral");
@@ -151,7 +151,7 @@ export default function HomeView({
       </div>
 
       {/* Speaking to */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgrgba(0,0,0,0.25)] p-4 mb-5">
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <Segmented
           value={gender}
@@ -165,7 +165,7 @@ export default function HomeView({
       </div>
 
       {/* Tone */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgrgba(0,0,0,0.25)] p-4 mb-5">
         <div className="text-sm font-semibold mb-2">Tone</div>
         <Segmented
           value={tone}
@@ -179,7 +179,7 @@ export default function HomeView({
       </div>
 
       {/* Input */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgrgba(0,0,0,0.25)] p-4 mb-5">
         <label className="block text-sm mb-2">What would you like to say?</label>
 
         <textarea
@@ -190,7 +190,7 @@ export default function HomeView({
         />
 
         <div className="flex gap-3 flex-wrap">
-          {/* Translate (PRIMARY PILL) */}
+          {/* Translate */}
           <button
             type="button"
             className="
@@ -205,7 +205,7 @@ export default function HomeView({
             {translating ? "Translating…" : "Translate"}
           </button>
 
-          {/* Clear (SECONDARY PILL) */}
+          {/* Clear */}
           <button
             type="button"
             className="
@@ -244,8 +244,9 @@ export default function HomeView({
             </div>
           </div>
 
-          {/* Play buttons */}
+          {/* Play + Copy + Save */}
           <div className="flex items-center gap-3 flex-wrap pt-2">
+
             {/* Normal play */}
             <button
               type="button"
@@ -276,9 +277,26 @@ export default function HomeView({
               🐢 Slow
             </button>
 
-            {/* Save to Library */}
+            {/* Copy button */}
             <button
               type="button"
+              className="
+                bg-zinc-800 text-zinc-200 rounded-full 
+                px-5 py-2 text-sm font-medium
+                hover:bg-zinc-700 active:bg-zinc-600
+                transition-transform duration-150 active:scale-95
+                select-none
+              "
+              onClick={() => {
+                navigator.clipboard.writeText(ltOut);
+                showToast?.("Copied");
+              }}
+            >
+              Copy
+            </button>
+
+            {/* Save */}
+            <button
               className="
                 bg-zinc-800 text-zinc-200 rounded-full 
                 px-5 py-2 text-sm font-medium
