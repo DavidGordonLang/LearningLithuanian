@@ -14,7 +14,7 @@ export default function HomeView({
 
   const [ltOut, setLtOut] = useState("");
   const [enLiteral, setEnLiteral] = useState("");
-  the have [enNatural, setEnNatural] = useState("");
+  const [enNatural, setEnNatural] = useState("");
   const [phonetics, setPhonetics] = useState("");
 
   const [gender, setGender] = useState("neutral");
