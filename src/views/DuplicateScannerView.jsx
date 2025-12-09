@@ -100,36 +100,115 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }, []);
 
   /* ============================================================
-     Scan duplicates
+     Normalisation + Fuzzy Matching Helpers
+     ============================================================ */
+
+  // Strip accents: ą → a, č → c, etc.
+  function stripDiacritics(str) {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  // Remove punctuation, collapse spaces, lowercase
+  function normalise(str) {
+    if (!str) return "";
+    return stripDiacritics(str)
+      .toLowerCase()
+      .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "") // strip punctuation
+      .replace(/\s+/g, " ") // collapse spaces
+      .trim();
+  }
+
+  // Lightweight Levenshtein distance
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    const m = a.length, n = b.length;
+    if (Math.abs(m - n) > 1) return 99; // too different, skip early
+
+    const dp = Array.from({ length: m + 1 }, (_, i) => [i]);
+    dp[0] = Array.from({ length: n + 1 }, (_, j) => j);
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[m][n];
+  }
+
+  // Determine whether two entries should be grouped as duplicates
+  function areNearDuplicates(a, b) {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+
+    const na = normalise(a);
+    const nb = normalise(b);
+
+    if (na === nb) return true;
+
+    // Fuzzy match with small tolerance
+    return levenshtein(na, nb) <= 1;
+  }
+
+  /* ============================================================
+     Scan duplicates (enhanced)
      ============================================================ */
   function scanDuplicates() {
     setIsScanning(true);
 
-    const map = new Map();
+    // We'll build groups of items that have matching (or near-matching) EN+LT pairs.
+    const visited = new Set();
+    const groupsOut = [];
 
-    for (const r of rows) {
-      const en = (r.English || "").trim().toLowerCase();
-      const lt = (r.Lithuanian || "").trim().toLowerCase();
-      if (!en && !lt) continue;
+    for (let i = 0; i < rows.length; i++) {
+      if (visited.has(i)) continue;
 
-      const key = `${en}||${lt}`;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(r);
+      const r1 = rows[i];
+      const en1 = normalise(r1.English || "");
+      const lt1 = normalise(r1.Lithuanian || "");
+
+      // Start a group with the first item
+      const group = [r1];
+
+      for (let j = i + 1; j < rows.length; j++) {
+        if (visited.has(j)) continue;
+
+        const r2 = rows[j];
+        const en2 = normalise(r2.English || "");
+        const lt2 = normalise(r2.Lithuanian || "");
+
+        // Both English and Lithuanian must be near-duplicate for grouping.
+        const enMatch = areNearDuplicates(en1, en2);
+        const ltMatch = areNearDuplicates(lt1, lt2);
+
+        if (enMatch && ltMatch) {
+          group.push(r2);
+          visited.add(j);
+        }
+      }
+
+      if (group.length > 1) {
+        groupsOut.push({
+          key: `${en1}||${lt1}`,
+          items: group,
+        });
+      }
     }
 
-    const out = [];
-    for (const [key, items] of map.entries()) {
-      if (items.length > 1) out.push({ key, items });
-    }
-
-    setGroups(out);
+    setGroups(groupsOut);
     undoRef.current = null;
     setHasScanned(true);
     setIsScanning(false);
   }
 
   /* ============================================================
-     Delete + Skip handlers
+     Delete + Skip handlers (unchanged)
      ============================================================ */
   function handleDelete(item, groupKey, itemIndex) {
     const groupIndex = groups.findIndex((g) => g.key === groupKey);
@@ -194,7 +273,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Swipeable item
+     Swipeable Duplicate Item (unchanged)
      ============================================================ */
   function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
@@ -344,7 +423,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Duplicate group section
+     Duplicate group section (unchanged)
      ============================================================ */
   function DuplicateGroupSection({ group, index }) {
     return (
@@ -359,7 +438,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
             Group {index + 1} • {group.items.length} items
           </div>
 
-          {/* SKIP GROUP — secondary pill */}
           <button
             type="button"
             className="
@@ -426,7 +504,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
       {/* Header + Scan */}
       <div className="flex items-center justify-between gap-2 mb-4 mt-2">
-        {/* Back — secondary pill */}
         <button
           type="button"
           className="
@@ -440,7 +517,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
           ← Back to settings
         </button>
 
-        {/* Scan — primary pill */}
         <button
           type="button"
           className="
@@ -458,9 +534,10 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
       <h2 className="text-2xl font-bold mb-1">Duplicate scanner</h2>
       <p className="text-sm text-zinc-400 mb-4">
-        Finds exact duplicates where{" "}
+        Finds near-identical duplicates where{" "}
         <span className="font-semibold">{T.english}</span> and{" "}
-        <span className="font-semibold">{T.lithuanian}</span> match.
+        <span className="font-semibold">{T.lithuanian}</span> match after
+        punctuation/diacritic normalisation.
       </p>
 
       {hasScanned && (
