@@ -20,6 +20,7 @@ import LibraryView from "./views/LibraryView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
 import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
+import WhatsNewModal from "./components/WhatsNewModal";
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
@@ -27,10 +28,13 @@ import { usePhraseStore } from "./stores/phraseStore";
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
+const APP_VERSION = "1.1.0-beta";
+
 const LSK_TTS_PROVIDER = "lt_tts_provider";
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
+const LSK_LAST_SEEN_VERSION = "lt_last_seen_version";
 
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
@@ -355,11 +359,21 @@ export default function App() {
   /* MODALS */
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
 
+  // First-launch user guide
   useEffect(() => {
     const seen = localStorage.getItem(LSK_USER_GUIDE);
     if (!seen) {
       setShowUserGuide(true);
+    }
+  }, []);
+
+  // "What's New" for version bumps
+  useEffect(() => {
+    const seenVersion = localStorage.getItem(LSK_LAST_SEEN_VERSION);
+    if (seenVersion !== APP_VERSION) {
+      setShowWhatsNew(true);
     }
   }, []);
 
@@ -504,6 +518,22 @@ export default function App() {
         </div>
       )}
 
+      {/* WHAT'S NEW MODAL */}
+      {showWhatsNew && (
+        <WhatsNewModal
+          version={APP_VERSION}
+          onClose={() => {
+            localStorage.setItem(LSK_LAST_SEEN_VERSION, APP_VERSION);
+            setShowWhatsNew(false);
+          }}
+          onViewChangelog={() => {
+            localStorage.setItem(LSK_LAST_SEEN_VERSION, APP_VERSION);
+            setShowWhatsNew(false);
+            setShowChangeLog(true);
+          }}
+        />
+      )}
+
       {/* CHANGE LOG MODAL */}
       {showChangeLog && (
         <ChangeLogModal onClose={() => setShowChangeLog(false)} />
@@ -512,7 +542,10 @@ export default function App() {
       {/* USER GUIDE MODAL */}
       {showUserGuide && (
         <UserGuideModal
-          onClose={() => setShowUserGuide(false)}
+          onClose={() => {
+            setShowUserGuide(false);
+            localStorage.setItem(LSK_USER_GUIDE, "1");
+          }}
           firstLaunch={!localStorage.getItem(LSK_USER_GUIDE)}
         />
       )}
