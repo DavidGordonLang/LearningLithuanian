@@ -196,7 +196,7 @@ export default function SettingsView({
 
         <div className="text-sm text-zinc-400">
           App Version:{" "}
-          <span className="text-zinc-200">1.0.0-beta</span>
+          <span className="text-zinc-200">1.1.0-beta</span>
         </div>
 
         {/* User Guide */}
