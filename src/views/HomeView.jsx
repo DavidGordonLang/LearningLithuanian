@@ -1,5 +1,71 @@
 import React, { useState } from "react";
 
+function stripDiacritics(str) {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalise(str) {
+  if (!str) return "";
+  return stripDiacritics(str)
+    .toLowerCase()
+    .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "") // punctuation
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Lightweight Levenshtein distance with early bailout
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  // If lengths differ by more than 1, we treat as "too far"
+  if (Math.abs(m - n) > 1) return 99;
+
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+      // small optimisation: if distance already > 1 we can stop caring,
+      // but we keep full calc for clarity here
+    }
+  }
+  return dp[m][n];
+}
+
+function areNearDuplicatesText(a, b) {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  const na = normalise(a);
+  const nb = normalise(b);
+  if (!na && !nb) return true;
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  return levenshtein(na, nb) <= 1;
+}
+
+function findDuplicateInLibrary(inputText, rows) {
+  const target = normalise(inputText);
+  if (!target) return null;
+
+  for (const r of rows) {
+    const candidateEn = r.EnglishOriginal || r.English || "";
+    if (areNearDuplicatesText(candidateEn, target)) {
+      return r;
+    }
+  }
+  return null;
+}
+
 export default function HomeView({
   playText,
   onOpenAddForm,
@@ -20,10 +86,28 @@ export default function HomeView({
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
 
-  async function handleTranslate() {
+  const [duplicateEntry, setDuplicateEntry] = useState(null);
+
+  async function handleTranslate(force = false) {
     const text = input.trim();
     if (!text) return;
 
+    // Pre-translation duplicate check (unless forced)
+    if (!force) {
+      const dup = findDuplicateInLibrary(text, rows);
+      if (dup) {
+        setDuplicateEntry(dup);
+        // Clear any previous translation result
+        setLtOut("");
+        setEnLiteral("");
+        setEnNatural("");
+        setPhonetics("");
+        showToast?.("Similar entry already in your library");
+        return;
+      }
+    }
+
+    setDuplicateEntry(null);
     setTranslating(true);
     setLtOut("");
     setEnLiteral("");
@@ -65,6 +149,7 @@ export default function HomeView({
     setEnLiteral("");
     setEnNatural("");
     setPhonetics("");
+    setDuplicateEntry(null);
   }
 
   function handleSaveToLibrary() {
@@ -146,12 +231,13 @@ export default function HomeView({
       <div className="mb-4">
         <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
         <p className="text-sm text-zinc-400 mt-1">
-          Draft the phrase, tune the tone, hear it spoken, then save it to your library.
+          Draft the phrase, tune the tone, hear it spoken, then save it to your
+          library.
         </p>
       </div>
 
       {/* Speaking to */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgrgba(0,0,0,0.25)] p-4 mb-5">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <Segmented
           value={gender}
@@ -165,7 +251,7 @@ export default function HomeView({
       </div>
 
       {/* Tone */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgrgba(0,0,0,0.25)] p-4 mb-5">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
         <div className="text-sm font-semibold mb-2">Tone</div>
         <Segmented
           value={tone}
@@ -179,7 +265,7 @@ export default function HomeView({
       </div>
 
       {/* Input */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgrgba(0,0,0,0.25)] p-4 mb-5">
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
         <label className="block text-sm mb-2">What would you like to say?</label>
 
         <textarea
@@ -199,7 +285,7 @@ export default function HomeView({
               transition-transform duration-150 active:scale-95
               select-none
             "
-            onClick={handleTranslate}
+            onClick={() => handleTranslate(false)}
             disabled={translating || !input.trim()}
           >
             {translating ? "Translating…" : "Translate"}
@@ -220,6 +306,97 @@ export default function HomeView({
           </button>
         </div>
       </div>
+
+      {/* Duplicate warning / existing entry view */}
+      {duplicateEntry && (
+        <div className="bg-amber-950/70 border border-amber-500/70 rounded-2xl p-4 mb-5">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <div className="text-sm font-semibold text-amber-300">
+                Similar entry already in your library
+              </div>
+              <div className="text-xs text-amber-200/80 mt-0.5">
+                You can use this one, or translate anyway if you really want a new
+                version.
+              </div>
+            </div>
+            <button
+              type="button"
+              className="
+                text-xs px-3 py-1 rounded-full 
+                bg-zinc-900/80 text-zinc-200 
+                hover:bg-zinc-800 active:bg-zinc-700
+              "
+              onClick={() => setDuplicateEntry(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+
+          <div className="text-sm font-semibold truncate">
+            {duplicateEntry.English || "—"}
+          </div>
+          <div className="text-sm text-emerald-300 truncate">
+            {duplicateEntry.Lithuanian || "—"}
+          </div>
+
+          {duplicateEntry.Phonetic && (
+            <div className="text-[11px] text-zinc-300 italic mt-1 truncate">
+              {duplicateEntry.Phonetic}
+            </div>
+          )}
+
+          {(duplicateEntry.Usage || duplicateEntry.Notes) && (
+            <div className="mt-2 text-[11px] text-zinc-200 space-y-1">
+              {duplicateEntry.Usage && (
+                <div>
+                  <span className="text-zinc-500">Usage: </span>
+                  {duplicateEntry.Usage}
+                </div>
+              )}
+              {duplicateEntry.Notes && (
+                <div>
+                  <span className="text-zinc-500">Notes: </span>
+                  {duplicateEntry.Notes}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-3 flex-wrap pt-3">
+            <button
+              type="button"
+              className="
+                bg-emerald-500 text-black rounded-full 
+                px-4 py-2 text-sm font-semibold shadow 
+                hover:bg-emerald-400 active:bg-emerald-300 
+                transition-transform duration-150 active:scale-95
+                select-none
+              "
+              onClick={() =>
+                duplicateEntry.Lithuanian &&
+                playText(duplicateEntry.Lithuanian)
+              }
+            >
+              ▶ Play
+            </button>
+
+            <button
+              type="button"
+              className="
+                bg-zinc-800 text-zinc-200 rounded-full 
+                px-4 py-2 text-sm font-medium
+                hover:bg-zinc-700 active:bg-zinc-600
+                transition-transform duration-150 active:scale-95
+                select-none
+              "
+              onClick={() => handleTranslate(true)}
+            >
+              Translate anyway
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Output */}
       {ltOut && (
@@ -246,7 +423,6 @@ export default function HomeView({
 
           {/* Play + Copy + Save */}
           <div className="flex items-center gap-3 flex-wrap pt-2">
-
             {/* Normal play */}
             <button
               type="button"
