@@ -1,7 +1,19 @@
 [
   {
+    "version": "1.1.0-beta",
+    "date": "2025-12-09",
+    "changes": [
+      "Added smart pre-translation duplicate detection to stop accidental duplicate entries.",
+      "Upgraded the Duplicate Scanner to handle punctuation and diacritic variations (e.g. \"ačiū\" vs \"aciu\").",
+      "Added a Copy button so you can quickly copy Lithuanian translations from the Home screen.",
+      "Improved translation behaviour and punctuation handling for simple greetings.",
+      "Polished card shadows and layout to make the app feel more premium."
+    ]
+  },
+  {
+
     "version": "1.0.0-beta",
-    "date": "2025-02-12",
+    "date": "2025-12-02",
     "changes": [
       "Removed Lithuanian-to-English mode entirely. App now works cleanly as English → Lithuanian.",
       "Added manual Add Entry button on Home and Library for direct phrase creation.",
