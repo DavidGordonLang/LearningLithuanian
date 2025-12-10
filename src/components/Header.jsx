@@ -18,13 +18,13 @@ const Header = forwardRef(function Header({ T, page, setPage }, ref) {
       )}
     >
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-2 pb-1">
-
         {/* Title */}
         <div className="flex items-baseline gap-3">
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-            <span className="text-white">{T.appTitle1}</span>{" "}
+            <span className="text-white">{T.appTitle1}</span>
             <span className="text-emerald-500">{T.appTitle2}</span>
           </h1>
+
           <span className="hidden sm:inline text-xs text-zinc-400">
             {T.subtitle}
           </span>
@@ -55,7 +55,6 @@ const Header = forwardRef(function Header({ T, page, setPage }, ref) {
             })}
           </div>
         </nav>
-
       </div>
     </header>
   );
