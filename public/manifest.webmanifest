@@ -1,8 +1,8 @@
 {
-  "name": "Lithuanian Trainer",
-  "short_name": "LT Trainer",
-  "id": "lt-trainer.aiden.app",
-  "description": "Practice Lithuanian phrases with audio and quick quizzes.",
+  "name": "Žodis",
+  "short_name": "Žodis",
+  "id": "zodis.app",
+  "description": "A fast, natural Lithuanian phrase assistant with real audio.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
