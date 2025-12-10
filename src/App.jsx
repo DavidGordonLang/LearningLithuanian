@@ -41,11 +41,11 @@ const STARTERS = {
 };
 
 /* ============================================================================
-   STRINGS
+   STRINGS — UPDATED FOR ŽODIS BRANDING
    ========================================================================== */
 const STR = {
-  appTitle1: "Lithuanian",
-  appTitle2: "Trainer",
+  appTitle1: "Žodis",
+  appTitle2: "",
   subtitle: "Tap to play. Long-press to savour.",
   navHome: "Home",
   navLibrary: "Library",
@@ -179,10 +179,10 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  /* STRING BUNDLE */
+  /* STRINGS */
   const T = STR;
 
-  /* VOICE SETTINGS (Azure-only) */
+  /* VOICE SETTINGS */
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(
     () => "lt-LT-LeonasNeural"
   );
@@ -190,7 +190,7 @@ export default function App() {
   const audioRef = useRef(null);
 
   /* ============================================================================
-     PLAY TEXT VIA SECURE API
+     PLAY TEXT (Azure TTS)
      ========================================================================== */
   async function playText(text, { slow = false } = {}) {
     try {
@@ -230,7 +230,7 @@ export default function App() {
     }
   }
 
-  /* SEARCH SUBSCRIPTION */
+  /* SEARCH STORE SUBSCRIPTION */
   useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
@@ -377,7 +377,9 @@ export default function App() {
     }
   }, []);
 
-  /* RENDER */
+  /* ============================================================================
+     RENDER
+     ========================================================================== */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={setPage} />
@@ -458,7 +460,8 @@ export default function App() {
       {/* ADD FORM MODAL */}
       {addOpen && (
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex
+          items-center justify-center p-4"
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
