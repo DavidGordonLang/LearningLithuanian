@@ -2,17 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
     <title>Žodis</title>
 
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- MUST MATCH manifest.json theme_color -->
     <meta name="theme-color" content="#10b981" />
 
-    <!-- iOS Support -->
+    <!-- iOS PWA / Homescreen -->
     <link rel="apple-touch-icon" href="/icons/192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
 
     <!-- Tailwind via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,7 +31,9 @@
         --sat: env(safe-area-inset-top);
         --sab: env(safe-area-inset-bottom);
       }
-      html, body, #root {
+      html,
+      body,
+      #root {
         height: 100%;
       }
     </style>
@@ -31,9 +42,10 @@
   <body class="bg-zinc-950 text-zinc-100">
     <div id="root"></div>
 
-    <!-- Main App -->
+    <!-- Main app -->
     <script type="module" src="/src/main.jsx"></script>
-    <!-- PWA Bootstrap (Service Worker + Install Prompt Handler) -->
+
+    <!-- PWA bootstrap -->
     <script type="module" src="/src/pwa.js"></script>
 
     <div id="toast-root"></div>
