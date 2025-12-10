@@ -7,9 +7,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // ⬇️ add this block
+
+      // Use your own manifest.json in /public
+      includeManifestIcons: true,
+      manifest: false,
+
       workbox: {
-        navigateFallbackDenylist: [/^\/api\//], // don't route /api/* to index.html
+        navigateFallbackDenylist: [/^\/api\//],
       },
     }),
   ],
