@@ -6,10 +6,10 @@
     <title>Žodis</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#10b981" />
 
-    <!-- iOS -->
+    <!-- iOS Support -->
     <link rel="apple-touch-icon" href="/icons/192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -18,15 +18,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-      :root{ --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
-      html, body, #root { height: 100%; }
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sab: env(safe-area-inset-bottom);
+      }
+      html, body, #root {
+        height: 100%;
+      }
     </style>
   </head>
+
   <body class="bg-zinc-950 text-zinc-100">
     <div id="root"></div>
 
+    <!-- Main App -->
     <script type="module" src="/src/main.jsx"></script>
+    <!-- PWA Bootstrap (Service Worker + Install Prompt Handler) -->
     <script type="module" src="/src/pwa.js"></script>
+
     <div id="toast-root"></div>
   </body>
 </html>
