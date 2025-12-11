@@ -6,7 +6,7 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
     <div
       className="
         fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm 
-        flex items-center justify-center p-4
+        flex items-center justify-center px-4 py-8
       "
       onPointerDown={onClose}
     >
@@ -28,7 +28,7 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
             </div>
           </div>
 
-          <button
+        <button
             className="
               bg-zinc-800 text-zinc-200 rounded-full 
               px-3 py-1 text-xs font-medium
