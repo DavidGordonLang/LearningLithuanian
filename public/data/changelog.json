@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.1.1-beta",
+    "date": "2025-12-10",
+    "changes": [
+      "Fixed Add/Edit modal positioning so it no longer appears clipped at the top.",
+      "Modal safe-area padding corrected for Android and iOS devices.",
+      "Modals now consistently centre correctly and avoid being pushed under the header.",
+      "Add/Edit modal now fully resets state when changing tabs.",
+      "Duplicate Scanner now auto-scrolls to the top when opened.",
+      "General modal polish and improved consistency across the UI."
+    ]
+  },
+  {
     "version": "1.1.0-beta",
     "date": "2025-12-09",
     "changes": [
@@ -11,14 +23,13 @@
     ]
   },
   {
-
     "version": "1.0.0-beta",
     "date": "2025-12-02",
     "changes": [
       "Removed Lithuanian-to-English mode entirely. App now works cleanly as English → Lithuanian.",
       "Added manual Add Entry button on Home and Library for direct phrase creation.",
       "Improved AddForm: sheet dropdown added, cleaner layout, stable editing.",
-      "Translation prompt simplified: 'What would you like to say?'",
+      "Translation prompt simplified: \"What would you like to say?\"",
       "Translation API rebuilt. Cleaner EN→LT JSON pipeline with tone and listener gender handling.",
       "LibraryView fully redesigned around single-direction audio playback.",
       "Long-press slow audio + tap for normal audio standardised across the app.",
