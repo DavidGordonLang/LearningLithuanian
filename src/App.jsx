@@ -120,11 +120,15 @@ const SearchBox = memo(
           }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
-            startTransition(() => searchStore.setRaw(e.currentTarget.value));
+            startTransition(() =>
+              searchStore.setRaw(e.currentTarget.value)
+            );
           }}
           onInput={(e) => {
             if (!composingRef.current)
-              startTransition(() => searchStore.setRaw(e.currentTarget.value));
+              startTransition(() =>
+                searchStore.setRaw(e.currentTarget.value)
+              );
           }}
         />
 
@@ -163,7 +167,9 @@ export default function App() {
   useEffect(() => {
     if (!headerRef.current) return;
     const measure = () =>
-      setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
+      setHeaderHeight(
+        headerRef.current.getBoundingClientRect().height || 0
+      );
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
@@ -182,15 +188,15 @@ export default function App() {
   /* STRING BUNDLE */
   const T = STR;
 
-  /* VOICE SETTINGS (Azure-only) */
+  /* VOICE SETTINGS */
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(
-    () => "lt-LT-LeonasNeural"
+    "lt-LT-LeonasNeural"
   );
 
   const audioRef = useRef(null);
 
   /* ============================================================================
-     PLAY TEXT VIA SECURE API
+     PLAY TEXT VIA API
      ========================================================================== */
   async function playText(text, { slow = false } = {}) {
     try {
@@ -248,7 +254,9 @@ export default function App() {
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
         "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(
+          r.Sheet
+        )
           ? r.Sheet
           : "Phrases",
         _id: r._id || genId(),
@@ -301,7 +309,7 @@ export default function App() {
 
   function showToast(msg) {
     setToast(msg);
-    setTimeout(() => setToast(""), 2200);
+    setTimeout(() => setToast(""), 2000);
   }
 
   const editingRow = useMemo(
@@ -310,6 +318,7 @@ export default function App() {
   );
   const isEditing = !!editingRow;
 
+  /* Close via ESC */
   useEffect(() => {
     if (!addOpen) return;
     const onKey = (e) => {
@@ -322,13 +331,12 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [addOpen]);
 
+  /* Prevent background scroll */
   useEffect(() => {
     if (!addOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return () => (document.body.style.overflow = prev);
   }, [addOpen]);
 
   function onOpenAddForm() {
@@ -346,7 +354,7 @@ export default function App() {
     }
   }
 
-  /* DUPES RESTORE */
+  /* RESTORE (from duplicate scanner) */
   useEffect(() => {
     function onRestore(e) {
       const { item } = e.detail;
@@ -354,48 +362,39 @@ export default function App() {
     }
     window.addEventListener("restorePhrase", onRestore);
     return () => window.removeEventListener("restorePhrase", onRestore);
-  }, [setRows]);
+  }, []);
 
   /* MODALS */
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
 
-  // First-launch user guide
+  /* First-launch user guide */
   useEffect(() => {
     const seen = localStorage.getItem(LSK_USER_GUIDE);
-    if (!seen) {
-      setShowUserGuide(true);
-    }
+    if (!seen) setShowUserGuide(true);
   }, []);
 
-  // "What's New" for version bumps
+  /* What's New */
   useEffect(() => {
-    const seenVersion = localStorage.getItem(LSK_LAST_SEEN_VERSION);
-    if (seenVersion !== APP_VERSION) {
-      setShowWhatsNew(true);
-    }
+    const seen = localStorage.getItem(LSK_LAST_SEEN_VERSION);
+    if (seen !== APP_VERSION) setShowWhatsNew(true);
   }, []);
 
-  /* PAGE CHANGE HELPER
-     - Closes Add modal when navigating
-     - Optionally scrolls to top (for dupes/settings)
-  */
-  function goToPage(nextPage, { scrollTop = false } = {}) {
-    setPage(nextPage);
+  /* PAGE CHANGE */
+  function goToPage(next, { scrollTop = false } = {}) {
+    setPage(next);
     setAddOpen(false);
     setEditRowId(null);
 
     if (scrollTop) {
-      try {
-        window.scrollTo({ top: 0, behavior: "instant" });
-      } catch {
-        window.scrollTo(0, 0);
-      }
+      window.scrollTo({ top: 0, behavior: "instant" });
     }
   }
 
-  /* RENDER */
+  /* ============================================================================
+     RENDER
+     ========================================================================== */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
@@ -467,7 +466,7 @@ export default function App() {
             />
 
             {toast && (
-              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[200] shadow-lg">
+              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[500] shadow-lg">
                 {toast}
               </div>
             )}
@@ -475,65 +474,75 @@ export default function App() {
         )}
       </main>
 
-      {/* ADD FORM MODAL */}
+      {/* ============================================================================
+         ADD / EDIT FORM MODAL — FIXED VERSION
+         ========================================================================== */}
       {addOpen && (
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 py-8"
+          className="fixed inset-0 z-[400] bg-black/60 backdrop-blur-sm overflow-y-auto"
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
             document.activeElement?.blur?.();
           }}
         >
+          {/* Top padding = header height + spacing */}
           <div
-            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto
-            bg-zinc-900/95 border border-zinc-800 rounded-2xl 
-            shadow-[0_0_20px_rgba(0,0,0,0.25)] backdrop-blur-sm p-4"
+            className="w-full max-w-2xl mx-auto px-4"
+            style={{ paddingTop: headerHeight + 20, paddingBottom: 40 }}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-lg font-semibold">
-                {isEditing ? T.edit : T.addEntry}
+            <div className="bg-zinc-900/95 border border-zinc-800 rounded-3xl shadow-[0_0_25px_rgba(0,0,0,0.35)] p-5">
+              {/* HEADER */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-lg font-semibold">
+                  {isEditing ? T.edit : T.addEntry}
+                </div>
+
+                <button
+                  className="
+                    px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-200 
+                    text-sm font-medium hover:bg-zinc-700 active:bg-zinc-600
+                  "
+                  onClick={() => {
+                    setAddOpen(false);
+                    setEditRowId(null);
+                  }}
+                >
+                  Close
+                </button>
               </div>
-              <button
-                className="px-2 py-1 rounded-md bg-zinc-800 select-none"
-                onClick={() => {
+
+              {/* FORM */}
+              <AddForm
+                T={T}
+                genId={genId}
+                nowTs={nowTs}
+                normalizeRag={normalizeRag}
+                mode={isEditing ? "edit" : "add"}
+                initialRow={editingRow || undefined}
+                onSubmit={(row) => {
+                  if (isEditing) {
+                    setRows((prev) =>
+                      prev.map((r) => (r._id === row._id ? row : r))
+                    );
+                  } else {
+                    setRows((prev) => [row, ...prev]);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+
+                  setAddOpen(false);
+                  setEditRowId(null);
+
+                  setToast("Entry saved to library");
+                  setTimeout(() => setToast(""), 2000);
+                }}
+                onCancel={() => {
                   setAddOpen(false);
                   setEditRowId(null);
                 }}
-              >
-                Close
-              </button>
+              />
             </div>
-
-            <AddForm
-              T={T}
-              genId={genId}
-              nowTs={nowTs}
-              normalizeRag={normalizeRag}
-              mode={isEditing ? "edit" : "add"}
-              initialRow={editingRow || undefined}
-              onSubmit={(row) => {
-                if (isEditing) {
-                  setRows((prev) =>
-                    prev.map((r) => (r._id === row._id ? row : r))
-                  );
-                } else {
-                  setRows((prev) => [row, ...prev]);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-
-                setAddOpen(false);
-                setEditRowId(null);
-
-                setToast("Entry saved to library");
-                setTimeout(() => setToast(""), 2000);
-              }}
-              onCancel={() => {
-                setAddOpen(false);
-                setEditRowId(null);
-              }}
-            />
           </div>
         </div>
       )}
