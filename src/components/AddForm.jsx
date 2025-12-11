@@ -258,7 +258,6 @@ export default function AddForm({
 
       {/* Button row */}
       <div className="flex items-center gap-3 pt-1">
-
         {/* Cancel (secondary pill) */}
         <button
           type="button"
