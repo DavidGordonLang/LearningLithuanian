@@ -103,28 +103,24 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
      Normalisation + Fuzzy Matching Helpers
      ============================================================ */
 
-  // Strip accents: ą → a, č → c, etc.
   function stripDiacritics(str) {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
 
-  // Remove punctuation, collapse spaces, lowercase
   function normalise(str) {
     if (!str) return "";
     return stripDiacritics(str)
       .toLowerCase()
-      .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "") // strip punctuation
-      .replace(/\s+/g, " ") // collapse spaces
+      .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "")
+      .replace(/\s+/g, " ")
       .trim();
   }
 
-  // Lightweight Levenshtein distance
   function levenshtein(a, b) {
     if (a === b) return 0;
-    const m = a.length, n = b.length;
-    if (Math.abs(m - n) > 1) return 99; // too different, skip early
+    const m = a.length,
+      n = b.length;
+    if (Math.abs(m - n) > 1) return 99;
 
     const dp = Array.from({ length: m + 1 }, (_, i) => [i]);
     dp[0] = Array.from({ length: n + 1 }, (_, j) => j);
@@ -142,7 +138,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     return dp[m][n];
   }
 
-  // Determine whether two entries should be grouped as duplicates
   function areNearDuplicates(a, b) {
     if (!a && !b) return true;
     if (!a || !b) return false;
@@ -152,7 +147,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
 
     if (na === nb) return true;
 
-    // Fuzzy match with small tolerance
     return levenshtein(na, nb) <= 1;
   }
 
@@ -162,7 +156,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   function scanDuplicates() {
     setIsScanning(true);
 
-    // We'll build groups of items that have matching (or near-matching) EN+LT pairs.
     const visited = new Set();
     const groupsOut = [];
 
@@ -173,7 +166,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       const en1 = normalise(r1.English || "");
       const lt1 = normalise(r1.Lithuanian || "");
 
-      // Start a group with the first item
       const group = [r1];
 
       for (let j = i + 1; j < rows.length; j++) {
@@ -183,7 +175,6 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
         const en2 = normalise(r2.English || "");
         const lt2 = normalise(r2.Lithuanian || "");
 
-        // Both English and Lithuanian must be near-duplicate for grouping.
         const enMatch = areNearDuplicates(en1, en2);
         const ltMatch = areNearDuplicates(lt1, lt2);
 
@@ -208,7 +199,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Delete + Skip handlers (unchanged)
+     Delete + Skip handlers
      ============================================================ */
   function handleDelete(item, groupKey, itemIndex) {
     const groupIndex = groups.findIndex((g) => g.key === groupKey);
@@ -268,12 +259,14 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     setGroups((prev) => prev.filter((g) => g.key !== groupKey));
 
     showUndoToast(
-      `Skipped group (${group.items.length} item${group.items.length > 1 ? "s" : ""} kept)`
+      `Skipped group (${group.items.length} item${
+        group.items.length > 1 ? "s" : ""
+      } kept)`
     );
   }
 
   /* ============================================================
-     Swipeable Duplicate Item (unchanged)
+     Swipeable Duplicate Item
      ============================================================ */
   function SwipeableDuplicateItem({ item, T, onDelete }) {
     const ref = useRef(null);
@@ -423,7 +416,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   }
 
   /* ============================================================
-     Duplicate group section (unchanged)
+     Duplicate group section
      ============================================================ */
   function DuplicateGroupSection({ group, index }) {
     return (
@@ -544,7 +537,9 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
         <div className="mb-4 text-sm text-zinc-300">
           {groups.length === 0
             ? "No duplicates found."
-            : `Found ${groups.length} active group${groups.length !== 1 ? "s" : ""}.`}
+            : `Found ${groups.length} active group${
+                groups.length !== 1 ? "s" : ""
+              }.`}
         </div>
       )}
 
