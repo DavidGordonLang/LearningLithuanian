@@ -23,7 +23,7 @@ export default function ChangeLogModal({ onClose }) {
     <div
       className="
         fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm 
-        flex items-center justify-center p-4
+        flex items-center justify-center px-4 py-8
       "
       onPointerDown={() => onClose()}
     >
@@ -54,9 +54,7 @@ export default function ChangeLogModal({ onClose }) {
         </div>
 
         {/* LOADING */}
-        {loading && (
-          <div className="text-sm text-zinc-400">Loading…</div>
-        )}
+        {loading && <div className="text-sm text-zinc-400">Loading…</div>}
 
         {/* NO ENTRIES */}
         {!loading && entries.length === 0 && (
