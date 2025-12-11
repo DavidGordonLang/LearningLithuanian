@@ -28,7 +28,7 @@ import { usePhraseStore } from "./stores/phraseStore";
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
-const APP_VERSION = "1.1.0-beta";
+const APP_VERSION = "1.1.1-beta";
 
 const LSK_TTS_PROVIDER = "lt_tts_provider";
 const LSK_SORT = "lt_sort_v1";
