@@ -6,7 +6,7 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
     <div
       className="
         fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm 
-        flex items-center justify-center px-4 py-8
+        flex items-center justify-center p-4
       "
       onPointerDown={onClose}
     >
@@ -28,7 +28,7 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
             </div>
           </div>
 
-        <button
+          <button
             className="
               bg-zinc-800 text-zinc-200 rounded-full 
               px-3 py-1 text-xs font-medium
@@ -45,23 +45,13 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
           Here’s what changed in the latest update:
         </p>
 
+        {/* UPDATED CHANGE LIST FOR v1.1.1-beta */}
         <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
-          <li>
-            New smart duplicate check before translation to stop you creating
-            near-identical entries by accident.
-          </li>
-          <li>
-            Improved Duplicate Scanner that now catches punctuation and
-            diacritic variations (e.g. &quot;ačiū&quot; vs &quot;aciu&quot;).
-          </li>
-          <li>
-            Added a Copy button on translations so you can quickly paste
-            Lithuanian text elsewhere.
-          </li>
-          <li>
-            Small visual polish to cards and shadows to make the app feel more
-            premium.
-          </li>
+          <li>Fixed Add/Edit modal being clipped at the top on some devices.</li>
+          <li>Improved modal centering and applied safe-area padding for Android and iOS.</li>
+          <li>Add/Edit modal now fully resets when switching tabs.</li>
+          <li>Duplicate Scanner now scrolls to the top automatically when opened.</li>
+          <li>General UI polish for smoother modal behaviour and responsiveness.</li>
         </ul>
 
         <div className="flex gap-3 justify-end">
