@@ -1,3 +1,4 @@
+// src/components/ChangeLogModal.jsx
 import React, { useEffect, useState } from "react";
 
 export default function ChangeLogModal({ onClose }) {
@@ -22,27 +23,30 @@ export default function ChangeLogModal({ onClose }) {
   return (
     <div
       className="
-        fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm 
-        flex items-center justify-center px-4 py-8
+        fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm
+        flex items-start justify-center
+        px-4 pb-6
+        pt-[calc(env(safe-area-inset-top)+24px)]
       "
-      onPointerDown={() => onClose()}
+      onPointerDown={onClose}
     >
       <div
         className="
-          w-full max-w-2xl max-h-[85vh] overflow-y-auto
-          bg-zinc-900/95 border border-zinc-800 
+          w-full max-w-2xl
+          max-h-[85vh] overflow-y-auto
+          bg-zinc-900/95 border border-zinc-800
           rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
           p-5
         "
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 sticky top-0 bg-zinc-900/95 pb-2 pt-1">
           <h2 className="text-xl font-bold">Change Log</h2>
 
           <button
             className="
-              bg-zinc-800 text-zinc-200 rounded-full 
+              bg-zinc-800 text-zinc-200 rounded-full
               px-4 py-1.5 text-sm font-medium
               hover:bg-zinc-700 active:bg-zinc-600
               select-none
@@ -54,7 +58,9 @@ export default function ChangeLogModal({ onClose }) {
         </div>
 
         {/* LOADING */}
-        {loading && <div className="text-sm text-zinc-400">Loading…</div>}
+        {loading && (
+          <div className="text-sm text-zinc-400">Loading…</div>
+        )}
 
         {/* NO ENTRIES */}
         {!loading && entries.length === 0 && (
@@ -70,7 +76,7 @@ export default function ChangeLogModal({ onClose }) {
               <section
                 key={index}
                 className="
-                  bg-zinc-950/60 border border-zinc-800 
+                  bg-zinc-950/60 border border-zinc-800
                   rounded-2xl p-4 shadow-sm
                 "
               >
