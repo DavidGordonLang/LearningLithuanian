@@ -41,7 +41,7 @@ const STARTERS = {
 };
 
 /* ============================================================================
-   STRINGS — UPDATED FOR ŽODIS BRANDING
+   STRINGS
    ========================================================================== */
 const STR = {
   appTitle1: "Žodis",
@@ -179,10 +179,10 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  /* STRINGS */
+  /* STRING BUNDLE */
   const T = STR;
 
-  /* VOICE SETTINGS */
+  /* VOICE SETTINGS (Azure-only) */
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(
     () => "lt-LT-LeonasNeural"
   );
@@ -190,7 +190,7 @@ export default function App() {
   const audioRef = useRef(null);
 
   /* ============================================================================
-     PLAY TEXT (Azure TTS)
+     PLAY TEXT VIA SECURE API
      ========================================================================== */
   async function playText(text, { slow = false } = {}) {
     try {
@@ -230,7 +230,7 @@ export default function App() {
     }
   }
 
-  /* SEARCH STORE SUBSCRIPTION */
+  /* SEARCH SUBSCRIPTION */
   useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
@@ -377,12 +377,28 @@ export default function App() {
     }
   }, []);
 
-  /* ============================================================================
-     RENDER
-     ========================================================================== */
+  /* PAGE CHANGE HELPER
+     - Closes Add modal when navigating
+     - Optionally scrolls to top (for dupes/settings)
+  */
+  function goToPage(nextPage, { scrollTop = false } = {}) {
+    setPage(nextPage);
+    setAddOpen(false);
+    setEditRowId(null);
+
+    if (scrollTop) {
+      try {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      } catch {
+        window.scrollTo(0, 0);
+      }
+    }
+  }
+
+  /* RENDER */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header ref={headerRef} T={T} page={page} setPage={setPage} />
+      <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
       <main className="pt-3">
         {page === "library" && (
@@ -394,7 +410,7 @@ export default function App() {
             T={T}
             offsetTop={headerHeight + 12}
             page={page}
-            setPage={setPage}
+            setPage={goToPage}
           />
         )}
 
@@ -425,7 +441,9 @@ export default function App() {
             clearLibrary={clearLibrary}
             importJsonFile={importJsonFile}
             rows={rows}
-            onOpenDuplicateScanner={() => setPage("dupes")}
+            onOpenDuplicateScanner={() =>
+              goToPage("dupes", { scrollTop: true })
+            }
             onOpenChangeLog={() => setShowChangeLog(true)}
             onOpenUserGuide={() => setShowUserGuide(true)}
           />
@@ -434,7 +452,7 @@ export default function App() {
             T={T}
             rows={rows}
             removePhrase={removePhraseById}
-            onBack={() => setPage("settings")}
+            onBack={() => goToPage("settings", { scrollTop: true })}
           />
         ) : (
           <>
@@ -460,8 +478,7 @@ export default function App() {
       {/* ADD FORM MODAL */}
       {addOpen && (
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex
-          items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 py-8"
           onPointerDown={() => {
             setAddOpen(false);
             setEditRowId(null);
