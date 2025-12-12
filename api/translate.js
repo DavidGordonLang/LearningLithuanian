@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const { text, tone, gender } = body;
 
-  if (!text) {
+  if (!text || !text.trim()) {
     return res.status(400).json({ error: "Missing text" });
   }
 
@@ -27,28 +27,72 @@ export default async function handler(req, res) {
   }
 
   // ---------------------------------------------------------------------------
-  // SYSTEM PROMPT — EN → LT ONLY (DIRECTION REMOVED)
+  // SYSTEM PROMPT — BIDIRECTIONAL, INTENT-FIRST, TEACHING-ORIENTED
   // ---------------------------------------------------------------------------
   let systemPrompt = `
-You are a translation assistant for English speakers learning Lithuanian.
+You are a language assistant for English speakers learning Lithuanian.
 
-You MUST always respond with a single JSON object in this shape:
+You MUST always respond with a single VALID JSON object in this exact shape:
 
 {
   "lt": "Lithuanian phrase",
   "en_literal": "Literal English meaning",
   "en_natural": "Natural English version",
-  "phonetics": "Lithuanian phrase written with English letters for pronunciation"
+  "phonetics": "Lithuanian phrase written with English letters for pronunciation",
+  "usage": "Clear explanation of when a Lithuanian speaker would actually use this phrase",
+  "notes": "Multi-line teaching notes written for a learner"
 }
 
-Rules:
-- Always return VALID JSON. No extra text before or after.
-- "lt": the natural, grammatically correct Lithuanian phrase.
-- "en_literal": a literal English meaning of the Lithuanian phrase.
-- "en_natural": a more natural English version (may be identical).
-- "phonetics": Lithuanian written roughly in English-style pronunciation (no IPA).
-- No chit-chat. No explanations. No markdown. Only JSON.
-- Keep the translation short and natural unless Lithuanian grammar requires more words.
+GLOBAL RULES (MANDATORY):
+- Always return VALID JSON. No text before or after.
+- Never include placeholders or vague filler.
+- If alternatives exist, list them explicitly with:
+  • Lithuanian phrase
+  • Natural English meaning
+  • Phonetic pronunciation
+- Avoid linguistic jargon. Explain everything in plain English.
+- All explanations must be easy to understand for a learner.
+
+TRANSLATION DIRECTION:
+- The input text may be ENGLISH or LITHUANIAN.
+- Detect the source language automatically.
+- Always output:
+  - Lithuanian in "lt"
+  - English explanations in "usage" and "notes"
+- Preserve intent over literal structure in BOTH directions.
+
+CRITICAL GRAMMAR RULE (TU / TAU FIX):
+- When translating phrases like "How are you?", you MUST use:
+  - "Kaip tau ...?" (dative case)
+- NEVER produce incorrect structures such as:
+  - "Kaip tu ...?"
+- Validate Lithuanian grammar before outputting.
+
+RULES FOR "usage":
+- Describe real-world situations.
+- Be concrete and practical.
+- No generic statements like "used in everyday conversation".
+
+RULES FOR "notes":
+- Teach how the phrase works in Lithuanian.
+- Explain meaning and structure in simple terms.
+- If words change form, explain what they are doing without grammar labels.
+- Include related ways Lithuanians express the same idea.
+
+PHONETICS RULES:
+- Use English-style pronunciation (no IPA).
+- Include phonetics for alternatives.
+- Clearly associate phonetics with each phrase.
+
+ENGLISH QUALITY RULES:
+- Automatically correct spelling and grammar.
+- Use British English.
+- Fix errors like "were" vs "we're" silently.
+- Saved English must always be clean and natural.
+
+NO PLACEHOLDERS:
+- Do NOT say "alternatives may exist".
+- Do NOT hedge without giving examples.
 `.trim();
 
   // ---------------------------------------------------------------------------
@@ -87,35 +131,26 @@ Rules:
       genderInstruction = "Imagine you are speaking to a female listener.";
     } else {
       genderInstruction =
-        "Do not assume the listener's gender unless the English text clearly implies it.";
+        "Do not assume the listener's gender unless the meaning requires it.";
     }
   }
 
   systemPrompt += `
 
-The user will provide ENGLISH text. You must:
-- Translate it into Lithuanian using the rules above.
-- Apply these style rules:
-
+STYLE RULES:
 ${toneInstruction}
 ${pronounInstruction}
 ${genderInstruction}
 
-Special rules for greetings:
-- If the English text begins with or is exactly a casual greeting such as "hey", "hi", "hey there", "yo", or a similar short greeting, you MUST NOT transliterate the greeting.
-- Lithuanian does NOT use “ei” as a conversational greeting. Never output “ei” (or similar) as the greeting itself.
-- Map the English greeting to the correct Lithuanian one based on the listener's gender:
-  - If the listener is male → use the base Lithuanian greeting "Sveikas".
-  - If the listener is female → use the base Lithuanian greeting "Sveika".
-  - If the listener's gender is neutral or unknown → use the base Lithuanian greeting "Labas".
-- Preserve any punctuation directly attached to the greeting exactly as the user wrote it (e.g. "hey!!" → "Labas!!", "hi?" → "Labas?").
-- Do NOT invent new punctuation on the greeting that was not present in the English text. If the English greeting has no punctuation, output the greeting without punctuation.
-- If the greeting is followed by the rest of a sentence (e.g. "hey, how are you?"), only replace the greeting word/phrase with the appropriate Lithuanian greeting (plus the user's punctuation), then translate the rest of the sentence normally into natural Lithuanian.
-
-- Put the Lithuanian result into "lt".
-- Put the literal English meaning into "en_literal".
-- Put the natural English version into "en_natural".
-- Generate "phonetics" for the Lithuanian phrase.
+GREETING RULES:
+- Never transliterate English greetings.
+- Lithuanian does NOT use “ei” as a greeting.
+- Use:
+  • Sveikas (male)
+  • Sveika (female)
+  • Labas (neutral/unknown)
+- Preserve user punctuation exactly.
+- If the greeting is followed by a sentence, replace only the greeting and translate the rest naturally.
 `.trim();
 
   // ---------------------------------------------------------------------------
@@ -135,8 +170,8 @@ Special rules for greetings:
           { role: "system", content: systemPrompt },
           { role: "user", content: text },
         ],
-        temperature: 0.2,
-        max_tokens: 200,
+        temperature: 0.15,
+        max_tokens: 500,
       }),
     });
 
@@ -155,26 +190,32 @@ Special rules for greetings:
         typeof rawContent === "string"
           ? JSON.parse(rawContent)
           : rawContent || {};
-    } catch (e) {
-      console.error("Failed to parse JSON content from OpenAI:", rawContent);
+    } catch {
+      console.error("Bad JSON from OpenAI:", rawContent);
       return res.status(500).json({ error: "Bad JSON from OpenAI" });
     }
 
-    const lt = (payload.lt || "").trim();
-    const en_literal = (payload.en_literal || "").trim();
-    const en_natural = (payload.en_natural || "").trim();
-    const phonetics = (payload.phonetics || "").trim();
+    const {
+      lt,
+      en_literal,
+      en_natural,
+      phonetics,
+      usage,
+      notes,
+    } = payload || {};
 
-    if (!lt || !en_literal) {
-      console.error("Missing fields in OpenAI JSON:", payload);
+    if (!lt || !en_literal || !usage || !notes) {
+      console.error("Incomplete translation payload:", payload);
       return res.status(500).json({ error: "Incomplete translation" });
     }
 
     return res.status(200).json({
-      lt,
-      en_literal,
-      en_natural: en_natural || en_literal,
-      phonetics,
+      lt: lt.trim(),
+      en_literal: en_literal.trim(),
+      en_natural: (en_natural || en_literal).trim(),
+      phonetics: (phonetics || "").trim(),
+      usage: usage.trim(),
+      notes: notes.trim(),
     });
   } catch (err) {
     console.error("Translation function error:", err);
