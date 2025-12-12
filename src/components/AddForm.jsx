@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
 
 /**
  * AddForm
@@ -28,10 +29,14 @@ export default function AddForm({
   const [english, setEnglish] = useState(initialRow?.English || "");
   const [lithuanian, setLithuanian] = useState(initialRow?.Lithuanian || "");
   const [phonetic, setPhonetic] = useState(initialRow?.Phonetic || "");
-  const [category, setCategory] = useState(initialRow?.Category || "");
+  const [category, setCategory] = useState(
+    initialRow?.Category || DEFAULT_CATEGORY
+  );
   const [usage, setUsage] = useState(initialRow?.Usage || "");
   const [notes, setNotes] = useState(initialRow?.Notes || "");
-  const [rag, setRag] = useState(normalizeRag(initialRow?.["RAG Icon"] || "🟠"));
+  const [rag, setRag] = useState(
+    normalizeRag(initialRow?.["RAG Icon"] || "🟠")
+  );
 
   const sheetValue = useMemo(() => {
     const allowed = ["Phrases", "Questions", "Words", "Numbers"];
@@ -46,7 +51,7 @@ export default function AddForm({
     setEnglish(initialRow.English || "");
     setLithuanian(initialRow.Lithuanian || "");
     setPhonetic(initialRow.Phonetic || "");
-    setCategory(initialRow.Category || "");
+    setCategory(initialRow.Category || DEFAULT_CATEGORY);
     setUsage(initialRow.Usage || "");
     setNotes(initialRow.Notes || "");
     setRag(normalizeRag(initialRow["RAG Icon"] || "🟠"));
@@ -62,7 +67,7 @@ export default function AddForm({
     setEnglish("");
     setLithuanian("");
     setPhonetic("");
-    setCategory("");
+    setCategory(DEFAULT_CATEGORY);
     setUsage("");
     setNotes("");
     setRag("🟠");
@@ -88,7 +93,7 @@ export default function AddForm({
       English: english.trim(),
       Lithuanian: lithuanian.trim(),
       Phonetic: phonetic.trim(),
-      Category: category.trim(),
+      Category: category,
       Usage: usage.trim(),
       Notes: notes.trim(),
       "RAG Icon": normalizeRag(rag),
@@ -122,10 +127,7 @@ export default function AddForm({
         </label>
         <input
           id="add-en"
-          className="
-            w-full bg-zinc-950/60 border border-zinc-800 
-            rounded-2xl px-3 py-2 text-sm
-          "
+          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
           value={english}
           onChange={(e) => setEnglish(e.target.value)}
         />
@@ -138,10 +140,7 @@ export default function AddForm({
         </label>
         <input
           id="add-lt"
-          className="
-            w-full bg-zinc-950/60 border border-zinc-800 
-            rounded-2xl px-3 py-2 text-sm
-          "
+          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
           value={lithuanian}
           onChange={(e) => setLithuanian(e.target.value)}
         />
@@ -154,10 +153,7 @@ export default function AddForm({
         </label>
         <input
           id="add-ph"
-          className="
-            w-full bg-zinc-950/60 border border-zinc-800 
-            rounded-2xl px-3 py-2 text-sm
-          "
+          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
           value={phonetic}
           onChange={(e) => setPhonetic(e.target.value)}
         />
@@ -168,15 +164,18 @@ export default function AddForm({
         <label className="block text-xs mb-1" htmlFor="add-cat">
           {T.category}
         </label>
-        <input
+        <select
           id="add-cat"
-          className="
-            w-full bg-zinc-950/60 border border-zinc-800 
-            rounded-2xl px-3 py-2 text-sm
-          "
+          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-        />
+        >
+          {CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Usage */}
@@ -186,10 +185,7 @@ export default function AddForm({
         </label>
         <textarea
           id="add-usage"
-          className="
-            w-full bg-zinc-950/60 border border-zinc-800 
-            rounded-2xl px-3 py-2 text-sm
-          "
+          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
           rows={3}
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
@@ -203,10 +199,7 @@ export default function AddForm({
         </label>
         <textarea
           id="add-notes"
-          className="
-            w-full bg-zinc-950/60 border border-zinc-800 
-            rounded-2xl px-3 py-2 text-sm
-          "
+          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
           rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -221,10 +214,7 @@ export default function AddForm({
           </label>
           <select
             id="add-rag"
-            className="
-              w-full bg-zinc-950/60 border border-zinc-800 
-              rounded-2xl px-3 py-2 text-sm
-            "
+            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
             value={rag}
             onChange={(e) => setRag(e.target.value)}
           >
@@ -241,10 +231,7 @@ export default function AddForm({
           </label>
           <select
             id="add-sheet"
-            className="
-              w-full bg-zinc-950/60 border border-zinc-800 
-              rounded-2xl px-3 py-2 text-sm
-            "
+            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
             value={sheet}
             onChange={(e) => setSheet(e.target.value)}
           >
@@ -256,17 +243,11 @@ export default function AddForm({
         </div>
       </div>
 
-      {/* Button row */}
+      {/* Buttons */}
       <div className="flex items-center gap-3 pt-1">
-        {/* Cancel (secondary pill) */}
         <button
           type="button"
-          className="
-            bg-zinc-800 text-zinc-200 
-            rounded-full px-5 py-2 
-            font-medium hover:bg-zinc-700 active:bg-zinc-600
-            transition-all select-none
-          "
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
           onClick={() => {
             if (!isEdit) reset();
             onCancel?.();
@@ -275,15 +256,9 @@ export default function AddForm({
           {T.cancel}
         </button>
 
-        {/* Save (primary pill) */}
         <button
           type="submit"
-          className="
-            bg-emerald-500 text-black rounded-full 
-            px-5 py-2 font-semibold shadow
-            hover:bg-emerald-400 active:bg-emerald-300
-            disabled:opacity-60 select-none transition-all
-          "
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
           disabled={!canSave}
         >
           {T.save}
