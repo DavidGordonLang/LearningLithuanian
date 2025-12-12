@@ -1,4 +1,9 @@
-import React, { useMemo, useState, useSyncExternalStore, useEffect } from "react";
+import React, {
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  useEffect,
+} from "react";
 import { searchStore } from "../searchStore";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
 
@@ -34,7 +39,7 @@ export default function LibraryView({
   const filteredRows = useMemo(() => {
     let base = rows;
 
-    // Search (always global)
+    // Search (global)
     if (qNorm) {
       base = base.filter((r) => {
         const en = (r.English || "").toLowerCase();
@@ -111,12 +116,7 @@ export default function LibraryView({
       {/* ADD ENTRY */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="
-            mt-3 mb-4 bg-emerald-500 text-black rounded-full 
-            px-5 py-2 font-semibold shadow
-            hover:bg-emerald-400 active:bg-emerald-300
-            transition-transform active:scale-95 select-none
-          "
+          className="mt-3 mb-4 bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 transition-transform active:scale-95 select-none"
           onClick={onOpenAddForm}
         >
           + Add Entry
@@ -125,14 +125,10 @@ export default function LibraryView({
 
       {/* CONTROLS */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-4">
-        {/* CATEGORY SELECT */}
         <div className="flex items-center gap-2">
           <label className="text-sm text-zinc-400">Category</label>
           <select
-            className="
-              bg-zinc-900 border border-zinc-700 
-              rounded-full px-3 py-1.5 text-sm
-            "
+            className="bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1.5 text-sm"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             disabled={!!qNorm}
@@ -167,11 +163,7 @@ export default function LibraryView({
             return (
               <article
                 key={r._id}
-                className="
-                  bg-zinc-900/95 border border-zinc-800 
-                  rounded-2xl p-4 
-                  shadow-[0_0_12px_rgba(0,0,0,0.15)]
-                "
+                className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_12px_rgba(0,0,0,0.15)]"
               >
                 {/* HEADER */}
                 <div
@@ -189,12 +181,7 @@ export default function LibraryView({
                   {/* RAG */}
                   <button
                     type="button"
-                    className="
-                      w-8 h-8 rounded-full border border-zinc-700 
-                      flex items-center justify-center text-sm
-                      bg-zinc-950/60 hover:bg-zinc-800/60
-                      select-none shrink-0
-                    "
+                    className="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center text-sm bg-zinc-950/60 hover:bg-zinc-800/60 select-none shrink-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       setRows((prev) =>
@@ -228,25 +215,41 @@ export default function LibraryView({
                   </div>
                 </div>
 
-                {/* EXPANDED */}
+                {/* EXPANDED CONTENT */}
                 {isOpen && (
-                  <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
+                  <div className="mt-4 border-t border-zinc-800 pt-3 space-y-4 text-sm text-zinc-300">
+                    {r.Phonetic && (
+                      <div className="italic text-zinc-400">
+                        {r.Phonetic}
+                      </div>
+                    )}
+
                     {r.Usage && (
                       <div>
-                        <span className="text-zinc-500">{T.usage}: </span>
-                        {r.Usage}
+                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
+                          {T.usage}
+                        </div>
+                        <div className="leading-relaxed">{r.Usage}</div>
                       </div>
                     )}
+
                     {r.Notes && (
                       <div>
-                        <span className="text-zinc-500">{T.notes}: </span>
-                        {r.Notes}
+                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
+                          {T.notes}
+                        </div>
+                        <div className="whitespace-pre-line leading-relaxed">
+                          {r.Notes}
+                        </div>
                       </div>
                     )}
+
                     {r.Category && (
-                      <div>
-                        <span className="text-zinc-500">{T.category}: </span>
-                        {r.Category}
+                      <div className="text-xs text-zinc-500 pt-1">
+                        {T.category}:{" "}
+                        <span className="text-zinc-300">
+                          {r.Category}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -269,7 +272,8 @@ export default function LibraryView({
                   <button
                     className="bg-red-500 text-white rounded-full px-4 py-2 text-sm"
                     onClick={() => {
-                      if (window.confirm(T.confirm)) removePhrase(r._id);
+                      if (window.confirm(T.confirm))
+                        removePhrase(r._id);
                     }}
                   >
                     Delete
