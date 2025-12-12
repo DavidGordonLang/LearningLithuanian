@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useSyncExternalStore } from "react";
+import React, { useMemo, useState, useSyncExternalStore, useEffect } from "react";
 import { searchStore } from "../searchStore";
-import { CATEGORIES } from "../constants/categories";
+import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
 
 export default function LibraryView({
   T,
@@ -14,8 +14,7 @@ export default function LibraryView({
   onOpenAddForm,
 }) {
   const [expanded, setExpanded] = useState(new Set());
-  const [tab, setTab] = useState("Phrases");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [category, setCategory] = useState("ALL");
 
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
@@ -24,30 +23,30 @@ export default function LibraryView({
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
 
-  /* FILTERING LOGIC */
+  /* SEARCH OVERRIDES CATEGORY */
+  useEffect(() => {
+    if (qNorm && category !== "ALL") {
+      setCategory("ALL");
+    }
+  }, [qNorm, category]);
+
+  /* FILTER + SORT */
   const filteredRows = useMemo(() => {
     let base = rows;
 
-    // Search filter
+    // Search (always global)
     if (qNorm) {
       base = base.filter((r) => {
         const en = (r.English || "").toLowerCase();
         const lt = (r.Lithuanian || "").toLowerCase();
         return en.includes(qNorm) || lt.includes(qNorm);
       });
-    }
-
-    // Sheet filter
-    base = base.filter((r) => r.Sheet === tab);
-
-    // Category filter
-    if (categoryFilter !== "ALL") {
+    } else if (category !== "ALL") {
       base = base.filter(
-        (r) => (r.Category || "General") === categoryFilter
+        (r) => (r.Category || DEFAULT_CATEGORY) === category
       );
     }
 
-    // Sorting
     if (sortMode === "Newest") {
       return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
     }
@@ -61,73 +60,9 @@ export default function LibraryView({
         (order[normalizeRag(a["RAG Icon"])] ?? 1) -
         (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, qNorm, sortMode, tab, categoryFilter, normalizeRag]);
+  }, [rows, qNorm, category, sortMode, normalizeRag]);
 
-  /* SHEET TABS */
-  function TabControl() {
-    const options = ["Phrases", "Questions", "Words", "Numbers"];
-
-    return (
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-1 flex">
-        {options.map((opt) => {
-          const active = tab === opt;
-          return (
-            <button
-              key={opt}
-              type="button"
-              className={
-                "flex-1 px-3 py-2 text-sm font-medium rounded-full transition select-none " +
-                (active
-                  ? "bg-emerald-500 text-black shadow"
-                  : "text-zinc-300 hover:bg-zinc-800/60")
-              }
-              onClick={() => setTab(opt)}
-            >
-              {opt}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-
-  /* CATEGORY FILTER */
-  function CategoryFilter() {
-    return (
-      <div className="flex flex-wrap gap-2 mt-3">
-        <button
-          type="button"
-          className={
-            "px-3 py-1.5 text-xs rounded-full border transition select-none " +
-            (categoryFilter === "ALL"
-              ? "bg-emerald-500 text-black border-emerald-500"
-              : "bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800")
-          }
-          onClick={() => setCategoryFilter("ALL")}
-        >
-          All
-        </button>
-
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            className={
-              "px-3 py-1.5 text-xs rounded-full border transition select-none " +
-              (categoryFilter === cat
-                ? "bg-emerald-500 text-black border-emerald-500"
-                : "bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800")
-            }
-            onClick={() => setCategoryFilter(cat)}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  /* AUDIO HANDLERS */
+  /* AUDIO */
   function pressHandlers(text) {
     let timer = null;
     let firedSlow = false;
@@ -169,60 +104,97 @@ export default function LibraryView({
     };
   }
 
-  function getAudioText(r) {
-    return r.Lithuanian || "";
-  }
-
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
 
+      {/* ADD ENTRY */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="mt-3 mb-3 bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 transition-transform active:scale-95 select-none"
+          className="
+            mt-3 mb-4 bg-emerald-500 text-black rounded-full 
+            px-5 py-2 font-semibold shadow
+            hover:bg-emerald-400 active:bg-emerald-300
+            transition-transform active:scale-95 select-none
+          "
           onClick={onOpenAddForm}
         >
           + Add Entry
         </button>
       )}
 
-      <div className="mt-1 mb-3 text-sm text-zinc-400">
+      {/* CONTROLS */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-4">
+        {/* CATEGORY SELECT */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-zinc-400">Category</label>
+          <select
+            className="
+              bg-zinc-900 border border-zinc-700 
+              rounded-full px-3 py-1.5 text-sm
+            "
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            disabled={!!qNorm}
+          >
+            <option value="ALL">All</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {qNorm && (
+          <div className="text-xs text-zinc-500">
+            Search active – showing all categories
+          </div>
+        )}
+      </div>
+
+      <div className="mb-3 text-sm text-zinc-400">
         {filteredRows.length} / {rows.length} entries
       </div>
 
-      <div className="mb-4">
-        <TabControl />
-        <CategoryFilter />
-      </div>
-
       {filteredRows.length === 0 ? (
-        <p className="text-sm text-zinc-400">No entries match your filters.</p>
+        <p className="text-sm text-zinc-400">No entries found.</p>
       ) : (
         <div className="space-y-3">
           {filteredRows.map((r) => {
             const isOpen = expanded.has(r._id);
-            const textToPlay = getAudioText(r);
 
             return (
               <article
                 key={r._id}
-                className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_12px_rgba(0,0,0,0.15)]"
+                className="
+                  bg-zinc-900/95 border border-zinc-800 
+                  rounded-2xl p-4 
+                  shadow-[0_0_12px_rgba(0,0,0,0.15)]
+                "
               >
-                {/* TEXT + EXPANSION */}
+                {/* HEADER */}
                 <div
-                  className="flex flex-col md:flex-row gap-3 cursor-pointer"
+                  className="flex gap-3 cursor-pointer"
                   onClick={() =>
                     setExpanded((prev) => {
                       const next = new Set(prev);
-                      next.has(r._id) ? next.delete(r._id) : next.add(r._id);
+                      next.has(r._id)
+                        ? next.delete(r._id)
+                        : next.add(r._id);
                       return next;
                     })
                   }
                 >
-                  {/* RAG ICON */}
+                  {/* RAG */}
                   <button
                     type="button"
-                    className="w-8 h-8 rounded-full border border-zinc-700 text-sm flex items-center justify-center bg-zinc-950/60 hover:bg-zinc-800/60 select-none shrink-0"
+                    className="
+                      w-8 h-8 rounded-full border border-zinc-700 
+                      flex items-center justify-center text-sm
+                      bg-zinc-950/60 hover:bg-zinc-800/60
+                      select-none shrink-0
+                    "
                     onClick={(e) => {
                       e.stopPropagation();
                       setRows((prev) =>
@@ -256,6 +228,7 @@ export default function LibraryView({
                   </div>
                 </div>
 
+                {/* EXPANDED */}
                 {isOpen && (
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
@@ -279,11 +252,11 @@ export default function LibraryView({
                   </div>
                 )}
 
-                {/* MOBILE ACTION BAR */}
-                <div className="md:hidden flex justify-center gap-4 mt-5">
+                {/* ACTIONS */}
+                <div className="flex justify-center gap-4 mt-5">
                   <button
                     className="bg-emerald-500 text-black rounded-full px-5 py-2 text-[18px]"
-                    {...pressHandlers(textToPlay)}
+                    {...pressHandlers(r.Lithuanian || "")}
                   >
                     ▶
                   </button>
