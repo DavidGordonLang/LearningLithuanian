@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+// src/views/HomeView.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { DEFAULT_CATEGORY } from "../constants/categories";
 
 function stripDiacritics(str) {
   return str
@@ -20,7 +22,6 @@ function levenshtein(a, b) {
   if (a === b) return 0;
   const m = a.length;
   const n = b.length;
-  // If lengths differ by more than 1, we treat as "too far"
   if (Math.abs(m - n) > 1) return 99;
 
   const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
@@ -35,8 +36,6 @@ function levenshtein(a, b) {
         dp[i][j - 1] + 1,
         dp[i - 1][j - 1] + cost
       );
-      // small optimisation: if distance already > 1 we can stop caring,
-      // but we keep full calc for clarity here
     }
   }
   return dp[m][n];
@@ -53,15 +52,22 @@ function areNearDuplicatesText(a, b) {
   return levenshtein(na, nb) <= 1;
 }
 
+/**
+ * Pre-translation duplicate check:
+ * We don't assume source language, so we check BOTH:
+ * - Input ≈ any saved English (EnglishOriginal/English)
+ * - Input ≈ any saved Lithuanian (Lithuanian/LithuanianOriginal)
+ */
 function findDuplicateInLibrary(inputText, rows) {
   const target = normalise(inputText);
   if (!target) return null;
 
   for (const r of rows) {
     const candidateEn = r.EnglishOriginal || r.English || "";
-    if (areNearDuplicatesText(candidateEn, target)) {
-      return r;
-    }
+    const candidateLt = r.LithuanianOriginal || r.Lithuanian || "";
+
+    if (areNearDuplicatesText(candidateEn, target)) return r;
+    if (areNearDuplicatesText(candidateLt, target)) return r;
   }
   return null;
 }
@@ -83,10 +89,23 @@ export default function HomeView({
   const [enNatural, setEnNatural] = useState("");
   const [phonetics, setPhonetics] = useState("");
 
+  const [usageOut, setUsageOut] = useState("");
+  const [notesOut, setNotesOut] = useState("");
+  const [categoryOut, setCategoryOut] = useState(DEFAULT_CATEGORY);
+
+  // Inferred from response: if input ≈ ltOut, we treat source as Lithuanian
+  const [sourceLang, setSourceLang] = useState("en"); // "en" | "lt"
+
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
 
   const [duplicateEntry, setDuplicateEntry] = useState(null);
+
+  const canTranslate = useMemo(() => !!input.trim(), [input]);
+  const canSave = useMemo(
+    () => !!ltOut && !!(enNatural || enLiteral),
+    [ltOut, enNatural, enLiteral]
+  );
 
   async function handleTranslate(force = false) {
     const text = input.trim();
@@ -102,6 +121,10 @@ export default function HomeView({
         setEnLiteral("");
         setEnNatural("");
         setPhonetics("");
+        setUsageOut("");
+        setNotesOut("");
+        setCategoryOut(DEFAULT_CATEGORY);
+        setSourceLang("en");
         showToast?.("Similar entry already in your library");
         return;
       }
@@ -109,10 +132,15 @@ export default function HomeView({
 
     setDuplicateEntry(null);
     setTranslating(true);
+
     setLtOut("");
     setEnLiteral("");
     setEnNatural("");
     setPhonetics("");
+    setUsageOut("");
+    setNotesOut("");
+    setCategoryOut(DEFAULT_CATEGORY);
+    setSourceLang("en");
 
     try {
       const res = await fetch("/api/translate", {
@@ -127,11 +155,29 @@ export default function HomeView({
 
       const data = await res.json();
 
-      if (data?.lt && data?.en_literal) {
-        setLtOut(data.lt);
-        setEnLiteral(data.en_literal);
-        setEnNatural(data.en_natural || data.en_literal);
-        setPhonetics(data.phonetics || "");
+      if (data?.lt && (data?.en_literal || data?.en_natural)) {
+        const lt = String(data.lt || "").trim();
+        const lit = String(data.en_literal || "").trim();
+        const nat = String(data.en_natural || "").trim();
+        const pho = String(data.phonetics || "").trim();
+
+        const usage = String(data.usage || "").trim();
+        const notes = String(data.notes || "").trim();
+        const cat = String(data.category || "").trim();
+
+        setLtOut(lt);
+        setEnLiteral(lit);
+        setEnNatural(nat || lit);
+        setPhonetics(pho);
+
+        setUsageOut(usage);
+        setNotesOut(notes);
+        setCategoryOut(cat || DEFAULT_CATEGORY);
+
+        // Infer source language (no brittle diacritics rules)
+        const inferred =
+          areNearDuplicatesText(normalise(text), normalise(lt)) ? "lt" : "en";
+        setSourceLang(inferred);
       } else {
         setLtOut("Translation error.");
       }
@@ -149,21 +195,32 @@ export default function HomeView({
     setEnLiteral("");
     setEnNatural("");
     setPhonetics("");
+    setUsageOut("");
+    setNotesOut("");
+    setCategoryOut(DEFAULT_CATEGORY);
+    setSourceLang("en");
     setDuplicateEntry(null);
   }
 
   function handleSaveToLibrary() {
-    if (!ltOut || !enLiteral) return;
+    if (!canSave) return;
 
-    const englishInput = input.trim();
-    if (!englishInput) return;
+    const rawInput = input.trim();
+    if (!rawInput) return;
 
-    const already = rows.some(
-      (r) =>
-        (r.EnglishOriginal || r.English || "").trim().toLowerCase() ===
-          englishInput.toLowerCase() &&
-        (r.Lithuanian || "").trim().toLowerCase() === ltOut.trim().toLowerCase()
-    );
+    const englishToSave = (enNatural || enLiteral || "").trim();
+    const lithuanianToSave = (ltOut || "").trim();
+    if (!englishToSave || !lithuanianToSave) return;
+
+    // Prevent exact duplicates (case/spacing-insensitive)
+    const already = rows.some((r) => {
+      const en = (r.EnglishNatural || r.EnglishLiteral || r.English || "").trim();
+      const lt = (r.Lithuanian || "").trim();
+      return (
+        en.toLowerCase() === englishToSave.toLowerCase() &&
+        lt.toLowerCase() === lithuanianToSave.toLowerCase()
+      );
+    });
 
     if (already) {
       showToast?.("Already in library");
@@ -171,17 +228,27 @@ export default function HomeView({
     }
 
     const row = {
-      English: englishInput,
-      EnglishOriginal: englishInput,
-      EnglishLiteral: enLiteral,
-      EnglishNatural: enNatural || enLiteral,
-      Lithuanian: ltOut,
+      English: englishToSave,
+      EnglishOriginal: sourceLang === "en" ? rawInput : englishToSave,
+      EnglishLiteral: (enLiteral || "").trim(),
+      EnglishNatural: englishToSave,
+
+      Lithuanian: lithuanianToSave,
+      LithuanianOriginal: sourceLang === "lt" ? rawInput : lithuanianToSave,
+
       Phonetic: phonetics || "",
-      Category: "",
-      Usage: "",
-      Notes: "",
+
+      Category: categoryOut || DEFAULT_CATEGORY,
+      Usage: usageOut || "",
+      Notes: notesOut || "",
+
+      SourceLang: sourceLang, // optional metadata (harmless if unused)
+
       "RAG Icon": "🟠",
+      // Keep Sheet for backwards compatibility with existing data;
+      // LibraryView no longer depends on it.
       Sheet: "Phrases",
+
       _id: genId(),
       _ts: nowTs(),
       _qstat: {
@@ -212,9 +279,7 @@ export default function HomeView({
                 (active
                   ? "bg-emerald-600 text-black"
                   : "bg-zinc-950/60 text-zinc-200 hover:bg-zinc-800/60") +
-                (idx !== options.length - 1
-                  ? " border-r border-zinc-800"
-                  : "")
+                (idx !== options.length - 1 ? " border-r border-zinc-800" : "")
               }
             >
               {opt.label}
@@ -231,8 +296,8 @@ export default function HomeView({
       <div className="mb-4">
         <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
         <p className="text-sm text-zinc-400 mt-1">
-          Draft the phrase, tune the tone, hear it spoken, then save it to your
-          library.
+          Type English or Lithuanian. We’ll return the phrase, meaning,
+          pronunciation, plus learning notes — ready to save.
         </p>
       </div>
 
@@ -276,7 +341,6 @@ export default function HomeView({
         />
 
         <div className="flex gap-3 flex-wrap">
-          {/* Translate */}
           <button
             type="button"
             className="
@@ -286,12 +350,11 @@ export default function HomeView({
               select-none
             "
             onClick={() => handleTranslate(false)}
-            disabled={translating || !input.trim()}
+            disabled={translating || !canTranslate}
           >
             {translating ? "Translating…" : "Translate"}
           </button>
 
-          {/* Clear */}
           <button
             type="button"
             className="
@@ -347,7 +410,7 @@ export default function HomeView({
           )}
 
           {(duplicateEntry.Usage || duplicateEntry.Notes) && (
-            <div className="mt-2 text-[11px] text-zinc-200 space-y-1">
+            <div className="mt-2 text-[11px] text-zinc-200 space-y-2">
               {duplicateEntry.Usage && (
                 <div>
                   <span className="text-zinc-500">Usage: </span>
@@ -374,8 +437,7 @@ export default function HomeView({
                 select-none
               "
               onClick={() =>
-                duplicateEntry.Lithuanian &&
-                playText(duplicateEntry.Lithuanian)
+                duplicateEntry.Lithuanian && playText(duplicateEntry.Lithuanian)
               }
             >
               ▶ Play
@@ -401,6 +463,13 @@ export default function HomeView({
       {/* Output */}
       {ltOut && (
         <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 space-y-3">
+          <div className="text-xs text-zinc-500">
+            Detected input:{" "}
+            <span className="text-zinc-300">
+              {sourceLang === "lt" ? "Lithuanian" : "English"}
+            </span>
+          </div>
+
           <div>
             <label className="block text-sm mb-1">Lithuanian</label>
             <div className="text-lg font-semibold break-words">{ltOut}</div>
@@ -412,18 +481,44 @@ export default function HomeView({
 
           <div className="border-t border-zinc-800 pt-3 space-y-1 text-sm">
             <div>
-              <span className="font-semibold">English meaning (literal): </span>
-              <span>{enLiteral}</span>
-            </div>
-            <div>
               <span className="font-semibold">English meaning (natural): </span>
-              <span>{enNatural}</span>
+              <span>{enNatural || enLiteral}</span>
             </div>
+            {enLiteral && (
+              <div className="text-zinc-400">
+                <span className="font-semibold text-zinc-300">
+                  Literal meaning:{" "}
+                </span>
+                <span>{enLiteral}</span>
+              </div>
+            )}
           </div>
+
+          {(usageOut || notesOut || categoryOut) && (
+            <div className="border-t border-zinc-800 pt-3 space-y-2 text-sm">
+              {categoryOut && (
+                <div>
+                  <span className="font-semibold">Category: </span>
+                  <span>{categoryOut}</span>
+                </div>
+              )}
+              {usageOut && (
+                <div>
+                  <span className="font-semibold">Usage: </span>
+                  <span>{usageOut}</span>
+                </div>
+              )}
+              {notesOut && (
+                <div>
+                  <span className="font-semibold">Notes: </span>
+                  <span className="whitespace-pre-line">{notesOut}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Play + Copy + Save */}
           <div className="flex items-center gap-3 flex-wrap pt-2">
-            {/* Normal play */}
             <button
               type="button"
               className="
@@ -438,7 +533,6 @@ export default function HomeView({
               ▶ Normal
             </button>
 
-            {/* Slow play */}
             <button
               type="button"
               className="
@@ -453,7 +547,6 @@ export default function HomeView({
               🐢 Slow
             </button>
 
-            {/* Copy button */}
             <button
               type="button"
               className="
@@ -471,7 +564,6 @@ export default function HomeView({
               Copy
             </button>
 
-            {/* Save */}
             <button
               className="
                 bg-zinc-800 text-zinc-200 rounded-full 
@@ -479,8 +571,10 @@ export default function HomeView({
                 hover:bg-zinc-700 active:bg-zinc-600
                 transition-transform duration-150 active:scale-95
                 select-none
+                disabled:opacity-60
               "
               onClick={handleSaveToLibrary}
+              disabled={!canSave}
             >
               Save to library
             </button>
