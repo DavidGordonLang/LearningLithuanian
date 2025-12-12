@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { searchStore } from "../searchStore";
+import { CATEGORIES } from "../constants/categories";
 
 export default function LibraryView({
   T,
@@ -14,6 +15,7 @@ export default function LibraryView({
 }) {
   const [expanded, setExpanded] = useState(new Set());
   const [tab, setTab] = useState("Phrases");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
 
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
@@ -26,6 +28,7 @@ export default function LibraryView({
   const filteredRows = useMemo(() => {
     let base = rows;
 
+    // Search filter
     if (qNorm) {
       base = base.filter((r) => {
         const en = (r.English || "").toLowerCase();
@@ -34,8 +37,17 @@ export default function LibraryView({
       });
     }
 
+    // Sheet filter
     base = base.filter((r) => r.Sheet === tab);
 
+    // Category filter
+    if (categoryFilter !== "ALL") {
+      base = base.filter(
+        (r) => (r.Category || "General") === categoryFilter
+      );
+    }
+
+    // Sorting
     if (sortMode === "Newest") {
       return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
     }
@@ -49,20 +61,14 @@ export default function LibraryView({
         (order[normalizeRag(a["RAG Icon"])] ?? 1) -
         (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, qNorm, sortMode, tab, normalizeRag]);
+  }, [rows, qNorm, sortMode, tab, categoryFilter, normalizeRag]);
 
-  /* MOBILE + DESKTOP–FRIENDLY TABS */
+  /* SHEET TABS */
   function TabControl() {
     const options = ["Phrases", "Questions", "Words", "Numbers"];
 
     return (
-      <div
-        className="
-          bg-zinc-900/95 border border-zinc-800 rounded-2xl 
-          shadow-[0_0_20px_rgba(0,0,0,0.25)] p-1 
-          flex
-        "
-      >
+      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-1 flex">
         {options.map((opt) => {
           const active = tab === opt;
           return (
@@ -81,6 +87,42 @@ export default function LibraryView({
             </button>
           );
         })}
+      </div>
+    );
+  }
+
+  /* CATEGORY FILTER */
+  function CategoryFilter() {
+    return (
+      <div className="flex flex-wrap gap-2 mt-3">
+        <button
+          type="button"
+          className={
+            "px-3 py-1.5 text-xs rounded-full border transition select-none " +
+            (categoryFilter === "ALL"
+              ? "bg-emerald-500 text-black border-emerald-500"
+              : "bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800")
+          }
+          onClick={() => setCategoryFilter("ALL")}
+        >
+          All
+        </button>
+
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            className={
+              "px-3 py-1.5 text-xs rounded-full border transition select-none " +
+              (categoryFilter === cat
+                ? "bg-emerald-500 text-black border-emerald-500"
+                : "bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800")
+            }
+            onClick={() => setCategoryFilter(cat)}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
     );
   }
@@ -135,16 +177,9 @@ export default function LibraryView({
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
 
-      {/* Add Entry */}
       {typeof onOpenAddForm === "function" && (
         <button
-          className="
-            mt-3 mb-3 bg-emerald-500 text-black rounded-full 
-            px-5 py-2 font-semibold shadow
-            hover:bg-emerald-400 active:bg-emerald-300 
-            transition-transform duration-150 active:scale-95
-            select-none
-          "
+          className="mt-3 mb-3 bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 transition-transform active:scale-95 select-none"
           onClick={onOpenAddForm}
         >
           + Add Entry
@@ -155,13 +190,13 @@ export default function LibraryView({
         {filteredRows.length} / {rows.length} entries
       </div>
 
-      {/* Tabs */}
       <div className="mb-4">
         <TabControl />
+        <CategoryFilter />
       </div>
 
       {filteredRows.length === 0 ? (
-        <p className="text-sm text-zinc-400">No entries match your search.</p>
+        <p className="text-sm text-zinc-400">No entries match your filters.</p>
       ) : (
         <div className="space-y-3">
           {filteredRows.map((r) => {
@@ -171,15 +206,11 @@ export default function LibraryView({
             return (
               <article
                 key={r._id}
-                className="
-                  bg-zinc-900/95 border border-zinc-800 
-                  rounded-2xl p-4 
-                  shadow-[0_0_12px_rgba(0,0,0,0.15)]
-                "
+                className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_12px_rgba(0,0,0,0.15)]"
               >
                 {/* TEXT + EXPANSION */}
                 <div
-                  className="flex flex-col md:flex-row md:items-start gap-3 cursor-pointer"
+                  className="flex flex-col md:flex-row gap-3 cursor-pointer"
                   onClick={() =>
                     setExpanded((prev) => {
                       const next = new Set(prev);
@@ -191,13 +222,7 @@ export default function LibraryView({
                   {/* RAG ICON */}
                   <button
                     type="button"
-                    className="
-                      w-8 h-8 rounded-full border border-zinc-700 
-                      text-sm flex items-center justify-center 
-                      bg-zinc-950/60 hover:bg-zinc-800/60 
-                      transition-transform duration-150 active:scale-95
-                      select-none shrink-0
-                    "
+                    className="w-8 h-8 rounded-full border border-zinc-700 text-sm flex items-center justify-center bg-zinc-950/60 hover:bg-zinc-800/60 select-none shrink-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       setRows((prev) =>
@@ -220,85 +245,17 @@ export default function LibraryView({
                     {normalizeRag(r["RAG Icon"])}
                   </button>
 
-                  {/* TEXT BLOCK */}
+                  {/* TEXT */}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold break-words">
                       {r.English || "—"}
                     </div>
-
                     <div className="text-sm text-emerald-300 break-words">
                       {r.Lithuanian || "—"}
                     </div>
-
-                    {r.Phonetic && (
-                      <div className="text-[11px] text-zinc-400 italic break-words mt-1">
-                        {r.Phonetic}
-                      </div>
-                    )}
-
-                    {(r.Usage || r.Notes) && !isOpen && (
-                      <div className="text-[11px] text-zinc-500 mt-1 break-words">
-                        {r.Usage || r.Notes}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* DESKTOP ACTIONS (hidden on mobile) */}
-                  <div className="hidden md:flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      className="
-                        bg-emerald-500 text-black 
-                        rounded-full px-5 py-2 
-                        text-[18px] shadow 
-                        hover:bg-emerald-400 active:bg-emerald-300 
-                        transition-transform duration-150 active:scale-95
-                        select-none
-                      "
-                      {...pressHandlers(textToPlay)}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      ▶
-                    </button>
-
-                    <button
-                      type="button"
-                      className="
-                        bg-zinc-800 text-zinc-200 
-                        rounded-full px-4 py-2 
-                        text-sm shadow-sm
-                        hover:bg-zinc-700 active:bg-zinc-600 
-                        transition-transform duration-150 active:scale-95
-                        select-none
-                      "
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditRow(r._id);
-                      }}
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      className="
-                        bg-red-500 text-white rounded-full 
-                        px-4 py-2 text-sm font-medium
-                        hover:bg-red-400 active:bg-red-300
-                        transition-transform duration-150 active:scale-95
-                        select-none
-                      "
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(T.confirm)) removePhrase(r._id);
-                      }}
-                    >
-                      Delete
-                    </button>
                   </div>
                 </div>
 
-                {/* EXPANDED CONTENT */}
                 {isOpen && (
                   <div className="mt-3 text-xs text-zinc-300 space-y-2 border-t border-zinc-800 pt-2">
                     {r.Usage && (
@@ -322,47 +279,22 @@ export default function LibraryView({
                   </div>
                 )}
 
-                {/* MOBILE ACTION BAR (centered) */}
+                {/* MOBILE ACTION BAR */}
                 <div className="md:hidden flex justify-center gap-4 mt-5">
                   <button
-                    type="button"
-                    className="
-                      bg-emerald-500 text-black 
-                      rounded-full px-5 py-2 
-                      text-[18px] shadow 
-                      hover:bg-emerald-400 active:bg-emerald-300 
-                      transition-transform duration-150 active:scale-95
-                      select-none
-                    "
+                    className="bg-emerald-500 text-black rounded-full px-5 py-2 text-[18px]"
                     {...pressHandlers(textToPlay)}
                   >
                     ▶
                   </button>
-
                   <button
-                    type="button"
-                    className="
-                      bg-zinc-800 text-zinc-200 
-                      rounded-full px-4 py-2 
-                      text-sm shadow-sm
-                      hover:bg-zinc-700 active:bg-zinc-600 
-                      transition-transform duration-150 active:scale-95
-                      select-none
-                    "
+                    className="bg-zinc-800 text-zinc-200 rounded-full px-4 py-2 text-sm"
                     onClick={() => onEditRow(r._id)}
                   >
                     Edit
                   </button>
-
                   <button
-                    type="button"
-                    className="
-                      bg-red-500 text-white rounded-full 
-                      px-4 py-2 text-sm font-medium
-                      hover:bg-red-400 active:bg-red-300
-                      transition-transform duration-150 active:scale-95
-                      select-none
-                    "
+                    className="bg-red-500 text-white rounded-full px-4 py-2 text-sm"
                     onClick={() => {
                       if (window.confirm(T.confirm)) removePhrase(r._id);
                     }}
