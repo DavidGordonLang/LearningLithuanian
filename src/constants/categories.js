@@ -15,6 +15,8 @@ export const CATEGORIES = [
   "Sexual",
   "Parenting",
   "Education",
+  "Numbers",
+  "Time & Dates",
 ];
 
 export const DEFAULT_CATEGORY = "General";
