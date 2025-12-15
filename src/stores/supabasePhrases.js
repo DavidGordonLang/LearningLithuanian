@@ -1,40 +1,46 @@
+// src/stores/supabasePhrases.js
 import { supabase } from "../supabaseClient";
 
 /**
- * Fetch all phrases for the current user
- */
-export async function fetchUserPhrases() {
-  const {
-    data,
-    error,
-  } = await supabase
-    .from("phrases")
-    .select("id, data, updated_at")
-    .order("updated_at", { ascending: false });
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Replace entire user library (initial sync)
+ * Replace the current user's phrase library in Supabase
+ * This is intentionally destructive *per user only*
  */
 export async function replaceUserPhrases(rows) {
-  // Delete existing rows
-  const { error: delErr } = await supabase
+  // 1. Get the logged-in user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error("Not authenticated");
+  }
+
+  const userId = user.id;
+
+  // 2. Delete ONLY this user's existing phrases
+  const { error: deleteError } = await supabase
     .from("phrases")
-    .delete();
+    .delete()
+    .eq("user_id", userId);
 
-  if (delErr) throw delErr;
+  if (deleteError) {
+    throw deleteError;
+  }
 
-  // Insert fresh rows
-  const payload = rows.map((r) => ({
-    data: r,
+  // 3. Insert new rows (if any)
+  if (!rows || rows.length === 0) return;
+
+  const payload = rows.map((row) => ({
+    user_id: userId,
+    data: row, // JSONB column
   }));
 
-  const { error: insErr } = await supabase
+  const { error: insertError } = await supabase
     .from("phrases")
     .insert(payload);
 
-  if (insErr) throw insErr;
+  if (insertError) {
+    throw insertError;
+  }
 }
