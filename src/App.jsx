@@ -385,7 +385,16 @@ export default function App() {
 
       {addOpen && (
   <div
-    className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm px-3 py-6"
+    className="
+      fixed inset-0 z-50
+      flex justify-center
+      overflow-y-auto
+      bg-black/60 backdrop-blur-sm
+      px-3 pb-6
+    "
+    style={{
+      paddingTop: "env(safe-area-inset-top, 1.5rem)",
+    }}
     onClick={() => {
       setAddOpen(false);
       setEditRowId(null);
@@ -437,6 +446,7 @@ export default function App() {
     </div>
   </div>
 )}
+
 
 
       {showWhatsNew && (
