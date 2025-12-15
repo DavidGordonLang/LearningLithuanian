@@ -24,14 +24,13 @@ import WhatsNewModal from "./components/WhatsNewModal";
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
-import { supabase } from "./supabaseClient";
+import { initAuthListener } from "./stores/authStore";
 
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
 const APP_VERSION = "1.1.1-beta";
 
-const LSK_TTS_PROVIDER = "lt_tts_provider";
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
@@ -156,26 +155,9 @@ const SearchBox = memo(
    MAIN APP
    ========================================================================== */
 export default function App() {
-  /* SUPABASE AUTH STATE (passive) */
-  const [session, setSession] = useState(null);
-  const [user, setUser] = useState(null);
-
+  /* INIT AUTH (PASSIVE, ONCE) */
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session || null);
-      setUser(data.session?.user || null);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user || null);
-      }
-    );
-
-    return () => {
-      listener?.subscription?.unsubscribe();
-    };
+    initAuthListener();
   }, []);
 
   /* PAGE */
@@ -208,43 +190,31 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
-  /* STRING BUNDLE */
   const T = STR;
 
-  /* VOICE SETTINGS */
+  /* VOICE */
   const [azureVoiceShortName, setAzureVoiceShortName] = useState(
     "lt-LT-LeonasNeural"
   );
-
   const audioRef = useRef(null);
 
-  /* ============================================================================
-     PLAY TEXT VIA API
-     ========================================================================== */
   async function playText(text, { slow = false } = {}) {
     try {
       if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-        } catch {}
+        audioRef.current.pause();
         audioRef.current = null;
       }
 
       const resp = await fetch("/api/azure-tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          voice: azureVoiceShortName,
-          slow,
-        }),
+        body: JSON.stringify({ text, voice: azureVoiceShortName, slow }),
       });
 
       if (!resp.ok) throw new Error("Azure TTS failed");
 
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
-
       const audio = new Audio(url);
       audioRef.current = audio;
 
@@ -259,14 +229,12 @@ export default function App() {
     }
   }
 
-  /* SEARCH SUBSCRIPTION */
   useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
 
-  /* IMPORT / MERGE */
   async function mergeRows(newRows) {
     const cleaned = newRows
       .map((r) => ({
@@ -277,9 +245,7 @@ export default function App() {
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
         "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(
-          r.Sheet
-        )
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
           ? r.Sheet
           : "Phrases",
         _id: r._id || genId(),
@@ -297,127 +263,60 @@ export default function App() {
   }
 
   async function fetchStarter(kind) {
-    try {
-      const url = STARTERS[kind];
-      if (!url) throw new Error("Starter not found");
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch starter");
-      await mergeRows(await res.json());
-      alert("Installed.");
-    } catch (e) {
-      alert("Starter error: " + e.message);
-    }
+    const url = STARTERS[kind];
+    if (!url) return alert("Starter not found");
+    const res = await fetch(url);
+    if (!res.ok) return alert("Failed to fetch starter");
+    await mergeRows(await res.json());
+    alert("Installed.");
   }
 
   function clearLibrary() {
-    if (!confirm(T.confirm)) return;
-    setRows([]);
+    if (confirm(T.confirm)) setRows([]);
   }
 
   async function importJsonFile(file) {
     try {
       const data = JSON.parse(await file.text());
-      if (!Array.isArray(data)) throw new Error("JSON must be an array");
+      if (!Array.isArray(data)) throw new Error();
       await mergeRows(data);
       alert("Imported.");
-    } catch (e) {
-      alert("Import failed: " + e.message);
+    } catch {
+      alert("Import failed.");
     }
   }
 
-  /* ADD / EDIT MODAL */
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
-  const [toast, setToast] = useState("");
-
-  function showToast(msg) {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2000);
-  }
-
   const editingRow = useMemo(
     () => rows.find((r) => r._id === editRowId) || null,
     [rows, editRowId]
   );
   const isEditing = !!editingRow;
 
-  /* Close via ESC */
-  useEffect(() => {
-    if (!addOpen) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setAddOpen(false);
-        setEditRowId(null);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [addOpen]);
-
-  /* Prevent background scroll */
-  useEffect(() => {
-    if (!addOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => (document.body.style.overflow = prev);
-  }, [addOpen]);
-
-  function onOpenAddForm() {
-    setEditRowId(null);
-    setAddOpen(true);
-  }
-
   function removePhraseById(id) {
-    const idx = rows.findIndex((r) => r._id === id);
-    if (idx !== -1) {
-      const removeFromStore = usePhraseStore.getState().removePhrase;
-      removeFromStore(idx);
-    } else {
-      setRows((prev) => prev.filter((r) => r._id !== id));
-    }
+    setRows((prev) => prev.filter((r) => r._id !== id));
   }
 
-  /* RESTORE (from duplicate scanner) */
-  useEffect(() => {
-    function onRestore(e) {
-      const { item } = e.detail;
-      setRows((prev) => [item, ...prev]);
-    }
-    window.addEventListener("restorePhrase", onRestore);
-    return () => window.removeEventListener("restorePhrase", onRestore);
-  }, []);
-
-  /* MODALS */
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
 
-  /* First-launch user guide */
   useEffect(() => {
-    const seen = localStorage.getItem(LSK_USER_GUIDE);
-    if (!seen) setShowUserGuide(true);
+    if (!localStorage.getItem(LSK_USER_GUIDE)) setShowUserGuide(true);
   }, []);
 
-  /* What's New */
   useEffect(() => {
-    const seen = localStorage.getItem(LSK_LAST_SEEN_VERSION);
-    if (seen !== APP_VERSION) setShowWhatsNew(true);
+    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION)
+      setShowWhatsNew(true);
   }, []);
 
-  /* PAGE CHANGE */
-  function goToPage(next, { scrollTop = false } = {}) {
+  function goToPage(next) {
     setPage(next);
     setAddOpen(false);
     setEditRowId(null);
-
-    if (scrollTop) {
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }
   }
 
-  /* ============================================================================
-     RENDER
-     ========================================================================== */
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
@@ -449,13 +348,11 @@ export default function App() {
               setEditRowId(id);
               setAddOpen(true);
             }}
-            onOpenAddForm={onOpenAddForm}
+            onOpenAddForm={() => setAddOpen(true)}
           />
         ) : page === "settings" ? (
           <SettingsView
             T={T}
-            ttsProvider="azure"
-            setTtsProvider={() => {}}
             azureVoiceShortName={azureVoiceShortName}
             setAzureVoiceShortName={setAzureVoiceShortName}
             playText={playText}
@@ -463,9 +360,7 @@ export default function App() {
             clearLibrary={clearLibrary}
             importJsonFile={importJsonFile}
             rows={rows}
-            onOpenDuplicateScanner={() =>
-              goToPage("dupes", { scrollTop: true })
-            }
+            onOpenDuplicateScanner={() => goToPage("dupes")}
             onOpenChangeLog={() => setShowChangeLog(true)}
             onOpenUserGuide={() => setShowUserGuide(true)}
           />
@@ -474,71 +369,42 @@ export default function App() {
             T={T}
             rows={rows}
             removePhrase={removePhraseById}
-            onBack={() => goToPage("settings", { scrollTop: true })}
+            onBack={() => goToPage("settings")}
           />
         ) : (
-          <>
-            <HomeView
-              playText={playText}
-              setRows={setRows}
-              genId={genId}
-              nowTs={nowTs}
-              rows={rows}
-              showToast={showToast}
-              onOpenAddForm={onOpenAddForm}
-            />
-
-            {toast && (
-              <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg z-[500] shadow-lg">
-                {toast}
-              </div>
-            )}
-          </>
+          <HomeView
+            playText={playText}
+            setRows={setRows}
+            genId={genId}
+            nowTs={nowTs}
+            rows={rows}
+            onOpenAddForm={() => setAddOpen(true)}
+          />
         )}
       </main>
 
-      {/* ADD / EDIT FORM MODAL */}
       {addOpen && (
-        <div
-          className="fixed inset-0 z-[400] bg-black/60 backdrop-blur-sm overflow-y-auto"
-          onPointerDown={() => {
+        <AddForm
+          T={T}
+          genId={genId}
+          nowTs={nowTs}
+          normalizeRag={normalizeRag}
+          mode={isEditing ? "edit" : "add"}
+          initialRow={editingRow || undefined}
+          onSubmit={(row) => {
+            setRows((prev) =>
+              isEditing
+                ? prev.map((r) => (r._id === row._id ? row : r))
+                : [row, ...prev]
+            );
             setAddOpen(false);
             setEditRowId(null);
-            document.activeElement?.blur?.();
           }}
-        >
-          <div
-            className="w-full max-w-2xl mx-auto px-4"
-            style={{ paddingTop: headerHeight + 20, paddingBottom: 40 }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="bg-zinc-900/95 border border-zinc-800 rounded-3xl p-5">
-              <AddForm
-                T={T}
-                genId={genId}
-                nowTs={nowTs}
-                normalizeRag={normalizeRag}
-                mode={isEditing ? "edit" : "add"}
-                initialRow={editingRow || undefined}
-                onSubmit={(row) => {
-                  if (isEditing) {
-                    setRows((prev) =>
-                      prev.map((r) => (r._id === row._id ? row : r))
-                    );
-                  } else {
-                    setRows((prev) => [row, ...prev]);
-                  }
-                  setAddOpen(false);
-                  setEditRowId(null);
-                }}
-                onCancel={() => {
-                  setAddOpen(false);
-                  setEditRowId(null);
-                }}
-              />
-            </div>
-          </div>
-        </div>
+          onCancel={() => {
+            setAddOpen(false);
+            setEditRowId(null);
+          }}
+        />
       )}
 
       {showWhatsNew && (
@@ -566,7 +432,7 @@ export default function App() {
             setShowUserGuide(false);
             localStorage.setItem(LSK_USER_GUIDE, "1");
           }}
-          firstLaunch={!localStorage.getItem(LSK_USER_GUIDE)}
+          firstLaunch
         />
       )}
     </div>
