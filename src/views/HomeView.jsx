@@ -72,6 +72,24 @@ function findDuplicateInLibrary(inputText, rows) {
   return null;
 }
 
+/**
+ * Map enrich-controlled vocab → your current app categories (to avoid dropdown mismatch)
+ * We only map when needed; otherwise keep as-is.
+ */
+function mapEnrichCategoryToApp(category) {
+  const c = String(category || "").trim();
+
+  const map = {
+    Food: "Food & Drink",
+    Emergencies: "Emergency",
+    "Daily life": "General",
+    Emotions: "General",
+    Relationships: "Social",
+  };
+
+  return map[c] || c || DEFAULT_CATEGORY;
+}
+
 export default function HomeView({
   playText,
   onOpenAddForm,
@@ -89,6 +107,8 @@ export default function HomeView({
   const [enNatural, setEnNatural] = useState("");
   const [phonetics, setPhonetics] = useState("");
 
+  // These are intentionally NOT produced by translate anymore.
+  // They remain here for display if ever populated later (e.g., manual edits).
   const [usageOut, setUsageOut] = useState("");
   const [notesOut, setNotesOut] = useState("");
   const [categoryOut, setCategoryOut] = useState(DEFAULT_CATEGORY);
@@ -161,18 +181,15 @@ export default function HomeView({
         const nat = String(data.en_natural || "").trim();
         const pho = String(data.phonetics || "").trim();
 
-        const usage = String(data.usage || "").trim();
-        const notes = String(data.notes || "").trim();
-        const cat = String(data.category || "").trim();
+        // Translate must NOT provide these — we ignore if present.
+        setUsageOut("");
+        setNotesOut("");
+        setCategoryOut(DEFAULT_CATEGORY);
 
         setLtOut(lt);
         setEnLiteral(lit);
         setEnNatural(nat || lit);
         setPhonetics(pho);
-
-        setUsageOut(usage);
-        setNotesOut(notes);
-        setCategoryOut(cat || DEFAULT_CATEGORY);
 
         // Infer source language (no brittle diacritics rules)
         const inferred =
@@ -200,6 +217,56 @@ export default function HomeView({
     setCategoryOut(DEFAULT_CATEGORY);
     setSourceLang("en");
     setDuplicateEntry(null);
+  }
+
+  async function enrichSavedRowSilently(row) {
+    try {
+      if (!row?._id) return;
+
+      // One-time guard: if Usage/Notes already exist, do nothing.
+      if ((row.Usage && String(row.Usage).trim()) || (row.Notes && String(row.Notes).trim())) {
+        return;
+      }
+
+      const res = await fetch("/api/enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lt: row.Lithuanian,
+          phonetics: row.Phonetic,
+          en_natural: row.EnglishNatural || row.English || "",
+          en_literal: row.EnglishLiteral || row.English || "",
+        }),
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const CategoryRaw = String(data?.Category || "").trim();
+      const Usage = String(data?.Usage || "").trim();
+      const Notes = String(data?.Notes || "").trim();
+
+      if (!CategoryRaw || !Usage || !Notes) return;
+
+      const Category = mapEnrichCategoryToApp(CategoryRaw);
+
+      // Patch ONLY additive fields, matched by _id
+      setRows((prev) =>
+        prev.map((r) =>
+          r._id === row._id
+            ? {
+                ...r,
+                Category: Category || r.Category || DEFAULT_CATEGORY,
+                Usage,
+                Notes,
+              }
+            : r
+        )
+      );
+    } catch (err) {
+      // Silent by design
+      console.error("Enrich failed (silent):", err);
+    }
   }
 
   function handleSaveToLibrary() {
@@ -238,15 +305,14 @@ export default function HomeView({
 
       Phonetic: phonetics || "",
 
-      Category: categoryOut || DEFAULT_CATEGORY,
-      Usage: usageOut || "",
-      Notes: notesOut || "",
+      // Enrich will overwrite these later (additive only)
+      Category: DEFAULT_CATEGORY,
+      Usage: "",
+      Notes: "",
 
       SourceLang: sourceLang, // optional metadata (harmless if unused)
 
       "RAG Icon": "🟠",
-      // Keep Sheet for backwards compatibility with existing data;
-      // LibraryView no longer depends on it.
       Sheet: "Phrases",
 
       _id: genId(),
@@ -260,6 +326,10 @@ export default function HomeView({
 
     setRows((prev) => [row, ...prev]);
     showToast?.("Entry saved to library");
+
+    // Silent enrich (runs once, guarded)
+    // Fire-and-forget
+    enrichSavedRowSilently(row);
   }
 
   function Segmented({ value, onChange, options }) {
@@ -494,6 +564,7 @@ export default function HomeView({
             )}
           </div>
 
+          {/* (Translate does not populate these; kept for compatibility) */}
           {(usageOut || notesOut || categoryOut) && (
             <div className="border-t border-zinc-800 pt-3 space-y-2 text-sm">
               {categoryOut && (
