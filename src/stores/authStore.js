@@ -50,11 +50,24 @@ export const useAuthStore = create((set) => ({
     // success is handled by auth state listener
   },
 
-  signOut: async () => {
-    set({ loading: true });
+signOut: async () => {
+  set({ loading: true });
+
+  try {
+    // Attempt Supabase logout (may fail on mobile PWA)
     await supabase.auth.signOut();
-    set({ loading: false });
-  },
+  } catch (err) {
+    console.warn("Supabase signOut failed, continuing local logout", err);
+  } finally {
+    // ALWAYS clear local state so UI recovers
+    set({
+      user: null,
+      session: null,
+      loading: false,
+    });
+  }
+},
+
 }));
 
 /* ---------- ONE-TIME AUTH BOOTSTRAP ---------- */
