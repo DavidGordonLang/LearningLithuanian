@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../stores/authStore";
-import { replaceUserPhrases, fetchUserPhrases } from "../stores/supabasePhrases";
+import { usePhraseStore } from "../stores/phraseStore";
+import {
+  replaceUserPhrases,
+  fetchUserPhrases,
+} from "../stores/supabasePhrases";
 
 export default function SettingsView({
   T,
@@ -16,25 +20,22 @@ export default function SettingsView({
   onOpenUserGuide,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
+  const setRows = usePhraseStore((s) => s.setPhrases);
 
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
 
   /* EXPORT JSON */
   function exportJson() {
-    try {
-      const blob = new Blob([JSON.stringify(rows, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "zodis-library.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert("Export failed: " + (e?.message || "Unknown error"));
-    }
+    const blob = new Blob([JSON.stringify(rows, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "zodis-library.json";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   /* IMPORT JSON */
@@ -45,13 +46,13 @@ export default function SettingsView({
     e.target.value = "";
   }
 
-  /* MANUAL CLOUD UPLOAD (TEST) */
+  /* UPLOAD → CLOUD */
   async function uploadLibraryToCloud() {
     if (!user) return;
     try {
       setSyncingUp(true);
       await replaceUserPhrases(rows);
-      alert("Uploaded to Supabase (test) ✅");
+      alert("Library uploaded to cloud ✅");
     } catch (e) {
       alert("Upload failed: " + (e?.message || "Unknown error"));
     } finally {
@@ -59,21 +60,20 @@ export default function SettingsView({
     }
   }
 
-  /* MANUAL CLOUD DOWNLOAD (TEST) */
+  /* DOWNLOAD → LOCAL (REPLACE) */
   async function downloadLibraryFromCloud() {
     if (!user) return;
+
+    const ok = window.confirm(
+      "This will replace your entire local library with the cloud version.\n\nContinue?"
+    );
+    if (!ok) return;
+
     try {
       setSyncingDown(true);
       const cloudRows = await fetchUserPhrases();
-
-      // IMPORTANT:
-      // We are NOT auto-overwriting local state yet because SettingsView
-      // doesn’t own setRows in your current wiring.
-      //
-      // For now: show a sanity check so you can confirm reads work.
-      alert(
-        `Downloaded ${cloudRows.length} items from Supabase (test) ✅\n\nNext step is wiring this into the local store.`
-      );
+      setRows(cloudRows);
+      alert(`Downloaded ${cloudRows.length} entries ✅`);
     } catch (e) {
       alert("Download failed: " + (e?.message || "Unknown error"));
     } finally {
@@ -100,18 +100,16 @@ export default function SettingsView({
 
         {!user ? (
           <>
-            <p className="text-sm text-zinc-400 leading-relaxed">
-              Your data is currently stored only on this device.
-              <br />
-              Signing in enables secure cloud sync across devices.
+            <p className="text-sm text-zinc-400">
+              Sign in to sync your library across devices.
             </p>
 
             <button
-              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
               onClick={signInWithGoogle}
               disabled={loading}
             >
-              {loading ? "Connecting…" : "Sign in to enable sync"}
+              {loading ? "Connecting…" : "Sign in with Google"}
             </button>
           </>
         ) : (
@@ -123,68 +121,48 @@ export default function SettingsView({
 
             <div className="flex flex-wrap gap-3">
               <button
-                className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+                className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold"
                 onClick={uploadLibraryToCloud}
                 disabled={syncingUp}
               >
-                {syncingUp ? "Uploading…" : "Upload library (test)"}
+                {syncingUp ? "Uploading…" : "Upload library"}
               </button>
 
               <button
-                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-semibold"
                 onClick={downloadLibraryFromCloud}
                 disabled={syncingDown}
               >
-                {syncingDown ? "Downloading…" : "Download library (test)"}
+                {syncingDown ? "Downloading…" : "Download library"}
               </button>
 
               <button
-                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
+                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
                 onClick={signOut}
-                disabled={loading}
               >
                 Sign out
               </button>
             </div>
-
-            <p className="text-xs text-zinc-500">
-              These test buttons are temporary. Once we confirm read/write, we’ll
-              wire automatic sync.
-            </p>
           </>
         )}
       </section>
 
-      {/* VOICE SETTINGS */}
+      {/* VOICE */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Voice Settings</div>
 
-        <div className="space-y-1">
-          <label className="text-sm">{T.azure}</label>
-          <select
-            disabled
-            value="azure"
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60"
-          >
-            <option>Azure Speech (recommended)</option>
-          </select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm">Select Voice</label>
-          <select
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-            value={azureVoiceShortName}
-            onChange={(e) => setAzureVoiceShortName(e.target.value)}
-          >
-            <option value="lt-LT-LeonasNeural">Leonas (male)</option>
-            <option value="lt-LT-OnaNeural">Ona (female)</option>
-          </select>
-        </div>
+        <select
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          value={azureVoiceShortName}
+          onChange={(e) => setAzureVoiceShortName(e.target.value)}
+        >
+          <option value="lt-LT-LeonasNeural">Leonas (male)</option>
+          <option value="lt-LT-OnaNeural">Ona (female)</option>
+        </select>
 
         <button
           className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={() => playText("Sveiki!", { slow: false })}
+          onClick={() => playText("Sveiki!")}
         >
           Play sample
         </button>
@@ -194,41 +172,33 @@ export default function SettingsView({
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
-        <input
-          type="file"
-          accept="application/json"
-          onChange={handleImportFile}
-        />
+        <input type="file" accept="application/json" onChange={handleImportFile} />
 
         <button
           className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
           onClick={exportJson}
         >
-          Export current library
+          Export library
         </button>
 
         <button
           className="bg-blue-600 text-white rounded-full px-5 py-2"
           onClick={onOpenDuplicateScanner}
         >
-          Open duplicate scanner
+          Duplicate scanner
         </button>
 
         <button
           className="bg-red-500 text-white rounded-full px-5 py-2"
           onClick={clearLibrary}
         >
-          Clear entire library
+          Clear library
         </button>
       </section>
 
       {/* ABOUT */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">About</div>
-
-        <div className="text-sm text-zinc-400">
-          App Version: <span className="text-zinc-200">1.1.1-beta</span>
-        </div>
 
         <button
           className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
@@ -241,7 +211,7 @@ export default function SettingsView({
           className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
           onClick={onOpenChangeLog}
         >
-          View Change Log
+          Change log
         </button>
       </section>
     </div>
