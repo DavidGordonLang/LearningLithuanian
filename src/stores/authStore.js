@@ -5,7 +5,9 @@ import { supabase } from "../supabaseClient";
 export const useAuthStore = create((set) => ({
   user: null,
   session: null,
-  loading: true,
+  loading: false,
+
+  /* ---------- SESSION HANDLING ---------- */
 
   setSession: (session) =>
     set({
@@ -20,7 +22,35 @@ export const useAuthStore = create((set) => ({
       user: null,
       loading: false,
     }),
+
+  /* ---------- AUTH ACTIONS ---------- */
+
+  signInWithGoogle: async () => {
+    set({ loading: true });
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (error) {
+      console.error("Google sign-in failed:", error);
+      set({ loading: false });
+      alert(error.message);
+    }
+    // success will be handled by onAuthStateChange
+  },
+
+  signOut: async () => {
+    set({ loading: true });
+    await supabase.auth.signOut();
+    set({ loading: false });
+  },
 }));
+
+/* ---------- ONE-TIME AUTH LISTENER ---------- */
 
 let initialised = false;
 
@@ -28,12 +58,10 @@ export function initAuthListener() {
   if (initialised) return;
   initialised = true;
 
-  // Get existing session on load
   supabase.auth.getSession().then(({ data }) => {
     useAuthStore.getState().setSession(data.session);
   });
 
-  // Listen for login / logout
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session) {
       useAuthStore.getState().setSession(session);
