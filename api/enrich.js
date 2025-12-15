@@ -58,7 +58,7 @@ The user has already saved:
 • Its phonetic pronunciation
 
 You MUST NOT:
-• Change the Lithuanuanian phrase
+• Change the Lithuanian phrase
 • Change the English meaning
 • Change phonetics
 • Re-translate anything
@@ -134,13 +134,24 @@ Notes SHOULD include, when relevant:
 2. How this differs from what an English speaker might expect
 3. Related Lithuanian alternatives (ONLY if genuinely useful)
 
-When including alternatives:
-• Always list:
-  - Lithuanian phrase
-  - Natural English meaning
-  - Phonetic pronunciation in brackets
-• Do NOT include alternatives “for completeness”
-• If no meaningful alternatives exist, OMIT the section entirely
+WHEN INCLUDING ALTERNATIVES (IMPORTANT):
+
+• Introduce the section with a short line such as:
+  “An alternative phrase is:” on its own line.
+
+• Then use THIS STRUCTURE exactly, preserving blank lines:
+
+Lithuanian phrase followed by its natural English meaning on the same line
+Phonetic pronunciation on the next line
+
+(blank line)
+
+A short explanation of how this alternative differs in meaning or usage.
+
+• Do NOT merge alternatives into a single paragraph.
+• Do NOT remove blank lines.
+• Do NOT include alternatives for completeness.
+• If no meaningful alternatives exist, OMIT the section entirely.
 
 Explain differences simply:
 • Do NOT say “genitive”, “dative”, “reflexive”, etc.
@@ -227,7 +238,6 @@ ${String(en_literal).trim()}
     const Usage = String(payload?.Usage || "").trim();
     const Notes = String(payload?.Notes || "").trim();
 
-    // Strict: never return empties
     if (!Category || !Usage || !Notes) {
       console.error("Incomplete enrich payload:", payload);
       return res.status(500).json({ error: "Incomplete enrichment" });
