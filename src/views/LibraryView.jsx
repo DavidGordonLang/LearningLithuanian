@@ -205,17 +205,14 @@ export default function LibraryView({
 
                   {/* TEXT */}
                   <div className="flex-1 min-w-0">
-                    {/* Lithuanian — primary */}
                     <div className="text-base font-semibold text-emerald-300 break-words">
                       {r.Lithuanian || "—"}
                     </div>
 
-                    {/* English — secondary */}
                     <div className="text-sm text-zinc-400 mt-0.5 break-words">
                       {r.English || "—"}
                     </div>
 
-                    {/* Phonetics — helper */}
                     {!isOpen && r.Phonetic && (
                       <div className="text-xs text-zinc-500 italic mt-0.5 break-words">
                         {r.Phonetic}
@@ -226,7 +223,7 @@ export default function LibraryView({
 
                 {/* EXPANDED CONTENT */}
                 {isOpen && (
-                  <div className="mt-5 border-t border-zinc-800 pt-4 space-y-5 text-sm text-zinc-300">
+                  <div className="mt-5 border-t border-zinc-800 pt-4 space-y-6 text-sm text-zinc-300">
                     {r.Phonetic && (
                       <div className="italic text-zinc-400">
                         {r.Phonetic}
@@ -238,16 +235,19 @@ export default function LibraryView({
                         <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
                           {T.usage}
                         </div>
-                        <div>{r.Usage}</div>
+                        <div className="leading-relaxed">
+                          {r.Usage}
+                        </div>
                       </div>
                     )}
 
                     {r.Notes && (
-                      <div className="leading-relaxed whitespace-pre-line">
-                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
+                      <div className="leading-relaxed">
+                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
                           {T.notes}
                         </div>
-                        <div className="leading-relaxed">
+
+                        <div className="whitespace-pre-line leading-[1.75] space-y-4">
                           {r.Notes}
                         </div>
                       </div>
