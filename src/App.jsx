@@ -384,28 +384,28 @@ export default function App() {
       </main>
 
       {addOpen && (
-        <AddForm
-          T={T}
-          genId={genId}
-          nowTs={nowTs}
-          normalizeRag={normalizeRag}
-          mode={isEditing ? "edit" : "add"}
-          initialRow={editingRow || undefined}
-          onSubmit={(row) => {
-            setRows((prev) =>
-              isEditing
-                ? prev.map((r) => (r._id === row._id ? row : r))
-                : [row, ...prev]
-            );
-            setAddOpen(false);
-            setEditRowId(null);
-          }}
-          onCancel={() => {
-            setAddOpen(false);
-            setEditRowId(null);
-          }}
-        />
-      )}
+  <AddForm
+    T={T}
+    genId={genId}
+    nowTs={nowTs}
+    normalizeRag={normalizeRag}
+    mode={isEditing ? "edit" : "add"}
+    initialRow={editingRow || undefined}
+    onSubmit={(row) => {
+      setRows((prev) =>
+        isEditing
+          ? prev.map((r) => (r._id === row._id ? row : r))
+          : [row, ...prev]
+      );
+      setAddOpen(false);
+      setEditRowId(null);
+    }}
+    onCancel={() => {
+      setAddOpen(false);
+      setEditRowId(null);
+    }}
+  />
+)}
 
       {showWhatsNew && (
         <WhatsNewModal
