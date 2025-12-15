@@ -24,11 +24,11 @@ export default function SettingsView({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "lithuanian-trainer-export.json";
+      a.download = "zodis-export.json";
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      alert("Export failed: " + e.message);
+      alert("Export failed");
     }
   }
 
@@ -43,18 +43,19 @@ export default function SettingsView({
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
 
       {/* ACCOUNT & SYNC */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-3">
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Account & Sync</div>
 
         {!user ? (
           <>
             <p className="text-sm text-zinc-400">
-              Your data is currently stored <strong>only on this device</strong>.
-              Signing in enables secure cloud sync and backup across devices.
+              Žodis works fully offline by default.
+              <br />
+              Signing in lets you back up your library and sync across devices.
             </p>
 
             <button
-              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400 active:bg-emerald-300"
+              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
               onClick={signInWithGoogle}
             >
               Sign in to enable sync
@@ -68,8 +69,7 @@ export default function SettingsView({
             </p>
 
             <p className="text-xs text-zinc-500">
-              Sync infrastructure is active. Data syncing will be enabled in a
-              future update.
+              Sync will be enabled in a future update.
             </p>
 
             <button
@@ -85,8 +85,9 @@ export default function SettingsView({
       {/* STARTER PACK */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
+
         <button
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
           onClick={() => fetchStarter("EN2LT")}
         >
           Install starter pack
@@ -97,25 +98,31 @@ export default function SettingsView({
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Voice Settings</div>
 
-        <select
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60"
-          disabled
-        >
-          <option>Azure Speech (recommended)</option>
-        </select>
+        <div className="space-y-1">
+          <label className="text-sm">Azure Speech</label>
+          <select
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60 cursor-not-allowed"
+            disabled
+          >
+            <option>Azure Speech (recommended)</option>
+          </select>
+        </div>
 
-        <select
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
-          value={azureVoiceShortName}
-          onChange={(e) => setAzureVoiceShortName(e.target.value)}
-        >
-          <option value="lt-LT-LeonasNeural">Leonas (male)</option>
-          <option value="lt-LT-OnaNeural">Ona (female)</option>
-        </select>
+        <div className="space-y-1">
+          <label className="text-sm">Select Voice</label>
+          <select
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+            value={azureVoiceShortName}
+            onChange={(e) => setAzureVoiceShortName(e.target.value)}
+          >
+            <option value="lt-LT-LeonasNeural">Leonas (male)</option>
+            <option value="lt-LT-OnaNeural">Ona (female)</option>
+          </select>
+        </div>
 
         <button
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={() => playText("Sveiki!")}
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
+          onClick={() => playText("Sveiki!", { slow: false })}
         >
           Play sample
         </button>
@@ -125,24 +132,28 @@ export default function SettingsView({
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
-        <input type="file" accept="application/json" onChange={handleImportFile} />
+        <input
+          type="file"
+          accept="application/json"
+          onChange={handleImportFile}
+        />
 
         <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
           onClick={exportJson}
         >
           Export current library
         </button>
 
         <button
-          className="bg-blue-600 text-white rounded-full px-5 py-2"
+          className="bg-blue-600 text-white rounded-full px-5 py-2 hover:bg-blue-500"
           onClick={onOpenDuplicateScanner}
         >
           Open duplicate scanner
         </button>
 
         <button
-          className="bg-red-500 text-white rounded-full px-5 py-2"
+          className="bg-red-500 text-white rounded-full px-5 py-2 hover:bg-red-400"
           onClick={clearLibrary}
         >
           Clear entire library
@@ -150,21 +161,22 @@ export default function SettingsView({
       </section>
 
       {/* ABOUT */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-3">
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">About</div>
+
         <div className="text-sm text-zinc-400">
           App Version: <span className="text-zinc-200">1.1.1-beta</span>
         </div>
 
         <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
           onClick={onOpenUserGuide}
         >
           User Guide
         </button>
 
         <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
           onClick={onOpenChangeLog}
         >
           View Change Log
