@@ -29,7 +29,7 @@ import { initAuthListener } from "./stores/authStore";
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
-const APP_VERSION = "1.1.1-beta";
+const APP_VERSION = "1.1.2-beta-auth-test";
 
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
