@@ -1,4 +1,5 @@
 import React from "react";
+import { useAuthStore } from "../stores/authStore";
 
 export default function SettingsView({
   T,
@@ -15,6 +16,8 @@ export default function SettingsView({
   onOpenChangeLog,
   onOpenUserGuide,
 }) {
+  const user = useAuthStore((s) => s.user);
+
   /* EXPORT JSON */
   function exportJson() {
     try {
@@ -42,6 +45,36 @@ export default function SettingsView({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
+
+      {/* ACCOUNT STATUS */}
+      <section
+        className="
+          bg-zinc-900/95 border border-zinc-800
+          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
+          p-4 space-y-2
+        "
+      >
+        <div className="text-lg font-semibold">Account status</div>
+
+        {user ? (
+          <p className="text-sm text-zinc-300">
+            Signed in as{" "}
+            <span className="font-medium">{user.email}</span>
+            <br />
+            Your library can be synced across devices.
+          </p>
+        ) : (
+          <p className="text-sm text-zinc-400">
+            You’re using the app in local-only mode.
+            <br />
+            Your library is stored on this device only.
+            <br />
+            <span className="text-zinc-500">
+              Signing in enables cross-device sync later.
+            </span>
+          </p>
+        )}
+      </section>
 
       {/* STARTER PACK */}
       <section
@@ -107,7 +140,6 @@ export default function SettingsView({
           </select>
         </div>
 
-        {/* Play sample */}
         <button
           className="
             bg-emerald-500 text-black rounded-full 
@@ -131,7 +163,6 @@ export default function SettingsView({
       >
         <div className="text-lg font-semibold">Your Data</div>
 
-        {/* Import JSON */}
         <div className="flex items-center gap-3">
           <input
             type="file"
@@ -144,7 +175,6 @@ export default function SettingsView({
           </span>
         </div>
 
-        {/* Export */}
         <button
           className="
             bg-zinc-800 text-zinc-200 rounded-full 
@@ -157,7 +187,6 @@ export default function SettingsView({
           Export current library
         </button>
 
-        {/* Duplicate Scanner */}
         <button
           className="
             bg-blue-600 text-white rounded-full
@@ -170,7 +199,6 @@ export default function SettingsView({
           Open duplicate scanner
         </button>
 
-        {/* Clear Library */}
         <button
           className="
             bg-red-500 text-white rounded-full 
@@ -199,7 +227,6 @@ export default function SettingsView({
           <span className="text-zinc-200">1.1.1-beta</span>
         </div>
 
-        {/* User Guide */}
         <button
           className="
             bg-zinc-800 text-zinc-200 rounded-full 
@@ -212,7 +239,6 @@ export default function SettingsView({
           User Guide
         </button>
 
-        {/* Change Log */}
         <button
           className="
             bg-zinc-800 text-zinc-200 rounded-full 
