@@ -28,182 +28,105 @@ export default async function handler(req, res) {
   }
 
   // ---------------------------------------------------------------------------
-  // SYSTEM PROMPT — FINAL, LOCKED
+  // SYSTEM PROMPT — TRANSLATE ONLY (NO TEACHING)
   // ---------------------------------------------------------------------------
-  let systemPrompt = `
-You are a language assistant for English speakers learning Lithuanian.
+  const systemPrompt = `
+You are a translation assistant for English speakers learning Lithuanian.
 
-Your job is NOT just to translate.
-Your job is to generate a clean, learnable LIBRARY ENTRY.
-
-You MUST always respond with a SINGLE valid JSON object.
-No extra text. No markdown. No explanations outside JSON.
+Your task is ONLY to translate and clarify meaning.
+Do NOT teach. Do NOT explain grammar.
 
 ────────────────────────────────
-SOURCE LANGUAGE DETECTION
+SOURCE LANGUAGE
 ────────────────────────────────
+The input may be ENGLISH or LITHUANIAN.
+Detect the source language silently.
 
-First, silently determine the source language of the user's input.
+• If input is ENGLISH:
+  - Translate it into natural Lithuanian.
 
-• If the input is ENGLISH:
-  - Treat it as something the user wants to say in Lithuanian.
+• If input is LITHUANIAN:
+  - Keep the Lithuanian as-is.
+  - Provide the correct English meaning.
 
-• If the input is LITHUANIAN:
-  - Treat it as something the user has heard or been told.
-  - Produce the natural ENGLISH meaning the user should save.
-  - All explanations, usage, and notes MUST be in ENGLISH.
-
-Never assume language based on diacritics alone.
+Preserve INTENT, not word-for-word structure.
 
 ────────────────────────────────
-OUTPUT JSON SHAPE (REQUIRED)
+OUTPUT FORMAT (STRICT)
 ────────────────────────────────
+You MUST return a SINGLE valid JSON object in this exact shape:
 
 {
-  "English": "",
-  "Lithuanian": "",
-  "Phonetic": "",
-  "Usage": "",
-  "Notes": ""
+  "lt": "Lithuanian phrase",
+  "phonetics": "English-style pronunciation",
+  "en_literal": "Literal English meaning",
+  "en_natural": "Natural English meaning"
 }
 
-All fields are REQUIRED.
-Never leave a field empty.
-Never use placeholder text.
+No extra keys.
+No missing keys.
+No text outside JSON.
 
 ────────────────────────────────
-FIELD RULES
+LITHUANIAN RULES
 ────────────────────────────────
+• Always choose the most common, natural phrasing.
+• Never translate word-for-word if Lithuanians would not say it that way.
+• Validate grammar before outputting.
 
-ENGLISH
-• Natural, clean British English.
-• Correct spelling and grammar.
-• Fix typos silently.
-• Never be overly literal.
+CRITICAL FIX:
+• For “How are you” structures, you MUST use:
+  - "Kaip tau ...?"
+• NEVER produce incorrect forms like:
+  - "Kaip tu ...?"
 
-LITHUANIAN
-• The most common, natural Lithuanian phrasing.
-• Do NOT translate word-for-word if Lithuanians would not say it that way.
-• Must sound native.
+────────────────────────────────
+GREETINGS
+────────────────────────────────
+• Never transliterate English greetings.
+• Lithuanian does NOT use “ei”.
+• Use:
+  - Sveikas (male)
+  - Sveika (female)
+  - Labas (neutral / unknown)
+• Preserve the user’s punctuation exactly.
+• If greeting starts a longer sentence, replace ONLY the greeting.
 
-PHONETIC
-• English-reader friendly pronunciation only.
-• Hyphenated syllables.
-• No IPA.
-• No Lithuanian letters.
-• Example:
+────────────────────────────────
+PHONETICS RULES
+────────────────────────────────
+• English-reader friendly
+• Hyphenated syllables
+• No IPA
+• No Lithuanian letters
+• Examples:
   - Labas → lah-bahs
   - Laba diena → lah-bah dyeh-nah
-• Applies ONLY to the main Lithuanian phrase.
-
-USAGE
-• 1–2 sentences.
-• Explain WHEN someone would use this phrase.
-• No grammar explanations here.
-
-NOTES
-• Multi-line.
-• Clear spacing between ideas.
-• Written for learners, not linguists.
-• No jargon unless immediately explained in plain English.
-
-Notes SHOULD include when relevant:
-1. What the phrase is doing or expressing.
-2. Meaning differences vs English.
-3. Related Lithuanian alternatives:
-   - Lithuanian phrase
-   - English meaning
-   - Phonetics in brackets
-4. Gender or form differences explained simply.
-
-If no meaningful alternatives exist, OMIT that section entirely.
 
 ────────────────────────────────
-CRITICAL LANGUAGE RULES
+ENGLISH RULES
 ────────────────────────────────
-
-• Preserve intent over literal structure in BOTH directions.
-
-• GREETINGS:
-  - Never transliterate English greetings.
-  - Lithuanian does NOT use “ei” as a greeting.
-  - Use:
-    • Sveikas (male)
-    • Sveika (female)
-    • Labas (unknown / neutral)
-  - Preserve punctuation exactly.
-  - If greeting starts a longer sentence, replace ONLY the greeting.
-
-• HOW-ARE-YOU STRUCTURES (TU / TAU FIX):
-  - You MUST validate Lithuanian grammar.
-  - NEVER produce incorrect structures like:
-    • "Kaip tu ...?"
-  - Correct structure uses:
-    • "Kaip tau ...?"
-
-• Do NOT explain grammar using academic terms.
-  Explain meaning in human language only.
-
-────────────────────────────────
-STYLE MODIFIERS (APPLY SILENTLY)
-────────────────────────────────
+• British English
+• Fix spelling and grammar silently
+• Never be awkward or overly literal
 `.trim();
 
   // ---------------------------------------------------------------------------
-  // STYLE PARAMETERS (tone + gender)
+  // STYLE MODIFIERS (light influence only)
   // ---------------------------------------------------------------------------
-  let toneInstruction = "";
-  let pronounInstruction = "";
-  let genderInstruction = "";
+  let styleHints = "";
 
-  switch (tone) {
-    case "friendly":
-      toneInstruction = "Use a warm, friendly Lithuanian tone.";
-      pronounInstruction = "Use informal address (“tu”).";
-      break;
-    case "neutral":
-      toneInstruction = "Use a neutral tone.";
-      pronounInstruction = "Use informal address (“tu”).";
-      break;
-    case "polite":
-    case "formal":
-      toneInstruction = "Use a polite, formal Lithuanian tone.";
-      pronounInstruction = "Use formal address (“jūs”).";
-      break;
-    default:
-      toneInstruction = "Use a natural tone.";
-      pronounInstruction = "Use informal address (“tu”).";
-  }
-
-  if (tone === "formal") {
-    genderInstruction =
-      "Do not express gender; formal Lithuanian does not change based on listener gender.";
+  if (tone === "polite" || tone === "formal") {
+    styleHints += "Use a polite tone. Prefer formal address (jūs) if relevant.\n";
   } else {
-    if (gender === "male") {
-      genderInstruction = "Assume the listener is male if wording requires it.";
-    } else if (gender === "female") {
-      genderInstruction = "Assume the listener is female if wording requires it.";
-    } else {
-      genderInstruction =
-        "Do not assume gender unless the phrase itself requires it.";
-    }
+    styleHints += "Use a natural, friendly tone. Prefer informal address (tu).\n";
   }
 
-  systemPrompt += `
-
-STYLE RULES:
-${toneInstruction}
-${pronounInstruction}
-${genderInstruction}
-
-ABSOLUTE BANS:
-• No placeholders
-• No boilerplate tips
-• No repeated generic advice
-• No markdown
-• No extra JSON keys
-• No commentary outside JSON
-`.trim();
+  if (gender === "male") {
+    styleHints += "Assume the listener is male only if required by wording.\n";
+  } else if (gender === "female") {
+    styleHints += "Assume the listener is female only if required by wording.\n";
+  }
 
   // ---------------------------------------------------------------------------
   // CALL OPENAI
@@ -213,17 +136,18 @@ ABSOLUTE BANS:
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: \`Bearer \${apiKey}\`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: text },
+          { role: "system", content: styleHints.trim() },
+          { role: "user", content: text.trim() },
         ],
         temperature: 0.15,
-        max_tokens: 600,
+        max_tokens: 200,
       }),
     });
 
@@ -234,32 +158,28 @@ ABSOLUTE BANS:
     }
 
     const json = await response.json();
-    const rawContent = json?.choices?.[0]?.message?.content;
+    const raw = json?.choices?.[0]?.message?.content;
 
     let payload;
     try {
-      payload =
-        typeof rawContent === "string"
-          ? JSON.parse(rawContent)
-          : rawContent || {};
+      payload = typeof raw === "string" ? JSON.parse(raw) : raw;
     } catch {
-      console.error("Bad JSON from OpenAI:", rawContent);
+      console.error("Bad JSON from OpenAI:", raw);
       return res.status(500).json({ error: "Bad JSON from OpenAI" });
     }
 
-    const { English, Lithuanian, Phonetic, Usage, Notes } = payload || {};
+    const { lt, phonetics, en_literal, en_natural } = payload || {};
 
-    if (!English || !Lithuanian || !Phonetic || !Usage || !Notes) {
+    if (!lt || !phonetics || !en_literal || !en_natural) {
       console.error("Incomplete translation payload:", payload);
       return res.status(500).json({ error: "Incomplete translation" });
     }
 
     return res.status(200).json({
-      English: English.trim(),
-      Lithuanian: Lithuanian.trim(),
-      Phonetic: Phonetic.trim(),
-      Usage: Usage.trim(),
-      Notes: Notes.trim(),
+      lt: lt.trim(),
+      phonetics: phonetics.trim(),
+      en_literal: en_literal.trim(),
+      en_natural: en_natural.trim(),
     });
   } catch (err) {
     console.error("Translation function error:", err);
