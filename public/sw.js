@@ -1,50 +1,73 @@
-/* Simple SW for Vite app */
-const VERSION = "v1.0.0";
-const STATIC_CACHE = `static-${VERSION}`;
+/* Simple, versioned Service Worker for Žodis (PWA-safe) */
+
+const CACHE_VERSION = "v-account-sync"; // 🔁 CHANGE THIS ON EVERY UI CHANGE
+const CACHE_NAME = `zodis-static-${CACHE_VERSION}`;
+
 const STATIC_ASSETS = [
-  "/", "/index.html", "/manifest.webmanifest",
-  "/icons/192.png", "/icons/512.png", "/icons/maskable-512.png"
+  "/",
+  "/index.html",
+  "/manifest.webmanifest",
+  "/icons/192.png",
+  "/icons/512.png",
+  "/icons/maskable-512.png",
 ];
 
-self.addEventListener("install", (e) => {
+/* INSTALL */
+self.addEventListener("install", (event) => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(STATIC_CACHE).then((c) => c.addAll(STATIC_ASSETS))
+
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    })
   );
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
+/* ACTIVATE — CLEAN OLD CACHES */
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter(k => k !== STATIC_CACHE).map(k => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
     ).then(() => self.clients.claim())
   );
 });
 
-/* Network-first for navigations, cache-first for static assets */
-self.addEventListener("fetch", (e) => {
-  const { request } = e;
+/* FETCH STRATEGY
+   - Network-first for navigation (SPA correctness)
+   - Cache-first for same-origin static assets
+*/
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
   if (request.method !== "GET") return;
 
   // SPA navigations
   if (request.mode === "navigate") {
-    e.respondWith(
+    event.respondWith(
       fetch(request).catch(() => caches.match("/index.html"))
     );
     return;
   }
 
-  // Same-origin static assets
   const url = new URL(request.url);
+
+  // Same-origin assets
   if (url.origin === self.location.origin) {
-    e.respondWith(
+    event.respondWith(
       caches.match(request).then((cached) => {
-        const fetchPromise = fetch(request).then((res) => {
-          const copy = res.clone();
-          caches.open(STATIC_CACHE).then((c) => c.put(request, copy));
-          return res;
-        }).catch(() => cached);
-        return cached || fetchPromise;
+        if (cached) return cached;
+
+        return fetch(request).then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+          return response;
+        });
       })
     );
   }
