@@ -1,3 +1,4 @@
+// src/views/LibraryView.jsx
 import React, {
   useMemo,
   useState,
@@ -209,9 +210,17 @@ export default function LibraryView({
                     <div className="text-sm font-semibold break-words">
                       {r.English || "—"}
                     </div>
+
                     <div className="text-sm text-emerald-300 break-words">
                       {r.Lithuanian || "—"}
                     </div>
+
+                    {/* PHONETICS — now visible even when collapsed */}
+                    {!isOpen && r.Phonetic && (
+                      <div className="text-xs text-zinc-500 italic mt-0.5 break-words">
+                        {r.Phonetic}
+                      </div>
+                    )}
                   </div>
                 </div>
 
