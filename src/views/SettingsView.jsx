@@ -14,28 +14,18 @@ export default function SettingsView({
   onOpenChangeLog,
   onOpenUserGuide,
 }) {
-  const {
-    user,
-    loading,
-    signInWithGoogle,
-    signOut,
-  } = useAuthStore();
+  const { user, loading, signInWithGoogle, signOut } = useAuthStore();
 
-  /* EXPORT JSON */
   function exportJson() {
-    try {
-      const dataStr = JSON.stringify(rows, null, 2);
-      const blob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-
-      a.href = url;
-      a.download = "lithuanian-trainer-export.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert("Export failed");
-    }
+    const blob = new Blob([JSON.stringify(rows, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "zodis-library.json";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function handleImportFile(e) {
@@ -65,7 +55,7 @@ export default function SettingsView({
 
         {!user ? (
           <>
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-zinc-400 leading-relaxed">
               Your data is currently stored only on this device.
               <br />
               Signing in enables secure cloud sync across devices.
@@ -103,9 +93,9 @@ export default function SettingsView({
         <div className="space-y-1">
           <label className="text-sm">{T.azure}</label>
           <select
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60"
             disabled
             value="azure"
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60"
           >
             <option>Azure Speech (recommended)</option>
           </select>
@@ -135,11 +125,7 @@ export default function SettingsView({
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
-        <input
-          type="file"
-          accept="application/json"
-          onChange={handleImportFile}
-        />
+        <input type="file" accept="application/json" onChange={handleImportFile} />
 
         <button
           className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
