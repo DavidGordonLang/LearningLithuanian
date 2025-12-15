@@ -7,16 +7,16 @@ export const useAuthStore = create((set) => ({
   session: null,
   loading: true,
 
-  /* ---------- SESSION HANDLING ---------- */
+  /* ---------- INTERNAL STATE ---------- */
 
-  setSession: (session) =>
+  _setSession: (session) =>
     set({
       session,
       user: session?.user ?? null,
       loading: false,
     }),
 
-  clearSession: () =>
+  _clearSession: () =>
     set({
       session: null,
       user: null,
@@ -31,7 +31,13 @@ export const useAuthStore = create((set) => ({
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // CRITICAL: works for web, PWA, Android, iOS
+        /**
+         * IMPORTANT:
+         * - Works for web
+         * - Works for PWA
+         * - Works for Android Chrome
+         * - Works for iOS Safari
+         */
         redirectTo: window.location.origin,
       },
     });
@@ -41,7 +47,7 @@ export const useAuthStore = create((set) => ({
       set({ loading: false });
       alert(error.message);
     }
-    // success is handled by onAuthStateChange
+    // success is handled by auth state listener
   },
 
   signOut: async () => {
@@ -51,7 +57,7 @@ export const useAuthStore = create((set) => ({
   },
 }));
 
-/* ---------- ONE-TIME AUTH LISTENER ---------- */
+/* ---------- ONE-TIME AUTH BOOTSTRAP ---------- */
 
 let initialised = false;
 
@@ -59,17 +65,17 @@ export function initAuthListener() {
   if (initialised) return;
   initialised = true;
 
-  // Restore session on app load / refresh
+  // 1) Restore session on load (VERY IMPORTANT for PWAs)
   supabase.auth.getSession().then(({ data }) => {
-    useAuthStore.getState().setSession(data.session);
+    useAuthStore.getState()._setSession(data.session);
   });
 
-  // Listen for login / logout
+  // 2) Listen for all future auth changes
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session) {
-      useAuthStore.getState().setSession(session);
+      useAuthStore.getState()._setSession(session);
     } else {
-      useAuthStore.getState().clearSession();
+      useAuthStore.getState()._clearSession();
     }
   });
 }
