@@ -2,38 +2,49 @@
 import { supabase } from "../supabaseClient";
 
 /**
- * Replace the current user's phrase library in Supabase
- * This is intentionally destructive *per user only*
+ * INTERNAL: get the currently authenticated user
+ * Throws hard if auth state is invalid — this should never be silent.
  */
-export async function replaceUserPhrases(rows) {
-  // 1. Get the logged-in user
+async function requireUser() {
   const {
     data: { user },
-    error: userError,
+    error,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) {
+  if (error || !user) {
     throw new Error("Not authenticated");
   }
 
+  return user;
+}
+
+/**
+ * Replace the current user's phrase library in Supabase.
+ * This is DESTRUCTIVE per-user, but SAFE by design.
+ */
+export async function replaceUserPhrases(rows) {
+  const user = await requireUser();
   const userId = user.id;
 
-  // 2. Delete ONLY this user's existing phrases
+  // Defensive: ensure rows is always an array
+  const safeRows = Array.isArray(rows) ? rows : [];
+
+  // 1) Delete ONLY this user's phrases
   const { error: deleteError } = await supabase
     .from("phrases")
     .delete()
     .eq("user_id", userId);
 
   if (deleteError) {
-    throw deleteError;
+    throw new Error(`Delete failed: ${deleteError.message}`);
   }
 
-  // 3. Insert new rows (if any)
-  if (!rows || rows.length === 0) return;
+  // 2) Insert new rows (if any)
+  if (safeRows.length === 0) return;
 
-  const payload = rows.map((row) => ({
+  const payload = safeRows.map((row) => ({
     user_id: userId,
-    data: row, // JSONB column
+    data: row, // stored as JSONB
   }));
 
   const { error: insertError } = await supabase
@@ -41,6 +52,28 @@ export async function replaceUserPhrases(rows) {
     .insert(payload);
 
   if (insertError) {
-    throw insertError;
+    throw new Error(`Insert failed: ${insertError.message}`);
   }
+}
+
+/**
+ * Fetch the current user's phrase library from Supabase.
+ * Returns a flat array of phrase objects (same shape as local store).
+ */
+export async function fetchUserPhrases() {
+  const user = await requireUser();
+  const userId = user.id;
+
+  const { data, error } = await supabase
+    .from("phrases")
+    .select("data")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Fetch failed: ${error.message}`);
+  }
+
+  // Flatten JSONB rows back into plain phrase objects
+  return (data || []).map((row) => row.data);
 }
