@@ -1,3 +1,9 @@
+return (
+  <div className="bg-red-600 text-white p-4 text-center font-bold">
+    SETTINGS VIEW TEST — IF YOU SEE THIS, YOU ARE EDITING THE RIGHT FILE
+  </div>
+);
+
 import React from "react";
 import { useAuthStore } from "../stores/authStore";
 
