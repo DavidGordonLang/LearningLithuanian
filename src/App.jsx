@@ -24,6 +24,7 @@ import WhatsNewModal from "./components/WhatsNewModal";
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
+import { supabase } from "./supabaseClient";
 
 /* ============================================================================
    CONSTANTS
@@ -155,6 +156,28 @@ const SearchBox = memo(
    MAIN APP
    ========================================================================== */
 export default function App() {
+  /* SUPABASE AUTH STATE (passive) */
+  const [session, setSession] = useState(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session || null);
+      setUser(data.session?.user || null);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => {
+      listener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   /* PAGE */
   const [page, setPage] = useState(
     () => localStorage.getItem(LSK_PAGE) || "home"
@@ -474,9 +497,7 @@ export default function App() {
         )}
       </main>
 
-      {/* ============================================================================
-         ADD / EDIT FORM MODAL — FIXED VERSION
-         ========================================================================== */}
+      {/* ADD / EDIT FORM MODAL */}
       {addOpen && (
         <div
           className="fixed inset-0 z-[400] bg-black/60 backdrop-blur-sm overflow-y-auto"
@@ -486,34 +507,12 @@ export default function App() {
             document.activeElement?.blur?.();
           }}
         >
-          {/* Top padding = header height + spacing */}
           <div
             className="w-full max-w-2xl mx-auto px-4"
             style={{ paddingTop: headerHeight + 20, paddingBottom: 40 }}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <div className="bg-zinc-900/95 border border-zinc-800 rounded-3xl shadow-[0_0_25px_rgba(0,0,0,0.35)] p-5">
-              {/* HEADER */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-lg font-semibold">
-                  {isEditing ? T.edit : T.addEntry}
-                </div>
-
-                <button
-                  className="
-                    px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-200 
-                    text-sm font-medium hover:bg-zinc-700 active:bg-zinc-600
-                  "
-                  onClick={() => {
-                    setAddOpen(false);
-                    setEditRowId(null);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-
-              {/* FORM */}
+            <div className="bg-zinc-900/95 border border-zinc-800 rounded-3xl p-5">
               <AddForm
                 T={T}
                 genId={genId}
@@ -528,14 +527,9 @@ export default function App() {
                     );
                   } else {
                     setRows((prev) => [row, ...prev]);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }
-
                   setAddOpen(false);
                   setEditRowId(null);
-
-                  setToast("Entry saved to library");
-                  setTimeout(() => setToast(""), 2000);
                 }}
                 onCancel={() => {
                   setAddOpen(false);
@@ -547,7 +541,6 @@ export default function App() {
         </div>
       )}
 
-      {/* WHAT'S NEW MODAL */}
       {showWhatsNew && (
         <WhatsNewModal
           version={APP_VERSION}
@@ -563,12 +556,10 @@ export default function App() {
         />
       )}
 
-      {/* CHANGE LOG MODAL */}
       {showChangeLog && (
         <ChangeLogModal onClose={() => setShowChangeLog(false)} />
       )}
 
-      {/* USER GUIDE MODAL */}
       {showUserGuide && (
         <UserGuideModal
           onClose={() => {
