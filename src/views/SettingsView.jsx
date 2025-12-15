@@ -3,8 +3,6 @@ import { useAuthStore } from "../stores/authStore";
 
 export default function SettingsView({
   T,
-  ttsProvider,
-  setTtsProvider,
   azureVoiceShortName,
   setAzureVoiceShortName,
   playText,
@@ -16,7 +14,7 @@ export default function SettingsView({
   onOpenChangeLog,
   onOpenUserGuide,
 }) {
-  const user = useAuthStore((s) => s.user);
+  const { user } = useAuthStore();
 
   /* EXPORT JSON */
   function exportJson() {
@@ -31,11 +29,11 @@ export default function SettingsView({
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      alert("Export failed: " + e.message);
+      alert("Export failed");
     }
   }
 
-  /* IMPORT JSON HANDLER */
+  /* IMPORT JSON */
   function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -46,92 +44,36 @@ export default function SettingsView({
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
 
-      {/* ACCOUNT STATUS */}
-      <section
-        className="
-          bg-zinc-900/95 border border-zinc-800
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
-          p-4 space-y-2
-        "
-      >
-        <div className="text-lg font-semibold">Account status</div>
-
-        {user ? (
-          <p className="text-sm text-zinc-300">
-            Signed in as{" "}
-            <span className="font-medium">{user.email}</span>
-            <br />
-            Your library can be synced across devices.
-          </p>
-        ) : (
-          <p className="text-sm text-zinc-400">
-            You’re using the app in local-only mode.
-            <br />
-            Your library is stored on this device only.
-            <br />
-            <span className="text-zinc-500">
-              Signing in enables cross-device sync later.
-            </span>
-          </p>
-        )}
-      </section>
-
       {/* STARTER PACK */}
-      <section
-        className="
-          bg-zinc-900/95 border border-zinc-800 
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-          p-4 space-y-4
-        "
-      >
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
 
         <button
-          className="
-            bg-emerald-500 text-black 
-            rounded-full px-5 py-2 font-semibold shadow 
-            hover:bg-emerald-400 active:bg-emerald-300
-            select-none
-          "
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
           onClick={() => fetchStarter("EN2LT")}
         >
           Install starter pack
         </button>
       </section>
 
-      {/* AZURE SPEECH */}
-      <section
-        className="
-          bg-zinc-900/95 border border-zinc-800 
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-          p-4 space-y-4
-        "
-      >
+      {/* VOICE SETTINGS */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Voice Settings</div>
 
-        {/* Provider (locked) */}
         <div className="space-y-1">
-          <label className="text-sm">{T.azure}</label>
+          <label className="text-sm">Azure Speech</label>
           <select
-            className="
-              w-full bg-zinc-950 border border-zinc-700 
-              rounded-md px-3 py-2 cursor-not-allowed opacity-60
-            "
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60"
             disabled
-            value="azure"
           >
             <option>Azure Speech (recommended)</option>
           </select>
         </div>
 
-        {/* Voice Selection */}
         <div className="space-y-1">
           <label className="text-sm">Select Voice</label>
           <select
-            className="
-              w-full bg-zinc-950 border border-zinc-700 
-              rounded-md px-3 py-2
-            "
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
             value={azureVoiceShortName}
             onChange={(e) => setAzureVoiceShortName(e.target.value)}
           >
@@ -141,12 +83,7 @@ export default function SettingsView({
         </div>
 
         <button
-          className="
-            bg-emerald-500 text-black rounded-full 
-            px-5 py-2 font-semibold shadow 
-            hover:bg-emerald-400 active:bg-emerald-300
-            select-none
-          "
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
           onClick={() => playText("Sveiki!", { slow: false })}
         >
           Play sample
@@ -154,13 +91,7 @@ export default function SettingsView({
       </section>
 
       {/* YOUR DATA */}
-      <section
-        className="
-          bg-zinc-900/95 border border-zinc-800 
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-          p-4 space-y-5
-        "
-      >
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-5">
         <div className="text-lg font-semibold">Your Data</div>
 
         <div className="flex items-center gap-3">
@@ -176,76 +107,77 @@ export default function SettingsView({
         </div>
 
         <button
-          className="
-            bg-zinc-800 text-zinc-200 rounded-full 
-            px-5 py-2 font-medium
-            hover:bg-zinc-700 active:bg-zinc-600
-            select-none
-          "
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
           onClick={exportJson}
         >
           Export current library
         </button>
 
         <button
-          className="
-            bg-blue-600 text-white rounded-full
-            px-5 py-2 font-medium shadow
-            hover:bg-blue-500 active:bg-blue-400
-            select-none
-          "
+          className="bg-blue-600 text-white rounded-full px-5 py-2 hover:bg-blue-500"
           onClick={onOpenDuplicateScanner}
         >
           Open duplicate scanner
         </button>
 
         <button
-          className="
-            bg-red-500 text-white rounded-full 
-            px-5 py-2 font-medium shadow
-            hover:bg-red-400 active:bg-red-300
-            select-none
-          "
+          className="bg-red-500 text-white rounded-full px-5 py-2 hover:bg-red-400"
           onClick={clearLibrary}
         >
           Clear entire library
         </button>
       </section>
 
+      {/* ACCOUNT & SYNC (OPTION A) */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-3">
+        <div className="text-lg font-semibold">Account & Sync</div>
+
+        {!user ? (
+          <>
+            <p className="text-sm text-zinc-400">
+              You’re currently using Žodis in local-only mode.
+            </p>
+            <p className="text-xs text-zinc-500">
+              Your data is stored on this device only. Signing in is optional and
+              will allow backup and sync across devices in the future.
+            </p>
+
+            <button
+              className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700 opacity-60 cursor-not-allowed"
+              disabled
+            >
+              Sign in (coming soon)
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-emerald-400">
+              Signed in as {user.email}
+            </p>
+            <p className="text-xs text-zinc-500">
+              Sync features will appear here.
+            </p>
+          </>
+        )}
+      </section>
+
       {/* ABOUT */}
-      <section
-        className="
-          bg-zinc-900/95 border border-zinc-800 
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] 
-          p-4 space-y-4
-        "
-      >
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">About</div>
 
         <div className="text-sm text-zinc-400">
-          App Version:{" "}
-          <span className="text-zinc-200">1.1.1-beta</span>
+          App Version: <span className="text-zinc-200">1.1.1-beta</span>
         </div>
 
         <button
-          className="
-            bg-zinc-800 text-zinc-200 rounded-full 
-            px-5 py-2 font-medium
-            hover:bg-zinc-700 active:bg-zinc-600
-            select-none
-          "
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
           onClick={onOpenUserGuide}
         >
           User Guide
         </button>
 
         <button
-          className="
-            bg-zinc-800 text-zinc-200 rounded-full 
-            px-5 py-2 font-medium
-            hover:bg-zinc-700 active:bg-zinc-600
-            select-none
-          "
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
           onClick={onOpenChangeLog}
         >
           View Change Log
