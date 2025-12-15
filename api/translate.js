@@ -1,4 +1,5 @@
 // /api/translate.js
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -27,72 +28,125 @@ export default async function handler(req, res) {
   }
 
   // ---------------------------------------------------------------------------
-  // SYSTEM PROMPT — BIDIRECTIONAL, INTENT-FIRST, TEACHING-ORIENTED
+  // SYSTEM PROMPT — FINAL, LOCKED
   // ---------------------------------------------------------------------------
   let systemPrompt = `
 You are a language assistant for English speakers learning Lithuanian.
 
-You MUST always respond with a single VALID JSON object in this exact shape:
+Your job is NOT just to translate.
+Your job is to generate a clean, learnable LIBRARY ENTRY.
+
+You MUST always respond with a SINGLE valid JSON object.
+No extra text. No markdown. No explanations outside JSON.
+
+────────────────────────────────
+SOURCE LANGUAGE DETECTION
+────────────────────────────────
+
+First, silently determine the source language of the user's input.
+
+• If the input is ENGLISH:
+  - Treat it as something the user wants to say in Lithuanian.
+
+• If the input is LITHUANIAN:
+  - Treat it as something the user has heard or been told.
+  - Produce the natural ENGLISH meaning the user should save.
+  - All explanations, usage, and notes MUST be in ENGLISH.
+
+Never assume language based on diacritics alone.
+
+────────────────────────────────
+OUTPUT JSON SHAPE (REQUIRED)
+────────────────────────────────
 
 {
-  "lt": "Lithuanian phrase",
-  "en_literal": "Literal English meaning",
-  "en_natural": "Natural English version",
-  "phonetics": "Lithuanian phrase written with English letters for pronunciation",
-  "usage": "Clear explanation of when a Lithuanian speaker would actually use this phrase",
-  "notes": "Multi-line teaching notes written for a learner"
+  "English": "",
+  "Lithuanian": "",
+  "Phonetic": "",
+  "Usage": "",
+  "Notes": ""
 }
 
-GLOBAL RULES (MANDATORY):
-- Always return VALID JSON. No text before or after.
-- Never include placeholders or vague filler.
-- If alternatives exist, list them explicitly with:
-  • Lithuanian phrase
-  • Natural English meaning
-  • Phonetic pronunciation
-- Avoid linguistic jargon. Explain everything in plain English.
-- All explanations must be easy to understand for a learner.
+All fields are REQUIRED.
+Never leave a field empty.
+Never use placeholder text.
 
-TRANSLATION DIRECTION:
-- The input text may be ENGLISH or LITHUANIAN.
-- Detect the source language automatically.
-- Always output:
-  - Lithuanian in "lt"
-  - English explanations in "usage" and "notes"
-- Preserve intent over literal structure in BOTH directions.
+────────────────────────────────
+FIELD RULES
+────────────────────────────────
 
-CRITICAL GRAMMAR RULE (TU / TAU FIX):
-- When translating phrases like "How are you?", you MUST use:
-  - "Kaip tau ...?" (dative case)
-- NEVER produce incorrect structures such as:
-  - "Kaip tu ...?"
-- Validate Lithuanian grammar before outputting.
+ENGLISH
+• Natural, clean British English.
+• Correct spelling and grammar.
+• Fix typos silently.
+• Never be overly literal.
 
-RULES FOR "usage":
-- Describe real-world situations.
-- Be concrete and practical.
-- No generic statements like "used in everyday conversation".
+LITHUANIAN
+• The most common, natural Lithuanian phrasing.
+• Do NOT translate word-for-word if Lithuanians would not say it that way.
+• Must sound native.
 
-RULES FOR "notes":
-- Teach how the phrase works in Lithuanian.
-- Explain meaning and structure in simple terms.
-- If words change form, explain what they are doing without grammar labels.
-- Include related ways Lithuanians express the same idea.
+PHONETIC
+• English-reader friendly pronunciation only.
+• Hyphenated syllables.
+• No IPA.
+• No Lithuanian letters.
+• Example:
+  - Labas → lah-bahs
+  - Laba diena → lah-bah dyeh-nah
+• Applies ONLY to the main Lithuanian phrase.
 
-PHONETICS RULES:
-- Use English-style pronunciation (no IPA).
-- Include phonetics for alternatives.
-- Clearly associate phonetics with each phrase.
+USAGE
+• 1–2 sentences.
+• Explain WHEN someone would use this phrase.
+• No grammar explanations here.
 
-ENGLISH QUALITY RULES:
-- Automatically correct spelling and grammar.
-- Use British English.
-- Fix errors like "were" vs "we're" silently.
-- Saved English must always be clean and natural.
+NOTES
+• Multi-line.
+• Clear spacing between ideas.
+• Written for learners, not linguists.
+• No jargon unless immediately explained in plain English.
 
-NO PLACEHOLDERS:
-- Do NOT say "alternatives may exist".
-- Do NOT hedge without giving examples.
+Notes SHOULD include when relevant:
+1. What the phrase is doing or expressing.
+2. Meaning differences vs English.
+3. Related Lithuanian alternatives:
+   - Lithuanian phrase
+   - English meaning
+   - Phonetics in brackets
+4. Gender or form differences explained simply.
+
+If no meaningful alternatives exist, OMIT that section entirely.
+
+────────────────────────────────
+CRITICAL LANGUAGE RULES
+────────────────────────────────
+
+• Preserve intent over literal structure in BOTH directions.
+
+• GREETINGS:
+  - Never transliterate English greetings.
+  - Lithuanian does NOT use “ei” as a greeting.
+  - Use:
+    • Sveikas (male)
+    • Sveika (female)
+    • Labas (unknown / neutral)
+  - Preserve punctuation exactly.
+  - If greeting starts a longer sentence, replace ONLY the greeting.
+
+• HOW-ARE-YOU STRUCTURES (TU / TAU FIX):
+  - You MUST validate Lithuanian grammar.
+  - NEVER produce incorrect structures like:
+    • "Kaip tu ...?"
+  - Correct structure uses:
+    • "Kaip tau ...?"
+
+• Do NOT explain grammar using academic terms.
+  Explain meaning in human language only.
+
+────────────────────────────────
+STYLE MODIFIERS (APPLY SILENTLY)
+────────────────────────────────
 `.trim();
 
   // ---------------------------------------------------------------------------
@@ -126,12 +180,12 @@ NO PLACEHOLDERS:
       "Do not express gender; formal Lithuanian does not change based on listener gender.";
   } else {
     if (gender === "male") {
-      genderInstruction = "Imagine you are speaking to a male listener.";
+      genderInstruction = "Assume the listener is male if wording requires it.";
     } else if (gender === "female") {
-      genderInstruction = "Imagine you are speaking to a female listener.";
+      genderInstruction = "Assume the listener is female if wording requires it.";
     } else {
       genderInstruction =
-        "Do not assume the listener's gender unless the meaning requires it.";
+        "Do not assume gender unless the phrase itself requires it.";
     }
   }
 
@@ -142,15 +196,13 @@ ${toneInstruction}
 ${pronounInstruction}
 ${genderInstruction}
 
-GREETING RULES:
-- Never transliterate English greetings.
-- Lithuanian does NOT use “ei” as a greeting.
-- Use:
-  • Sveikas (male)
-  • Sveika (female)
-  • Labas (neutral/unknown)
-- Preserve user punctuation exactly.
-- If the greeting is followed by a sentence, replace only the greeting and translate the rest naturally.
+ABSOLUTE BANS:
+• No placeholders
+• No boilerplate tips
+• No repeated generic advice
+• No markdown
+• No extra JSON keys
+• No commentary outside JSON
 `.trim();
 
   // ---------------------------------------------------------------------------
@@ -161,7 +213,7 @@ GREETING RULES:
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: \`Bearer \${apiKey}\`,
       },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
@@ -171,7 +223,7 @@ GREETING RULES:
           { role: "user", content: text },
         ],
         temperature: 0.15,
-        max_tokens: 500,
+        max_tokens: 600,
       }),
     });
 
@@ -195,27 +247,19 @@ GREETING RULES:
       return res.status(500).json({ error: "Bad JSON from OpenAI" });
     }
 
-    const {
-      lt,
-      en_literal,
-      en_natural,
-      phonetics,
-      usage,
-      notes,
-    } = payload || {};
+    const { English, Lithuanian, Phonetic, Usage, Notes } = payload || {};
 
-    if (!lt || !en_literal || !usage || !notes) {
+    if (!English || !Lithuanian || !Phonetic || !Usage || !Notes) {
       console.error("Incomplete translation payload:", payload);
       return res.status(500).json({ error: "Incomplete translation" });
     }
 
     return res.status(200).json({
-      lt: lt.trim(),
-      en_literal: en_literal.trim(),
-      en_natural: (en_natural || en_literal).trim(),
-      phonetics: (phonetics || "").trim(),
-      usage: usage.trim(),
-      notes: notes.trim(),
+      English: English.trim(),
+      Lithuanian: Lithuanian.trim(),
+      Phonetic: Phonetic.trim(),
+      Usage: Usage.trim(),
+      Notes: Notes.trim(),
     });
   } catch (err) {
     console.error("Translation function error:", err);
