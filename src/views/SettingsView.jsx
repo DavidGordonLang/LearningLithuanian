@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuthStore } from "../stores/authStore";
+import { replaceUserPhrases } from "../stores/supabasePhrases";
 
 export default function SettingsView({
   T,
@@ -15,7 +16,9 @@ export default function SettingsView({
   onOpenUserGuide,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
+  const [syncing, setSyncing] = useState(false);
 
+  /* EXPORT JSON */
   function exportJson() {
     const blob = new Blob([JSON.stringify(rows, null, 2)], {
       type: "application/json",
@@ -28,11 +31,26 @@ export default function SettingsView({
     URL.revokeObjectURL(url);
   }
 
+  /* IMPORT JSON */
   function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     importJsonFile(file);
     e.target.value = "";
+  }
+
+  /* MANUAL CLOUD UPLOAD (TEST STEP) */
+  async function uploadLibraryToCloud() {
+    if (!user) return;
+    try {
+      setSyncing(true);
+      await replaceUserPhrases(rows);
+      alert("Library uploaded to Supabase successfully.");
+    } catch (e) {
+      alert("Upload failed: " + e.message);
+    } finally {
+      setSyncing(false);
+    }
   }
 
   return (
@@ -75,6 +93,15 @@ export default function SettingsView({
               Signed in as{" "}
               <span className="text-zinc-200">{user.email}</span>
             </p>
+
+            {/* TEMPORARY MANUAL SYNC BUTTON */}
+            <button
+              className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+              onClick={uploadLibraryToCloud}
+              disabled={syncing}
+            >
+              {syncing ? "Uploading…" : "Upload library (test)"}
+            </button>
 
             <button
               className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
