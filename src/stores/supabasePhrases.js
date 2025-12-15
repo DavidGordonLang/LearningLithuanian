@@ -1,79 +1,53 @@
 // src/stores/supabasePhrases.js
 import { supabase } from "../supabaseClient";
+import { useAuthStore } from "./authStore";
 
 /**
- * INTERNAL: get the currently authenticated user
- * Throws hard if auth state is invalid — this should never be silent.
- */
-async function requireUser() {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    throw new Error("Not authenticated");
-  }
-
-  return user;
-}
-
-/**
- * Replace the current user's phrase library in Supabase.
- * This is DESTRUCTIVE per-user, but SAFE by design.
+ * Replace ALL phrases for the current user in Supabase
+ * (upload local → cloud)
  */
 export async function replaceUserPhrases(rows) {
-  const user = await requireUser();
-  const userId = user.id;
+  const { user } = useAuthStore.getState();
+  if (!user) throw new Error("Not authenticated");
 
-  // Defensive: ensure rows is always an array
-  const safeRows = Array.isArray(rows) ? rows : [];
-
-  // 1) Delete ONLY this user's phrases
-  const { error: deleteError } = await supabase
+  // HARD DELETE — scoped to user
+  const { error: delErr } = await supabase
     .from("phrases")
     .delete()
-    .eq("user_id", userId);
+    .eq("user_id", user.id);
 
-  if (deleteError) {
-    throw new Error(`Delete failed: ${deleteError.message}`);
-  }
+  if (delErr) throw delErr;
 
-  // 2) Insert new rows (if any)
-  if (safeRows.length === 0) return;
+  if (!rows.length) return;
 
-  const payload = safeRows.map((row) => ({
-    user_id: userId,
-    data: row, // stored as JSONB
+  const payload = rows.map((r) => ({
+    user_id: user.id,
+    data: r,
   }));
 
-  const { error: insertError } = await supabase
+  const { error: insErr } = await supabase
     .from("phrases")
     .insert(payload);
 
-  if (insertError) {
-    throw new Error(`Insert failed: ${insertError.message}`);
-  }
+  if (insErr) throw insErr;
 }
 
 /**
- * Fetch the current user's phrase library from Supabase.
- * Returns a flat array of phrase objects (same shape as local store).
+ * Fetch ALL phrases for the current user
+ * (cloud → local)
  */
 export async function fetchUserPhrases() {
-  const user = await requireUser();
-  const userId = user.id;
+  const { user } = useAuthStore.getState();
+  if (!user) throw new Error("Not authenticated");
 
   const { data, error } = await supabase
     .from("phrases")
     .select("data")
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
-  if (error) {
-    throw new Error(`Fetch failed: ${error.message}`);
-  }
+  if (error) throw error;
 
-  // Flatten JSONB rows back into plain phrase objects
-  return (data || []).map((row) => row.data);
+  // Return raw phrase rows exactly as stored
+  return data.map((row) => row.data);
 }
