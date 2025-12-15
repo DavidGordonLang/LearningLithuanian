@@ -5,7 +5,7 @@ import { supabase } from "../supabaseClient";
 export const useAuthStore = create((set) => ({
   user: null,
   session: null,
-  loading: false,
+  loading: true,
 
   /* ---------- SESSION HANDLING ---------- */
 
@@ -31,6 +31,7 @@ export const useAuthStore = create((set) => ({
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
+        // CRITICAL: works for web, PWA, Android, iOS
         redirectTo: window.location.origin,
       },
     });
@@ -40,7 +41,7 @@ export const useAuthStore = create((set) => ({
       set({ loading: false });
       alert(error.message);
     }
-    // success will be handled by onAuthStateChange
+    // success is handled by onAuthStateChange
   },
 
   signOut: async () => {
@@ -58,10 +59,12 @@ export function initAuthListener() {
   if (initialised) return;
   initialised = true;
 
+  // Restore session on app load / refresh
   supabase.auth.getSession().then(({ data }) => {
     useAuthStore.getState().setSession(data.session);
   });
 
+  // Listen for login / logout
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session) {
       useAuthStore.getState().setSession(session);
