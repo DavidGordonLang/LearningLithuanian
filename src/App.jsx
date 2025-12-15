@@ -384,28 +384,60 @@ export default function App() {
       </main>
 
       {addOpen && (
-  <AddForm
-    T={T}
-    genId={genId}
-    nowTs={nowTs}
-    normalizeRag={normalizeRag}
-    mode={isEditing ? "edit" : "add"}
-    initialRow={editingRow || undefined}
-    onSubmit={(row) => {
-      setRows((prev) =>
-        isEditing
-          ? prev.map((r) => (r._id === row._id ? row : r))
-          : [row, ...prev]
-      );
+  <div
+    className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm px-3 py-6"
+    onClick={() => {
       setAddOpen(false);
       setEditRowId(null);
     }}
-    onCancel={() => {
-      setAddOpen(false);
-      setEditRowId(null);
+    onKeyDown={(e) => {
+      if (e.key === "Escape") {
+        setAddOpen(false);
+        setEditRowId(null);
+      }
     }}
-  />
+    tabIndex={-1}
+  >
+    <div
+      className="
+        w-full max-w-2xl
+        bg-zinc-900 border border-zinc-800
+        rounded-2xl shadow-2xl
+        p-5
+      "
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">
+          {isEditing ? T.edit : T.addEntry}
+        </h3>
+      </div>
+
+      <AddForm
+        T={T}
+        genId={genId}
+        nowTs={nowTs}
+        normalizeRag={normalizeRag}
+        mode={isEditing ? "edit" : "add"}
+        initialRow={editingRow || undefined}
+        onSubmit={(row) => {
+          setRows((prev) =>
+            isEditing
+              ? prev.map((r) => (r._id === row._id ? row : r))
+              : [row, ...prev]
+          );
+          setAddOpen(false);
+          setEditRowId(null);
+        }}
+        onCancel={() => {
+          setAddOpen(false);
+          setEditRowId(null);
+        }}
+      />
+    </div>
+  </div>
 )}
+
 
       {showWhatsNew && (
         <WhatsNewModal
