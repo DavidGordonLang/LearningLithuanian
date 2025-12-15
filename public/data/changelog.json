@@ -1,5 +1,22 @@
 [
   {
+    "version": "1.2.0-beta",
+    "date": "2025-12-15",
+    "changes": [
+      "Added secure account sign-in with Google to enable multi-device use.",
+      "Introduced cloud sync via Supabase, allowing your library to be uploaded and downloaded across devices.",
+      "Implemented user-scoped cloud storage so each account’s data is fully isolated and protected.",
+      "Added explicit Upload and Download buttons in Settings for safe, testable sync during beta.",
+      "Session persistence now works across desktop, mobile browser, and installed PWA.",
+      "Fixed logout issues on mobile and PWA caused by duplicate auth state handling.",
+      "Resolved multiple service worker caching issues that prevented updates from reaching mobile and tablet devices.",
+      "Restored Add Entry and Edit Entry forms to a proper modal overlay for a cleaner, more premium experience.",
+      "Unified Add and Edit flows so both use the same modal system and behave consistently.",
+      "Background enrichment now safely adds Usage, Notes, and Category without overwriting user edits.",
+      "Improved overall stability of the app during navigation, auth changes, and device switching."
+    ]
+  },
+  {
     "version": "1.1.1-beta",
     "date": "2025-12-10",
     "changes": [
