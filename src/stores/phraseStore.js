@@ -22,6 +22,13 @@ const saveRows = (rows) => {
   }
 };
 
+const ensureIdTs = (r) => {
+  const out = { ...r };
+  if (!out._id || typeof out._id !== "string") out._id = Math.random().toString(36).slice(2);
+  if (!out._ts || typeof out._ts !== "number") out._ts = Date.now();
+  return out;
+};
+
 /* ------------------------ Zustand Store ------------------------ */
 
 export const usePhraseStore = create((set, get) => ({
@@ -34,15 +41,11 @@ export const usePhraseStore = create((set, get) => ({
     let changed = false;
 
     const migrated = rows.map((r) => {
-      if (!r._id || typeof r._id !== "string") {
-        changed = true;
-        return {
-          ...r,
-          _id: Math.random().toString(36).slice(2),
-          _ts: r._ts || Date.now(),
-        };
-      }
-      return r;
+      const beforeId = r?._id;
+      const beforeTs = r?._ts;
+      const next = ensureIdTs(r);
+      if (beforeId !== next._id || beforeTs !== next._ts) changed = true;
+      return next;
     });
 
     if (changed) {
@@ -54,28 +57,27 @@ export const usePhraseStore = create((set, get) => ({
   // replace entire list
   setPhrases: (update) => {
     set((state) => {
-      const next =
-        typeof update === "function" ? update(state.phrases) : update;
-      return { phrases: next };
+      const next = typeof update === "function" ? update(state.phrases) : update;
+      const safe = Array.isArray(next) ? next : [];
+      saveRows(safe);
+      return { phrases: safe };
     });
-    saveRows(get().phrases);
   },
 
   // add entry
   addPhrase: (row) =>
     set((state) => {
-      const next = [row, ...state.phrases];
+      const safeRow = ensureIdTs(row);
+      const next = [safeRow, ...state.phrases];
       saveRows(next);
       return { phrases: next };
     }),
 
-  // update a phrase by index
+  // update a phrase by index (existing behaviour)
   saveEditedPhrase: (index, updated) =>
     set((state) => {
       const next = state.phrases.map((r, i) =>
-        i === index
-          ? { ...updated, _ts: r._ts || Date.now() }
-          : r
+        i === index ? { ...ensureIdTs(r), ...updated, _ts: r._ts || Date.now() } : r
       );
       saveRows(next);
       return { phrases: next };
@@ -85,6 +87,20 @@ export const usePhraseStore = create((set, get) => ({
   removePhrase: (index) =>
     set((state) => {
       const next = state.phrases.filter((_, i) => i !== index);
+      saveRows(next);
+      return { phrases: next };
+    }),
+
+  // PATCH by _id (for async enrich)
+  patchPhraseById: (id, patch) =>
+    set((state) => {
+      if (!id) return { phrases: state.phrases };
+
+      const next = state.phrases.map((r) => {
+        if ((r?._id ?? null) !== id) return r;
+        return { ...r, ...patch };
+      });
+
       saveRows(next);
       return { phrases: next };
     }),
