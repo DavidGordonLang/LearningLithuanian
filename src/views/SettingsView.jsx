@@ -14,7 +14,12 @@ export default function SettingsView({
   onOpenChangeLog,
   onOpenUserGuide,
 }) {
-  const { user, signInWithGoogle, signOut } = useAuthStore();
+  const {
+    user,
+    loading,
+    signInWithGoogle,
+    signOut,
+  } = useAuthStore();
 
   /* EXPORT JSON */
   function exportJson() {
@@ -23,8 +28,9 @@ export default function SettingsView({
       const blob = new Blob([dataStr], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+
       a.href = url;
-      a.download = "zodis-export.json";
+      a.download = "lithuanian-trainer-export.json";
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -42,6 +48,17 @@ export default function SettingsView({
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
 
+      {/* STARTER PACK */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
+        <div className="text-lg font-semibold">Starter Pack</div>
+        <button
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
+          onClick={() => fetchStarter("EN2LT")}
+        >
+          Install starter pack
+        </button>
+      </section>
+
       {/* ACCOUNT & SYNC */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Account & Sync</div>
@@ -49,16 +66,17 @@ export default function SettingsView({
         {!user ? (
           <>
             <p className="text-sm text-zinc-400">
-              Žodis works fully offline by default.
+              Your data is currently stored only on this device.
               <br />
-              Signing in lets you back up your library and sync across devices.
+              Signing in enables secure cloud sync across devices.
             </p>
 
             <button
-              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
+              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
               onClick={signInWithGoogle}
+              disabled={loading}
             >
-              Sign in to enable sync
+              {loading ? "Connecting…" : "Sign in to enable sync"}
             </button>
           </>
         ) : (
@@ -68,12 +86,8 @@ export default function SettingsView({
               <span className="text-zinc-200">{user.email}</span>
             </p>
 
-            <p className="text-xs text-zinc-500">
-              Sync will be enabled in a future update.
-            </p>
-
             <button
-              className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
+              className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
               onClick={signOut}
             >
               Sign out
@@ -82,27 +96,16 @@ export default function SettingsView({
         )}
       </section>
 
-      {/* STARTER PACK */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Starter Pack</div>
-
-        <button
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
-          onClick={() => fetchStarter("EN2LT")}
-        >
-          Install starter pack
-        </button>
-      </section>
-
       {/* VOICE SETTINGS */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Voice Settings</div>
 
         <div className="space-y-1">
-          <label className="text-sm">Azure Speech</label>
+          <label className="text-sm">{T.azure}</label>
           <select
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60 cursor-not-allowed"
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 opacity-60"
             disabled
+            value="azure"
           >
             <option>Azure Speech (recommended)</option>
           </select>
@@ -121,7 +124,7 @@ export default function SettingsView({
         </div>
 
         <button
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
           onClick={() => playText("Sveiki!", { slow: false })}
         >
           Play sample
@@ -139,21 +142,21 @@ export default function SettingsView({
         />
 
         <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
           onClick={exportJson}
         >
           Export current library
         </button>
 
         <button
-          className="bg-blue-600 text-white rounded-full px-5 py-2 hover:bg-blue-500"
+          className="bg-blue-600 text-white rounded-full px-5 py-2"
           onClick={onOpenDuplicateScanner}
         >
           Open duplicate scanner
         </button>
 
         <button
-          className="bg-red-500 text-white rounded-full px-5 py-2 hover:bg-red-400"
+          className="bg-red-500 text-white rounded-full px-5 py-2"
           onClick={clearLibrary}
         >
           Clear entire library
@@ -169,14 +172,14 @@ export default function SettingsView({
         </div>
 
         <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
           onClick={onOpenUserGuide}
         >
           User Guide
         </button>
 
         <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700"
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
           onClick={onOpenChangeLog}
         >
           View Change Log
