@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../stores/authStore";
-import { replaceUserPhrases } from "../stores/supabasePhrases";
+import { replaceUserPhrases, fetchUserPhrases } from "../stores/supabasePhrases";
 
 export default function SettingsView({
   T,
@@ -16,19 +16,25 @@ export default function SettingsView({
   onOpenUserGuide,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
-  const [syncing, setSyncing] = useState(false);
+
+  const [syncingUp, setSyncingUp] = useState(false);
+  const [syncingDown, setSyncingDown] = useState(false);
 
   /* EXPORT JSON */
   function exportJson() {
-    const blob = new Blob([JSON.stringify(rows, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "zodis-library.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = new Blob([JSON.stringify(rows, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "zodis-library.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + (e?.message || "Unknown error"));
+    }
   }
 
   /* IMPORT JSON */
@@ -39,23 +45,44 @@ export default function SettingsView({
     e.target.value = "";
   }
 
-  /* MANUAL CLOUD UPLOAD (TEST STEP) */
+  /* MANUAL CLOUD UPLOAD (TEST) */
   async function uploadLibraryToCloud() {
     if (!user) return;
     try {
-      setSyncing(true);
+      setSyncingUp(true);
       await replaceUserPhrases(rows);
-      alert("Library uploaded to Supabase successfully.");
+      alert("Uploaded to Supabase (test) ✅");
     } catch (e) {
-      alert("Upload failed: " + e.message);
+      alert("Upload failed: " + (e?.message || "Unknown error"));
     } finally {
-      setSyncing(false);
+      setSyncingUp(false);
+    }
+  }
+
+  /* MANUAL CLOUD DOWNLOAD (TEST) */
+  async function downloadLibraryFromCloud() {
+    if (!user) return;
+    try {
+      setSyncingDown(true);
+      const cloudRows = await fetchUserPhrases();
+
+      // IMPORTANT:
+      // We are NOT auto-overwriting local state yet because SettingsView
+      // doesn’t own setRows in your current wiring.
+      //
+      // For now: show a sanity check so you can confirm reads work.
+      alert(
+        `Downloaded ${cloudRows.length} items from Supabase (test) ✅\n\nNext step is wiring this into the local store.`
+      );
+    } catch (e) {
+      alert("Download failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setSyncingDown(false);
     }
   }
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
-
       {/* STARTER PACK */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
@@ -94,21 +121,36 @@ export default function SettingsView({
               <span className="text-zinc-200">{user.email}</span>
             </p>
 
-            {/* TEMPORARY MANUAL SYNC BUTTON */}
-            <button
-              className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold disabled:opacity-60"
-              onClick={uploadLibraryToCloud}
-              disabled={syncing}
-            >
-              {syncing ? "Uploading…" : "Upload library (test)"}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+                onClick={uploadLibraryToCloud}
+                disabled={syncingUp}
+              >
+                {syncingUp ? "Uploading…" : "Upload library (test)"}
+              </button>
 
-            <button
-              className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
-              onClick={signOut}
-            >
-              Sign out
-            </button>
+              <button
+                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+                onClick={downloadLibraryFromCloud}
+                disabled={syncingDown}
+              >
+                {syncingDown ? "Downloading…" : "Download library (test)"}
+              </button>
+
+              <button
+                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
+                onClick={signOut}
+                disabled={loading}
+              >
+                Sign out
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-500">
+              These test buttons are temporary. Once we confirm read/write, we’ll
+              wire automatic sync.
+            </p>
           </>
         )}
       </section>
@@ -152,7 +194,11 @@ export default function SettingsView({
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
-        <input type="file" accept="application/json" onChange={handleImportFile} />
+        <input
+          type="file"
+          accept="application/json"
+          onChange={handleImportFile}
+        />
 
         <button
           className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
