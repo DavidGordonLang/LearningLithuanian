@@ -43,8 +43,7 @@ export async function fetchUserPhrases() {
   const { data, error } = await supabase
     .from("phrases")
     .select("data")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .eq("user_id", user.id);
 
   if (error) throw error;
 
