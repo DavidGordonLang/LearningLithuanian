@@ -1,20 +1,29 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
-      registerType: 'autoUpdate',
 
-      // Use your own manifest.json in /public
-      includeManifestIcons: true,
+    VitePWA({
+      // We keep PWA support, but disable SW generation for now
+      // This keeps the app installable without caching complexity
+      registerType: "autoUpdate",
+
+      // We manage manifest ourselves in /public/manifest.json
       manifest: false,
+      includeManifestIcons: true,
+
+      // 🔒 Critical: disable service worker generation
+      devOptions: {
+        enabled: false,
+      },
 
       workbox: {
-        navigateFallbackDenylist: [/^\/api\//],
+        // Explicitly disable precaching to avoid build errors
+        globPatterns: [],
       },
     }),
   ],
-})
+});
