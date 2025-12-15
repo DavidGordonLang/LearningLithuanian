@@ -40,7 +40,6 @@ export default function LibraryView({
   const filteredRows = useMemo(() => {
     let base = rows;
 
-    // Search (global)
     if (qNorm) {
       base = base.filter((r) => {
         const en = (r.English || "").toLowerCase();
@@ -114,7 +113,6 @@ export default function LibraryView({
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
       <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
 
-      {/* ADD ENTRY */}
       {typeof onOpenAddForm === "function" && (
         <button
           className="mt-3 mb-4 bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 transition-transform active:scale-95 select-none"
@@ -157,7 +155,7 @@ export default function LibraryView({
       {filteredRows.length === 0 ? (
         <p className="text-sm text-zinc-400">No entries found.</p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filteredRows.map((r) => {
             const isOpen = expanded.has(r._id);
 
@@ -207,15 +205,17 @@ export default function LibraryView({
 
                   {/* TEXT */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold break-words">
-                      {r.English || "—"}
-                    </div>
-
-                    <div className="text-sm text-emerald-300 break-words">
+                    {/* Lithuanian — primary */}
+                    <div className="text-base font-semibold text-emerald-300 break-words">
                       {r.Lithuanian || "—"}
                     </div>
 
-                    {/* PHONETICS — now visible even when collapsed */}
+                    {/* English — secondary */}
+                    <div className="text-sm text-zinc-400 mt-0.5 break-words">
+                      {r.English || "—"}
+                    </div>
+
+                    {/* Phonetics — helper */}
                     {!isOpen && r.Phonetic && (
                       <div className="text-xs text-zinc-500 italic mt-0.5 break-words">
                         {r.Phonetic}
@@ -226,7 +226,7 @@ export default function LibraryView({
 
                 {/* EXPANDED CONTENT */}
                 {isOpen && (
-                  <div className="mt-4 border-t border-zinc-800 pt-3 space-y-4 text-sm text-zinc-300">
+                  <div className="mt-5 border-t border-zinc-800 pt-4 space-y-5 text-sm text-zinc-300">
                     {r.Phonetic && (
                       <div className="italic text-zinc-400">
                         {r.Phonetic}
@@ -234,27 +234,27 @@ export default function LibraryView({
                     )}
 
                     {r.Usage && (
-                      <div>
+                      <div className="leading-relaxed">
                         <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
                           {T.usage}
                         </div>
-                        <div className="leading-relaxed">{r.Usage}</div>
+                        <div>{r.Usage}</div>
                       </div>
                     )}
 
                     {r.Notes && (
-                      <div>
+                      <div className="leading-relaxed whitespace-pre-line">
                         <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
                           {T.notes}
                         </div>
-                        <div className="whitespace-pre-line leading-relaxed">
+                        <div className="leading-relaxed">
                           {r.Notes}
                         </div>
                       </div>
                     )}
 
                     {r.Category && (
-                      <div className="text-xs text-zinc-500 pt-1">
+                      <div className="text-xs text-zinc-500 pt-2">
                         {T.category}:{" "}
                         <span className="text-zinc-300">
                           {r.Category}
