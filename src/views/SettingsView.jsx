@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuthStore } from "../stores/authStore";
+import { supabase } from "../supabaseClient";
 
 export default function SettingsView({
   T,
@@ -14,8 +14,6 @@ export default function SettingsView({
   onOpenChangeLog,
   onOpenUserGuide,
 }) {
-  const { user } = useAuthStore();
-
   /* EXPORT JSON */
   function exportJson() {
     try {
@@ -29,11 +27,11 @@ export default function SettingsView({
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      alert("Export failed");
+      alert("Export failed: " + e.message);
     }
   }
 
-  /* IMPORT JSON */
+  /* IMPORT JSON HANDLER */
   function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -41,9 +39,17 @@ export default function SettingsView({
     e.target.value = "";
   }
 
+  async function signInWithGoogle() {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
-
       {/* STARTER PACK */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
@@ -84,7 +90,7 @@ export default function SettingsView({
 
         <button
           className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
-          onClick={() => playText("Sveiki!", { slow: false })}
+          onClick={() => playText("Sveiki!")}
         >
           Play sample
         </button>
@@ -128,37 +134,26 @@ export default function SettingsView({
         </button>
       </section>
 
-      {/* ACCOUNT & SYNC (OPTION A) */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-3">
+      {/* ACCOUNT / SYNC */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Account & Sync</div>
 
-        {!user ? (
-          <>
-            <p className="text-sm text-zinc-400">
-              You’re currently using Žodis in local-only mode.
-            </p>
-            <p className="text-xs text-zinc-500">
-              Your data is stored on this device only. Signing in is optional and
-              will allow backup and sync across devices in the future.
-            </p>
+        <p className="text-sm text-zinc-400 leading-relaxed">
+          You are currently using Žodis in <span className="text-zinc-200">local-only mode</span>.
+          Your data lives on this device only.
+        </p>
 
-            <button
-              className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 hover:bg-zinc-700 opacity-60 cursor-not-allowed"
-              disabled
-            >
-              Sign in (coming soon)
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-emerald-400">
-              Signed in as {user.email}
-            </p>
-            <p className="text-xs text-zinc-500">
-              Sync features will appear here.
-            </p>
-          </>
-        )}
+        <p className="text-sm text-zinc-400 leading-relaxed">
+          Signing in lets you back up your library and sync it across devices.
+          You can keep using the app without signing in if you prefer.
+        </p>
+
+        <button
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold hover:bg-emerald-400"
+          onClick={signInWithGoogle}
+        >
+          Sign in to enable sync
+        </button>
       </section>
 
       {/* ABOUT */}
