@@ -393,8 +393,9 @@ export default function App() {
       px-3 pb-6
     "
     style={{
-      paddingTop: "env(safe-area-inset-top, 1.5rem)",
-    }}
+  top: headerHeight,
+  paddingTop: "1.5rem",
+}}
     onClick={() => {
       setAddOpen(false);
       setEditRowId(null);
