@@ -14,10 +14,7 @@ const Header = forwardRef(function Header({ T, page, setPage }, ref) {
     <header
       ref={ref}
       className={cn(
-        // IMPORTANT:
-        // z-40 keeps the header above page content
-        // but BELOW modals (z-50+)
-        "sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800"
+        "sticky top-0 z-[10000] bg-zinc-950/95 backdrop-blur border-b border-zinc-800"
       )}
     >
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-2 pb-1">
