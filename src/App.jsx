@@ -304,36 +304,58 @@ export default function App() {
     setEditRowId(null);
   }
 
-  // HARD BODY SCROLL LOCK (mobile-safe) + single scroll owner inside modal
+  // HARD BODY + HTML SCROLL LOCK (mobile-safe, kills background scroll + rubber-band)
   useEffect(() => {
     if (!addOpen) return;
 
     const scrollY = window.scrollY || 0;
 
-    const prevPosition = document.body.style.position;
-    const prevTop = document.body.style.top;
-    const prevLeft = document.body.style.left;
-    const prevRight = document.body.style.right;
-    const prevWidth = document.body.style.width;
-    const prevOverflow = document.body.style.overflow;
-    const prevOverscroll = document.body.style.overscrollBehavior;
+    const body = document.body;
+    const html = document.documentElement;
 
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
-    document.body.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
+    const prevBody = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      overscrollBehavior: body.style.overscrollBehavior,
+      touchAction: body.style.touchAction,
+    };
+
+    const prevHtml = {
+      overflow: html.style.overflow,
+      overscrollBehavior: html.style.overscrollBehavior,
+      height: html.style.height,
+    };
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    body.style.touchAction = "none";
+
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    html.style.height = "100%";
 
     return () => {
-      document.body.style.position = prevPosition;
-      document.body.style.top = prevTop;
-      document.body.style.left = prevLeft;
-      document.body.style.right = prevRight;
-      document.body.style.width = prevWidth;
-      document.body.style.overflow = prevOverflow;
-      document.body.style.overscrollBehavior = prevOverscroll;
+      body.style.position = prevBody.position;
+      body.style.top = prevBody.top;
+      body.style.left = prevBody.left;
+      body.style.right = prevBody.right;
+      body.style.width = prevBody.width;
+      body.style.overflow = prevBody.overflow;
+      body.style.overscrollBehavior = prevBody.overscrollBehavior;
+      body.style.touchAction = prevBody.touchAction;
+
+      html.style.overflow = prevHtml.overflow;
+      html.style.overscrollBehavior = prevHtml.overscrollBehavior;
+      html.style.height = prevHtml.height;
 
       window.scrollTo(0, scrollY);
     };
@@ -405,10 +427,10 @@ export default function App() {
         )}
       </main>
 
-      {/* ADD / EDIT MODAL — SINGLE SCROLL OWNER (the card) */}
+      {/* ADD / EDIT MODAL — SINGLE SCROLL OWNER = AddForm's internal scroller */}
       {addOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overscroll-none"
           role="dialog"
           aria-modal="true"
           onClick={() => {
@@ -423,35 +445,32 @@ export default function App() {
           }}
           tabIndex={-1}
         >
-          {/* This wrapper positions the card below the header and prevents overlay scrolling */}
           <div
-            className="w-full h-full px-3 flex justify-center"
-            style={{
-              paddingTop: headerHeight + 16,
-              paddingBottom: 16,
-            }}
+            className="w-full h-full px-3 pb-4 flex justify-center items-start"
+            style={{ paddingTop: headerHeight + 16 }}
           >
-            {/* Card is the ONLY scroll container */}
             <div
               className="
                 w-full max-w-2xl
                 bg-zinc-900 border border-zinc-800
                 rounded-2xl shadow-2xl
-                overflow-y-auto overscroll-contain
+                overflow-hidden
+                flex flex-col
               "
               style={{
-                maxHeight: `calc(100vh - ${headerHeight + 32}px)`,
-                WebkitOverflowScrolling: "touch",
+                height: `calc(100dvh - ${headerHeight + 32}px)`,
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-5 pb-3 border-b border-zinc-800">
+              {/* Modal header should NOT scroll */}
+              <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
                 <h3 className="text-lg font-semibold">
                   {isEditing ? T.edit : T.addEntry}
                 </h3>
               </div>
 
-              <div className="p-5 pt-4">
+              {/* Body: AddForm owns internal scroll + footer */}
+              <div className="p-5 pt-4 flex-1 min-h-0">
                 <AddForm
                   T={T}
                   genId={genId}
