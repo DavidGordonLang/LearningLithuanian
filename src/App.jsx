@@ -304,16 +304,38 @@ export default function App() {
     setEditRowId(null);
   }
 
-  // BODY SCROLL LOCK (prevents page behind moving)
+  // HARD BODY SCROLL LOCK (mobile-safe) + single scroll owner inside modal
   useEffect(() => {
     if (!addOpen) return;
+
+    const scrollY = window.scrollY || 0;
+
+    const prevPosition = document.body.style.position;
+    const prevTop = document.body.style.top;
+    const prevLeft = document.body.style.left;
+    const prevRight = document.body.style.right;
+    const prevWidth = document.body.style.width;
     const prevOverflow = document.body.style.overflow;
     const prevOverscroll = document.body.style.overscrollBehavior;
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
     document.body.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "contain";
+    document.body.style.overscrollBehavior = "none";
+
     return () => {
+      document.body.style.position = prevPosition;
+      document.body.style.top = prevTop;
+      document.body.style.left = prevLeft;
+      document.body.style.right = prevRight;
+      document.body.style.width = prevWidth;
       document.body.style.overflow = prevOverflow;
       document.body.style.overscrollBehavior = prevOverscroll;
+
+      window.scrollTo(0, scrollY);
     };
   }, [addOpen]);
 
@@ -383,11 +405,12 @@ export default function App() {
         )}
       </main>
 
-      {/* ADD / EDIT MODAL */}
+      {/* ADD / EDIT MODAL — SINGLE SCROLL OWNER (the card) */}
       {addOpen && (
         <div
-          className="fixed inset-x-0 bottom-0 z-50 bg-black/60 backdrop-blur-sm overscroll-contain touch-pan-y"
-          style={{ top: headerHeight }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
           onClick={() => {
             setAddOpen(false);
             setEditRowId(null);
@@ -400,17 +423,25 @@ export default function App() {
           }}
           tabIndex={-1}
         >
-          <div className="h-full w-full px-3 pb-6 pt-6 flex justify-center items-start">
+          {/* This wrapper positions the card below the header and prevents overlay scrolling */}
+          <div
+            className="w-full h-full px-3 flex justify-center"
+            style={{
+              paddingTop: headerHeight + 16,
+              paddingBottom: 16,
+            }}
+          >
+            {/* Card is the ONLY scroll container */}
             <div
               className="
                 w-full max-w-2xl
                 bg-zinc-900 border border-zinc-800
                 rounded-2xl shadow-2xl
-                overflow-hidden
-                flex flex-col
+                overflow-y-auto overscroll-contain
               "
               style={{
-                height: `calc(100vh - ${headerHeight + 24}px)`,
+                maxHeight: `calc(100vh - ${headerHeight + 32}px)`,
+                WebkitOverflowScrolling: "touch",
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -420,7 +451,7 @@ export default function App() {
                 </h3>
               </div>
 
-              <div className="p-5 pt-4 flex-1 min-h-0">
+              <div className="p-5 pt-4">
                 <AddForm
                   T={T}
                   genId={genId}
