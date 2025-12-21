@@ -120,15 +120,11 @@ const SearchBox = memo(
           }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
-            startTransition(() =>
-              searchStore.setRaw(e.currentTarget.value)
-            );
+            startTransition(() => searchStore.setRaw(e.currentTarget.value));
           }}
           onInput={(e) => {
             if (!composingRef.current)
-              startTransition(() =>
-                searchStore.setRaw(e.currentTarget.value)
-              );
+              startTransition(() => searchStore.setRaw(e.currentTarget.value));
           }}
         />
 
@@ -161,9 +157,7 @@ export default function App() {
   }, []);
 
   /* PAGE */
-  const [page, setPage] = useState(
-    () => localStorage.getItem(LSK_PAGE) || "home"
-  );
+  const [page, setPage] = useState(() => localStorage.getItem(LSK_PAGE) || "home");
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
 
   const headerRef = useRef(null);
@@ -172,9 +166,7 @@ export default function App() {
   useEffect(() => {
     if (!headerRef.current) return;
     const measure = () =>
-      setHeaderHeight(
-        headerRef.current.getBoundingClientRect().height || 0
-      );
+      setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
@@ -185,17 +177,13 @@ export default function App() {
   const setRows = usePhraseStore((s) => s.setPhrases);
 
   /* SORT */
-  const [sortMode, setSortMode] = useState(
-    () => localStorage.getItem(LSK_SORT) || "RAG"
-  );
+  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
   const T = STR;
 
   /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
-    "lt-LT-LeonasNeural"
-  );
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState("lt-LT-LeonasNeural");
   const audioRef = useRef(null);
 
   async function playText(text, { slow = false } = {}) {
@@ -307,8 +295,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION)
-      setShowWhatsNew(true);
+    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION) setShowWhatsNew(true);
   }, []);
 
   function goToPage(next) {
@@ -383,72 +370,78 @@ export default function App() {
         )}
       </main>
 
+      {/* ADD / EDIT MODAL (rewritten to keep everything inside the card) */}
       {addOpen && (
-  <div
-    className="
-      fixed inset-0 z-50
-      flex justify-center
-      overflow-y-auto
-      bg-black/60 backdrop-blur-sm
-      px-3 pb-6
-    "
-    style={{
-  top: headerHeight,
-  paddingTop: "1.5rem",
-}}
-    onClick={() => {
-      setAddOpen(false);
-      setEditRowId(null);
-    }}
-    onKeyDown={(e) => {
-      if (e.key === "Escape") {
-        setAddOpen(false);
-        setEditRowId(null);
-      }
-    }}
-    tabIndex={-1}
-  >
-    <div
-      className="
-        w-full max-w-2xl
-        bg-zinc-900 border border-zinc-800
-        rounded-2xl shadow-2xl
-        p-5
-      "
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold">
-          {isEditing ? T.edit : T.addEntry}
-        </h3>
-      </div>
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 bg-black/60 backdrop-blur-sm"
+          style={{
+            top: headerHeight,
+          }}
+          onClick={() => {
+            setAddOpen(false);
+            setEditRowId(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setAddOpen(false);
+              setEditRowId(null);
+            }
+          }}
+          tabIndex={-1}
+        >
+          {/* Centering + padding + scroll on the OVERLAY */}
+          <div
+            className="h-full w-full overflow-y-auto px-3 pb-6 pt-6 flex justify-center items-start"
+          >
+            {/* Card owns layout; inner body scrolls */}
+            <div
+              className="
+                w-full max-w-2xl
+                bg-zinc-900 border border-zinc-800
+                rounded-2xl shadow-2xl
+                overflow-hidden
+                flex flex-col
+              "
+              style={{
+                maxHeight: `calc(100vh - ${headerHeight + 24}px)`,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Card header */}
+              <div className="p-5 pb-3 border-b border-zinc-800">
+                <h3 className="text-lg font-semibold">
+                  {isEditing ? T.edit : T.addEntry}
+                </h3>
+              </div>
 
-      <AddForm
-        T={T}
-        genId={genId}
-        nowTs={nowTs}
-        normalizeRag={normalizeRag}
-        mode={isEditing ? "edit" : "add"}
-        initialRow={editingRow || undefined}
-        onSubmit={(row) => {
-          setRows((prev) =>
-            isEditing
-              ? prev.map((r) => (r._id === row._id ? row : r))
-              : [row, ...prev]
-          );
-          setAddOpen(false);
-          setEditRowId(null);
-        }}
-        onCancel={() => {
-          setAddOpen(false);
-          setEditRowId(null);
-        }}
-      />
-    </div>
-  </div>
-)}
-
-
+              {/* Card body scroll area */}
+              <div className="p-5 pt-4 overflow-y-auto min-h-0">
+                <AddForm
+                  T={T}
+                  genId={genId}
+                  nowTs={nowTs}
+                  normalizeRag={normalizeRag}
+                  mode={isEditing ? "edit" : "add"}
+                  initialRow={editingRow || undefined}
+                  onSubmit={(row) => {
+                    setRows((prev) =>
+                      isEditing
+                        ? prev.map((r) => (r._id === row._id ? row : r))
+                        : [row, ...prev]
+                    );
+                    setAddOpen(false);
+                    setEditRowId(null);
+                  }}
+                  onCancel={() => {
+                    setAddOpen(false);
+                    setEditRowId(null);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showWhatsNew && (
         <WhatsNewModal
@@ -465,9 +458,7 @@ export default function App() {
         />
       )}
 
-      {showChangeLog && (
-        <ChangeLogModal onClose={() => setShowChangeLog(false)} />
-      )}
+      {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
 
       {showUserGuide && (
         <UserGuideModal
