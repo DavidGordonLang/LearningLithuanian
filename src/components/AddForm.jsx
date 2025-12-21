@@ -159,7 +159,8 @@ export default function AddForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* RAG + Actions row */}
+      <div className="grid grid-cols-2 gap-3 items-end">
         <div>
           <label className="block text-xs mb-1">{T.ragLabel}</label>
           <select
@@ -172,27 +173,27 @@ export default function AddForm({
             <option value="🟢">🟢 Green</option>
           </select>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3 pt-1">
-        <button
-          type="button"
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
-          onClick={() => {
-            if (!isEdit) reset();
-            onCancel?.();
-          }}
-        >
-          {T.cancel}
-        </button>
+        <div className="flex justify-end items-center gap-3 pt-5">
+          <button
+            type="button"
+            className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
+            onClick={() => {
+              if (!isEdit) reset();
+              onCancel?.();
+            }}
+          >
+            {T.cancel}
+          </button>
 
-        <button
-          type="submit"
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
-          disabled={!canSave}
-        >
-          {T.save}
-        </button>
+          <button
+            type="submit"
+            className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+            disabled={!canSave}
+          >
+            {T.save}
+          </button>
+        </div>
       </div>
     </form>
   );
