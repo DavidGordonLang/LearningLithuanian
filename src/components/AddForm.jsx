@@ -28,6 +28,9 @@ export default function AddForm({
     normalizeRag(initialRow?.["RAG Icon"] || "🟠")
   );
 
+  /* ------------------------------------------------------------------ */
+  /* SYNC EDIT STATE                                                     */
+  /* ------------------------------------------------------------------ */
   useEffect(() => {
     if (!isEdit || !initialRow) return;
 
@@ -44,6 +47,9 @@ export default function AddForm({
     setRag(normalizeRag(initialRow["RAG Icon"] || "🟠"));
   }, [isEdit, initialRow, normalizeRag]);
 
+  /* ------------------------------------------------------------------ */
+  /* VALIDATION                                                         */
+  /* ------------------------------------------------------------------ */
   const canSave = useMemo(
     () => english.trim() !== "" && lithuanian.trim() !== "",
     [english, lithuanian]
@@ -95,13 +101,16 @@ export default function AddForm({
     if (!isEdit) reset();
   }
 
+  /* ------------------------------------------------------------------ */
+  /* LAYOUT                                                             */
+  /* ------------------------------------------------------------------ */
   return (
     <form
       onSubmit={handleSave}
-      className="flex flex-col min-h-0 h-full"
+      className="flex flex-col h-full min-h-0"
     >
-      {/* SCROLLING CONTENT */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4 overscroll-contain">
+      {/* ================= SCROLLABLE BODY ================= */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 space-y-4">
         <div>
           <label className="block text-xs mb-1">{T.english} *</label>
           <input
@@ -164,15 +173,14 @@ export default function AddForm({
           />
         </div>
 
-        {/* spacer so last textarea isn't hidden behind footer */}
-        <div className="h-2" />
+        {/* breathing room above footer */}
+        <div className="h-4" />
       </div>
 
-      {/* FIXED FOOTER (always inside container, no sticky) */}
+      {/* ================= FIXED FOOTER (INSIDE FORM) ================= */}
       <div
         className="
           shrink-0
-          mt-4
           border-t border-zinc-800
           pt-4
           pb-[calc(env(safe-area-inset-bottom)+0.75rem)]
