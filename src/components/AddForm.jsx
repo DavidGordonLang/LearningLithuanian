@@ -96,9 +96,12 @@ export default function AddForm({
   }
 
   return (
-    <form className="flex flex-col min-h-0" onSubmit={handleSave}>
-      {/* Scrollable content area (parent controls actual scroll; this keeps structure clean) */}
-      <div className="space-y-4">
+    <form
+      onSubmit={handleSave}
+      className="flex flex-col min-h-0 h-full"
+    >
+      {/* SCROLLING CONTENT */}
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4 overscroll-contain">
         <div>
           <label className="block text-xs mb-1">{T.english} *</label>
           <input
@@ -160,17 +163,20 @@ export default function AddForm({
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>
+
+        {/* spacer so last textarea isn't hidden behind footer */}
+        <div className="h-2" />
       </div>
 
-      {/* Sticky footer INSIDE the form container */}
+      {/* FIXED FOOTER (always inside container, no sticky) */}
       <div
         className="
+          shrink-0
           mt-4
-          sticky bottom-0
-          bg-zinc-900/95 backdrop-blur
           border-t border-zinc-800
           pt-4
           pb-[calc(env(safe-area-inset-bottom)+0.75rem)]
+          bg-zinc-900
         "
       >
         <div className="grid grid-cols-2 gap-3 items-end">
