@@ -120,11 +120,15 @@ const SearchBox = memo(
           }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
-            startTransition(() => searchStore.setRaw(e.currentTarget.value));
+            startTransition(() =>
+              searchStore.setRaw(e.currentTarget.value)
+            );
           }}
           onInput={(e) => {
             if (!composingRef.current)
-              startTransition(() => searchStore.setRaw(e.currentTarget.value));
+              startTransition(() =>
+                searchStore.setRaw(e.currentTarget.value)
+              );
           }}
         />
 
@@ -308,6 +312,50 @@ export default function App() {
     setEditRowId(null);
   }
 
+  /* ============================================================================
+     🔒 HARD MODAL SCROLL INVARIANT
+     Re-applied on every render while addOpen === true
+     Survives auth churn, remounts, SW updates
+     ========================================================================== */
+  useEffect(() => {
+    if (!addOpen) return;
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    const scrollY = window.scrollY || 0;
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    body.style.touchAction = "none";
+
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    html.style.height = "100%";
+
+    return () => {
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      body.style.overflow = "";
+      body.style.overscrollBehavior = "";
+      body.style.touchAction = "";
+
+      html.style.overflow = "";
+      html.style.overscrollBehavior = "";
+      html.style.height = "";
+
+      window.scrollTo(0, scrollY);
+    };
+  }, [addOpen]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
@@ -393,8 +441,8 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
-                <h3 className="text-lg font-semibold text-red-400">
-                  MODAL FIX TEST — {isEditing ? T.edit : T.addEntry}
+                <h3 className="text-lg font-semibold">
+                  {isEditing ? T.edit : T.addEntry}
                 </h3>
               </div>
 
