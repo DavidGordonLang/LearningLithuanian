@@ -177,13 +177,16 @@ export default function App() {
   const setRows = usePhraseStore((s) => s.setPhrases);
 
   /* SORT */
-  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
+  const [sortMode, setSortMode] = useState(
+    () => localStorage.getItem(LSK_SORT) || "RAG"
+  );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
   const T = STR;
 
   /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState("lt-LT-LeonasNeural");
+  const [azureVoiceShortName, setAzureVoiceShortName] =
+    useState("lt-LT-LeonasNeural");
   const audioRef = useRef(null);
 
   async function playText(text, { slow = false } = {}) {
@@ -295,7 +298,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION) setShowWhatsNew(true);
+    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION)
+      setShowWhatsNew(true);
   }, []);
 
   function goToPage(next) {
@@ -303,63 +307,6 @@ export default function App() {
     setAddOpen(false);
     setEditRowId(null);
   }
-
-  // HARD BODY + HTML SCROLL LOCK (mobile-safe, kills background scroll + rubber-band)
-  useEffect(() => {
-    if (!addOpen) return;
-
-    const scrollY = window.scrollY || 0;
-
-    const body = document.body;
-    const html = document.documentElement;
-
-    const prevBody = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-      overscrollBehavior: body.style.overscrollBehavior,
-      touchAction: body.style.touchAction,
-    };
-
-    const prevHtml = {
-      overflow: html.style.overflow,
-      overscrollBehavior: html.style.overscrollBehavior,
-      height: html.style.height,
-    };
-
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    body.style.overflow = "hidden";
-    body.style.overscrollBehavior = "none";
-    body.style.touchAction = "none";
-
-    html.style.overflow = "hidden";
-    html.style.overscrollBehavior = "none";
-    html.style.height = "100%";
-
-    return () => {
-      body.style.position = prevBody.position;
-      body.style.top = prevBody.top;
-      body.style.left = prevBody.left;
-      body.style.right = prevBody.right;
-      body.style.width = prevBody.width;
-      body.style.overflow = prevBody.overflow;
-      body.style.overscrollBehavior = prevBody.overscrollBehavior;
-      body.style.touchAction = prevBody.touchAction;
-
-      html.style.overflow = prevHtml.overflow;
-      html.style.overscrollBehavior = prevHtml.overscrollBehavior;
-      html.style.height = prevHtml.height;
-
-      window.scrollTo(0, scrollY);
-    };
-  }, [addOpen]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -427,49 +374,30 @@ export default function App() {
         )}
       </main>
 
-      {/* ADD / EDIT MODAL — SINGLE SCROLL OWNER = AddForm's internal scroller */}
+      {/* ADD / EDIT MODAL */}
       {addOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overscroll-none"
-          role="dialog"
-          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           onClick={() => {
             setAddOpen(false);
             setEditRowId(null);
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              setAddOpen(false);
-              setEditRowId(null);
-            }
-          }}
-          tabIndex={-1}
         >
           <div
             className="w-full h-full px-3 pb-4 flex justify-center items-start"
             style={{ paddingTop: headerHeight + 16 }}
           >
             <div
-              className="
-                w-full max-w-2xl
-                bg-zinc-900 border border-zinc-800
-                rounded-2xl shadow-2xl
-                overflow-hidden
-                flex flex-col
-              "
-              style={{
-                height: `calc(100dvh - ${headerHeight + 32}px)`,
-              }}
+              className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+              style={{ height: `calc(100dvh - ${headerHeight + 32}px)` }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal header should NOT scroll */}
               <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
-               <h3 className="text-lg font-semibold">
-  {isEditing ? T.edit : T.addEntry}
-</h3>
+                <h3 className="text-lg font-semibold text-red-400">
+                  MODAL FIX TEST — {isEditing ? T.edit : T.addEntry}
+                </h3>
               </div>
 
-              {/* Body: AddForm owns internal scroll + footer */}
               <div className="p-5 pt-4 flex-1 min-h-0">
                 <AddForm
                   T={T}
