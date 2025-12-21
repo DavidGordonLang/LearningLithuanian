@@ -1,6 +1,6 @@
 /* Simple, versioned Service Worker for Žodis (PWA-safe) */
 
-const CACHE_VERSION = "zodis-container-fix7"; // 🔁 bump this on every UI change
+const CACHE_VERSION = "zodis-container-fix8"; // 🔁 bump this on every UI change
 const CACHE_NAME = `zodis-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -21,29 +21,39 @@ self.addEventListener("install", (event) => {
   );
 });
 
-/* ACTIVATE — CLEAN OLD CACHES */
+/* ACTIVATE — CLEAN OLD CACHES + TAKE CONTROL */
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
+      );
+
+      // Take control of any open pages immediately
+      await self.clients.claim();
+    })()
   );
 });
 
 /* FETCH STRATEGY
-   - Always fetch from network for navigations (no cache fallback to old index.html)
-   - Cache-first for same-origin static assets
+   - Navigations: HARD network (bypass HTTP cache + SW caches) to avoid stale app after auth redirects
+   - Static same-origin: cache-first, then fetch & cache
 */
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
   if (request.method !== "GET") return;
 
-  // Always go to the network for SPA navigations (index.html)
+  // SPA navigations (index.html). Force network + bypass caches.
+  // This is the critical fix for "Google sign-in -> app reverts to old UI".
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request));
+    event.respondWith(
+      fetch(request, { cache: "no-store" }).catch(() =>
+        // If truly offline, fall back to cached index.html (best-effort)
+        caches.match("/index.html")
+      )
+    );
     return;
   }
 
@@ -54,15 +64,26 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
+
         return fetch(request).then((response) => {
-          // Clone and cache the response for future requests
+          // Only cache successful basic/cors responses
+          if (!response || response.status !== 200) return response;
+
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseClone);
           });
+
           return response;
         });
       })
     );
+  }
+});
+
+/* OPTIONAL: allow the page to tell the SW to activate immediately */
+self.addEventListener("message", (event) => {
+  if (event?.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
   }
 });
