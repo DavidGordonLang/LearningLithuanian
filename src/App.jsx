@@ -464,9 +464,10 @@ export default function App() {
             >
               {/* Modal header should NOT scroll */}
               <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
-                <h3 className="text-lg font-semibold">
-                  {isEditing ? T.edit : T.addEntry}
-                </h3>
+                <h3 className="text-lg font-semibold text-red-400">
+  MODAL FIX TEST — {isEditing ? T.edit : T.addEntry}
+</h3>
+
               </div>
 
               {/* Body: AddForm owns internal scroll + footer */}
