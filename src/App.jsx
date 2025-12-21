@@ -304,6 +304,19 @@ export default function App() {
     setEditRowId(null);
   }
 
+  // BODY SCROLL LOCK (prevents page behind moving)
+  useEffect(() => {
+    if (!addOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "contain";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, [addOpen]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
@@ -370,13 +383,11 @@ export default function App() {
         )}
       </main>
 
-      {/* ADD / EDIT MODAL (rewritten to keep everything inside the card) */}
+      {/* ADD / EDIT MODAL */}
       {addOpen && (
         <div
-          className="fixed inset-x-0 bottom-0 z-50 bg-black/60 backdrop-blur-sm"
-          style={{
-            top: headerHeight,
-          }}
+          className="fixed inset-x-0 bottom-0 z-50 bg-black/60 backdrop-blur-sm overscroll-contain touch-pan-y"
+          style={{ top: headerHeight }}
           onClick={() => {
             setAddOpen(false);
             setEditRowId(null);
@@ -389,11 +400,7 @@ export default function App() {
           }}
           tabIndex={-1}
         >
-          {/* Centering + padding + scroll on the OVERLAY */}
-          <div
-            className="h-full w-full overflow-y-auto px-3 pb-6 pt-6 flex justify-center items-start"
-          >
-            {/* Card owns layout; inner body scrolls */}
+          <div className="h-full w-full px-3 pb-6 pt-6 flex justify-center items-start">
             <div
               className="
                 w-full max-w-2xl
@@ -403,19 +410,17 @@ export default function App() {
                 flex flex-col
               "
               style={{
-                maxHeight: `calc(100vh - ${headerHeight + 24}px)`,
+                height: `calc(100vh - ${headerHeight + 24}px)`,
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Card header */}
               <div className="p-5 pb-3 border-b border-zinc-800">
                 <h3 className="text-lg font-semibold">
                   {isEditing ? T.edit : T.addEntry}
                 </h3>
               </div>
 
-              {/* Card body scroll area */}
-              <div className="p-5 pt-4 overflow-y-auto min-h-0">
+              <div className="p-5 pt-4 flex-1 min-h-0">
                 <AddForm
                   T={T}
                   genId={genId}
