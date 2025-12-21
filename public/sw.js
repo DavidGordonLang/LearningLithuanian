@@ -1,6 +1,6 @@
 /* Simple, versioned Service Worker for Žodis (PWA-safe) */
 
-const CACHE_VERSION = "zodis-container-fix3"; // 🔁 CHANGE THIS ON EVERY UI CHANGE
+const CACHE_VERSION = "zodis-container-fix4"; // 🔁 CHANGE THIS ON EVERY UI CHANGE
 const CACHE_NAME = `zodis-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
