@@ -24,7 +24,7 @@ import WhatsNewModal from "./components/WhatsNewModal";
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
-import { initAuthListener } from "./stores/authStore";
+import { initAuthListener, useAuthStore } from "./stores/authStore";
 
 /* ============================================================================
    CONSTANTS
@@ -155,6 +155,9 @@ export default function App() {
   useEffect(() => {
     initAuthListener();
   }, []);
+
+  // ✅ FIX: gate scroll-lock during auth redirects / session restore
+  const authLoading = useAuthStore((s) => s.loading);
 
   /* PAGE */
   const [page, setPage] = useState(
@@ -314,9 +317,10 @@ export default function App() {
   /* ============================================================================
      🔒 HARD MODAL SCROLL INVARIANT (resilient to Google auth bounce)
      - Re-applies while addOpen is true.
+     ✅ FIX: do NOT apply while authLoading is true
      ========================================================================== */
   useEffect(() => {
-    if (!addOpen) return;
+    if (!addOpen || authLoading) return;
 
     const body = document.body;
     const html = document.documentElement;
@@ -358,7 +362,7 @@ export default function App() {
     };
 
     const reapplyIfNeeded = () => {
-      if (!addOpen) return;
+      if (!addOpen || authLoading) return;
       applyLock();
     };
 
@@ -392,7 +396,7 @@ export default function App() {
 
       window.scrollTo(0, scrollY);
     };
-  }, [addOpen]);
+  }, [addOpen, authLoading]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
