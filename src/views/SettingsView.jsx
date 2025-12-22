@@ -14,7 +14,7 @@ export default function SettingsView({
   fetchStarter,
   clearLibrary,
   importJsonFile,
-  rows,
+  rows, // UI rows (non-deleted only) — DO NOT use for export/sync
   onOpenDuplicateScanner,
   onOpenChangeLog,
   onOpenUserGuide,
@@ -25,11 +25,22 @@ export default function SettingsView({
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
 
-  /* EXPORT JSON */
+  /**
+   * IMPORTANT:
+   * For data integrity, exports and cloud sync must use the
+   * full phrase store (including tombstones), NOT UI-filtered rows.
+   */
+  const getAllStoredPhrases = () =>
+    usePhraseStore.getState().phrases || [];
+
+  /* EXPORT JSON (includes tombstones) */
   function exportJson() {
-    const blob = new Blob([JSON.stringify(rows, null, 2)], {
+    const allPhrases = getAllStoredPhrases();
+
+    const blob = new Blob([JSON.stringify(allPhrases, null, 2)], {
       type: "application/json",
     });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -46,12 +57,14 @@ export default function SettingsView({
     e.target.value = "";
   }
 
-  /* UPLOAD → CLOUD */
+  /* UPLOAD → CLOUD (includes tombstones) */
   async function uploadLibraryToCloud() {
     if (!user) return;
+
     try {
       setSyncingUp(true);
-      await replaceUserPhrases(rows);
+      const allPhrases = getAllStoredPhrases();
+      await replaceUserPhrases(allPhrases);
       alert("Library uploaded to cloud ✅");
     } catch (e) {
       alert("Upload failed: " + (e?.message || "Unknown error"));
@@ -172,7 +185,11 @@ export default function SettingsView({
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
-        <input type="file" accept="application/json" onChange={handleImportFile} />
+        <input
+          type="file"
+          accept="application/json"
+          onChange={handleImportFile}
+        />
 
         <button
           className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
