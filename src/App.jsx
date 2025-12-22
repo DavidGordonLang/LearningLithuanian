@@ -156,7 +156,7 @@ export default function App() {
     initAuthListener();
   }, []);
 
-  // ✅ FIX: gate scroll-lock during auth redirects / session restore
+  // ✅ gate scroll-lock during auth redirects / session restore
   const authLoading = useAuthStore((s) => s.loading);
 
   /* PAGE */
@@ -291,8 +291,17 @@ export default function App() {
   );
   const isEditing = !!editingRow;
 
+  /**
+   * ✅ FIX (tombstones):
+   * Deletion must go through phraseStore.removePhrase(index),
+   * not filtering out the object, otherwise exports/merge can’t see deletions.
+   */
   function removePhraseById(id) {
-    setRows((prev) => prev.filter((r) => r._id !== id));
+    const idx = rows.findIndex((r) => (r?._id ?? null) === id);
+    if (idx < 0) return;
+
+    // mark tombstone in local store
+    usePhraseStore.getState().removePhrase(idx);
   }
 
   const [showChangeLog, setShowChangeLog] = useState(false);
@@ -317,7 +326,7 @@ export default function App() {
   /* ============================================================================
      🔒 HARD MODAL SCROLL INVARIANT (resilient to Google auth bounce)
      - Re-applies while addOpen is true.
-     ✅ FIX: do NOT apply while authLoading is true
+     ✅ do NOT apply while authLoading is true
      ========================================================================== */
   useEffect(() => {
     if (!addOpen || authLoading) return;
