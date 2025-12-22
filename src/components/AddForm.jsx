@@ -96,102 +96,120 @@ export default function AddForm({
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSave}>
-      <div>
-        <label className="block text-xs mb-1">{T.english} *</label>
-        <input
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
-          value={english}
-          onChange={(e) => setEnglish(e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs mb-1">{T.lithuanian} *</label>
-        <input
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
-          value={lithuanian}
-          onChange={(e) => setLithuanian(e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs mb-1">{T.phonetic}</label>
-        <input
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
-          value={phonetic}
-          onChange={(e) => setPhonetic(e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs mb-1">{T.category}</label>
-        <select
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          {CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-xs mb-1">{T.usage}</label>
-        <textarea
-          rows={3}
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
-          value={usage}
-          onChange={(e) => setUsage(e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs mb-1">{T.notes}</label>
-        <textarea
-          rows={3}
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 items-end">
+    <form onSubmit={handleSave} className="flex flex-col min-h-0 h-full">
+      {/* SCROLLING CONTENT */}
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4 overscroll-contain">
         <div>
-          <label className="block text-xs mb-1">{T.ragLabel}</label>
+          <label className="block text-xs mb-1">{T.english} *</label>
+          <input
+            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+            value={english}
+            onChange={(e) => setEnglish(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs mb-1">{T.lithuanian} *</label>
+          <input
+            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+            value={lithuanian}
+            onChange={(e) => setLithuanian(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs mb-1">{T.phonetic}</label>
+          <input
+            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+            value={phonetic}
+            onChange={(e) => setPhonetic(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs mb-1">{T.category}</label>
           <select
             className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
-            value={rag}
-            onChange={(e) => setRag(e.target.value)}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
           >
-            <option value="🔴">🔴 Red</option>
-            <option value="🟠">🟠 Amber</option>
-            <option value="🟢">🟢 Green</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
           </select>
         </div>
 
-        <div className="flex justify-end items-center gap-3 pt-5">
-          <button
-            type="button"
-            className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
-            onClick={() => {
-              if (!isEdit) reset();
-              onCancel?.();
-            }}
-          >
-            {T.cancel}
-          </button>
+        <div>
+          <label className="block text-xs mb-1">{T.usage}</label>
+          <textarea
+            rows={3}
+            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+            value={usage}
+            onChange={(e) => setUsage(e.target.value)}
+          />
+        </div>
 
-          <button
-            type="submit"
-            className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
-            disabled={!canSave}
-          >
-            {T.save}
-          </button>
+        <div>
+          <label className="block text-xs mb-1">{T.notes}</label>
+          <textarea
+            rows={3}
+            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+
+        {/* Spacer so scroll can go past the footer comfortably */}
+        <div className="h-10" />
+      </div>
+
+      {/* FOOTER */}
+      <div
+        className="
+          shrink-0
+          mt-4
+          border-t border-zinc-800
+          pt-4
+          pb-[calc(env(safe-area-inset-bottom)+1.25rem)]
+          bg-zinc-900
+        "
+      >
+        <div className="grid grid-cols-2 gap-3 items-end">
+          <div>
+            <label className="block text-xs mb-1">{T.ragLabel}</label>
+            <select
+              className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+              value={rag}
+              onChange={(e) => setRag(e.target.value)}
+            >
+              <option value="🔴">🔴 Red</option>
+              <option value="🟠">🟠 Amber</option>
+              <option value="🟢">🟢 Green</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end items-center gap-3">
+            <button
+              type="button"
+              className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
+              onClick={() => {
+                if (!isEdit) reset();
+                onCancel?.();
+              }}
+            >
+              {T.cancel}
+            </button>
+
+            <button
+              type="submit"
+              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+              disabled={!canSave}
+            >
+              {T.save}
+            </button>
+          </div>
         </div>
       </div>
     </form>
