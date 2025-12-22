@@ -120,15 +120,11 @@ const SearchBox = memo(
           }}
           onCompositionEnd={(e) => {
             composingRef.current = false;
-            startTransition(() =>
-              searchStore.setRaw(e.currentTarget.value)
-            );
+            startTransition(() => searchStore.setRaw(e.currentTarget.value));
           }}
           onInput={(e) => {
             if (!composingRef.current)
-              startTransition(() =>
-                searchStore.setRaw(e.currentTarget.value)
-              );
+              startTransition(() => searchStore.setRaw(e.currentTarget.value));
           }}
         />
 
@@ -161,7 +157,9 @@ export default function App() {
   }, []);
 
   /* PAGE */
-  const [page, setPage] = useState(() => localStorage.getItem(LSK_PAGE) || "home");
+  const [page, setPage] = useState(
+    () => localStorage.getItem(LSK_PAGE) || "home"
+  );
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
 
   const headerRef = useRef(null);
@@ -189,8 +187,9 @@ export default function App() {
   const T = STR;
 
   /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] =
-    useState("lt-LT-LeonasNeural");
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
+    "lt-LT-LeonasNeural"
+  );
   const audioRef = useRef(null);
 
   async function playText(text, { slow = false } = {}) {
@@ -314,8 +313,7 @@ export default function App() {
 
   /* ============================================================================
      🔒 HARD MODAL SCROLL INVARIANT (resilient to Google auth bounce)
-     - Google sign-in often causes focus/visibility/pageshow churn.
-     - We re-apply the lock while addOpen is true whenever those events happen.
+     - Re-applies while addOpen is true.
      ========================================================================== */
   useEffect(() => {
     if (!addOpen) return;
@@ -323,7 +321,6 @@ export default function App() {
     const body = document.body;
     const html = document.documentElement;
 
-    // Keep these in closure so we can restore correctly
     const prevBody = {
       position: body.style.position,
       top: body.style.top,
@@ -341,11 +338,9 @@ export default function App() {
       height: html.style.height,
     };
 
-    // We’ll store scrollY in a ref-like variable inside this effect
     let scrollY = window.scrollY || 0;
 
     const applyLock = () => {
-      // If modal is open but page got restored/changed, re-lock.
       scrollY = Number.isFinite(window.scrollY) ? window.scrollY : scrollY;
 
       body.style.position = "fixed";
@@ -363,15 +358,12 @@ export default function App() {
     };
 
     const reapplyIfNeeded = () => {
-      // Only re-apply if still open (safety)
       if (!addOpen) return;
       applyLock();
     };
 
-    // Apply immediately
     applyLock();
 
-    // Events that commonly fire when returning from Google sign-in / redirects
     window.addEventListener("pageshow", reapplyIfNeeded);
     window.addEventListener("focus", reapplyIfNeeded);
     window.addEventListener("resize", reapplyIfNeeded);
@@ -482,7 +474,7 @@ export default function App() {
             style={{ paddingTop: headerHeight + 16 }}
           >
             <div
-              className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-y-auto flex flex-col"
               style={{ height: `calc(100dvh - ${headerHeight + 32}px)` }}
               onClick={(e) => e.stopPropagation()}
             >
