@@ -4,6 +4,7 @@ import { create } from "zustand";
 const LS_KEY = "lt_phrasebook_v3";
 
 /* --------------------------- Helpers --------------------------- */
+
 const loadRows = () => {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -22,29 +23,34 @@ const saveRows = (rows) => {
   }
 };
 
-const genId = () => Math.random().toString(36).slice(2);
-
 const ensureIdTs = (r) => {
-  const out = { ...(r || {}) };
-  if (!out._id || typeof out._id !== "string") out._id = genId();
-  if (!out._ts || typeof out._ts !== "number") out._ts = Date.now();
+  const out = { ...r };
+
+  if (!out._id || typeof out._id !== "string") {
+    out._id = Math.random().toString(36).slice(2);
+  }
+
+  if (!out._ts || typeof out._ts !== "number") {
+    out._ts = Date.now();
+  }
+
   return out;
 };
 
-const markDeleted = (row) => {
-  const base = ensureIdTs(row);
-  const now = Date.now();
+/**
+ * Ensure tombstone fields exist and are sane
+ */
+const ensureDeletionFields = (r) => {
+  const out = { ...r };
 
-  // IMPORTANT:
-  // - Keep the row so it can sync as a tombstone
-  // - Keep _id stable forever
-  // - _ts is set to "now" to represent the latest change
-  return {
-    ...base,
-    _deleted: true,
-    _deletedAt: now,
-    _ts: now,
-  };
+  if (out._deleted !== true) {
+    out._deleted = false;
+    out._deleted_ts = null;
+  } else if (typeof out._deleted_ts !== "number") {
+    out._deleted_ts = Date.now();
+  }
+
+  return out;
 };
 
 /* ------------------------ Zustand Store ------------------------ */
@@ -53,24 +59,22 @@ export const usePhraseStore = create((set, get) => ({
   // initial state
   phrases: loadRows(),
 
-  // ensure each row has an ID and timestamp
+  /* ---------- Migration ---------- */
+
   _migrateRows: () => {
     const rows = get().phrases || [];
     let changed = false;
 
     const migrated = rows.map((r) => {
-      const beforeId = r?._id;
-      const beforeTs = r?._ts;
+      const before = JSON.stringify(r);
 
-      const next = ensureIdTs(r);
+      let next = ensureIdTs(r);
+      next = ensureDeletionFields(next);
 
-      // Backfill tombstone fields if partially present (defensive)
-      if (next._deleted && typeof next._deletedAt !== "number") {
-        next._deletedAt = next._ts || Date.now();
+      if (JSON.stringify(next) !== before) {
         changed = true;
       }
 
-      if (beforeId !== next._id || beforeTs !== next._ts) changed = true;
       return next;
     });
 
@@ -80,93 +84,88 @@ export const usePhraseStore = create((set, get) => ({
     }
   },
 
-  // replace entire list
+  /* ---------- Core setters ---------- */
+
   setPhrases: (update) => {
     set((state) => {
-      const next = typeof update === "function" ? update(state.phrases) : update;
-      const safe = Array.isArray(next) ? next : [];
+      const next =
+        typeof update === "function" ? update(state.phrases) : update;
+
+      const safe = Array.isArray(next)
+        ? next.map((r) => ensureDeletionFields(ensureIdTs(r)))
+        : [];
+
       saveRows(safe);
       return { phrases: safe };
     });
   },
 
-  // add entry
+  /* ---------- Add ---------- */
+
   addPhrase: (row) =>
     set((state) => {
-      const safeRow = ensureIdTs(row);
+      const safeRow = ensureDeletionFields(ensureIdTs(row));
       const next = [safeRow, ...state.phrases];
       saveRows(next);
       return { phrases: next };
     }),
 
-  // update a phrase by index (existing behaviour)
+  /* ---------- Edit (by index) ---------- */
+
   saveEditedPhrase: (index, updated) =>
     set((state) => {
-      const next = state.phrases.map((r, i) =>
-        i === index
-          ? { ...ensureIdTs(r), ...updated, _ts: r._ts || Date.now() }
-          : r
-      );
-      saveRows(next);
-      return { phrases: next };
-    }),
+      const next = state.phrases.map((r, i) => {
+        if (i !== index) return r;
 
-  // remove phrase by index
-  // NEW BEHAVIOUR: tombstone instead of hard delete
-  removePhrase: (index) =>
-    set((state) => {
-      const target = state.phrases[index];
-      if (!target) return { phrases: state.phrases };
-
-      // If already deleted, keep as-is (idempotent)
-      if (target._deleted) return { phrases: state.phrases };
-
-      const next = state.phrases.map((r, i) => (i === index ? markDeleted(r) : r));
-      saveRows(next);
-      return { phrases: next };
-    }),
-
-  // OPTIONAL: delete by _id (useful for future merge + UI)
-  tombstonePhraseById: (id) =>
-    set((state) => {
-      if (!id) return { phrases: state.phrases };
-
-      const next = state.phrases.map((r) => {
-        if ((r?._id ?? null) !== id) return r;
-        if (r?._deleted) return r;
-        return markDeleted(r);
+        return ensureDeletionFields({
+          ...ensureIdTs(r),
+          ...updated,
+          _ts: r._ts || Date.now(),
+        });
       });
 
       saveRows(next);
       return { phrases: next };
     }),
 
-  // PATCH by _id (for async enrich)
+  /* ---------- Delete (TOMBSTONE) ---------- */
+
+  /**
+   * Soft delete:
+   * - Phrase remains in store
+   * - Marked with _deleted + _deleted_ts
+   * - Required for correct merging later
+   */
+  removePhrase: (index) =>
+    set((state) => {
+      const next = state.phrases.map((r, i) => {
+        if (i !== index) return r;
+
+        return {
+          ...r,
+          _deleted: true,
+          _deleted_ts: Date.now(),
+        };
+      });
+
+      saveRows(next);
+      return { phrases: next };
+    }),
+
+  /* ---------- Patch by _id (used by enrich) ---------- */
+
   patchPhraseById: (id, patch) =>
     set((state) => {
       if (!id) return { phrases: state.phrases };
 
-      const now = Date.now();
-
       const next = state.phrases.map((r) => {
         if ((r?._id ?? null) !== id) return r;
+        if (r._deleted) return r; // never patch deleted rows
 
-        // If it's deleted, we generally should NOT "revive" it via enrich.
-        // We still allow patching fields if you ever want to display deleted items,
-        // but we keep the tombstone flags intact.
-        const merged = { ...r, ...(patch || {}) };
-
-        // Ensure metadata stays sane
-        if (!merged._id) merged._id = id;
-        merged._ts = typeof merged._ts === "number" ? merged._ts : now;
-
-        if (merged._deleted) {
-          if (typeof merged._deletedAt !== "number") merged._deletedAt = merged._ts;
-          // Do not clear _deleted/_deletedAt here.
-          return merged;
-        }
-
-        return merged;
+        return ensureDeletionFields({
+          ...r,
+          ...patch,
+        });
       });
 
       saveRows(next);
@@ -174,5 +173,5 @@ export const usePhraseStore = create((set, get) => ({
     }),
 }));
 
-// Run migration on startup
+// Run migration immediately on load
 usePhraseStore.getState()._migrateRows();
