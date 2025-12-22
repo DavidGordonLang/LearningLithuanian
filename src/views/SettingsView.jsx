@@ -4,6 +4,7 @@ import { usePhraseStore } from "../stores/phraseStore";
 import {
   replaceUserPhrases,
   fetchUserPhrases,
+  mergeUserPhrases,
 } from "../stores/supabasePhrases";
 
 export default function SettingsView({
@@ -14,7 +15,7 @@ export default function SettingsView({
   fetchStarter,
   clearLibrary,
   importJsonFile,
-  rows, // UI rows (non-deleted only) — DO NOT use for export/sync
+  rows, // UI rows (non-deleted only)
   onOpenDuplicateScanner,
   onOpenChangeLog,
   onOpenUserGuide,
@@ -24,11 +25,11 @@ export default function SettingsView({
 
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
+  const [merging, setMerging] = useState(false);
 
   /**
    * IMPORTANT:
-   * For data integrity, exports and cloud sync must use the
-   * full phrase store (including tombstones), NOT UI-filtered rows.
+   * Always use full store (including tombstones) for export & sync
    */
   const getAllStoredPhrases = () =>
     usePhraseStore.getState().phrases || [];
@@ -57,7 +58,7 @@ export default function SettingsView({
     e.target.value = "";
   }
 
-  /* UPLOAD → CLOUD (includes tombstones) */
+  /* UPLOAD → CLOUD (overwrite, includes tombstones) */
   async function uploadLibraryToCloud() {
     if (!user) return;
 
@@ -73,7 +74,7 @@ export default function SettingsView({
     }
   }
 
-  /* DOWNLOAD → LOCAL (REPLACE) */
+  /* DOWNLOAD → LOCAL (overwrite) */
   async function downloadLibraryFromCloud() {
     if (!user) return;
 
@@ -91,6 +92,39 @@ export default function SettingsView({
       alert("Download failed: " + (e?.message || "Unknown error"));
     } finally {
       setSyncingDown(false);
+    }
+  }
+
+  /* MERGE (safe, conflict-aware) */
+  async function mergeLibraryWithCloud() {
+    if (!user) return;
+
+    try {
+      setMerging(true);
+
+      const localAll = getAllStoredPhrases();
+      const result = await mergeUserPhrases(localAll);
+
+      if (result.conflicts?.length) {
+        alert(
+          `Merge paused ⚠️\n\n` +
+            `${result.conflicts.length} conflicts were found.\n\n` +
+            `Nothing has been overwritten.\n\n` +
+            `Next step: review conflicts before completing the merge.`
+        );
+
+        // Next step: store conflicts for UI (coming next)
+        console.log("Merge conflicts:", result.conflicts);
+        return;
+      }
+
+      // No conflicts → mergedRows already written to cloud
+      setRows(result.mergedRows);
+      alert("Merge completed successfully ✅");
+    } catch (e) {
+      alert("Merge failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setMerging(false);
     }
   }
 
@@ -147,6 +181,14 @@ export default function SettingsView({
                 disabled={syncingDown}
               >
                 {syncingDown ? "Downloading…" : "Download library"}
+              </button>
+
+              <button
+                className="bg-emerald-600 text-black rounded-full px-5 py-2 font-semibold"
+                onClick={mergeLibraryWithCloud}
+                disabled={merging}
+              >
+                {merging ? "Merging…" : "Merge library"}
               </button>
 
               <button
