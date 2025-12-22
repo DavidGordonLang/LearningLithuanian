@@ -313,9 +313,9 @@ export default function App() {
   }
 
   /* ============================================================================
-     🔒 HARD MODAL SCROLL INVARIANT
-     Re-applied on every render while addOpen === true
-     Survives auth churn, remounts, SW updates
+     🔒 HARD MODAL SCROLL INVARIANT (resilient to Google auth bounce)
+     - Google sign-in often causes focus/visibility/pageshow churn.
+     - We re-apply the lock while addOpen is true whenever those events happen.
      ========================================================================== */
   useEffect(() => {
     if (!addOpen) return;
@@ -323,34 +323,80 @@ export default function App() {
     const body = document.body;
     const html = document.documentElement;
 
-    const scrollY = window.scrollY || 0;
+    // Keep these in closure so we can restore correctly
+    const prevBody = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      overscrollBehavior: body.style.overscrollBehavior,
+      touchAction: body.style.touchAction,
+    };
 
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    body.style.overflow = "hidden";
-    body.style.overscrollBehavior = "none";
-    body.style.touchAction = "none";
+    const prevHtml = {
+      overflow: html.style.overflow,
+      overscrollBehavior: html.style.overscrollBehavior,
+      height: html.style.height,
+    };
 
-    html.style.overflow = "hidden";
-    html.style.overscrollBehavior = "none";
-    html.style.height = "100%";
+    // We’ll store scrollY in a ref-like variable inside this effect
+    let scrollY = window.scrollY || 0;
+
+    const applyLock = () => {
+      // If modal is open but page got restored/changed, re-lock.
+      scrollY = Number.isFinite(window.scrollY) ? window.scrollY : scrollY;
+
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.style.overflow = "hidden";
+      body.style.overscrollBehavior = "none";
+      body.style.touchAction = "none";
+
+      html.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+      html.style.height = "100%";
+    };
+
+    const reapplyIfNeeded = () => {
+      // Only re-apply if still open (safety)
+      if (!addOpen) return;
+      applyLock();
+    };
+
+    // Apply immediately
+    applyLock();
+
+    // Events that commonly fire when returning from Google sign-in / redirects
+    window.addEventListener("pageshow", reapplyIfNeeded);
+    window.addEventListener("focus", reapplyIfNeeded);
+    window.addEventListener("resize", reapplyIfNeeded);
+    window.addEventListener("orientationchange", reapplyIfNeeded);
+    document.addEventListener("visibilitychange", reapplyIfNeeded);
 
     return () => {
-      body.style.position = "";
-      body.style.top = "";
-      body.style.left = "";
-      body.style.right = "";
-      body.style.width = "";
-      body.style.overflow = "";
-      body.style.overscrollBehavior = "";
-      body.style.touchAction = "";
+      window.removeEventListener("pageshow", reapplyIfNeeded);
+      window.removeEventListener("focus", reapplyIfNeeded);
+      window.removeEventListener("resize", reapplyIfNeeded);
+      window.removeEventListener("orientationchange", reapplyIfNeeded);
+      document.removeEventListener("visibilitychange", reapplyIfNeeded);
 
-      html.style.overflow = "";
-      html.style.overscrollBehavior = "";
-      html.style.height = "";
+      body.style.position = prevBody.position;
+      body.style.top = prevBody.top;
+      body.style.left = prevBody.left;
+      body.style.right = prevBody.right;
+      body.style.width = prevBody.width;
+      body.style.overflow = prevBody.overflow;
+      body.style.overscrollBehavior = prevBody.overscrollBehavior;
+      body.style.touchAction = prevBody.touchAction;
+
+      html.style.overflow = prevHtml.overflow;
+      html.style.overscrollBehavior = prevHtml.overscrollBehavior;
+      html.style.height = prevHtml.height;
 
       window.scrollTo(0, scrollY);
     };
