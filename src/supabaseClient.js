@@ -1,3 +1,4 @@
+// src/supabaseClient.js
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -15,11 +16,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
 
-    /**
-     * CRITICAL:
-     * Prevents Supabase from re-processing OAuth hashes
-     * when switching between preview / prod domains.
-     */
-    detectSessionInUrl: false,
+    // ✅ REQUIRED for OAuth to complete on return (code/hash processing)
+    detectSessionInUrl: true,
   },
 });
