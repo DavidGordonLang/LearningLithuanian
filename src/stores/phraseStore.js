@@ -1,4 +1,3 @@
-// src/stores/phraseStore.js
 import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -43,15 +42,50 @@ const ensureIdTs = (r) => {
 const ensureDeletionFields = (r) => {
   const out = { ...r };
 
-  if (out._deleted !== true) {
+  if (out._deleted === true) {
+    if (typeof out._deleted_ts !== "number") {
+      out._deleted_ts = Date.now();
+    }
+  } else {
     out._deleted = false;
     out._deleted_ts = null;
-  } else if (typeof out._deleted_ts !== "number") {
-    out._deleted_ts = Date.now();
   }
 
   return out;
 };
+
+/**
+ * Ensure Source + Touched exist
+ */
+const ensureSourceTouched = (r) => {
+  const out = { ...r };
+
+  if (!out.Source) {
+    // Heuristic:
+    // - If phrase has no enrich / qstat and looks like bulk data → starter
+    // - Otherwise default to user
+    out.Source = out._qstat ? "user" : "starter";
+  }
+
+  if (typeof out.Touched !== "boolean") {
+    // If user ever interacted (qstat / usage / notes), treat as touched
+    out.Touched =
+      !!out._qstat ||
+      !!out.Usage ||
+      !!out.Notes ||
+      out.Source === "user";
+  }
+
+  return out;
+};
+
+/**
+ * Mark phrase as touched (used on edit / enrich)
+ */
+const markTouched = (r) => ({
+  ...r,
+  Touched: true,
+});
 
 /* ------------------------ Zustand Store ------------------------ */
 
@@ -70,6 +104,7 @@ export const usePhraseStore = create((set, get) => ({
 
       let next = ensureIdTs(r);
       next = ensureDeletionFields(next);
+      next = ensureSourceTouched(next);
 
       if (JSON.stringify(next) !== before) {
         changed = true;
@@ -92,7 +127,11 @@ export const usePhraseStore = create((set, get) => ({
         typeof update === "function" ? update(state.phrases) : update;
 
       const safe = Array.isArray(next)
-        ? next.map((r) => ensureDeletionFields(ensureIdTs(r)))
+        ? next.map((r) =>
+            ensureSourceTouched(
+              ensureDeletionFields(ensureIdTs(r))
+            )
+          )
         : [];
 
       saveRows(safe);
@@ -104,7 +143,16 @@ export const usePhraseStore = create((set, get) => ({
 
   addPhrase: (row) =>
     set((state) => {
-      const safeRow = ensureDeletionFields(ensureIdTs(row));
+      const safeRow = ensureSourceTouched(
+        ensureDeletionFields(
+          ensureIdTs({
+            ...row,
+            Source: "user",
+            Touched: true,
+          })
+        )
+      );
+
       const next = [safeRow, ...state.phrases];
       saveRows(next);
       return { phrases: next };
@@ -117,11 +165,15 @@ export const usePhraseStore = create((set, get) => ({
       const next = state.phrases.map((r, i) => {
         if (i !== index) return r;
 
-        return ensureDeletionFields({
-          ...ensureIdTs(r),
-          ...updated,
-          _ts: r._ts || Date.now(),
-        });
+        return ensureSourceTouched(
+          ensureDeletionFields(
+            markTouched({
+              ...ensureIdTs(r),
+              ...updated,
+              _ts: Date.now(),
+            })
+          )
+        );
       });
 
       saveRows(next);
@@ -130,12 +182,6 @@ export const usePhraseStore = create((set, get) => ({
 
   /* ---------- Delete (TOMBSTONE) ---------- */
 
-  /**
-   * Soft delete:
-   * - Phrase remains in store
-   * - Marked with _deleted + _deleted_ts
-   * - Required for correct merging later
-   */
   removePhrase: (index) =>
     set((state) => {
       const next = state.phrases.map((r, i) => {
@@ -152,7 +198,7 @@ export const usePhraseStore = create((set, get) => ({
       return { phrases: next };
     }),
 
-  /* ---------- Patch by _id (used by enrich) ---------- */
+  /* ---------- Patch by _id (enrich / async updates) ---------- */
 
   patchPhraseById: (id, patch) =>
     set((state) => {
@@ -160,12 +206,16 @@ export const usePhraseStore = create((set, get) => ({
 
       const next = state.phrases.map((r) => {
         if ((r?._id ?? null) !== id) return r;
-        if (r._deleted) return r; // never patch deleted rows
+        if (r._deleted) return r;
 
-        return ensureDeletionFields({
-          ...r,
-          ...patch,
-        });
+        return ensureSourceTouched(
+          ensureDeletionFields(
+            markTouched({
+              ...r,
+              ...patch,
+            })
+          )
+        );
       });
 
       saveRows(next);
