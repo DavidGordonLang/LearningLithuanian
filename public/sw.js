@@ -1,6 +1,6 @@
 /* Simple, versioned Service Worker for Žodis (PWA-safe) */
 
-const CACHE_VERSION = "zodis-auth-signin1"; // 🔁 bump this on every UI change
+const CACHE_VERSION = "zodis-auth-signin2"; // 🔁 bump this on every UI change
 const CACHE_NAME = `zodis-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
