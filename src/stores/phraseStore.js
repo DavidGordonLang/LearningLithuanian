@@ -1,8 +1,33 @@
+// src/stores/phraseStore.js
 import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
 
-/* --------------------------- Helpers --------------------------- */
+/* --------------------------- Normalisation --------------------------- */
+
+/**
+ * Remove Lithuanian diacritics and normalise text for identity matching
+ */
+function normalizeText(input = "") {
+  return String(input)
+    .toLowerCase()
+    .trim()
+    .normalize("NFD") // split accents
+    .replace(/[\u0300-\u036f]/g, "") // remove accents
+    .replace(/[^a-z0-9]+/g, "") // remove punctuation & spaces
+}
+
+/**
+ * Deterministic identity for a phrase
+ * DO NOT CHANGE once in use
+ */
+function buildContentKey(row) {
+  const en = normalizeText(row?.English || "");
+  const lt = normalizeText(row?.Lithuanian || "");
+  return `${en}::${lt}`;
+}
+
+/* --------------------------- Storage --------------------------- */
 
 const loadRows = () => {
   try {
@@ -22,6 +47,8 @@ const saveRows = (rows) => {
   }
 };
 
+/* --------------------------- Guards --------------------------- */
+
 const ensureIdTs = (r) => {
   const out = { ...r };
 
@@ -36,9 +63,6 @@ const ensureIdTs = (r) => {
   return out;
 };
 
-/**
- * Ensure tombstone fields exist and are sane
- */
 const ensureDeletionFields = (r) => {
   const out = { ...r };
 
@@ -54,43 +78,19 @@ const ensureDeletionFields = (r) => {
   return out;
 };
 
-/**
- * Ensure Source + Touched exist
- */
-const ensureSourceTouched = (r) => {
+const ensureContentKey = (r) => {
   const out = { ...r };
 
-  if (!out.Source) {
-    // Heuristic:
-    // - If phrase has no enrich / qstat and looks like bulk data → starter
-    // - Otherwise default to user
-    out.Source = out._qstat ? "user" : "starter";
-  }
-
-  if (typeof out.Touched !== "boolean") {
-    // If user ever interacted (qstat / usage / notes), treat as touched
-    out.Touched =
-      !!out._qstat ||
-      !!out.Usage ||
-      !!out.Notes ||
-      out.Source === "user";
+  if (!out.contentKey || typeof out.contentKey !== "string") {
+    out.contentKey = buildContentKey(out);
   }
 
   return out;
 };
 
-/**
- * Mark phrase as touched (used on edit / enrich)
- */
-const markTouched = (r) => ({
-  ...r,
-  Touched: true,
-});
-
 /* ------------------------ Zustand Store ------------------------ */
 
 export const usePhraseStore = create((set, get) => ({
-  // initial state
   phrases: loadRows(),
 
   /* ---------- Migration ---------- */
@@ -104,7 +104,7 @@ export const usePhraseStore = create((set, get) => ({
 
       let next = ensureIdTs(r);
       next = ensureDeletionFields(next);
-      next = ensureSourceTouched(next);
+      next = ensureContentKey(next);
 
       if (JSON.stringify(next) !== before) {
         changed = true;
@@ -119,7 +119,7 @@ export const usePhraseStore = create((set, get) => ({
     }
   },
 
-  /* ---------- Core setters ---------- */
+  /* ---------- Core ---------- */
 
   setPhrases: (update) => {
     set((state) => {
@@ -128,9 +128,7 @@ export const usePhraseStore = create((set, get) => ({
 
       const safe = Array.isArray(next)
         ? next.map((r) =>
-            ensureSourceTouched(
-              ensureDeletionFields(ensureIdTs(r))
-            )
+            ensureContentKey(ensureDeletionFields(ensureIdTs(r)))
           )
         : [];
 
@@ -143,36 +141,29 @@ export const usePhraseStore = create((set, get) => ({
 
   addPhrase: (row) =>
     set((state) => {
-      const safeRow = ensureSourceTouched(
-        ensureDeletionFields(
-          ensureIdTs({
-            ...row,
-            Source: "user",
-            Touched: true,
-          })
-        )
+      const safeRow = ensureContentKey(
+        ensureDeletionFields(ensureIdTs(row))
       );
-
       const next = [safeRow, ...state.phrases];
       saveRows(next);
       return { phrases: next };
     }),
 
-  /* ---------- Edit (by index) ---------- */
+  /* ---------- Edit ---------- */
 
   saveEditedPhrase: (index, updated) =>
     set((state) => {
       const next = state.phrases.map((r, i) => {
         if (i !== index) return r;
 
-        return ensureSourceTouched(
-          ensureDeletionFields(
-            markTouched({
-              ...ensureIdTs(r),
-              ...updated,
-              _ts: Date.now(),
-            })
-          )
+        const merged = {
+          ...r,
+          ...updated,
+          _ts: r._ts || Date.now(),
+        };
+
+        return ensureContentKey(
+          ensureDeletionFields(ensureIdTs(merged))
         );
       });
 
@@ -180,41 +171,32 @@ export const usePhraseStore = create((set, get) => ({
       return { phrases: next };
     }),
 
-  /* ---------- Delete (TOMBSTONE) ---------- */
+  /* ---------- Delete (tombstone) ---------- */
 
   removePhrase: (index) =>
     set((state) => {
-      const next = state.phrases.map((r, i) => {
-        if (i !== index) return r;
-
-        return {
-          ...r,
-          _deleted: true,
-          _deleted_ts: Date.now(),
-        };
-      });
+      const next = state.phrases.map((r, i) =>
+        i === index
+          ? { ...r, _deleted: true, _deleted_ts: Date.now() }
+          : r
+      );
 
       saveRows(next);
       return { phrases: next };
     }),
 
-  /* ---------- Patch by _id (enrich / async updates) ---------- */
+  /* ---------- Patch by ID ---------- */
 
   patchPhraseById: (id, patch) =>
     set((state) => {
       if (!id) return { phrases: state.phrases };
 
       const next = state.phrases.map((r) => {
-        if ((r?._id ?? null) !== id) return r;
-        if (r._deleted) return r;
+        if (r._id !== id || r._deleted) return r;
 
-        return ensureSourceTouched(
-          ensureDeletionFields(
-            markTouched({
-              ...r,
-              ...patch,
-            })
-          )
+        const merged = { ...r, ...patch };
+        return ensureContentKey(
+          ensureDeletionFields(ensureIdTs(merged))
         );
       });
 
@@ -223,5 +205,5 @@ export const usePhraseStore = create((set, get) => ({
     }),
 }));
 
-// Run migration immediately on load
+// Run migration immediately
 usePhraseStore.getState()._migrateRows();
