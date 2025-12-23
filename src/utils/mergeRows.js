@@ -1,75 +1,106 @@
 // src/utils/mergeRows.js
 
 /**
- * Deterministic merge for phrase rows.
- *
- * Rules (current):
- * - contentKey is the identity
- * - _deleted always wins
- * - user > starter
- * - newer _ts wins between equals
- * - starter never overwrites user-edited rows
- * - no conflicts are raised (yet)
- *
- * This function is intentionally conservative and predictable.
+ * Structured row merge with latent conflict detection.
+ * Deterministic today, conflict-aware tomorrow.
  */
 
 /**
- * Decide which of two rows wins.
- * Both rows MUST have the same contentKey.
+ * @typedef {Object} MergeResult
+ * @property {Array} rows
+ * @property {Array} conflicts
  */
-function resolveRow(a, b) {
-  // 1. Deletion always wins
-  if (a._deleted && !b._deleted) return a;
-  if (b._deleted && !a._deleted) return b;
-  if (a._deleted && b._deleted) {
-    return (a._deleted_ts || 0) >= (b._deleted_ts || 0) ? a : b;
-  }
 
-  // 2. User beats starter
-  const aIsUser = a.Source === "user";
-  const bIsUser = b.Source === "user";
-
-  if (aIsUser && !bIsUser) return a;
-  if (bIsUser && !aIsUser) return b;
-
-  // 3. Both same class → newest timestamp wins
-  return (a._ts || 0) >= (b._ts || 0) ? a : b;
-}
-
-/**
- * Merge two row arrays.
- *
- * @param {Array} localRows  - existing rows (local)
- * @param {Array} incomingRows - rows from import / cloud / starter
- *
- * @returns {Array} merged rows
- */
 export function mergeRows(localRows = [], incomingRows = []) {
   const byKey = new Map();
+  const conflicts = [];
 
-  // Seed with local rows first
+  // Seed with local rows first (local has precedence)
   for (const row of localRows) {
-    if (!row || !row.contentKey) continue;
+    if (!row?.contentKey) continue;
     byKey.set(row.contentKey, row);
   }
 
-  // Merge incoming rows
   for (const incoming of incomingRows) {
-    if (!incoming || !incoming.contentKey) continue;
+    if (!incoming?.contentKey) continue;
 
-    const existing = byKey.get(incoming.contentKey);
+    const key = incoming.contentKey;
+    const existing = byKey.get(key);
 
+    // No existing → accept incoming
     if (!existing) {
-      // New identity
-      byKey.set(incoming.contentKey, incoming);
+      byKey.set(key, incoming);
       continue;
     }
 
-    // Resolve deterministically
-    const resolved = resolveRow(existing, incoming);
-    byKey.set(incoming.contentKey, resolved);
+    // ----- Deletion logic -----
+    if (existing._deleted || incoming._deleted) {
+      const chosen =
+        (incoming._deleted_ts || 0) > (existing._deleted_ts || 0)
+          ? incoming
+          : existing;
+
+      byKey.set(key, chosen);
+      continue;
+    }
+
+    // ----- Ownership logic -----
+    const existingIsUser = existing.Source === "user" || existing.Touched;
+    const incomingIsUser = incoming.Source === "user" || incoming.Touched;
+
+    // User always beats starter
+    if (existingIsUser && !incomingIsUser) {
+      continue;
+    }
+
+    if (!existingIsUser && incomingIsUser) {
+      byKey.set(key, incoming);
+      continue;
+    }
+
+    // ----- Both starter -----
+    if (!existingIsUser && !incomingIsUser) {
+      // Keep the newer starter (rare, but deterministic)
+      const chosen =
+        (incoming._ts || 0) > (existing._ts || 0)
+          ? incoming
+          : existing;
+
+      byKey.set(key, chosen);
+      continue;
+    }
+
+    // ----- Both user-owned -----
+    // Potential conflict
+    const fieldsDiffer =
+      existing.English !== incoming.English ||
+      existing.Lithuanian !== incoming.Lithuanian ||
+      existing.Usage !== incoming.Usage ||
+      existing.Notes !== incoming.Notes ||
+      existing.Phonetic !== incoming.Phonetic ||
+      existing.Category !== incoming.Category ||
+      existing["RAG Icon"] !== incoming["RAG Icon"];
+
+    if (fieldsDiffer) {
+      conflicts.push({
+        contentKey: key,
+        local: existing,
+        incoming,
+        resolvedBy: "timestamp",
+      });
+    }
+
+    // Deterministic resolution for now: newer wins
+    const chosen =
+      (incoming._ts || 0) > (existing._ts || 0)
+        ? incoming
+        : existing;
+
+    byKey.set(key, chosen);
   }
 
-  return Array.from(byKey.values());
+  return {
+    rows: Array.from(byKey.values()),
+    conflicts,
+  };
 }
