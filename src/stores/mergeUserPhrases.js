@@ -11,16 +11,19 @@
  *   stats: {...}
  * }
  *
- * Notes:
+ * Alignment notes (Dec 2025):
  * - Primary identity is _id when present on both sides.
- * - Secondary identity is contentKey based on NORMALISED Lithuanian (not English),
- *   ONLY when Lithuanian exists on both sides.
+ * - Secondary identity is contentKey, which MUST match phraseStore.js:
+ *     contentKey = normalize(Lithuanian)   (Lithuanian-only)
+ * - If a row already has contentKey (from phraseStore), we trust it.
  * - Deletions are tombstones: _deleted=true + _deleted_ts (number).
  * - We never overwrite meaningful data with blanks / placeholders.
  * - If both sides have meaningful, different values for the same field, we surface a conflict.
  */
 
 const PLACEHOLDERS = new Set(["nan", "null", "nul", "none", "n/a", "na", ""]);
+
+/* --------------------------- Meaningfulness --------------------------- */
 
 function isMeaningful(v) {
   if (v === null || v === undefined) return false;
@@ -33,6 +36,8 @@ function meaningfulText(v) {
   const s = (v ?? "").toString().trim();
   return isMeaningful(s) ? s : "";
 }
+
+/* --------------------------- Guards --------------------------- */
 
 function ensureDeletionFields(r) {
   const out = { ...(r || {}) };
@@ -47,33 +52,24 @@ function ensureDeletionFields(r) {
 
 function ensureIdTs(r) {
   const out = { ...(r || {}) };
-  if (!out._id || typeof out._id !== "string") out._id = Math.random().toString(36).slice(2);
+  if (!out._id || typeof out._id !== "string")
+    out._id = Math.random().toString(36).slice(2);
   if (!out._ts || typeof out._ts !== "number") out._ts = Date.now();
   return out;
 }
 
+/* --------------------------- Key normalisation --------------------------- */
+
 /**
  * Remove Lithuanian diacritics & normalise to a safe ASCII-ish key.
- * (We are NOT trying to “fix” Lithuanian here, just create stable matching keys.)
+ * This must mirror phraseStore.js normalization behaviour as closely as possible.
  */
 function normaliseForKey(input) {
   let s = (input ?? "").toString().trim().toLowerCase();
   if (!s) return "";
 
-  // Unicode NFKD + strip combining marks
-  s = s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
-
-  // Explicit fallback mappings (covers cases where keyboards produce odd variants)
-  s = s
-    .replace(/š/g, "s")
-    .replace(/ž/g, "z")
-    .replace(/č/g, "c")
-    .replace(/į/g, "i")
-    .replace(/ų/g, "u")
-    .replace(/ū/g, "u")
-    .replace(/ė/g, "e")
-    .replace(/ą/g, "a")
-    .replace(/ę/g, "e");
+  // Unicode NFD + strip combining marks
+  s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   // Remove punctuation/symbols/spaces entirely for compact key
   s = s.replace(/[^a-z0-9]+/g, "");
@@ -83,38 +79,23 @@ function normaliseForKey(input) {
 
 /**
  * Secondary identity: Lithuanian-only content key.
- * IMPORTANT: we do NOT use English for identity (per your requirement).
- *
- * Also: we do not include Category in the key because category can legitimately evolve.
+ * IMPORTANT:
+ * - We do NOT use English for identity.
+ * - We do NOT include Sheet/Category for identity.
+ * - Prefer row.contentKey when present (phraseStore is source of truth).
  */
 export function makeContentKeyFromRow(row) {
+  const existing = row?.contentKey;
+  if (typeof existing === "string" && existing.trim()) return existing.trim();
+
   const lt = meaningfulText(row?.Lithuanian);
   if (!lt) return "";
 
-  // include Sheet because “same phrase” could exist in different conceptual buckets
-  // (optional, but helps avoid odd collisions)
-  const sheet = meaningfulText(row?.Sheet);
-  const base = normaliseForKey(lt);
-  const sheetKey = sheet ? normaliseForKey(sheet) : "";
-
-  // If sheet empty, just return lt key
-  return sheetKey ? `${base}__${sheetKey}` : base;
+  return normaliseForKey(lt);
 }
 
-function fieldDiffMeaningful(a, b) {
-  const A = meaningfulText(a);
-  const B = meaningfulText(b);
-  if (!A && !B) return false;
-  if (!A || !B) return false; // one side empty isn't a conflict; we can fill
-  return A !== B;
-}
+/* --------------------------- Merge helpers --------------------------- */
 
-/**
- * Choose the "better" text when neither is blank:
- * - Prefer newer _ts if both meaningful and different
- * - Prefer longer text if timestamps equal (or missing)
- * - Never choose placeholders
- */
 function chooseBestText(fieldName, localRow, cloudRow) {
   const lv = meaningfulText(localRow?.[fieldName]);
   const cv = meaningfulText(cloudRow?.[fieldName]);
@@ -123,7 +104,6 @@ function chooseBestText(fieldName, localRow, cloudRow) {
   if (cv && !lv) return cv;
   if (!lv && !cv) return "";
 
-  // Both meaningful
   if (lv === cv) return lv;
 
   const lts = typeof localRow?._ts === "number" ? localRow._ts : 0;
@@ -136,7 +116,6 @@ function chooseBestText(fieldName, localRow, cloudRow) {
 }
 
 function computeCompletenessScore(r) {
-  // crude but useful: we want to favour “more complete” rows when timestamps are close
   let score = 0;
   if (isMeaningful(r?.Lithuanian)) score += 3;
   if (isMeaningful(r?.English)) score += 1;
@@ -157,23 +136,34 @@ function mergePair(localIn, cloudIn) {
   const localRow = ensureDeletionFields(ensureIdTs(localIn));
   const cloudRow = ensureDeletionFields(ensureIdTs(cloudIn));
 
-  // Tombstones:
-  // If one side is deleted and its delete timestamp is newer than the other side's edits,
-  // deletion wins.
+  // Preserve / derive keys (do not let them drift)
+  const localKey = makeContentKeyFromRow(localRow);
+  const cloudKey = makeContentKeyFromRow(cloudRow);
+
+  // Tombstones
   const lDel = localRow._deleted === true;
   const cDel = cloudRow._deleted === true;
-  const lDelTs = typeof localRow._deleted_ts === "number" ? localRow._deleted_ts : 0;
-  const cDelTs = typeof cloudRow._deleted_ts === "number" ? cloudRow._deleted_ts : 0;
+  const lDelTs =
+    typeof localRow._deleted_ts === "number" ? localRow._deleted_ts : 0;
+  const cDelTs =
+    typeof cloudRow._deleted_ts === "number" ? cloudRow._deleted_ts : 0;
 
   const lEditTs = typeof localRow._ts === "number" ? localRow._ts : 0;
   const cEditTs = typeof cloudRow._ts === "number" ? cloudRow._ts : 0;
 
   if (lDel && !cDel) {
-    // local deleted: win if delete is newer than cloud edit
     if (lDelTs >= cEditTs) {
-      return { merged: { ...cloudRow, ...localRow, _deleted: true, _deleted_ts: lDelTs }, conflict: null };
+      return {
+        merged: {
+          ...cloudRow,
+          ...localRow,
+          _deleted: true,
+          _deleted_ts: lDelTs,
+          contentKey: localKey || cloudKey || cloudRow.contentKey,
+        },
+        conflict: null,
+      };
     }
-    // else: deletion is old; keep cloud, but we should surface a conflict because it’s ambiguous
     return {
       merged: cloudRow,
       conflict: {
@@ -188,7 +178,16 @@ function mergePair(localIn, cloudIn) {
 
   if (cDel && !lDel) {
     if (cDelTs >= lEditTs) {
-      return { merged: { ...localRow, ...cloudRow, _deleted: true, _deleted_ts: cDelTs }, conflict: null };
+      return {
+        merged: {
+          ...localRow,
+          ...cloudRow,
+          _deleted: true,
+          _deleted_ts: cDelTs,
+          contentKey: localKey || cloudKey || localRow.contentKey,
+        },
+        conflict: null,
+      };
     }
     return {
       merged: localRow,
@@ -203,39 +202,54 @@ function mergePair(localIn, cloudIn) {
   }
 
   if (lDel && cDel) {
-    // both deleted → keep the newest deletion timestamp
     const newestDelTs = Math.max(lDelTs, cDelTs, Date.now());
-    // Prefer keeping the richer payload (useful for recovery UI later)
-    const base = computeCompletenessScore(localRow) >= computeCompletenessScore(cloudRow) ? localRow : cloudRow;
+    const base =
+      computeCompletenessScore(localRow) >=
+      computeCompletenessScore(cloudRow)
+        ? localRow
+        : cloudRow;
+
     return {
-      merged: { ...base, _deleted: true, _deleted_ts: newestDelTs },
+      merged: {
+        ...base,
+        _deleted: true,
+        _deleted_ts: newestDelTs,
+        contentKey: localKey || cloudKey || base.contentKey,
+      },
       conflict: null,
     };
   }
 
   // Neither deleted → resolve field-by-field
-  // Choose a base row:
-  // - If timestamps differ a lot, newest _ts wins as base
-  // - If close, more complete wins
   const tsGap = Math.abs(lEditTs - cEditTs);
   const base =
     tsGap > 10_000
-      ? (lEditTs >= cEditTs ? localRow : cloudRow)
-      : (computeCompletenessScore(localRow) >= computeCompletenessScore(cloudRow) ? localRow : cloudRow);
+      ? lEditTs >= cEditTs
+        ? localRow
+        : cloudRow
+      : computeCompletenessScore(localRow) >=
+        computeCompletenessScore(cloudRow)
+      ? localRow
+      : cloudRow;
 
   const other = base === localRow ? cloudRow : localRow;
 
   const merged = {
     ...base,
-    // always preserve identity
+
+    // identity (keep _id stable if possible)
     _id: base._id || other._id,
+
     // keep latest edit time as _ts
     _ts: Math.max(lEditTs, cEditTs, base._ts || 0, other._ts || 0),
+
     _deleted: false,
     _deleted_ts: null,
+
+    // keep contentKey stable and aligned with phraseStore behaviour
+    contentKey: localKey || cloudKey || base.contentKey || other.contentKey,
   };
 
-  // Fields we allow merging/filling (do NOT try to merge internal stats)
   const FIELDS = [
     "English",
     "Lithuanian",
@@ -253,22 +267,17 @@ function mergePair(localIn, cloudIn) {
     const baseVal = meaningfulText(base[f]);
     const otherVal = meaningfulText(other[f]);
 
-    // Fill blanks from other
     if (!baseVal && otherVal) {
       merged[f] = otherVal;
       continue;
     }
 
-    // Both meaningful & equal → keep
     if (baseVal && otherVal && baseVal === otherVal) {
       merged[f] = baseVal;
       continue;
     }
 
-    // Both meaningful and different:
     if (baseVal && otherVal && baseVal !== otherVal) {
-      // For Lithuanian: do NOT silently overwrite (masc/fem one-letter changes matter)
-      // We will prefer newest text but surface conflict for user resolution.
       const chosen = chooseBestText(f, localRow, cloudRow);
       merged[f] = chosen;
 
@@ -281,7 +290,7 @@ function mergePair(localIn, cloudIn) {
     }
   }
 
-  // Preserve _qstat sensibly: keep whichever exists, prefer base
+  // Preserve _qstat sensibly
   if (base._qstat || other._qstat) merged._qstat = base._qstat || other._qstat;
 
   if (fieldConflicts.length) {
@@ -301,12 +310,15 @@ function mergePair(localIn, cloudIn) {
   return { merged, conflict: null };
 }
 
-/**
- * Main API
- */
+/* --------------------------- Main API --------------------------- */
+
 export function mergeUserPhrases(localRows, cloudRows) {
-  const local = Array.isArray(localRows) ? localRows.map((r) => ensureDeletionFields(ensureIdTs(r))) : [];
-  const cloud = Array.isArray(cloudRows) ? cloudRows.map((r) => ensureDeletionFields(ensureIdTs(r))) : [];
+  const local = Array.isArray(localRows)
+    ? localRows.map((r) => ensureDeletionFields(ensureIdTs(r)))
+    : [];
+  const cloud = Array.isArray(cloudRows)
+    ? cloudRows.map((r) => ensureDeletionFields(ensureIdTs(r)))
+    : [];
 
   const stats = {
     localCount: local.length,
@@ -318,19 +330,27 @@ export function mergeUserPhrases(localRows, cloudRows) {
     deletionsApplied: 0,
     conflictsCount: 0,
     mergedCount: 0,
+
+    // useful extra signals (won’t break callers)
+    cloudKeyCollisions: 0,
+    localKeyCollisions: 0,
   };
 
   const conflicts = [];
 
-  // Build indexes
   const cloudById = new Map();
   const cloudByKey = new Map();
+
+  // Track collisions (same key appears multiple times)
+  const cloudKeyCounts = new Map();
 
   for (const r of cloud) {
     if (r?._id) cloudById.set(r._id, r);
 
     const key = makeContentKeyFromRow(r);
     if (key) {
+      cloudKeyCounts.set(key, (cloudKeyCounts.get(key) || 0) + 1);
+
       // If collision, keep the most recently edited as primary
       if (!cloudByKey.has(key)) cloudByKey.set(key, r);
       else {
@@ -342,8 +362,11 @@ export function mergeUserPhrases(localRows, cloudRows) {
     }
   }
 
-  const usedCloudIds = new Set();
+  stats.cloudKeyCollisions = Array.from(cloudKeyCounts.values()).filter(
+    (n) => n > 1
+  ).length;
 
+  const usedCloudIds = new Set();
   const merged = [];
 
   // First pass: merge local against cloud
@@ -355,7 +378,7 @@ export function mergeUserPhrases(localRows, cloudRows) {
       c = cloudById.get(l._id);
       stats.matchedById++;
     } else {
-      // 2) Match by Lithuanian content key (only if Lithuanian exists)
+      // 2) Match by contentKey (Lithuanian-only)
       const lk = makeContentKeyFromRow(l);
       if (lk && cloudByKey.has(lk)) {
         c = cloudByKey.get(lk);
@@ -367,14 +390,13 @@ export function mergeUserPhrases(localRows, cloudRows) {
       usedCloudIds.add(c._id);
       const { merged: m, conflict } = mergePair(l, c);
       if (m?._deleted) stats.deletionsApplied++;
-      if (conflict) {
-        conflicts.push(conflict);
-      }
+      if (conflict) conflicts.push(conflict);
       merged.push(m);
     } else {
-      // local-only
       if (l?._deleted) stats.deletionsApplied++;
-      merged.push(l);
+      // Ensure key exists if possible (helps downstream even if phraseStore missed it)
+      const lk = makeContentKeyFromRow(l);
+      merged.push(lk ? { ...l, contentKey: lk } : l);
       stats.createdFromLocal++;
     }
   }
@@ -384,7 +406,9 @@ export function mergeUserPhrases(localRows, cloudRows) {
     if (!c?._id) continue;
     if (usedCloudIds.has(c._id)) continue;
 
-    merged.push(c);
+    const ck = makeContentKeyFromRow(c);
+    merged.push(ck ? { ...c, contentKey: ck } : c);
+
     stats.createdFromCloud++;
     if (c?._deleted) stats.deletionsApplied++;
   }
