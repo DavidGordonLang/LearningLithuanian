@@ -562,7 +562,7 @@ export default function App() {
           <SettingsView
             T={T}
             azureVoiceShortName={azureVoiceShortName}
-            setAzureVoiceShortName={setAzureVoiceShortName attaching the snippets or i can reason: Wait cannot modify? Actually continue}
+            setAzureVoiceShortName={setAzureVoiceShortName}
             playText={playText}
             fetchStarter={fetchStarter}
             clearLibrary={clearLibrary}
