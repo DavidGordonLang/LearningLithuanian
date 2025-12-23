@@ -91,6 +91,31 @@ function normalizeRag(icon = "") {
   return "🟠";
 }
 
+/**
+ * Deterministic semantic identity.
+ * - Includes BOTH English + Lithuanian (so masc/fem variants do not merge)
+ * - Removes diacritics (dušu -> dusu)
+ * - Removes punctuation/whitespace (stable across keyboards)
+ * - Includes Sheet to avoid collisions across types
+ */
+function makeContentKey(r) {
+  const norm = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .normalize("NFD") // split accents (š -> s + accent)
+      .replace(/[\u0300-\u036f]/g, "") // drop accents
+      .replace(/[^a-z0-9]+/g, "") // drop punctuation/spaces
+      .trim();
+
+  const en = norm(r?.English);
+  const lt = norm(r?.Lithuanian);
+  const sheet = String(r?.Sheet || "Phrases").toLowerCase();
+
+  // If either side is missing, still return something stable-ish,
+  // but note: your merge logic should treat missing-LT as weaker identity.
+  return `${en}::${lt}::${sheet}`;
+}
+
 /* ============================================================================
    SEARCH BOX
    ========================================================================== */
@@ -272,45 +297,55 @@ export default function App() {
   }
 
   /**
-   * ✅ Starter-aware ingest (NOW IDEMPOTENT via contentKey):
+   * ✅ Starter-aware ingest (IDEMPOTENT via generated contentKey):
    * - Always marks Source: "starter", Touched: false
    * - Never overwrites existing rows
    * - Prevents duplicates across repeated installs by using contentKey
+   * - Includes tombstones in the key set so deleted starter rows stay deleted
    */
   async function mergeStarterRows(newRows) {
     const cleaned = newRows
-      .map((r) => ({
-        English: r.English?.trim() || "",
-        Lithuanian: r.Lithuanian?.trim() || "",
-        Phonetic: r.Phonetic?.trim() || "",
-        Category: r.Category?.trim() || "",
-        Usage: r.Usage?.trim() || "",
-        Notes: r.Notes?.trim() || "",
-        "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-          ? r.Sheet
-          : "Phrases",
+      .map((r) => {
+        const base = {
+          English: r.English?.trim() || "",
+          Lithuanian: r.Lithuanian?.trim() || "",
+          Phonetic: r.Phonetic?.trim() || "",
+          Category: r.Category?.trim() || "",
+          Usage: r.Usage?.trim() || "",
+          Notes: r.Notes?.trim() || "",
+          "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
+          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+            ? r.Sheet
+            : "Phrases",
 
-        _id: r._id || genId(),
-        _ts: r._ts || nowTs(),
-        _qstat:
-          r._qstat || {
-            red: { ok: 0, bad: 0 },
-            amb: { ok: 0, bad: 0 },
-            grn: { ok: 0, bad: 0 },
-          },
+          _id: r._id || genId(),
+          _ts: r._ts || nowTs(),
+          _qstat:
+            r._qstat || {
+              red: { ok: 0, bad: 0 },
+              amb: { ok: 0, bad: 0 },
+              grn: { ok: 0, bad: 0 },
+            },
 
-        // 🔑 identity
-        contentKey: r.contentKey,
+          Source: "starter",
+          Touched: false,
+        };
 
-        // provenance
-        Source: "starter",
-        Touched: false,
-      }))
+        // 🔑 critical: generate a stable contentKey if missing
+        const ck =
+          typeof r?.contentKey === "string" && r.contentKey.length
+            ? r.contentKey
+            : makeContentKey(base);
+
+        return {
+          ...base,
+          contentKey: ck,
+        };
+      })
       .filter((r) => r.English || r.Lithuanian);
 
     setRows((prev) => {
-      // Existing keys, including tombstones, to prevent re-adding deleted starter rows too
+      // include tombstones so re-install won't resurrect deleted starter entries
       const existingKeys = new Set(
         prev
           .map((p) => p?.contentKey)
@@ -321,9 +356,9 @@ export default function App() {
 
       for (const row of cleaned) {
         const key = row?.contentKey;
-        // If starter row somehow lacks contentKey, fall back to _id to avoid blowing up
+
+        // if for any reason key is still missing, fall back to _id (safe)
         if (!key) {
-          // Old behaviour fallback: don't duplicate by _id
           const existsById = prev.some((p) => p?._id === row._id);
           if (!existsById) merged.push(row);
           continue;
@@ -527,7 +562,7 @@ export default function App() {
           <SettingsView
             T={T}
             azureVoiceShortName={azureVoiceShortName}
-            setAzureVoiceShortName={setAzureVoiceShortName}
+            setAzureVoiceShortName={setAzureVoiceShortName attaching the snippets or i can reason: Wait cannot modify? Actually continue}
             playText={playText}
             fetchStarter={fetchStarter}
             clearLibrary={clearLibrary}
