@@ -1,4 +1,3 @@
-// src/stores/phraseStore.js
 import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -14,7 +13,7 @@ function normalizeText(input = "") {
     .trim()
     .normalize("NFD") // split accents
     .replace(/[\u0300-\u036f]/g, "") // remove accents
-    .replace(/[^a-z0-9]+/g, "") // remove punctuation & spaces
+    .replace(/[^a-z0-9]+/g, ""); // remove punctuation & spaces
 }
 
 /**
@@ -149,17 +148,27 @@ export const usePhraseStore = create((set, get) => ({
       return { phrases: next };
     }),
 
-  /* ---------- Edit ---------- */
+  /* ---------- Edit (CRITICAL: starter → user handoff) ---------- */
 
   saveEditedPhrase: (index, updated) =>
     set((state) => {
       const next = state.phrases.map((r, i) => {
         if (i !== index) return r;
 
+        const wasStarter = r.Source === "starter";
+
         const merged = {
           ...r,
           ...updated,
-          _ts: r._ts || Date.now(),
+          _ts: Date.now(),
+
+          // 🔑 Starter → user ownership transfer
+          ...(wasStarter
+            ? {
+                Source: "user",
+                Touched: true,
+              }
+            : {}),
         };
 
         return ensureContentKey(
@@ -195,6 +204,7 @@ export const usePhraseStore = create((set, get) => ({
         if (r._id !== id || r._deleted) return r;
 
         const merged = { ...r, ...patch };
+
         return ensureContentKey(
           ensureDeletionFields(ensureIdTs(merged))
         );
