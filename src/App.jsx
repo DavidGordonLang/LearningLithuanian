@@ -180,6 +180,10 @@ export default function App() {
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
+  // ✅ FIX: use store actions for add/edit so metadata + tombstones stay correct
+  const addPhrase = usePhraseStore((s) => s.addPhrase);
+  const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
+
   /**
    * 🔑 UI FILTER
    * Deleted rows remain in storage/export/merge,
@@ -270,6 +274,8 @@ export default function App() {
    * - Always marks Source: "starter", Touched: false
    * - Never overwrites existing rows (by _id)
    * - Prevents starter installs from being mislabelled as user data
+   *
+   * NOTE: This does NOT make installs idempotent yet (content-key work comes later).
    */
   async function mergeStarterRows(newRows) {
     const cleaned = newRows
@@ -294,7 +300,7 @@ export default function App() {
             grn: { ok: 0, bad: 0 },
           },
 
-        // 🔒 provenance
+        // provenance
         Source: "starter",
         Touched: false,
       }))
@@ -305,9 +311,7 @@ export default function App() {
       const merged = [...prev];
 
       for (const row of cleaned) {
-        if (!existingById.has(row._id)) {
-          merged.push(row);
-        }
+        if (!existingById.has(row._id)) merged.push(row);
       }
 
       return merged;
@@ -344,6 +348,7 @@ export default function App() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
+
   const editingRow = useMemo(
     () => visibleRows.find((r) => r._id === editRowId) || null,
     [visibleRows, editRowId]
@@ -377,6 +382,90 @@ export default function App() {
     setEditRowId(null);
   }
 
+  /* ============================================================================
+     🔒 HARD MODAL SCROLL INVARIANT (resilient to Google auth bounce)
+     - Re-applies while addOpen is true.
+     ✅ FIX: do NOT apply while authLoading is true
+     ========================================================================== */
+  useEffect(() => {
+    if (!addOpen || authLoading) return;
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    const prevBody = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      overscrollBehavior: body.style.overscrollBehavior,
+      touchAction: body.style.touchAction,
+    };
+
+    const prevHtml = {
+      overflow: html.style.overflow,
+      overscrollBehavior: html.style.overscrollBehavior,
+      height: html.style.height,
+    };
+
+    let scrollY = window.scrollY || 0;
+
+    const applyLock = () => {
+      scrollY = Number.isFinite(window.scrollY) ? window.scrollY : scrollY;
+
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.style.overflow = "hidden";
+      body.style.overscrollBehavior = "none";
+      body.style.touchAction = "none";
+
+      html.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+      html.style.height = "100%";
+    };
+
+    const reapplyIfNeeded = () => {
+      if (!addOpen || authLoading) return;
+      applyLock();
+    };
+
+    applyLock();
+
+    window.addEventListener("pageshow", reapplyIfNeeded);
+    window.addEventListener("focus", reapplyIfNeeded);
+    window.addEventListener("resize", reapplyIfNeeded);
+    window.addEventListener("orientationchange", reapplyIfNeeded);
+    document.addEventListener("visibilitychange", reapplyIfNeeded);
+
+    return () => {
+      window.removeEventListener("pageshow", reapplyIfNeeded);
+      window.removeEventListener("focus", reapplyIfNeeded);
+      window.removeEventListener("resize", reapplyIfNeeded);
+      window.removeEventListener("orientationchange", reapplyIfNeeded);
+      document.removeEventListener("visibilitychange", reapplyIfNeeded);
+
+      body.style.position = prevBody.position;
+      body.style.top = prevBody.top;
+      body.style.left = prevBody.left;
+      body.style.right = prevBody.right;
+      body.style.width = prevBody.width;
+      body.style.overflow = prevBody.overflow;
+      body.style.overscrollBehavior = prevBody.overscrollBehavior;
+      body.style.touchAction = prevBody.touchAction;
+
+      html.style.overflow = prevHtml.overflow;
+      html.style.overscrollBehavior = prevHtml.overscrollBehavior;
+      html.style.height = prevHtml.height;
+
+      window.scrollTo(0, scrollY);
+    };
+  }, [addOpen, authLoading]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
@@ -408,7 +497,10 @@ export default function App() {
               setEditRowId(id);
               setAddOpen(true);
             }}
-            onOpenAddForm={() => setAddOpen(true)}
+            onOpenAddForm={() => {
+              setEditRowId(null);
+              setAddOpen(true);
+            }}
           />
         ) : page === "settings" ? (
           <SettingsView
@@ -438,10 +530,71 @@ export default function App() {
             genId={genId}
             nowTs={nowTs}
             rows={visibleRows}
-            onOpenAddForm={() => setAddOpen(true)}
+            onOpenAddForm={() => {
+              setEditRowId(null);
+              setAddOpen(true);
+            }}
           />
         )}
       </main>
+
+      {/* ADD / EDIT MODAL */}
+      {addOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          onClick={() => {
+            setAddOpen(false);
+            setEditRowId(null);
+          }}
+        >
+          <div
+            className="w-full h-full px-3 pb-4 flex justify-center items-start"
+            style={{ paddingTop: headerHeight + 16 }}
+          >
+            <div
+              className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-y-auto flex flex-col"
+              style={{ height: `calc(100dvh - ${headerHeight + 32}px)` }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
+                <h3 className="text-lg font-semibold">
+                  {isEditing ? T.edit : T.addEntry}
+                </h3>
+              </div>
+
+              <div className="p-5 pt-4 flex-1 min-h-0">
+                <AddForm
+                  T={T}
+                  genId={genId}
+                  nowTs={nowTs}
+                  normalizeRag={normalizeRag}
+                  mode={isEditing ? "edit" : "add"}
+                  initialRow={editingRow || undefined}
+                  onSubmit={(row) => {
+                    if (isEditing) {
+                      // IMPORTANT: edit must route through store logic
+                      const index = rows.findIndex((r) => r._id === row._id);
+                      if (index !== -1) {
+                        saveEditedPhrase(index, row);
+                      }
+                    } else {
+                      // IMPORTANT: add must route through store logic
+                      addPhrase(row);
+                    }
+
+                    setAddOpen(false);
+                    setEditRowId(null);
+                  }}
+                  onCancel={() => {
+                    setAddOpen(false);
+                    setEditRowId(null);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showWhatsNew && (
         <WhatsNewModal
@@ -458,7 +611,9 @@ export default function App() {
         />
       )}
 
-      {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
+      {showChangeLog && (
+        <ChangeLogModal onClose={() => setShowChangeLog(false)} />
+      )}
 
       {showUserGuide && (
         <UserGuideModal
