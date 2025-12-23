@@ -263,6 +263,8 @@ export default function App() {
             amb: { ok: 0, bad: 0 },
             grn: { ok: 0, bad: 0 },
           },
+        // Keep contentKey if present (import/export roundtrip)
+        contentKey: r.contentKey,
       }))
       .filter((r) => r.English || r.Lithuanian);
 
@@ -270,12 +272,10 @@ export default function App() {
   }
 
   /**
-   * ✅ Starter-aware ingest:
+   * ✅ Starter-aware ingest (NOW IDEMPOTENT via contentKey):
    * - Always marks Source: "starter", Touched: false
-   * - Never overwrites existing rows (by _id)
-   * - Prevents starter installs from being mislabelled as user data
-   *
-   * NOTE: This does NOT make installs idempotent yet (content-key work comes later).
+   * - Never overwrites existing rows
+   * - Prevents duplicates across repeated installs by using contentKey
    */
   async function mergeStarterRows(newRows) {
     const cleaned = newRows
@@ -300,6 +300,9 @@ export default function App() {
             grn: { ok: 0, bad: 0 },
           },
 
+        // 🔑 identity
+        contentKey: r.contentKey,
+
         // provenance
         Source: "starter",
         Touched: false,
@@ -307,11 +310,29 @@ export default function App() {
       .filter((r) => r.English || r.Lithuanian);
 
     setRows((prev) => {
-      const existingById = new Map(prev.map((p) => [p._id, p]));
+      // Existing keys, including tombstones, to prevent re-adding deleted starter rows too
+      const existingKeys = new Set(
+        prev
+          .map((p) => p?.contentKey)
+          .filter((k) => typeof k === "string" && k.length > 0)
+      );
+
       const merged = [...prev];
 
       for (const row of cleaned) {
-        if (!existingById.has(row._id)) merged.push(row);
+        const key = row?.contentKey;
+        // If starter row somehow lacks contentKey, fall back to _id to avoid blowing up
+        if (!key) {
+          // Old behaviour fallback: don't duplicate by _id
+          const existsById = prev.some((p) => p?._id === row._id);
+          if (!existsById) merged.push(row);
+          continue;
+        }
+
+        if (!existingKeys.has(key)) {
+          merged.push(row);
+          existingKeys.add(key);
+        }
       }
 
       return merged;
