@@ -185,10 +185,7 @@ export default function App() {
    * Deleted rows remain in storage/export/merge,
    * but are hidden from all normal views.
    */
-  const visibleRows = useMemo(
-    () => rows.filter((r) => !r._deleted),
-    [rows]
-  );
+  const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
   /* SORT */
   const [sortMode, setSortMode] = useState(
@@ -268,13 +265,66 @@ export default function App() {
     setRows((prev) => [...cleaned, ...prev]);
   }
 
+  /**
+   * ✅ Starter-aware ingest:
+   * - Always marks Source: "starter", Touched: false
+   * - Never overwrites existing rows (by _id)
+   * - Prevents starter installs from being mislabelled as user data
+   */
+  async function mergeStarterRows(newRows) {
+    const cleaned = newRows
+      .map((r) => ({
+        English: r.English?.trim() || "",
+        Lithuanian: r.Lithuanian?.trim() || "",
+        Phonetic: r.Phonetic?.trim() || "",
+        Category: r.Category?.trim() || "",
+        Usage: r.Usage?.trim() || "",
+        Notes: r.Notes?.trim() || "",
+        "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+          ? r.Sheet
+          : "Phrases",
+
+        _id: r._id || genId(),
+        _ts: r._ts || nowTs(),
+        _qstat:
+          r._qstat || {
+            red: { ok: 0, bad: 0 },
+            amb: { ok: 0, bad: 0 },
+            grn: { ok: 0, bad: 0 },
+          },
+
+        // 🔒 provenance
+        Source: "starter",
+        Touched: false,
+      }))
+      .filter((r) => r.English || r.Lithuanian);
+
+    setRows((prev) => {
+      const existingById = new Map(prev.map((p) => [p._id, p]));
+      const merged = [...prev];
+
+      for (const row of cleaned) {
+        if (!existingById.has(row._id)) {
+          merged.push(row);
+        }
+      }
+
+      return merged;
+    });
+  }
+
   async function fetchStarter(kind) {
     const url = STARTERS[kind];
     if (!url) return alert("Starter not found");
+
     const res = await fetch(url);
     if (!res.ok) return alert("Failed to fetch starter");
-    await mergeRows(await res.json());
-    alert("Installed.");
+
+    const data = await res.json();
+    await mergeStarterRows(data);
+
+    alert("Starter pack installed.");
   }
 
   function clearLibrary() {
@@ -303,9 +353,7 @@ export default function App() {
   function removePhraseById(id) {
     setRows((prev) =>
       prev.map((r) =>
-        r._id === id
-          ? { ...r, _deleted: true, _deleted_ts: Date.now() }
-          : r
+        r._id === id ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r
       )
     );
   }
