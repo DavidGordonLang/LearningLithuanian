@@ -19,11 +19,15 @@ function normalizeText(input = "") {
 /**
  * Deterministic identity for a phrase
  * DO NOT CHANGE once in use
+ *
+ * Identity rule:
+ * - Lithuanian ONLY
+ * - English is NOT identity
+ * - Category / Sheet are NOT identity
  */
 function buildContentKey(row) {
-  const en = normalizeText(row?.English || "");
   const lt = normalizeText(row?.Lithuanian || "");
-  return `${en}::${lt}`;
+  return lt;
 }
 
 /* --------------------------- Storage --------------------------- */
