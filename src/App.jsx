@@ -193,15 +193,10 @@ export default function App() {
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
-  // ✅ FIX: use store actions for add/edit so metadata + tombstones stay correct
+  // ✅ store-controlled
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
-  /**
-   * 🔑 UI FILTER
-   * Deleted rows remain in storage/export/merge,
-   * but are hidden from all normal views.
-   */
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
   /* SORT */
@@ -276,23 +271,12 @@ export default function App() {
             amb: { ok: 0, bad: 0 },
             grn: { ok: 0, bad: 0 },
           },
-
-        // IMPORTANT:
-        // Do NOT preserve incoming contentKey here.
-        // phraseStore will compute and ALIGN to the current identity rule.
       }))
       .filter((r) => r.English || r.Lithuanian);
 
     setRows((prev) => [...cleaned, ...prev]);
   }
 
-  /**
-   * ✅ Starter-aware ingest (IDEMPOTENT):
-   * - Always marks Source: "starter", Touched: false
-   * - Never overwrites existing rows
-   * - Prevents duplicates across repeated installs by using LT-only content key
-   * - Includes tombstones in the key set so deleted starter rows stay deleted
-   */
   async function mergeStarterRows(newRows) {
     const cleaned = newRows
       .map((r) => {
@@ -307,7 +291,6 @@ export default function App() {
           Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
             ? r.Sheet
             : "Phrases",
-
           _id: r._id || genId(),
           _ts: r._ts || nowTs(),
           _qstat:
@@ -316,23 +299,16 @@ export default function App() {
               amb: { ok: 0, bad: 0 },
               grn: { ok: 0, bad: 0 },
             },
-
           Source: "starter",
           Touched: false,
         };
 
-        // Force LT-only key for idempotency (matches phraseStore)
         const ck = makeLtKey(base);
-
-        return {
-          ...base,
-          contentKey: ck,
-        };
+        return { ...base, contentKey: ck };
       })
       .filter((r) => r.English || r.Lithuanian);
 
     setRows((prev) => {
-      // include tombstones so re-install won't resurrect deleted starter entries
       const existingKeys = new Set(
         prev
           .map((p) => p?.contentKey)
@@ -343,14 +319,11 @@ export default function App() {
 
       for (const row of cleaned) {
         const key = row?.contentKey;
-
-        // if for any reason key is still missing, fall back to _id (safe)
         if (!key) {
           const existsById = prev.some((p) => p?._id === row._id);
           if (!existsById) merged.push(row);
           continue;
         }
-
         if (!existingKeys.has(key)) {
           merged.push(row);
           existingKeys.add(key);
@@ -420,21 +393,15 @@ export default function App() {
   }, []);
 
   function goToPage(next) {
-    // ✅ Always close overlays when changing tabs/pages
     setAddOpen(false);
     setEditRowId(null);
     setShowChangeLog(false);
     setShowUserGuide(false);
     setShowWhatsNew(false);
-
     setPage(next);
   }
 
-  /* ============================================================================
-     🔒 HARD MODAL SCROLL INVARIANT (resilient to Google auth bounce)
-     - Re-applies while addOpen is true.
-     ✅ FIX: do NOT apply while authLoading is true
-     ========================================================================== */
+  /* ============================================================================ */
   useEffect(() => {
     if (!addOpen || authLoading) return;
 
@@ -621,9 +588,7 @@ export default function App() {
                   onSubmit={(row) => {
                     if (isEditing) {
                       const index = rows.findIndex((r) => r._id === row._id);
-                      if (index !== -1) {
-                        saveEditedPhrase(index, row);
-                      }
+                      if (index !== -1) saveEditedPhrase(index, row);
                     } else {
                       addPhrase(row);
                     }
@@ -645,6 +610,7 @@ export default function App() {
       {showWhatsNew && (
         <WhatsNewModal
           version={APP_VERSION}
+          topOffset={headerHeight}
           onClose={() => {
             localStorage.setItem(LSK_LAST_SEEN_VERSION, APP_VERSION);
             setShowWhatsNew(false);
@@ -658,11 +624,15 @@ export default function App() {
       )}
 
       {showChangeLog && (
-        <ChangeLogModal onClose={() => setShowChangeLog(false)} />
+        <ChangeLogModal
+          topOffset={headerHeight}
+          onClose={() => setShowChangeLog(false)}
+        />
       )}
 
       {showUserGuide && (
         <UserGuideModal
+          topOffset={headerHeight}
           onClose={() => {
             setShowUserGuide(false);
             localStorage.setItem(LSK_USER_GUIDE, "1");
