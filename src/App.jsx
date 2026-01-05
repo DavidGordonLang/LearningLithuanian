@@ -92,28 +92,16 @@ function normalizeRag(icon = "") {
 }
 
 /**
- * Deterministic semantic identity.
- * - Includes BOTH English + Lithuanian (so masc/fem variants do not merge)
- * - Removes diacritics (dušu -> dusu)
- * - Removes punctuation/whitespace (stable across keyboards)
- * - Includes Sheet to avoid collisions across types
+ * ✅ Must match src/stores/phraseStore.js identity rule:
+ * Lithuanian-only, diacritics stripped, punctuation removed.
  */
-function makeContentKey(r) {
-  const norm = (s) =>
-    String(s || "")
-      .toLowerCase()
-      .normalize("NFD") // split accents (š -> s + accent)
-      .replace(/[\u0300-\u036f]/g, "") // drop accents
-      .replace(/[^a-z0-9]+/g, "") // drop punctuation/spaces
-      .trim();
-
-  const en = norm(r?.English);
-  const lt = norm(r?.Lithuanian);
-  const sheet = String(r?.Sheet || "Phrases").toLowerCase();
-
-  // If either side is missing, still return something stable-ish,
-  // but note: your merge logic should treat missing-LT as weaker identity.
-  return `${en}::${lt}::${sheet}`;
+function makeLtKey(r) {
+  return String(r?.Lithuanian || "")
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 /* ============================================================================
@@ -288,8 +276,10 @@ export default function App() {
             amb: { ok: 0, bad: 0 },
             grn: { ok: 0, bad: 0 },
           },
-        // Keep contentKey if present (import/export roundtrip)
-        contentKey: r.contentKey,
+
+        // IMPORTANT:
+        // Do NOT preserve incoming contentKey here.
+        // phraseStore will compute and ALIGN to the current identity rule.
       }))
       .filter((r) => r.English || r.Lithuanian);
 
@@ -297,10 +287,10 @@ export default function App() {
   }
 
   /**
-   * ✅ Starter-aware ingest (IDEMPOTENT via generated contentKey):
+   * ✅ Starter-aware ingest (IDEMPOTENT):
    * - Always marks Source: "starter", Touched: false
    * - Never overwrites existing rows
-   * - Prevents duplicates across repeated installs by using contentKey
+   * - Prevents duplicates across repeated installs by using LT-only content key
    * - Includes tombstones in the key set so deleted starter rows stay deleted
    */
   async function mergeStarterRows(newRows) {
@@ -331,11 +321,8 @@ export default function App() {
           Touched: false,
         };
 
-        // 🔑 critical: generate a stable contentKey if missing
-        const ck =
-          typeof r?.contentKey === "string" && r.contentKey.length
-            ? r.contentKey
-            : makeContentKey(base);
+        // Force LT-only key for idempotency (matches phraseStore)
+        const ck = makeLtKey(base);
 
         return {
           ...base,
@@ -628,13 +615,11 @@ export default function App() {
                   initialRow={editingRow || undefined}
                   onSubmit={(row) => {
                     if (isEditing) {
-                      // IMPORTANT: edit must route through store logic
                       const index = rows.findIndex((r) => r._id === row._id);
                       if (index !== -1) {
                         saveEditedPhrase(index, row);
                       }
                     } else {
-                      // IMPORTANT: add must route through store logic
                       addPhrase(row);
                     }
 
