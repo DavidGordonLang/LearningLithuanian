@@ -33,9 +33,8 @@ export default function ChangeLogModal({ onClose }) {
   return (
     <div
       className="
-        fixed inset-0 z-[260]
-        bg-black/70
-        backdrop-blur-sm
+        fixed inset-0 z-[9999]
+        bg-black/70 backdrop-blur-sm
         px-4
         pt-[calc(env(safe-area-inset-top)+12px)]
         pb-[calc(env(safe-area-inset-bottom)+12px)]
@@ -43,6 +42,29 @@ export default function ChangeLogModal({ onClose }) {
       "
       onPointerDown={onClose}
     >
+      {/* ALWAYS-VISIBLE CLOSE (above everything) */}
+      <button
+        type="button"
+        aria-label="Close changelog"
+        className="
+          fixed z-[10000]
+          top-[calc(env(safe-area-inset-top)+10px)]
+          right-[calc(env(safe-area-inset-right)+10px)]
+          w-10 h-10
+          rounded-full
+          bg-zinc-900 border border-zinc-700
+          text-zinc-200
+          flex items-center justify-center
+          shadow-lg
+          hover:bg-zinc-800 active:bg-zinc-700
+          select-none
+        "
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={onClose}
+      >
+        ✕
+      </button>
+
       <div
         className="
           w-full max-w-2xl
@@ -54,15 +76,14 @@ export default function ChangeLogModal({ onClose }) {
           flex flex-col
         "
         style={{
-          // IMPORTANT: top-aligned modal that always fits the screen.
           maxHeight:
             "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)",
         }}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* HEADER — always visible */}
+        {/* HEADER (should be visible, but we also have the fixed ✕ as a fallback) */}
         <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800">
-          <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center justify-between px-5 py-4 pr-16">
             <h2 className="text-lg sm:text-xl font-bold">Change Log</h2>
 
             <button
@@ -80,7 +101,7 @@ export default function ChangeLogModal({ onClose }) {
           </div>
         </div>
 
-        {/* BODY — scrolls */}
+        {/* BODY */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading && <div className="text-sm text-zinc-400">Loading…</div>}
 
