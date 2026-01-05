@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/views/SettingsView.jsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { usePhraseStore } from "../stores/phraseStore";
 import {
@@ -27,12 +28,76 @@ export default function SettingsView({
   const [syncingDown, setSyncingDown] = useState(false);
   const [merging, setMerging] = useState(false);
 
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  /**
+   * Sync status (manual sync model)
+   * - "dirty" means local has changed since last successful sync/upload.
+   */
+  const [syncDirty, setSyncDirty] = useState(false);
+  const [lastSyncLabel, setLastSyncLabel] = useState(""); // e.g., "Synced", "Downloaded", "Uploaded"
+  const [lastSyncAt, setLastSyncAt] = useState(null); // Date.now()
+
   /**
    * IMPORTANT:
    * Always use full store (including tombstones) for export & sync
    */
-  const getAllStoredPhrases = () =>
-    usePhraseStore.getState().phrases || [];
+  const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
+
+  /**
+   * Mark local as changed (not synced).
+   * We use a lightweight hash to detect changes without deep comparisons.
+   */
+  const lastHashRef = useRef("");
+
+  const localHash = useMemo(() => {
+    try {
+      const all = getAllStoredPhrases();
+      // Small, stable-ish fingerprint. Good enough for "dirty" signalling.
+      // Includes tombstones and core identity fields.
+      const sig = all
+        .map((r) => `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`)
+        .join("~");
+      // Keep it short
+      return String(sig.length) + ":" + String(sig.slice(0, 200));
+    } catch {
+      return "0:";
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows?.length]); // rows length changes on add/edit/delete; tombstones included via store anyway
+
+  useEffect(() => {
+    // On first mount, set baseline hash.
+    if (!lastHashRef.current) {
+      lastHashRef.current = localHash;
+      return;
+    }
+
+    if (localHash !== lastHashRef.current) {
+      lastHashRef.current = localHash;
+      setSyncDirty(true);
+      setLastSyncLabel("");
+      setLastSyncAt(null);
+    }
+  }, [localHash]);
+
+  function markSynced(label) {
+    setSyncDirty(false);
+    setLastSyncLabel(label);
+    setLastSyncAt(Date.now());
+    // refresh baseline hash now that we're "in sync"
+    lastHashRef.current = localHash;
+  }
+
+  function formatWhen(ts) {
+    if (!ts) return "";
+    try {
+      const d = new Date(ts);
+      return d.toLocaleString();
+    } catch {
+      return "";
+    }
+  }
 
   /* EXPORT JSON (includes tombstones) */
   function exportJson() {
@@ -51,22 +116,48 @@ export default function SettingsView({
   }
 
   /* IMPORT JSON */
-  function handleImportFile(e) {
+  async function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    importJsonFile(file);
+    await importJsonFile(file);
+    // local has changed; banner should show "Not synced"
+    setSyncDirty(true);
+    setLastSyncLabel("");
+    setLastSyncAt(null);
     e.target.value = "";
+  }
+
+  /* STARTER PACK */
+  async function handleInstallStarter() {
+    await fetchStarter("EN2LT");
+    setSyncDirty(true);
+    setLastSyncLabel("");
+    setLastSyncAt(null);
+  }
+
+  /* CLEAR LIBRARY */
+  function handleClearLibrary() {
+    clearLibrary?.();
+    setSyncDirty(true);
+    setLastSyncLabel("");
+    setLastSyncAt(null);
   }
 
   /* UPLOAD → CLOUD (overwrite, includes tombstones) */
   async function uploadLibraryToCloud() {
     if (!user) return;
 
+    const ok = window.confirm(
+      "Upload (overwrite):\n\nThis will REPLACE your cloud library with your local library.\n\nContinue?"
+    );
+    if (!ok) return;
+
     try {
       setSyncingUp(true);
       const allPhrases = getAllStoredPhrases();
       await replaceUserPhrases(allPhrases);
-      alert("Library uploaded to cloud ✅");
+      markSynced("Uploaded");
+      alert("Uploaded to cloud ✅");
     } catch (e) {
       alert("Upload failed: " + (e?.message || "Unknown error"));
     } finally {
@@ -79,7 +170,7 @@ export default function SettingsView({
     if (!user) return;
 
     const ok = window.confirm(
-      "This will replace your entire local library with the cloud version.\n\nContinue?"
+      "Download (overwrite):\n\nThis will REPLACE your entire local library with the cloud version.\n\nContinue?"
     );
     if (!ok) return;
 
@@ -87,6 +178,8 @@ export default function SettingsView({
       setSyncingDown(true);
       const cloudRows = await fetchUserPhrases();
       setRows(cloudRows);
+      // After download, local == cloud (as far as we know)
+      markSynced("Downloaded");
       alert(`Downloaded ${cloudRows.length} entries ✅`);
     } catch (e) {
       alert("Download failed: " + (e?.message || "Unknown error"));
@@ -95,7 +188,7 @@ export default function SettingsView({
     }
   }
 
-  /* MERGE (safe, conflict-aware) */
+  /* SYNC (MERGE) — safe, conflict-aware */
   async function mergeLibraryWithCloud() {
     if (!user) return;
 
@@ -107,35 +200,78 @@ export default function SettingsView({
 
       if (result.conflicts?.length) {
         alert(
-          `Merge paused ⚠️\n\n` +
+          `Sync paused ⚠️\n\n` +
             `${result.conflicts.length} conflicts were found.\n\n` +
             `Nothing has been overwritten.\n\n` +
-            `Next step: review conflicts before completing the merge.`
+            `Next step: review conflicts before completing the sync.`
         );
 
-        // Next step: store conflicts for UI (coming next)
         console.log("Merge conflicts:", result.conflicts);
         return;
       }
 
       // No conflicts → mergedRows already written to cloud
       setRows(result.mergedRows);
-      alert("Merge completed successfully ✅");
+      markSynced("Synced");
+      alert("Sync completed ✅");
     } catch (e) {
-      alert("Merge failed: " + (e?.message || "Unknown error"));
+      alert("Sync failed: " + (e?.message || "Unknown error"));
     } finally {
       setMerging(false);
     }
   }
+
+  const syncBanner = (() => {
+    if (!user) return null;
+
+    if (syncDirty) {
+      return (
+        <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-4 py-3 text-sm">
+          <div className="font-semibold text-amber-300">Not synced</div>
+          <div className="text-zinc-300 mt-1">
+            Changes on this device haven’t been synced to cloud yet. Use{" "}
+            <span className="text-amber-200 font-semibold">Sync (merge)</span>{" "}
+            when you’re ready.
+          </div>
+        </div>
+      );
+    }
+
+    if (lastSyncLabel) {
+      return (
+        <div className="rounded-xl border border-emerald-800 bg-emerald-950/20 px-4 py-3 text-sm">
+          <div className="font-semibold text-emerald-300">{lastSyncLabel}</div>
+          {lastSyncAt ? (
+            <div className="text-zinc-300 mt-1">
+              {formatWhen(lastSyncAt)}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 text-sm">
+        <div className="font-semibold text-zinc-200">Sync status</div>
+        <div className="text-zinc-400 mt-1">
+          Use <span className="text-zinc-200 font-semibold">Sync (merge)</span>{" "}
+          to keep devices aligned.
+        </div>
+      </div>
+    );
+  })();
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
       {/* STARTER PACK */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
+        <p className="text-sm text-zinc-400">
+          Adds the starter library to this device. Re-installing won’t duplicate entries.
+        </p>
         <button
           className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={() => fetchStarter("EN2LT")}
+          onClick={handleInstallStarter}
         >
           Install starter pack
         </button>
@@ -166,29 +302,17 @@ export default function SettingsView({
               <span className="text-zinc-200">{user.email}</span>
             </p>
 
+            {syncBanner}
+
             <div className="flex flex-wrap gap-3">
-              <button
-                className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold"
-                onClick={uploadLibraryToCloud}
-                disabled={syncingUp}
-              >
-                {syncingUp ? "Uploading…" : "Upload library"}
-              </button>
-
-              <button
-                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-semibold"
-                onClick={downloadLibraryFromCloud}
-                disabled={syncingDown}
-              >
-                {syncingDown ? "Downloading…" : "Download library"}
-              </button>
-
+              {/* Primary action */}
               <button
                 className="bg-emerald-600 text-black rounded-full px-5 py-2 font-semibold"
                 onClick={mergeLibraryWithCloud}
                 disabled={merging}
+                title="Safest option: merges local + cloud, avoids duplicates, and pauses on conflicts."
               >
-                {merging ? "Merging…" : "Merge library"}
+                {merging ? "Syncing…" : "Sync (merge)"}
               </button>
 
               <button
@@ -197,6 +321,57 @@ export default function SettingsView({
               >
                 Sign out
               </button>
+            </div>
+
+            {/* Advanced */}
+            <div className="pt-2">
+              <button
+                type="button"
+                className="text-sm text-zinc-300 hover:text-zinc-100 underline underline-offset-4"
+                onClick={() => setShowAdvanced((v) => !v)}
+              >
+                {showAdvanced ? "Hide advanced sync options" : "Show advanced sync options"}
+              </button>
+
+              {showAdvanced && (
+                <div className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/20 p-4 space-y-3">
+                  <div className="text-sm text-zinc-300">
+                    Use these only if you understand the difference:
+                  </div>
+
+                  <ul className="text-sm text-zinc-400 list-disc pl-5 space-y-1">
+                    <li>
+                      <span className="text-zinc-200">Upload (overwrite)</span>: forces local → cloud.
+                    </li>
+                    <li>
+                      <span className="text-zinc-200">Download (overwrite)</span>: forces cloud → local.
+                    </li>
+                    <li>
+                      <span className="text-zinc-200">Sync (merge)</span> is safer for normal use.
+                    </li>
+                  </ul>
+
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <button
+                      className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold"
+                      onClick={uploadLibraryToCloud}
+                      disabled={syncingUp}
+                      title="Replaces your cloud library with your local library."
+                    >
+                      {syncingUp ? "Uploading…" : "Upload (overwrite)"}
+                    </button>
+
+                    <button
+                      className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-semibold"
+                      onClick={downloadLibraryFromCloud}
+                      disabled={syncingDown}
+                      title="Replaces your local library with the cloud version."
+                    >
+                      {syncingDown ? "Downloading…" : "Download (overwrite)"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -227,32 +402,40 @@ export default function SettingsView({
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Your Data</div>
 
-        <input
-          type="file"
-          accept="application/json"
-          onChange={handleImportFile}
-        />
+        <div className="space-y-2">
+          <div className="text-sm text-zinc-400">
+            Export/Import is a file on this device (not cloud).
+          </div>
 
-        <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
-          onClick={exportJson}
-        >
-          Export library
-        </button>
+          <input
+            type="file"
+            accept="application/json"
+            onChange={handleImportFile}
+          />
 
-        <button
-          className="bg-blue-600 text-white rounded-full px-5 py-2"
-          onClick={onOpenDuplicateScanner}
-        >
-          Duplicate scanner
-        </button>
+          <button
+            className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+            onClick={exportJson}
+          >
+            Export JSON (file)
+          </button>
+        </div>
 
-        <button
-          className="bg-red-500 text-white rounded-full px-5 py-2"
-          onClick={clearLibrary}
-        >
-          Clear library
-        </button>
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button
+            className="bg-blue-600 text-white rounded-full px-5 py-2"
+            onClick={onOpenDuplicateScanner}
+          >
+            Duplicate scanner
+          </button>
+
+          <button
+            className="bg-red-500 text-white rounded-full px-5 py-2"
+            onClick={handleClearLibrary}
+          >
+            Clear library
+          </button>
+        </div>
       </section>
 
       {/* ABOUT */}
