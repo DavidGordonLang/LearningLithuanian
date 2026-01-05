@@ -6,52 +6,67 @@ export default function ChangeLogModal({ onClose }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let alive = true;
+
     async function loadFile() {
       try {
-        const res = await fetch("/data/changelog.json");
+        const res = await fetch("/data/changelog.json", { cache: "no-store" });
         const json = await res.json();
+        if (!alive) return;
         setEntries(Array.isArray(json) ? json : []);
       } catch (err) {
         console.error("Failed to load changelog:", err);
+        if (!alive) return;
         setEntries([]);
       } finally {
+        if (!alive) return;
         setLoading(false);
       }
     }
+
     loadFile();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
     <div
       className="
-        fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm
-        flex items-center justify-center
+        fixed inset-0 z-[260]
+        bg-black/70
+        backdrop-blur-sm
         px-4
-        pt-[calc(env(safe-area-inset-top)+16px)]
-        pb-[calc(env(safe-area-inset-bottom)+16px)]
+        pt-[calc(env(safe-area-inset-top)+12px)]
+        pb-[calc(env(safe-area-inset-bottom)+12px)]
+        flex items-start justify-center
       "
       onPointerDown={onClose}
     >
       <div
         className="
           w-full max-w-2xl
-          bg-zinc-900/98 border border-zinc-800
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.35)]
+          bg-zinc-900
+          border border-zinc-800
+          rounded-2xl
+          shadow-[0_0_24px_rgba(0,0,0,0.55)]
           overflow-hidden
           flex flex-col
         "
         style={{
+          // IMPORTANT: top-aligned modal that always fits the screen.
           maxHeight:
-            "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px)",
+            "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)",
         }}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* HEADER (always visible) */}
-        <div className="shrink-0 border-b border-zinc-800 bg-zinc-900/98 backdrop-blur">
+        {/* HEADER — always visible */}
+        <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800">
           <div className="flex items-center justify-between px-5 py-4">
-            <h2 className="text-xl font-bold">Change Log</h2>
+            <h2 className="text-lg sm:text-xl font-bold">Change Log</h2>
 
             <button
+              type="button"
               className="
                 bg-zinc-800 text-zinc-200 rounded-full
                 px-4 py-1.5 text-sm font-medium
@@ -65,8 +80,8 @@ export default function ChangeLogModal({ onClose }) {
           </div>
         </div>
 
-        {/* BODY (scrollable) */}
-        <div className="flex-1 overflow-y-auto p-5">
+        {/* BODY — scrolls */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading && <div className="text-sm text-zinc-400">Loading…</div>}
 
           {!loading && entries.length === 0 && (
@@ -81,16 +96,20 @@ export default function ChangeLogModal({ onClose }) {
                 <section
                   key={index}
                   className="
-                    bg-zinc-950/60 border border-zinc-800
-                    rounded-2xl p-4 shadow-sm
+                    bg-zinc-950
+                    border border-zinc-800
+                    rounded-2xl
+                    p-4
                   "
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold">{entry.version}</h3>
+                    <h3 className="text-base sm:text-lg font-semibold">
+                      {entry.version}
+                    </h3>
                     <span className="text-xs text-zinc-400">{entry.date}</span>
                   </div>
 
-                  <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300">
+                  <ul className="list-disc list-inside space-y-1 text-sm text-zinc-200">
                     {(entry.changes || []).map((change, idx) => (
                       <li key={idx}>{change}</li>
                     ))}
