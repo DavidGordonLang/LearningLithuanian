@@ -1,7 +1,7 @@
 // src/components/ChangeLogModal.jsx
 import React, { useEffect, useState } from "react";
 
-export default function ChangeLogModal({ onClose }) {
+export default function ChangeLogModal({ onClose, topOffset = 0 }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,10 +36,12 @@ export default function ChangeLogModal({ onClose }) {
         fixed inset-0 z-[9999]
         bg-black/70 backdrop-blur-sm
         px-4
-        pt-[calc(env(safe-area-inset-top)+12px)]
         pb-[calc(env(safe-area-inset-bottom)+12px)]
         flex items-start justify-center
       "
+      style={{
+        paddingTop: `calc(env(safe-area-inset-top) + ${topOffset}px + 12px)`,
+      }}
       onPointerDown={onClose}
     >
       {/* ALWAYS-VISIBLE CLOSE (above everything) */}
@@ -48,10 +50,7 @@ export default function ChangeLogModal({ onClose }) {
         aria-label="Close changelog"
         className="
           fixed z-[10000]
-          top-[calc(env(safe-area-inset-top)+10px)]
-          right-[calc(env(safe-area-inset-right)+10px)]
-          w-10 h-10
-          rounded-full
+          w-10 h-10 rounded-full
           bg-zinc-900 border border-zinc-700
           text-zinc-200
           flex items-center justify-center
@@ -59,6 +58,10 @@ export default function ChangeLogModal({ onClose }) {
           hover:bg-zinc-800 active:bg-zinc-700
           select-none
         "
+        style={{
+          top: `calc(env(safe-area-inset-top) + ${topOffset}px + 10px)`,
+          right: "calc(env(safe-area-inset-right) + 10px)",
+        }}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={onClose}
       >
@@ -68,20 +71,16 @@ export default function ChangeLogModal({ onClose }) {
       <div
         className="
           w-full max-w-2xl
-          bg-zinc-900
-          border border-zinc-800
-          rounded-2xl
-          shadow-[0_0_24px_rgba(0,0,0,0.55)]
-          overflow-hidden
-          flex flex-col
+          bg-zinc-900 border border-zinc-800
+          rounded-2xl shadow-[0_0_24px_rgba(0,0,0,0.55)]
+          overflow-hidden flex flex-col
         "
         style={{
-          maxHeight:
-            "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)",
+          maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${topOffset}px - 24px)`,
         }}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* HEADER (should be visible, but we also have the fixed ✕ as a fallback) */}
+        {/* HEADER */}
         <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800">
           <div className="flex items-center justify-between px-5 py-4 pr-16">
             <h2 className="text-lg sm:text-xl font-bold">Change Log</h2>
@@ -117,10 +116,8 @@ export default function ChangeLogModal({ onClose }) {
                 <section
                   key={index}
                   className="
-                    bg-zinc-950
-                    border border-zinc-800
-                    rounded-2xl
-                    p-4
+                    bg-zinc-950 border border-zinc-800
+                    rounded-2xl p-4
                   "
                 >
                   <div className="flex items-center justify-between mb-2">
