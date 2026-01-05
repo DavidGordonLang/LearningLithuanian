@@ -82,21 +82,43 @@ const ensureDeletionFields = (r) => {
   return out;
 };
 
-/**
- * ✅ CRITICAL ALIGNMENT:
- * Always recompute contentKey to the current standard and overwrite if it differs.
- * This prevents legacy starter/en::lt::sheet keys from causing duplication.
- */
 const ensureContentKey = (r) => {
   const out = { ...r };
-  const computed = buildContentKey(out);
 
-  if (out.contentKey !== computed) {
-    out.contentKey = computed;
+  if (!out.contentKey || typeof out.contentKey !== "string") {
+    out.contentKey = buildContentKey(out);
   }
 
   return out;
 };
+
+/**
+ * Ensure ownership fields exist.
+ *
+ * Rules:
+ * - Starter rows: Source="starter", Touched defaults false
+ * - Everything else: Source defaults "user", Touched defaults true
+ *
+ * (This fixes legacy cloud rows that predate Source/Touched.)
+ */
+const ensureOwnershipFields = (r) => {
+  const out = { ...r };
+
+  const src = typeof out.Source === "string" ? out.Source : "";
+
+  if (!src) {
+    out.Source = "user";
+  }
+
+  if (typeof out.Touched !== "boolean") {
+    out.Touched = out.Source === "starter" ? false : true;
+  }
+
+  return out;
+};
+
+const ensureAll = (r) =>
+  ensureOwnershipFields(ensureContentKey(ensureDeletionFields(ensureIdTs(r))));
 
 /* ------------------------ Zustand Store ------------------------ */
 
@@ -111,15 +133,8 @@ export const usePhraseStore = create((set, get) => ({
 
     const migrated = rows.map((r) => {
       const before = JSON.stringify(r);
-
-      let next = ensureIdTs(r);
-      next = ensureDeletionFields(next);
-      next = ensureContentKey(next);
-
-      if (JSON.stringify(next) !== before) {
-        changed = true;
-      }
-
+      const next = ensureAll(r);
+      if (JSON.stringify(next) !== before) changed = true;
       return next;
     });
 
@@ -136,9 +151,7 @@ export const usePhraseStore = create((set, get) => ({
       const next =
         typeof update === "function" ? update(state.phrases) : update;
 
-      const safe = Array.isArray(next)
-        ? next.map((r) => ensureContentKey(ensureDeletionFields(ensureIdTs(r))))
-        : [];
+      const safe = Array.isArray(next) ? next.map(ensureAll) : [];
 
       saveRows(safe);
       return { phrases: safe };
@@ -149,7 +162,15 @@ export const usePhraseStore = create((set, get) => ({
 
   addPhrase: (row) =>
     set((state) => {
-      const safeRow = ensureContentKey(ensureDeletionFields(ensureIdTs(row)));
+      const merged = {
+        ...row,
+        // Manual add is always user-owned
+        Source: "user",
+        Touched: true,
+        _ts: Date.now(),
+      };
+
+      const safeRow = ensureAll(merged);
       const next = [safeRow, ...state.phrases];
       saveRows(next);
       return { phrases: next };
@@ -169,16 +190,12 @@ export const usePhraseStore = create((set, get) => ({
           ...updated,
           _ts: Date.now(),
 
-          // 🔑 Starter → user ownership transfer
-          ...(wasStarter
-            ? {
-                Source: "user",
-                Touched: true,
-              }
-            : {}),
+          // ✅ Any edit makes it user-owned + touched
+          Source: wasStarter ? "user" : (r.Source || "user"),
+          Touched: true,
         };
 
-        return ensureContentKey(ensureDeletionFields(ensureIdTs(merged)));
+        return ensureAll(merged);
       });
 
       saveRows(next);
@@ -190,7 +207,9 @@ export const usePhraseStore = create((set, get) => ({
   removePhrase: (index) =>
     set((state) => {
       const next = state.phrases.map((r, i) =>
-        i === index ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r
+        i === index
+          ? ensureAll({ ...r, _deleted: true, _deleted_ts: Date.now() })
+          : r
       );
 
       saveRows(next);
@@ -207,7 +226,7 @@ export const usePhraseStore = create((set, get) => ({
         if (r._id !== id || r._deleted) return r;
 
         const merged = { ...r, ...patch };
-        return ensureContentKey(ensureDeletionFields(ensureIdTs(merged)));
+        return ensureAll(merged);
       });
 
       saveRows(next);
