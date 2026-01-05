@@ -420,9 +420,14 @@ export default function App() {
   }, []);
 
   function goToPage(next) {
-    setPage(next);
+    // ✅ Always close overlays when changing tabs/pages
     setAddOpen(false);
     setEditRowId(null);
+    setShowChangeLog(false);
+    setShowUserGuide(false);
+    setShowWhatsNew(false);
+
+    setPage(next);
   }
 
   /* ============================================================================
@@ -521,7 +526,7 @@ export default function App() {
             setSortMode={setSortMode}
             placeholder={T.search}
             T={T}
-            offsetTop={headerHeight + 12}
+            offsetTop={headerHeight}
             page={page}
             setPage={goToPage}
           />
