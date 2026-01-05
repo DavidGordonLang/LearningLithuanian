@@ -15,11 +15,10 @@ export default function SearchDock({
 
   return (
     <div
-      className="sticky z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur"
+      className="sticky z-40 border-b border-zinc-800 bg-zinc-950"
       style={{ top: offsetTop }}
     >
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 space-y-2">
-        {/* LIBRARY ONLY */}
         {isLibrary && (
           <div className="space-y-2 pb-1">
             {/* Search */}
@@ -30,6 +29,7 @@ export default function SearchDock({
             {/* Sort controls */}
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
               <span className="text-zinc-400">{T.sort}</span>
+
               {["RAG", "Newest", "Oldest"].map((mode) => {
                 const active = sortMode === mode;
                 return (
