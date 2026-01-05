@@ -13,7 +13,7 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
       <div
         className="
           w-full max-w-md max-h-[80vh] overflow-y-auto
-          bg-zinc-900/95 border border-zinc-800
+          bg-zinc-900 border border-zinc-800
           rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
           p-5
         "
@@ -45,34 +45,19 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
           Here’s what changed in the latest update:
         </p>
 
-        {/* UPDATED CHANGE LIST FOR v1.3.0-beta */}
+        {/* UPDATED CHANGE LIST FOR v1.3.1-beta */}
         <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
           <li>
-            Added deterministic phrase identity using a stable Lithuanian-only{" "}
-            <b>contentKey</b> (no more duplication across devices or merges).
+            Fixed the Change Log window so it no longer sits behind the top
+            navigation bar.
           </li>
           <li>
-            Starter pack is now <b>truly idempotent</b>: reinstalling never
-            increases entry count.
+            Change Log now has a clearly visible close control on both mobile and
+            desktop.
           </li>
           <li>
-            Edited starter entries now cleanly convert to <b>user-owned</b>{" "}
-            entries.
-          </li>
-          <li>
-            Deletions are now <b>tombstoned</b> and never “come back” after
-            reinstalling or syncing.
-          </li>
-          <li>
-            Added a <b>safe, conflict-aware merge engine</b> that pauses if it
-            detects conflicts (nothing is overwritten silently).
-          </li>
-          <li>
-            Manual sync model is finalised with clear <b>Upload</b>,{" "}
-            <b>Download</b>, and <b>Merge</b> actions.
-          </li>
-          <li>
-            Duplicate Scanner is reliable again after identity and merge fixes.
+            Improved modal spacing to better respect safe areas and device
+            layouts.
           </li>
         </ul>
 
