@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.3.1-beta",
+    "date": "2026-01-05",
+    "changes": [
+      "Fixed Change Log modal layout so it no longer sits behind the top navigation bar.",
+      "Change Log now renders with a clear, visible close control across mobile and desktop.",
+      "Improved modal safe-area handling to ensure premium, consistent spacing across devices."
+    ]
+  },
+  {
     "version": "1.3.0-beta",
     "date": "2026-01-05",
     "changes": [
