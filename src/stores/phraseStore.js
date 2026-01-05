@@ -1,3 +1,4 @@
+// src/stores/phraseStore.js
 import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
@@ -81,11 +82,17 @@ const ensureDeletionFields = (r) => {
   return out;
 };
 
+/**
+ * ✅ CRITICAL ALIGNMENT:
+ * Always recompute contentKey to the current standard and overwrite if it differs.
+ * This prevents legacy starter/en::lt::sheet keys from causing duplication.
+ */
 const ensureContentKey = (r) => {
   const out = { ...r };
+  const computed = buildContentKey(out);
 
-  if (!out.contentKey || typeof out.contentKey !== "string") {
-    out.contentKey = buildContentKey(out);
+  if (out.contentKey !== computed) {
+    out.contentKey = computed;
   }
 
   return out;
@@ -130,9 +137,7 @@ export const usePhraseStore = create((set, get) => ({
         typeof update === "function" ? update(state.phrases) : update;
 
       const safe = Array.isArray(next)
-        ? next.map((r) =>
-            ensureContentKey(ensureDeletionFields(ensureIdTs(r)))
-          )
+        ? next.map((r) => ensureContentKey(ensureDeletionFields(ensureIdTs(r))))
         : [];
 
       saveRows(safe);
@@ -144,9 +149,7 @@ export const usePhraseStore = create((set, get) => ({
 
   addPhrase: (row) =>
     set((state) => {
-      const safeRow = ensureContentKey(
-        ensureDeletionFields(ensureIdTs(row))
-      );
+      const safeRow = ensureContentKey(ensureDeletionFields(ensureIdTs(row)));
       const next = [safeRow, ...state.phrases];
       saveRows(next);
       return { phrases: next };
@@ -175,9 +178,7 @@ export const usePhraseStore = create((set, get) => ({
             : {}),
         };
 
-        return ensureContentKey(
-          ensureDeletionFields(ensureIdTs(merged))
-        );
+        return ensureContentKey(ensureDeletionFields(ensureIdTs(merged)));
       });
 
       saveRows(next);
@@ -189,9 +190,7 @@ export const usePhraseStore = create((set, get) => ({
   removePhrase: (index) =>
     set((state) => {
       const next = state.phrases.map((r, i) =>
-        i === index
-          ? { ...r, _deleted: true, _deleted_ts: Date.now() }
-          : r
+        i === index ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r
       );
 
       saveRows(next);
@@ -208,10 +207,7 @@ export const usePhraseStore = create((set, get) => ({
         if (r._id !== id || r._deleted) return r;
 
         const merged = { ...r, ...patch };
-
-        return ensureContentKey(
-          ensureDeletionFields(ensureIdTs(merged))
-        );
+        return ensureContentKey(ensureDeletionFields(ensureIdTs(merged)));
       });
 
       saveRows(next);
