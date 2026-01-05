@@ -1,9 +1,44 @@
 [
   {
+    "version": "1.3.1-beta",
+    "date": "2026-01-05",
+    "changes": [
+      "Fixed Change Log modal layout so it no longer sits behind the top navigation bar.",
+      "Change Log now renders with a clear, visible close control across mobile and desktop.",
+      "Improved modal safe-area handling to ensure premium, consistent spacing across devices."
+    ]
+  },
+  {
+    "version": "1.3.0-beta",
+    "date": "2026-01-05",
+    "changes": [
+      "Introduced deterministic phrase identity using a stable contentKey system.",
+      "Phrase identity is now based solely on normalised Lithuanian text (diacritics removed, punctuation and spacing ignored).",
+      "contentKey is automatically generated when missing and preserved across import, export, and sync.",
+      "This permanently fixes duplication across starter installs, imports, exports, cloud merges, and cross-device use.",
+      "Starter pack behaviour is now fully idempotent: installing the starter pack multiple times never increases entry count.",
+      "Starter entries now explicitly track Source: \"starter\" and Touched: false until edited.",
+      "Editing a starter entry cleanly converts it to Source: \"user\" and sets Touched: true.",
+      "Deleted starter entries are tombstoned and never reappear, even after reinstalling the starter pack.",
+      "Implemented tombstone-based deletion system-wide using _deleted and _deleted_ts flags.",
+      "Deleted entries remain in storage and exports, are hidden from the UI, and are respected by starter installs and cloud merges.",
+      "Added a safe, conflict-aware cloud merge engine instead of blind overwrite behaviour.",
+      "Merge logic matches entries by _id first and contentKey second, and never overwrites meaningful data with blanks.",
+      "The merge engine detects edit vs delete conflicts and field-level conflicts (e.g. Notes edited on both devices).",
+      "If conflicts are detected, the merge pauses and nothing is written to the cloud.",
+      "If no conflicts are detected, a single safely merged library is written back to the cloud.",
+      "Finalised an explicit, manual sync model with three clear actions: Upload, Download, and Merge.",
+      "No background sync or silent overwrites occur by design to prioritise trust and data safety during beta.",
+      "Duplicate Scanner reliability restored after identity and merge fixes, eliminating large false-positive groups.",
+      "All add, edit, and delete flows are now fully store-controlled to ensure IDs, timestamps, and metadata are always correct.",
+      "Cross-device behaviour verified in real-world testing with duplication-free, deletion-safe results."
+    ]
+  },
+  {
     "version": "1.2.0-beta",
     "date": "2025-12-15",
     "changes": [
-      "Added secure account sign-in with Google to enable multi-device use.",
+      "Added secure account sign-in with Google to enable multi-device use-test.",
       "Introduced cloud sync via Supabase, allowing your library to be uploaded and downloaded across devices.",
       "Implemented user-scoped cloud storage so each account’s data is fully isolated and protected.",
       "Added explicit Upload and Download buttons in Settings for safe, testable sync during beta.",

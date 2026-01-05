@@ -195,6 +195,9 @@ export default function AddForm({
           </button>
         </div>
       </div>
+
+      {/* ✅ Bottom breathing room — matches top spacing */}
+      <div className="h-10" />
     </form>
   );
 }

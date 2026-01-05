@@ -3,7 +3,36 @@ import { create } from "zustand";
 
 const LS_KEY = "lt_phrasebook_v3";
 
-/* --------------------------- Helpers --------------------------- */
+/* --------------------------- Normalisation --------------------------- */
+
+/**
+ * Remove Lithuanian diacritics and normalise text for identity matching
+ */
+function normalizeText(input = "") {
+  return String(input)
+    .toLowerCase()
+    .trim()
+    .normalize("NFD") // split accents
+    .replace(/[\u0300-\u036f]/g, "") // remove accents
+    .replace(/[^a-z0-9]+/g, ""); // remove punctuation & spaces
+}
+
+/**
+ * Deterministic identity for a phrase
+ * DO NOT CHANGE once in use
+ *
+ * Identity rule:
+ * - Lithuanian ONLY
+ * - English is NOT identity
+ * - Category / Sheet are NOT identity
+ */
+function buildContentKey(row) {
+  const lt = normalizeText(row?.Lithuanian || "");
+  return lt;
+}
+
+/* --------------------------- Storage --------------------------- */
+
 const loadRows = () => {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -22,29 +51,90 @@ const saveRows = (rows) => {
   }
 };
 
+/* --------------------------- Guards --------------------------- */
+
 const ensureIdTs = (r) => {
   const out = { ...r };
-  if (!out._id || typeof out._id !== "string") out._id = Math.random().toString(36).slice(2);
-  if (!out._ts || typeof out._ts !== "number") out._ts = Date.now();
+
+  if (!out._id || typeof out._id !== "string") {
+    out._id = Math.random().toString(36).slice(2);
+  }
+
+  if (!out._ts || typeof out._ts !== "number") {
+    out._ts = Date.now();
+  }
+
   return out;
 };
+
+const ensureDeletionFields = (r) => {
+  const out = { ...r };
+
+  if (out._deleted === true) {
+    if (typeof out._deleted_ts !== "number") {
+      out._deleted_ts = Date.now();
+    }
+  } else {
+    out._deleted = false;
+    out._deleted_ts = null;
+  }
+
+  return out;
+};
+
+const ensureContentKey = (r) => {
+  const out = { ...r };
+
+  if (!out.contentKey || typeof out.contentKey !== "string") {
+    out.contentKey = buildContentKey(out);
+  }
+
+  return out;
+};
+
+/**
+ * Ensure ownership fields exist.
+ *
+ * Rules:
+ * - Starter rows: Source="starter", Touched defaults false
+ * - Everything else: Source defaults "user", Touched defaults true
+ *
+ * (This fixes legacy cloud rows that predate Source/Touched.)
+ */
+const ensureOwnershipFields = (r) => {
+  const out = { ...r };
+
+  const src = typeof out.Source === "string" ? out.Source : "";
+
+  if (!src) {
+    out.Source = "user";
+  }
+
+  if (typeof out.Touched !== "boolean") {
+    out.Touched = out.Source === "starter" ? false : true;
+  }
+
+  return out;
+};
+
+const ensureAll = (r) =>
+  ensureOwnershipFields(ensureContentKey(ensureDeletionFields(ensureIdTs(r))));
 
 /* ------------------------ Zustand Store ------------------------ */
 
 export const usePhraseStore = create((set, get) => ({
-  // initial state
   phrases: loadRows(),
 
-  // ensure each row has an ID and timestamp
+  /* ---------- Migration ---------- */
+
   _migrateRows: () => {
     const rows = get().phrases || [];
     let changed = false;
 
     const migrated = rows.map((r) => {
-      const beforeId = r?._id;
-      const beforeTs = r?._ts;
-      const next = ensureIdTs(r);
-      if (beforeId !== next._id || beforeTs !== next._ts) changed = true;
+      const before = JSON.stringify(r);
+      const next = ensureAll(r);
+      if (JSON.stringify(next) !== before) changed = true;
       return next;
     });
 
@@ -54,51 +144,89 @@ export const usePhraseStore = create((set, get) => ({
     }
   },
 
-  // replace entire list
+  /* ---------- Core ---------- */
+
   setPhrases: (update) => {
     set((state) => {
-      const next = typeof update === "function" ? update(state.phrases) : update;
-      const safe = Array.isArray(next) ? next : [];
+      const next =
+        typeof update === "function" ? update(state.phrases) : update;
+
+      const safe = Array.isArray(next) ? next.map(ensureAll) : [];
+
       saveRows(safe);
       return { phrases: safe };
     });
   },
 
-  // add entry
+  /* ---------- Add ---------- */
+
   addPhrase: (row) =>
     set((state) => {
-      const safeRow = ensureIdTs(row);
+      const merged = {
+        ...row,
+        // Manual add is always user-owned
+        Source: "user",
+        Touched: true,
+        _ts: Date.now(),
+      };
+
+      const safeRow = ensureAll(merged);
       const next = [safeRow, ...state.phrases];
       saveRows(next);
       return { phrases: next };
     }),
 
-  // update a phrase by index (existing behaviour)
+  /* ---------- Edit (CRITICAL: starter → user handoff) ---------- */
+
   saveEditedPhrase: (index, updated) =>
     set((state) => {
-      const next = state.phrases.map((r, i) =>
-        i === index ? { ...ensureIdTs(r), ...updated, _ts: r._ts || Date.now() } : r
-      );
+      const next = state.phrases.map((r, i) => {
+        if (i !== index) return r;
+
+        const wasStarter = r.Source === "starter";
+
+        const merged = {
+          ...r,
+          ...updated,
+          _ts: Date.now(),
+
+          // ✅ Any edit makes it user-owned + touched
+          Source: wasStarter ? "user" : (r.Source || "user"),
+          Touched: true,
+        };
+
+        return ensureAll(merged);
+      });
+
       saveRows(next);
       return { phrases: next };
     }),
 
-  // remove phrase by index
+  /* ---------- Delete (tombstone) ---------- */
+
   removePhrase: (index) =>
     set((state) => {
-      const next = state.phrases.filter((_, i) => i !== index);
+      const next = state.phrases.map((r, i) =>
+        i === index
+          ? ensureAll({ ...r, _deleted: true, _deleted_ts: Date.now() })
+          : r
+      );
+
       saveRows(next);
       return { phrases: next };
     }),
 
-  // PATCH by _id (for async enrich)
+  /* ---------- Patch by ID ---------- */
+
   patchPhraseById: (id, patch) =>
     set((state) => {
       if (!id) return { phrases: state.phrases };
 
       const next = state.phrases.map((r) => {
-        if ((r?._id ?? null) !== id) return r;
-        return { ...r, ...patch };
+        if (r._id !== id || r._deleted) return r;
+
+        const merged = { ...r, ...patch };
+        return ensureAll(merged);
       });
 
       saveRows(next);
@@ -106,5 +234,5 @@ export const usePhraseStore = create((set, get) => ({
     }),
 }));
 
-// Run migration on startup
+// Run migration immediately
 usePhraseStore.getState()._migrateRows();
