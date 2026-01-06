@@ -22,9 +22,13 @@ import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
 
+import AuthGate from "./components/AuthGate";
+import BetaBlocked from "./components/BetaBlocked";
+
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
 import { initAuthListener, useAuthStore } from "./stores/authStore";
+import { supabase } from "./supabaseClient";
 
 /* ============================================================================
    CONSTANTS
@@ -170,6 +174,83 @@ export default function App() {
   }, []);
 
   const authLoading = useAuthStore((s) => s.loading);
+  const user = useAuthStore((s) => s.user);
+
+  /* ============================================================================
+     BETA ACCESS GATE (invite-only)
+     - Not signed in  -> AuthGate
+     - Signed in, not allowlisted -> BetaBlocked
+     - Signed in, allowlisted -> app
+     ========================================================================== */
+  const [allowlistChecked, setAllowlistChecked] = useState(false);
+  const [isAllowlisted, setIsAllowlisted] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function check() {
+      // If signed out, reset and let AuthGate show
+      if (!user?.email) {
+        if (!alive) return;
+        setAllowlistChecked(true);
+        setIsAllowlisted(false);
+        return;
+      }
+
+      setAllowlistChecked(false);
+
+      const email = String(user.email).toLowerCase();
+
+      const { data, error } = await supabase
+        .from("beta_allowlist")
+        .select("email")
+        .eq("email", email)
+        .limit(1);
+
+      if (!alive) return;
+
+      if (error) {
+        console.warn("Allowlist check failed:", error);
+        setIsAllowlisted(false);
+        setAllowlistChecked(true);
+        return;
+      }
+
+      setIsAllowlisted((data?.length || 0) > 0);
+      setAllowlistChecked(true);
+    }
+
+    check();
+
+    return () => {
+      alive = false;
+    };
+  }, [user?.email]);
+
+  // While auth store is still booting, keep a blank shell (prevents flicker)
+  if (authLoading && !user) {
+    return <div className="min-h-[100dvh] bg-zinc-950" />;
+  }
+
+  if (!user) {
+    return <AuthGate />;
+  }
+
+  if (!allowlistChecked) {
+    return (
+      <div className="min-h-[100dvh] bg-zinc-950 text-zinc-200 flex items-center justify-center">
+        Checking beta access…
+      </div>
+    );
+  }
+
+  if (!isAllowlisted) {
+    return <BetaBlocked email={user.email} />;
+  }
+
+  /* ============================================================================
+     APP UI (only for allowlisted users)
+     ========================================================================== */
 
   /* PAGE */
   const [page, setPage] = useState(
@@ -401,7 +482,9 @@ export default function App() {
     setPage(next);
   }
 
-  /* ============================================================================ */
+  /* ============================================================================
+     🔒 HARD MODAL SCROLL INVARIANT
+     ========================================================================== */
   useEffect(() => {
     if (!addOpen || authLoading) return;
 
