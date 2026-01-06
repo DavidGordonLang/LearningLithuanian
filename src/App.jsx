@@ -33,7 +33,7 @@ import { supabase } from "./supabaseClient";
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
-const APP_VERSION = "1.3.0-beta";
+const APP_VERSION = "1.3.1-beta";
 
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
@@ -176,12 +176,7 @@ export default function App() {
   const authLoading = useAuthStore((s) => s.loading);
   const user = useAuthStore((s) => s.user);
 
-  /* ============================================================================
-     BETA ACCESS GATE (invite-only)
-     - Not signed in  -> AuthGate
-     - Signed in, not allowlisted -> BetaBlocked
-     - Signed in, allowlisted -> app
-     ========================================================================== */
+  /* BETA ACCESS GATE */
   const [allowlistChecked, setAllowlistChecked] = useState(false);
   const [isAllowlisted, setIsAllowlisted] = useState(false);
 
@@ -189,11 +184,10 @@ export default function App() {
     let alive = true;
 
     async function check() {
-      // If signed out, reset and let AuthGate show
       if (!user?.email) {
         if (!alive) return;
-        setAllowlistChecked(true);
         setIsAllowlisted(false);
+        setAllowlistChecked(true);
         return;
       }
 
@@ -226,31 +220,6 @@ export default function App() {
       alive = false;
     };
   }, [user?.email]);
-
-  // While auth store is still booting, keep a blank shell (prevents flicker)
-  if (authLoading && !user) {
-    return <div className="min-h-[100dvh] bg-zinc-950" />;
-  }
-
-  if (!user) {
-    return <AuthGate />;
-  }
-
-  if (!allowlistChecked) {
-    return (
-      <div className="min-h-[100dvh] bg-zinc-950 text-zinc-200 flex items-center justify-center">
-        Checking beta access…
-      </div>
-    );
-  }
-
-  if (!isAllowlisted) {
-    return <BetaBlocked email={user.email} />;
-  }
-
-  /* ============================================================================
-     APP UI (only for allowlisted users)
-     ========================================================================== */
 
   /* PAGE */
   const [page, setPage] = useState(
@@ -482,9 +451,7 @@ export default function App() {
     setPage(next);
   }
 
-  /* ============================================================================
-     🔒 HARD MODAL SCROLL INVARIANT
-     ========================================================================== */
+  /* MODAL SCROLL LOCK */
   useEffect(() => {
     if (!addOpen || authLoading) return;
 
@@ -564,6 +531,27 @@ export default function App() {
     };
   }, [addOpen, authLoading]);
 
+  /* RENDER GATE (no early returns before hooks) */
+  if (authLoading && !user) {
+    return <div className="min-h-[100dvh] bg-zinc-950" />;
+  }
+
+  if (!user) {
+    return <AuthGate />;
+  }
+
+  if (!allowlistChecked) {
+    return (
+      <div className="min-h-[100dvh] bg-zinc-950 text-zinc-200 flex items-center justify-center">
+        Checking beta access…
+      </div>
+    );
+  }
+
+  if (!isAllowlisted) {
+    return <BetaBlocked email={user.email} />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
@@ -636,7 +624,6 @@ export default function App() {
         )}
       </main>
 
-      {/* ADD / EDIT MODAL */}
       {addOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
