@@ -22,14 +22,18 @@ import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
 
+import AuthGate from "./components/AuthGate";
+import BetaBlocked from "./components/BetaBlocked";
+
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
 import { initAuthListener, useAuthStore } from "./stores/authStore";
+import { supabase } from "./supabaseClient";
 
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
-const APP_VERSION = "1.3.0-beta";
+const APP_VERSION = "1.3.1-beta";
 
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
@@ -170,6 +174,52 @@ export default function App() {
   }, []);
 
   const authLoading = useAuthStore((s) => s.loading);
+  const user = useAuthStore((s) => s.user);
+
+  /* BETA ACCESS GATE */
+  const [allowlistChecked, setAllowlistChecked] = useState(false);
+  const [isAllowlisted, setIsAllowlisted] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function check() {
+      if (!user?.email) {
+        if (!alive) return;
+        setIsAllowlisted(false);
+        setAllowlistChecked(true);
+        return;
+      }
+
+      setAllowlistChecked(false);
+
+      const email = String(user.email).toLowerCase();
+
+      const { data, error } = await supabase
+        .from("beta_allowlist")
+        .select("email")
+        .eq("email", email)
+        .limit(1);
+
+      if (!alive) return;
+
+      if (error) {
+        console.warn("Allowlist check failed:", error);
+        setIsAllowlisted(false);
+        setAllowlistChecked(true);
+        return;
+      }
+
+      setIsAllowlisted((data?.length || 0) > 0);
+      setAllowlistChecked(true);
+    }
+
+    check();
+
+    return () => {
+      alive = false;
+    };
+  }, [user?.email]);
 
   /* PAGE */
   const [page, setPage] = useState(
@@ -401,7 +451,7 @@ export default function App() {
     setPage(next);
   }
 
-  /* ============================================================================ */
+  /* MODAL SCROLL LOCK */
   useEffect(() => {
     if (!addOpen || authLoading) return;
 
@@ -481,6 +531,27 @@ export default function App() {
     };
   }, [addOpen, authLoading]);
 
+  /* RENDER GATE (no early returns before hooks) */
+  if (authLoading && !user) {
+    return <div className="min-h-[100dvh] bg-zinc-950" />;
+  }
+
+  if (!user) {
+    return <AuthGate />;
+  }
+
+  if (!allowlistChecked) {
+    return (
+      <div className="min-h-[100dvh] bg-zinc-950 text-zinc-200 flex items-center justify-center">
+        Checking beta access…
+      </div>
+    );
+  }
+
+  if (!isAllowlisted) {
+    return <BetaBlocked email={user.email} />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
@@ -553,7 +624,6 @@ export default function App() {
         )}
       </main>
 
-      {/* ADD / EDIT MODAL */}
       {addOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
