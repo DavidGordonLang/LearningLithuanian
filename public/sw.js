@@ -1,6 +1,6 @@
 /* Simple, versioned Service Worker for Žodis (PWA-safe) */
 
-const CACHE_VERSION = "zodis-1.3.1-beta-changemodalfix2"; // 🔁 bump this on every UI change
+const CACHE_VERSION = "zodis-1.3.1-beta-blockupdate"; // 🔁 bump this on every UI change
 const CACHE_NAME = `zodis-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
