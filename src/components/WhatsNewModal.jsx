@@ -45,23 +45,37 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
           Here’s what changed in the latest update:
         </p>
 
-        {/* UPDATED CHANGE LIST FOR v1.3.1-beta */}
+        {/* UPDATED CHANGE LIST FOR v1.4.1-beta */}
         <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
           <li>
-            Fixed the Change Log window so it no longer sits behind the top
-            navigation bar.
+            New full user guide is now live at{" "}
+            <span className="font-semibold">zodis.app/userguide</span>.
           </li>
           <li>
-            Change Log now has a clearly visible close control on both mobile and
-            desktop.
+            Early access messaging is clearer if you sign in with an email that
+            is not on the beta list.
           </li>
           <li>
-            Improved modal spacing to better respect safe areas and device
-            layouts.
+            Modal layout and stacking has been polished so Change Log and Add
+            Entry do not clip behind the header.
           </li>
         </ul>
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end flex-wrap">
+          <a
+            href="https://zodis.app/userguide"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="
+              bg-zinc-800 text-zinc-200 rounded-full
+              px-4 py-2 text-sm font-medium
+              hover:bg-zinc-700 active:bg-zinc-600
+              select-none
+            "
+          >
+            Open user guide
+          </a>
+
           <button
             type="button"
             className="
