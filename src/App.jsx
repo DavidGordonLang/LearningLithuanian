@@ -694,11 +694,8 @@ export default function App() {
       )}
 
       {showChangeLog && (
-        <ChangeLogModal
-          topOffset={headerHeight}
-          onClose={() => setShowChangeLog(false)}
-        />
-      )}
+  <ChangeLogModal onClose={() => setShowChangeLog(false)} />
+)}
 
       {showUserGuide && (
         <UserGuideModal
