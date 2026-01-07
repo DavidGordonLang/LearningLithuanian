@@ -1,7 +1,7 @@
 // src/components/ChangeLogModal.jsx
 import React, { useEffect, useState } from "react";
 
-export default function ChangeLogModal({ onClose, topOffset = 0 }) {
+export default function ChangeLogModal({ onClose }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,16 +35,14 @@ export default function ChangeLogModal({ onClose, topOffset = 0 }) {
       className="
         fixed inset-0 z-[9999]
         bg-black/70 backdrop-blur-sm
-        px-4
-        pb-[calc(env(safe-area-inset-bottom)+12px)]
         flex items-start justify-center
+        px-4
+        pt-[calc(env(safe-area-inset-top)+12px)]
+        pb-[calc(env(safe-area-inset-bottom)+12px)]
       "
-      style={{
-        paddingTop: `calc(env(safe-area-inset-top) + ${topOffset}px + 12px)`,
-      }}
       onPointerDown={onClose}
     >
-      {/* ALWAYS-VISIBLE CLOSE (above everything) */}
+      {/* Floating close button (always visible) */}
       <button
         type="button"
         aria-label="Close changelog"
@@ -59,7 +57,7 @@ export default function ChangeLogModal({ onClose, topOffset = 0 }) {
           select-none
         "
         style={{
-          top: `calc(env(safe-area-inset-top) + ${topOffset}px + 10px)`,
+          top: "calc(env(safe-area-inset-top) + 10px)",
           right: "calc(env(safe-area-inset-right) + 10px)",
         }}
         onPointerDown={(e) => e.stopPropagation()}
@@ -76,11 +74,12 @@ export default function ChangeLogModal({ onClose, topOffset = 0 }) {
           overflow-hidden flex flex-col
         "
         style={{
-          maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${topOffset}px - 24px)`,
+          maxHeight:
+            "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)",
         }}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* HEADER */}
+        {/* HEADER (sticky) */}
         <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800">
           <div className="flex items-center justify-between px-5 py-4 pr-16">
             <h2 className="text-lg sm:text-xl font-bold">Change Log</h2>
@@ -100,7 +99,7 @@ export default function ChangeLogModal({ onClose, topOffset = 0 }) {
           </div>
         </div>
 
-        {/* BODY */}
+        {/* BODY (scrolls) */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading && <div className="text-sm text-zinc-400">Loading…</div>}
 
