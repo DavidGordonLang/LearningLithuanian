@@ -127,7 +127,7 @@ const SearchBox = memo(
     }, []);
 
     return (
-      <div className="relative flex-1">
+      <div className="relative flex-1" data-no-swipe>
         <input
           id="main-search"
           ref={inputRef}
@@ -528,13 +528,8 @@ export default function App() {
   }, [addOpen, authLoading]);
 
   /* RENDER GATE (no early returns before hooks) */
-  if (authLoading && !user) {
-    return <div className="min-h-[100dvh] bg-zinc-950" />;
-  }
-
-  if (!user) {
-    return <AuthGate />;
-  }
+  if (authLoading && !user) return <div className="min-h-[100dvh] bg-zinc-950" />;
+  if (!user) return <AuthGate />;
 
   if (!allowlistChecked) {
     return (
@@ -544,13 +539,13 @@ export default function App() {
     );
   }
 
-  if (!isAllowlisted) {
-    return <BetaBlocked email={user.email} />;
-  }
+  if (!isAllowlisted) return <BetaBlocked email={user.email} />;
 
   /* ============================================================================
-     SWIPE NAV (commit-on-release, keeps content + indicator in sync)
+     SWIPE NAV (safe: only for home/library/settings; dupes uses normal render)
      ========================================================================== */
+  const isSwipePage = PAGE_ORDER.includes(page);
+
   const [activeIndex, setActiveIndex] = useState(() => {
     const i = PAGE_ORDER.indexOf(page);
     return i === -1 ? 0 : i;
@@ -585,16 +580,14 @@ export default function App() {
     const tag = String(target.tagName || "").toLowerCase();
     if (["input", "textarea", "select", "button"].includes(tag)) return true;
     if (target.isContentEditable) return true;
-    // Optional escape hatch: any element can opt out
     if (target.closest?.("[data-no-swipe]")) return true;
     return false;
   };
 
   const onPointerDown = (e) => {
+    if (!isSwipePage) return;
     if (addOpen) return;
     if (shouldIgnoreSwipeStart(e.target)) return;
-
-    // Only primary touch/pen/mouse button
     if (e.pointerType === "mouse" && e.button !== 0) return;
 
     const st = dragRef.current;
@@ -623,23 +616,18 @@ export default function App() {
     const dx = e.clientX - st.startX;
     const dy = e.clientY - st.startY;
 
-    // Decide lock direction
     if (!st.lock) {
       const ax = Math.abs(dx);
       const ay = Math.abs(dy);
       if (ax < 6 && ay < 6) return;
-
-      // If clearly horizontal, lock X. Otherwise lock Y and do nothing.
-      if (ax > ay + 6) st.lock = "x";
-      else st.lock = "y";
+      st.lock = ax > ay + 6 ? "x" : "y";
     }
 
     if (st.lock !== "x") return;
 
-    // Prevent the browser from horizontal scrolling/back gesture during swipe
+    // Only prevent default once we know it’s horizontal
     e.preventDefault();
 
-    // Apply gentle edge resistance
     let nextDx = dx;
     if (activeIndex === 0 && dx > 0) nextDx = dx * 0.35;
     if (activeIndex === PAGE_ORDER.length - 1 && dx < 0) nextDx = dx * 0.35;
@@ -662,7 +650,6 @@ export default function App() {
     setIsDragging(false);
     setDragX(0);
 
-    // If user was scrolling vertically, do not page-snap
     if (st.lock !== "x") {
       st.lock = null;
       return;
@@ -678,8 +665,6 @@ export default function App() {
     if (nextIndex !== activeIndex) {
       setActiveIndex(nextIndex);
       goToPage(PAGE_ORDER[nextIndex]);
-    } else {
-      setActiveIndex(activeIndex);
     }
   };
 
@@ -698,115 +683,98 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      {/* Swipe container sits under header. Keeps pages mounted and in sync. */}
-      <main
-        className="pt-3 overflow-hidden"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
-        style={{
-          touchAction: isDragging ? "none" : "pan-y",
-        }}
-      >
-        <div ref={trackRef} className="flex" style={trackStyle}>
-          {/* HOME */}
-          <section
-            className="shrink-0"
-            style={panelStyle}
-            aria-hidden={page !== "home"}
-          >
-            <HomeView
-              playText={playText}
-              setRows={setRows}
-              genId={genId}
-              nowTs={nowTs}
-              rows={visibleRows}
-              onOpenAddForm={() => {
-                setEditRowId(null);
-                setAddOpen(true);
-              }}
-            />
-          </section>
+      {/* If we're on dupes, render it normally (no swipe track) */}
+      {page === "dupes" ? (
+        <main className="pt-3">
+          <DuplicateScannerView
+            T={T}
+            rows={visibleRows}
+            removePhrase={removePhraseById}
+            onBack={() => goToPage("settings")}
+          />
+        </main>
+      ) : (
+        <main
+          className="pt-3 overflow-hidden"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
+          style={{ touchAction: isDragging ? "none" : "pan-y" }}
+        >
+          <div ref={trackRef} className="flex" style={trackStyle}>
+            {/* HOME */}
+            <section className="shrink-0" style={panelStyle}>
+              <div data-no-swipe>
+                <HomeView
+                  playText={playText}
+                  setRows={setRows}
+                  genId={genId}
+                  nowTs={nowTs}
+                  rows={visibleRows}
+                  onOpenAddForm={() => {
+                    setEditRowId(null);
+                    setAddOpen(true);
+                  }}
+                />
+              </div>
+            </section>
 
-          {/* LIBRARY */}
-          <section
-            className="shrink-0"
-            style={panelStyle}
-            aria-hidden={page !== "library"}
-          >
-            <div
-              style={{ pointerEvents: page === "library" ? "auto" : "none" }}
-            >
-              <SearchDock
-                SearchBox={SearchBox}
-                sortMode={sortMode}
-                setSortMode={setSortMode}
-                placeholder={T.search}
-                T={T}
-                offsetTop={headerHeight}
-                page={page}
-                setPage={goToPage}
-              />
+            {/* LIBRARY */}
+            <section className="shrink-0" style={panelStyle}>
+              <div data-no-swipe>
+                <SearchDock
+                  SearchBox={SearchBox}
+                  sortMode={sortMode}
+                  setSortMode={setSortMode}
+                  placeholder={T.search}
+                  T={T}
+                  offsetTop={headerHeight}
+                  page={page}
+                  setPage={goToPage}
+                />
 
-              <LibraryView
-                T={T}
-                rows={visibleRows}
-                setRows={setRows}
-                normalizeRag={normalizeRag}
-                sortMode={sortMode}
-                playText={playText}
-                removePhrase={removePhraseById}
-                onEditRow={(id) => {
-                  setEditRowId(id);
-                  setAddOpen(true);
-                }}
-                onOpenAddForm={() => {
-                  setEditRowId(null);
-                  setAddOpen(true);
-                }}
-              />
-            </div>
-          </section>
+                <LibraryView
+                  T={T}
+                  rows={visibleRows}
+                  setRows={setRows}
+                  normalizeRag={normalizeRag}
+                  sortMode={sortMode}
+                  playText={playText}
+                  removePhrase={removePhraseById}
+                  onEditRow={(id) => {
+                    setEditRowId(id);
+                    setAddOpen(true);
+                  }}
+                  onOpenAddForm={() => {
+                    setEditRowId(null);
+                    setAddOpen(true);
+                  }}
+                />
+              </div>
+            </section>
 
-          {/* SETTINGS */}
-          <section
-            className="shrink-0"
-            style={panelStyle}
-            aria-hidden={page !== "settings"}
-          >
-            <div
-              style={{ pointerEvents: page === "settings" ? "auto" : "none" }}
-            >
-              <SettingsView
-                T={T}
-                azureVoiceShortName={azureVoiceShortName}
-                setAzureVoiceShortName={setAzureVoiceShortName}
-                playText={playText}
-                fetchStarter={fetchStarter}
-                clearLibrary={clearLibrary}
-                importJsonFile={importJsonFile}
-                rows={rows}
-                onOpenDuplicateScanner={() => goToPage("dupes")}
-                onOpenChangeLog={() => setShowChangeLog(true)}
-                onOpenUserGuide={() => setShowUserGuide(true)}
-              />
-            </div>
-          </section>
-        </div>
-
-        {/* DUPES is not part of swipe order (intentional) */}
-        {page === "dupes" && (
-          <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-            <DuplicateScannerView
-              T={T}
-              rows={visibleRows}
-              removePhrase={removePhraseById}
-              onBack={() => goToPage("settings")}
-            />
+            {/* SETTINGS */}
+            <section className="shrink-0" style={panelStyle}>
+              <div data-no-swipe>
+                <SettingsView
+                  T={T}
+                  azureVoiceShortName={azureVoiceShortName}
+                  setAzureVoiceShortName={setAzureVoiceShortName}
+                  playText={playText}
+                  fetchStarter={fetchStarter}
+                  clearLibrary={clearLibrary}
+                  importJsonFile={importJsonFile}
+                  rows={rows}
+                  onOpenDuplicateScanner={() => goToPage("dupes")}
+                  onOpenChangeLog={() => setShowChangeLog(true)}
+                  onOpenUserGuide={() => setShowUserGuide(true)}
+                />
+              </div>
+            </section>
           </div>
-        )}
-      </main>
+        </main>
+      )}
 
       {addOpen && (
         <div
