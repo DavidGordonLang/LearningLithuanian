@@ -4,8 +4,8 @@ import React, {
   useMemo,
   useRef,
   useState,
-  memo,
   forwardRef,
+  memo,
   startTransition,
   useImperativeHandle,
   useSyncExternalStore,
@@ -44,7 +44,7 @@ const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
 };
 
-const SWIPE_PAGES = ["home", "library", "settings"]; // only these are swipe-navigable
+const SWIPE_PAGES = ["home", "library", "settings"];
 
 /* ============================================================================
    STRINGS
@@ -243,6 +243,7 @@ export default function App() {
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
+  // ✅ store-controlled
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
@@ -305,7 +306,9 @@ export default function App() {
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
         "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+          ? r.Sheet
+          : "Phrases",
         _id: r._id || genId(),
         _ts: r._ts || nowTs(),
         _qstat:
@@ -331,7 +334,9 @@ export default function App() {
           Usage: r.Usage?.trim() || "",
           Notes: r.Notes?.trim() || "",
           "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
+          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
+            ? r.Sheet
+            : "Phrases",
           _id: r._id || genId(),
           _ts: r._ts || nowTs(),
           _qstat:
@@ -429,47 +434,34 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION) setShowWhatsNew(true);
+    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION)
+      setShowWhatsNew(true);
   }, []);
 
-  // for slide animation
-  const [navAnim, setNavAnim] = useState(null); // null | "left" | "right"
-  const animTimerRef = useRef(null);
-
-  function clearAnimSoon() {
-    if (animTimerRef.current) clearTimeout(animTimerRef.current);
-    animTimerRef.current = setTimeout(() => setNavAnim(null), 180);
-  }
-
-  function goToPage(next, { animateFrom } = {}) {
+  function goToPage(next) {
     setAddOpen(false);
     setEditRowId(null);
     setShowChangeLog(false);
     setShowUserGuide(false);
     setShowWhatsNew(false);
-
-    if (animateFrom) {
-      setNavAnim(animateFrom); // "left" or "right"
-      clearAnimSoon();
-    } else {
-      setNavAnim(null);
-    }
-
     setPage(next);
   }
 
   /* ============================================================================
-     SWIPE NAV (more responsive + velocity + pointer capture)
+     SWIPE NAV — start anywhere (even inputs/buttons), suppress taps only if swipe
      ========================================================================== */
+  const suppressTapUntilRef = useRef(0);
+
   const swipeRef = useRef({
     active: false,
+    pointerId: null,
     startX: 0,
     startY: 0,
     lastX: 0,
     lastY: 0,
-    pointerId: null,
     startT: 0,
     locked: null, // null | "h" | "v"
+    didSwipe: false, // becomes true once we lock horizontal meaningfully
   });
 
   const canSwipe = useMemo(() => {
@@ -483,28 +475,17 @@ export default function App() {
     return i === -1 ? 0 : i;
   }, [page]);
 
-  function swipeToIndex(nextIdx, dir) {
+  function swipeToIndex(nextIdx) {
     const clamped = Math.max(0, Math.min(SWIPE_PAGES.length - 1, nextIdx));
-    const nextPage = SWIPE_PAGES[clamped];
-    if (nextPage && nextPage !== page) {
-      // if we go "next" (swipe left), animate content sliding left
-      // if we go "prev" (swipe right), animate content sliding right
-      goToPage(nextPage, { animateFrom: dir === "next" ? "left" : "right" });
-    }
-  }
-
-  function isTextInputTarget(target) {
-    if (!target) return false;
-    const el = target.closest?.("input, textarea, select, [contenteditable='true']");
-    return !!el;
+    const next = SWIPE_PAGES[clamped];
+    if (next && next !== page) goToPage(next);
   }
 
   function onPointerDown(e) {
     if (!canSwipe) return;
     if (e.pointerType === "mouse") return;
-    if (isTextInputTarget(e.target)) return;
 
-    // Capture pointer so we don't "lose" the swipe as we pass over other elements.
+    // capture so the gesture continues even if we drag across other elements
     try {
       e.currentTarget.setPointerCapture?.(e.pointerId);
     } catch {}
@@ -517,71 +498,88 @@ export default function App() {
     swipeRef.current.lastY = e.clientY;
     swipeRef.current.startT = Date.now();
     swipeRef.current.locked = null;
+    swipeRef.current.didSwipe = false;
   }
 
   function onPointerMove(e) {
-    if (!swipeRef.current.active) return;
-    if (e.pointerId !== swipeRef.current.pointerId) return;
+    const s = swipeRef.current;
+    if (!s.active) return;
+    if (e.pointerId !== s.pointerId) return;
 
-    swipeRef.current.lastX = e.clientX;
-    swipeRef.current.lastY = e.clientY;
+    s.lastX = e.clientX;
+    s.lastY = e.clientY;
 
-    const dx = e.clientX - swipeRef.current.startX;
-    const dy = e.clientY - swipeRef.current.startY;
+    const dx = e.clientX - s.startX;
+    const dy = e.clientY - s.startY;
 
-    // lock earlier than before
-    if (!swipeRef.current.locked) {
+    // decide lock quickly, but only after a tiny movement
+    if (!s.locked) {
       const adx = Math.abs(dx);
       const ady = Math.abs(dy);
-      if (adx < 4 && ady < 4) return;
-      swipeRef.current.locked = adx > ady ? "h" : "v";
+      if (adx < 3 && ady < 3) return;
+      s.locked = adx > ady ? "h" : "v";
+      if (s.locked === "h") s.didSwipe = true;
     }
 
-    if (swipeRef.current.locked === "h") {
-      // stop browser navigation/selection once we know it's horizontal
+    if (s.locked === "h") {
+      // Once we know it’s horizontal, stop the browser stealing it.
+      // This is what makes swiping across textarea/buttons actually work.
       e.preventDefault?.();
     }
   }
 
   function onPointerUpOrCancel(e) {
-    if (!swipeRef.current.active) return;
-    if (e.pointerId !== swipeRef.current.pointerId) return;
+    const s = swipeRef.current;
+    if (!s.active) return;
+    if (e.pointerId !== s.pointerId) return;
 
-    const dx = swipeRef.current.lastX - swipeRef.current.startX;
-    const dy = swipeRef.current.lastY - swipeRef.current.startY;
+    const dx = s.lastX - s.startX;
+    const dy = s.lastY - s.startY;
 
     const adx = Math.abs(dx);
     const ady = Math.abs(dy);
 
-    const elapsed = Date.now() - swipeRef.current.startT;
-    const locked = swipeRef.current.locked;
+    const elapsed = Date.now() - s.startT;
+    const locked = s.locked;
+    const didSwipe = s.didSwipe;
 
-    // reset first
-    swipeRef.current.active = false;
-    swipeRef.current.pointerId = null;
-    swipeRef.current.locked = null;
+    // reset
+    s.active = false;
+    s.pointerId = null;
+    s.locked = null;
+    s.didSwipe = false;
 
     if (!canSwipe) return;
 
-    // Only act on locked horizontal swipes.
+    // only consider horizontal swipes
     if (locked !== "h") return;
 
-    // If it became too vertical, ignore.
-    if (ady > 55) return;
+    // ignore if it turned very vertical
+    if (ady > 70) return;
 
-    // Velocity (px per ms)
+    // velocity px/ms
     const v = elapsed > 0 ? adx / elapsed : 0;
 
-    // Accept either:
-    // - reasonable distance
-    // - or a fast flick
-    const DIST_OK = adx >= 45;     // lower than before
-    const FLICK_OK = v >= 0.65 && adx >= 20; // fast flick
+    // More forgiving than before
+    const DIST_OK = adx >= 30;
+    const FLICK_OK = v >= 0.55 && adx >= 15;
 
     if (!(DIST_OK || FLICK_OK)) return;
 
-    if (dx < 0) swipeToIndex(pageIndex + 1, "next");
-    else swipeToIndex(pageIndex - 1, "prev");
+    // We are committing navigation; suppress the "tap" that often fires after a swipe.
+    // This is the key to allowing swipes over buttons/inputs without accidental presses.
+    if (didSwipe) suppressTapUntilRef.current = Date.now() + 450;
+
+    if (dx < 0) swipeToIndex(pageIndex + 1);
+    else swipeToIndex(pageIndex - 1);
+  }
+
+  function onClickCapture(e) {
+    // If we just swiped, block the click/tap that tends to happen on release.
+    if (Date.now() < suppressTapUntilRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }
 
   /* MODAL SCROLL LOCK */
@@ -685,31 +683,9 @@ export default function App() {
     return <BetaBlocked email={user.email} />;
   }
 
-  // slide animation classes (commit-based, not finger-tracking)
-  const animClass =
-    navAnim === "left"
-      ? "animate-slide-left"
-      : navAnim === "right"
-      ? "animate-slide-right"
-      : "";
-
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header ref={headerRef} T={T} page={page} setPage={(p) => goToPage(p)} />
-
-      {/* Simple slide animation on page change */}
-      <style>{`
-        @keyframes slideLeft {
-          from { transform: translateX(10px); opacity: 0.7; }
-          to   { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideRight {
-          from { transform: translateX(-10px); opacity: 0.7; }
-          to   { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-left { animation: slideLeft 160ms ease-out; }
-        .animate-slide-right { animation: slideRight 160ms ease-out; }
-      `}</style>
+      <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
       <main
         className="pt-3 touch-pan-y"
@@ -717,6 +693,7 @@ export default function App() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUpOrCancel}
         onPointerCancel={onPointerUpOrCancel}
+        onClickCapture={onClickCapture}
       >
         {page === "library" && (
           <SearchDock
@@ -727,84 +704,64 @@ export default function App() {
             T={T}
             offsetTop={headerHeight}
             page={page}
-            setPage={(p) => goToPage(p)}
+            setPage={goToPage}
           />
         )}
 
-        <div className={animClass}>
-          {page === "library" ? (
-            <LibraryView
-              T={T}
-              rows={visibleRows}
-              setRows={setRows}
-              normalizeRag={normalizeRag}
-              sortMode={sortMode}
-              playText={() => {}} // overridden below (kept signature stable)
-              removePhrase={removePhraseById}
-              onEditRow={(id) => {
-                setEditRowId(id);
-                setAddOpen(true);
-              }}
-              onOpenAddForm={() => {
-                setEditRowId(null);
-                setAddOpen(true);
-              }}
-            />
-          ) : page === "settings" ? (
-            <SettingsView
-              T={T}
-              azureVoiceShortName={azureVoiceShortName}
-              setAzureVoiceShortName={setAzureVoiceShortName}
-              playText={playText}
-              fetchStarter={fetchStarter}
-              clearLibrary={clearLibrary}
-              importJsonFile={importJsonFile}
-              rows={rows}
-              onOpenDuplicateScanner={() => goToPage("dupes")}
-              onOpenChangeLog={() => setShowChangeLog(true)}
-              onOpenUserGuide={() => setShowUserGuide(true)}
-            />
-          ) : page === "dupes" ? (
-            <DuplicateScannerView
-              T={T}
-              rows={visibleRows}
-              removePhrase={removePhraseById}
-              onBack={() => goToPage("settings")}
-            />
-          ) : (
-            <HomeView
-              playText={playText}
-              setRows={setRows}
-              genId={genId}
-              nowTs={nowTs}
-              rows={visibleRows}
-              onOpenAddForm={() => {
-                setEditRowId(null);
-                setAddOpen(true);
-              }}
-            />
-          )}
-        </div>
-
-        {/* Fix: LibraryView needs playText - pass it after render so we keep structure simple */}
-        {page === "library" ? null : null}
+        {page === "library" ? (
+          <LibraryView
+            T={T}
+            rows={visibleRows}
+            setRows={setRows}
+            normalizeRag={normalizeRag}
+            sortMode={sortMode}
+            playText={playText}
+            removePhrase={removePhraseById}
+            onEditRow={(id) => {
+              setEditRowId(id);
+              setAddOpen(true);
+            }}
+            onOpenAddForm={() => {
+              setEditRowId(null);
+              setAddOpen(true);
+            }}
+          />
+        ) : page === "settings" ? (
+          <SettingsView
+            T={T}
+            azureVoiceShortName={azureVoiceShortName}
+            setAzureVoiceShortName={setAzureVoiceShortName}
+            playText={playText}
+            fetchStarter={fetchStarter}
+            clearLibrary={clearLibrary}
+            importJsonFile={importJsonFile}
+            rows={rows}
+            onOpenDuplicateScanner={() => goToPage("dupes")}
+            onOpenChangeLog={() => setShowChangeLog(true)}
+            onOpenUserGuide={() => setShowUserGuide(true)}
+          />
+        ) : page === "dupes" ? (
+          <DuplicateScannerView
+            T={T}
+            rows={visibleRows}
+            removePhrase={removePhraseById}
+            onBack={() => goToPage("settings")}
+          />
+        ) : (
+          <HomeView
+            playText={playText}
+            setRows={setRows}
+            genId={genId}
+            nowTs={nowTs}
+            rows={visibleRows}
+            onOpenAddForm={() => {
+              setEditRowId(null);
+              setAddOpen(true);
+            }}
+          />
+        )}
       </main>
 
-      {/* Re-render LibraryView with correct playText (simple + safe) */}
-      {page === "library" && (
-        <div className="hidden">
-          {/* no-op; kept to avoid refactors */}
-        </div>
-      )}
-
-      {/* REAL render for library (with playText) - keep in same branch order */}
-      {page === "library" ? (
-        <div className="hidden">
-          {/* no-op */}
-        </div>
-      ) : null}
-
-      {/* Modal */}
       {addOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
@@ -823,7 +780,9 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
-                <h3 className="text-lg font-semibold">{isEditing ? T.edit : T.addEntry}</h3>
+                <h3 className="text-lg font-semibold">
+                  {isEditing ? T.edit : T.addEntry}
+                </h3>
               </div>
 
               <div className="p-5 pt-4 flex-1 min-h-0">
@@ -884,13 +843,6 @@ export default function App() {
           firstLaunch
         />
       )}
-
-      {/* Fix: actually render LibraryView once with playText (keep single visible instance) */}
-      {page === "library" ? (
-        <div className="pointer-events-none opacity-0 h-0 overflow-hidden" aria-hidden="true">
-          {/* placeholder - no-op */}
-        </div>
-      ) : null}
     </div>
   );
 }
