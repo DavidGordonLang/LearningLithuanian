@@ -166,7 +166,7 @@ const SearchBox = memo(
 );
 
 /* ============================================================================
-   SWIPE PAGER (keeps header fixed, each page scrolls independently)
+   SWIPE PAGER (pixel-accurate widths; header fixed; panels scroll independently)
    ========================================================================== */
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
@@ -189,34 +189,37 @@ function isInteractiveEl(el) {
 }
 
 function SwipePager({ index, onIndexChange, children }) {
+  const hostRef = useRef(null);
   const trackRef = useRef(null);
 
+  const pageCount = React.Children.count(children);
+
+  const [vw, setVw] = useState(() => {
+    if (typeof window === "undefined") return 360;
+    return window.innerWidth || 360;
+  });
+
+  // drag state
   const drag = useRef({
     active: false,
-    locked: false, // horizontal lock
+    locked: false,
     startX: 0,
     startY: 0,
     dx: 0,
-    width: 1,
     startIndex: 0,
     raf: 0,
   });
 
-  const [dragX, setDragX] = useState(0);
-
-  const pageCount = React.Children.count(children);
-
   const applyTransform = (x) => {
     const el = trackRef.current;
     if (!el) return;
-    el.style.transform = `translate3d(${x}px, 0, 0)`;
+    el.style.transform = `translate3d(${x}px,0,0)`;
   };
 
-  const snapToIndex = (nextIndex) => {
+  const snapTo = (nextIndex) => {
     const el = trackRef.current;
     if (!el) return;
-    const w = drag.current.width || 1;
-    const x = -nextIndex * w;
+    const x = -nextIndex * vw;
     el.style.transition = "transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1)";
     applyTransform(x);
     window.setTimeout(() => {
@@ -224,23 +227,19 @@ function SwipePager({ index, onIndexChange, children }) {
     }, 260);
   };
 
-  // keep track aligned when index changes (tap on pills)
-  useEffect(() => {
-    const w = drag.current.width || 1;
-    snapToIndex(index);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
-
+  // Measure host width (not window) so it stays correct even inside layouts
   useLayoutEffect(() => {
     const measure = () => {
-      const host = trackRef.current?.parentElement;
-      const w = host?.getBoundingClientRect().width || window.innerWidth || 1;
-      drag.current.width = w;
-      // re-snap to current index after resize
-      const x = -index * w;
-      applyTransform(x);
+      const host = hostRef.current;
+      if (!host) return;
+      const w = host.getBoundingClientRect().width || window.innerWidth || 360;
+      setVw(w);
+      // keep aligned immediately
+      applyTransform(-index * w);
     };
+
     measure();
+
     window.addEventListener("resize", measure);
     window.addEventListener("orientationchange", measure);
     return () => {
@@ -249,14 +248,20 @@ function SwipePager({ index, onIndexChange, children }) {
     };
   }, [index]);
 
+  // Snap when index changes (tap on pills)
   useEffect(() => {
-    const host = trackRef.current?.parentElement;
+    snapTo(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, vw]);
+
+  useEffect(() => {
+    const host = hostRef.current;
     if (!host) return;
 
     const onTouchStart = (e) => {
       if (!e.touches || e.touches.length !== 1) return;
 
-      // If user starts on an interactive element, let it behave normally.
+      // allow normal behaviour on interactive targets
       const target = e.target;
       if (isInteractiveEl(target)) return;
 
@@ -267,7 +272,6 @@ function SwipePager({ index, onIndexChange, children }) {
       drag.current.startY = t.clientY;
       drag.current.dx = 0;
       drag.current.startIndex = index;
-      setDragX(0);
     };
 
     const onTouchMove = (e) => {
@@ -277,63 +281,53 @@ function SwipePager({ index, onIndexChange, children }) {
       const dx = t.clientX - drag.current.startX;
       const dy = t.clientY - drag.current.startY;
 
-      // decide if horizontal swipe
       if (!drag.current.locked) {
         if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
 
-        // only lock horizontal if clearly more horizontal than vertical
         if (Math.abs(dx) > Math.abs(dy) * 1.15) {
           drag.current.locked = true;
         } else {
-          // vertical scroll gesture; abandon swipe
+          // vertical scroll gesture
           drag.current.active = false;
           drag.current.locked = false;
-          setDragX(0);
           return;
         }
       }
 
-      // now we are in horizontal swipe mode → prevent page from scrolling
+      // horizontal swipe mode
       e.preventDefault();
 
       drag.current.dx = dx;
+
       // edge resistance
       const atFirst = index === 0 && dx > 0;
       const atLast = index === pageCount - 1 && dx < 0;
       const resisted = atFirst || atLast ? dx * 0.35 : dx;
 
-      const w = drag.current.width || 1;
-      const baseX = -index * w;
-      const x = baseX + resisted;
+      const x = -index * vw + resisted;
 
       if (drag.current.raf) cancelAnimationFrame(drag.current.raf);
       drag.current.raf = requestAnimationFrame(() => applyTransform(x));
-      setDragX(resisted);
     };
 
     const onTouchEnd = () => {
       if (!drag.current.active) return;
 
-      const w = drag.current.width || 1;
       const dx = drag.current.dx || 0;
 
       drag.current.active = false;
+      drag.current.locked = false;
 
-      // threshold + velocity-lite
-      const threshold = Math.max(50, w * 0.18);
+      const threshold = Math.max(50, vw * 0.18);
 
       let next = index;
       if (dx <= -threshold) next = index + 1;
       else if (dx >= threshold) next = index - 1;
 
       next = clamp(next, 0, pageCount - 1);
-
-      // snap back/forward
       onIndexChange(next);
-      setDragX(0);
     };
 
-    // IMPORTANT: passive:false so preventDefault works
     host.addEventListener("touchstart", onTouchStart, { passive: true });
     host.addEventListener("touchmove", onTouchMove, { passive: false });
     host.addEventListener("touchend", onTouchEnd, { passive: true });
@@ -345,21 +339,25 @@ function SwipePager({ index, onIndexChange, children }) {
       host.removeEventListener("touchend", onTouchEnd);
       host.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [index, onIndexChange, pageCount, dragX]);
+  }, [index, onIndexChange, pageCount, vw]);
 
   return (
-    <div className="h-full w-full overflow-hidden touch-pan-y">
+    <div ref={hostRef} className="h-full w-full overflow-hidden touch-pan-y">
       <div
         ref={trackRef}
         className="h-full flex"
         style={{
-          width: `${pageCount * 100}%`,
-          transform: `translate3d(${-index * (drag.current.width || 1)}px,0,0)`,
+          width: `${vw * pageCount}px`,
+          transform: `translate3d(${-index * vw}px,0,0)`,
           transition: "none",
+          willChange: "transform",
         }}
       >
         {React.Children.map(children, (child) => (
-          <div className="h-full w-full shrink-0 overflow-y-auto overscroll-contain">
+          <div
+            className="h-full flex-none overflow-y-auto overscroll-contain"
+            style={{ width: `${vw}px` }}
+          >
             {child}
           </div>
         ))}
@@ -431,7 +429,6 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
 
-  // Only these are swipeable tabs:
   const swipeTabs = ["home", "library", "settings"];
   const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
 
@@ -455,7 +452,6 @@ export default function App() {
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
-  // ✅ store-controlled
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
@@ -665,7 +661,6 @@ export default function App() {
 
   // Lock BODY scrolling so only the active panel scrolls (header stays visible)
   useEffect(() => {
-    // only lock once user is inside the app shell
     if (!user) return;
 
     const body = document.body;
@@ -796,7 +791,6 @@ export default function App() {
     <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      {/* MAIN AREA: fixed height under header; pages scroll INSIDE panels */}
       <main
         className="flex-1 overflow-hidden"
         style={{ height: `calc(100dvh - ${headerHeight}px)` }}
