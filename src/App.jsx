@@ -167,24 +167,25 @@ const SearchBox = memo(
 
 /* ============================================================================
    SWIPE PAGER (pixel-accurate widths; header fixed; panels scroll independently)
+   - Allows swipe on buttons (so play-area can swipe)
+   - Still blocks swipe on text inputs/textarea/select/contenteditable
    ========================================================================== */
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-function isInteractiveEl(el) {
+function isTextFieldEl(el) {
   if (!el) return false;
+  // Any explicit block zone
+  if (el.closest?.('[data-swipe-block="true"]')) return true;
+
   const tag = (el.tagName || "").toLowerCase();
-  if (
-    tag === "input" ||
-    tag === "textarea" ||
-    tag === "select" ||
-    tag === "button" ||
-    tag === "a" ||
-    tag === "label"
-  )
-    return true;
-  if (el.closest?.("button, a, input, textarea, select, label")) return true;
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+
+  // Contenteditable (or inside)
+  if (el.isContentEditable) return true;
+  if (el.closest?.("[contenteditable='true']")) return true;
+
   return false;
 }
 
@@ -234,7 +235,6 @@ function SwipePager({ index, onIndexChange, children }) {
       if (!host) return;
       const w = host.getBoundingClientRect().width || window.innerWidth || 360;
       setVw(w);
-      // keep aligned immediately
       applyTransform(-index * w);
     };
 
@@ -261,9 +261,10 @@ function SwipePager({ index, onIndexChange, children }) {
     const onTouchStart = (e) => {
       if (!e.touches || e.touches.length !== 1) return;
 
-      // allow normal behaviour on interactive targets
       const target = e.target;
-      if (isInteractiveEl(target)) return;
+
+      // Block swipe on text fields (typing)
+      if (isTextFieldEl(target)) return;
 
       const t = e.touches[0];
       drag.current.active = true;
@@ -282,10 +283,20 @@ function SwipePager({ index, onIndexChange, children }) {
       const dy = t.clientY - drag.current.startY;
 
       if (!drag.current.locked) {
+        // deadzone
         if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
 
+        // decide swipe vs scroll
         if (Math.abs(dx) > Math.abs(dy) * 1.15) {
           drag.current.locked = true;
+
+          // If a text input is focused, blur it so the keyboard doesn't fight the gesture.
+          const ae = document.activeElement;
+          if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.tagName === "SELECT")) {
+            try {
+              ae.blur();
+            } catch {}
+          }
         } else {
           // vertical scroll gesture
           drag.current.active = false;
@@ -424,9 +435,7 @@ export default function App() {
   }, [user?.email]);
 
   /* PAGE */
-  const [page, setPage] = useState(
-    () => localStorage.getItem(LSK_PAGE) || "home"
-  );
+  const [page, setPage] = useState(() => localStorage.getItem(LSK_PAGE) || "home");
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
 
   const swipeTabs = ["home", "library", "settings"];
@@ -437,8 +446,7 @@ export default function App() {
 
   useEffect(() => {
     if (!headerRef.current) return;
-    const measure = () =>
-      setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
+    const measure = () => setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
     measure();
     window.addEventListener("resize", measure);
     window.addEventListener("orientationchange", measure);
@@ -458,17 +466,13 @@ export default function App() {
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
   /* SORT */
-  const [sortMode, setSortMode] = useState(
-    () => localStorage.getItem(LSK_SORT) || "RAG"
-  );
+  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
   const T = STR;
 
   /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
-    "lt-LT-LeonasNeural"
-  );
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState("lt-LT-LeonasNeural");
   const audioRef = useRef(null);
 
   async function playText(text, { slow = false } = {}) {
@@ -518,9 +522,7 @@ export default function App() {
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
         "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-          ? r.Sheet
-          : "Phrases",
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
         _id: r._id || genId(),
         _ts: r._ts || nowTs(),
         _qstat:
@@ -546,9 +548,7 @@ export default function App() {
           Usage: r.Usage?.trim() || "",
           Notes: r.Notes?.trim() || "",
           "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-            ? r.Sheet
-            : "Phrases",
+          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
           _id: r._id || genId(),
           _ts: r._ts || nowTs(),
           _qstat:
@@ -568,9 +568,7 @@ export default function App() {
 
     setRows((prev) => {
       const existingKeys = new Set(
-        prev
-          .map((p) => p?.contentKey)
-          .filter((k) => typeof k === "string" && k.length > 0)
+        prev.map((p) => p?.contentKey).filter((k) => typeof k === "string" && k.length > 0)
       );
 
       const merged = [...prev];
@@ -631,9 +629,7 @@ export default function App() {
 
   function removePhraseById(id) {
     setRows((prev) =>
-      prev.map((r) =>
-        r._id === id ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r
-      )
+      prev.map((r) => (r._id === id ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r))
     );
   }
 
@@ -646,8 +642,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION)
-      setShowWhatsNew(true);
+    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION) setShowWhatsNew(true);
   }, []);
 
   function goToPage(next) {
@@ -791,10 +786,7 @@ export default function App() {
     <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      <main
-        className="flex-1 overflow-hidden"
-        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
-      >
+      <main className="flex-1 overflow-hidden" style={{ height: `calc(100dvh - ${headerHeight}px)` }}>
         {page === "dupes" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
             <DuplicateScannerView
@@ -805,10 +797,7 @@ export default function App() {
             />
           </div>
         ) : (
-          <SwipePager
-            index={swipeIndex}
-            onIndexChange={(i) => goToPage(swipeTabs[i])}
-          >
+          <SwipePager index={swipeIndex} onIndexChange={(i) => goToPage(swipeTabs[i])}>
             {/* HOME */}
             <div className="h-full">
               <HomeView
@@ -886,19 +875,14 @@ export default function App() {
             setEditRowId(null);
           }}
         >
-          <div
-            className="w-full h-full px-3 pb-4 flex justify-center items-start"
-            style={{ paddingTop: headerHeight + 16 }}
-          >
+          <div className="w-full h-full px-3 pb-4 flex justify-center items-start" style={{ paddingTop: headerHeight + 16 }}>
             <div
               className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-y-auto flex flex-col"
               style={{ height: `calc(100dvh - ${headerHeight + 32}px)` }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
-                <h3 className="text-lg font-semibold">
-                  {isEditing ? T.edit : T.addEntry}
-                </h3>
+                <h3 className="text-lg font-semibold">{isEditing ? T.edit : T.addEntry}</h3>
               </div>
 
               <div className="p-5 pt-4 flex-1 min-h-0">
@@ -947,9 +931,7 @@ export default function App() {
         />
       )}
 
-      {showChangeLog && (
-        <ChangeLogModal onClose={() => setShowChangeLog(false)} />
-      )}
+      {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
 
       {showUserGuide && (
         <UserGuideModal
