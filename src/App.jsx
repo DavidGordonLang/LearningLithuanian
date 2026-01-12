@@ -44,7 +44,7 @@ const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
 };
 
-const SWIPE_PAGES = ["home", "library", "settings"];
+const PAGES = ["home", "library", "settings"];
 
 /* ============================================================================
    STRINGS
@@ -224,8 +224,15 @@ export default function App() {
   }, [user?.email]);
 
   /* PAGE */
-  const [page, setPage] = useState(() => localStorage.getItem(LSK_PAGE) || "home");
+  const [page, setPage] = useState(
+    () => localStorage.getItem(LSK_PAGE) || "home"
+  );
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
+
+  const pageIndex = useMemo(() => {
+    const idx = PAGES.indexOf(page);
+    return idx === -1 ? 0 : idx;
+  }, [page]);
 
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -250,13 +257,17 @@ export default function App() {
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
   /* SORT */
-  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
+  const [sortMode, setSortMode] = useState(
+    () => localStorage.getItem(LSK_SORT) || "RAG"
+  );
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
   const T = STR;
 
   /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState("lt-LT-LeonasNeural");
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
+    "lt-LT-LeonasNeural"
+  );
   const audioRef = useRef(null);
 
   async function playText(text, { slow = false } = {}) {
@@ -448,139 +459,146 @@ export default function App() {
   }
 
   /* ============================================================================
-     SWIPE NAV — start anywhere (even inputs/buttons), suppress taps only if swipe
+     SWIPE PAGER (VISIBLE TRACK)
+     - Keeps all pages mounted
+     - Track moves with finger
+     - Snaps on release
      ========================================================================== */
-  const suppressTapUntilRef = useRef(0);
-
-  const swipeRef = useRef({
+  const pagerRef = useRef(null);
+  const dragStateRef = useRef({
     active: false,
+    dragging: false,
     pointerId: null,
     startX: 0,
     startY: 0,
     lastX: 0,
-    lastY: 0,
-    startT: 0,
-    locked: null, // null | "h" | "v"
-    didSwipe: false, // becomes true once we lock horizontal meaningfully
+    lastT: 0,
+    vx: 0,
+    width: 1,
   });
 
-  const canSwipe = useMemo(() => {
-    if (addOpen || showChangeLog || showUserGuide || showWhatsNew) return false;
-    if (!SWIPE_PAGES.includes(page)) return false;
-    return true;
-  }, [addOpen, showChangeLog, showUserGuide, showWhatsNew, page]);
+  const [dragX, setDragX] = useState(0); // px
+  const [dragging, setDragging] = useState(false);
 
-  const pageIndex = useMemo(() => {
-    const i = SWIPE_PAGES.indexOf(page);
-    return i === -1 ? 0 : i;
+  // When page changes via tap or code, ensure we reset any drag
+  useEffect(() => {
+    setDragX(0);
+    setDragging(false);
+    dragStateRef.current.dragging = false;
+    dragStateRef.current.active = false;
+    dragStateRef.current.pointerId = null;
   }, [page]);
 
-  function swipeToIndex(nextIdx) {
-    const clamped = Math.max(0, Math.min(SWIPE_PAGES.length - 1, nextIdx));
-    const next = SWIPE_PAGES[clamped];
-    if (next && next !== page) goToPage(next);
-  }
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-  function onPointerDown(e) {
-    if (!canSwipe) return;
-    if (e.pointerType === "mouse") return;
+  const onPointerDownPager = (e) => {
+    if (addOpen) return; // don’t swipe while modal open
+    if (!pagerRef.current) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
 
-    // capture so the gesture continues even if we drag across other elements
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    } catch {}
+    const rect = pagerRef.current.getBoundingClientRect();
+    const width = rect.width || 1;
 
-    swipeRef.current.active = true;
-    swipeRef.current.pointerId = e.pointerId;
-    swipeRef.current.startX = e.clientX;
-    swipeRef.current.startY = e.clientY;
-    swipeRef.current.lastX = e.clientX;
-    swipeRef.current.lastY = e.clientY;
-    swipeRef.current.startT = Date.now();
-    swipeRef.current.locked = null;
-    swipeRef.current.didSwipe = false;
-  }
+    dragStateRef.current = {
+      active: true,
+      dragging: false,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      lastT: performance.now(),
+      vx: 0,
+      width,
+    };
 
-  function onPointerMove(e) {
-    const s = swipeRef.current;
-    if (!s.active) return;
-    if (e.pointerId !== s.pointerId) return;
+    // Don’t capture yet; we only capture once we know it’s a horizontal drag.
+  };
 
-    s.lastX = e.clientX;
-    s.lastY = e.clientY;
+  const onPointerMovePager = (e) => {
+    const st = dragStateRef.current;
+    if (!st.active || st.pointerId !== e.pointerId) return;
 
-    const dx = e.clientX - s.startX;
-    const dy = e.clientY - s.startY;
+    const dx = e.clientX - st.startX;
+    const dy = e.clientY - st.startY;
 
-    // decide lock quickly, but only after a tiny movement
-    if (!s.locked) {
-      const adx = Math.abs(dx);
-      const ady = Math.abs(dy);
-      if (adx < 3 && ady < 3) return;
-      s.locked = adx > ady ? "h" : "v";
-      if (s.locked === "h") s.didSwipe = true;
+    // Determine intent: only start dragging when horizontal is clearly dominant
+    if (!st.dragging) {
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      // require a small commitment, and horizontal dominance
+      if (absX < 10) return;
+      if (absX < absY * 1.2) return;
+
+      st.dragging = true;
+      setDragging(true);
+
+      // capture now that we’re sure
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
     }
 
-    if (s.locked === "h") {
-      // Once we know it’s horizontal, stop the browser stealing it.
-      // This is what makes swiping across textarea/buttons actually work.
-      e.preventDefault?.();
+    if (!st.dragging) return;
+
+    // velocity (simple)
+    const now = performance.now();
+    const dt = Math.max(1, now - st.lastT);
+    st.vx = (e.clientX - st.lastX) / dt; // px per ms
+    st.lastX = e.clientX;
+    st.lastT = now;
+
+    // clamp to one page width in either direction
+    const clamped = clamp(dx, -st.width, st.width);
+    setDragX(clamped);
+  };
+
+  const finishSwipe = (e) => {
+    const st = dragStateRef.current;
+    if (!st.active || st.pointerId !== e.pointerId) return;
+
+    const dx = dragX;
+    const width = st.width || 1;
+    const vx = st.vx || 0;
+
+    const absDx = Math.abs(dx);
+    const dir = dx < 0 ? 1 : -1; // left swipe -> +1 page, right swipe -> -1 page
+
+    // thresholds: distance OR quick flick
+    const distancePass = absDx > width * 0.18;
+    const velocityPass = Math.abs(vx) > 0.9; // ~ fast flick
+
+    let nextIndex = pageIndex;
+
+    if (st.dragging && (distancePass || velocityPass)) {
+      nextIndex = clamp(pageIndex + dir, 0, PAGES.length - 1);
     }
-  }
 
-  function onPointerUpOrCancel(e) {
-    const s = swipeRef.current;
-    if (!s.active) return;
-    if (e.pointerId !== s.pointerId) return;
+    // reset drag
+    dragStateRef.current.active = false;
+    dragStateRef.current.dragging = false;
+    dragStateRef.current.pointerId = null;
 
-    const dx = s.lastX - s.startX;
-    const dy = s.lastY - s.startY;
+    setDragging(false);
+    setDragX(0);
 
-    const adx = Math.abs(dx);
-    const ady = Math.abs(dy);
-
-    const elapsed = Date.now() - s.startT;
-    const locked = s.locked;
-    const didSwipe = s.didSwipe;
-
-    // reset
-    s.active = false;
-    s.pointerId = null;
-    s.locked = null;
-    s.didSwipe = false;
-
-    if (!canSwipe) return;
-
-    // only consider horizontal swipes
-    if (locked !== "h") return;
-
-    // ignore if it turned very vertical
-    if (ady > 70) return;
-
-    // velocity px/ms
-    const v = elapsed > 0 ? adx / elapsed : 0;
-
-    // More forgiving than before
-    const DIST_OK = adx >= 30;
-    const FLICK_OK = v >= 0.55 && adx >= 15;
-
-    if (!(DIST_OK || FLICK_OK)) return;
-
-    // We are committing navigation; suppress the "tap" that often fires after a swipe.
-    // This is the key to allowing swipes over buttons/inputs without accidental presses.
-    if (didSwipe) suppressTapUntilRef.current = Date.now() + 450;
-
-    if (dx < 0) swipeToIndex(pageIndex + 1);
-    else swipeToIndex(pageIndex - 1);
-  }
-
-  function onClickCapture(e) {
-    // If we just swiped, block the click/tap that tends to happen on release.
-    if (Date.now() < suppressTapUntilRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
+    if (nextIndex !== pageIndex) {
+      goToPage(PAGES[nextIndex]);
     }
-  }
+  };
+
+  const onPointerUpPager = (e) => finishSwipe(e);
+  const onPointerCancelPager = (e) => finishSwipe(e);
+
+  const trackTransform = useMemo(() => {
+    // base position in px
+    // translateX = -(index * width) + dragX
+    const w = dragStateRef.current.width || 1;
+    const base = -pageIndex * w;
+    return base + (dragging ? dragX : 0);
+  }, [pageIndex, dragX, dragging]);
 
   /* MODAL SCROLL LOCK */
   useEffect(() => {
@@ -687,14 +705,8 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      <main
-        className="pt-3 touch-pan-y"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUpOrCancel}
-        onPointerCancel={onPointerUpOrCancel}
-        onClickCapture={onClickCapture}
-      >
+      <main className="pt-3">
+        {/* Fixed-under-header search UI only when Library is active (your choice “2”) */}
         {page === "library" && (
           <SearchDock
             SearchBox={SearchBox}
@@ -708,56 +720,88 @@ export default function App() {
           />
         )}
 
-        {page === "library" ? (
-          <LibraryView
-            T={T}
-            rows={visibleRows}
-            setRows={setRows}
-            normalizeRag={normalizeRag}
-            sortMode={sortMode}
-            playText={playText}
-            removePhrase={removePhraseById}
-            onEditRow={(id) => {
-              setEditRowId(id);
-              setAddOpen(true);
+        {/* PAGER: pages stay mounted, track slides with swipe */}
+        <div
+          ref={pagerRef}
+          className="relative w-full overflow-hidden"
+          style={{
+            touchAction: "pan-y", // allow vertical scroll, we handle horizontal
+          }}
+          onPointerDown={onPointerDownPager}
+          onPointerMove={onPointerMovePager}
+          onPointerUp={onPointerUpPager}
+          onPointerCancel={onPointerCancelPager}
+        >
+          <div
+            className="flex w-[300%]"
+            style={{
+              transform: `translateX(${trackTransform}px)`,
+              transition: dragging ? "none" : "transform 220ms ease-out",
+              willChange: "transform",
             }}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
-            }}
-          />
-        ) : page === "settings" ? (
-          <SettingsView
-            T={T}
-            azureVoiceShortName={azureVoiceShortName}
-            setAzureVoiceShortName={setAzureVoiceShortName}
-            playText={playText}
-            fetchStarter={fetchStarter}
-            clearLibrary={clearLibrary}
-            importJsonFile={importJsonFile}
-            rows={rows}
-            onOpenDuplicateScanner={() => goToPage("dupes")}
-            onOpenChangeLog={() => setShowChangeLog(true)}
-            onOpenUserGuide={() => setShowUserGuide(true)}
-          />
-        ) : page === "dupes" ? (
+          >
+            {/* HOME */}
+            <div className="w-full shrink-0">
+              <HomeView
+                playText={playText}
+                setRows={setRows}
+                genId={genId}
+                nowTs={nowTs}
+                rows={visibleRows}
+                onOpenAddForm={() => {
+                  setEditRowId(null);
+                  setAddOpen(true);
+                }}
+              />
+            </div>
+
+            {/* LIBRARY */}
+            <div className="w-full shrink-0">
+              <LibraryView
+                T={T}
+                rows={visibleRows}
+                setRows={setRows}
+                normalizeRag={normalizeRag}
+                sortMode={sortMode}
+                playText={playText}
+                removePhrase={removePhraseById}
+                onEditRow={(id) => {
+                  setEditRowId(id);
+                  setAddOpen(true);
+                }}
+                onOpenAddForm={() => {
+                  setEditRowId(null);
+                  setAddOpen(true);
+                }}
+              />
+            </div>
+
+            {/* SETTINGS (includes dupes navigation like before) */}
+            <div className="w-full shrink-0">
+              <SettingsView
+                T={T}
+                azureVoiceShortName={azureVoiceShortName}
+                setAzureVoiceShortName={setAzureVoiceShortName}
+                playText={playText}
+                fetchStarter={fetchStarter}
+                clearLibrary={clearLibrary}
+                importJsonFile={importJsonFile}
+                rows={rows}
+                onOpenDuplicateScanner={() => goToPage("dupes")}
+                onOpenChangeLog={() => setShowChangeLog(true)}
+                onOpenUserGuide={() => setShowUserGuide(true)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* DUPES is not part of the swipe pager (intentional) */}
+        {page === "dupes" && (
           <DuplicateScannerView
             T={T}
             rows={visibleRows}
             removePhrase={removePhraseById}
             onBack={() => goToPage("settings")}
-          />
-        ) : (
-          <HomeView
-            playText={playText}
-            setRows={setRows}
-            genId={genId}
-            nowTs={nowTs}
-            rows={visibleRows}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
-            }}
           />
         )}
       </main>
@@ -831,7 +875,9 @@ export default function App() {
         />
       )}
 
-      {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
+      {showChangeLog && (
+        <ChangeLogModal onClose={() => setShowChangeLog(false)} />
+      )}
 
       {showUserGuide && (
         <UserGuideModal
