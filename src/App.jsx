@@ -52,7 +52,7 @@ const PAGES = ["home", "library", "settings"];
 const STR = {
   appTitle1: "Žodis",
   appTitle2: "",
-  subtitle: "",
+  subtitle: "", // you removed this from header UI already
   navHome: "Home",
   navLibrary: "Library",
   navSettings: "Settings",
@@ -108,6 +108,18 @@ function makeLtKey(r) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "");
+}
+
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
+
+function isInteractiveTarget(target) {
+  if (!target) return false;
+  const el = target.closest?.(
+    "input, textarea, select, button, a, [role='button'], [data-no-swipe='true']"
+  );
+  return !!el;
 }
 
 /* ============================================================================
@@ -224,9 +236,10 @@ export default function App() {
   }, [user?.email]);
 
   /* PAGE */
-  const [page, setPage] = useState(
-    () => localStorage.getItem(LSK_PAGE) || "home"
-  );
+  const [page, setPage] = useState(() => {
+    const raw = localStorage.getItem(LSK_PAGE) || "home";
+    return PAGES.includes(raw) ? raw : "home";
+  });
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
 
   const pageIndex = useMemo(() => {
@@ -234,6 +247,7 @@ export default function App() {
     return idx === -1 ? 0 : idx;
   }, [page]);
 
+  /* HEADER HEIGHT */
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -450,155 +464,29 @@ export default function App() {
   }, []);
 
   function goToPage(next) {
+    // keep your "close modals when navigating" behaviour
     setAddOpen(false);
     setEditRowId(null);
     setShowChangeLog(false);
     setShowUserGuide(false);
     setShowWhatsNew(false);
-    setPage(next);
+
+    if (next === "dupes") {
+      setPage("settings");
+      // dupe scanner is not a swipe page; it lives "on settings"
+      setShowChangeLog(false);
+      setShowUserGuide(false);
+      setShowWhatsNew(false);
+      setInternalRoute("dupes");
+      return;
+    }
+
+    setInternalRoute("main");
+    if (PAGES.includes(next)) setPage(next);
   }
 
-  /* ============================================================================
-     SWIPE PAGER (VISIBLE TRACK)
-     - Keeps all pages mounted
-     - Track moves with finger
-     - Snaps on release
-     ========================================================================== */
-  const pagerRef = useRef(null);
-  const dragStateRef = useRef({
-    active: false,
-    dragging: false,
-    pointerId: null,
-    startX: 0,
-    startY: 0,
-    lastX: 0,
-    lastT: 0,
-    vx: 0,
-    width: 1,
-  });
-
-  const [dragX, setDragX] = useState(0); // px
-  const [dragging, setDragging] = useState(false);
-
-  // When page changes via tap or code, ensure we reset any drag
-  useEffect(() => {
-    setDragX(0);
-    setDragging(false);
-    dragStateRef.current.dragging = false;
-    dragStateRef.current.active = false;
-    dragStateRef.current.pointerId = null;
-  }, [page]);
-
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
-  const onPointerDownPager = (e) => {
-    if (addOpen) return; // don’t swipe while modal open
-    if (!pagerRef.current) return;
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-
-    const rect = pagerRef.current.getBoundingClientRect();
-    const width = rect.width || 1;
-
-    dragStateRef.current = {
-      active: true,
-      dragging: false,
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      lastX: e.clientX,
-      lastT: performance.now(),
-      vx: 0,
-      width,
-    };
-
-    // Don’t capture yet; we only capture once we know it’s a horizontal drag.
-  };
-
-  const onPointerMovePager = (e) => {
-    const st = dragStateRef.current;
-    if (!st.active || st.pointerId !== e.pointerId) return;
-
-    const dx = e.clientX - st.startX;
-    const dy = e.clientY - st.startY;
-
-    // Determine intent: only start dragging when horizontal is clearly dominant
-    if (!st.dragging) {
-      const absX = Math.abs(dx);
-      const absY = Math.abs(dy);
-
-      // require a small commitment, and horizontal dominance
-      if (absX < 10) return;
-      if (absX < absY * 1.2) return;
-
-      st.dragging = true;
-      setDragging(true);
-
-      // capture now that we’re sure
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      } catch {
-        // ignore
-      }
-    }
-
-    if (!st.dragging) return;
-
-    // velocity (simple)
-    const now = performance.now();
-    const dt = Math.max(1, now - st.lastT);
-    st.vx = (e.clientX - st.lastX) / dt; // px per ms
-    st.lastX = e.clientX;
-    st.lastT = now;
-
-    // clamp to one page width in either direction
-    const clamped = clamp(dx, -st.width, st.width);
-    setDragX(clamped);
-  };
-
-  const finishSwipe = (e) => {
-    const st = dragStateRef.current;
-    if (!st.active || st.pointerId !== e.pointerId) return;
-
-    const dx = dragX;
-    const width = st.width || 1;
-    const vx = st.vx || 0;
-
-    const absDx = Math.abs(dx);
-    const dir = dx < 0 ? 1 : -1; // left swipe -> +1 page, right swipe -> -1 page
-
-    // thresholds: distance OR quick flick
-    const distancePass = absDx > width * 0.18;
-    const velocityPass = Math.abs(vx) > 0.9; // ~ fast flick
-
-    let nextIndex = pageIndex;
-
-    if (st.dragging && (distancePass || velocityPass)) {
-      nextIndex = clamp(pageIndex + dir, 0, PAGES.length - 1);
-    }
-
-    // reset drag
-    dragStateRef.current.active = false;
-    dragStateRef.current.dragging = false;
-    dragStateRef.current.pointerId = null;
-
-    setDragging(false);
-    setDragX(0);
-
-    if (nextIndex !== pageIndex) {
-      goToPage(PAGES[nextIndex]);
-    }
-  };
-
-  const onPointerUpPager = (e) => finishSwipe(e);
-  const onPointerCancelPager = (e) => finishSwipe(e);
-
-  const trackTransform = useMemo(() => {
-    // base position in px
-    // translateX = -(index * width) + dragX
-    const w = dragStateRef.current.width || 1;
-    const base = -pageIndex * w;
-    return base + (dragging ? dragX : 0);
-  }, [pageIndex, dragX, dragging]);
+  // internalRoute keeps "dupes" as a settings sub-view without becoming a swipe-page
+  const [internalRoute, setInternalRoute] = useState("main"); // "main" | "dupes"
 
   /* MODAL SCROLL LOCK */
   useEffect(() => {
@@ -680,6 +568,144 @@ export default function App() {
     };
   }, [addOpen, authLoading]);
 
+  /* ============================================================================
+     SWIPE PAGER (animated, correct sizing)
+     ========================================================================== */
+  const viewportRef = useRef(null);
+  const trackRef = useRef(null);
+
+  const draggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const lastXRef = useRef(0);
+  const lastTRef = useRef(0);
+  const allowSwipeRef = useRef(true);
+  const movedHorizRef = useRef(false);
+
+  const [dragDX, setDragDX] = useState(0); // px
+
+  // Keep the track snapped when page changes (and not dragging)
+  useEffect(() => {
+    if (draggingRef.current) return;
+    setDragDX(0);
+  }, [pageIndex]);
+
+  function getViewportWidth() {
+    const el = viewportRef.current;
+    const w = el?.getBoundingClientRect?.().width;
+    return w && w > 0 ? w : window.innerWidth || 360;
+  }
+
+  function snapToIndex(idx) {
+    const next = PAGES[clamp(idx, 0, PAGES.length - 1)];
+    if (next && next !== page) setPage(next);
+  }
+
+  function onPointerDown(e) {
+    if (addOpen) return; // no swiping with modal open
+
+    // If the initial touch is on a control, don’t start swipe
+    if (isInteractiveTarget(e.target)) {
+      allowSwipeRef.current = false;
+      return;
+    }
+
+    allowSwipeRef.current = true;
+    draggingRef.current = true;
+    movedHorizRef.current = false;
+
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    lastXRef.current = e.clientX;
+    lastTRef.current = performance.now();
+
+    setDragDX(0);
+
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    } catch {
+      // ignore
+    }
+  }
+
+  function onPointerMove(e) {
+    if (!draggingRef.current) return;
+    if (!allowSwipeRef.current) return;
+
+    const dx = e.clientX - startXRef.current;
+    const dy = e.clientY - startYRef.current;
+
+    // Decide direction once
+    if (!movedHorizRef.current) {
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+
+      // if user is scrolling vertically, bail out of swipe
+      if (ady > 10 && ady > adx) {
+        draggingRef.current = false;
+        setDragDX(0);
+        return;
+      }
+
+      // require a small horizontal intent before we commit
+      if (adx > 6 && adx > ady) {
+        movedHorizRef.current = true;
+      } else {
+        return;
+      }
+    }
+
+    // prevent page scroll while swiping
+    e.preventDefault?.();
+
+    // resistance at edges
+    const vw = getViewportWidth();
+    let nextDx = dx;
+
+    if (pageIndex === 0 && nextDx > 0) nextDx = nextDx * 0.35;
+    if (pageIndex === PAGES.length - 1 && nextDx < 0) nextDx = nextDx * 0.35;
+
+    // clamp to about one screen each way
+    nextDx = clamp(nextDx, -vw * 1.05, vw * 1.05);
+
+    // track velocity helpers
+    lastXRef.current = e.clientX;
+    lastTRef.current = performance.now();
+
+    setDragDX(nextDx);
+  }
+
+  function onPointerUp(e) {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+
+    if (!allowSwipeRef.current) {
+      allowSwipeRef.current = true;
+      setDragDX(0);
+      return;
+    }
+
+    const vw = getViewportWidth();
+    const dx = dragDX;
+
+    // velocity estimate (simple)
+    const dt = performance.now() - lastTRef.current;
+    const vx = dt > 0 ? (e.clientX - lastXRef.current) / dt : 0;
+
+    const threshold = vw * 0.18; // swipe distance threshold
+    const fast = Math.abs(vx) > 0.6; // quick flick
+
+    let nextIndex = pageIndex;
+
+    if (dx < -threshold || (fast && vx < -0.6)) nextIndex = pageIndex + 1;
+    if (dx > threshold || (fast && vx > 0.6)) nextIndex = pageIndex - 1;
+
+    nextIndex = clamp(nextIndex, 0, PAGES.length - 1);
+
+    setDragDX(0);
+    snapToIndex(nextIndex);
+  }
+
   /* RENDER GATE (no early returns before hooks) */
   if (authLoading && !user) {
     return <div className="min-h-[100dvh] bg-zinc-950" />;
@@ -701,62 +727,70 @@ export default function App() {
     return <BetaBlocked email={user.email} />;
   }
 
+  // translate based on index + drag
+  const vw = typeof window !== "undefined" ? window.innerWidth || 360 : 360;
+  const baseTranslate = -pageIndex * vw;
+  const translatePx = baseTranslate + dragDX;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      <main className="pt-3">
-        {/* Fixed-under-header search UI only when Library is active (your choice “2”) */}
-        {page === "library" && (
-          <SearchDock
-            SearchBox={SearchBox}
-            sortMode={sortMode}
-            setSortMode={setSortMode}
-            placeholder={T.search}
-            T={T}
-            offsetTop={headerHeight}
-            page={page}
-            setPage={goToPage}
-          />
-        )}
-
-        {/* PAGER: pages stay mounted, track slides with swipe */}
+      {/* Pager viewport */}
+      <main
+        ref={viewportRef}
+        className="pt-3 overflow-hidden"
+        style={{
+          // allow vertical scroll inside content; horizontal handled by pointer
+          touchAction: "pan-y",
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {/* Track */}
         <div
-          ref={pagerRef}
-          className="relative w-full overflow-hidden"
+          ref={trackRef}
+          className="flex w-full"
           style={{
-            touchAction: "pan-y", // allow vertical scroll, we handle horizontal
+            transform: `translate3d(${translatePx}px, 0, 0)`,
+            transition:
+              draggingRef.current || dragDX !== 0
+                ? "none"
+                : "transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1)",
+            willChange: "transform",
           }}
-          onPointerDown={onPointerDownPager}
-          onPointerMove={onPointerMovePager}
-          onPointerUp={onPointerUpPager}
-          onPointerCancel={onPointerCancelPager}
         >
-          <div
-            className="flex w-[300%]"
-            style={{
-              transform: `translateX(${trackTransform}px)`,
-              transition: dragging ? "none" : "transform 220ms ease-out",
-              willChange: "transform",
-            }}
-          >
-            {/* HOME */}
-            <div className="w-full shrink-0">
-              <HomeView
-                playText={playText}
-                setRows={setRows}
-                genId={genId}
-                nowTs={nowTs}
-                rows={visibleRows}
-                onOpenAddForm={() => {
-                  setEditRowId(null);
-                  setAddOpen(true);
-                }}
-              />
-            </div>
+          {/* HOME */}
+          <section className="w-screen shrink-0">
+            <HomeView
+              playText={playText}
+              setRows={setRows}
+              genId={genId}
+              nowTs={nowTs}
+              rows={visibleRows}
+              onOpenAddForm={() => {
+                setEditRowId(null);
+                setAddOpen(true);
+              }}
+            />
+          </section>
 
-            {/* LIBRARY */}
-            <div className="w-full shrink-0">
+          {/* LIBRARY */}
+          <section className="w-screen shrink-0">
+            <div>
+              <SearchDock
+                SearchBox={SearchBox}
+                sortMode={sortMode}
+                setSortMode={setSortMode}
+                placeholder={T.search}
+                T={T}
+                offsetTop={headerHeight}
+                page={"library"}
+                setPage={goToPage}
+              />
+
               <LibraryView
                 T={T}
                 rows={visibleRows}
@@ -775,9 +809,21 @@ export default function App() {
                 }}
               />
             </div>
+          </section>
 
-            {/* SETTINGS (includes dupes navigation like before) */}
-            <div className="w-full shrink-0">
+          {/* SETTINGS (and dupes sub-view) */}
+          <section className="w-screen shrink-0">
+            {internalRoute === "dupes" ? (
+              <DuplicateScannerView
+                T={T}
+                rows={visibleRows}
+                removePhrase={removePhraseById}
+                onBack={() => {
+                  setInternalRoute("main");
+                  setPage("settings");
+                }}
+              />
+            ) : (
               <SettingsView
                 T={T}
                 azureVoiceShortName={azureVoiceShortName}
@@ -787,23 +833,16 @@ export default function App() {
                 clearLibrary={clearLibrary}
                 importJsonFile={importJsonFile}
                 rows={rows}
-                onOpenDuplicateScanner={() => goToPage("dupes")}
+                onOpenDuplicateScanner={() => {
+                  setInternalRoute("dupes");
+                  setPage("settings");
+                }}
                 onOpenChangeLog={() => setShowChangeLog(true)}
                 onOpenUserGuide={() => setShowUserGuide(true)}
               />
-            </div>
-          </div>
+            )}
+          </section>
         </div>
-
-        {/* DUPES is not part of the swipe pager (intentional) */}
-        {page === "dupes" && (
-          <DuplicateScannerView
-            T={T}
-            rows={visibleRows}
-            removePhrase={removePhraseById}
-            onBack={() => goToPage("settings")}
-          />
-        )}
       </main>
 
       {addOpen && (
