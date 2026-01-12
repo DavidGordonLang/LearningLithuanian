@@ -165,6 +165,24 @@ const SearchBox = memo(
 );
 
 /* ============================================================================
+   SWIPE HELPERS
+   ========================================================================== */
+const SWIPE_PAGES = ["home", "library", "settings"];
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+function isInteractiveEl(target) {
+  if (!target) return false;
+  const el = target instanceof Element ? target : null;
+  if (!el) return false;
+
+  // Anything that should not trigger swipe when touched
+  const interactive = el.closest(
+    'input, textarea, select, button, a, [role="button"], [contenteditable="true"]'
+  );
+  return !!interactive;
+}
+
+/* ============================================================================
    MAIN APP
    ========================================================================== */
 export default function App() {
@@ -531,6 +549,199 @@ export default function App() {
     };
   }, [addOpen, authLoading]);
 
+  /* ============================================================================
+     SWIPE NAV (Home/Library/Settings only)
+     ========================================================================== */
+  const swipeEnabled =
+    page !== "dupes" &&
+    !addOpen &&
+    !showWhatsNew &&
+    !showChangeLog &&
+    !showUserGuide;
+
+  const pageIndex = useMemo(() => {
+    const idx = SWIPE_PAGES.indexOf(page);
+    return idx === -1 ? 0 : idx;
+  }, [page]);
+
+  // drag state in refs (avoid re-render spam)
+  const dragRef = useRef({
+    dragging: false,
+    decided: false, // whether we decided horizontal vs vertical
+    allow: false,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastT: 0,
+    dx: 0,
+    dy: 0,
+    velocityX: 0,
+  });
+
+  const [dragPx, setDragPx] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const pagerRef = useRef(null);
+
+  const animateToZero = () => {
+    setDragPx(0);
+    setIsDragging(false);
+    dragRef.current.dragging = false;
+    dragRef.current.decided = false;
+    dragRef.current.allow = false;
+    dragRef.current.dx = 0;
+    dragRef.current.dy = 0;
+    dragRef.current.velocityX = 0;
+  };
+
+  const goToIndex = (nextIdx) => {
+    const clamped = clamp(nextIdx, 0, SWIPE_PAGES.length - 1);
+    const nextPage = SWIPE_PAGES[clamped];
+    if (nextPage && nextPage !== page) goToPage(nextPage);
+  };
+
+  const onPointerDownPager = (e) => {
+    if (!swipeEnabled) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    // If starting on an interactive element, do not swipe.
+    if (isInteractiveEl(e.target)) return;
+
+    const el = pagerRef.current;
+    if (!el) return;
+
+    dragRef.current.dragging = true;
+    dragRef.current.decided = false;
+    dragRef.current.allow = false;
+
+    dragRef.current.startX = e.clientX;
+    dragRef.current.startY = e.clientY;
+    dragRef.current.lastX = e.clientX;
+    dragRef.current.lastT = performance.now();
+    dragRef.current.dx = 0;
+    dragRef.current.dy = 0;
+    dragRef.current.velocityX = 0;
+
+    setIsDragging(true);
+    setDragPx(0);
+
+    try {
+      el.setPointerCapture?.(e.pointerId);
+    } catch {
+      // ignore
+    }
+  };
+
+  const onPointerMovePager = (e) => {
+    if (!dragRef.current.dragging) return;
+
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+
+    dragRef.current.dx = dx;
+    dragRef.current.dy = dy;
+
+    // Decide if this gesture is horizontal swipe or vertical scroll
+    if (!dragRef.current.decided) {
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+
+      // tiny jitter: wait until a small threshold
+      if (adx < 6 && ady < 6) return;
+
+      dragRef.current.decided = true;
+
+      // If vertical dominates, cancel swipe (let scrolling happen)
+      if (ady > adx * 1.2) {
+        dragRef.current.allow = false;
+        // stop tracking (but keep pointer capture release on up)
+        return;
+      }
+
+      dragRef.current.allow = true;
+    }
+
+    if (!dragRef.current.allow) return;
+
+    // Compute velocity
+    const now = performance.now();
+    const dt = Math.max(1, now - dragRef.current.lastT);
+    const vx = (e.clientX - dragRef.current.lastX) / dt; // px per ms
+    dragRef.current.velocityX = vx;
+    dragRef.current.lastX = e.clientX;
+    dragRef.current.lastT = now;
+
+    // Prevent page scroll while swiping horizontally
+    e.preventDefault();
+
+    const w = pagerRef.current?.getBoundingClientRect?.().width || 1;
+
+    // Resistance at edges
+    let nextDx = dx;
+    if (pageIndex === 0 && dx > 0) nextDx = dx * 0.35;
+    if (pageIndex === SWIPE_PAGES.length - 1 && dx < 0) nextDx = dx * 0.35;
+
+    // clamp to one screen width
+    nextDx = clamp(nextDx, -w, w);
+
+    setDragPx(nextDx);
+  };
+
+  const onPointerUpPager = (e) => {
+    if (!dragRef.current.dragging) return;
+
+    const allow = dragRef.current.allow;
+    const dx = dragRef.current.dx;
+    const vx = dragRef.current.velocityX;
+
+    dragRef.current.dragging = false;
+
+    if (!allow) {
+      animateToZero();
+      return;
+    }
+
+    const w = pagerRef.current?.getBoundingClientRect?.().width || 1;
+    const progress = dx / w; // -1..1
+
+    // thresholds
+    const DIST_THRESH = 0.18; // 18% width
+    const VEL_THRESH = 0.9; // px/ms (~900 px/s)
+
+    let nextIdx = pageIndex;
+
+    const flingLeft = vx < -VEL_THRESH;
+    const flingRight = vx > VEL_THRESH;
+
+    if (progress <= -DIST_THRESH || flingLeft) {
+      nextIdx = pageIndex + 1;
+    } else if (progress >= DIST_THRESH || flingRight) {
+      nextIdx = pageIndex - 1;
+    }
+
+    // Snap back visually first, then change page (to keep it feeling quick)
+    setDragPx(0);
+
+    // If page changes, do it immediately; the pager transition handles the snap
+    if (nextIdx !== pageIndex) {
+      goToIndex(nextIdx);
+    }
+
+    setIsDragging(false);
+    dragRef.current.decided = false;
+    dragRef.current.allow = false;
+    dragRef.current.dx = 0;
+    dragRef.current.dy = 0;
+    dragRef.current.velocityX = 0;
+
+    try {
+      const el = pagerRef.current;
+      el?.releasePointerCapture?.(e.pointerId);
+    } catch {
+      // ignore
+    }
+  };
+
   /* RENDER GATE (no early returns before hooks) */
   if (authLoading && !user) {
     return <div className="min-h-[100dvh] bg-zinc-950" />;
@@ -552,75 +763,128 @@ export default function App() {
     return <BetaBlocked email={user.email} />;
   }
 
+  // Render the three swipeable pages
+  const renderHome = (
+    <HomeView
+      playText={playText}
+      setRows={setRows}
+      genId={genId}
+      nowTs={nowTs}
+      rows={visibleRows}
+      onOpenAddForm={() => {
+        setEditRowId(null);
+        setAddOpen(true);
+      }}
+    />
+  );
+
+  const renderLibrary = (
+    <>
+      <SearchDock
+        SearchBox={SearchBox}
+        sortMode={sortMode}
+        setSortMode={setSortMode}
+        placeholder={T.search}
+        T={T}
+        offsetTop={headerHeight}
+        page={"library"}
+        setPage={goToPage}
+      />
+      <LibraryView
+        T={T}
+        rows={visibleRows}
+        setRows={setRows}
+        normalizeRag={normalizeRag}
+        sortMode={sortMode}
+        playText={playText}
+        removePhrase={removePhraseById}
+        onEditRow={(id) => {
+          setEditRowId(id);
+          setAddOpen(true);
+        }}
+        onOpenAddForm={() => {
+          setEditRowId(null);
+          setAddOpen(true);
+        }}
+      />
+    </>
+  );
+
+  const renderSettings = (
+    <SettingsView
+      T={T}
+      azureVoiceShortName={azureVoiceShortName}
+      setAzureVoiceShortName={setAzureVoiceShortName}
+      playText={playText}
+      fetchStarter={fetchStarter}
+      clearLibrary={clearLibrary}
+      importJsonFile={importJsonFile}
+      rows={rows}
+      onOpenDuplicateScanner={() => goToPage("dupes")}
+      onOpenChangeLog={() => setShowChangeLog(true)}
+      onOpenUserGuide={() => setShowUserGuide(true)}
+    />
+  );
+
+  // If we are on "dupes", render normally (no swipe)
+  const renderDupes = (
+    <DuplicateScannerView
+      T={T}
+      rows={visibleRows}
+      removePhrase={removePhraseById}
+      onBack={() => goToPage("settings")}
+    />
+  );
+
+  const pagerWidthStyle = { width: `${SWIPE_PAGES.length * 100}%` };
+  const panelWidthStyle = { width: `${100 / SWIPE_PAGES.length}%` };
+
+  const w = pagerRef.current?.getBoundingClientRect?.().width || 1;
+  const dragPct = (dragPx / w) * 100; // percent of viewport width
+  const translatePct = -(pageIndex * 100) + dragPct;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
       <main className="pt-3">
-        {page === "library" && (
-          <SearchDock
-            SearchBox={SearchBox}
-            sortMode={sortMode}
-            setSortMode={setSortMode}
-            placeholder={T.search}
-            T={T}
-            offsetTop={headerHeight}
-            page={page}
-            setPage={goToPage}
-          />
-        )}
-
-        {page === "library" ? (
-          <LibraryView
-            T={T}
-            rows={visibleRows}
-            setRows={setRows}
-            normalizeRag={normalizeRag}
-            sortMode={sortMode}
-            playText={playText}
-            removePhrase={removePhraseById}
-            onEditRow={(id) => {
-              setEditRowId(id);
-              setAddOpen(true);
-            }}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
-            }}
-          />
-        ) : page === "settings" ? (
-          <SettingsView
-            T={T}
-            azureVoiceShortName={azureVoiceShortName}
-            setAzureVoiceShortName={setAzureVoiceShortName}
-            playText={playText}
-            fetchStarter={fetchStarter}
-            clearLibrary={clearLibrary}
-            importJsonFile={importJsonFile}
-            rows={rows}
-            onOpenDuplicateScanner={() => goToPage("dupes")}
-            onOpenChangeLog={() => setShowChangeLog(true)}
-            onOpenUserGuide={() => setShowUserGuide(true)}
-          />
-        ) : page === "dupes" ? (
-          <DuplicateScannerView
-            T={T}
-            rows={visibleRows}
-            removePhrase={removePhraseById}
-            onBack={() => goToPage("settings")}
-          />
+        {page === "dupes" ? (
+          renderDupes
         ) : (
-          <HomeView
-            playText={playText}
-            setRows={setRows}
-            genId={genId}
-            nowTs={nowTs}
-            rows={visibleRows}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
+          <div
+            ref={pagerRef}
+            className="w-full overflow-hidden"
+            style={{
+              touchAction: swipeEnabled ? "pan-y" : "auto",
             }}
-          />
+            onPointerDown={onPointerDownPager}
+            onPointerMove={onPointerMovePager}
+            onPointerUp={onPointerUpPager}
+            onPointerCancel={onPointerUpPager}
+          >
+            <div
+              className={
+                "flex will-change-transform " +
+                (isDragging ? "" : "transition-transform duration-200 ease-out")
+              }
+              style={{
+                ...pagerWidthStyle,
+                transform: `translate3d(${translatePct}%, 0, 0)`,
+              }}
+            >
+              <div style={panelWidthStyle} className="shrink-0">
+                {renderHome}
+              </div>
+
+              <div style={panelWidthStyle} className="shrink-0">
+                {renderLibrary}
+              </div>
+
+              <div style={panelWidthStyle} className="shrink-0">
+                {renderSettings}
+              </div>
+            </div>
+          </div>
         )}
       </main>
 
@@ -693,9 +957,7 @@ export default function App() {
         />
       )}
 
-      {showChangeLog && (
-  <ChangeLogModal onClose={() => setShowChangeLog(false)} />
-)}
+      {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
 
       {showUserGuide && (
         <UserGuideModal
