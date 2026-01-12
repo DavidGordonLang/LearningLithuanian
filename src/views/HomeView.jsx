@@ -3,9 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { DEFAULT_CATEGORY } from "../constants/categories";
 
 function stripDiacritics(str) {
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function normalise(str) {
@@ -224,7 +222,10 @@ export default function HomeView({
       if (!row?._id) return;
 
       // One-time guard: if Usage/Notes already exist, do nothing.
-      if ((row.Usage && String(row.Usage).trim()) || (row.Notes && String(row.Notes).trim())) {
+      if (
+        (row.Usage && String(row.Usage).trim()) ||
+        (row.Notes && String(row.Notes).trim())
+      ) {
         return;
       }
 
@@ -362,15 +363,6 @@ export default function HomeView({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
-      {/* Header */}
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold">Say it right — then save it.</h2>
-        <p className="text-sm text-zinc-400 mt-1">
-          Type English or Lithuanian. We’ll return the phrase, meaning,
-          pronunciation, plus learning notes — ready to save.
-        </p>
-      </div>
-
       {/* Speaking to */}
       <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
@@ -449,8 +441,8 @@ export default function HomeView({
                 Similar entry already in your library
               </div>
               <div className="text-xs text-amber-200/80 mt-0.5">
-                You can use this one, or translate anyway if you really want a new
-                version.
+                You can use this one, or translate anyway if you really want a
+                new version.
               </div>
             </div>
             <button

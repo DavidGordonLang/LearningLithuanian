@@ -4,11 +4,12 @@ import React, {
   useMemo,
   useRef,
   useState,
+  startTransition,
   forwardRef,
   memo,
-  startTransition,
   useImperativeHandle,
   useSyncExternalStore,
+  useLayoutEffect,
 } from "react";
 
 import Header from "./components/Header";
@@ -33,7 +34,7 @@ import { supabase } from "./supabaseClient";
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
-const APP_VERSION = "1.4.1-beta";
+const APP_VERSION = "1.5.0-beta";
 
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
@@ -50,7 +51,7 @@ const STARTERS = {
 const STR = {
   appTitle1: "Žodis",
   appTitle2: "",
-  subtitle: "Tap to play. Long-press to savour.",
+  subtitle: "",
   navHome: "Home",
   navLibrary: "Library",
   navSettings: "Settings",
@@ -165,6 +166,223 @@ const SearchBox = memo(
 );
 
 /* ============================================================================
+   SWIPE PAGER (pixel-accurate widths; header fixed; panels scroll independently)
+   - Allows swipe on buttons (so play-area can swipe)
+   - Still blocks swipe on text inputs/textarea/select/contenteditable
+   ========================================================================== */
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function isTextFieldEl(el) {
+  if (!el) return false;
+  // Any explicit block zone
+  if (el.closest?.('[data-swipe-block="true"]')) return true;
+
+  const tag = (el.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+
+  // Contenteditable (or inside)
+  if (el.isContentEditable) return true;
+  if (el.closest?.("[contenteditable='true']")) return true;
+
+  return false;
+}
+
+function SwipePager({ index, onIndexChange, children }) {
+  const hostRef = useRef(null);
+  const trackRef = useRef(null);
+
+  const pageCount = React.Children.count(children);
+
+  const [vw, setVw] = useState(() => {
+    if (typeof window === "undefined") return 360;
+    return window.innerWidth || 360;
+  });
+
+  // drag state
+  const drag = useRef({
+    active: false,
+    locked: false,
+    startX: 0,
+    startY: 0,
+    dx: 0,
+    startIndex: 0,
+    raf: 0,
+  });
+
+  const applyTransform = (x) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.style.transform = `translate3d(${x}px,0,0)`;
+  };
+
+  const snapTo = (nextIndex) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const x = -nextIndex * vw;
+    el.style.transition = "transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1)";
+    applyTransform(x);
+    window.setTimeout(() => {
+      if (trackRef.current) trackRef.current.style.transition = "none";
+    }, 260);
+  };
+
+  // Measure host width (not window) so it stays correct even inside layouts
+  useLayoutEffect(() => {
+    const measure = () => {
+      const host = hostRef.current;
+      if (!host) return;
+      const w = host.getBoundingClientRect().width || window.innerWidth || 360;
+      setVw(w);
+      applyTransform(-index * w);
+    };
+
+    measure();
+
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, [index]);
+
+  // Snap when index changes (tap on pills)
+  useEffect(() => {
+    snapTo(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, vw]);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+
+    const onTouchStart = (e) => {
+      if (!e.touches || e.touches.length !== 1) return;
+
+      const target = e.target;
+
+      // Block swipe on text fields (typing)
+      if (isTextFieldEl(target)) return;
+
+      const t = e.touches[0];
+      drag.current.active = true;
+      drag.current.locked = false;
+      drag.current.startX = t.clientX;
+      drag.current.startY = t.clientY;
+      drag.current.dx = 0;
+      drag.current.startIndex = index;
+    };
+
+    const onTouchMove = (e) => {
+      if (!drag.current.active || !e.touches || e.touches.length !== 1) return;
+
+      const t = e.touches[0];
+      const dx = t.clientX - drag.current.startX;
+      const dy = t.clientY - drag.current.startY;
+
+      if (!drag.current.locked) {
+        // deadzone
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+
+        // decide swipe vs scroll
+        if (Math.abs(dx) > Math.abs(dy) * 1.15) {
+          drag.current.locked = true;
+
+          // If a text input is focused, blur it so the keyboard doesn't fight the gesture.
+          const ae = document.activeElement;
+          if (
+            ae &&
+            (ae.tagName === "INPUT" ||
+              ae.tagName === "TEXTAREA" ||
+              ae.tagName === "SELECT")
+          ) {
+            try {
+              ae.blur();
+            } catch {}
+          }
+        } else {
+          // vertical scroll gesture
+          drag.current.active = false;
+          drag.current.locked = false;
+          return;
+        }
+      }
+
+      // horizontal swipe mode
+      e.preventDefault();
+
+      drag.current.dx = dx;
+
+      // edge resistance
+      const atFirst = index === 0 && dx > 0;
+      const atLast = index === pageCount - 1 && dx < 0;
+      const resisted = atFirst || atLast ? dx * 0.35 : dx;
+
+      const x = -index * vw + resisted;
+
+      if (drag.current.raf) cancelAnimationFrame(drag.current.raf);
+      drag.current.raf = requestAnimationFrame(() => applyTransform(x));
+    };
+
+    const onTouchEnd = () => {
+      if (!drag.current.active) return;
+
+      const dx = drag.current.dx || 0;
+
+      drag.current.active = false;
+      drag.current.locked = false;
+
+      const threshold = Math.max(50, vw * 0.18);
+
+      let next = index;
+      if (dx <= -threshold) next = index + 1;
+      else if (dx >= threshold) next = index - 1;
+
+      next = clamp(next, 0, pageCount - 1);
+      onIndexChange(next);
+    };
+
+    host.addEventListener("touchstart", onTouchStart, { passive: true });
+    host.addEventListener("touchmove", onTouchMove, { passive: false });
+    host.addEventListener("touchend", onTouchEnd, { passive: true });
+    host.addEventListener("touchcancel", onTouchEnd, { passive: true });
+
+    return () => {
+      host.removeEventListener("touchstart", onTouchStart);
+      host.removeEventListener("touchmove", onTouchMove);
+      host.removeEventListener("touchend", onTouchEnd);
+      host.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [index, onIndexChange, pageCount, vw]);
+
+  return (
+    <div ref={hostRef} className="h-full w-full overflow-hidden touch-pan-y">
+      <div
+        ref={trackRef}
+        className="h-full flex"
+        style={{
+          width: `${vw * pageCount}px`,
+          transform: `translate3d(${-index * vw}px,0,0)`,
+          transition: "none",
+          willChange: "transform",
+        }}
+      >
+        {React.Children.map(children, (child) => (
+          <div
+            className="h-full flex-none overflow-y-auto overscroll-contain"
+            style={{ width: `${vw}px` }}
+          >
+            {child}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================================
    MAIN APP
    ========================================================================== */
 export default function App() {
@@ -222,10 +440,14 @@ export default function App() {
   }, [user?.email]);
 
   /* PAGE */
-  const [page, setPage] = useState(
-    () => localStorage.getItem(LSK_PAGE) || "home"
-  );
+  const [page, setPage] = useState(() => localStorage.getItem(LSK_PAGE) || "home");
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
+
+  const swipeTabs = ["home", "library", "settings"];
+  const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
+
+  // ✅ Used to force-remount HomeView when logo is tapped (clears translate box etc)
+  const [homeResetKey, setHomeResetKey] = useState(0);
 
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -236,31 +458,30 @@ export default function App() {
       setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
   }, []);
 
   /* ROWS */
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
-  // ✅ store-controlled
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
   /* SORT */
-  const [sortMode, setSortMode] = useState(
-    () => localStorage.getItem(LSK_SORT) || "RAG"
-  );
+  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
   useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
 
   const T = STR;
 
   /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
-    "lt-LT-LeonasNeural"
-  );
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState("lt-LT-LeonasNeural");
   const audioRef = useRef(null);
 
   async function playText(text, { slow = false } = {}) {
@@ -451,7 +672,57 @@ export default function App() {
     setPage(next);
   }
 
-  /* MODAL SCROLL LOCK */
+  // ✅ LOGO = "refresh" but default to home
+  function handleLogoClick() {
+    // Clear global search (old pull-to-refresh behaviour vibe)
+    startTransition(() => searchStore.clear());
+
+    // Drop keyboard if any input is focused
+    const ae = document.activeElement;
+    if (
+      ae &&
+      (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.tagName === "SELECT")
+    ) {
+      try {
+        ae.blur();
+      } catch {}
+    }
+
+    // Force HomeView remount to clear its local state (translate box etc.)
+    setHomeResetKey((k) => k + 1);
+
+    // Go home (also closes modals via goToPage)
+    goToPage("home");
+  }
+
+  // Lock BODY scrolling so only the active panel scrolls (header stays visible)
+  useEffect(() => {
+    if (!user) return;
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    const prev = {
+      bodyOverflow: body.style.overflow,
+      bodyHeight: body.style.height,
+      htmlOverflow: html.style.overflow,
+      htmlHeight: html.style.height,
+    };
+
+    body.style.overflow = "hidden";
+    body.style.height = "100%";
+    html.style.overflow = "hidden";
+    html.style.height = "100%";
+
+    return () => {
+      body.style.overflow = prev.bodyOverflow;
+      body.style.height = prev.bodyHeight;
+      html.style.overflow = prev.htmlOverflow;
+      html.style.height = prev.htmlHeight;
+    };
+  }, [user]);
+
+  /* MODAL SCROLL LOCK (unchanged) */
   useEffect(() => {
     if (!addOpen || authLoading) return;
 
@@ -553,74 +824,100 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
+    <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+      <Header
+        ref={headerRef}
+        T={T}
+        page={page}
+        setPage={goToPage}
+        onLogoClick={handleLogoClick}
+      />
 
-      <main className="pt-3">
-        {page === "library" && (
-          <SearchDock
-            SearchBox={SearchBox}
-            sortMode={sortMode}
-            setSortMode={setSortMode}
-            placeholder={T.search}
-            T={T}
-            offsetTop={headerHeight}
-            page={page}
-            setPage={goToPage}
-          />
-        )}
-
-        {page === "library" ? (
-          <LibraryView
-            T={T}
-            rows={visibleRows}
-            setRows={setRows}
-            normalizeRag={normalizeRag}
-            sortMode={sortMode}
-            playText={playText}
-            removePhrase={removePhraseById}
-            onEditRow={(id) => {
-              setEditRowId(id);
-              setAddOpen(true);
-            }}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
-            }}
-          />
-        ) : page === "settings" ? (
-          <SettingsView
-            T={T}
-            azureVoiceShortName={azureVoiceShortName}
-            setAzureVoiceShortName={setAzureVoiceShortName}
-            playText={playText}
-            fetchStarter={fetchStarter}
-            clearLibrary={clearLibrary}
-            importJsonFile={importJsonFile}
-            rows={rows}
-            onOpenDuplicateScanner={() => goToPage("dupes")}
-            onOpenChangeLog={() => setShowChangeLog(true)}
-            onOpenUserGuide={() => setShowUserGuide(true)}
-          />
-        ) : page === "dupes" ? (
-          <DuplicateScannerView
-            T={T}
-            rows={visibleRows}
-            removePhrase={removePhraseById}
-            onBack={() => goToPage("settings")}
-          />
+      <main
+        className="flex-1 overflow-hidden"
+        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
+      >
+        {page === "dupes" ? (
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <DuplicateScannerView
+              T={T}
+              rows={visibleRows}
+              removePhrase={removePhraseById}
+              onBack={() => goToPage("settings")}
+            />
+          </div>
         ) : (
-          <HomeView
-            playText={playText}
-            setRows={setRows}
-            genId={genId}
-            nowTs={nowTs}
-            rows={visibleRows}
-            onOpenAddForm={() => {
-              setEditRowId(null);
-              setAddOpen(true);
-            }}
-          />
+          <SwipePager
+            index={swipeIndex}
+            onIndexChange={(i) => goToPage(swipeTabs[i])}
+          >
+            {/* HOME */}
+            <div className="h-full">
+              <HomeView
+                key={homeResetKey}
+                playText={playText}
+                setRows={setRows}
+                genId={genId}
+                nowTs={nowTs}
+                rows={visibleRows}
+                onOpenAddForm={() => {
+                  setEditRowId(null);
+                  setAddOpen(true);
+                }}
+              />
+            </div>
+
+            {/* LIBRARY */}
+            <div className="h-full">
+              <div className="pt-3">
+                <SearchDock
+                  SearchBox={SearchBox}
+                  sortMode={sortMode}
+                  setSortMode={setSortMode}
+                  placeholder={T.search}
+                  T={T}
+                  offsetTop={headerHeight}
+                  page={"library"}
+                  setPage={goToPage}
+                />
+              </div>
+
+              <LibraryView
+                T={T}
+                rows={visibleRows}
+                setRows={setRows}
+                normalizeRag={normalizeRag}
+                sortMode={sortMode}
+                playText={playText}
+                removePhrase={removePhraseById}
+                onEditRow={(id) => {
+                  setEditRowId(id);
+                  setAddOpen(true);
+                }}
+                onOpenAddForm={() => {
+                  setEditRowId(null);
+                  setAddOpen(true);
+                }}
+              />
+            </div>
+
+            {/* SETTINGS */}
+            <div className="h-full">
+              <SettingsView
+                T={T}
+                azureVoiceShortName={azureVoiceShortName}
+                setAzureVoiceShortName={setAzureVoiceShortName}
+                playText={playText}
+                fetchStarter={fetchStarter}
+                clearLibrary={clearLibrary}
+                importJsonFile={importJsonFile}
+                rows={rows}
+                onOpenDuplicateScanner={() => goToPage("dupes")}
+                onOpenChangeLog={() => setShowChangeLog(true)}
+                onOpenUserGuide={() => setShowUserGuide(true)}
+              />
+            </div>
+          </SwipePager>
         )}
       </main>
 
@@ -693,9 +990,7 @@ export default function App() {
         />
       )}
 
-      {showChangeLog && (
-  <ChangeLogModal onClose={() => setShowChangeLog(false)} />
-)}
+      {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
 
       {showUserGuide && (
         <UserGuideModal

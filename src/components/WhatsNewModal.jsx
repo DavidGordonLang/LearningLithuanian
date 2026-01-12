@@ -45,37 +45,16 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
           Here’s what changed in the latest update:
         </p>
 
-        {/* UPDATED CHANGE LIST FOR v1.4.1-beta */}
+        {/* CHANGE LIST (current release) */}
         <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
-          <li>
-            New full user guide is now live at{" "}
-            <span className="font-semibold">zodis.app/userguide</span>.
-          </li>
-          <li>
-            Early access messaging is clearer if you sign in with an email that
-            is not on the beta list.
-          </li>
-          <li>
-            Modal layout and stacking has been polished so Change Log and Add
-            Entry do not clip behind the header.
-          </li>
+          <li>Swipe navigation is back: move between Home, Library, and Settings.</li>
+          <li>Each tab now scrolls independently, with the header staying fixed.</li>
+          <li>Page sizing/width issues have been tightened up for more reliable layouts.</li>
+          <li>The header logo now acts as a Home + refresh shortcut.</li>
+          <li>Removed the Žodis title text from the header for a cleaner, logo-led look.</li>
         </ul>
 
         <div className="flex gap-3 justify-end flex-wrap">
-          <a
-            href="https://zodis.app/userguide"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="
-              bg-zinc-800 text-zinc-200 rounded-full
-              px-4 py-2 text-sm font-medium
-              hover:bg-zinc-700 active:bg-zinc-600
-              select-none
-            "
-          >
-            Open user guide
-          </a>
-
           <button
             type="button"
             className="

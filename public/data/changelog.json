@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.5.0-beta",
+    "date": "2026-01-12",
+    "changes": [
+      "Reintroduced horizontal swipe navigation between Home, Library, and Settings using a dedicated swipe pager.",
+      "Moved to pixel-accurate page sizing and independent per-tab scrolling to prevent cross-page height and overflow issues.",
+      "Kept the header fixed while swiping and scrolling, improving navigation consistency on mobile and PWA.",
+      "Updated the header so the logo acts as a Home + refresh shortcut (clears search state and resets Home view input state).",
+      "Removed the Žodis title text from the header and tightened spacing for a cleaner, logo-led brand presentation.",
+      "Improved touch gesture handling to reduce accidental scroll locking and better separate horizontal swipes from vertical scrolling."
+    ]
+  },
+  {
     "version": "1.4.1-beta",
     "date": "2026-01-07",
     "changes": [
