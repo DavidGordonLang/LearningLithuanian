@@ -52,7 +52,7 @@ const PAGES = ["home", "library", "settings"];
 const STR = {
   appTitle1: "Žodis",
   appTitle2: "",
-  subtitle: "", // you removed this from header UI already
+  subtitle: "",
   navHome: "Home",
   navLibrary: "Library",
   navSettings: "Settings",
@@ -257,7 +257,45 @@ export default function App() {
       setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
+  /* VIEWPORT WIDTH (for correct translate) */
+  const viewportRef = useRef(null);
+  const [viewportW, setViewportW] = useState(
+    typeof window !== "undefined" ? window.innerWidth || 360 : 360
+  );
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w && w > 0) setViewportW(w);
+    };
+
+    update();
+
+    // ResizeObserver if available (best)
+    let ro = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => update());
+      ro.observe(el);
+    } else {
+      window.addEventListener("resize", update);
+      window.addEventListener("orientationchange", update);
+    }
+
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
   }, []);
 
   /* ROWS */
@@ -463,8 +501,10 @@ export default function App() {
       setShowWhatsNew(true);
   }, []);
 
+  // internalRoute keeps "dupes" as a settings sub-view without becoming a swipe-page
+  const [internalRoute, setInternalRoute] = useState("main"); // "main" | "dupes"
+
   function goToPage(next) {
-    // keep your "close modals when navigating" behaviour
     setAddOpen(false);
     setEditRowId(null);
     setShowChangeLog(false);
@@ -472,21 +512,14 @@ export default function App() {
     setShowWhatsNew(false);
 
     if (next === "dupes") {
-      setPage("settings");
-      // dupe scanner is not a swipe page; it lives "on settings"
-      setShowChangeLog(false);
-      setShowUserGuide(false);
-      setShowWhatsNew(false);
       setInternalRoute("dupes");
+      setPage("settings");
       return;
     }
 
     setInternalRoute("main");
     if (PAGES.includes(next)) setPage(next);
   }
-
-  // internalRoute keeps "dupes" as a settings sub-view without becoming a swipe-page
-  const [internalRoute, setInternalRoute] = useState("main"); // "main" | "dupes"
 
   /* MODAL SCROLL LOCK */
   useEffect(() => {
@@ -569,32 +602,22 @@ export default function App() {
   }, [addOpen, authLoading]);
 
   /* ============================================================================
-     SWIPE PAGER (animated, correct sizing)
+     SWIPE PAGER (fixed-height viewport + per-page scroll)
      ========================================================================== */
-  const viewportRef = useRef(null);
   const trackRef = useRef(null);
 
   const draggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
-  const lastXRef = useRef(0);
-  const lastTRef = useRef(0);
   const allowSwipeRef = useRef(true);
   const movedHorizRef = useRef(false);
 
   const [dragDX, setDragDX] = useState(0); // px
 
-  // Keep the track snapped when page changes (and not dragging)
   useEffect(() => {
     if (draggingRef.current) return;
     setDragDX(0);
   }, [pageIndex]);
-
-  function getViewportWidth() {
-    const el = viewportRef.current;
-    const w = el?.getBoundingClientRect?.().width;
-    return w && w > 0 ? w : window.innerWidth || 360;
-  }
 
   function snapToIndex(idx) {
     const next = PAGES[clamp(idx, 0, PAGES.length - 1)];
@@ -602,9 +625,8 @@ export default function App() {
   }
 
   function onPointerDown(e) {
-    if (addOpen) return; // no swiping with modal open
+    if (addOpen) return;
 
-    // If the initial touch is on a control, don’t start swipe
     if (isInteractiveTarget(e.target)) {
       allowSwipeRef.current = false;
       return;
@@ -616,8 +638,6 @@ export default function App() {
 
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
-    lastXRef.current = e.clientX;
-    lastTRef.current = performance.now();
 
     setDragDX(0);
 
@@ -635,47 +655,39 @@ export default function App() {
     const dx = e.clientX - startXRef.current;
     const dy = e.clientY - startYRef.current;
 
-    // Decide direction once
+    // tighter intent rules: avoid accidental page flips when scrolling
     if (!movedHorizRef.current) {
       const adx = Math.abs(dx);
       const ady = Math.abs(dy);
 
-      // if user is scrolling vertically, bail out of swipe
-      if (ady > 10 && ady > adx) {
+      // if clearly vertical, abort swipe
+      if (ady > 12 && ady > adx * 1.25) {
         draggingRef.current = false;
         setDragDX(0);
         return;
       }
 
-      // require a small horizontal intent before we commit
-      if (adx > 6 && adx > ady) {
+      // require stronger horizontal commitment
+      if (adx > 12 && adx > ady * 1.1) {
         movedHorizRef.current = true;
       } else {
         return;
       }
     }
 
-    // prevent page scroll while swiping
     e.preventDefault?.();
 
-    // resistance at edges
-    const vw = getViewportWidth();
     let nextDx = dx;
 
+    // resistance at edges
     if (pageIndex === 0 && nextDx > 0) nextDx = nextDx * 0.35;
     if (pageIndex === PAGES.length - 1 && nextDx < 0) nextDx = nextDx * 0.35;
 
-    // clamp to about one screen each way
-    nextDx = clamp(nextDx, -vw * 1.05, vw * 1.05);
-
-    // track velocity helpers
-    lastXRef.current = e.clientX;
-    lastTRef.current = performance.now();
-
+    nextDx = clamp(nextDx, -viewportW * 1.05, viewportW * 1.05);
     setDragDX(nextDx);
   }
 
-  function onPointerUp(e) {
+  function onPointerUp() {
     if (!draggingRef.current) return;
     draggingRef.current = false;
 
@@ -685,20 +697,11 @@ export default function App() {
       return;
     }
 
-    const vw = getViewportWidth();
-    const dx = dragDX;
-
-    // velocity estimate (simple)
-    const dt = performance.now() - lastTRef.current;
-    const vx = dt > 0 ? (e.clientX - lastXRef.current) / dt : 0;
-
-    const threshold = vw * 0.18; // swipe distance threshold
-    const fast = Math.abs(vx) > 0.6; // quick flick
-
+    const threshold = viewportW * 0.18;
     let nextIndex = pageIndex;
 
-    if (dx < -threshold || (fast && vx < -0.6)) nextIndex = pageIndex + 1;
-    if (dx > threshold || (fast && vx > 0.6)) nextIndex = pageIndex - 1;
+    if (dragDX < -threshold) nextIndex = pageIndex + 1;
+    if (dragDX > threshold) nextIndex = pageIndex - 1;
 
     nextIndex = clamp(nextIndex, 0, PAGES.length - 1);
 
@@ -727,21 +730,21 @@ export default function App() {
     return <BetaBlocked email={user.email} />;
   }
 
-  // translate based on index + drag
-  const vw = typeof window !== "undefined" ? window.innerWidth || 360 : 360;
-  const baseTranslate = -pageIndex * vw;
+  const baseTranslate = -pageIndex * viewportW;
   const translatePx = baseTranslate + dragDX;
 
+  const pagerHeight = `calc(100dvh - ${headerHeight}px)`;
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      {/* Pager viewport */}
+      {/* Pager viewport: fixed height, no document scroll */}
       <main
         ref={viewportRef}
-        className="pt-3 overflow-hidden"
+        className="overflow-hidden"
         style={{
-          // allow vertical scroll inside content; horizontal handled by pointer
+          height: pagerHeight,
           touchAction: "pan-y",
         }}
         onPointerDown={onPointerDown}
@@ -752,7 +755,7 @@ export default function App() {
         {/* Track */}
         <div
           ref={trackRef}
-          className="flex w-full"
+          className="flex h-full"
           style={{
             transform: `translate3d(${translatePx}px, 0, 0)`,
             transition:
@@ -762,24 +765,26 @@ export default function App() {
             willChange: "transform",
           }}
         >
-          {/* HOME */}
-          <section className="w-screen shrink-0">
-            <HomeView
-              playText={playText}
-              setRows={setRows}
-              genId={genId}
-              nowTs={nowTs}
-              rows={visibleRows}
-              onOpenAddForm={() => {
-                setEditRowId(null);
-                setAddOpen(true);
-              }}
-            />
+          {/* HOME (own scroll container) */}
+          <section className="w-screen shrink-0 h-full overflow-y-auto overscroll-contain">
+            <div className="pt-3">
+              <HomeView
+                playText={playText}
+                setRows={setRows}
+                genId={genId}
+                nowTs={nowTs}
+                rows={visibleRows}
+                onOpenAddForm={() => {
+                  setEditRowId(null);
+                  setAddOpen(true);
+                }}
+              />
+            </div>
           </section>
 
-          {/* LIBRARY */}
-          <section className="w-screen shrink-0">
-            <div>
+          {/* LIBRARY (own scroll container) */}
+          <section className="w-screen shrink-0 h-full overflow-y-auto overscroll-contain">
+            <div className="pt-3">
               <SearchDock
                 SearchBox={SearchBox}
                 sortMode={sortMode}
@@ -811,36 +816,38 @@ export default function App() {
             </div>
           </section>
 
-          {/* SETTINGS (and dupes sub-view) */}
-          <section className="w-screen shrink-0">
-            {internalRoute === "dupes" ? (
-              <DuplicateScannerView
-                T={T}
-                rows={visibleRows}
-                removePhrase={removePhraseById}
-                onBack={() => {
-                  setInternalRoute("main");
-                  setPage("settings");
-                }}
-              />
-            ) : (
-              <SettingsView
-                T={T}
-                azureVoiceShortName={azureVoiceShortName}
-                setAzureVoiceShortName={setAzureVoiceShortName}
-                playText={playText}
-                fetchStarter={fetchStarter}
-                clearLibrary={clearLibrary}
-                importJsonFile={importJsonFile}
-                rows={rows}
-                onOpenDuplicateScanner={() => {
-                  setInternalRoute("dupes");
-                  setPage("settings");
-                }}
-                onOpenChangeLog={() => setShowChangeLog(true)}
-                onOpenUserGuide={() => setShowUserGuide(true)}
-              />
-            )}
+          {/* SETTINGS (own scroll container) */}
+          <section className="w-screen shrink-0 h-full overflow-y-auto overscroll-contain">
+            <div className="pt-3">
+              {internalRoute === "dupes" ? (
+                <DuplicateScannerView
+                  T={T}
+                  rows={visibleRows}
+                  removePhrase={removePhraseById}
+                  onBack={() => {
+                    setInternalRoute("main");
+                    setPage("settings");
+                  }}
+                />
+              ) : (
+                <SettingsView
+                  T={T}
+                  azureVoiceShortName={azureVoiceShortName}
+                  setAzureVoiceShortName={setAzureVoiceShortName}
+                  playText={playText}
+                  fetchStarter={fetchStarter}
+                  clearLibrary={clearLibrary}
+                  importJsonFile={importJsonFile}
+                  rows={rows}
+                  onOpenDuplicateScanner={() => {
+                    setInternalRoute("dupes");
+                    setPage("settings");
+                  }}
+                  onOpenChangeLog={() => setShowChangeLog(true)}
+                  onOpenUserGuide={() => setShowUserGuide(true)}
+                />
+              )}
+            </div>
           </section>
         </div>
       </main>
