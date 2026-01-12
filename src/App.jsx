@@ -4,8 +4,8 @@ import React, {
   useMemo,
   useRef,
   useState,
-  forwardRef,
   memo,
+  forwardRef,
   startTransition,
   useImperativeHandle,
   useSyncExternalStore,
@@ -44,8 +44,7 @@ const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
 };
 
-const PAGE_ORDER = ["home", "library", "settings"];
-const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const SWIPE_PAGES = ["home", "library", "settings"]; // only these are swipe-navigable
 
 /* ============================================================================
    STRINGS
@@ -99,7 +98,7 @@ function normalizeRag(icon = "") {
 }
 
 /**
- * Must match src/stores/phraseStore.js identity rule:
+ * ✅ Must match src/stores/phraseStore.js identity rule:
  * Lithuanian-only, diacritics stripped, punctuation removed.
  */
 function makeLtKey(r) {
@@ -127,7 +126,7 @@ const SearchBox = memo(
     }, []);
 
     return (
-      <div className="relative flex-1" data-no-swipe>
+      <div className="relative flex-1">
         <input
           id="main-search"
           ref={inputRef}
@@ -244,6 +243,7 @@ export default function App() {
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
 
+  // ✅ store-controlled
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
@@ -306,9 +306,7 @@ export default function App() {
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
         "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-          ? r.Sheet
-          : "Phrases",
+        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
         _id: r._id || genId(),
         _ts: r._ts || nowTs(),
         _qstat:
@@ -334,9 +332,7 @@ export default function App() {
           Usage: r.Usage?.trim() || "",
           Notes: r.Notes?.trim() || "",
           "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-            ? r.Sheet
-            : "Phrases",
+          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet) ? r.Sheet : "Phrases",
           _id: r._id || genId(),
           _ts: r._ts || nowTs(),
           _qstat:
@@ -434,8 +430,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION)
-      setShowWhatsNew(true);
+    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION) setShowWhatsNew(true);
   }, []);
 
   function goToPage(next) {
@@ -445,6 +440,114 @@ export default function App() {
     setShowUserGuide(false);
     setShowWhatsNew(false);
     setPage(next);
+  }
+
+  /* ============================================================================
+     SWIPE NAV (SAFE: NO CONDITIONAL HOOKS)
+     ========================================================================== */
+  const swipeRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    pointerId: null,
+    startT: 0,
+    locked: null, // null | "h" | "v"
+  });
+
+  const canSwipe = useMemo(() => {
+    // Only allow swipe between main tabs; never while modals open.
+    if (addOpen || showChangeLog || showUserGuide || showWhatsNew) return false;
+    if (!SWIPE_PAGES.includes(page)) return false;
+    return true;
+  }, [addOpen, showChangeLog, showUserGuide, showWhatsNew, page]);
+
+  const pageIndex = useMemo(() => {
+    const i = SWIPE_PAGES.indexOf(page);
+    return i === -1 ? 0 : i;
+  }, [page]);
+
+  function swipeToIndex(nextIdx) {
+    const clamped = Math.max(0, Math.min(SWIPE_PAGES.length - 1, nextIdx));
+    const nextPage = SWIPE_PAGES[clamped];
+    if (nextPage && nextPage !== page) goToPage(nextPage);
+  }
+
+  function isTextInputTarget(target) {
+    if (!target) return false;
+    const el = target.closest?.("input, textarea, select, [contenteditable='true']");
+    return !!el;
+  }
+
+  function onPointerDown(e) {
+    if (!canSwipe) return;
+    if (e.pointerType === "mouse") return; // swipe is touch/pen only
+    if (isTextInputTarget(e.target)) return;
+
+    swipeRef.current.active = true;
+    swipeRef.current.pointerId = e.pointerId;
+    swipeRef.current.startX = e.clientX;
+    swipeRef.current.startY = e.clientY;
+    swipeRef.current.lastX = e.clientX;
+    swipeRef.current.lastY = e.clientY;
+    swipeRef.current.startT = Date.now();
+    swipeRef.current.locked = null;
+  }
+
+  function onPointerMove(e) {
+    if (!swipeRef.current.active) return;
+    if (e.pointerId !== swipeRef.current.pointerId) return;
+
+    swipeRef.current.lastX = e.clientX;
+    swipeRef.current.lastY = e.clientY;
+
+    const dx = e.clientX - swipeRef.current.startX;
+    const dy = e.clientY - swipeRef.current.startY;
+
+    // lock direction after small movement
+    if (!swipeRef.current.locked) {
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      if (adx < 6 && ady < 6) return;
+      swipeRef.current.locked = adx > ady ? "h" : "v";
+    }
+
+    // If horizontal swipe, prevent browser back/forward + weird selection
+    if (swipeRef.current.locked === "h") {
+      e.preventDefault?.();
+    }
+  }
+
+  function onPointerUpOrCancel(e) {
+    if (!swipeRef.current.active) return;
+    if (e.pointerId !== swipeRef.current.pointerId) return;
+
+    const dx = swipeRef.current.lastX - swipeRef.current.startX;
+    const dy = swipeRef.current.lastY - swipeRef.current.startY;
+
+    const adx = Math.abs(dx);
+    const ady = Math.abs(dy);
+
+    const elapsed = Date.now() - swipeRef.current.startT;
+
+    // reset first
+    swipeRef.current.active = false;
+    swipeRef.current.pointerId = null;
+    const locked = swipeRef.current.locked;
+    swipeRef.current.locked = null;
+
+    if (!canSwipe) return;
+
+    // require a deliberate horizontal swipe
+    if (locked !== "h") return;
+    if (ady > 40) return; // too vertical
+    if (adx < 55) return; // not far enough
+    if (elapsed > 1200) return; // too slow; treat as scroll/drag
+
+    // dx < 0 means swipe left (next page)
+    if (dx < 0) swipeToIndex(pageIndex + 1);
+    else swipeToIndex(pageIndex - 1);
   }
 
   /* MODAL SCROLL LOCK */
@@ -528,8 +631,13 @@ export default function App() {
   }, [addOpen, authLoading]);
 
   /* RENDER GATE (no early returns before hooks) */
-  if (authLoading && !user) return <div className="min-h-[100dvh] bg-zinc-950" />;
-  if (!user) return <AuthGate />;
+  if (authLoading && !user) {
+    return <div className="min-h-[100dvh] bg-zinc-950" />;
+  }
+
+  if (!user) {
+    return <AuthGate />;
+  }
 
   if (!allowlistChecked) {
     return (
@@ -539,242 +647,88 @@ export default function App() {
     );
   }
 
-  if (!isAllowlisted) return <BetaBlocked email={user.email} />;
-
-  /* ============================================================================
-     SWIPE NAV (safe: only for home/library/settings; dupes uses normal render)
-     ========================================================================== */
-  const isSwipePage = PAGE_ORDER.includes(page);
-
-  const [activeIndex, setActiveIndex] = useState(() => {
-    const i = PAGE_ORDER.indexOf(page);
-    return i === -1 ? 0 : i;
-  });
-
-  useEffect(() => {
-    const i = PAGE_ORDER.indexOf(page);
-    if (i !== -1) setActiveIndex(i);
-  }, [page]);
-
-  const trackRef = useRef(null);
-  const dragRef = useRef({
-    dragging: false,
-    startX: 0,
-    startY: 0,
-    dx: 0,
-    lock: null, // "x" | "y" | null
-    pointerId: null,
-  });
-
-  const [dragX, setDragX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const getTrackWidth = () => {
-    const el = trackRef.current;
-    const w = el?.getBoundingClientRect?.().width || window.innerWidth || 360;
-    return Math.max(1, w);
-  };
-
-  const shouldIgnoreSwipeStart = (target) => {
-    if (!target) return false;
-    const tag = String(target.tagName || "").toLowerCase();
-    if (["input", "textarea", "select", "button"].includes(tag)) return true;
-    if (target.isContentEditable) return true;
-    if (target.closest?.("[data-no-swipe]")) return true;
-    return false;
-  };
-
-  const onPointerDown = (e) => {
-    if (!isSwipePage) return;
-    if (addOpen) return;
-    if (shouldIgnoreSwipeStart(e.target)) return;
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-
-    const st = dragRef.current;
-    st.dragging = true;
-    st.startX = e.clientX;
-    st.startY = e.clientY;
-    st.dx = 0;
-    st.lock = null;
-    st.pointerId = e.pointerId;
-
-    setIsDragging(true);
-    setDragX(0);
-
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
-  };
-
-  const onPointerMove = (e) => {
-    const st = dragRef.current;
-    if (!st.dragging) return;
-    if (st.pointerId != null && e.pointerId !== st.pointerId) return;
-
-    const dx = e.clientX - st.startX;
-    const dy = e.clientY - st.startY;
-
-    if (!st.lock) {
-      const ax = Math.abs(dx);
-      const ay = Math.abs(dy);
-      if (ax < 6 && ay < 6) return;
-      st.lock = ax > ay + 6 ? "x" : "y";
-    }
-
-    if (st.lock !== "x") return;
-
-    // Only prevent default once we know it’s horizontal
-    e.preventDefault();
-
-    let nextDx = dx;
-    if (activeIndex === 0 && dx > 0) nextDx = dx * 0.35;
-    if (activeIndex === PAGE_ORDER.length - 1 && dx < 0) nextDx = dx * 0.35;
-
-    st.dx = nextDx;
-    setDragX(nextDx);
-  };
-
-  const finishSwipe = (e) => {
-    const st = dragRef.current;
-    if (!st.dragging) return;
-    if (st.pointerId != null && e.pointerId !== st.pointerId) return;
-
-    const dx = st.dx || 0;
-    const w = getTrackWidth();
-
-    st.dragging = false;
-    st.pointerId = null;
-
-    setIsDragging(false);
-    setDragX(0);
-
-    if (st.lock !== "x") {
-      st.lock = null;
-      return;
-    }
-    st.lock = null;
-
-    const threshold = Math.min(120, w * 0.22);
-    let nextIndex = activeIndex;
-
-    if (dx <= -threshold) nextIndex = clamp(activeIndex + 1, 0, PAGE_ORDER.length - 1);
-    else if (dx >= threshold) nextIndex = clamp(activeIndex - 1, 0, PAGE_ORDER.length - 1);
-
-    if (nextIndex !== activeIndex) {
-      setActiveIndex(nextIndex);
-      goToPage(PAGE_ORDER[nextIndex]);
-    }
-  };
-
-  const onPointerUp = (e) => finishSwipe(e);
-  const onPointerCancel = (e) => finishSwipe(e);
-
-  const trackStyle = {
-    width: `${PAGE_ORDER.length * 100}%`,
-    transform: `translateX(calc(${-activeIndex * 100}% + ${dragX}px))`,
-    transition: isDragging ? "none" : "transform 180ms ease-out",
-  };
-
-  const panelStyle = { width: `${100 / PAGE_ORDER.length}%` };
+  if (!isAllowlisted) {
+    return <BetaBlocked email={user.email} />;
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      {/* If we're on dupes, render it normally (no swipe track) */}
-      {page === "dupes" ? (
-        <main className="pt-3">
+      {/* Swipe wrapper (touch only). Allow vertical scroll; we only intercept locked horizontal swipes. */}
+      <main
+        className="pt-3 touch-pan-y"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUpOrCancel}
+        onPointerCancel={onPointerUpOrCancel}
+      >
+        {page === "library" && (
+          <SearchDock
+            SearchBox={SearchBox}
+            sortMode={sortMode}
+            setSortMode={setSortMode}
+            placeholder={T.search}
+            T={T}
+            offsetTop={headerHeight}
+            page={page}
+            setPage={goToPage}
+          />
+        )}
+
+        {page === "library" ? (
+          <LibraryView
+            T={T}
+            rows={visibleRows}
+            setRows={setRows}
+            normalizeRag={normalizeRag}
+            sortMode={sortMode}
+            playText={playText}
+            removePhrase={removePhraseById}
+            onEditRow={(id) => {
+              setEditRowId(id);
+              setAddOpen(true);
+            }}
+            onOpenAddForm={() => {
+              setEditRowId(null);
+              setAddOpen(true);
+            }}
+          />
+        ) : page === "settings" ? (
+          <SettingsView
+            T={T}
+            azureVoiceShortName={azureVoiceShortName}
+            setAzureVoiceShortName={setAzureVoiceShortName}
+            playText={playText}
+            fetchStarter={fetchStarter}
+            clearLibrary={clearLibrary}
+            importJsonFile={importJsonFile}
+            rows={rows}
+            onOpenDuplicateScanner={() => goToPage("dupes")}
+            onOpenChangeLog={() => setShowChangeLog(true)}
+            onOpenUserGuide={() => setShowUserGuide(true)}
+          />
+        ) : page === "dupes" ? (
           <DuplicateScannerView
             T={T}
             rows={visibleRows}
             removePhrase={removePhraseById}
             onBack={() => goToPage("settings")}
           />
-        </main>
-      ) : (
-        <main
-          className="pt-3 overflow-hidden"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerCancel}
-          style={{ touchAction: isDragging ? "none" : "pan-y" }}
-        >
-          <div ref={trackRef} className="flex" style={trackStyle}>
-            {/* HOME */}
-            <section className="shrink-0" style={panelStyle}>
-              <div data-no-swipe>
-                <HomeView
-                  playText={playText}
-                  setRows={setRows}
-                  genId={genId}
-                  nowTs={nowTs}
-                  rows={visibleRows}
-                  onOpenAddForm={() => {
-                    setEditRowId(null);
-                    setAddOpen(true);
-                  }}
-                />
-              </div>
-            </section>
-
-            {/* LIBRARY */}
-            <section className="shrink-0" style={panelStyle}>
-              <div data-no-swipe>
-                <SearchDock
-                  SearchBox={SearchBox}
-                  sortMode={sortMode}
-                  setSortMode={setSortMode}
-                  placeholder={T.search}
-                  T={T}
-                  offsetTop={headerHeight}
-                  page={page}
-                  setPage={goToPage}
-                />
-
-                <LibraryView
-                  T={T}
-                  rows={visibleRows}
-                  setRows={setRows}
-                  normalizeRag={normalizeRag}
-                  sortMode={sortMode}
-                  playText={playText}
-                  removePhrase={removePhraseById}
-                  onEditRow={(id) => {
-                    setEditRowId(id);
-                    setAddOpen(true);
-                  }}
-                  onOpenAddForm={() => {
-                    setEditRowId(null);
-                    setAddOpen(true);
-                  }}
-                />
-              </div>
-            </section>
-
-            {/* SETTINGS */}
-            <section className="shrink-0" style={panelStyle}>
-              <div data-no-swipe>
-                <SettingsView
-                  T={T}
-                  azureVoiceShortName={azureVoiceShortName}
-                  setAzureVoiceShortName={setAzureVoiceShortName}
-                  playText={playText}
-                  fetchStarter={fetchStarter}
-                  clearLibrary={clearLibrary}
-                  importJsonFile={importJsonFile}
-                  rows={rows}
-                  onOpenDuplicateScanner={() => goToPage("dupes")}
-                  onOpenChangeLog={() => setShowChangeLog(true)}
-                  onOpenUserGuide={() => setShowUserGuide(true)}
-                />
-              </div>
-            </section>
-          </div>
-        </main>
-      )}
+        ) : (
+          <HomeView
+            playText={playText}
+            setRows={setRows}
+            genId={genId}
+            nowTs={nowTs}
+            rows={visibleRows}
+            onOpenAddForm={() => {
+              setEditRowId(null);
+              setAddOpen(true);
+            }}
+          />
+        )}
+      </main>
 
       {addOpen && (
         <div
@@ -794,9 +748,7 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
-                <h3 className="text-lg font-semibold">
-                  {isEditing ? T.edit : T.addEntry}
-                </h3>
+                <h3 className="text-lg font-semibold">{isEditing ? T.edit : T.addEntry}</h3>
               </div>
 
               <div className="p-5 pt-4 flex-1 min-h-0">
