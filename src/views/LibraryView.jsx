@@ -1,10 +1,5 @@
 // src/views/LibraryView.jsx
-import React, {
-  useMemo,
-  useState,
-  useSyncExternalStore,
-  useEffect,
-} from "react";
+import React, { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
 import { searchStore } from "../searchStore";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
 
@@ -31,9 +26,7 @@ export default function LibraryView({
 
   /* SEARCH OVERRIDES CATEGORY */
   useEffect(() => {
-    if (qNorm && category !== "ALL") {
-      setCategory("ALL");
-    }
+    if (qNorm && category !== "ALL") setCategory("ALL");
   }, [qNorm, category]);
 
   /* FILTER + SORT */
@@ -47,65 +40,120 @@ export default function LibraryView({
         return en.includes(qNorm) || lt.includes(qNorm);
       });
     } else if (category !== "ALL") {
-      base = base.filter(
-        (r) => (r.Category || DEFAULT_CATEGORY) === category
-      );
+      base = base.filter((r) => (r.Category || DEFAULT_CATEGORY) === category);
     }
 
-    if (sortMode === "Newest") {
-      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
-    }
-    if (sortMode === "Oldest") {
-      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
-    }
+    if (sortMode === "Newest") return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+    if (sortMode === "Oldest") return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
 
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...base].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
-        (order[normalizeRag(b["RAG Icon"])] ?? 1)
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
   }, [rows, qNorm, category, sortMode, normalizeRag]);
 
-  /* AUDIO */
+  /* AUDIO (tap = normal, long press = slow, BUT cancel if finger moves) */
+  function blurActiveInput() {
+    const ae = document.activeElement;
+    if (!ae) return;
+    const tag = (ae.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+      try {
+        ae.blur();
+      } catch {}
+    }
+  }
+
   function pressHandlers(text) {
-    let timer = null;
-    let firedSlow = false;
-    let pressed = false;
+    // All state per-press lives in refs so rerenders don't break timing
+    const state = {
+      timer: null,
+      firedSlow: false,
+      pressed: false,
+      moved: false,
+      startX: 0,
+      startY: 0,
+    };
+
+    const cancelAll = () => {
+      state.pressed = false;
+      if (state.timer) clearTimeout(state.timer);
+      state.timer = null;
+    };
 
     const start = (e) => {
+      // Prevent text selection + prevent focus changes on the button itself
       e.preventDefault();
       e.stopPropagation();
-      pressed = true;
-      firedSlow = false;
-      timer = setTimeout(() => {
-        if (!pressed) return;
-        firedSlow = true;
+
+      if (!text) return;
+
+      blurActiveInput();
+
+      state.pressed = true;
+      state.firedSlow = false;
+      state.moved = false;
+
+      // PointerEvent preferred; fall back to touches if needed
+      const x = e?.clientX ?? e?.touches?.[0]?.clientX ?? 0;
+      const y = e?.clientY ?? e?.touches?.[0]?.clientY ?? 0;
+      state.startX = x;
+      state.startY = y;
+
+      state.timer = setTimeout(() => {
+        if (!state.pressed || state.moved) return;
+        state.firedSlow = true;
         playText(text, { slow: true });
       }, 550);
+    };
+
+    const move = (e) => {
+      if (!state.pressed) return;
+
+      const x = e?.clientX ?? e?.touches?.[0]?.clientX ?? 0;
+      const y = e?.clientY ?? e?.touches?.[0]?.clientY ?? 0;
+
+      const dx = x - state.startX;
+      const dy = y - state.startY;
+
+      // If the finger moves, treat it as swipe/scroll and cancel play
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        state.moved = true;
+        if (state.timer) clearTimeout(state.timer);
+        state.timer = null;
+      }
     };
 
     const finish = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      pressed = false;
-      if (timer) clearTimeout(timer);
-      timer = null;
-      if (!firedSlow) playText(text);
+
+      if (!state.pressed) return;
+
+      state.pressed = false;
+      if (state.timer) clearTimeout(state.timer);
+      state.timer = null;
+
+      // If user moved finger, do NOTHING (swipe/scroll)
+      if (state.moved) return;
+
+      // If slow already fired, do not also fire normal
+      if (!state.firedSlow) playText(text);
     };
 
-    const cancel = () => {
-      pressed = false;
-      if (timer) clearTimeout(timer);
-      timer = null;
-    };
+    const cancel = () => cancelAll();
 
     return {
       onPointerDown: start,
+      onPointerMove: move,
       onPointerUp: finish,
       onPointerLeave: cancel,
       onPointerCancel: cancel,
+      // Extra safety for long-press menu
       onContextMenu: (e) => e.preventDefault(),
+      // Mobile Safari callout suppression
+      onTouchStart: (e) => e.preventDefault(),
     };
   }
 
@@ -141,11 +189,7 @@ export default function LibraryView({
           </select>
         </div>
 
-        {qNorm && (
-          <div className="text-xs text-zinc-500">
-            Search active – showing all categories
-          </div>
-        )}
+        {qNorm && <div className="text-xs text-zinc-500">Search active – showing all categories</div>}
       </div>
 
       <div className="mb-3 text-sm text-zinc-400">
@@ -170,9 +214,7 @@ export default function LibraryView({
                   onClick={() =>
                     setExpanded((prev) => {
                       const next = new Set(prev);
-                      next.has(r._id)
-                        ? next.delete(r._id)
-                        : next.add(r._id);
+                      next.has(r._id) ? next.delete(r._id) : next.add(r._id);
                       return next;
                     })
                   }
@@ -209,9 +251,7 @@ export default function LibraryView({
                       {r.Lithuanian || "—"}
                     </div>
 
-                    <div className="text-sm text-zinc-400 mt-0.5 break-words">
-                      {r.English || "—"}
-                    </div>
+                    <div className="text-sm text-zinc-400 mt-0.5 break-words">{r.English || "—"}</div>
 
                     {!isOpen && r.Phonetic && (
                       <div className="text-xs text-zinc-500 italic mt-0.5 break-words">
@@ -224,20 +264,14 @@ export default function LibraryView({
                 {/* EXPANDED CONTENT */}
                 {isOpen && (
                   <div className="mt-5 border-t border-zinc-800 pt-4 space-y-6 text-sm text-zinc-300">
-                    {r.Phonetic && (
-                      <div className="italic text-zinc-400">
-                        {r.Phonetic}
-                      </div>
-                    )}
+                    {r.Phonetic && <div className="italic text-zinc-400">{r.Phonetic}</div>}
 
                     {r.Usage && (
                       <div className="leading-relaxed">
                         <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
                           {T.usage}
                         </div>
-                        <div className="leading-relaxed">
-                          {r.Usage}
-                        </div>
+                        <div className="leading-relaxed">{r.Usage}</div>
                       </div>
                     )}
 
@@ -247,18 +281,13 @@ export default function LibraryView({
                           {T.notes}
                         </div>
 
-                        <div className="whitespace-pre-line leading-[1.75] space-y-4">
-                          {r.Notes}
-                        </div>
+                        <div className="whitespace-pre-line leading-[1.75] space-y-4">{r.Notes}</div>
                       </div>
                     )}
 
                     {r.Category && (
                       <div className="text-xs text-zinc-500 pt-2">
-                        {T.category}:{" "}
-                        <span className="text-zinc-300">
-                          {r.Category}
-                        </span>
+                        {T.category}: <span className="text-zinc-300">{r.Category}</span>
                       </div>
                     )}
                   </div>
@@ -267,22 +296,30 @@ export default function LibraryView({
                 {/* ACTIONS */}
                 <div className="flex justify-center gap-4 mt-5">
                   <button
-                    className="bg-emerald-500 text-black rounded-full px-5 py-2 text-[18px]"
+                    type="button"
+                    className="bg-emerald-500 text-black rounded-full px-5 py-2 text-[18px] select-none"
+                    style={{
+                      WebkitUserSelect: "none",
+                      userSelect: "none",
+                      WebkitTouchCallout: "none",
+                      touchAction: "manipulation",
+                    }}
                     {...pressHandlers(r.Lithuanian || "")}
                   >
                     ▶
                   </button>
+
                   <button
                     className="bg-zinc-800 text-zinc-200 rounded-full px-4 py-2 text-sm"
                     onClick={() => onEditRow(r._id)}
                   >
                     Edit
                   </button>
+
                   <button
                     className="bg-red-500 text-white rounded-full px-4 py-2 text-sm"
                     onClick={() => {
-                      if (window.confirm(T.confirm))
-                        removePhrase(r._id);
+                      if (window.confirm(T.confirm)) removePhrase(r._id);
                     }}
                   >
                     Delete
