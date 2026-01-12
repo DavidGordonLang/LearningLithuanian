@@ -34,7 +34,7 @@ import { supabase } from "./supabaseClient";
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
-const APP_VERSION = "1.4.1-beta";
+const APP_VERSION = "1.5.0-beta";
 
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
