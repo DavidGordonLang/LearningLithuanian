@@ -4,11 +4,12 @@ import React, {
   useMemo,
   useRef,
   useState,
+  startTransition,
   forwardRef,
   memo,
-  startTransition,
   useImperativeHandle,
   useSyncExternalStore,
+  useLayoutEffect,
 } from "react";
 
 import Header from "./components/Header";
@@ -43,8 +44,6 @@ const LSK_LAST_SEEN_VERSION = "lt_last_seen_version";
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
 };
-
-const PAGES = ["home", "library", "settings"];
 
 /* ============================================================================
    STRINGS
@@ -110,18 +109,6 @@ function makeLtKey(r) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
-function clamp(n, a, b) {
-  return Math.max(a, Math.min(b, n));
-}
-
-function isInteractiveTarget(target) {
-  if (!target) return false;
-  const el = target.closest?.(
-    "input, textarea, select, button, a, [role='button'], [data-no-swipe='true']"
-  );
-  return !!el;
-}
-
 /* ============================================================================
    SEARCH BOX
    ========================================================================== */
@@ -177,6 +164,209 @@ const SearchBox = memo(
     );
   })
 );
+
+/* ============================================================================
+   SWIPE PAGER (keeps header fixed, each page scrolls independently)
+   ========================================================================== */
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function isInteractiveEl(el) {
+  if (!el) return false;
+  const tag = (el.tagName || "").toLowerCase();
+  if (
+    tag === "input" ||
+    tag === "textarea" ||
+    tag === "select" ||
+    tag === "button" ||
+    tag === "a" ||
+    tag === "label"
+  )
+    return true;
+  if (el.closest?.("button, a, input, textarea, select, label")) return true;
+  return false;
+}
+
+function SwipePager({ index, onIndexChange, children }) {
+  const trackRef = useRef(null);
+
+  const drag = useRef({
+    active: false,
+    locked: false, // horizontal lock
+    startX: 0,
+    startY: 0,
+    dx: 0,
+    width: 1,
+    startIndex: 0,
+    raf: 0,
+  });
+
+  const [dragX, setDragX] = useState(0);
+
+  const pageCount = React.Children.count(children);
+
+  const applyTransform = (x) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.style.transform = `translate3d(${x}px, 0, 0)`;
+  };
+
+  const snapToIndex = (nextIndex) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const w = drag.current.width || 1;
+    const x = -nextIndex * w;
+    el.style.transition = "transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1)";
+    applyTransform(x);
+    window.setTimeout(() => {
+      if (trackRef.current) trackRef.current.style.transition = "none";
+    }, 260);
+  };
+
+  // keep track aligned when index changes (tap on pills)
+  useEffect(() => {
+    const w = drag.current.width || 1;
+    snapToIndex(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const host = trackRef.current?.parentElement;
+      const w = host?.getBoundingClientRect().width || window.innerWidth || 1;
+      drag.current.width = w;
+      // re-snap to current index after resize
+      const x = -index * w;
+      applyTransform(x);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, [index]);
+
+  useEffect(() => {
+    const host = trackRef.current?.parentElement;
+    if (!host) return;
+
+    const onTouchStart = (e) => {
+      if (!e.touches || e.touches.length !== 1) return;
+
+      // If user starts on an interactive element, let it behave normally.
+      const target = e.target;
+      if (isInteractiveEl(target)) return;
+
+      const t = e.touches[0];
+      drag.current.active = true;
+      drag.current.locked = false;
+      drag.current.startX = t.clientX;
+      drag.current.startY = t.clientY;
+      drag.current.dx = 0;
+      drag.current.startIndex = index;
+      setDragX(0);
+    };
+
+    const onTouchMove = (e) => {
+      if (!drag.current.active || !e.touches || e.touches.length !== 1) return;
+
+      const t = e.touches[0];
+      const dx = t.clientX - drag.current.startX;
+      const dy = t.clientY - drag.current.startY;
+
+      // decide if horizontal swipe
+      if (!drag.current.locked) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+
+        // only lock horizontal if clearly more horizontal than vertical
+        if (Math.abs(dx) > Math.abs(dy) * 1.15) {
+          drag.current.locked = true;
+        } else {
+          // vertical scroll gesture; abandon swipe
+          drag.current.active = false;
+          drag.current.locked = false;
+          setDragX(0);
+          return;
+        }
+      }
+
+      // now we are in horizontal swipe mode → prevent page from scrolling
+      e.preventDefault();
+
+      drag.current.dx = dx;
+      // edge resistance
+      const atFirst = index === 0 && dx > 0;
+      const atLast = index === pageCount - 1 && dx < 0;
+      const resisted = atFirst || atLast ? dx * 0.35 : dx;
+
+      const w = drag.current.width || 1;
+      const baseX = -index * w;
+      const x = baseX + resisted;
+
+      if (drag.current.raf) cancelAnimationFrame(drag.current.raf);
+      drag.current.raf = requestAnimationFrame(() => applyTransform(x));
+      setDragX(resisted);
+    };
+
+    const onTouchEnd = () => {
+      if (!drag.current.active) return;
+
+      const w = drag.current.width || 1;
+      const dx = drag.current.dx || 0;
+
+      drag.current.active = false;
+
+      // threshold + velocity-lite
+      const threshold = Math.max(50, w * 0.18);
+
+      let next = index;
+      if (dx <= -threshold) next = index + 1;
+      else if (dx >= threshold) next = index - 1;
+
+      next = clamp(next, 0, pageCount - 1);
+
+      // snap back/forward
+      onIndexChange(next);
+      setDragX(0);
+    };
+
+    // IMPORTANT: passive:false so preventDefault works
+    host.addEventListener("touchstart", onTouchStart, { passive: true });
+    host.addEventListener("touchmove", onTouchMove, { passive: false });
+    host.addEventListener("touchend", onTouchEnd, { passive: true });
+    host.addEventListener("touchcancel", onTouchEnd, { passive: true });
+
+    return () => {
+      host.removeEventListener("touchstart", onTouchStart);
+      host.removeEventListener("touchmove", onTouchMove);
+      host.removeEventListener("touchend", onTouchEnd);
+      host.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [index, onIndexChange, pageCount, dragX]);
+
+  return (
+    <div className="h-full w-full overflow-hidden touch-pan-y">
+      <div
+        ref={trackRef}
+        className="h-full flex"
+        style={{
+          width: `${pageCount * 100}%`,
+          transform: `translate3d(${-index * (drag.current.width || 1)}px,0,0)`,
+          transition: "none",
+        }}
+      >
+        {React.Children.map(children, (child) => (
+          <div className="h-full w-full shrink-0 overflow-y-auto overscroll-contain">
+            {child}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ============================================================================
    MAIN APP
@@ -236,18 +426,15 @@ export default function App() {
   }, [user?.email]);
 
   /* PAGE */
-  const [page, setPage] = useState(() => {
-    const raw = localStorage.getItem(LSK_PAGE) || "home";
-    return PAGES.includes(raw) ? raw : "home";
-  });
+  const [page, setPage] = useState(
+    () => localStorage.getItem(LSK_PAGE) || "home"
+  );
   useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
 
-  const pageIndex = useMemo(() => {
-    const idx = PAGES.indexOf(page);
-    return idx === -1 ? 0 : idx;
-  }, [page]);
+  // Only these are swipeable tabs:
+  const swipeTabs = ["home", "library", "settings"];
+  const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
 
-  /* HEADER HEIGHT */
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -261,40 +448,6 @@ export default function App() {
     return () => {
       window.removeEventListener("resize", measure);
       window.removeEventListener("orientationchange", measure);
-    };
-  }, []);
-
-  /* VIEWPORT WIDTH (for correct translate) */
-  const viewportRef = useRef(null);
-  const [viewportW, setViewportW] = useState(
-    typeof window !== "undefined" ? window.innerWidth || 360 : 360
-  );
-
-  useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
-
-    const update = () => {
-      const w = el.getBoundingClientRect().width;
-      if (w && w > 0) setViewportW(w);
-    };
-
-    update();
-
-    // ResizeObserver if available (best)
-    let ro = null;
-    if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(() => update());
-      ro.observe(el);
-    } else {
-      window.addEventListener("resize", update);
-      window.addEventListener("orientationchange", update);
-    }
-
-    return () => {
-      if (ro) ro.disconnect();
-      window.removeEventListener("resize", update);
-      window.removeEventListener("orientationchange", update);
     };
   }, []);
 
@@ -501,27 +654,44 @@ export default function App() {
       setShowWhatsNew(true);
   }, []);
 
-  // internalRoute keeps "dupes" as a settings sub-view without becoming a swipe-page
-  const [internalRoute, setInternalRoute] = useState("main"); // "main" | "dupes"
-
   function goToPage(next) {
     setAddOpen(false);
     setEditRowId(null);
     setShowChangeLog(false);
     setShowUserGuide(false);
     setShowWhatsNew(false);
-
-    if (next === "dupes") {
-      setInternalRoute("dupes");
-      setPage("settings");
-      return;
-    }
-
-    setInternalRoute("main");
-    if (PAGES.includes(next)) setPage(next);
+    setPage(next);
   }
 
-  /* MODAL SCROLL LOCK */
+  // Lock BODY scrolling so only the active panel scrolls (header stays visible)
+  useEffect(() => {
+    // only lock once user is inside the app shell
+    if (!user) return;
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    const prev = {
+      bodyOverflow: body.style.overflow,
+      bodyHeight: body.style.height,
+      htmlOverflow: html.style.overflow,
+      htmlHeight: html.style.height,
+    };
+
+    body.style.overflow = "hidden";
+    body.style.height = "100%";
+    html.style.overflow = "hidden";
+    html.style.height = "100%";
+
+    return () => {
+      body.style.overflow = prev.bodyOverflow;
+      body.style.height = prev.bodyHeight;
+      html.style.overflow = prev.htmlOverflow;
+      html.style.height = prev.htmlHeight;
+    };
+  }, [user]);
+
+  /* MODAL SCROLL LOCK (unchanged) */
   useEffect(() => {
     if (!addOpen || authLoading) return;
 
@@ -601,114 +771,6 @@ export default function App() {
     };
   }, [addOpen, authLoading]);
 
-  /* ============================================================================
-     SWIPE PAGER (fixed-height viewport + per-page scroll)
-     ========================================================================== */
-  const trackRef = useRef(null);
-
-  const draggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const allowSwipeRef = useRef(true);
-  const movedHorizRef = useRef(false);
-
-  const [dragDX, setDragDX] = useState(0); // px
-
-  useEffect(() => {
-    if (draggingRef.current) return;
-    setDragDX(0);
-  }, [pageIndex]);
-
-  function snapToIndex(idx) {
-    const next = PAGES[clamp(idx, 0, PAGES.length - 1)];
-    if (next && next !== page) setPage(next);
-  }
-
-  function onPointerDown(e) {
-    if (addOpen) return;
-
-    if (isInteractiveTarget(e.target)) {
-      allowSwipeRef.current = false;
-      return;
-    }
-
-    allowSwipeRef.current = true;
-    draggingRef.current = true;
-    movedHorizRef.current = false;
-
-    startXRef.current = e.clientX;
-    startYRef.current = e.clientY;
-
-    setDragDX(0);
-
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    } catch {
-      // ignore
-    }
-  }
-
-  function onPointerMove(e) {
-    if (!draggingRef.current) return;
-    if (!allowSwipeRef.current) return;
-
-    const dx = e.clientX - startXRef.current;
-    const dy = e.clientY - startYRef.current;
-
-    // tighter intent rules: avoid accidental page flips when scrolling
-    if (!movedHorizRef.current) {
-      const adx = Math.abs(dx);
-      const ady = Math.abs(dy);
-
-      // if clearly vertical, abort swipe
-      if (ady > 12 && ady > adx * 1.25) {
-        draggingRef.current = false;
-        setDragDX(0);
-        return;
-      }
-
-      // require stronger horizontal commitment
-      if (adx > 12 && adx > ady * 1.1) {
-        movedHorizRef.current = true;
-      } else {
-        return;
-      }
-    }
-
-    e.preventDefault?.();
-
-    let nextDx = dx;
-
-    // resistance at edges
-    if (pageIndex === 0 && nextDx > 0) nextDx = nextDx * 0.35;
-    if (pageIndex === PAGES.length - 1 && nextDx < 0) nextDx = nextDx * 0.35;
-
-    nextDx = clamp(nextDx, -viewportW * 1.05, viewportW * 1.05);
-    setDragDX(nextDx);
-  }
-
-  function onPointerUp() {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-
-    if (!allowSwipeRef.current) {
-      allowSwipeRef.current = true;
-      setDragDX(0);
-      return;
-    }
-
-    const threshold = viewportW * 0.18;
-    let nextIndex = pageIndex;
-
-    if (dragDX < -threshold) nextIndex = pageIndex + 1;
-    if (dragDX > threshold) nextIndex = pageIndex - 1;
-
-    nextIndex = clamp(nextIndex, 0, PAGES.length - 1);
-
-    setDragDX(0);
-    snapToIndex(nextIndex);
-  }
-
   /* RENDER GATE (no early returns before hooks) */
   if (authLoading && !user) {
     return <div className="min-h-[100dvh] bg-zinc-950" />;
@@ -730,44 +792,31 @@ export default function App() {
     return <BetaBlocked email={user.email} />;
   }
 
-  const baseTranslate = -pageIndex * viewportW;
-  const translatePx = baseTranslate + dragDX;
-
-  const pagerHeight = `calc(100dvh - ${headerHeight}px)`;
-
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
       <Header ref={headerRef} T={T} page={page} setPage={goToPage} />
 
-      {/* Pager viewport: fixed height, no document scroll */}
+      {/* MAIN AREA: fixed height under header; pages scroll INSIDE panels */}
       <main
-        ref={viewportRef}
-        className="overflow-hidden"
-        style={{
-          height: pagerHeight,
-          touchAction: "pan-y",
-        }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        className="flex-1 overflow-hidden"
+        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
       >
-        {/* Track */}
-        <div
-          ref={trackRef}
-          className="flex h-full"
-          style={{
-            transform: `translate3d(${translatePx}px, 0, 0)`,
-            transition:
-              draggingRef.current || dragDX !== 0
-                ? "none"
-                : "transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1)",
-            willChange: "transform",
-          }}
-        >
-          {/* HOME (own scroll container) */}
-          <section className="w-screen shrink-0 h-full overflow-y-auto overscroll-contain">
-            <div className="pt-3">
+        {page === "dupes" ? (
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <DuplicateScannerView
+              T={T}
+              rows={visibleRows}
+              removePhrase={removePhraseById}
+              onBack={() => goToPage("settings")}
+            />
+          </div>
+        ) : (
+          <SwipePager
+            index={swipeIndex}
+            onIndexChange={(i) => goToPage(swipeTabs[i])}
+          >
+            {/* HOME */}
+            <div className="h-full">
               <HomeView
                 playText={playText}
                 setRows={setRows}
@@ -780,21 +829,21 @@ export default function App() {
                 }}
               />
             </div>
-          </section>
 
-          {/* LIBRARY (own scroll container) */}
-          <section className="w-screen shrink-0 h-full overflow-y-auto overscroll-contain">
-            <div className="pt-3">
-              <SearchDock
-                SearchBox={SearchBox}
-                sortMode={sortMode}
-                setSortMode={setSortMode}
-                placeholder={T.search}
-                T={T}
-                offsetTop={headerHeight}
-                page={"library"}
-                setPage={goToPage}
-              />
+            {/* LIBRARY */}
+            <div className="h-full">
+              <div className="pt-3">
+                <SearchDock
+                  SearchBox={SearchBox}
+                  sortMode={sortMode}
+                  setSortMode={setSortMode}
+                  placeholder={T.search}
+                  T={T}
+                  offsetTop={headerHeight}
+                  page={"library"}
+                  setPage={goToPage}
+                />
+              </div>
 
               <LibraryView
                 T={T}
@@ -814,42 +863,25 @@ export default function App() {
                 }}
               />
             </div>
-          </section>
 
-          {/* SETTINGS (own scroll container) */}
-          <section className="w-screen shrink-0 h-full overflow-y-auto overscroll-contain">
-            <div className="pt-3">
-              {internalRoute === "dupes" ? (
-                <DuplicateScannerView
-                  T={T}
-                  rows={visibleRows}
-                  removePhrase={removePhraseById}
-                  onBack={() => {
-                    setInternalRoute("main");
-                    setPage("settings");
-                  }}
-                />
-              ) : (
-                <SettingsView
-                  T={T}
-                  azureVoiceShortName={azureVoiceShortName}
-                  setAzureVoiceShortName={setAzureVoiceShortName}
-                  playText={playText}
-                  fetchStarter={fetchStarter}
-                  clearLibrary={clearLibrary}
-                  importJsonFile={importJsonFile}
-                  rows={rows}
-                  onOpenDuplicateScanner={() => {
-                    setInternalRoute("dupes");
-                    setPage("settings");
-                  }}
-                  onOpenChangeLog={() => setShowChangeLog(true)}
-                  onOpenUserGuide={() => setShowUserGuide(true)}
-                />
-              )}
+            {/* SETTINGS */}
+            <div className="h-full">
+              <SettingsView
+                T={T}
+                azureVoiceShortName={azureVoiceShortName}
+                setAzureVoiceShortName={setAzureVoiceShortName}
+                playText={playText}
+                fetchStarter={fetchStarter}
+                clearLibrary={clearLibrary}
+                importJsonFile={importJsonFile}
+                rows={rows}
+                onOpenDuplicateScanner={() => goToPage("dupes")}
+                onOpenChangeLog={() => setShowChangeLog(true)}
+                onOpenUserGuide={() => setShowUserGuide(true)}
+              />
             </div>
-          </section>
-        </div>
+          </SwipePager>
+        )}
       </main>
 
       {addOpen && (
