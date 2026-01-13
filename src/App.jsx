@@ -34,6 +34,7 @@ import { supabase } from "./supabaseClient";
 import useLocalStorageState from "./hooks/useLocalStorageState";
 import useModalScrollLock from "./hooks/useModalScrollLock";
 import useBetaAllowlist from "./hooks/useBetaAllowlist";
+import useAppBodyScrollLock from "./hooks/useAppBodyScrollLock";
 
 import { nowTs, genId } from "./utils/ids";
 import { normalizeRag } from "./utils/rag";
@@ -161,7 +162,6 @@ export default function App() {
   const authLoading = useAuthStore((s) => s.loading);
   const user = useAuthStore((s) => s.user);
 
-  // ✅ Extracted allowlist logic
   const { checked: allowlistChecked, allowed: isAllowlisted } = useBetaAllowlist({
     userEmail: user?.email,
     supabase,
@@ -295,6 +295,9 @@ export default function App() {
 
   useModalScrollLock({ active: addOpen, disabled: authLoading });
 
+  // ✅ Extracted: lock body scroll for the authenticated app shell
+  useAppBodyScrollLock({ active: !!user });
+
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
@@ -335,32 +338,6 @@ export default function App() {
     setHomeResetKey((k) => k + 1);
     goToPage("home");
   }
-
-  useEffect(() => {
-    if (!user) return;
-
-    const body = document.body;
-    const html = document.documentElement;
-
-    const prev = {
-      bodyOverflow: body.style.overflow,
-      bodyHeight: body.style.height,
-      htmlOverflow: html.style.overflow,
-      htmlHeight: html.style.height,
-    };
-
-    body.style.overflow = "hidden";
-    body.style.height = "100%";
-    html.style.overflow = "hidden";
-    html.style.height = "100%";
-
-    return () => {
-      body.style.overflow = prev.bodyOverflow;
-      body.style.height = prev.bodyHeight;
-      html.style.overflow = prev.htmlOverflow;
-      html.style.height = prev.htmlHeight;
-    };
-  }, [user]);
 
   /* RENDER GATE */
   if (authLoading && !user) {
