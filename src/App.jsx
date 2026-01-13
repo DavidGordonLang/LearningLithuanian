@@ -35,6 +35,7 @@ import useLocalStorageState from "./hooks/useLocalStorageState";
 import useModalScrollLock from "./hooks/useModalScrollLock";
 import useBetaAllowlist from "./hooks/useBetaAllowlist";
 import useAppBodyScrollLock from "./hooks/useAppBodyScrollLock";
+import useTTSPlayer from "./hooks/useTTSPlayer";
 
 import { nowTs, genId } from "./utils/ids";
 import { normalizeRag } from "./utils/rag";
@@ -212,42 +213,13 @@ export default function App() {
 
   const T = STR;
 
-  /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
-    "lt-LT-LeonasNeural"
-  );
-  const audioRef = useRef(null);
-
-  async function playText(text, { slow = false } = {}) {
-    try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-
-      const resp = await fetch("/api/azure-tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: azureVoiceShortName, slow }),
-      });
-
-      if (!resp.ok) throw new Error("Azure TTS failed");
-
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        if (audioRef.current === audio) audioRef.current = null;
-      };
-
-      await audio.play();
-    } catch (e) {
-      alert("Voice error: " + e.message);
-    }
-  }
+  /* VOICE (extracted + cached) */
+  const { voice: azureVoiceShortName, setVoice: setAzureVoiceShortName, playText } =
+    useTTSPlayer({
+      initialVoice: "lt-LT-LeonasNeural",
+      maxIdbEntries: 200,
+      onError: (e) => alert("Voice error: " + (e?.message || "Unknown error")),
+    });
 
   useSyncExternalStore(
     searchStore.subscribe,
@@ -294,8 +266,6 @@ export default function App() {
   }
 
   useModalScrollLock({ active: addOpen, disabled: authLoading });
-
-  // ✅ Extracted: lock body scroll for the authenticated app shell
   useAppBodyScrollLock({ active: !!user });
 
   const [showChangeLog, setShowChangeLog] = useState(false);
