@@ -169,6 +169,8 @@ const SearchBox = memo(
    SWIPE PAGER (pixel-accurate widths; header fixed; panels scroll independently)
    - Allows swipe on buttons (so play-area can swipe)
    - Still blocks swipe on text inputs/textarea/select/contenteditable
+   - NEW: exposes live progress for header pill interpolation
+   - FIX: always snaps back from overscroll edges (no sticking)
    ========================================================================== */
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
@@ -189,7 +191,7 @@ function isTextFieldEl(el) {
   return false;
 }
 
-function SwipePager({ index, onIndexChange, children }) {
+function SwipePager({ index, onIndexChange, onProgress, children }) {
   const hostRef = useRef(null);
   const trackRef = useRef(null);
 
@@ -209,22 +211,39 @@ function SwipePager({ index, onIndexChange, children }) {
     dx: 0,
     startIndex: 0,
     raf: 0,
+    dragging: false,
   });
 
-  const applyTransform = (x) => {
-    const el = trackRef.current;
-    if (!el) return;
-    el.style.transform = `translate3d(${x}px,0,0)`;
+  const currentXRef = useRef(-index * vw);
+
+  const emitProgress = (x, draggingFlag) => {
+    if (typeof onProgress !== "function") return;
+    if (!vw) return;
+
+    // progress uses the actual on-screen transform (including resisted overscroll)
+    const p = (-x) / vw;
+    onProgress(p, !!draggingFlag);
   };
 
-  const snapTo = (nextIndex) => {
+  const applyTransform = (x, draggingFlag) => {
+    const el = trackRef.current;
+    if (!el) return;
+    currentXRef.current = x;
+    el.style.transform = `translate3d(${x}px,0,0)`;
+    emitProgress(x, draggingFlag);
+  };
+
+  const snapTo = (nextIndex, { draggingFlag = false } = {}) => {
     const el = trackRef.current;
     if (!el) return;
     const x = -nextIndex * vw;
     el.style.transition = "transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1)";
-    applyTransform(x);
+    applyTransform(x, draggingFlag);
+
     window.setTimeout(() => {
       if (trackRef.current) trackRef.current.style.transition = "none";
+      // After snap completes, lock progress exactly to the page index
+      if (typeof onProgress === "function") onProgress(nextIndex, false);
     }, 260);
   };
 
@@ -235,7 +254,11 @@ function SwipePager({ index, onIndexChange, children }) {
       if (!host) return;
       const w = host.getBoundingClientRect().width || window.innerWidth || 360;
       setVw(w);
-      applyTransform(-index * w);
+
+      const x = -index * w;
+      // keep track aligned to current page
+      if (trackRef.current) trackRef.current.style.transition = "none";
+      applyTransform(x, false);
     };
 
     measure();
@@ -246,17 +269,46 @@ function SwipePager({ index, onIndexChange, children }) {
       window.removeEventListener("resize", measure);
       window.removeEventListener("orientationchange", measure);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
   // Snap when index changes (tap on pills)
   useEffect(() => {
-    snapTo(index);
+    snapTo(index, { draggingFlag: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, vw]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+
+    const endGesture = () => {
+      if (!drag.current.active) return;
+
+      const dx = drag.current.dx || 0;
+
+      drag.current.active = false;
+      drag.current.locked = false;
+
+      const threshold = Math.max(50, vw * 0.18);
+
+      let next = index;
+      if (dx <= -threshold) next = index + 1;
+      else if (dx >= threshold) next = index - 1;
+
+      next = clamp(next, 0, pageCount - 1);
+
+      // Always snap back visually, even if the page index doesn't change.
+      // This fixes "sticking" after resisted overscroll.
+      if (next === index) {
+        snapTo(index, { draggingFlag: false });
+      } else {
+        onIndexChange(next);
+      }
+
+      drag.current.dragging = false;
+      if (typeof onProgress === "function") onProgress(next, false);
+    };
 
     const onTouchStart = (e) => {
       if (!e.touches || e.touches.length !== 1) return;
@@ -273,6 +325,7 @@ function SwipePager({ index, onIndexChange, children }) {
       drag.current.startY = t.clientY;
       drag.current.dx = 0;
       drag.current.startIndex = index;
+      drag.current.dragging = false;
     };
 
     const onTouchMove = (e) => {
@@ -289,6 +342,7 @@ function SwipePager({ index, onIndexChange, children }) {
         // decide swipe vs scroll
         if (Math.abs(dx) > Math.abs(dy) * 1.15) {
           drag.current.locked = true;
+          drag.current.dragging = true;
 
           // If a text input is focused, blur it so the keyboard doesn't fight the gesture.
           const ae = document.activeElement;
@@ -306,6 +360,7 @@ function SwipePager({ index, onIndexChange, children }) {
           // vertical scroll gesture
           drag.current.active = false;
           drag.current.locked = false;
+          drag.current.dragging = false;
           return;
         }
       }
@@ -323,39 +378,23 @@ function SwipePager({ index, onIndexChange, children }) {
       const x = -index * vw + resisted;
 
       if (drag.current.raf) cancelAnimationFrame(drag.current.raf);
-      drag.current.raf = requestAnimationFrame(() => applyTransform(x));
-    };
-
-    const onTouchEnd = () => {
-      if (!drag.current.active) return;
-
-      const dx = drag.current.dx || 0;
-
-      drag.current.active = false;
-      drag.current.locked = false;
-
-      const threshold = Math.max(50, vw * 0.18);
-
-      let next = index;
-      if (dx <= -threshold) next = index + 1;
-      else if (dx >= threshold) next = index - 1;
-
-      next = clamp(next, 0, pageCount - 1);
-      onIndexChange(next);
+      drag.current.raf = requestAnimationFrame(() =>
+        applyTransform(x, true /* dragging */)
+      );
     };
 
     host.addEventListener("touchstart", onTouchStart, { passive: true });
     host.addEventListener("touchmove", onTouchMove, { passive: false });
-    host.addEventListener("touchend", onTouchEnd, { passive: true });
-    host.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    host.addEventListener("touchend", endGesture, { passive: true });
+    host.addEventListener("touchcancel", endGesture, { passive: true });
 
     return () => {
       host.removeEventListener("touchstart", onTouchStart);
       host.removeEventListener("touchmove", onTouchMove);
-      host.removeEventListener("touchend", onTouchEnd);
-      host.removeEventListener("touchcancel", onTouchEnd);
+      host.removeEventListener("touchend", endGesture);
+      host.removeEventListener("touchcancel", endGesture);
     };
-  }, [index, onIndexChange, pageCount, vw]);
+  }, [index, onIndexChange, onProgress, pageCount, vw]);
 
   return (
     <div ref={hostRef} className="h-full w-full overflow-hidden touch-pan-y">
@@ -445,6 +484,17 @@ export default function App() {
 
   const swipeTabs = ["home", "library", "settings"];
   const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
+
+  // Live swipe progress for header pill interpolation
+  const [swipeProgress, setSwipeProgress] = useState(swipeIndex);
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  // Keep header pill correct on non-drag navigation
+  useEffect(() => {
+    if (page === "dupes") return; // leave as-is (pager not visible)
+    setSwipeProgress(swipeIndex);
+    setIsSwiping(false);
+  }, [page, swipeIndex]);
 
   // ✅ Used to force-remount HomeView when logo is tapped (clears translate box etc)
   const [homeResetKey, setHomeResetKey] = useState(0);
@@ -831,6 +881,8 @@ export default function App() {
         page={page}
         setPage={goToPage}
         onLogoClick={handleLogoClick}
+        swipeProgress={swipeProgress}
+        isSwiping={isSwiping}
       />
 
       <main
@@ -850,6 +902,12 @@ export default function App() {
           <SwipePager
             index={swipeIndex}
             onIndexChange={(i) => goToPage(swipeTabs[i])}
+            onProgress={(p, dragging) => {
+              // clamp progress for safety; allow small overscroll visual movement at edges
+              const clamped = Math.max(-0.25, Math.min(2.25, p));
+              setSwipeProgress(clamped);
+              setIsSwiping(!!dragging);
+            }}
           >
             {/* HOME */}
             <div className="h-full">
