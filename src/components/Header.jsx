@@ -1,9 +1,22 @@
 // src/components/Header.jsx
-import React, { forwardRef, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref) {
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+const Header = forwardRef(function Header(
+  { T, page, setPage, onLogoClick, swipeProgress, isSwiping },
+  ref
+) {
   const tabs = useMemo(
     () => [
       { id: "home", label: T.navHome },
@@ -15,34 +28,90 @@ const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref
 
   const containerRef = useRef(null);
   const btnRefs = useRef({});
+  const [metrics, setMetrics] = useState(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
-  const updateIndicator = () => {
+  const measureAll = () => {
     const wrap = containerRef.current;
-    const btn = btnRefs.current?.[page];
-    if (!wrap || !btn) return;
+    if (!wrap) return;
 
     const wRect = wrap.getBoundingClientRect();
-    const bRect = btn.getBoundingClientRect();
+    const out = {};
 
-    setIndicator({
-      left: bRect.left - wRect.left,
-      width: bRect.width,
-    });
+    for (const t of tabs) {
+      const btn = btnRefs.current?.[t.id];
+      if (!btn) continue;
+      const bRect = btn.getBoundingClientRect();
+      out[t.id] = {
+        left: bRect.left - wRect.left,
+        width: bRect.width,
+      };
+    }
+
+    if (out.home && out.library && out.settings) setMetrics(out);
+  };
+
+  const updateIndicatorForPage = () => {
+    if (!metrics) {
+      const wrap = containerRef.current;
+      const btn = btnRefs.current?.[page];
+      if (!wrap || !btn) return;
+
+      const wRect = wrap.getBoundingClientRect();
+      const bRect = btn.getBoundingClientRect();
+
+      setIndicator({
+        left: bRect.left - wRect.left,
+        width: bRect.width,
+      });
+      return;
+    }
+
+    if (typeof swipeProgress === "number" && Number.isFinite(swipeProgress)) {
+      const pClamped = Math.max(0, Math.min(tabs.length - 1, swipeProgress));
+      const i0 = Math.floor(pClamped);
+      const i1 = Math.min(tabs.length - 1, i0 + 1);
+      const t = pClamped - i0;
+
+      const a = tabs[i0].id;
+      const b = tabs[i1].id;
+
+      const A = metrics[a];
+      const B = metrics[b];
+      if (!A || !B) return;
+
+      setIndicator({
+        left: lerp(A.left, B.left, t),
+        width: lerp(A.width, B.width, t),
+      });
+      return;
+    }
+
+    const m = metrics[page];
+    if (m) setIndicator({ left: m.left, width: m.width });
   };
 
   useLayoutEffect(() => {
-    updateIndicator();
-  }, [page]);
+    measureAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabs.length]);
 
   useLayoutEffect(() => {
-    const onResize = () => updateIndicator();
+    updateIndicatorForPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, swipeProgress, metrics]);
+
+  useLayoutEffect(() => {
+    const onResize = () => {
+      measureAll();
+    };
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -51,7 +120,6 @@ const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref
       className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800"
     >
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-3 pb-3">
-        {/* Brand (logo only; acts like refresh -> home) */}
         <div className="flex items-center justify-center">
           <button
             type="button"
@@ -76,7 +144,6 @@ const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex justify-center mt-3">
           <div
             ref={containerRef}
@@ -88,16 +155,14 @@ const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref
               text-xs sm:text-sm
             "
           >
-            {/* Active pill */}
             <div
-              className="
-                absolute top-1 bottom-1
-                rounded-full bg-emerald-500 shadow
-                transition-[transform,width] duration-200 ease-out
-              "
+              className="absolute top-1 bottom-1 rounded-full bg-emerald-500 shadow"
               style={{
                 width: `${indicator.width}px`,
                 transform: `translateX(${indicator.left}px)`,
+                transition: isSwiping
+                  ? "none"
+                  : "transform 200ms ease-out, width 200ms ease-out",
               }}
             />
 
