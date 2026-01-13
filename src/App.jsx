@@ -36,6 +36,14 @@ import { nowTs, genId } from "./utils/ids";
 import { normalizeRag } from "./utils/rag";
 import { makeLtKey } from "./utils/contentKey";
 
+import {
+  mergeRows as mergeRowsIO,
+  mergeStarterRows as mergeStarterRowsIO,
+  fetchStarter as fetchStarterIO,
+  importJsonFile as importJsonFileIO,
+  clearLibrary as clearLibraryIO,
+} from "./services/libraryIO";
+
 /* ============================================================================
    CONSTANTS
    ========================================================================== */
@@ -143,7 +151,6 @@ const SearchBox = memo(
    MAIN APP
    ========================================================================== */
 export default function App() {
-  /* INIT AUTH (PASSIVE, ONCE) */
   useEffect(() => {
     initAuthListener();
   }, []);
@@ -201,7 +208,6 @@ export default function App() {
   const swipeTabs = ["home", "library", "settings"];
   const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
 
-  // Live swipe progress for header pill interpolation
   const [swipeProgress, setSwipeProgress] = useState(swipeIndex);
   const [isSwiping, setIsSwiping] = useState(false);
 
@@ -211,7 +217,6 @@ export default function App() {
     setIsSwiping(false);
   }, [page, swipeIndex]);
 
-  // Force-remount HomeView when logo is tapped (clears translate box etc)
   const [homeResetKey, setHomeResetKey] = useState(0);
 
   const headerRef = useRef(null);
@@ -286,117 +291,19 @@ export default function App() {
     searchStore.getServerSnapshot
   );
 
-  async function mergeRows(newRows) {
-    const cleaned = newRows
-      .map((r) => ({
-        English: r.English?.trim() || "",
-        Lithuanian: r.Lithuanian?.trim() || "",
-        Phonetic: r.Phonetic?.trim() || "",
-        Category: r.Category?.trim() || "",
-        Usage: r.Usage?.trim() || "",
-        Notes: r.Notes?.trim() || "",
-        "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-        Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-          ? r.Sheet
-          : "Phrases",
-        _id: r._id || genId(),
-        _ts: r._ts || nowTs(),
-        _qstat:
-          r._qstat || {
-            red: { ok: 0, bad: 0 },
-            amb: { ok: 0, bad: 0 },
-            grn: { ok: 0, bad: 0 },
-          },
-      }))
-      .filter((r) => r.English || r.Lithuanian);
+  /* LIBRARY IO (thin wrappers) */
+  const mergeRows = (newRows) =>
+    mergeRowsIO(newRows, { setRows, normalizeRag, genId, nowTs });
 
-    setRows((prev) => [...cleaned, ...prev]);
-  }
+  const mergeStarterRows = (newRows) =>
+    mergeStarterRowsIO(newRows, { setRows, normalizeRag, makeLtKey, genId, nowTs });
 
-  async function mergeStarterRows(newRows) {
-    const cleaned = newRows
-      .map((r) => {
-        const base = {
-          English: r.English?.trim() || "",
-          Lithuanian: r.Lithuanian?.trim() || "",
-          Phonetic: r.Phonetic?.trim() || "",
-          Category: r.Category?.trim() || "",
-          Usage: r.Usage?.trim() || "",
-          Notes: r.Notes?.trim() || "",
-          "RAG Icon": normalizeRag(r["RAG Icon"] || "🟠"),
-          Sheet: ["Phrases", "Questions", "Words", "Numbers"].includes(r.Sheet)
-            ? r.Sheet
-            : "Phrases",
-          _id: r._id || genId(),
-          _ts: r._ts || nowTs(),
-          _qstat:
-            r._qstat || {
-              red: { ok: 0, bad: 0 },
-              amb: { ok: 0, bad: 0 },
-              grn: { ok: 0, bad: 0 },
-            },
-          Source: "starter",
-          Touched: false,
-        };
+  const fetchStarter = (kind) =>
+    fetchStarterIO(kind, { STARTERS, mergeStarterRowsImpl: mergeStarterRows });
 
-        const ck = makeLtKey(base);
-        return { ...base, contentKey: ck };
-      })
-      .filter((r) => r.English || r.Lithuanian);
+  const importJsonFile = (file) => importJsonFileIO(file, { mergeRowsImpl: mergeRows });
 
-    setRows((prev) => {
-      const existingKeys = new Set(
-        prev
-          .map((p) => p?.contentKey)
-          .filter((k) => typeof k === "string" && k.length > 0)
-      );
-
-      const merged = [...prev];
-
-      for (const row of cleaned) {
-        const key = row?.contentKey;
-        if (!key) {
-          const existsById = prev.some((p) => p?._id === row._id);
-          if (!existsById) merged.push(row);
-          continue;
-        }
-        if (!existingKeys.has(key)) {
-          merged.push(row);
-          existingKeys.add(key);
-        }
-      }
-
-      return merged;
-    });
-  }
-
-  async function fetchStarter(kind) {
-    const url = STARTERS[kind];
-    if (!url) return alert("Starter not found");
-
-    const res = await fetch(url);
-    if (!res.ok) return alert("Failed to fetch starter");
-
-    const data = await res.json();
-    await mergeStarterRows(data);
-
-    alert("Starter pack installed.");
-  }
-
-  function clearLibrary() {
-    if (confirm(T.confirm)) setRows([]);
-  }
-
-  async function importJsonFile(file) {
-    try {
-      const data = JSON.parse(await file.text());
-      if (!Array.isArray(data)) throw new Error();
-      await mergeRows(data);
-      alert("Imported.");
-    } catch {
-      alert("Import failed.");
-    }
-  }
+  const clearLibrary = () => clearLibraryIO({ T, setRows });
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
@@ -456,7 +363,6 @@ export default function App() {
     goToPage("home");
   }
 
-  // Lock BODY scrolling so only the active panel scrolls
   useEffect(() => {
     if (!user) return;
 
