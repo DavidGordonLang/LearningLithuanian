@@ -9,7 +9,6 @@ import React, {
   memo,
   useImperativeHandle,
   useSyncExternalStore,
-  useLayoutEffect,
 } from "react";
 
 import Header from "./components/Header";
@@ -22,6 +21,7 @@ import DuplicateScannerView from "./views/DuplicateScannerView";
 import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
+import SwipePager from "./components/SwipePager";
 
 import AuthGate from "./components/AuthGate";
 import BetaBlocked from "./components/BetaBlocked";
@@ -30,6 +30,11 @@ import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
 import { initAuthListener, useAuthStore } from "./stores/authStore";
 import { supabase } from "./supabaseClient";
+
+import useLocalStorageState from "./hooks/useLocalStorageState";
+import { nowTs, genId } from "./utils/ids";
+import { normalizeRag } from "./utils/rag";
+import { makeLtKey } from "./utils/contentKey";
 
 /* ============================================================================
    CONSTANTS
@@ -77,37 +82,6 @@ const STR = {
   addEntry: "Add Entry",
   edit: "Edit Entry",
 };
-
-/* ============================================================================
-   HELPERS
-   ========================================================================== */
-const nowTs = () => Date.now();
-const genId = () => Math.random().toString(36).slice(2);
-
-function normalizeRag(icon = "") {
-  const s = String(icon).trim().toLowerCase();
-  if (["🔴", "red"].includes(icon) || s === "red") return "🔴";
-  if (
-    ["🟠", "amber", "orange", "yellow"].includes(icon) ||
-    ["amber", "orange", "yellow"].includes(s)
-  )
-    return "🟠";
-  if (["🟢", "green"].includes(icon) || s === "green") return "🟢";
-  return "🟠";
-}
-
-/**
- * ✅ Must match src/stores/phraseStore.js identity rule:
- * Lithuanian-only, diacritics stripped, punctuation removed.
- */
-function makeLtKey(r) {
-  return String(r?.Lithuanian || "")
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "");
-}
 
 /* ============================================================================
    SEARCH BOX
@@ -164,264 +138,6 @@ const SearchBox = memo(
     );
   })
 );
-
-/* ============================================================================
-   SWIPE PAGER (pixel-accurate widths; header fixed; panels scroll independently)
-   - Allows swipe on buttons (so play-area can swipe)
-   - Still blocks swipe on text inputs/textarea/select/contenteditable
-   - Live header progress during drag (premium pill)
-   - Robust snap-back: NEVER leaves track between pages or stuck at edges
-   ========================================================================== */
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
-
-function isTextFieldEl(el) {
-  if (!el) return false;
-  if (el.closest?.('[data-swipe-block="true"]')) return true;
-
-  const tag = (el.tagName || "").toLowerCase();
-  if (tag === "input" || tag === "textarea" || tag === "select") return true;
-
-  if (el.isContentEditable) return true;
-  if (el.closest?.("[contenteditable='true']")) return true;
-
-  return false;
-}
-
-function SwipePager({ index, onIndexChange, onProgress, children }) {
-  const hostRef = useRef(null);
-  const trackRef = useRef(null);
-
-  const pageCount = React.Children.count(children);
-
-  const [vw, setVw] = useState(() => {
-    if (typeof window === "undefined") return 360;
-    return window.innerWidth || 360;
-  });
-
-  const drag = useRef({
-    active: false,
-    locked: false,
-    startX: 0,
-    startY: 0,
-    dx: 0,
-    startIndex: 0,
-    raf: 0,
-  });
-
-  const resetTimerRef = useRef(0);
-
-  const emitProgress = (x, dragging) => {
-    if (typeof onProgress !== "function") return;
-    if (!vw) return;
-    const p = (-x) / vw;
-    onProgress(p, !!dragging);
-  };
-
-  const applyTransform = (x, dragging) => {
-    const el = trackRef.current;
-    if (!el) return;
-    el.style.transform = `translate3d(${x}px,0,0)`;
-    emitProgress(x, dragging);
-  };
-
-  const clearResetTimer = () => {
-    if (resetTimerRef.current) {
-      window.clearTimeout(resetTimerRef.current);
-      resetTimerRef.current = 0;
-    }
-  };
-
-  const snapToIndex = (nextIndex) => {
-    const el = trackRef.current;
-    if (!el) return;
-
-    clearResetTimer();
-
-    // Always cancel any "in-progress" drag animation frame
-    if (drag.current.raf) cancelAnimationFrame(drag.current.raf);
-    drag.current.raf = 0;
-
-    const x = -nextIndex * vw;
-    el.style.transition = "transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1)";
-    applyTransform(x, false);
-
-    resetTimerRef.current = window.setTimeout(() => {
-      if (trackRef.current) trackRef.current.style.transition = "none";
-      resetTimerRef.current = 0;
-      // Ensure the header ends perfectly aligned
-      if (typeof onProgress === "function") onProgress(nextIndex, false);
-    }, 260);
-  };
-
-  // Measure host width (not window) so it stays correct even inside layouts
-  useLayoutEffect(() => {
-    const measure = () => {
-      const host = hostRef.current;
-      if (!host) return;
-      const w = host.getBoundingClientRect().width || window.innerWidth || 360;
-      setVw(w);
-
-      const el = trackRef.current;
-      if (el) el.style.transition = "none";
-      applyTransform(-index * w, false);
-      if (typeof onProgress === "function") onProgress(index, false);
-    };
-
-    measure();
-
-    window.addEventListener("resize", measure);
-    window.addEventListener("orientationchange", measure);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("orientationchange", measure);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
-
-  // Snap when index changes (tap on pills or programmatic)
-  useEffect(() => {
-    snapToIndex(index);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, vw]);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-
-    const onTouchStart = (e) => {
-      if (!e.touches || e.touches.length !== 1) return;
-
-      const target = e.target;
-      if (isTextFieldEl(target)) return;
-
-      clearResetTimer();
-
-      const el = trackRef.current;
-      if (el) el.style.transition = "none";
-
-      const t = e.touches[0];
-      drag.current.active = true;
-      drag.current.locked = false;
-      drag.current.startX = t.clientX;
-      drag.current.startY = t.clientY;
-      drag.current.dx = 0;
-      drag.current.startIndex = index;
-    };
-
-    const onTouchMove = (e) => {
-      if (!drag.current.active || !e.touches || e.touches.length !== 1) return;
-
-      const t = e.touches[0];
-      const dx = t.clientX - drag.current.startX;
-      const dy = t.clientY - drag.current.startY;
-
-      if (!drag.current.locked) {
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-
-        if (Math.abs(dx) > Math.abs(dy) * 1.15) {
-          drag.current.locked = true;
-
-          // Blur active input so keyboard doesn't fight the gesture.
-          const ae = document.activeElement;
-          if (
-            ae &&
-            (ae.tagName === "INPUT" ||
-              ae.tagName === "TEXTAREA" ||
-              ae.tagName === "SELECT")
-          ) {
-            try {
-              ae.blur();
-            } catch {}
-          }
-        } else {
-          // vertical scroll gesture
-          drag.current.active = false;
-          drag.current.locked = false;
-          return;
-        }
-      }
-
-      e.preventDefault();
-
-      drag.current.dx = dx;
-
-      // IMPORTANT: compute relative to gesture startIndex (stable), not live index
-      const startIndex = drag.current.startIndex;
-
-      // edge resistance relative to startIndex
-      const atFirst = startIndex === 0 && dx > 0;
-      const atLast = startIndex === pageCount - 1 && dx < 0;
-      const resisted = atFirst || atLast ? dx * 0.35 : dx;
-
-      const x = -startIndex * vw + resisted;
-
-      if (drag.current.raf) cancelAnimationFrame(drag.current.raf);
-      drag.current.raf = requestAnimationFrame(() => applyTransform(x, true));
-    };
-
-    const endGesture = () => {
-      if (!drag.current.active) return;
-
-      const dx = drag.current.dx || 0;
-      const startIndex = drag.current.startIndex;
-
-      drag.current.active = false;
-      drag.current.locked = false;
-
-      const threshold = Math.max(50, vw * 0.18);
-
-      let next = startIndex;
-      if (dx <= -threshold) next = startIndex + 1;
-      else if (dx >= threshold) next = startIndex - 1;
-
-      next = clamp(next, 0, pageCount - 1);
-
-      // ALWAYS snap immediately (fixes "stuck between screens" and edge stick)
-      snapToIndex(next);
-
-      // Then update state if needed (idempotent if same)
-      if (next !== index) onIndexChange(next);
-    };
-
-    host.addEventListener("touchstart", onTouchStart, { passive: true });
-    host.addEventListener("touchmove", onTouchMove, { passive: false });
-    host.addEventListener("touchend", endGesture, { passive: true });
-    host.addEventListener("touchcancel", endGesture, { passive: true });
-
-    return () => {
-      host.removeEventListener("touchstart", onTouchStart);
-      host.removeEventListener("touchmove", onTouchMove);
-      host.removeEventListener("touchend", endGesture);
-      host.removeEventListener("touchcancel", endGesture);
-    };
-  }, [index, onIndexChange, onProgress, pageCount, vw]);
-
-  return (
-    <div ref={hostRef} className="h-full w-full overflow-hidden touch-pan-y">
-      <div
-        ref={trackRef}
-        className="h-full flex"
-        style={{
-          width: `${vw * pageCount}px`,
-          transform: `translate3d(${-index * vw}px,0,0)`,
-          transition: "none",
-          willChange: "transform",
-        }}
-      >
-        {React.Children.map(children, (child) => (
-          <div
-            className="h-full flex-none overflow-y-auto overscroll-contain"
-            style={{ width: `${vw}px` }}
-          >
-            {child}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* ============================================================================
    MAIN APP
@@ -481,9 +197,7 @@ export default function App() {
   }, [user?.email]);
 
   /* PAGE */
-  const [page, setPage] = useState(() => localStorage.getItem(LSK_PAGE) || "home");
-  useEffect(() => localStorage.setItem(LSK_PAGE, page), [page]);
-
+  const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
   const swipeTabs = ["home", "library", "settings"];
   const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
 
@@ -497,6 +211,7 @@ export default function App() {
     setIsSwiping(false);
   }, [page, swipeIndex]);
 
+  // Force-remount HomeView when logo is tapped (clears translate box etc)
   const [homeResetKey, setHomeResetKey] = useState(0);
 
   const headerRef = useRef(null);
@@ -518,20 +233,20 @@ export default function App() {
   /* ROWS */
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
-
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
   /* SORT */
-  const [sortMode, setSortMode] = useState(() => localStorage.getItem(LSK_SORT) || "RAG");
-  useEffect(() => localStorage.setItem(LSK_SORT, sortMode), [sortMode]);
+  const [sortMode, setSortMode] = useLocalStorageState(LSK_SORT, "RAG");
 
   const T = STR;
 
   /* VOICE */
-  const [azureVoiceShortName, setAzureVoiceShortName] = useState("lt-LT-LeonasNeural");
+  const [azureVoiceShortName, setAzureVoiceShortName] = useState(
+    "lt-LT-LeonasNeural"
+  );
   const audioRef = useRef(null);
 
   async function playText(text, { slow = false } = {}) {
@@ -728,7 +443,9 @@ export default function App() {
     const ae = document.activeElement;
     if (
       ae &&
-      (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.tagName === "SELECT")
+      (ae.tagName === "INPUT" ||
+        ae.tagName === "TEXTAREA" ||
+        ae.tagName === "SELECT")
     ) {
       try {
         ae.blur();
@@ -739,6 +456,7 @@ export default function App() {
     goToPage("home");
   }
 
+  // Lock BODY scrolling so only the active panel scrolls
   useEffect(() => {
     if (!user) return;
 
@@ -845,7 +563,7 @@ export default function App() {
     };
   }, [addOpen, authLoading]);
 
-  /* RENDER GATE (no early returns before hooks) */
+  /* RENDER GATE */
   if (authLoading && !user) {
     return <div className="min-h-[100dvh] bg-zinc-950" />;
   }
@@ -896,7 +614,6 @@ export default function App() {
             index={swipeIndex}
             onIndexChange={(i) => goToPage(swipeTabs[i])}
             onProgress={(p, dragging) => {
-              // keep a little range so the pill can hint overscroll, but not go crazy
               const clamped = Math.max(-0.25, Math.min(2.25, p));
               setSwipeProgress(clamped);
               setIsSwiping(!!dragging);
