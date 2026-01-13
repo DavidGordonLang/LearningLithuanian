@@ -151,7 +151,7 @@ export default function App() {
 
   const T = STR;
 
-  /* VOICE (extracted + cached) */
+  /* VOICE */
   const { voice: azureVoiceShortName, setVoice: setAzureVoiceShortName, playText } =
     useTTSPlayer({
       initialVoice: "lt-LT-LeonasNeural",
@@ -165,7 +165,7 @@ export default function App() {
     searchStore.getServerSnapshot
   );
 
-  /* LIBRARY IO (thin wrappers) */
+  /* LIBRARY IO */
   const mergeRows = (newRows) =>
     mergeRowsIO(newRows, { setRows, normalizeRag, genId, nowTs });
 
@@ -247,7 +247,7 @@ export default function App() {
     goToPage("home");
   }
 
-  /* DAILY RECALL (once/day) */
+  /* DAILY RECALL */
   const dailyBlocked =
     addOpen ||
     showWhatsNew ||
@@ -383,6 +383,7 @@ export default function App() {
                 onOpenUserGuide={() => setShowUserGuide(true)}
                 dailyRecallEnabled={dailyRecall.enabled}
                 setDailyRecallEnabled={dailyRecall.setEnabled}
+                showDailyRecallNow={dailyRecall.showNow}
               />
             </div>
           </SwipePager>
