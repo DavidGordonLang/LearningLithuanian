@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.5.1-beta",
+    "date": "2026-01-13",
+    "changes": [
+      "Improved Home input focus behaviour so changing Speaking to… or Tone no longer triggers unwanted keyboard behaviour.",
+      "Polished swipe navigation feel: the header pill highlight now tracks swipe movement live rather than only updating after the page settles.",
+      "Fixed edge swipe behaviour so overscrolling past Home or Settings reliably snaps back instead of sticking between screens.",
+      "Added client-side audio caching for text-to-speech (memory + IndexedDB) to reduce Azure API calls and make repeat playback faster.",
+      "Refactored key app wiring into small hooks/components (scroll lock, swipe pager, TTS player, search box) to keep App.jsx lean and easier to extend without regressions."
+    ]
+  },
+  {
     "version": "1.5.0-beta",
     "date": "2026-01-12",
     "changes": [

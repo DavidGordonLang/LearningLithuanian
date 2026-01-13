@@ -1,13 +1,51 @@
 // src/components/WhatsNewModal.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 
-export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
+export default function WhatsNewModal({
+  version,
+  topOffset = 0,
+  onClose,
+  onViewChangelog,
+}) {
+  const [entry, setEntry] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const res = await fetch("/data/changelog.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load changelog");
+
+        const list = await res.json();
+        if (!alive || !Array.isArray(list)) return;
+
+        const match = list.find((e) => e?.version === version);
+        setEntry(match || list[0] || null);
+      } catch {
+        if (alive) setEntry(null);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, [version]);
+
+  const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+  const date = entry?.date || null;
+
   return (
     <div
       className="
         fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm
-        flex items-center justify-center p-4
+        flex justify-center p-4
       "
+      style={{ paddingTop: topOffset ? topOffset + 16 : 16 }}
       onPointerDown={onClose}
     >
       <div
@@ -20,15 +58,17 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div>
             <h2 className="text-xl font-bold">What’s New</h2>
             <div className="text-xs text-zinc-400 mt-0.5">
               App Version: {version}
+              {date && <span className="text-zinc-500"> • {date}</span>}
             </div>
           </div>
 
           <button
+            type="button"
             className="
               bg-zinc-800 text-zinc-200 rounded-full
               px-3 py-1 text-xs font-medium
@@ -45,14 +85,19 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
           Here’s what changed in the latest update:
         </p>
 
-        {/* CHANGE LIST (current release) */}
-        <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
-          <li>Swipe navigation is back: move between Home, Library, and Settings.</li>
-          <li>Each tab now scrolls independently, with the header staying fixed.</li>
-          <li>Page sizing/width issues have been tightened up for more reliable layouts.</li>
-          <li>The header logo now acts as a Home + refresh shortcut.</li>
-          <li>Removed the Žodis title text from the header for a cleaner, logo-led look.</li>
-        </ul>
+        {loading ? (
+          <div className="text-sm text-zinc-400 mb-4">Loading…</div>
+        ) : changes.length > 0 ? (
+          <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
+            {changes.slice(0, 8).map((c, idx) => (
+              <li key={idx}>{c}</li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-sm text-zinc-400 mb-4">
+            No release notes available for this version.
+          </div>
+        )}
 
         <div className="flex gap-3 justify-end flex-wrap">
           <button
