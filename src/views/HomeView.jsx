@@ -1,5 +1,5 @@
 // src/views/HomeView.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useMemo, useRef, useState } from "react";
 import { DEFAULT_CATEGORY } from "../constants/categories";
 
 function stripDiacritics(str) {
@@ -88,6 +88,47 @@ function mapEnrichCategoryToApp(category) {
   return map[c] || c || DEFAULT_CATEGORY;
 }
 
+const EMPTY_RESULT = {
+  ltOut: "",
+  enLiteral: "",
+  enNatural: "",
+  phonetics: "",
+  // Translate no longer produces these; kept for compatibility if ever populated.
+  usageOut: "",
+  notesOut: "",
+  categoryOut: DEFAULT_CATEGORY,
+  // Inferred: if input ≈ ltOut, source is Lithuanian
+  sourceLang: "en", // "en" | "lt"
+};
+
+const Segmented = memo(function Segmented({ value, onChange, options }) {
+  return (
+    <div className="flex w-full bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] overflow-hidden">
+      {options.map((opt, idx) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
+            className={
+              "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none " +
+              (active
+                ? "bg-emerald-600 text-black"
+                : "bg-zinc-950/60 text-zinc-200 hover:bg-zinc-800/60") +
+              (idx !== options.length - 1 ? " border-r border-zinc-800" : "")
+            }
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+});
+
 export default function HomeView({
   playText,
   onOpenAddForm,
@@ -97,22 +138,23 @@ export default function HomeView({
   showToast,
   rows,
 }) {
+  const textareaRef = useRef(null);
+
+  const blurTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    // Only blur if it's actually focused
+    if (document.activeElement === el) {
+      try {
+        el.blur();
+      } catch {}
+    }
+  }, []);
+
   const [input, setInput] = useState("");
   const [translating, setTranslating] = useState(false);
 
-  const [ltOut, setLtOut] = useState("");
-  const [enLiteral, setEnLiteral] = useState("");
-  const [enNatural, setEnNatural] = useState("");
-  const [phonetics, setPhonetics] = useState("");
-
-  // These are intentionally NOT produced by translate anymore.
-  // They remain here for display if ever populated later (e.g., manual edits).
-  const [usageOut, setUsageOut] = useState("");
-  const [notesOut, setNotesOut] = useState("");
-  const [categoryOut, setCategoryOut] = useState(DEFAULT_CATEGORY);
-
-  // Inferred from response: if input ≈ ltOut, we treat source as Lithuanian
-  const [sourceLang, setSourceLang] = useState("en"); // "en" | "lt"
+  const [result, setResult] = useState(EMPTY_RESULT);
 
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
@@ -121,9 +163,13 @@ export default function HomeView({
 
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
-    () => !!ltOut && !!(enNatural || enLiteral),
-    [ltOut, enNatural, enLiteral]
+    () => !!result.ltOut && !!(result.enNatural || result.enLiteral),
+    [result.ltOut, result.enNatural, result.enLiteral]
   );
+
+  const resetResult = useCallback(() => {
+    setResult(EMPTY_RESULT);
+  }, []);
 
   async function handleTranslate(force = false) {
     const text = input.trim();
@@ -134,15 +180,7 @@ export default function HomeView({
       const dup = findDuplicateInLibrary(text, rows);
       if (dup) {
         setDuplicateEntry(dup);
-        // Clear any previous translation result
-        setLtOut("");
-        setEnLiteral("");
-        setEnNatural("");
-        setPhonetics("");
-        setUsageOut("");
-        setNotesOut("");
-        setCategoryOut(DEFAULT_CATEGORY);
-        setSourceLang("en");
+        resetResult();
         showToast?.("Similar entry already in your library");
         return;
       }
@@ -150,15 +188,7 @@ export default function HomeView({
 
     setDuplicateEntry(null);
     setTranslating(true);
-
-    setLtOut("");
-    setEnLiteral("");
-    setEnNatural("");
-    setPhonetics("");
-    setUsageOut("");
-    setNotesOut("");
-    setCategoryOut(DEFAULT_CATEGORY);
-    setSourceLang("en");
+    resetResult();
 
     try {
       const res = await fetch("/api/translate", {
@@ -179,43 +209,44 @@ export default function HomeView({
         const nat = String(data.en_natural || "").trim();
         const pho = String(data.phonetics || "").trim();
 
-        // Translate must NOT provide these — we ignore if present.
-        setUsageOut("");
-        setNotesOut("");
-        setCategoryOut(DEFAULT_CATEGORY);
-
-        setLtOut(lt);
-        setEnLiteral(lit);
-        setEnNatural(nat || lit);
-        setPhonetics(pho);
-
         // Infer source language (no brittle diacritics rules)
         const inferred =
           areNearDuplicatesText(normalise(text), normalise(lt)) ? "lt" : "en";
-        setSourceLang(inferred);
+
+        // Translate must NOT provide usage/notes/category — we ignore if present.
+        setResult({
+          ltOut: lt,
+          enLiteral: lit,
+          enNatural: nat || lit,
+          phonetics: pho,
+          usageOut: "",
+          notesOut: "",
+          categoryOut: DEFAULT_CATEGORY,
+          sourceLang: inferred,
+        });
       } else {
-        setLtOut("Translation error.");
+        setResult({
+          ...EMPTY_RESULT,
+          ltOut: "Translation error.",
+        });
       }
     } catch (err) {
       console.error(err);
-      setLtOut("Translation error.");
+      setResult({
+        ...EMPTY_RESULT,
+        ltOut: "Translation error.",
+      });
     } finally {
       setTranslating(false);
     }
   }
 
-  function handleClear() {
+  const handleClear = useCallback(() => {
+    blurTextarea();
     setInput("");
-    setLtOut("");
-    setEnLiteral("");
-    setEnNatural("");
-    setPhonetics("");
-    setUsageOut("");
-    setNotesOut("");
-    setCategoryOut(DEFAULT_CATEGORY);
-    setSourceLang("en");
+    resetResult();
     setDuplicateEntry(null);
-  }
+  }, [blurTextarea, resetResult]);
 
   async function enrichSavedRowSilently(row) {
     try {
@@ -270,14 +301,16 @@ export default function HomeView({
     }
   }
 
-  function handleSaveToLibrary() {
+  const handleSaveToLibrary = useCallback(() => {
+    blurTextarea();
+
     if (!canSave) return;
 
     const rawInput = input.trim();
     if (!rawInput) return;
 
-    const englishToSave = (enNatural || enLiteral || "").trim();
-    const lithuanianToSave = (ltOut || "").trim();
+    const englishToSave = (result.enNatural || result.enLiteral || "").trim();
+    const lithuanianToSave = (result.ltOut || "").trim();
     if (!englishToSave || !lithuanianToSave) return;
 
     // Prevent exact duplicates (case/spacing-insensitive)
@@ -297,21 +330,22 @@ export default function HomeView({
 
     const row = {
       English: englishToSave,
-      EnglishOriginal: sourceLang === "en" ? rawInput : englishToSave,
-      EnglishLiteral: (enLiteral || "").trim(),
+      EnglishOriginal: result.sourceLang === "en" ? rawInput : englishToSave,
+      EnglishLiteral: (result.enLiteral || "").trim(),
       EnglishNatural: englishToSave,
 
       Lithuanian: lithuanianToSave,
-      LithuanianOriginal: sourceLang === "lt" ? rawInput : lithuanianToSave,
+      LithuanianOriginal:
+        result.sourceLang === "lt" ? rawInput : lithuanianToSave,
 
-      Phonetic: phonetics || "",
+      Phonetic: result.phonetics || "",
 
       // Enrich will overwrite these later (additive only)
       Category: DEFAULT_CATEGORY,
       Usage: "",
       Notes: "",
 
-      SourceLang: sourceLang, // optional metadata (harmless if unused)
+      SourceLang: result.sourceLang, // optional metadata (harmless if unused)
 
       "RAG Icon": "🟠",
       Sheet: "Phrases",
@@ -328,38 +362,70 @@ export default function HomeView({
     setRows((prev) => [row, ...prev]);
     showToast?.("Entry saved to library");
 
-    // Silent enrich (runs once, guarded)
-    // Fire-and-forget
+    // Silent enrich (runs once, guarded) — fire-and-forget
     enrichSavedRowSilently(row);
-  }
+  }, [
+    blurTextarea,
+    canSave,
+    genId,
+    input,
+    nowTs,
+    result.enLiteral,
+    result.enNatural,
+    result.ltOut,
+    result.phonetics,
+    result.sourceLang,
+    rows,
+    setRows,
+    showToast,
+  ]);
 
-  function Segmented({ value, onChange, options }) {
-    return (
-      <div className="flex w-full bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] overflow-hidden">
-        {options.map((opt, idx) => {
-          const active = value === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => onChange(opt.value)}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              className={
-                "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none " +
-                (active
-                  ? "bg-emerald-600 text-black"
-                  : "bg-zinc-950/60 text-zinc-200 hover:bg-zinc-800/60") +
-                (idx !== options.length - 1 ? " border-r border-zinc-800" : "")
-              }
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
+  const handleGenderChange = useCallback(
+    (v) => {
+      blurTextarea();
+      setGender(v);
+    },
+    [blurTextarea]
+  );
+
+  const handleToneChange = useCallback(
+    (v) => {
+      blurTextarea();
+      setTone(v);
+    },
+    [blurTextarea]
+  );
+
+  const handleTranslateClick = useCallback(() => {
+    blurTextarea();
+    handleTranslate(false);
+  }, [blurTextarea, input, tone, gender, rows]); // dependencies for lint friendliness
+
+  const handleTranslateAnywayClick = useCallback(() => {
+    blurTextarea();
+    handleTranslate(true);
+  }, [blurTextarea, input, tone, gender, rows]);
+
+  const handlePlay = useCallback(
+    (text, opts) => {
+      blurTextarea();
+      if (!text) return;
+      playText(text, opts);
+    },
+    [blurTextarea, playText]
+  );
+
+  const handleCopy = useCallback(() => {
+    blurTextarea();
+    if (!result.ltOut) return;
+    navigator.clipboard.writeText(result.ltOut);
+    showToast?.("Copied");
+  }, [blurTextarea, result.ltOut, showToast]);
+
+  const handleOpenAdd = useCallback(() => {
+    blurTextarea();
+    onOpenAddForm?.();
+  }, [blurTextarea, onOpenAddForm]);
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
@@ -368,7 +434,7 @@ export default function HomeView({
         <div className="text-sm font-semibold mb-2">Speaking to…</div>
         <Segmented
           value={gender}
-          onChange={setGender}
+          onChange={handleGenderChange}
           options={[
             { value: "neutral", label: "Neutral" },
             { value: "male", label: "Male" },
@@ -382,7 +448,7 @@ export default function HomeView({
         <div className="text-sm font-semibold mb-2">Tone</div>
         <Segmented
           value={tone}
-          onChange={setTone}
+          onChange={handleToneChange}
           options={[
             { value: "friendly", label: "Friendly" },
             { value: "neutral", label: "Neutral" },
@@ -396,6 +462,7 @@ export default function HomeView({
         <label className="block text-sm mb-2">What would you like to say?</label>
 
         <textarea
+          ref={textareaRef}
           rows={3}
           className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-sm mb-3"
           value={input}
@@ -406,12 +473,12 @@ export default function HomeView({
           <button
             type="button"
             className="
-              bg-emerald-500 text-black rounded-full px-5 py-2 
-              font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 
+              bg-emerald-500 text-black rounded-full px-5 py-2
+              font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300
               transition-transform duration-150 active:scale-95
               select-none
             "
-            onClick={() => handleTranslate(false)}
+            onClick={handleTranslateClick}
             disabled={translating || !canTranslate}
           >
             {translating ? "Translating…" : "Translate"}
@@ -420,8 +487,8 @@ export default function HomeView({
           <button
             type="button"
             className="
-              bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 
-              font-medium hover:bg-zinc-700 active:bg-zinc-600 
+              bg-zinc-800 text-zinc-200 rounded-full px-5 py-2
+              font-medium hover:bg-zinc-700 active:bg-zinc-600
               transition-transform duration-150 active:scale-95
               select-none
             "
@@ -448,11 +515,14 @@ export default function HomeView({
             <button
               type="button"
               className="
-                text-xs px-3 py-1 rounded-full 
-                bg-zinc-900/80 text-zinc-200 
+                text-xs px-3 py-1 rounded-full
+                bg-zinc-900/80 text-zinc-200
                 hover:bg-zinc-800 active:bg-zinc-700
               "
-              onClick={() => setDuplicateEntry(null)}
+              onClick={() => {
+                blurTextarea();
+                setDuplicateEntry(null);
+              }}
             >
               Dismiss
             </button>
@@ -492,14 +562,15 @@ export default function HomeView({
             <button
               type="button"
               className="
-                bg-emerald-500 text-black rounded-full 
-                px-4 py-2 text-sm font-semibold shadow 
-                hover:bg-emerald-400 active:bg-emerald-300 
+                bg-emerald-500 text-black rounded-full
+                px-4 py-2 text-sm font-semibold shadow
+                hover:bg-emerald-400 active:bg-emerald-300
                 transition-transform duration-150 active:scale-95
                 select-none
               "
               onClick={() =>
-                duplicateEntry.Lithuanian && playText(duplicateEntry.Lithuanian)
+                duplicateEntry.Lithuanian &&
+                handlePlay(duplicateEntry.Lithuanian)
               }
             >
               ▶ Play
@@ -508,13 +579,13 @@ export default function HomeView({
             <button
               type="button"
               className="
-                bg-zinc-800 text-zinc-200 rounded-full 
+                bg-zinc-800 text-zinc-200 rounded-full
                 px-4 py-2 text-sm font-medium
                 hover:bg-zinc-700 active:bg-zinc-600
                 transition-transform duration-150 active:scale-95
                 select-none
               "
-              onClick={() => handleTranslate(true)}
+              onClick={handleTranslateAnywayClick}
             >
               Translate anyway
             </button>
@@ -523,58 +594,62 @@ export default function HomeView({
       )}
 
       {/* Output */}
-      {ltOut && (
+      {result.ltOut && (
         <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 space-y-3">
           <div className="text-xs text-zinc-500">
             Detected input:{" "}
             <span className="text-zinc-300">
-              {sourceLang === "lt" ? "Lithuanian" : "English"}
+              {result.sourceLang === "lt" ? "Lithuanian" : "English"}
             </span>
           </div>
 
           <div>
             <label className="block text-sm mb-1">Lithuanian</label>
-            <div className="text-lg font-semibold break-words">{ltOut}</div>
+            <div className="text-lg font-semibold break-words">
+              {result.ltOut}
+            </div>
 
-            {phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">{phonetics}</div>
+            {result.phonetics && (
+              <div className="text-sm text-zinc-400 mt-1">
+                {result.phonetics}
+              </div>
             )}
           </div>
 
           <div className="border-t border-zinc-800 pt-3 space-y-1 text-sm">
             <div>
               <span className="font-semibold">English meaning (natural): </span>
-              <span>{enNatural || enLiteral}</span>
+              <span>{result.enNatural || result.enLiteral}</span>
             </div>
-            {enLiteral && (
+            {result.enLiteral && (
               <div className="text-zinc-400">
                 <span className="font-semibold text-zinc-300">
                   Literal meaning:{" "}
                 </span>
-                <span>{enLiteral}</span>
+                <span>{result.enLiteral}</span>
               </div>
             )}
           </div>
 
           {/* (Translate does not populate these; kept for compatibility) */}
-          {(usageOut || notesOut || categoryOut) && (
+          {(result.usageOut || result.notesOut || result.categoryOut) && (
             <div className="border-t border-zinc-800 pt-3 space-y-2 text-sm">
-              {categoryOut && (
+              {result.categoryOut && (
                 <div>
                   <span className="font-semibold">Category: </span>
-                  <span>{categoryOut}</span>
+                  <span>{result.categoryOut}</span>
                 </div>
               )}
-              {usageOut && (
+              {result.usageOut && (
                 <div>
                   <span className="font-semibold">Usage: </span>
-                  <span>{usageOut}</span>
+                  <span>{result.usageOut}</span>
                 </div>
               )}
-              {notesOut && (
+              {result.notesOut && (
                 <div>
                   <span className="font-semibold">Notes: </span>
-                  <span className="whitespace-pre-line">{notesOut}</span>
+                  <span className="whitespace-pre-line">{result.notesOut}</span>
                 </div>
               )}
             </div>
@@ -585,13 +660,13 @@ export default function HomeView({
             <button
               type="button"
               className="
-                bg-emerald-500 text-black rounded-full 
-                px-5 py-2 text-[18px] shadow 
-                hover:bg-emerald-400 active:bg-emerald-300 
+                bg-emerald-500 text-black rounded-full
+                px-5 py-2 text-[18px] shadow
+                hover:bg-emerald-400 active:bg-emerald-300
                 transition-transform duration-150 active:scale-95
                 select-none
               "
-              onClick={() => playText(ltOut)}
+              onClick={() => handlePlay(result.ltOut)}
             >
               ▶ Normal
             </button>
@@ -599,13 +674,13 @@ export default function HomeView({
             <button
               type="button"
               className="
-                bg-emerald-700 text-black rounded-full 
-                px-5 py-2 text-[18px] shadow 
-                hover:bg-emerald-600 active:bg-emerald-500 
+                bg-emerald-700 text-black rounded-full
+                px-5 py-2 text-[18px] shadow
+                hover:bg-emerald-600 active:bg-emerald-500
                 transition-transform duration-150 active:scale-95
                 select-none
               "
-              onClick={() => playText(ltOut, { slow: true })}
+              onClick={() => handlePlay(result.ltOut, { slow: true })}
             >
               🐢 Slow
             </button>
@@ -613,23 +688,20 @@ export default function HomeView({
             <button
               type="button"
               className="
-                bg-zinc-800 text-zinc-200 rounded-full 
+                bg-zinc-800 text-zinc-200 rounded-full
                 px-5 py-2 text-sm font-medium
                 hover:bg-zinc-700 active:bg-zinc-600
                 transition-transform duration-150 active:scale-95
                 select-none
               "
-              onClick={() => {
-                navigator.clipboard.writeText(ltOut);
-                showToast?.("Copied");
-              }}
+              onClick={handleCopy}
             >
               Copy
             </button>
 
             <button
               className="
-                bg-zinc-800 text-zinc-200 rounded-full 
+                bg-zinc-800 text-zinc-200 rounded-full
                 px-5 py-2 text-sm font-medium
                 hover:bg-zinc-700 active:bg-zinc-600
                 transition-transform duration-150 active:scale-95
@@ -649,13 +721,13 @@ export default function HomeView({
       {typeof onOpenAddForm === "function" && (
         <button
           className="
-            w-full mt-6 bg-emerald-500 text-black rounded-full 
+            w-full mt-6 bg-emerald-500 text-black rounded-full
             px-5 py-3 font-semibold shadow text-center
-            hover:bg-emerald-400 active:bg-emerald-300 
+            hover:bg-emerald-400 active:bg-emerald-300
             transition-transform duration-150 active:scale-95
             select-none
           "
-          onClick={onOpenAddForm}
+          onClick={handleOpenAdd}
         >
           + Add Entry Manually
         </button>
