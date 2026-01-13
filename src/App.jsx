@@ -21,6 +21,9 @@ import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
 import SwipePager from "./components/SwipePager";
 
+import DailyRecallModal from "./components/DailyRecallModal";
+import useDailyRecall from "./hooks/useDailyRecall";
+
 import AuthGate from "./components/AuthGate";
 import BetaBlocked from "./components/BetaBlocked";
 
@@ -47,9 +50,7 @@ import {
   clearLibrary as clearLibraryIO,
 } from "./services/libraryIO";
 
-/* ============================================================================
-   CONSTANTS
-   ========================================================================== */
+/* ============================================================================ */
 const APP_VERSION = "1.5.1-beta";
 
 const LSK_SORT = "lt_sort_v1";
@@ -61,9 +62,6 @@ const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
 };
 
-/* ============================================================================
-   STRINGS
-   ========================================================================== */
 const STR = {
   appTitle1: "Žodis",
   appTitle2: "",
@@ -94,9 +92,7 @@ const STR = {
   edit: "Edit Entry",
 };
 
-/* ============================================================================
-   MAIN APP
-   ========================================================================== */
+/* ============================================================================ */
 export default function App() {
   useEffect(() => {
     initAuthListener();
@@ -251,6 +247,20 @@ export default function App() {
     goToPage("home");
   }
 
+  /* DAILY RECALL (once/day) */
+  const dailyBlocked =
+    addOpen ||
+    showWhatsNew ||
+    showUserGuide ||
+    showChangeLog ||
+    page === "dupes";
+
+  const dailyRecall = useDailyRecall({
+    rows: visibleRows,
+    blocked: dailyBlocked,
+    minLibraryForUserMode: 8,
+  });
+
   /* RENDER GATE */
   if (authLoading && !user) {
     return <div className="min-h-[100dvh] bg-zinc-950" />;
@@ -371,11 +381,22 @@ export default function App() {
                 onOpenDuplicateScanner={() => goToPage("dupes")}
                 onOpenChangeLog={() => setShowChangeLog(true)}
                 onOpenUserGuide={() => setShowUserGuide(true)}
+                dailyRecallEnabled={dailyRecall.enabled}
+                setDailyRecallEnabled={dailyRecall.setEnabled}
               />
             </div>
           </SwipePager>
         )}
       </main>
+
+      {/* DAILY RECALL MODAL */}
+      {dailyRecall.isOpen && dailyRecall.phrase && (
+        <DailyRecallModal
+          phrase={dailyRecall.phrase}
+          playText={playText}
+          onClose={dailyRecall.close}
+        />
+      )}
 
       {addOpen && (
         <div
