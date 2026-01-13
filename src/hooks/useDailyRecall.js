@@ -50,7 +50,7 @@ function normalizeRagIcon(icon) {
   return "🟠";
 }
 
-function getEnglishForRecall(r) {
+export function getEnglishForRecall(r) {
   return (
     (r?.EnglishNatural && String(r.EnglishNatural).trim()) ||
     (r?.English && String(r.English).trim()) ||
@@ -97,7 +97,9 @@ async function fetchStarterPhrasesOnce(cacheRef) {
 
   cacheRef.current.promise = (async () => {
     try {
-      const res = await fetch("/data/starter_en_to_lt.json", { cache: "force-cache" });
+      const res = await fetch("/data/starter_en_to_lt.json", {
+        cache: "force-cache",
+      });
       if (!res.ok) throw new Error("starter fetch failed");
       const data = await res.json();
       const rows = Array.isArray(data) ? data : [];
@@ -155,13 +157,30 @@ export default function useDailyRecall({
     choosingRef.current = true;
 
     try {
+      // If we've already shown today AND we can find the same phrase, reuse it.
+      // This is the key fix that stops "random" behaviour on the same day.
+      if (lastShownDate === todayKey && lastShownId) {
+        const existing = usableUserRows.find(
+          (r) => String(r?._id || "") === String(lastShownId)
+        );
+        if (existing) {
+          setPhrase(existing);
+          setIsOpen(true);
+          return;
+        }
+      }
+
       const shouldUseUser = usableUserRows.length >= minLibraryForUserMode;
       const rand = seededRng(`daily_recall|${todayKey}`);
 
       if (shouldUseUser) {
+        // Only avoid repeats across days (not within the same day).
+        // If lastShownDate !== todayKey, we can exclude lastShownId to reduce "same as yesterday" feel.
         const pool =
-          usableUserRows.length > 1
-            ? usableUserRows.filter((r) => String(r._id || "") !== String(lastShownId || ""))
+          usableUserRows.length > 1 && lastShownId && lastShownDate !== todayKey
+            ? usableUserRows.filter(
+                (r) => String(r._id || "") !== String(lastShownId)
+              )
             : usableUserRows;
 
         const weights = pool.map(weightForRow);
@@ -172,6 +191,7 @@ export default function useDailyRecall({
         return;
       }
 
+      // Starter fallback
       const starter = await fetchStarterPhrasesOnce(starterCacheRef);
       const usableStarter = starter.filter((r) => {
         const lt = String(r?.Lithuanian || "").trim();
@@ -199,7 +219,7 @@ export default function useDailyRecall({
     }
   }
 
-  // Auto-show on open, once/day
+  // Auto-show: once/day
   useEffect(() => {
     if (!enabled) return;
     if (blocked) return;
@@ -209,7 +229,7 @@ export default function useDailyRecall({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, blocked, todayKey, lastShownDate, usableUserRows.length]);
 
-  // Manual trigger (can re-open even if already shown today)
+  // Manual trigger: re-open even if already shown today (and now it will reuse same phrase)
   async function showNow() {
     if (blocked) return;
     await choosePhrase({ force: true });
@@ -224,5 +244,3 @@ export default function useDailyRecall({
     showNow,
   };
 }
-
-export { getEnglishForRecall };
