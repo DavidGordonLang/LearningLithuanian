@@ -16,10 +16,14 @@ export default function SettingsView({
   fetchStarter,
   clearLibrary,
   importJsonFile,
-  rows, // UI rows (non-deleted only)
+  rows,
   onOpenDuplicateScanner,
   onOpenChangeLog,
   onOpenUserGuide,
+
+  dailyRecallEnabled,
+  setDailyRecallEnabled,
+  showDailyRecallNow,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
@@ -30,44 +34,33 @@ export default function SettingsView({
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  /**
-   * Sync status (manual sync model)
-   * - "dirty" means local has changed since last successful sync/upload.
-   */
   const [syncDirty, setSyncDirty] = useState(false);
-  const [lastSyncLabel, setLastSyncLabel] = useState(""); // e.g., "Synced", "Downloaded", "Uploaded"
-  const [lastSyncAt, setLastSyncAt] = useState(null); // Date.now()
+  const [lastSyncLabel, setLastSyncLabel] = useState("");
+  const [lastSyncAt, setLastSyncAt] = useState(null);
 
-  /**
-   * IMPORTANT:
-   * Always use full store (including tombstones) for export & sync
-   */
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
-  /**
-   * Mark local as changed (not synced).
-   * We use a lightweight hash to detect changes without deep comparisons.
-   */
   const lastHashRef = useRef("");
 
   const localHash = useMemo(() => {
     try {
       const all = getAllStoredPhrases();
-      // Small, stable-ish fingerprint. Good enough for "dirty" signalling.
-      // Includes tombstones and core identity fields.
       const sig = all
-        .map((r) => `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`)
+        .map(
+          (r) =>
+            `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${
+              r?._deleted ? 1 : 0
+            }`
+        )
         .join("~");
-      // Keep it short
       return String(sig.length) + ":" + String(sig.slice(0, 200));
     } catch {
       return "0:";
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows?.length]); // rows length changes on add/edit/delete; tombstones included via store anyway
+  }, [rows?.length]);
 
   useEffect(() => {
-    // On first mount, set baseline hash.
     if (!lastHashRef.current) {
       lastHashRef.current = localHash;
       return;
@@ -85,7 +78,6 @@ export default function SettingsView({
     setSyncDirty(false);
     setLastSyncLabel(label);
     setLastSyncAt(Date.now());
-    // refresh baseline hash now that we're "in sync"
     lastHashRef.current = localHash;
   }
 
@@ -99,7 +91,6 @@ export default function SettingsView({
     }
   }
 
-  /* EXPORT JSON (includes tombstones) */
   function exportJson() {
     const allPhrases = getAllStoredPhrases();
 
@@ -115,19 +106,16 @@ export default function SettingsView({
     URL.revokeObjectURL(url);
   }
 
-  /* IMPORT JSON */
   async function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     await importJsonFile(file);
-    // local has changed; banner should show "Not synced"
     setSyncDirty(true);
     setLastSyncLabel("");
     setLastSyncAt(null);
     e.target.value = "";
   }
 
-  /* STARTER PACK */
   async function handleInstallStarter() {
     await fetchStarter("EN2LT");
     setSyncDirty(true);
@@ -135,7 +123,6 @@ export default function SettingsView({
     setLastSyncAt(null);
   }
 
-  /* CLEAR LIBRARY */
   function handleClearLibrary() {
     clearLibrary?.();
     setSyncDirty(true);
@@ -143,7 +130,6 @@ export default function SettingsView({
     setLastSyncAt(null);
   }
 
-  /* UPLOAD → CLOUD (overwrite, includes tombstones) */
   async function uploadLibraryToCloud() {
     if (!user) return;
 
@@ -165,7 +151,6 @@ export default function SettingsView({
     }
   }
 
-  /* DOWNLOAD → LOCAL (overwrite) */
   async function downloadLibraryFromCloud() {
     if (!user) return;
 
@@ -178,7 +163,6 @@ export default function SettingsView({
       setSyncingDown(true);
       const cloudRows = await fetchUserPhrases();
       setRows(cloudRows);
-      // After download, local == cloud (as far as we know)
       markSynced("Downloaded");
       alert(`Downloaded ${cloudRows.length} entries ✅`);
     } catch (e) {
@@ -188,7 +172,6 @@ export default function SettingsView({
     }
   }
 
-  /* SYNC (MERGE) — safe, conflict-aware */
   async function mergeLibraryWithCloud() {
     if (!user) return;
 
@@ -210,7 +193,6 @@ export default function SettingsView({
         return;
       }
 
-      // No conflicts → mergedRows already written to cloud
       setRows(result.mergedRows);
       markSynced("Synced");
       alert("Sync completed ✅");
@@ -242,9 +224,7 @@ export default function SettingsView({
         <div className="rounded-xl border border-emerald-800 bg-emerald-950/20 px-4 py-3 text-sm">
           <div className="font-semibold text-emerald-300">{lastSyncLabel}</div>
           {lastSyncAt ? (
-            <div className="text-zinc-300 mt-1">
-              {formatWhen(lastSyncAt)}
-            </div>
+            <div className="text-zinc-300 mt-1">{formatWhen(lastSyncAt)}</div>
           ) : null}
         </div>
       );
@@ -263,11 +243,63 @@ export default function SettingsView({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
+      {/* DAILY RECALL */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
+        <div className="text-lg font-semibold">Daily Recall</div>
+        <p className="text-sm text-zinc-400">
+          Show one saved phrase when you open the app. Designed for light recall,
+          not streaks.
+        </p>
+
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-200">
+                Daily reminder phrase
+              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">
+                Once per day
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={
+                "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
+                (dailyRecallEnabled
+                  ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
+                  : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
+              }
+              onClick={() => setDailyRecallEnabled?.(!dailyRecallEnabled)}
+            >
+              {dailyRecallEnabled ? "On" : "Off"}
+            </button>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="
+                bg-zinc-800 text-zinc-200 rounded-full
+                px-4 py-2 text-sm font-medium
+                hover:bg-zinc-700 active:bg-zinc-600
+                select-none
+              "
+              onClick={() => showDailyRecallNow?.()}
+              title="Re-open today's recall prompt"
+            >
+              Show today’s recall
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* STARTER PACK */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
         <p className="text-sm text-zinc-400">
-          Adds the starter library to this device. Re-installing won’t duplicate entries.
+          Adds the starter library to this device. Re-installing won’t duplicate
+          entries.
         </p>
         <button
           className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
@@ -298,14 +330,12 @@ export default function SettingsView({
         ) : (
           <>
             <p className="text-sm text-zinc-400">
-              Signed in as{" "}
-              <span className="text-zinc-200">{user.email}</span>
+              Signed in as <span className="text-zinc-200">{user.email}</span>
             </p>
 
             {syncBanner}
 
             <div className="flex flex-wrap gap-3">
-              {/* Primary action */}
               <button
                 className="bg-emerald-600 text-black rounded-full px-5 py-2 font-semibold"
                 onClick={mergeLibraryWithCloud}
@@ -323,14 +353,15 @@ export default function SettingsView({
               </button>
             </div>
 
-            {/* Advanced */}
             <div className="pt-2">
               <button
                 type="button"
                 className="text-sm text-zinc-300 hover:text-zinc-100 underline underline-offset-4"
                 onClick={() => setShowAdvanced((v) => !v)}
               >
-                {showAdvanced ? "Hide advanced sync options" : "Show advanced sync options"}
+                {showAdvanced
+                  ? "Hide advanced sync options"
+                  : "Show advanced sync options"}
               </button>
 
               {showAdvanced && (
@@ -341,13 +372,20 @@ export default function SettingsView({
 
                   <ul className="text-sm text-zinc-400 list-disc pl-5 space-y-1">
                     <li>
-                      <span className="text-zinc-200">Upload (overwrite)</span>: forces local → cloud.
+                      <span className="text-zinc-200">
+                        Upload (overwrite)
+                      </span>
+                      : forces local → cloud.
                     </li>
                     <li>
-                      <span className="text-zinc-200">Download (overwrite)</span>: forces cloud → local.
+                      <span className="text-zinc-200">
+                        Download (overwrite)
+                      </span>
+                      : forces cloud → local.
                     </li>
                     <li>
-                      <span className="text-zinc-200">Sync (merge)</span> is safer for normal use.
+                      <span className="text-zinc-200">Sync (merge)</span> is
+                      safer for normal use.
                     </li>
                   </ul>
 
@@ -407,11 +445,7 @@ export default function SettingsView({
             Export/Import is a file on this device (not cloud).
           </div>
 
-          <input
-            type="file"
-            accept="application/json"
-            onChange={handleImportFile}
-          />
+          <input type="file" accept="application/json" onChange={handleImportFile} />
 
           <button
             className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
