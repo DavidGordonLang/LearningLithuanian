@@ -32,6 +32,8 @@ import { initAuthListener, useAuthStore } from "./stores/authStore";
 import { supabase } from "./supabaseClient";
 
 import useLocalStorageState from "./hooks/useLocalStorageState";
+import useModalScrollLock from "./hooks/useModalScrollLock";
+
 import { nowTs, genId } from "./utils/ids";
 import { normalizeRag } from "./utils/rag";
 import { makeLtKey } from "./utils/contentKey";
@@ -296,12 +298,19 @@ export default function App() {
     mergeRowsIO(newRows, { setRows, normalizeRag, genId, nowTs });
 
   const mergeStarterRows = (newRows) =>
-    mergeStarterRowsIO(newRows, { setRows, normalizeRag, makeLtKey, genId, nowTs });
+    mergeStarterRowsIO(newRows, {
+      setRows,
+      normalizeRag,
+      makeLtKey,
+      genId,
+      nowTs,
+    });
 
   const fetchStarter = (kind) =>
     fetchStarterIO(kind, { STARTERS, mergeStarterRowsImpl: mergeStarterRows });
 
-  const importJsonFile = (file) => importJsonFileIO(file, { mergeRowsImpl: mergeRows });
+  const importJsonFile = (file) =>
+    importJsonFileIO(file, { mergeRowsImpl: mergeRows });
 
   const clearLibrary = () => clearLibraryIO({ T, setRows });
 
@@ -321,6 +330,9 @@ export default function App() {
       )
     );
   }
+
+  // ✅ Extracted modal scroll lock (behaviour unchanged)
+  useModalScrollLock({ active: addOpen, disabled: authLoading });
 
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
@@ -388,86 +400,6 @@ export default function App() {
       html.style.height = prev.htmlHeight;
     };
   }, [user]);
-
-  /* MODAL SCROLL LOCK (unchanged) */
-  useEffect(() => {
-    if (!addOpen || authLoading) return;
-
-    const body = document.body;
-    const html = document.documentElement;
-
-    const prevBody = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-      overscrollBehavior: body.style.overscrollBehavior,
-      touchAction: body.style.touchAction,
-    };
-
-    const prevHtml = {
-      overflow: html.style.overflow,
-      overscrollBehavior: html.style.overscrollBehavior,
-      height: html.style.height,
-    };
-
-    let scrollY = window.scrollY || 0;
-
-    const applyLock = () => {
-      scrollY = Number.isFinite(window.scrollY) ? window.scrollY : scrollY;
-
-      body.style.position = "fixed";
-      body.style.top = `-${scrollY}px`;
-      body.style.left = "0";
-      body.style.right = "0";
-      body.style.width = "100%";
-      body.style.overflow = "hidden";
-      body.style.overscrollBehavior = "none";
-      body.style.touchAction = "none";
-
-      html.style.overflow = "hidden";
-      html.style.overscrollBehavior = "none";
-      html.style.height = "100%";
-    };
-
-    const reapplyIfNeeded = () => {
-      if (!addOpen || authLoading) return;
-      applyLock();
-    };
-
-    applyLock();
-
-    window.addEventListener("pageshow", reapplyIfNeeded);
-    window.addEventListener("focus", reapplyIfNeeded);
-    window.addEventListener("resize", reapplyIfNeeded);
-    window.addEventListener("orientationchange", reapplyIfNeeded);
-    document.addEventListener("visibilitychange", reapplyIfNeeded);
-
-    return () => {
-      window.removeEventListener("pageshow", reapplyIfNeeded);
-      window.removeEventListener("focus", reapplyIfNeeded);
-      window.removeEventListener("resize", reapplyIfNeeded);
-      window.removeEventListener("orientationchange", reapplyIfNeeded);
-      document.removeEventListener("visibilitychange", reapplyIfNeeded);
-
-      body.style.position = prevBody.position;
-      body.style.top = prevBody.top;
-      body.style.left = prevBody.left;
-      body.style.right = prevBody.right;
-      body.style.width = prevBody.width;
-      body.style.overflow = prevBody.overflow;
-      body.style.overscrollBehavior = prevBody.overscrollBehavior;
-      body.style.touchAction = prevBody.touchAction;
-
-      html.style.overflow = prevHtml.overflow;
-      html.style.overscrollBehavior = prevHtml.overscrollBehavior;
-      html.style.height = prevHtml.height;
-
-      window.scrollTo(0, scrollY);
-    };
-  }, [addOpen, authLoading]);
 
   /* RENDER GATE */
   if (authLoading && !user) {
