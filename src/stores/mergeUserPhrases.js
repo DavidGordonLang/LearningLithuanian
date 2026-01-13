@@ -19,6 +19,11 @@
  * - Deletions are tombstones: _deleted=true + _deleted_ts (number).
  * - We never overwrite meaningful data with blanks / placeholders.
  * - If both sides have meaningful, different values for the same field, we surface a conflict.
+ *
+ * IMPORTANT UPDATE (Jan 2026):
+ * - "RAG Icon" is treated as a non-blocking, auto-resolved field.
+ *   RAG differences will NEVER create a merge conflict.
+ *   Resolution: prefer newer _ts; if tied, prefer local.
  */
 
 const PLACEHOLDERS = new Set(["nan", "null", "nul", "none", "n/a", "na", ""]);
@@ -115,6 +120,29 @@ function chooseBestText(fieldName, localRow, cloudRow) {
   return lv.length >= cv.length ? lv : cv;
 }
 
+/**
+ * RAG is special: never block merge, never produce a conflict.
+ * Prefer newer _ts; if tied, prefer local.
+ */
+function chooseRagIcon(localRow, cloudRow) {
+  const lv = meaningfulText(localRow?.["RAG Icon"]);
+  const cv = meaningfulText(cloudRow?.["RAG Icon"]);
+
+  if (lv && !cv) return lv;
+  if (cv && !lv) return cv;
+  if (!lv && !cv) return "";
+
+  if (lv === cv) return lv;
+
+  const lts = typeof localRow?._ts === "number" ? localRow._ts : 0;
+  const cts = typeof cloudRow?._ts === "number" ? cloudRow._ts : 0;
+
+  if (lts !== cts) return lts > cts ? lv : cv;
+
+  // tie -> prefer local
+  return lv;
+}
+
 function computeCompletenessScore(r) {
   let score = 0;
   if (isMeaningful(r?.Lithuanian)) score += 3;
@@ -204,8 +232,7 @@ function mergePair(localIn, cloudIn) {
   if (lDel && cDel) {
     const newestDelTs = Math.max(lDelTs, cDelTs, Date.now());
     const base =
-      computeCompletenessScore(localRow) >=
-      computeCompletenessScore(cloudRow)
+      computeCompletenessScore(localRow) >= computeCompletenessScore(cloudRow)
         ? localRow
         : cloudRow;
 
@@ -227,8 +254,7 @@ function mergePair(localIn, cloudIn) {
       ? lEditTs >= cEditTs
         ? localRow
         : cloudRow
-      : computeCompletenessScore(localRow) >=
-        computeCompletenessScore(cloudRow)
+      : computeCompletenessScore(localRow) >= computeCompletenessScore(cloudRow)
       ? localRow
       : cloudRow;
 
@@ -264,6 +290,13 @@ function mergePair(localIn, cloudIn) {
   const fieldConflicts = [];
 
   for (const f of FIELDS) {
+    // Special case: RAG never blocks merge
+    if (f === "RAG Icon") {
+      const chosen = chooseRagIcon(localRow, cloudRow);
+      if (chosen) merged[f] = chosen;
+      continue;
+    }
+
     const baseVal = meaningfulText(base[f]);
     const otherVal = meaningfulText(other[f]);
 
@@ -293,6 +326,7 @@ function mergePair(localIn, cloudIn) {
   // Preserve _qstat sensibly
   if (base._qstat || other._qstat) merged._qstat = base._qstat || other._qstat;
 
+  // Only raise conflict if there are meaningful diffs outside of RAG
   if (fieldConflicts.length) {
     return {
       merged,
