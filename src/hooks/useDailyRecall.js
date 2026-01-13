@@ -6,7 +6,6 @@ const LSK_DAILY_RECALL_LAST_DATE = "lt_daily_recall_last_date";
 const LSK_DAILY_RECALL_LAST_ID = "lt_daily_recall_last_id";
 
 function getLocalDateKey(d = new Date()) {
-  // Local calendar day (device timezone) e.g. "2026-01-13"
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -28,7 +27,6 @@ function safeSetLS(key, value) {
 }
 
 function seededRng(seedStr) {
-  // Deterministic RNG from string seed (Mulberry32 fed by FNV-1a hash)
   let h = 2166136261;
   for (let i = 0; i < seedStr.length; i++) {
     h ^= seedStr.charCodeAt(i);
@@ -73,7 +71,6 @@ function isUsableRow(r) {
 
 function weightForRow(r) {
   const rag = normalizeRagIcon(r?.["RAG Icon"]);
-  // Strong bias: 🔴 > 🟠 > 🟢
   if (rag === "🔴") return 6;
   if (rag === "🟠") return 3;
   return 1;
@@ -104,7 +101,6 @@ async function fetchStarterPhrasesOnce(cacheRef) {
       if (!res.ok) throw new Error("starter fetch failed");
       const data = await res.json();
       const rows = Array.isArray(data) ? data : [];
-
       cacheRef.current = { ready: true, rows, promise: null };
       return rows;
     } catch {
@@ -150,23 +146,19 @@ export default function useDailyRecall({
   }
 
   function close() {
-    // Close marks as "shown today" so it won't reappear on refresh/reopen
     if (phrase) markShownToday(phrase);
     setIsOpen(false);
   }
 
-  async function choosePhrase() {
+  async function choosePhrase({ force = false } = {}) {
     if (choosingRef.current) return;
     choosingRef.current = true;
 
     try {
-      const shouldUseUser =
-        usableUserRows.length >= minLibraryForUserMode;
-
+      const shouldUseUser = usableUserRows.length >= minLibraryForUserMode;
       const rand = seededRng(`daily_recall|${todayKey}`);
 
       if (shouldUseUser) {
-        // Avoid yesterday’s exact phrase if possible
         const pool =
           usableUserRows.length > 1
             ? usableUserRows.filter((r) => String(r._id || "") !== String(lastShownId || ""))
@@ -180,7 +172,6 @@ export default function useDailyRecall({
         return;
       }
 
-      // Fallback: starter pack
       const starter = await fetchStarterPhrasesOnce(starterCacheRef);
       const usableStarter = starter.filter((r) => {
         const lt = String(r?.Lithuanian || "").trim();
@@ -198,7 +189,6 @@ export default function useDailyRecall({
         return;
       }
 
-      // Deterministic index by date
       const idx = Math.floor(rand() * usableStarter.length);
       const picked = usableStarter[idx] || usableStarter[0];
 
@@ -209,17 +199,21 @@ export default function useDailyRecall({
     }
   }
 
+  // Auto-show on open, once/day
   useEffect(() => {
-    // Don’t show if disabled, already shown today, blocked, or no rows at all
     if (!enabled) return;
     if (blocked) return;
     if (lastShownDate === todayKey) return;
 
-    // Avoid flashing open if we don’t have any eligible sources yet
-    // (but still allow starter fallback even if user rows are empty)
-    choosePhrase();
+    choosePhrase({ force: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, blocked, todayKey, lastShownDate, usableUserRows.length]);
+
+  // Manual trigger (can re-open even if already shown today)
+  async function showNow() {
+    if (blocked) return;
+    await choosePhrase({ force: true });
+  }
 
   return {
     enabled,
@@ -227,6 +221,7 @@ export default function useDailyRecall({
     isOpen,
     phrase,
     close,
+    showNow,
   };
 }
 
