@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.5.2-beta",
+    "date": "2026-01-13",
+    "changes": [
+      "Made Sync (merge) non-blocking for RAG changes: RAG Icon differences now auto-resolve instead of pausing sync with conflicts.",
+      "Improved daily reminder behaviour so the same phrase is reused for the current calendar day rather than re-rolling randomly each time.",
+      "Added a manual “show again” trigger for the daily reminder in Settings (even if it has already shown today).",
+      "Removed distracting helper copy in Settings that implied tap-outside-to-dismiss for the daily reminder toggle area."
+    ]
+  },
+  {
     "version": "1.5.1-beta",
     "date": "2026-01-13",
     "changes": [
