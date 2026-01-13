@@ -1,6 +1,5 @@
 // src/components/WhatsNewModal.jsx
-import React, { useMemo } from "react";
-import changelog from "../data/changelog.json";
+import React, { useEffect, useState } from "react";
 
 export default function WhatsNewModal({
   version,
@@ -8,14 +7,37 @@ export default function WhatsNewModal({
   onClose,
   onViewChangelog,
 }) {
-  const entry = useMemo(() => {
-    const list = Array.isArray(changelog) ? changelog : [];
-    const match = list.find((e) => e?.version === version);
-    return match || list[0] || null;
+  const [entry, setEntry] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      try {
+        const res = await fetch("/data/changelog.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load changelog");
+
+        const list = await res.json();
+        if (!alive || !Array.isArray(list)) return;
+
+        const match = list.find((e) => e?.version === version);
+        setEntry(match || list[0] || null);
+      } catch {
+        if (alive) setEntry(null);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
   }, [version]);
 
   const changes = Array.isArray(entry?.changes) ? entry.changes : [];
-  const date = entry?.date ? String(entry.date) : null;
+  const date = entry?.date || null;
 
   return (
     <div
@@ -41,11 +63,12 @@ export default function WhatsNewModal({
             <h2 className="text-xl font-bold">What’s New</h2>
             <div className="text-xs text-zinc-400 mt-0.5">
               App Version: {version}
-              {date ? <span className="text-zinc-500"> • {date}</span> : null}
+              {date && <span className="text-zinc-500"> • {date}</span>}
             </div>
           </div>
 
           <button
+            type="button"
             className="
               bg-zinc-800 text-zinc-200 rounded-full
               px-3 py-1 text-xs font-medium
@@ -53,7 +76,6 @@ export default function WhatsNewModal({
               select-none
             "
             onClick={onClose}
-            type="button"
           >
             Close
           </button>
@@ -63,8 +85,9 @@ export default function WhatsNewModal({
           Here’s what changed in the latest update:
         </p>
 
-        {/* CHANGE LIST (current release) */}
-        {changes.length > 0 ? (
+        {loading ? (
+          <div className="text-sm text-zinc-400 mb-4">Loading…</div>
+        ) : changes.length > 0 ? (
           <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
             {changes.slice(0, 8).map((c, idx) => (
               <li key={idx}>{c}</li>
