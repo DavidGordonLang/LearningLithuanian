@@ -39,13 +39,15 @@ export default function WhatsNewModal({
   const changes = Array.isArray(entry?.changes) ? entry.changes : [];
   const date = entry?.date || null;
 
+  const padTop = topOffset ? topOffset + 16 : 16;
+
   return (
     <div
       className="
         fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm
-        flex justify-center p-4
+        flex items-center justify-center p-4
       "
-      style={{ paddingTop: topOffset ? topOffset + 16 : 16 }}
+      style={{ paddingTop: padTop }}
       onPointerDown={onClose}
     >
       <div
