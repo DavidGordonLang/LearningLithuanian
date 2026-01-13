@@ -16,14 +16,14 @@ export default function SettingsView({
   fetchStarter,
   clearLibrary,
   importJsonFile,
-  rows, // UI rows (non-deleted only)
+  rows,
   onOpenDuplicateScanner,
   onOpenChangeLog,
   onOpenUserGuide,
 
-  // NEW: Daily Recall toggle
   dailyRecallEnabled,
   setDailyRecallEnabled,
+  showDailyRecallNow,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
@@ -34,24 +34,12 @@ export default function SettingsView({
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  /**
-   * Sync status (manual sync model)
-   * - "dirty" means local has changed since last successful sync/upload.
-   */
   const [syncDirty, setSyncDirty] = useState(false);
-  const [lastSyncLabel, setLastSyncLabel] = useState(""); // e.g., "Synced", "Downloaded", "Uploaded"
-  const [lastSyncAt, setLastSyncAt] = useState(null); // Date.now()
+  const [lastSyncLabel, setLastSyncLabel] = useState("");
+  const [lastSyncAt, setLastSyncAt] = useState(null);
 
-  /**
-   * IMPORTANT:
-   * Always use full store (including tombstones) for export & sync
-   */
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
-  /**
-   * Mark local as changed (not synced).
-   * We use a lightweight hash to detect changes without deep comparisons.
-   */
   const lastHashRef = useRef("");
 
   const localHash = useMemo(() => {
@@ -103,7 +91,6 @@ export default function SettingsView({
     }
   }
 
-  /* EXPORT JSON (includes tombstones) */
   function exportJson() {
     const allPhrases = getAllStoredPhrases();
 
@@ -119,7 +106,6 @@ export default function SettingsView({
     URL.revokeObjectURL(url);
   }
 
-  /* IMPORT JSON */
   async function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -130,7 +116,6 @@ export default function SettingsView({
     e.target.value = "";
   }
 
-  /* STARTER PACK */
   async function handleInstallStarter() {
     await fetchStarter("EN2LT");
     setSyncDirty(true);
@@ -138,7 +123,6 @@ export default function SettingsView({
     setLastSyncAt(null);
   }
 
-  /* CLEAR LIBRARY */
   function handleClearLibrary() {
     clearLibrary?.();
     setSyncDirty(true);
@@ -146,7 +130,6 @@ export default function SettingsView({
     setLastSyncAt(null);
   }
 
-  /* UPLOAD → CLOUD (overwrite, includes tombstones) */
   async function uploadLibraryToCloud() {
     if (!user) return;
 
@@ -168,7 +151,6 @@ export default function SettingsView({
     }
   }
 
-  /* DOWNLOAD → LOCAL (overwrite) */
   async function downloadLibraryFromCloud() {
     if (!user) return;
 
@@ -190,7 +172,6 @@ export default function SettingsView({
     }
   }
 
-  /* SYNC (MERGE) — safe, conflict-aware */
   async function mergeLibraryWithCloud() {
     if (!user) return;
 
@@ -270,28 +251,46 @@ export default function SettingsView({
           not streaks.
         </p>
 
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3">
-          <div>
-            <div className="text-sm font-semibold text-zinc-200">
-              Daily reminder phrase
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-200">
+                Daily reminder phrase
+              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">
+                Once per day
+              </div>
             </div>
-            <div className="text-xs text-zinc-500 mt-0.5">
-              Once per day • Tap outside to dismiss
-            </div>
+
+            <button
+              type="button"
+              className={
+                "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
+                (dailyRecallEnabled
+                  ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
+                  : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
+              }
+              onClick={() => setDailyRecallEnabled?.(!dailyRecallEnabled)}
+            >
+              {dailyRecallEnabled ? "On" : "Off"}
+            </button>
           </div>
 
-          <button
-            type="button"
-            className={
-              "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
-              (dailyRecallEnabled
-                ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
-                : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
-            }
-            onClick={() => setDailyRecallEnabled?.(!dailyRecallEnabled)}
-          >
-            {dailyRecallEnabled ? "On" : "Off"}
-          </button>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="
+                bg-zinc-800 text-zinc-200 rounded-full
+                px-4 py-2 text-sm font-medium
+                hover:bg-zinc-700 active:bg-zinc-600
+                select-none
+              "
+              onClick={() => showDailyRecallNow?.()}
+              title="Re-open today's recall prompt"
+            >
+              Show today’s recall
+            </button>
+          </div>
         </div>
       </section>
 
