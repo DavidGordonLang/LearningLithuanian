@@ -33,6 +33,7 @@ import { supabase } from "./supabaseClient";
 
 import useLocalStorageState from "./hooks/useLocalStorageState";
 import useModalScrollLock from "./hooks/useModalScrollLock";
+import useBetaAllowlist from "./hooks/useBetaAllowlist";
 
 import { nowTs, genId } from "./utils/ids";
 import { normalizeRag } from "./utils/rag";
@@ -160,50 +161,11 @@ export default function App() {
   const authLoading = useAuthStore((s) => s.loading);
   const user = useAuthStore((s) => s.user);
 
-  /* BETA ACCESS GATE */
-  const [allowlistChecked, setAllowlistChecked] = useState(false);
-  const [isAllowlisted, setIsAllowlisted] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-
-    async function check() {
-      if (!user?.email) {
-        if (!alive) return;
-        setIsAllowlisted(false);
-        setAllowlistChecked(true);
-        return;
-      }
-
-      setAllowlistChecked(false);
-
-      const email = String(user.email).toLowerCase();
-
-      const { data, error } = await supabase
-        .from("beta_allowlist")
-        .select("email")
-        .eq("email", email)
-        .limit(1);
-
-      if (!alive) return;
-
-      if (error) {
-        console.warn("Allowlist check failed:", error);
-        setIsAllowlisted(false);
-        setAllowlistChecked(true);
-        return;
-      }
-
-      setIsAllowlisted((data?.length || 0) > 0);
-      setAllowlistChecked(true);
-    }
-
-    check();
-
-    return () => {
-      alive = false;
-    };
-  }, [user?.email]);
+  // ✅ Extracted allowlist logic
+  const { checked: allowlistChecked, allowed: isAllowlisted } = useBetaAllowlist({
+    userEmail: user?.email,
+    supabase,
+  });
 
   /* PAGE */
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
@@ -331,7 +293,6 @@ export default function App() {
     );
   }
 
-  // ✅ Extracted modal scroll lock (behaviour unchanged)
   useModalScrollLock({ active: addOpen, disabled: authLoading });
 
   const [showChangeLog, setShowChangeLog] = useState(false);
