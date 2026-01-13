@@ -1,13 +1,29 @@
 // src/components/WhatsNewModal.jsx
-import React from "react";
+import React, { useMemo } from "react";
+import changelog from "../data/changelog.json";
 
-export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
+export default function WhatsNewModal({
+  version,
+  topOffset = 0,
+  onClose,
+  onViewChangelog,
+}) {
+  const entry = useMemo(() => {
+    const list = Array.isArray(changelog) ? changelog : [];
+    const match = list.find((e) => e?.version === version);
+    return match || list[0] || null;
+  }, [version]);
+
+  const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+  const date = entry?.date ? String(entry.date) : null;
+
   return (
     <div
       className="
         fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm
-        flex items-center justify-center p-4
+        flex justify-center p-4
       "
+      style={{ paddingTop: topOffset ? topOffset + 16 : 16 }}
       onPointerDown={onClose}
     >
       <div
@@ -20,11 +36,12 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div>
             <h2 className="text-xl font-bold">What’s New</h2>
             <div className="text-xs text-zinc-400 mt-0.5">
               App Version: {version}
+              {date ? <span className="text-zinc-500"> • {date}</span> : null}
             </div>
           </div>
 
@@ -36,6 +53,7 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
               select-none
             "
             onClick={onClose}
+            type="button"
           >
             Close
           </button>
@@ -46,13 +64,17 @@ export default function WhatsNewModal({ version, onClose, onViewChangelog }) {
         </p>
 
         {/* CHANGE LIST (current release) */}
-        <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
-          <li>Swipe navigation is back: move between Home, Library, and Settings.</li>
-          <li>Each tab now scrolls independently, with the header staying fixed.</li>
-          <li>Page sizing/width issues have been tightened up for more reliable layouts.</li>
-          <li>The header logo now acts as a Home + refresh shortcut.</li>
-          <li>Removed the Žodis title text from the header for a cleaner, logo-led look.</li>
-        </ul>
+        {changes.length > 0 ? (
+          <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
+            {changes.slice(0, 8).map((c, idx) => (
+              <li key={idx}>{c}</li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-sm text-zinc-400 mb-4">
+            No release notes available for this version.
+          </div>
+        )}
 
         <div className="flex gap-3 justify-end flex-wrap">
           <button
