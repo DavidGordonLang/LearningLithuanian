@@ -1,9 +1,22 @@
 // src/components/Header.jsx
-import React, { forwardRef, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref) {
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+const Header = forwardRef(function Header(
+  { T, page, setPage, onLogoClick, swipeProgress, isSwiping },
+  ref
+) {
   const tabs = useMemo(
     () => [
       { id: "home", label: T.navHome },
@@ -15,34 +28,99 @@ const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref
 
   const containerRef = useRef(null);
   const btnRefs = useRef({});
+  const [metrics, setMetrics] = useState(null); // { home:{left,width}, library:{...}, settings:{...} }
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
-  const updateIndicator = () => {
+  const measureAll = () => {
     const wrap = containerRef.current;
-    const btn = btnRefs.current?.[page];
-    if (!wrap || !btn) return;
+    if (!wrap) return;
 
     const wRect = wrap.getBoundingClientRect();
-    const bRect = btn.getBoundingClientRect();
+    const out = {};
 
-    setIndicator({
-      left: bRect.left - wRect.left,
-      width: bRect.width,
-    });
+    for (const t of tabs) {
+      const btn = btnRefs.current?.[t.id];
+      if (!btn) continue;
+      const bRect = btn.getBoundingClientRect();
+      out[t.id] = {
+        left: bRect.left - wRect.left,
+        width: bRect.width,
+      };
+    }
+
+    // Only set if we have all three
+    if (out.home && out.library && out.settings) setMetrics(out);
+  };
+
+  const updateIndicatorForPage = () => {
+    if (!metrics) {
+      // fallback: legacy behaviour (page-only)
+      const wrap = containerRef.current;
+      const btn = btnRefs.current?.[page];
+      if (!wrap || !btn) return;
+
+      const wRect = wrap.getBoundingClientRect();
+      const bRect = btn.getBoundingClientRect();
+
+      setIndicator({
+        left: bRect.left - wRect.left,
+        width: bRect.width,
+      });
+      return;
+    }
+
+    // If swipeProgress is provided, interpolate indicator position/width
+    if (typeof swipeProgress === "number" && Number.isFinite(swipeProgress)) {
+      const p = swipeProgress;
+
+      // Allow slight overscroll visual movement by clamping interpolation anchors
+      const pClamped = Math.max(0, Math.min(tabs.length - 1, p));
+      const i0 = Math.floor(pClamped);
+      const i1 = Math.min(tabs.length - 1, i0 + 1);
+      const t = pClamped - i0;
+
+      const a = tabs[i0].id;
+      const b = tabs[i1].id;
+
+      const A = metrics[a];
+      const B = metrics[b];
+
+      if (!A || !B) return;
+
+      setIndicator({
+        left: lerp(A.left, B.left, t),
+        width: lerp(A.width, B.width, t),
+      });
+      return;
+    }
+
+    // Otherwise, snap to current page
+    const m = metrics[page];
+    if (m) setIndicator({ left: m.left, width: m.width });
   };
 
   useLayoutEffect(() => {
-    updateIndicator();
-  }, [page]);
+    measureAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabs.length]);
 
   useLayoutEffect(() => {
-    const onResize = () => updateIndicator();
+    updateIndicatorForPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, swipeProgress, metrics]);
+
+  useLayoutEffect(() => {
+    const onResize = () => {
+      measureAll();
+      // after re-measure, indicator will update via metrics effect
+    };
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -93,11 +171,13 @@ const Header = forwardRef(function Header({ T, page, setPage, onLogoClick }, ref
               className="
                 absolute top-1 bottom-1
                 rounded-full bg-emerald-500 shadow
-                transition-[transform,width] duration-200 ease-out
               "
               style={{
                 width: `${indicator.width}px`,
                 transform: `translateX(${indicator.left}px)`,
+                transition: isSwiping
+                  ? "none"
+                  : "transform 200ms ease-out, width 200ms ease-out",
               }}
             />
 
