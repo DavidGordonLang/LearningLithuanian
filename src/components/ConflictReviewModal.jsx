@@ -104,11 +104,15 @@ export default function ConflictReviewModal({
     <div
       className="fixed inset-0 z-[230] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ paddingTop: padTop }}
-      onPointerDown={onClose}
+      // IMPORTANT: use onClick not onPointerDown so the opening tap can’t immediately close it on mobile/tablet
+      onClick={() => {
+        if (!busy) onClose?.();
+      }}
     >
       <div
         className="w-full max-w-3xl max-h-[82vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-[0_0_24px_rgba(0,0,0,0.35)] p-5"
-        onPointerDown={(e) => e.stopPropagation()}
+        // Stop backdrop click from firing when interacting with the modal panel
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-3">
@@ -122,7 +126,7 @@ export default function ConflictReviewModal({
           <button
             type="button"
             className="bg-zinc-800 text-zinc-200 rounded-full px-3 py-1 text-xs font-medium hover:bg-zinc-700 active:bg-zinc-600 select-none"
-            onClick={onClose}
+            onClick={() => onClose?.()}
             disabled={busy}
           >
             Close
@@ -142,10 +146,7 @@ export default function ConflictReviewModal({
             const en = merged?.English || c?.local?.English || c?.cloud?.English || "";
 
             return (
-              <div
-                key={key}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950/20 p-4"
-              >
+              <div key={key} className="rounded-2xl border border-zinc-800 bg-zinc-950/20 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-sm font-semibold text-zinc-100">
@@ -167,8 +168,7 @@ export default function ConflictReviewModal({
                         onClick={() => setDeletePick(key, "local")}
                         disabled={busy}
                       >
-                        Use local
-                        {c?.local?._deleted ? " (deleted)" : ""}
+                        Use local{c?.local?._deleted ? " (deleted)" : ""}
                       </Pill>
 
                       <Pill
@@ -176,14 +176,11 @@ export default function ConflictReviewModal({
                         onClick={() => setDeletePick(key, "cloud")}
                         disabled={busy}
                       >
-                        Use cloud
-                        {c?.cloud?._deleted ? " (deleted)" : ""}
+                        Use cloud{c?.cloud?._deleted ? " (deleted)" : ""}
                       </Pill>
                     </div>
 
-                    {c?.reason ? (
-                      <div className="text-xs text-zinc-500 mt-2">{c.reason}</div>
-                    ) : null}
+                    {c?.reason ? <div className="text-xs text-zinc-500 mt-2">{c.reason}</div> : null}
                   </div>
                 ) : c.type === "field_conflict" ? (
                   <div className="mt-3">
@@ -228,15 +225,11 @@ export default function ConflictReviewModal({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                               <div className="rounded-lg border border-zinc-800 bg-zinc-950/30 p-2">
                                 <div className="text-[11px] text-zinc-500 mb-1">Local</div>
-                                <div className="text-zinc-200 whitespace-pre-wrap">
-                                  {compact(f?.local)}
-                                </div>
+                                <div className="text-zinc-200 whitespace-pre-wrap">{compact(f?.local)}</div>
                               </div>
                               <div className="rounded-lg border border-zinc-800 bg-zinc-950/30 p-2">
                                 <div className="text-[11px] text-zinc-500 mb-1">Cloud</div>
-                                <div className="text-zinc-200 whitespace-pre-wrap">
-                                  {compact(f?.cloud)}
-                                </div>
+                                <div className="text-zinc-200 whitespace-pre-wrap">{compact(f?.cloud)}</div>
                               </div>
                             </div>
 
@@ -248,14 +241,10 @@ export default function ConflictReviewModal({
                       })}
                     </div>
 
-                    {c?.reason ? (
-                      <div className="text-xs text-zinc-500 mt-2">{c.reason}</div>
-                    ) : null}
+                    {c?.reason ? <div className="text-xs text-zinc-500 mt-2">{c.reason}</div> : null}
                   </div>
                 ) : (
-                  <div className="mt-3 text-xs text-zinc-500">
-                    Unknown conflict type.
-                  </div>
+                  <div className="mt-3 text-xs text-zinc-500">Unknown conflict type.</div>
                 )}
               </div>
             );
@@ -266,7 +255,7 @@ export default function ConflictReviewModal({
           <button
             type="button"
             className="bg-zinc-800 text-zinc-200 rounded-full px-4 py-2 text-sm font-medium hover:bg-zinc-700 active:bg-zinc-600 select-none"
-            onClick={onClose}
+            onClick={() => onClose?.()}
             disabled={busy}
           >
             Cancel
