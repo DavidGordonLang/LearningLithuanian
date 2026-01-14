@@ -7,9 +7,6 @@ import {
   fetchUserPhrases,
   mergeUserPhrases,
 } from "../stores/supabasePhrases";
-import useModalScrollLock from "../hooks/useModalScrollLock";
-import ConflictReviewModal from "../components/ConflictReviewModal";
-import applyMergeResolutions from "../utils/applyMergeResolutions";
 
 export default function SettingsView({
   T,
@@ -34,19 +31,12 @@ export default function SettingsView({
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
   const [merging, setMerging] = useState(false);
-  const [resolvingConflicts, setResolvingConflicts] = useState(false);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [syncDirty, setSyncDirty] = useState(false);
   const [lastSyncLabel, setLastSyncLabel] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState(null);
-
-  const [conflictModalOpen, setConflictModalOpen] = useState(false);
-  const [pendingConflicts, setPendingConflicts] = useState([]);
-  const [pendingMergedRows, setPendingMergedRows] = useState([]);
-
-  useModalScrollLock({ active: conflictModalOpen, disabled: false });
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
@@ -119,25 +109,14 @@ export default function SettingsView({
   async function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    await importJsonFile(file);
-    setSyncDirty(true);
-    setLastSyncLabel("");
-    setLastSyncAt(null);
-    e.target.value = "";
-  }
-
-  async function handleInstallStarter() {
-    await fetchStarter("EN2LT");
-    setSyncDirty(true);
-    setLastSyncLabel("");
-    setLastSyncAt(null);
-  }
-
-  function handleClearLibrary() {
-    clearLibrary?.();
-    setSyncDirty(true);
-    setLastSyncLabel("");
-    setLastSyncAt(null);
+    try {
+      await importJsonFile(file);
+      alert("Imported ✅");
+    } catch (err) {
+      alert("Import failed: " + (err?.message || "Unknown error"));
+    } finally {
+      e.target.value = "";
+    }
   }
 
   async function uploadLibraryToCloud() {
@@ -192,9 +171,9 @@ export default function SettingsView({
       const result = await mergeUserPhrases(localAll);
 
       if (result.conflicts?.length) {
-        setPendingConflicts(result.conflicts);
-        setPendingMergedRows(result.mergedRows || []);
-        setConflictModalOpen(true);
+        alert(
+          `Sync paused ⚠️\n\n${result.conflicts.length} conflict(s) were found.\n\nNothing has been overwritten.\n\nNext step: review conflicts before completing the sync.`
+        );
         return;
       }
 
@@ -208,58 +187,8 @@ export default function SettingsView({
     }
   }
 
-  async function finishConflictSync(selections) {
-    if (!user) return;
-    try {
-      setResolvingConflicts(true);
-
-      const finalRows = applyMergeResolutions(
-        pendingMergedRows,
-        pendingConflicts,
-        selections
-      );
-
-      // Commit to cloud, then adopt locally
-      await replaceUserPhrases(finalRows);
-      setRows(finalRows);
-      markSynced("Synced");
-
-      setConflictModalOpen(false);
-      setPendingConflicts([]);
-      setPendingMergedRows([]);
-
-      alert("Sync completed ✅");
-    } catch (e) {
-      alert("Could not finish sync: " + (e?.message || "Unknown error"));
-    } finally {
-      setResolvingConflicts(false);
-    }
-  }
-
   const syncBanner = (() => {
     if (!user) return null;
-
-    if (pendingConflicts.length) {
-      return (
-        <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-4 py-3 text-sm">
-          <div className="font-semibold text-amber-300">Sync paused</div>
-          <div className="text-zinc-300 mt-1">
-            {pendingConflicts.length} conflict
-            {pendingConflicts.length === 1 ? "" : "s"} found. Nothing was overwritten.
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="bg-amber-500/20 text-amber-200 border border-amber-500/30 rounded-full px-4 py-2 text-sm font-semibold hover:bg-amber-500/25 active:bg-amber-500/30"
-              onClick={() => setConflictModalOpen(true)}
-              disabled={merging || resolvingConflicts}
-            >
-              Review conflicts
-            </button>
-          </div>
-        </div>
-      );
-    }
 
     if (syncDirty) {
       return (
@@ -338,8 +267,7 @@ export default function SettingsView({
                 hover:bg-zinc-700 active:bg-zinc-600
                 select-none
               "
-              onClick={() => showDailyRecallNow?.()}
-              title="Re-open today's recall prompt"
+              onClick={showDailyRecallNow}
             >
               Show today’s recall
             </button>
@@ -350,13 +278,14 @@ export default function SettingsView({
       {/* STARTER PACK */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
-        <p className="text-sm text-zinc-400">
+        <div className="text-sm text-zinc-400">
           Adds the starter library to this device. Re-installing won’t duplicate
           entries.
-        </p>
+        </div>
+
         <button
           className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={handleInstallStarter}
+          onClick={() => fetchStarter?.("EN2LT")}
         >
           Install starter pack
         </button>
@@ -364,36 +293,33 @@ export default function SettingsView({
 
       {/* ACCOUNT & SYNC */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Account & Sync</div>
+        <div className="text-lg font-semibold">Account &amp; Sync</div>
 
-        {!user ? (
-          <>
-            <p className="text-sm text-zinc-400">
-              Sign in to sync your library across devices.
-            </p>
+        {user ? (
+          <div className="text-sm text-zinc-400">
+            Signed in as <span className="text-zinc-200">{user.email}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-zinc-400">Sign in to enable cloud sync.</div>
+        )}
 
+        {syncBanner}
+
+        <div className="flex flex-wrap gap-3">
+          {!user ? (
             <button
               className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
               onClick={signInWithGoogle}
               disabled={loading}
             >
-              {loading ? "Connecting…" : "Sign in with Google"}
+              {loading ? "Loading…" : "Sign in with Google"}
             </button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-zinc-400">
-              Signed in as <span className="text-zinc-200">{user.email}</span>
-            </p>
-
-            {syncBanner}
-
-            <div className="flex flex-wrap gap-3">
+          ) : (
+            <>
               <button
-                className="bg-emerald-600 text-black rounded-full px-5 py-2 font-semibold"
+                className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
                 onClick={mergeLibraryWithCloud}
                 disabled={merging}
-                title="Safest option: merges local + cloud, avoids duplicates, and pauses on conflicts."
               >
                 {merging ? "Syncing…" : "Sync (merge)"}
               </button>
@@ -404,72 +330,52 @@ export default function SettingsView({
               >
                 Sign out
               </button>
+            </>
+          )}
+        </div>
+
+        {user ? (
+          <button
+            className="text-xs text-zinc-400 underline underline-offset-4"
+            onClick={() => setShowAdvanced((v) => !v)}
+          >
+            {showAdvanced ? "Hide advanced sync options" : "Show advanced sync options"}
+          </button>
+        ) : null}
+
+        {user && showAdvanced ? (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 space-y-3">
+            <div className="text-sm text-zinc-300">
+              Advanced options overwrite one side completely. Use carefully.
             </div>
 
-            <div className="pt-2">
+            <div className="flex flex-wrap gap-3">
               <button
-                type="button"
-                className="text-sm text-zinc-300 hover:text-zinc-100 underline underline-offset-4"
-                onClick={() => setShowAdvanced((v) => !v)}
+                className="bg-blue-600 text-white rounded-full px-5 py-2"
+                onClick={uploadLibraryToCloud}
+                disabled={syncingUp || syncingDown || merging}
               >
-                {showAdvanced
-                  ? "Hide advanced sync options"
-                  : "Show advanced sync options"}
+                {syncingUp ? "Uploading…" : "Upload (overwrite)"}
               </button>
 
-              {showAdvanced && (
-                <div className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/20 p-4 space-y-3">
-                  <div className="text-sm text-zinc-300">
-                    Use these only if you understand the difference:
-                  </div>
-
-                  <ul className="text-sm text-zinc-400 list-disc pl-5 space-y-1">
-                    <li>
-                      <span className="text-zinc-200">Upload (overwrite)</span>:
-                      forces local → cloud.
-                    </li>
-                    <li>
-                      <span className="text-zinc-200">Download (overwrite)</span>:
-                      forces cloud → local.
-                    </li>
-                    <li>
-                      <span className="text-zinc-200">Sync (merge)</span> is
-                      safer for normal use.
-                    </li>
-                  </ul>
-
-                  <div className="flex flex-wrap gap-3 pt-1">
-                    <button
-                      className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold"
-                      onClick={uploadLibraryToCloud}
-                      disabled={syncingUp}
-                      title="Replaces your cloud library with your local library."
-                    >
-                      {syncingUp ? "Uploading…" : "Upload (overwrite)"}
-                    </button>
-
-                    <button
-                      className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-semibold"
-                      onClick={downloadLibraryFromCloud}
-                      disabled={syncingDown}
-                      title="Replaces your local library with the cloud version."
-                    >
-                      {syncingDown ? "Downloading…" : "Download (overwrite)"}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <button
+                className="bg-blue-600 text-white rounded-full px-5 py-2"
+                onClick={downloadLibraryFromCloud}
+                disabled={syncingUp || syncingDown || merging}
+              >
+                {syncingDown ? "Downloading…" : "Download (overwrite)"}
+              </button>
             </div>
-          </>
-        )}
+          </div>
+        ) : null}
       </section>
 
-      {/* VOICE */}
+      {/* VOICE SETTINGS */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Voice Settings</div>
 
         <select
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="w-full bg-zinc-950/30 border border-zinc-800 rounded-xl px-3 py-2 text-zinc-200"
           value={azureVoiceShortName}
           onChange={(e) => setAzureVoiceShortName(e.target.value)}
         >
@@ -539,18 +445,17 @@ export default function SettingsView({
           Change log
         </button>
       </section>
-
-      <ConflictReviewModal
-        open={conflictModalOpen}
-        conflicts={pendingConflicts}
-        mergedRows={pendingMergedRows}
-        onClose={() => {
-          if (resolvingConflicts) return;
-          setConflictModalOpen(false);
-        }}
-        onConfirm={finishConflictSync}
-        busy={resolvingConflicts}
-      />
     </div>
   );
+
+  async function handleClearLibrary() {
+    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
+    if (!ok) return;
+    try {
+      await clearLibrary?.();
+      alert("Cleared ✅");
+    } catch (e) {
+      alert("Could not clear: " + (e?.message || "Unknown error"));
+    }
+  }
 }
