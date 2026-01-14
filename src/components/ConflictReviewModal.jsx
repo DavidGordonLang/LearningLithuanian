@@ -1,5 +1,6 @@
 // src/components/ConflictReviewModal.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 function Pill({ active, children, onClick, disabled }) {
   return (
@@ -78,7 +79,23 @@ export default function ConflictReviewModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape" && !busy) onClose?.();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, busy, onClose]);
+
   if (!open) return null;
+
+  // IMPORTANT:
+  // Render as a portal to <body> so SwipePager's transform/overflow cannot clip a fixed overlay.
+  if (typeof document === "undefined") return null;
 
   const padTop = topOffset ? topOffset + 16 : 16;
 
@@ -100,18 +117,19 @@ export default function ConflictReviewModal({
     }));
   }
 
-  return (
+  const modal = (
     <div
-      className="fixed inset-0 z-[230] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ paddingTop: padTop }}
-      // IMPORTANT: use onClick not onPointerDown so the opening tap can’t immediately close it on mobile/tablet
       onClick={() => {
         if (!busy) onClose?.();
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Review sync conflicts"
     >
       <div
         className="w-full max-w-3xl max-h-[82vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-[0_0_24px_rgba(0,0,0,0.35)] p-5"
-        // Stop backdrop click from firing when interacting with the modal panel
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -142,8 +160,10 @@ export default function ConflictReviewModal({
             const key = c?.key || `c_${idx}`;
             const merged = c?.key ? mergedById.get(c.key) : null;
 
-            const lt = merged?.Lithuanian || c?.local?.Lithuanian || c?.cloud?.Lithuanian || "";
-            const en = merged?.English || c?.local?.English || c?.cloud?.English || "";
+            const lt =
+              merged?.Lithuanian || c?.local?.Lithuanian || c?.cloud?.Lithuanian || "";
+            const en =
+              merged?.English || c?.local?.English || c?.cloud?.English || "";
 
             return (
               <div key={key} className="rounded-2xl border border-zinc-800 bg-zinc-950/20 p-4">
@@ -180,7 +200,9 @@ export default function ConflictReviewModal({
                       </Pill>
                     </div>
 
-                    {c?.reason ? <div className="text-xs text-zinc-500 mt-2">{c.reason}</div> : null}
+                    {c?.reason ? (
+                      <div className="text-xs text-zinc-500 mt-2">{c.reason}</div>
+                    ) : null}
                   </div>
                 ) : c.type === "field_conflict" ? (
                   <div className="mt-3">
@@ -194,9 +216,14 @@ export default function ConflictReviewModal({
                         const pick = selections[key]?.fields?.[field] || "chosen";
 
                         return (
-                          <div key={field} className="rounded-xl border border-zinc-800 bg-zinc-950/10 p-3">
+                          <div
+                            key={field}
+                            className="rounded-xl border border-zinc-800 bg-zinc-950/10 p-3"
+                          >
                             <div className="flex items-center justify-between gap-3 mb-2">
-                              <div className="text-xs font-semibold text-zinc-200">{field}</div>
+                              <div className="text-xs font-semibold text-zinc-200">
+                                {field}
+                              </div>
                               <div className="flex gap-2">
                                 <Pill
                                   active={pick === "local"}
@@ -225,11 +252,15 @@ export default function ConflictReviewModal({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                               <div className="rounded-lg border border-zinc-800 bg-zinc-950/30 p-2">
                                 <div className="text-[11px] text-zinc-500 mb-1">Local</div>
-                                <div className="text-zinc-200 whitespace-pre-wrap">{compact(f?.local)}</div>
+                                <div className="text-zinc-200 whitespace-pre-wrap">
+                                  {compact(f?.local)}
+                                </div>
                               </div>
                               <div className="rounded-lg border border-zinc-800 bg-zinc-950/30 p-2">
                                 <div className="text-[11px] text-zinc-500 mb-1">Cloud</div>
-                                <div className="text-zinc-200 whitespace-pre-wrap">{compact(f?.cloud)}</div>
+                                <div className="text-zinc-200 whitespace-pre-wrap">
+                                  {compact(f?.cloud)}
+                                </div>
                               </div>
                             </div>
 
@@ -241,7 +272,9 @@ export default function ConflictReviewModal({
                       })}
                     </div>
 
-                    {c?.reason ? <div className="text-xs text-zinc-500 mt-2">{c.reason}</div> : null}
+                    {c?.reason ? (
+                      <div className="text-xs text-zinc-500 mt-2">{c.reason}</div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="mt-3 text-xs text-zinc-500">Unknown conflict type.</div>
@@ -273,4 +306,6 @@ export default function ConflictReviewModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
