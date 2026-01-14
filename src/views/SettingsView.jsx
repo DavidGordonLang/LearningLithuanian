@@ -7,6 +7,9 @@ import {
   fetchUserPhrases,
   mergeUserPhrases,
 } from "../stores/supabasePhrases";
+import useModalScrollLock from "../hooks/useModalScrollLock";
+import ConflictReviewModal from "../components/ConflictReviewModal";
+import applyMergeResolutions from "../utils/applyMergeResolutions";
 
 export default function SettingsView({
   T,
@@ -31,12 +34,19 @@ export default function SettingsView({
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [resolvingConflicts, setResolvingConflicts] = useState(false);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [syncDirty, setSyncDirty] = useState(false);
   const [lastSyncLabel, setLastSyncLabel] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState(null);
+
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [pendingConflicts, setPendingConflicts] = useState([]);
+  const [pendingMergedRows, setPendingMergedRows] = useState([]);
+
+  useModalScrollLock({ active: conflictModalOpen, disabled: false });
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
@@ -182,14 +192,9 @@ export default function SettingsView({
       const result = await mergeUserPhrases(localAll);
 
       if (result.conflicts?.length) {
-        alert(
-          `Sync paused ⚠️\n\n` +
-            `${result.conflicts.length} conflicts were found.\n\n` +
-            `Nothing has been overwritten.\n\n` +
-            `Next step: review conflicts before completing the sync.`
-        );
-
-        console.log("Merge conflicts:", result.conflicts);
+        setPendingConflicts(result.conflicts);
+        setPendingMergedRows(result.mergedRows || []);
+        setConflictModalOpen(true);
         return;
       }
 
@@ -203,8 +208,58 @@ export default function SettingsView({
     }
   }
 
+  async function finishConflictSync(selections) {
+    if (!user) return;
+    try {
+      setResolvingConflicts(true);
+
+      const finalRows = applyMergeResolutions(
+        pendingMergedRows,
+        pendingConflicts,
+        selections
+      );
+
+      // Commit to cloud, then adopt locally
+      await replaceUserPhrases(finalRows);
+      setRows(finalRows);
+      markSynced("Synced");
+
+      setConflictModalOpen(false);
+      setPendingConflicts([]);
+      setPendingMergedRows([]);
+
+      alert("Sync completed ✅");
+    } catch (e) {
+      alert("Could not finish sync: " + (e?.message || "Unknown error"));
+    } finally {
+      setResolvingConflicts(false);
+    }
+  }
+
   const syncBanner = (() => {
     if (!user) return null;
+
+    if (pendingConflicts.length) {
+      return (
+        <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-4 py-3 text-sm">
+          <div className="font-semibold text-amber-300">Sync paused</div>
+          <div className="text-zinc-300 mt-1">
+            {pendingConflicts.length} conflict
+            {pendingConflicts.length === 1 ? "" : "s"} found. Nothing was overwritten.
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="bg-amber-500/20 text-amber-200 border border-amber-500/30 rounded-full px-4 py-2 text-sm font-semibold hover:bg-amber-500/25 active:bg-amber-500/30"
+              onClick={() => setConflictModalOpen(true)}
+              disabled={merging || resolvingConflicts}
+            >
+              Review conflicts
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     if (syncDirty) {
       return (
@@ -257,9 +312,7 @@ export default function SettingsView({
               <div className="text-sm font-semibold text-zinc-200">
                 Daily reminder phrase
               </div>
-              <div className="text-xs text-zinc-500 mt-0.5">
-                Once per day
-              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">Once per day</div>
             </div>
 
             <button
@@ -372,16 +425,12 @@ export default function SettingsView({
 
                   <ul className="text-sm text-zinc-400 list-disc pl-5 space-y-1">
                     <li>
-                      <span className="text-zinc-200">
-                        Upload (overwrite)
-                      </span>
-                      : forces local → cloud.
+                      <span className="text-zinc-200">Upload (overwrite)</span>:
+                      forces local → cloud.
                     </li>
                     <li>
-                      <span className="text-zinc-200">
-                        Download (overwrite)
-                      </span>
-                      : forces cloud → local.
+                      <span className="text-zinc-200">Download (overwrite)</span>:
+                      forces cloud → local.
                     </li>
                     <li>
                       <span className="text-zinc-200">Sync (merge)</span> is
@@ -490,6 +539,18 @@ export default function SettingsView({
           Change log
         </button>
       </section>
+
+      <ConflictReviewModal
+        open={conflictModalOpen}
+        conflicts={pendingConflicts}
+        mergedRows={pendingMergedRows}
+        onClose={() => {
+          if (resolvingConflicts) return;
+          setConflictModalOpen(false);
+        }}
+        onConfirm={finishConflictSync}
+        busy={resolvingConflicts}
+      />
     </div>
   );
 }
