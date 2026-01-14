@@ -18,3 +18,5 @@
 ## Safety
 - If unsure, ask for clarification rather than guessing.
 - Prefer reversible changes and avoid one-way migrations unless requested. 
+
+Last reviewed: 2026-01-14
