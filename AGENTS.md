@@ -17,4 +17,4 @@
 
 ## Safety
 - If unsure, ask for clarification rather than guessing.
-- Prefer reversible changes and avoid one-way migrations unless requested.
+- Prefer reversible changes and avoid one-way migrations unless requested. 
