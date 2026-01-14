@@ -1,5 +1,4 @@
 // src/views/SettingsView.jsx
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { usePhraseStore } from "../stores/phraseStore";
@@ -49,7 +48,9 @@ export default function SettingsView({
       const sig = all
         .map(
           (r) =>
-            `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`
+            `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${
+              r?._deleted ? 1 : 0
+            }`
         )
         .join("~");
       return String(sig.length) + ":" + String(sig.slice(0, 200));
@@ -108,25 +109,14 @@ export default function SettingsView({
   async function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    await importJsonFile(file);
-    setSyncDirty(true);
-    setLastSyncLabel("");
-    setLastSyncAt(null);
-    e.target.value = "";
-  }
-
-  async function handleInstallStarter() {
-    await fetchStarter("EN2LT");
-    setSyncDirty(true);
-    setLastSyncLabel("");
-    setLastSyncAt(null);
-  }
-
-  function handleClearLibrary() {
-    clearLibrary?.();
-    setSyncDirty(true);
-    setLastSyncLabel("");
-    setLastSyncAt(null);
+    try {
+      await importJsonFile(file);
+      alert("Imported ✅");
+    } catch (err) {
+      alert("Import failed: " + (err?.message || "Unknown error"));
+    } finally {
+      e.target.value = "";
+    }
   }
 
   async function uploadLibraryToCloud() {
@@ -182,12 +172,8 @@ export default function SettingsView({
 
       if (result.conflicts?.length) {
         alert(
-          `Sync paused ⚠️\n\n` +
-            `${result.conflicts.length} conflicts were found.\n\n` +
-            `Nothing has been overwritten.\n\n` +
-            `Next step: review conflicts before completing the sync.`
+          `Sync paused ⚠️\n\n${result.conflicts.length} conflict(s) were found.\n\nNothing has been overwritten.\n\nNext step: review conflicts before completing the sync.`
         );
-        console.log("Merge conflicts:", result.conflicts);
         return;
       }
 
@@ -255,9 +241,7 @@ export default function SettingsView({
               <div className="text-sm font-semibold text-zinc-200">
                 Daily reminder phrase
               </div>
-              <div className="text-xs text-zinc-500 mt-0.5">
-                Once per day
-              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">Once per day</div>
             </div>
 
             <button
@@ -283,8 +267,7 @@ export default function SettingsView({
                 hover:bg-zinc-700 active:bg-zinc-600
                 select-none
               "
-              onClick={() => showDailyRecallNow?.()}
-              title="Re-open today's recall prompt"
+              onClick={showDailyRecallNow}
             >
               Show today’s recall
             </button>
@@ -295,13 +278,14 @@ export default function SettingsView({
       {/* STARTER PACK */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Starter Pack</div>
-        <p className="text-sm text-zinc-400">
+        <div className="text-sm text-zinc-400">
           Adds the starter library to this device. Re-installing won’t duplicate
           entries.
-        </p>
+        </div>
+
         <button
           className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={handleInstallStarter}
+          onClick={() => fetchStarter?.("EN2LT")}
         >
           Install starter pack
         </button>
@@ -309,36 +293,33 @@ export default function SettingsView({
 
       {/* ACCOUNT & SYNC */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Account & Sync</div>
+        <div className="text-lg font-semibold">Account &amp; Sync</div>
 
-        {!user ? (
-          <>
-            <p className="text-sm text-zinc-400">
-              Sign in to sync your library across devices.
-            </p>
+        {user ? (
+          <div className="text-sm text-zinc-400">
+            Signed in as <span className="text-zinc-200">{user.email}</span>
+          </div>
+        ) : (
+          <div className="text-sm text-zinc-400">Sign in to enable cloud sync.</div>
+        )}
 
+        {syncBanner}
+
+        <div className="flex flex-wrap gap-3">
+          {!user ? (
             <button
               className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
               onClick={signInWithGoogle}
               disabled={loading}
             >
-              {loading ? "Connecting…" : "Sign in with Google"}
+              {loading ? "Loading…" : "Sign in with Google"}
             </button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-zinc-400">
-              Signed in as <span className="text-zinc-200">{user.email}</span>
-            </p>
-
-            {syncBanner}
-
-            <div className="flex flex-wrap gap-3">
+          ) : (
+            <>
               <button
-                className="bg-emerald-600 text-black rounded-full px-5 py-2 font-semibold"
+                className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
                 onClick={mergeLibraryWithCloud}
                 disabled={merging}
-                title="Safest option: merges local + cloud, avoids duplicates, and pauses on conflicts."
               >
                 {merging ? "Syncing…" : "Sync (merge)"}
               </button>
@@ -349,76 +330,52 @@ export default function SettingsView({
               >
                 Sign out
               </button>
+            </>
+          )}
+        </div>
+
+        {user ? (
+          <button
+            className="text-xs text-zinc-400 underline underline-offset-4"
+            onClick={() => setShowAdvanced((v) => !v)}
+          >
+            {showAdvanced ? "Hide advanced sync options" : "Show advanced sync options"}
+          </button>
+        ) : null}
+
+        {user && showAdvanced ? (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 space-y-3">
+            <div className="text-sm text-zinc-300">
+              Advanced options overwrite one side completely. Use carefully.
             </div>
 
-            <div className="pt-2">
+            <div className="flex flex-wrap gap-3">
               <button
-                type="button"
-                className="text-sm text-zinc-300 hover:text-zinc-100 underline underline-offset-4"
-                onClick={() => setShowAdvanced((v) => !v)}
+                className="bg-blue-600 text-white rounded-full px-5 py-2"
+                onClick={uploadLibraryToCloud}
+                disabled={syncingUp || syncingDown || merging}
               >
-                {showAdvanced
-                  ? "Hide advanced sync options"
-                  : "Show advanced sync options"}
+                {syncingUp ? "Uploading…" : "Upload (overwrite)"}
               </button>
 
-              {showAdvanced && (
-                <div className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/20 p-4 space-y-3">
-                  <div className="text-sm text-zinc-300">
-                    Use these only if you understand the difference:
-                  </div>
-
-                  <ul className="text-sm text-zinc-400 list-disc pl-5 space-y-1">
-                    <li>
-                      <span className="text-zinc-200">
-                        Upload (overwrite)
-                      </span>
-                      : forces local → cloud.
-                    </li>
-                    <li>
-                      <span className="text-zinc-200">
-                        Download (overwrite)
-                      </span>
-                      : forces cloud → local.
-                    </li>
-                    <li>
-                      <span className="text-zinc-200">Sync (merge)</span> is
-                      safer for normal use.
-                    </li>
-                  </ul>
-
-                  <div className="flex flex-wrap gap-3 pt-1">
-                    <button
-                      className="bg-blue-600 text-white rounded-full px-5 py-2 font-semibold"
-                      onClick={uploadLibraryToCloud}
-                      disabled={syncingUp}
-                      title="Replaces your cloud library with your local library."
-                    >
-                      {syncingUp ? "Uploading…" : "Upload (overwrite)"}
-                    </button>
-
-                    <button
-                      className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-semibold"
-                      onClick={downloadLibraryFromCloud}
-                      disabled={syncingDown}
-                      title="Replaces your local library with the cloud version."
-                    >
-                      {syncingDown ? "Downloading…" : "Download (overwrite)"}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <button
+                className="bg-blue-600 text-white rounded-full px-5 py-2"
+                onClick={downloadLibraryFromCloud}
+                disabled={syncingUp || syncingDown || merging}
+              >
+                {syncingDown ? "Downloading…" : "Download (overwrite)"}
+              </button>
             </div>
-          </>
-        )}
+          </div>
+        ) : null}
       </section>
 
-      {/* VOICE */}
+      {/* VOICE SETTINGS */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Voice Settings</div>
 
         <select
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+          className="w-full bg-zinc-950/30 border border-zinc-800 rounded-xl px-3 py-2 text-zinc-200"
           value={azureVoiceShortName}
           onChange={(e) => setAzureVoiceShortName(e.target.value)}
         >
@@ -490,4 +447,15 @@ export default function SettingsView({
       </section>
     </div>
   );
+
+  async function handleClearLibrary() {
+    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
+    if (!ok) return;
+    try {
+      await clearLibrary?.();
+      alert("Cleared ✅");
+    } catch (e) {
+      alert("Could not clear: " + (e?.message || "Unknown error"));
+    }
+  }
 }
