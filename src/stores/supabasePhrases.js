@@ -3,10 +3,6 @@ import { supabase } from "../supabaseClient";
 import { useAuthStore } from "./authStore";
 import { mergeUserPhrases as mergeEngine } from "./mergeUserPhrases";
 
-/**
- * Replace ALL phrases for the current user in Supabase
- * (upload local → cloud)
- */
 export async function replaceUserPhrases(rows) {
   const { user } = useAuthStore.getState();
   if (!user) throw new Error("Not authenticated");
@@ -34,13 +30,10 @@ export async function fetchUserPhrases() {
   const { user } = useAuthStore.getState();
   if (!user) throw new Error("Not authenticated");
 
-  const { data, error } = await supabase
-    .from("phrases")
-    .select("*")
-    .eq("user_id", user.id);
+  const { data, error } = await supabase.from("phrases").select("data").eq("user_id", user.id);
   if (error) throw error;
 
-  return data;
+  return (data || []).map((row) => row.data);
 }
 
 /**
@@ -70,5 +63,6 @@ export async function mergeUserPhrases(localRows) {
   }
 
   await replaceUserPhrases(mergedRows);
-  return { mergedRows, conflicts: [], stats, wroteToCloud: true };
+
+  return { mergedRows, conflicts, stats, wroteToCloud: true };
 }
