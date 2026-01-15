@@ -50,6 +50,8 @@ import {
   clearLibrary as clearLibraryIO,
 } from "./services/libraryIO";
 
+import { trackEvent, trackError } from "./services/analytics";
+
 /* ============================================================================ */
 const APP_VERSION = "1.5.3-beta";
 
@@ -156,8 +158,27 @@ export default function App() {
     useTTSPlayer({
       initialVoice: "lt-LT-LeonasNeural",
       maxIdbEntries: 200,
-      onError: (e) => alert("Voice error: " + (e?.message || "Unknown error")),
+      onError: (e) => {
+        try {
+          trackError(e, { source: "tts_player" }, { app_version: APP_VERSION });
+        } catch {}
+        alert("Voice error: " + (e?.message || "Unknown error"));
+      },
     });
+
+  const playTextTracked = (text, opts) => {
+    try {
+      trackEvent(
+        "tts_play",
+        {
+          voice: azureVoiceShortName,
+          text_len: typeof text === "string" ? text.length : null,
+        },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+    return playText(text, opts);
+  };
 
   useSyncExternalStore(
     searchStore.subscribe,
@@ -196,6 +217,10 @@ export default function App() {
   const isEditing = !!editingRow;
 
   function removePhraseById(id) {
+    try {
+      trackEvent("phrase_delete", { phrase_id: id }, { app_version: APP_VERSION });
+    } catch {}
+
     setRows((prev) =>
       prev.map((r) =>
         r._id === id ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r
@@ -261,6 +286,68 @@ export default function App() {
     minLibraryForUserMode: 8,
   });
 
+  /* ---------- ANALYTICS: session + views + global errors ---------- */
+
+  // Global JS error capture
+  useEffect(() => {
+    function onError(event) {
+      try {
+        trackError(
+          event?.error || new Error(event?.message || "window_error"),
+          { source: "window_error" },
+          { app_version: APP_VERSION }
+        );
+      } catch {}
+    }
+
+    function onRejection(event) {
+      try {
+        const reason = event?.reason;
+        trackError(
+          reason instanceof Error ? reason : new Error(String(reason || "unhandled_rejection")),
+          { source: "unhandled_rejection" },
+          { app_version: APP_VERSION }
+        );
+      } catch {}
+    }
+
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+
+  // session_start once per authenticated allowlisted render
+  const sessionStartedRef = useRef(false);
+  useEffect(() => {
+    if (!user) return;
+    if (!allowlistChecked || !isAllowlisted) return;
+    if (sessionStartedRef.current) return;
+
+    sessionStartedRef.current = true;
+
+    try {
+      trackEvent(
+        "session_start",
+        { initial_page: page },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+  }, [user, allowlistChecked, isAllowlisted]); // intentionally not depending on page
+
+  // view tracking on page changes
+  useEffect(() => {
+    if (!user) return;
+    if (!allowlistChecked || !isAllowlisted) return;
+
+    try {
+      trackEvent(`view_${page}`, {}, { app_version: APP_VERSION });
+    } catch {}
+  }, [page, user, allowlistChecked, isAllowlisted]);
+
   /* RENDER GATE */
   if (authLoading && !user) {
     return <div className="min-h-[100dvh] bg-zinc-950" />;
@@ -321,7 +408,7 @@ export default function App() {
             <div className="h-full">
               <HomeView
                 key={homeResetKey}
-                playText={playText}
+                playText={playTextTracked}
                 setRows={setRows}
                 genId={genId}
                 nowTs={nowTs}
@@ -354,7 +441,7 @@ export default function App() {
                 setRows={setRows}
                 normalizeRag={normalizeRag}
                 sortMode={sortMode}
-                playText={playText}
+                playText={playTextTracked}
                 removePhrase={removePhraseById}
                 onEditRow={(id) => {
                   setEditRowId(id);
@@ -371,9 +458,10 @@ export default function App() {
             <div className="h-full">
               <SettingsView
                 T={T}
+                appVersion={APP_VERSION}
                 azureVoiceShortName={azureVoiceShortName}
                 setAzureVoiceShortName={setAzureVoiceShortName}
-                playText={playText}
+                playText={playTextTracked}
                 fetchStarter={fetchStarter}
                 clearLibrary={clearLibrary}
                 importJsonFile={importJsonFile}
@@ -394,7 +482,7 @@ export default function App() {
       {dailyRecall.isOpen && dailyRecall.phrase && (
         <DailyRecallModal
           phrase={dailyRecall.phrase}
-          playText={playText}
+          playText={playTextTracked}
           onClose={dailyRecall.close}
         />
       )}
@@ -432,9 +520,25 @@ export default function App() {
                   initialRow={editingRow || undefined}
                   onSubmit={(row) => {
                     if (isEditing) {
+                      try {
+                        trackEvent(
+                          "phrase_edit",
+                          { phrase_id: row?._id || null },
+                          { app_version: APP_VERSION }
+                        );
+                      } catch {}
+
                       const index = rows.findIndex((r) => r._id === row._id);
                       if (index !== -1) saveEditedPhrase(index, row);
                     } else {
+                      try {
+                        trackEvent(
+                          "phrase_add",
+                          { phrase_id: row?._id || null },
+                          { app_version: APP_VERSION }
+                        );
+                      } catch {}
+
                       addPhrase(row);
                     }
 
