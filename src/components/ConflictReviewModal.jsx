@@ -11,13 +11,10 @@ function getRowLabel(row) {
   return row?._id ? `Entry ${row._id}` : "Entry";
 }
 
-function defaultSelections(conflicts) {
+function defaultConflictSelections(conflicts) {
   const initial = {};
   for (const conflict of conflicts || []) {
-    if (!conflict?.key) continue;
-
     if (conflict.type === "delete_vs_edit") {
-      // Default: prefer cloud if local is deleted, otherwise local
       const preferCloud = conflict.local?._deleted === true;
       initial[conflict.key] = { pick: preferCloud ? "cloud" : "local" };
       continue;
@@ -25,12 +22,11 @@ function defaultSelections(conflicts) {
 
     if (conflict.type === "field_conflict") {
       const fields = {};
-      for (const f of conflict.fields || []) {
-        // Default to the merge engine’s chosen value
+      for (const field of conflict.fields || []) {
         let pick = "chosen";
-        if (f.chosen === f.cloud) pick = "cloud";
-        if (f.chosen === f.local) pick = "local";
-        fields[f.field] = pick;
+        if (field.chosen === field.cloud) pick = "cloud";
+        if (field.chosen === field.local) pick = "local";
+        fields[field.field] = pick;
       }
       initial[conflict.key] = { fields };
     }
@@ -38,57 +34,85 @@ function defaultSelections(conflicts) {
   return initial;
 }
 
-export default function ConflictReviewModal({ open, conflicts = [], onClose, onFinish }) {
+export default function ConflictReviewModal({
+  open,
+  conflicts = [],
+  onClose,
+  onFinish,
+}) {
   const hostRef = useRef(null);
-  const [selections, setSelections] = useState(() => defaultSelections(conflicts));
+  const [selections, setSelections] = useState(() =>
+    defaultConflictSelections(conflicts)
+  );
 
+  // Create the portal host ONLY when the modal is open.
   useEffect(() => {
+    if (!open) {
+      // Ensure any previous host is removed
+      if (hostRef.current) {
+        try {
+          document.body.removeChild(hostRef.current);
+        } catch {}
+        hostRef.current = null;
+      }
+      return;
+    }
+
     const host = document.createElement("div");
     host.setAttribute("id", "conflict-review-host");
     host.style.position = "fixed";
-    host.style.inset = "0";
+    host.style.top = "0";
+    host.style.left = "0";
+    host.style.right = "0";
+    host.style.bottom = "0";
     host.style.zIndex = "9999";
+    // Important: allow clicks to reach the modal content we portal in
+    host.style.pointerEvents = "auto";
+
     hostRef.current = host;
     document.body.appendChild(host);
 
     return () => {
-      try {
-        document.body.removeChild(host);
-      } catch {}
-      hostRef.current = null;
+      if (hostRef.current) {
+        try {
+          document.body.removeChild(hostRef.current);
+        } catch {}
+        hostRef.current = null;
+      }
     };
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    setSelections(defaultSelections(conflicts));
+    setSelections(defaultConflictSelections(conflicts));
   }, [open, conflicts]);
 
   const conflictList = useMemo(() => conflicts || [], [conflicts]);
 
-  const setRowPick = (key, pick) => {
-    setSelections((prev) => ({
-      ...prev,
-      [key]: {
-        ...(prev[key] || {}),
-        pick,
-      },
-    }));
-  };
-
-  const setFieldPick = (key, fieldName, pick) => {
+  const updateFieldChoice = (key, field, value) => {
     setSelections((prev) => ({
       ...prev,
       [key]: {
         ...(prev[key] || {}),
         fields: {
           ...(prev[key]?.fields || {}),
-          [fieldName]: pick,
+          [field]: value,
         },
       },
     }));
   };
 
+  const updateRowChoice = (key, value) => {
+    setSelections((prev) => ({
+      ...prev,
+      [key]: {
+        ...(prev[key] || {}),
+        pick: value,
+      },
+    }));
+  };
+
+  // If not open, render nothing (and host is removed by effect above)
   if (!open || !hostRef.current) return null;
 
   return createPortal(
@@ -106,7 +130,7 @@ export default function ConflictReviewModal({ open, conflicts = [], onClose, onF
           <div>
             <div className="text-lg font-semibold">Review conflicts</div>
             <div className="text-xs text-zinc-400">
-              Nothing has been overwritten yet. Choose how to finish syncing.
+              {conflictList.length} conflict(s) need resolution to finish sync.
             </div>
           </div>
           <button
@@ -119,17 +143,17 @@ export default function ConflictReviewModal({ open, conflicts = [], onClose, onF
         </div>
 
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4 space-y-4">
-          {conflictList.map((conflict, idx) => {
+          {conflictList.map((conflict, index) => {
             const label = getRowLabel(conflict.local || conflict.cloud || {});
-            const key = conflict.key || String(idx);
-
             return (
               <div
-                key={key}
+                key={conflict.key || index}
                 className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 space-y-3"
               >
                 <div>
-                  <div className="text-sm font-semibold text-zinc-200">{label}</div>
+                  <div className="text-sm font-semibold text-zinc-200">
+                    {label}
+                  </div>
                   <div className="text-xs text-zinc-500">{conflict.reason}</div>
                 </div>
 
@@ -138,29 +162,32 @@ export default function ConflictReviewModal({ open, conflicts = [], onClose, onF
                     <label className="flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 p-3">
                       <input
                         type="radio"
-                        name={`delete-${key}`}
-                        checked={selections[key]?.pick === "local"}
-                        onChange={() => setRowPick(key, "local")}
+                        name={`delete-${conflict.key}`}
+                        checked={selections[conflict.key]?.pick === "local"}
+                        onChange={() => updateRowChoice(conflict.key, "local")}
                       />
                       <div>
                         <div className="text-xs text-zinc-400">Keep local</div>
                         <div className="text-sm text-zinc-200">
-                          {conflict.local?._deleted ? "Deleted locally" : "Keep local edits"}
+                          {conflict.local?._deleted
+                            ? "Deleted locally"
+                            : "Keep local edits"}
                         </div>
                       </div>
                     </label>
-
                     <label className="flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 p-3">
                       <input
                         type="radio"
-                        name={`delete-${key}`}
-                        checked={selections[key]?.pick === "cloud"}
-                        onChange={() => setRowPick(key, "cloud")}
+                        name={`delete-${conflict.key}`}
+                        checked={selections[conflict.key]?.pick === "cloud"}
+                        onChange={() => updateRowChoice(conflict.key, "cloud")}
                       />
                       <div>
                         <div className="text-xs text-zinc-400">Keep cloud</div>
                         <div className="text-sm text-zinc-200">
-                          {conflict.cloud?._deleted ? "Deleted in cloud" : "Keep cloud edits"}
+                          {conflict.cloud?._deleted
+                            ? "Deleted in cloud"
+                            : "Keep cloud edits"}
                         </div>
                       </div>
                     </label>
@@ -168,22 +195,34 @@ export default function ConflictReviewModal({ open, conflicts = [], onClose, onF
                 ) : null}
 
                 {conflict.type === "field_conflict"
-                  ? (conflict.fields || []).map((f) => (
-                      <div key={`${key}-${f.field}`}>
-                        <div className="text-xs uppercase text-zinc-400">{f.field}</div>
+                  ? (conflict.fields || []).map((field) => (
+                      <div key={`${conflict.key}-${field.field}`}>
+                        <div className="text-xs uppercase text-zinc-400">
+                          {field.field}
+                        </div>
 
                         <div className="grid sm:grid-cols-2 gap-3 mt-2">
                           <label className="flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 p-3">
                             <input
                               type="radio"
-                              name={`${key}-${f.field}`}
-                              checked={selections[key]?.fields?.[f.field] === "local"}
-                              onChange={() => setFieldPick(key, f.field, "local")}
+                              name={`${conflict.key}-${field.field}`}
+                              checked={
+                                selections[conflict.key]?.fields?.[
+                                  field.field
+                                ] === "local"
+                              }
+                              onChange={() =>
+                                updateFieldChoice(
+                                  conflict.key,
+                                  field.field,
+                                  "local"
+                                )
+                              }
                             />
                             <div>
                               <div className="text-xs text-zinc-400">Local</div>
                               <div className="text-sm text-zinc-200 break-words">
-                                {f.local ?? "—"}
+                                {field.local || "—"}
                               </div>
                             </div>
                           </label>
@@ -191,14 +230,24 @@ export default function ConflictReviewModal({ open, conflicts = [], onClose, onF
                           <label className="flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 p-3">
                             <input
                               type="radio"
-                              name={`${key}-${f.field}`}
-                              checked={selections[key]?.fields?.[f.field] === "cloud"}
-                              onChange={() => setFieldPick(key, f.field, "cloud")}
+                              name={`${conflict.key}-${field.field}`}
+                              checked={
+                                selections[conflict.key]?.fields?.[
+                                  field.field
+                                ] === "cloud"
+                              }
+                              onChange={() =>
+                                updateFieldChoice(
+                                  conflict.key,
+                                  field.field,
+                                  "cloud"
+                                )
+                              }
                             />
                             <div>
                               <div className="text-xs text-zinc-400">Cloud</div>
                               <div className="text-sm text-zinc-200 break-words">
-                                {f.cloud ?? "—"}
+                                {field.cloud || "—"}
                               </div>
                             </div>
                           </label>
@@ -207,14 +256,26 @@ export default function ConflictReviewModal({ open, conflicts = [], onClose, onF
                         <label className="mt-2 flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 p-3">
                           <input
                             type="radio"
-                            name={`${key}-${f.field}`}
-                            checked={selections[key]?.fields?.[f.field] === "chosen"}
-                            onChange={() => setFieldPick(key, f.field, "chosen")}
+                            name={`${conflict.key}-${field.field}`}
+                            checked={
+                              selections[conflict.key]?.fields?.[
+                                field.field
+                              ] === "chosen"
+                            }
+                            onChange={() =>
+                              updateFieldChoice(
+                                conflict.key,
+                                field.field,
+                                "chosen"
+                              )
+                            }
                           />
                           <div>
-                            <div className="text-xs text-zinc-400">Keep auto-merge</div>
+                            <div className="text-xs text-zinc-400">
+                              Keep auto-merge
+                            </div>
                             <div className="text-sm text-zinc-200 break-words">
-                              {f.chosen ?? "—"}
+                              {field.chosen || "—"}
                             </div>
                           </div>
                         </label>
