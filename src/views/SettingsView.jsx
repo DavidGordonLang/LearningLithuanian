@@ -613,3 +613,88 @@ export default function SettingsView({
           onChange={(e) => setAzureVoiceShortName(e.target.value)}
         >
           <option value="lt-LT-LeonasNeural">Leonas (male)</option>
+          <option value="lt-LT-OnaNeural">Ona (female)</option>
+        </select>
+
+        <button
+          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
+          onClick={() => playText("Sveiki!")}
+        >
+          Play sample
+        </button>
+      </section>
+
+      {/* YOUR DATA */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
+        <div className="text-lg font-semibold">Your Data</div>
+
+        <div className="space-y-2">
+          <div className="text-sm text-zinc-400">
+            Export/Import is a file on this device (not cloud).
+          </div>
+
+          <input type="file" accept="application/json" onChange={handleImportFile} />
+
+          <button
+            className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+            onClick={exportJson}
+          >
+            Export JSON (file)
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button
+            className="bg-blue-600 text-white rounded-full px-5 py-2"
+            onClick={onOpenDuplicateScanner}
+          >
+            Duplicate scanner
+          </button>
+
+          <button
+            className="bg-red-500 text-white rounded-full px-5 py-2"
+            onClick={handleClearLibrary}
+          >
+            Clear library
+          </button>
+        </div>
+      </section>
+
+      {/* ABOUT */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
+        <div className="text-lg font-semibold">About</div>
+
+        <button
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+          onClick={onOpenUserGuide}
+        >
+          User Guide
+        </button>
+
+        <button
+          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+          onClick={onOpenChangeLog}
+        >
+          Change log
+        </button>
+      </section>
+    </div>
+  );
+
+  async function handleClearLibrary() {
+    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
+    if (!ok) return;
+    try {
+      await clearLibrary?.();
+      alert("Cleared ✅");
+      try {
+        trackEvent("library_clear", {}, { app_version: appVersion });
+      } catch {}
+    } catch (e) {
+      try {
+        trackError(e, { source: "library_clear" }, { app_version: appVersion });
+      } catch {}
+      alert("Could not clear: " + (e?.message || "Unknown error"));
+    }
+  }
+}
