@@ -7,6 +7,8 @@ import {
   fetchUserPhrases,
   mergeUserPhrases,
 } from "../stores/supabasePhrases";
+import ConflictReviewModal from "../components/ConflictReviewModal";
+import applyMergeResolutions from "../utils/applyMergeResolutions";
 
 export default function SettingsView({
   T,
@@ -37,6 +39,11 @@ export default function SettingsView({
   const [syncDirty, setSyncDirty] = useState(false);
   const [lastSyncLabel, setLastSyncLabel] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState(null);
+
+  // Conflict flow
+  const [pendingConflicts, setPendingConflicts] = useState([]);
+  const [pendingMergedRows, setPendingMergedRows] = useState([]);
+  const [showConflictModal, setShowConflictModal] = useState(false);
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
@@ -165,15 +172,22 @@ export default function SettingsView({
     if (!user) return;
 
     try {
+      // If already paused, just reopen review UI
+      if (pendingConflicts.length) {
+        setShowConflictModal(true);
+        return;
+      }
+
       setMerging(true);
 
       const localAll = getAllStoredPhrases();
       const result = await mergeUserPhrases(localAll);
 
       if (result.conflicts?.length) {
-        alert(
-          `Sync paused ⚠️\n\n${result.conflicts.length} conflict(s) were found.\n\nNothing has been overwritten.\n\nNext step: review conflicts before completing the sync.`
-        );
+        // Pause: store conflicts + proposed merged rows, open review immediately
+        setPendingConflicts(result.conflicts);
+        setPendingMergedRows(result.mergedRows || []);
+        setShowConflictModal(true);
         return;
       }
 
@@ -187,8 +201,63 @@ export default function SettingsView({
     }
   }
 
+  async function finishConflictSync(resolutions) {
+    if (!user) return;
+
+    // If state somehow got cleared, just close modal safely
+    if (!pendingMergedRows.length || !pendingConflicts.length) {
+      setShowConflictModal(false);
+      return;
+    }
+
+    try {
+      setMerging(true);
+
+      const finalRows = applyMergeResolutions(
+        pendingMergedRows,
+        pendingConflicts,
+        resolutions
+      );
+
+      // Now that user has decided, it is safe to write
+      await replaceUserPhrases(finalRows);
+
+      setRows(finalRows);
+      markSynced("Synced");
+
+      // Clear paused state
+      setPendingConflicts([]);
+      setPendingMergedRows([]);
+      setShowConflictModal(false);
+
+      alert("Sync completed ✅");
+    } catch (e) {
+      alert("Finish sync failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setMerging(false);
+    }
+  }
+
   const syncBanner = (() => {
     if (!user) return null;
+
+    if (pendingConflicts.length) {
+      return (
+        <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-4 py-3 text-sm space-y-2">
+          <div className="font-semibold text-amber-300">Sync paused</div>
+          <div className="text-zinc-300">
+            {pendingConflicts.length} conflict(s) found. Review to finish syncing.
+          </div>
+          <button
+            type="button"
+            className="bg-amber-500 text-black rounded-full px-4 py-1.5 text-xs font-semibold"
+            onClick={() => setShowConflictModal(true)}
+          >
+            Review conflicts
+          </button>
+        </div>
+      );
+    }
 
     if (syncDirty) {
       return (
@@ -227,6 +296,13 @@ export default function SettingsView({
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
+      <ConflictReviewModal
+        open={showConflictModal}
+        conflicts={pendingConflicts}
+        onClose={() => setShowConflictModal(false)}
+        onFinish={finishConflictSync}
+      />
+
       {/* DAILY RECALL */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Daily Recall</div>
