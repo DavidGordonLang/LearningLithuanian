@@ -51,7 +51,7 @@ import {
 } from "./services/libraryIO";
 
 /* ============================================================================ */
-const APP_VERSION = "1.5.2-beta";
+const APP_VERSION = "1.5.3-beta";
 
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
