@@ -10,8 +10,16 @@ import {
 import ConflictReviewModal from "../components/ConflictReviewModal";
 import applyMergeResolutions from "../utils/applyMergeResolutions";
 
+import {
+  getDiagnosticsEnabled,
+  setDiagnosticsEnabled,
+  trackEvent,
+  trackError,
+} from "../services/analytics";
+
 export default function SettingsView({
   T,
+  appVersion,
   azureVoiceShortName,
   setAzureVoiceShortName,
   playText,
@@ -44,6 +52,9 @@ export default function SettingsView({
   const [pendingConflicts, setPendingConflicts] = useState([]);
   const [pendingMergedRows, setPendingMergedRows] = useState([]);
   const [showConflictModal, setShowConflictModal] = useState(false);
+
+  // Diagnostics toggle (local)
+  const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
@@ -111,6 +122,10 @@ export default function SettingsView({
     a.download = "zodis-library.json";
     a.click();
     URL.revokeObjectURL(url);
+
+    try {
+      trackEvent("export_json", {}, { app_version: appVersion });
+    } catch {}
   }
 
   async function handleImportFile(e) {
@@ -119,7 +134,13 @@ export default function SettingsView({
     try {
       await importJsonFile(file);
       alert("Imported ✅");
+      try {
+        trackEvent("import_json", {}, { app_version: appVersion });
+      } catch {}
     } catch (err) {
+      try {
+        trackError(err, { source: "import_json" }, { app_version: appVersion });
+      } catch {}
       alert("Import failed: " + (err?.message || "Unknown error"));
     } finally {
       e.target.value = "";
@@ -136,11 +157,27 @@ export default function SettingsView({
 
     try {
       setSyncingUp(true);
+      try {
+        trackEvent("sync_upload_start", {}, { app_version: appVersion });
+      } catch {}
+
       const allPhrases = getAllStoredPhrases();
       await replaceUserPhrases(allPhrases);
       markSynced("Uploaded");
+
+      try {
+        trackEvent(
+          "sync_upload_complete",
+          { rows: allPhrases.length },
+          { app_version: appVersion }
+        );
+      } catch {}
+
       alert("Uploaded to cloud ✅");
     } catch (e) {
+      try {
+        trackError(e, { source: "sync_upload" }, { app_version: appVersion });
+      } catch {}
       alert("Upload failed: " + (e?.message || "Unknown error"));
     } finally {
       setSyncingUp(false);
@@ -157,11 +194,27 @@ export default function SettingsView({
 
     try {
       setSyncingDown(true);
+      try {
+        trackEvent("sync_download_start", {}, { app_version: appVersion });
+      } catch {}
+
       const cloudRows = await fetchUserPhrases();
       setRows(cloudRows);
       markSynced("Downloaded");
+
+      try {
+        trackEvent(
+          "sync_download_complete",
+          { rows: cloudRows.length },
+          { app_version: appVersion }
+        );
+      } catch {}
+
       alert(`Downloaded ${cloudRows.length} entries ✅`);
     } catch (e) {
+      try {
+        trackError(e, { source: "sync_download" }, { app_version: appVersion });
+      } catch {}
       alert("Download failed: " + (e?.message || "Unknown error"));
     } finally {
       setSyncingDown(false);
@@ -174,16 +227,31 @@ export default function SettingsView({
     try {
       // If already paused, just reopen review UI
       if (pendingConflicts.length) {
+        try {
+          trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion });
+        } catch {}
         setShowConflictModal(true);
         return;
       }
 
       setMerging(true);
 
+      try {
+        trackEvent("sync_merge_start", {}, { app_version: appVersion });
+      } catch {}
+
       const localAll = getAllStoredPhrases();
       const result = await mergeUserPhrases(localAll);
 
       if (result.conflicts?.length) {
+        try {
+          trackEvent(
+            "sync_conflicts_found",
+            { count: result.conflicts.length },
+            { app_version: appVersion }
+          );
+        } catch {}
+
         // Pause: store conflicts + proposed merged rows, open review immediately
         setPendingConflicts(result.conflicts);
         setPendingMergedRows(result.mergedRows || []);
@@ -193,8 +261,20 @@ export default function SettingsView({
 
       setRows(result.mergedRows);
       markSynced("Synced");
+
+      try {
+        trackEvent(
+          "sync_merge_complete",
+          { rows: result.mergedRows?.length || 0 },
+          { app_version: appVersion }
+        );
+      } catch {}
+
       alert("Sync completed ✅");
     } catch (e) {
+      try {
+        trackError(e, { source: "sync_merge" }, { app_version: appVersion });
+      } catch {}
       alert("Sync failed: " + (e?.message || "Unknown error"));
     } finally {
       setMerging(false);
@@ -213,6 +293,14 @@ export default function SettingsView({
     try {
       setMerging(true);
 
+      try {
+        trackEvent(
+          "sync_conflicts_finish_start",
+          { count: pendingConflicts.length },
+          { app_version: appVersion }
+        );
+      } catch {}
+
       const finalRows = applyMergeResolutions(
         pendingMergedRows,
         pendingConflicts,
@@ -230,8 +318,19 @@ export default function SettingsView({
       setPendingMergedRows([]);
       setShowConflictModal(false);
 
+      try {
+        trackEvent(
+          "sync_conflicts_finish_complete",
+          { rows: finalRows.length },
+          { app_version: appVersion }
+        );
+      } catch {}
+
       alert("Sync completed ✅");
     } catch (e) {
+      try {
+        trackError(e, { source: "sync_conflicts_finish" }, { app_version: appVersion });
+      } catch {}
       alert("Finish sync failed: " + (e?.message || "Unknown error"));
     } finally {
       setMerging(false);
@@ -251,7 +350,12 @@ export default function SettingsView({
           <button
             type="button"
             className="bg-amber-500 text-black rounded-full px-4 py-1.5 text-xs font-semibold"
-            onClick={() => setShowConflictModal(true)}
+            onClick={() => {
+              try {
+                trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion });
+              } catch {}
+              setShowConflictModal(true);
+            }}
           >
             Review conflicts
           </button>
@@ -302,6 +406,54 @@ export default function SettingsView({
         onClose={() => setShowConflictModal(false)}
         onFinish={finishConflictSync}
       />
+
+      {/* DIAGNOSTICS */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
+        <div className="text-lg font-semibold">Diagnostics</div>
+        <p className="text-sm text-zinc-400">
+          During beta, we track basic usage (screens and feature clicks) and collect error reports.
+          This helps improve stability and understand what people actually use.
+          We do <span className="text-zinc-200 font-semibold">not</span> collect your phrase content.
+        </p>
+
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-200">
+                Share anonymous diagnostics
+              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">
+                Usage + errors (no phrase content)
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={
+                "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
+                (diagnosticsOn
+                  ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
+                  : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
+              }
+              onClick={() => {
+                const next = !diagnosticsOn;
+                setDiagnosticsOn(next);
+                setDiagnosticsEnabled(next);
+
+                try {
+                  trackEvent(
+                    "diagnostics_toggle",
+                    { enabled: next ? 1 : 0 },
+                    { app_version: appVersion }
+                  );
+                } catch {}
+              }}
+            >
+              {diagnosticsOn ? "On" : "Off"}
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* DAILY RECALL */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
@@ -361,7 +513,12 @@ export default function SettingsView({
 
         <button
           className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={() => fetchStarter?.("EN2LT")}
+          onClick={() => {
+            try {
+              trackEvent("starter_install", {}, { app_version: appVersion });
+            } catch {}
+            fetchStarter?.("EN2LT");
+          }}
         >
           Install starter pack
         </button>
@@ -456,82 +613,3 @@ export default function SettingsView({
           onChange={(e) => setAzureVoiceShortName(e.target.value)}
         >
           <option value="lt-LT-LeonasNeural">Leonas (male)</option>
-          <option value="lt-LT-OnaNeural">Ona (female)</option>
-        </select>
-
-        <button
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={() => playText("Sveiki!")}
-        >
-          Play sample
-        </button>
-      </section>
-
-      {/* YOUR DATA */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Your Data</div>
-
-        <div className="space-y-2">
-          <div className="text-sm text-zinc-400">
-            Export/Import is a file on this device (not cloud).
-          </div>
-
-          <input type="file" accept="application/json" onChange={handleImportFile} />
-
-          <button
-            className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
-            onClick={exportJson}
-          >
-            Export JSON (file)
-          </button>
-        </div>
-
-        <div className="flex flex-wrap gap-3 pt-2">
-          <button
-            className="bg-blue-600 text-white rounded-full px-5 py-2"
-            onClick={onOpenDuplicateScanner}
-          >
-            Duplicate scanner
-          </button>
-
-          <button
-            className="bg-red-500 text-white rounded-full px-5 py-2"
-            onClick={handleClearLibrary}
-          >
-            Clear library
-          </button>
-        </div>
-      </section>
-
-      {/* ABOUT */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">About</div>
-
-        <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
-          onClick={onOpenUserGuide}
-        >
-          User Guide
-        </button>
-
-        <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
-          onClick={onOpenChangeLog}
-        >
-          Change log
-        </button>
-      </section>
-    </div>
-  );
-
-  async function handleClearLibrary() {
-    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
-    if (!ok) return;
-    try {
-      await clearLibrary?.();
-      alert("Cleared ✅");
-    } catch (e) {
-      alert("Could not clear: " + (e?.message || "Unknown error"));
-    }
-  }
-}
