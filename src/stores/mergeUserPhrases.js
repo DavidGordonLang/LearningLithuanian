@@ -24,9 +24,17 @@
  * - "RAG Icon" is treated as a non-blocking, auto-resolved field.
  *   RAG differences will NEVER create a merge conflict.
  *   Resolution: prefer newer _ts; if tied, prefer local.
+ *
+ * IMPORTANT UPDATE (Jan 2026 - conflicts should be rare):
+ * - Field conflicts should only be raised when edits are near-simultaneous / ambiguous.
+ *   If one side is clearly newer by _ts, we auto-resolve without blocking sync.
  */
 
 const PLACEHOLDERS = new Set(["nan", "null", "nul", "none", "n/a", "na", ""]);
+
+// If edits are within this window, we treat them as "concurrent-ish" and allow conflicts.
+// Outside this window, we auto-resolve by timestamp and do NOT create a conflict.
+const CONFLICT_TS_WINDOW_MS = 10_000;
 
 /* --------------------------- Meaningfulness --------------------------- */
 
@@ -250,7 +258,7 @@ function mergePair(localIn, cloudIn) {
   // Neither deleted → resolve field-by-field
   const tsGap = Math.abs(lEditTs - cEditTs);
   const base =
-    tsGap > 10_000
+    tsGap > CONFLICT_TS_WINDOW_MS
       ? lEditTs >= cEditTs
         ? localRow
         : cloudRow
@@ -314,19 +322,24 @@ function mergePair(localIn, cloudIn) {
       const chosen = chooseBestText(f, localRow, cloudRow);
       merged[f] = chosen;
 
-      fieldConflicts.push({
-        field: f,
-        local: meaningfulText(localRow[f]),
-        cloud: meaningfulText(cloudRow[f]),
-        chosen,
-      });
+      // ✅ Conflicts should be rare:
+      // Only raise a conflict if edits are near-simultaneous / ambiguous.
+      // If one side is clearly newer, we auto-resolve and do NOT block merge.
+      if (tsGap <= CONFLICT_TS_WINDOW_MS) {
+        fieldConflicts.push({
+          field: f,
+          local: meaningfulText(localRow[f]),
+          cloud: meaningfulText(cloudRow[f]),
+          chosen,
+        });
+      }
     }
   }
 
   // Preserve _qstat sensibly
   if (base._qstat || other._qstat) merged._qstat = base._qstat || other._qstat;
 
-  // Only raise conflict if there are meaningful diffs outside of RAG
+  // Only raise conflict if there are meaningful diffs outside of RAG (and within the conflict window)
   if (fieldConflicts.length) {
     return {
       merged,
@@ -336,7 +349,7 @@ function mergePair(localIn, cloudIn) {
         local: localRow,
         cloud: cloudRow,
         fields: fieldConflicts,
-        reason: "Both sides have meaningful differences in one or more fields.",
+        reason: "Both sides have meaningful differences in one or more fields (near-simultaneous edits).",
       },
     };
   }
