@@ -17,6 +17,8 @@ import {
   trackError,
 } from "../services/analytics";
 
+const ADMIN_EMAILS = ["davidgordonlang@gmail.com"]; // <-- replace with your email
+
 export default function SettingsView({
   T,
   appVersion,
@@ -30,6 +32,7 @@ export default function SettingsView({
   onOpenDuplicateScanner,
   onOpenChangeLog,
   onOpenUserGuide,
+  onOpenAnalytics,
 
   dailyRecallEnabled,
   setDailyRecallEnabled,
@@ -54,7 +57,15 @@ export default function SettingsView({
   const [showConflictModal, setShowConflictModal] = useState(false);
 
   // Diagnostics toggle (local)
-  const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
+  const [diagnosticsOn, setDiagnosticsOn] = useState(() =>
+    getDiagnosticsEnabled()
+  );
+
+  const isAdmin =
+    !!user?.email &&
+    ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(
+      String(user.email).toLowerCase()
+    );
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
@@ -677,6 +688,15 @@ export default function SettingsView({
         >
           Change log
         </button>
+
+        {isAdmin ? (
+          <button
+            className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
+            onClick={() => onOpenAnalytics?.()}
+          >
+            Analytics (admin)
+          </button>
+        ) : null}
       </section>
     </div>
   );
