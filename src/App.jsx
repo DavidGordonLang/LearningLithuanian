@@ -16,6 +16,7 @@ import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
+import AnalyticsView from "./views/AnalyticsView";
 import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
@@ -50,8 +51,10 @@ import {
   clearLibrary as clearLibraryIO,
 } from "./services/libraryIO";
 
+import { trackEvent, trackError } from "./services/analytics";
+
 /* ============================================================================ */
-const APP_VERSION = "1.5.3-beta";
+const APP_VERSION = "1.5.4-beta";
 
 const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
@@ -109,13 +112,13 @@ export default function App() {
   /* PAGE */
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
   const swipeTabs = ["home", "library", "settings"];
-  const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
+  const swipeIndex = swipeTabs.includes(page) ? swipeTabs.indexOf(page) : swipeTabs.indexOf("settings");
 
   const [swipeProgress, setSwipeProgress] = useState(swipeIndex);
   const [isSwiping, setIsSwiping] = useState(false);
 
   useEffect(() => {
-    if (page === "dupes") return;
+    if (page === "dupes" || page === "analytics") return;
     setSwipeProgress(swipeIndex);
     setIsSwiping(false);
   }, [page, swipeIndex]);
@@ -156,8 +159,27 @@ export default function App() {
     useTTSPlayer({
       initialVoice: "lt-LT-LeonasNeural",
       maxIdbEntries: 200,
-      onError: (e) => alert("Voice error: " + (e?.message || "Unknown error")),
+      onError: (e) => {
+        try {
+          trackError(e, { source: "tts_player" }, { app_version: APP_VERSION });
+        } catch {}
+        alert("Voice error: " + (e?.message || "Unknown error"));
+      },
     });
+
+  const playTextTracked = (text, opts) => {
+    try {
+      trackEvent(
+        "tts_play",
+        {
+          voice: azureVoiceShortName,
+          text_len: typeof text === "string" ? text.length : null,
+        },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+    return playText(text, opts);
+  };
 
   useSyncExternalStore(
     searchStore.subscribe,
@@ -196,6 +218,10 @@ export default function App() {
   const isEditing = !!editingRow;
 
   function removePhraseById(id) {
+    try {
+      trackEvent("phrase_delete", { phrase_id: id }, { app_version: APP_VERSION });
+    } catch {}
+
     setRows((prev) =>
       prev.map((r) =>
         r._id === id ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r
@@ -253,13 +279,78 @@ export default function App() {
     showWhatsNew ||
     showUserGuide ||
     showChangeLog ||
-    page === "dupes";
+    page === "dupes" ||
+    page === "analytics";
 
   const dailyRecall = useDailyRecall({
     rows: visibleRows,
     blocked: dailyBlocked,
     minLibraryForUserMode: 8,
   });
+
+  /* ---------- ANALYTICS: session + views + global errors ---------- */
+
+  // Global JS error capture
+  useEffect(() => {
+    function onError(event) {
+      try {
+        trackError(
+          event?.error || new Error(event?.message || "window_error"),
+          { source: "window_error" },
+          { app_version: APP_VERSION }
+        );
+      } catch {}
+    }
+
+    function onRejection(event) {
+      try {
+        const reason = event?.reason;
+        trackError(
+          reason instanceof Error
+            ? reason
+            : new Error(String(reason || "unhandled_rejection")),
+          { source: "unhandled_rejection" },
+          { app_version: APP_VERSION }
+        );
+      } catch {}
+    }
+
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+
+  // session_start once per authenticated allowlisted render
+  const sessionStartedRef = useRef(false);
+  useEffect(() => {
+    if (!user) return;
+    if (!allowlistChecked || !isAllowlisted) return;
+    if (sessionStartedRef.current) return;
+
+    sessionStartedRef.current = true;
+
+    try {
+      trackEvent(
+        "session_start",
+        { initial_page: page },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+  }, [user, allowlistChecked, isAllowlisted]); // intentionally not depending on page
+
+  // view tracking on page changes
+  useEffect(() => {
+    if (!user) return;
+    if (!allowlistChecked || !isAllowlisted) return;
+
+    try {
+      trackEvent(`view_${page}`, {}, { app_version: APP_VERSION });
+    } catch {}
+  }, [page, user, allowlistChecked, isAllowlisted]);
 
   /* RENDER GATE */
   if (authLoading && !user) {
@@ -282,12 +373,15 @@ export default function App() {
     return <BetaBlocked email={user.email} />;
   }
 
+  // Header highlight: keep the normal tabs. Analytics should look like "Settings" is active.
+  const headerPage = swipeTabs.includes(page) ? page : "settings";
+
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
       <Header
         ref={headerRef}
         T={T}
-        page={page}
+        page={headerPage}
         setPage={goToPage}
         onLogoClick={handleLogoClick}
         swipeProgress={swipeProgress}
@@ -307,6 +401,13 @@ export default function App() {
               onBack={() => goToPage("settings")}
             />
           </div>
+        ) : page === "analytics" ? (
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <AnalyticsView
+              appVersion={APP_VERSION}
+              onBack={() => goToPage("settings")}
+            />
+          </div>
         ) : (
           <SwipePager
             index={swipeIndex}
@@ -321,7 +422,7 @@ export default function App() {
             <div className="h-full">
               <HomeView
                 key={homeResetKey}
-                playText={playText}
+                playText={playTextTracked}
                 setRows={setRows}
                 genId={genId}
                 nowTs={nowTs}
@@ -354,7 +455,7 @@ export default function App() {
                 setRows={setRows}
                 normalizeRag={normalizeRag}
                 sortMode={sortMode}
-                playText={playText}
+                playText={playTextTracked}
                 removePhrase={removePhraseById}
                 onEditRow={(id) => {
                   setEditRowId(id);
@@ -371,9 +472,10 @@ export default function App() {
             <div className="h-full">
               <SettingsView
                 T={T}
+                appVersion={APP_VERSION}
                 azureVoiceShortName={azureVoiceShortName}
                 setAzureVoiceShortName={setAzureVoiceShortName}
-                playText={playText}
+                playText={playTextTracked}
                 fetchStarter={fetchStarter}
                 clearLibrary={clearLibrary}
                 importJsonFile={importJsonFile}
@@ -381,6 +483,7 @@ export default function App() {
                 onOpenDuplicateScanner={() => goToPage("dupes")}
                 onOpenChangeLog={() => setShowChangeLog(true)}
                 onOpenUserGuide={() => setShowUserGuide(true)}
+                onOpenAnalytics={() => goToPage("analytics")}
                 dailyRecallEnabled={dailyRecall.enabled}
                 setDailyRecallEnabled={dailyRecall.setEnabled}
                 showDailyRecallNow={dailyRecall.showNow}
@@ -394,7 +497,7 @@ export default function App() {
       {dailyRecall.isOpen && dailyRecall.phrase && (
         <DailyRecallModal
           phrase={dailyRecall.phrase}
-          playText={playText}
+          playText={playTextTracked}
           onClose={dailyRecall.close}
         />
       )}
@@ -432,9 +535,25 @@ export default function App() {
                   initialRow={editingRow || undefined}
                   onSubmit={(row) => {
                     if (isEditing) {
+                      try {
+                        trackEvent(
+                          "phrase_edit",
+                          { phrase_id: row?._id || null },
+                          { app_version: APP_VERSION }
+                        );
+                      } catch {}
+
                       const index = rows.findIndex((r) => r._id === row._id);
                       if (index !== -1) saveEditedPhrase(index, row);
                     } else {
+                      try {
+                        trackEvent(
+                          "phrase_add",
+                          { phrase_id: row?._id || null },
+                          { app_version: APP_VERSION }
+                        );
+                      } catch {}
+
                       addPhrase(row);
                     }
 

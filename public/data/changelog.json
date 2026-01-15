@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.5.4-beta",
+    "date": "2026-01-15",
+    "changes": [
+      "Introduced internal usage analytics during beta to help improve stability and prioritise real-world features.",
+      "Added secure, privacy-conscious tracking of screen views, feature usage (add/edit/delete, text-to-speech, sync actions), and session starts.",
+      "Implemented automatic error reporting for unhandled runtime errors and rejected promises to improve crash visibility.",
+      "Analytics data is stored internally in the app’s own backend (no third-party analytics services).",
+      "Added an admin-only Analytics view to see daily activity in plain English (who used the app, what they did, and any errors).",
+      "Added a clear Diagnostics toggle in Settings allowing users to opt out of anonymous usage and error reporting.",
+      "Confirmed that phrase content is never collected or transmitted as part of analytics or diagnostics.",
+      "Moved Diagnostics settings to the bottom of the Settings screen for a cleaner, less intrusive layout."
+    ]
+  },
+  {
     "version": "1.5.3-beta",
     "date": "2026-01-15",
     "changes": [
