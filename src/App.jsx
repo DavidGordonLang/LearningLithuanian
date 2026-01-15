@@ -16,6 +16,7 @@ import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
+import AnalyticsView from "./views/AnalyticsView";
 import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
@@ -111,13 +112,13 @@ export default function App() {
   /* PAGE */
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
   const swipeTabs = ["home", "library", "settings"];
-  const swipeIndex = Math.max(0, swipeTabs.indexOf(page));
+  const swipeIndex = swipeTabs.includes(page) ? swipeTabs.indexOf(page) : swipeTabs.indexOf("settings");
 
   const [swipeProgress, setSwipeProgress] = useState(swipeIndex);
   const [isSwiping, setIsSwiping] = useState(false);
 
   useEffect(() => {
-    if (page === "dupes") return;
+    if (page === "dupes" || page === "analytics") return;
     setSwipeProgress(swipeIndex);
     setIsSwiping(false);
   }, [page, swipeIndex]);
@@ -278,7 +279,8 @@ export default function App() {
     showWhatsNew ||
     showUserGuide ||
     showChangeLog ||
-    page === "dupes";
+    page === "dupes" ||
+    page === "analytics";
 
   const dailyRecall = useDailyRecall({
     rows: visibleRows,
@@ -304,7 +306,9 @@ export default function App() {
       try {
         const reason = event?.reason;
         trackError(
-          reason instanceof Error ? reason : new Error(String(reason || "unhandled_rejection")),
+          reason instanceof Error
+            ? reason
+            : new Error(String(reason || "unhandled_rejection")),
           { source: "unhandled_rejection" },
           { app_version: APP_VERSION }
         );
@@ -369,12 +373,15 @@ export default function App() {
     return <BetaBlocked email={user.email} />;
   }
 
+  // Header highlight: keep the normal tabs. Analytics should look like "Settings" is active.
+  const headerPage = swipeTabs.includes(page) ? page : "settings";
+
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
       <Header
         ref={headerRef}
         T={T}
-        page={page}
+        page={headerPage}
         setPage={goToPage}
         onLogoClick={handleLogoClick}
         swipeProgress={swipeProgress}
@@ -391,6 +398,13 @@ export default function App() {
               T={T}
               rows={visibleRows}
               removePhrase={removePhraseById}
+              onBack={() => goToPage("settings")}
+            />
+          </div>
+        ) : page === "analytics" ? (
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <AnalyticsView
+              appVersion={APP_VERSION}
               onBack={() => goToPage("settings")}
             />
           </div>
@@ -469,6 +483,7 @@ export default function App() {
                 onOpenDuplicateScanner={() => goToPage("dupes")}
                 onOpenChangeLog={() => setShowChangeLog(true)}
                 onOpenUserGuide={() => setShowUserGuide(true)}
+                onOpenAnalytics={() => goToPage("analytics")}
                 dailyRecallEnabled={dailyRecall.enabled}
                 setDailyRecallEnabled={dailyRecall.setEnabled}
                 showDailyRecallNow={dailyRecall.showNow}
