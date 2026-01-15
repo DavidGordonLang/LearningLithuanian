@@ -418,54 +418,6 @@ export default function SettingsView({
         onFinish={finishConflictSync}
       />
 
-      {/* DIAGNOSTICS */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Diagnostics</div>
-        <p className="text-sm text-zinc-400">
-          During beta, we track basic usage (screens and feature clicks) and collect error reports.
-          This helps improve stability and understand what people actually use.
-          We do <span className="text-zinc-200 font-semibold">not</span> collect your phrase content.
-        </p>
-
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-sm font-semibold text-zinc-200">
-                Share anonymous diagnostics
-              </div>
-              <div className="text-xs text-zinc-500 mt-0.5">
-                Usage + errors (no phrase content)
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className={
-                "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
-                (diagnosticsOn
-                  ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
-                  : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
-              }
-              onClick={() => {
-                const next = !diagnosticsOn;
-                setDiagnosticsOn(next);
-                setDiagnosticsEnabled(next);
-
-                try {
-                  trackEvent(
-                    "diagnostics_toggle",
-                    { enabled: next ? 1 : 0 },
-                    { app_version: appVersion }
-                  );
-                } catch {}
-              }}
-            >
-              {diagnosticsOn ? "On" : "Off"}
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* DAILY RECALL */}
       <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
         <div className="text-lg font-semibold">Daily Recall</div>
@@ -697,6 +649,54 @@ export default function SettingsView({
             Analytics (admin)
           </button>
         ) : null}
+      </section>
+
+      {/* DIAGNOSTICS (moved to bottom) */}
+      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
+        <div className="text-lg font-semibold">Diagnostics</div>
+        <p className="text-sm text-zinc-400">
+          During beta, we track basic usage (screens and feature clicks) and collect error reports.
+          This helps improve stability and understand what people actually use.
+          We do <span className="text-zinc-200 font-semibold">not</span> collect your phrase content.
+        </p>
+
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-200">
+                Share anonymous diagnostics
+              </div>
+              <div className="text-xs text-zinc-500 mt-0.5">
+                Usage + errors (no phrase content)
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={
+                "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
+                (diagnosticsOn
+                  ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
+                  : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
+              }
+              onClick={() => {
+                const next = !diagnosticsOn;
+                setDiagnosticsOn(next);
+                setDiagnosticsEnabled(next);
+
+                try {
+                  trackEvent(
+                    "diagnostics_toggle",
+                    { enabled: next ? 1 : 0 },
+                    { app_version: appVersion }
+                  );
+                } catch {}
+              }}
+            >
+              {diagnosticsOn ? "On" : "Off"}
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   );
