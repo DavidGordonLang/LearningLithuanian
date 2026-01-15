@@ -34,46 +34,6 @@ function defaultConflictSelections(conflicts) {
   return initial;
 }
 
-function ChoiceChip({ checked, onChange, label, sublabel, tone = "zinc" }) {
-  const toneMap = {
-    zinc: "border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900/80",
-    emerald:
-      "border-emerald-800/60 bg-emerald-950/20 hover:bg-emerald-950/30",
-    sky: "border-sky-800/60 bg-sky-950/20 hover:bg-sky-950/30",
-    amber: "border-amber-800/60 bg-amber-950/20 hover:bg-amber-950/30",
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      className={
-        "group w-full text-left rounded-xl border px-3 py-2.5 transition " +
-        (toneMap[tone] || toneMap.zinc) +
-        (checked ? " ring-1 ring-emerald-500/60" : "")
-      }
-      aria-pressed={checked}
-    >
-      <div className="flex items-start gap-3">
-        <span
-          className={
-            "mt-0.5 inline-flex h-4 w-4 rounded-full border transition " +
-            (checked
-              ? "border-emerald-400 bg-emerald-400 shadow-[0_0_0_3px_rgba(16,185,129,0.15)]"
-              : "border-zinc-700 bg-zinc-950/40")
-          }
-        />
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-zinc-100">{label}</div>
-          {sublabel ? (
-            <div className="text-xs text-zinc-400 mt-0.5">{sublabel}</div>
-          ) : null}
-        </div>
-      </div>
-    </button>
-  );
-}
-
 export default function ConflictReviewModal({
   open,
   conflicts = [],
@@ -85,6 +45,7 @@ export default function ConflictReviewModal({
     defaultConflictSelections(conflicts)
   );
 
+  // Create the portal host ONLY when the modal is open.
   useEffect(() => {
     if (!open) {
       if (hostRef.current) {
@@ -153,145 +114,170 @@ export default function ConflictReviewModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-start sm:items-center justify-center px-3 py-6"
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:py-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div
-        className="w-full max-w-3xl rounded-3xl border border-emerald-900/30 bg-zinc-950/80 shadow-2xl overflow-hidden"
-        style={{
-          boxShadow:
-            "0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(16,185,129,0.08), 0 0 40px rgba(16,185,129,0.08)",
-        }}
+        className="w-full max-w-3xl rounded-3xl border border-emerald-900/30 bg-zinc-950/80 shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-24px)] sm:max-h-[70vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-zinc-800/80 bg-gradient-to-b from-zinc-950/70 to-transparent">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-xl font-semibold text-zinc-100">
-                Resolve sync conflicts
-              </div>
-              <div className="text-sm text-zinc-400 mt-1">
-                {conflictList.length} item(s) need a choice before we can finish
-                syncing. Nothing has been overwritten yet.
-              </div>
+        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-zinc-800/80">
+          <div className="min-w-0">
+            <div className="text-lg font-semibold text-zinc-100">
+              Resolve sync conflicts
             </div>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:bg-zinc-900 flex items-center justify-center text-zinc-200"
-              aria-label="Close"
-            >
-              ×
-            </button>
+            <div className="text-xs text-zinc-400 mt-1">
+              {conflictList.length} item(s) need a choice before we can finish
+              syncing. Nothing has been overwritten yet.
+            </div>
           </div>
+
+          <button
+            onClick={onClose}
+            className="w-9 h-9 shrink-0 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-200"
+            aria-label="Close"
+            type="button"
+          >
+            ×
+          </button>
         </div>
 
-        {/* Body */}
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-4 sm:py-5 space-y-4">
           {conflictList.map((conflict, index) => {
             const label = getRowLabel(conflict.local || conflict.cloud || {});
             return (
               <div
                 key={conflict.key || index}
-                className="rounded-2xl border border-zinc-800/80 bg-zinc-950/50 p-4 sm:p-5"
+                className="rounded-2xl border border-zinc-800/80 bg-zinc-950/40 p-4 space-y-3"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-base font-semibold text-zinc-100 truncate">
+                    <div className="text-sm font-semibold text-zinc-200 truncate">
                       {label}
                     </div>
-                    <div className="text-xs text-zinc-500 mt-1">
+                    <div className="text-xs text-zinc-500 mt-0.5">
                       {conflict.reason}
                     </div>
                   </div>
-                  <div className="text-xs text-zinc-500 shrink-0">
-                    #{index + 1}
-                  </div>
                 </div>
 
-                {/* Delete vs edit */}
                 {conflict.type === "delete_vs_edit" ? (
-                  <div className="grid sm:grid-cols-2 gap-3 mt-4">
-                    <ChoiceChip
-                      checked={selections[conflict.key]?.pick === "local"}
-                      onChange={() => updateRowChoice(conflict.key, "local")}
-                      label="Keep local"
-                      sublabel={
-                        conflict.local?._deleted
-                          ? "Local version is deleted"
-                          : "Keep local edits"
-                      }
-                      tone="emerald"
-                    />
-                    <ChoiceChip
-                      checked={selections[conflict.key]?.pick === "cloud"}
-                      onChange={() => updateRowChoice(conflict.key, "cloud")}
-                      label="Keep cloud"
-                      sublabel={
-                        conflict.cloud?._deleted
-                          ? "Cloud version is deleted"
-                          : "Keep cloud edits"
-                      }
-                      tone="sky"
-                    />
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <label className="group flex items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 hover:border-zinc-700">
+                      <input
+                        type="radio"
+                        name={`delete-${conflict.key}`}
+                        checked={selections[conflict.key]?.pick === "local"}
+                        onChange={() => updateRowChoice(conflict.key, "local")}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-xs text-zinc-400">Keep local</div>
+                        <div className="text-sm text-zinc-200">
+                          {conflict.local?._deleted
+                            ? "Deleted locally"
+                            : "Keep local edits"}
+                        </div>
+                      </div>
+                    </label>
+
+                    <label className="group flex items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 hover:border-zinc-700">
+                      <input
+                        type="radio"
+                        name={`delete-${conflict.key}`}
+                        checked={selections[conflict.key]?.pick === "cloud"}
+                        onChange={() => updateRowChoice(conflict.key, "cloud")}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-xs text-zinc-400">Keep cloud</div>
+                        <div className="text-sm text-zinc-200">
+                          {conflict.cloud?._deleted
+                            ? "Deleted in cloud"
+                            : "Keep cloud edits"}
+                        </div>
+                      </div>
+                    </label>
                   </div>
                 ) : null}
 
-                {/* Field conflicts */}
-                {conflict.type === "field_conflict" ? (
-                  <div className="mt-4 space-y-4">
-                    {(conflict.fields || []).map((field) => {
-                      const current =
-                        selections[conflict.key]?.fields?.[field.field] ||
-                        "chosen";
-                      return (
-                        <div
-                          key={`${conflict.key}-${field.field}`}
-                          className="rounded-2xl border border-zinc-800/70 bg-zinc-950/30 p-4"
-                        >
-                          <div className="flex items-baseline justify-between gap-3">
-                            <div className="text-xs font-semibold tracking-wide text-zinc-300 uppercase">
-                              {field.field}
-                            </div>
-                            <div className="text-[11px] text-zinc-500">
-                              Choose the value you want to keep
-                            </div>
-                          </div>
+                {conflict.type === "field_conflict"
+                  ? (conflict.fields || []).map((field) => (
+                      <div key={`${conflict.key}-${field.field}`}>
+                        <div className="text-xs uppercase tracking-wide text-zinc-500">
+                          {field.field}
+                        </div>
 
-                          <div className="grid sm:grid-cols-2 gap-3 mt-3">
-                            <ChoiceChip
-                              checked={current === "local"}
-                              onChange={() =>
-                                updateFieldChoice(
-                                  conflict.key,
-                                  field.field,
-                                  "local"
-                                )
-                              }
-                              label="Local"
-                              sublabel={field.local || "—"}
-                              tone="emerald"
-                            />
-                            <ChoiceChip
-                              checked={current === "cloud"}
-                              onChange={() =>
-                                updateFieldChoice(
-                                  conflict.key,
-                                  field.field,
-                                  "cloud"
-                                )
-                              }
-                              label="Cloud"
-                              sublabel={field.cloud || "—"}
-                              tone="sky"
-                            />
-                          </div>
+                        <div className="grid sm:grid-cols-2 gap-3 mt-2">
+                          <label className="relative rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-950/60 to-zinc-900/40 p-3 hover:border-zinc-700">
+                            <div className="flex items-start gap-2">
+                              <input
+                                type="radio"
+                                name={`${conflict.key}-${field.field}`}
+                                checked={
+                                  selections[conflict.key]?.fields?.[
+                                    field.field
+                                  ] === "local"
+                                }
+                                onChange={() =>
+                                  updateFieldChoice(
+                                    conflict.key,
+                                    field.field,
+                                    "local"
+                                  )
+                                }
+                              />
+                              <div className="min-w-0">
+                                <div className="text-xs text-zinc-400">
+                                  Local
+                                </div>
+                                <div className="text-sm text-zinc-200 break-words mt-1">
+                                  {field.local || "—"}
+                                </div>
+                              </div>
+                            </div>
+                          </label>
 
-                          <div className="mt-3">
-                            <ChoiceChip
-                              checked={current === "chosen"}
+                          <label className="relative rounded-2xl border border-emerald-900/40 bg-gradient-to-b from-emerald-950/30 to-zinc-900/40 p-3 hover:border-emerald-800/60">
+                            <div className="flex items-start gap-2">
+                              <input
+                                type="radio"
+                                name={`${conflict.key}-${field.field}`}
+                                checked={
+                                  selections[conflict.key]?.fields?.[
+                                    field.field
+                                  ] === "cloud"
+                                }
+                                onChange={() =>
+                                  updateFieldChoice(
+                                    conflict.key,
+                                    field.field,
+                                    "cloud"
+                                  )
+                                }
+                              />
+                              <div className="min-w-0">
+                                <div className="text-xs text-zinc-400">
+                                  Cloud
+                                </div>
+                                <div className="text-sm text-zinc-200 break-words mt-1">
+                                  {field.cloud || "—"}
+                                </div>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+
+                        <label className="mt-3 block rounded-2xl border border-zinc-700 bg-zinc-900/60 p-3 hover:border-zinc-600">
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="radio"
+                              name={`${conflict.key}-${field.field}`}
+                              checked={
+                                selections[conflict.key]?.fields?.[
+                                  field.field
+                                ] === "chosen"
+                              }
                               onChange={() =>
                                 updateFieldChoice(
                                   conflict.key,
@@ -299,44 +285,47 @@ export default function ConflictReviewModal({
                                   "chosen"
                                 )
                               }
-                              label="Keep auto-merge"
-                              sublabel={field.chosen || "—"}
-                              tone="zinc"
                             />
+                            <div className="min-w-0">
+                              <div className="text-xs text-zinc-400">
+                                Keep auto-merge
+                              </div>
+                              <div className="text-sm text-zinc-200 break-words mt-1">
+                                {field.chosen || "—"}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null}
+                        </label>
+                      </div>
+                    ))
+                  : null}
               </div>
             );
           })}
-
-          {!conflictList.length ? (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-5 text-sm text-zinc-400">
-              No conflicts to review.
-            </div>
-          ) : null}
         </div>
 
-        {/* Sticky footer */}
-        <div className="px-6 py-4 border-t border-zinc-800/80 bg-zinc-950/70 sticky bottom-0">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-xs text-zinc-500">
-              Tip: “Auto-merge” uses the merge engine’s best guess (usually newer
-              / more complete). You can override field-by-field.
+        <div className="px-5 sm:px-6 py-3 sm:py-4 border-t border-zinc-800/80 bg-zinc-950/70">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-xs text-zinc-500 leading-snug sm:pr-6">
+              Tip:{" "}
+              <span className="text-zinc-400">
+                “Auto-merge” uses the merge engine’s best guess (usually newer /
+                more complete). You can override it field-by-field.
+              </span>
             </div>
-            <div className="flex items-center gap-3">
+
+            <div className="flex items-center justify-end gap-3">
               <button
-                className="bg-zinc-900/70 border border-zinc-800 text-zinc-200 rounded-full px-4 py-2 text-sm hover:bg-zinc-900"
+                className="bg-zinc-800 text-zinc-200 rounded-full px-4 py-2 text-sm hover:bg-zinc-700"
                 onClick={onClose}
+                type="button"
               >
                 Close
               </button>
               <button
-                className="bg-emerald-500 text-black rounded-full px-5 py-2 text-sm font-semibold hover:bg-emerald-400 active:bg-emerald-300"
+                className="bg-emerald-500 text-black rounded-full px-5 py-2 text-sm font-semibold hover:bg-emerald-400"
                 onClick={() => onFinish?.(selections)}
+                type="button"
               >
                 Finish sync
               </button>
