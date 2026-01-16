@@ -95,6 +95,102 @@ const STR = {
   edit: "Edit Entry",
 };
 
+/* -------------------- Premium Toast UI (stack + animation) -------------------- */
+
+function ToastStack({ toasts, onDismiss }) {
+  // Show at most 3 to keep it clean.
+  const visible = Array.isArray(toasts) ? toasts.slice(0, 3) : [];
+
+  if (!visible.length) return null;
+
+  return (
+    <div className="fixed left-0 right-0 bottom-6 z-[90] flex justify-center px-4 pointer-events-none">
+      <div className="w-full max-w-md space-y-2 pointer-events-auto">
+        {visible.map((t) => (
+          <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ToastItem({ toast, onDismiss }) {
+  const [show, setShow] = useState(false);
+  const closeRef = useRef(false);
+
+  useEffect(() => {
+    // Enter animation
+    const raf = requestAnimationFrame(() => setShow(true));
+
+    // Auto-dismiss timer
+    const ms = typeof toast?.ms === "number" ? toast.ms : 2200;
+    const timer = setTimeout(() => {
+      if (closeRef.current) return;
+      closeRef.current = true;
+      setShow(false);
+    }, ms);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+    };
+  }, [toast?.id]);
+
+  // After exit animation, remove from stack
+  useEffect(() => {
+    if (!toast?.id) return;
+    if (show) return;
+
+    // Only run exit cleanup if we’ve already entered once
+    if (!closeRef.current) return;
+
+    const t = setTimeout(() => {
+      onDismiss?.(toast.id);
+    }, 180); // matches transition duration
+
+    return () => clearTimeout(t);
+  }, [show, toast?.id, onDismiss]);
+
+  const msg = String(toast?.msg || "").trim();
+  if (!msg) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (closeRef.current) return;
+        closeRef.current = true;
+        setShow(false);
+      }}
+      className={
+        "w-full text-left select-none " +
+        "rounded-2xl px-4 py-3 " +
+        "backdrop-blur bg-zinc-900/85 " +
+        "border border-zinc-700/70 " +
+        "shadow-[0_12px_40px_rgba(0,0,0,0.55)] " +
+        "transition-all duration-200 ease-out " +
+        (show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2")
+      }
+      aria-label="Dismiss notification"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="
+            mt-[2px]
+            h-2.5 w-2.5 rounded-full
+            bg-emerald-400
+            shadow-[0_0_18px_rgba(52,211,153,0.55)]
+            shrink-0
+          "
+        />
+        <div className="text-sm text-zinc-100 leading-snug">{msg}</div>
+      </div>
+
+      <div className="mt-2 h-[1px] w-full bg-gradient-to-r from-emerald-400/40 via-zinc-400/10 to-transparent" />
+    </button>
+  );
+}
+
 /* ============================================================================ */
 export default function App() {
   useEffect(() => {
@@ -156,29 +252,26 @@ export default function App() {
 
   const T = STR;
 
-  /* -------------------- TOAST (global, minimal) -------------------- */
-  const [toast, setToast] = useState(null); // { id, msg }
-  const toastTimerRef = useRef(null);
+  /* -------------------- TOAST (global, premium-ish) -------------------- */
+  const [toasts, setToasts] = useState([]); // [{ id, msg, ms }]
+  const toastMaxRef = useRef(6); // keep memory bounded
 
   function showToast(msg, ms = 2200) {
     const text = String(msg || "").trim();
     if (!text) return;
 
     const id = Date.now() + Math.random();
-    setToast({ id, msg: text });
 
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, ms);
+    setToasts((prev) => {
+      const next = [{ id, msg: text, ms }, ...(Array.isArray(prev) ? prev : [])];
+      // hard bound to avoid weird growth
+      return next.slice(0, toastMaxRef.current);
+    });
   }
 
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
+  function dismissToast(id) {
+    setToasts((prev) => (Array.isArray(prev) ? prev.filter((t) => t.id !== id) : []));
+  }
 
   /* VOICE */
   const { voice: azureVoiceShortName, setVoice: setAzureVoiceShortName, playText } =
@@ -520,26 +613,8 @@ export default function App() {
         )}
       </main>
 
-      {/* TOAST */}
-      {toast && (
-        <div className="fixed left-0 right-0 bottom-6 z-[90] flex justify-center px-4 pointer-events-none">
-          <div
-            key={toast.id}
-            className="
-              pointer-events-none
-              max-w-md w-full
-              bg-zinc-900/95 border border-zinc-700
-              text-zinc-100
-              rounded-2xl px-4 py-3
-              shadow-[0_10px_30px_rgba(0,0,0,0.45)]
-              backdrop-blur
-              text-sm
-            "
-          >
-            {toast.msg}
-          </div>
-        </div>
-      )}
+      {/* TOASTS */}
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
       {/* DAILY RECALL MODAL */}
       {dailyRecall.isOpen && dailyRecall.phrase && (
