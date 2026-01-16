@@ -1,7 +1,6 @@
 // src/views/HomeView.jsx
 import React, { memo, useCallback, useMemo, useRef, useState } from "react";
 import { DEFAULT_CATEGORY } from "../constants/categories";
-import useSttPressHold from "../hooks/useSttPressHold";
 
 function stripDiacritics(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -11,11 +10,12 @@ function normalise(str) {
   if (!str) return "";
   return stripDiacritics(str)
     .toLowerCase()
-    .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "")
+    .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "") // punctuation
     .replace(/\s+/g, " ")
     .trim();
 }
 
+// Lightweight Levenshtein distance with early bailout
 function levenshtein(a, b) {
   if (a === b) return 0;
   const m = a.length;
@@ -50,6 +50,12 @@ function areNearDuplicatesText(a, b) {
   return levenshtein(na, nb) <= 1;
 }
 
+/**
+ * Pre-translation duplicate check:
+ * We don't assume source language, so we check BOTH:
+ * - Input ≈ any saved English (EnglishOriginal/English)
+ * - Input ≈ any saved Lithuanian (Lithuanian/LithuanianOriginal)
+ */
 function findDuplicateInLibrary(inputText, rows) {
   const target = normalise(inputText);
   if (!target) return null;
@@ -57,14 +63,20 @@ function findDuplicateInLibrary(inputText, rows) {
   for (const r of rows) {
     const candidateEn = r.EnglishOriginal || r.English || "";
     const candidateLt = r.LithuanianOriginal || r.Lithuanian || "";
+
     if (areNearDuplicatesText(candidateEn, target)) return r;
     if (areNearDuplicatesText(candidateLt, target)) return r;
   }
   return null;
 }
 
+/**
+ * Map enrich-controlled vocab → your current app categories (to avoid dropdown mismatch)
+ * We only map when needed; otherwise keep as-is.
+ */
 function mapEnrichCategoryToApp(category) {
   const c = String(category || "").trim();
+
   const map = {
     Food: "Food & Drink",
     Emergencies: "Emergency",
@@ -72,6 +84,7 @@ function mapEnrichCategoryToApp(category) {
     Emotions: "General",
     Relationships: "Social",
   };
+
   return map[c] || c || DEFAULT_CATEGORY;
 }
 
@@ -83,7 +96,7 @@ const EMPTY_RESULT = {
   usageOut: "",
   notesOut: "",
   categoryOut: DEFAULT_CATEGORY,
-  sourceLang: "en",
+  sourceLang: "en", // "en" | "lt"
 };
 
 const Segmented = memo(function Segmented({ value, onChange, options }) {
@@ -114,8 +127,6 @@ const Segmented = memo(function Segmented({ value, onChange, options }) {
   );
 });
 
-const LSK_AUTO_TRANSLATE = "lt_auto_translate_v1";
-
 export default function HomeView({
   playText,
   onOpenAddForm,
@@ -144,22 +155,17 @@ export default function HomeView({
   const [tone, setTone] = useState("friendly");
   const [duplicateEntry, setDuplicateEntry] = useState(null);
 
-  const [autoTranslate, setAutoTranslate] = useState(() => {
-    try {
-      const v = localStorage.getItem(LSK_AUTO_TRANSLATE);
-      if (v === "0") return false;
-      if (v === "1") return true;
-    } catch {}
-    return true;
-  });
+  // STT state machine: idle | recording | transcribing | translating
+  const [sttState, setSttState] = useState("idle");
+  const sttStateRef = useRef("idle");
 
-  const sttDebug = useMemo(() => {
-    try {
-      return localStorage.getItem("lt_stt_debug") === "1";
-    } catch {
-      return false;
-    }
-  }, []);
+  const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const chunksRef = useRef([]);
+
+  const stopTimerRef = useRef(null);
+  const stopGraceRef = useRef(null);
+  const processWatchdogRef = useRef(null);
 
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
@@ -171,6 +177,62 @@ export default function HomeView({
     setResult(EMPTY_RESULT);
   }, []);
 
+  function setSttStateSafe(next) {
+    sttStateRef.current = next;
+    setSttState(next);
+  }
+
+  function clearStopTimers() {
+    if (stopTimerRef.current) {
+      clearTimeout(stopTimerRef.current);
+      stopTimerRef.current = null;
+    }
+    if (stopGraceRef.current) {
+      clearTimeout(stopGraceRef.current);
+      stopGraceRef.current = null;
+    }
+  }
+
+  function clearProcessWatchdog() {
+    if (processWatchdogRef.current) {
+      clearTimeout(processWatchdogRef.current);
+      processWatchdogRef.current = null;
+    }
+  }
+
+  function forceResetStt(reasonToast) {
+    clearStopTimers();
+    clearProcessWatchdog();
+
+    try {
+      const mr = mediaRecorderRef.current;
+      if (mr && mr.state !== "inactive") {
+        try {
+          mr.ondataavailable = null;
+          mr.onstop = null;
+          mr.stop();
+        } catch {}
+      }
+    } catch {}
+
+    try {
+      const s = streamRef.current;
+      if (s) {
+        try {
+          s.getTracks().forEach((t) => t.stop());
+        } catch {}
+      }
+    } catch {}
+
+    mediaRecorderRef.current = null;
+    streamRef.current = null;
+    chunksRef.current = [];
+
+    setSttStateSafe("idle");
+    if (reasonToast) showToast?.(reasonToast);
+  }
+
+  // IMPORTANT: translate *a specific string* to avoid React state race when STT sets input then translates.
   async function translateText(text, force = false) {
     const cleaned = (text || "").trim();
     if (!cleaned) return;
@@ -193,7 +255,11 @@ export default function HomeView({
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: cleaned, tone, gender }),
+        body: JSON.stringify({
+          text: cleaned,
+          tone,
+          gender,
+        }),
       });
 
       const data = await res.json();
@@ -218,11 +284,17 @@ export default function HomeView({
           sourceLang: inferred,
         });
       } else {
-        setResult({ ...EMPTY_RESULT, ltOut: "Translation error." });
+        setResult({
+          ...EMPTY_RESULT,
+          ltOut: "Translation error.",
+        });
       }
     } catch (err) {
       console.error(err);
-      setResult({ ...EMPTY_RESULT, ltOut: "Translation error." });
+      setResult({
+        ...EMPTY_RESULT,
+        ltOut: "Translation error.",
+      });
     } finally {
       setTranslating(false);
     }
@@ -267,6 +339,7 @@ export default function HomeView({
       const CategoryRaw = String(data?.Category || "").trim();
       const Usage = String(data?.Usage || "").trim();
       const Notes = String(data?.Notes || "").trim();
+
       if (!CategoryRaw || !Usage || !Notes) return;
 
       const Category = mapEnrichCategoryToApp(CategoryRaw);
@@ -274,7 +347,12 @@ export default function HomeView({
       setRows((prev) =>
         prev.map((r) =>
           r._id === row._id
-            ? { ...r, Category: Category || r.Category || DEFAULT_CATEGORY, Usage, Notes }
+            ? {
+                ...r,
+                Category: Category || r.Category || DEFAULT_CATEGORY,
+                Usage,
+                Notes,
+              }
             : r
         )
       );
@@ -285,6 +363,7 @@ export default function HomeView({
 
   const handleSaveToLibrary = useCallback(() => {
     blurTextarea();
+
     if (!canSave) return;
 
     const rawInput = input.trim();
@@ -315,14 +394,17 @@ export default function HomeView({
       EnglishNatural: englishToSave,
 
       Lithuanian: lithuanianToSave,
-      LithuanianOriginal: result.sourceLang === "lt" ? rawInput : lithuanianToSave,
+      LithuanianOriginal:
+        result.sourceLang === "lt" ? rawInput : lithuanianToSave,
 
       Phonetic: result.phonetics || "",
+
       Category: DEFAULT_CATEGORY,
       Usage: "",
       Notes: "",
 
       SourceLang: result.sourceLang,
+
       "RAG Icon": "🟠",
       Sheet: "Phrases",
 
@@ -401,50 +483,213 @@ export default function HomeView({
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
 
-  // -------------------- STT hook --------------------
-  const { sttState, supported: sttSupported, start, stop, cancel } = useSttPressHold({
-    endpoint: "/api/stt",
-    maxMs: 15000,
-    fetchTimeoutMs: 20000,
-    processWatchdogMs: 30000,
-    stopGraceMs: 2500,
-    disabled: translating,
-    debug: sttDebug,
-    onToast: (m) => showToast?.(m),
-    onTranscript: async (text) => {
-      blurTextarea();
-      setDuplicateEntry(null);
-      resetResult();
-      setInput(text);
+  // -------------------- STT helpers --------------------
 
-      if (autoTranslate) {
-        await translateText(text, false);
+  const STT_MAX_MS = 15000;
+  const STT_FETCH_TIMEOUT_MS = 20000; // stt should be quick for short clips
+  const STT_PROCESS_WATCHDOG_MS = 30000; // absolute UI recovery cap
+  const STOP_GRACE_MS = 2500; // if onstop never fires, recover
+
+  function sttSupported() {
+    return (
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia &&
+      typeof MediaRecorder !== "undefined"
+    );
+  }
+
+  async function startRecording() {
+    if (!sttSupported()) {
+      showToast?.("Speech input not supported on this device/browser");
+      return;
+    }
+    if (sttStateRef.current !== "idle") return;
+    if (translating) return;
+
+    blurTextarea();
+    setDuplicateEntry(null);
+    resetResult();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      chunksRef.current = [];
+
+      const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+      const mimeType = candidates.find((t) => {
+        try {
+          return MediaRecorder.isTypeSupported(t);
+        } catch {
+          return false;
+        }
+      });
+
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = mr;
+
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mr.onstop = async () => {
+        clearStopTimers();
+
+        // Stop mic tracks immediately
+        try {
+          const s = streamRef.current;
+          if (s) s.getTracks().forEach((t) => t.stop());
+        } catch {}
+
+        // If user cancelled and we pre-set idle, ignore work
+        if (sttStateRef.current === "idle") {
+          return;
+        }
+
+        // Start watchdog so we never get stuck
+        clearProcessWatchdog();
+        processWatchdogRef.current = setTimeout(() => {
+          forceResetStt("Speech processing timed out");
+        }, STT_PROCESS_WATCHDOG_MS);
+
+        const blob = new Blob(chunksRef.current, {
+          type: mr.mimeType || "audio/webm",
+        });
+
+        // “No audio” case
+        if (!blob || blob.size < 1000) {
+          forceResetStt("No audio detected");
+          return;
+        }
+
+        setSttStateSafe("transcribing");
+
+        // Abortable STT fetch
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), STT_FETCH_TIMEOUT_MS);
+
+        try {
+          const fd = new FormData();
+          fd.append("file", blob, "speech.webm");
+          fd.append("model", "gpt-4o-mini-transcribe");
+          fd.append("max_seconds", "15");
+
+          const resp = await fetch("/api/stt", {
+            method: "POST",
+            body: fd,
+            signal: controller.signal,
+          });
+
+          let data = {};
+          try {
+            data = await resp.json();
+          } catch {
+            data = {};
+          }
+
+          if (!resp.ok) {
+            console.error("STT failed:", data);
+            forceResetStt("Speech recognition failed");
+            return;
+          }
+
+          const text = String(data?.text || "").trim();
+          if (!text) {
+            forceResetStt("Didn’t catch that — try again");
+            return;
+          }
+
+          setInput(text);
+
+          setSttStateSafe("translating");
+          await translateText(text, false);
+
+          forceResetStt(); // returns to idle, clears timers
+        } catch (err) {
+          console.error(err);
+          if (err?.name === "AbortError") {
+            forceResetStt("Speech recognition timed out");
+          } else {
+            forceResetStt("Speech recognition failed");
+          }
+        } finally {
+          clearTimeout(t);
+        }
+      };
+
+      setSttStateSafe("recording");
+      mr.start();
+
+      // Hard stop at 15 seconds
+      clearStopTimers();
+      stopTimerRef.current = setTimeout(() => {
+        try {
+          stopRecording();
+        } catch {}
+      }, STT_MAX_MS);
+    } catch (err) {
+      console.error(err);
+      forceResetStt();
+      if (String(err?.name || "").includes("NotAllowed")) {
+        showToast?.("Microphone permission denied");
       } else {
-        showToast?.("Speech captured");
+        showToast?.("Couldn’t access microphone");
       }
-    },
-  });
+    }
+  }
 
-  const micUiState = sttState !== "idle" ? sttState : translating ? "transcribing" : "idle";
+  function stopRecording() {
+    if (sttStateRef.current !== "recording") return;
+
+    try {
+      const mr = mediaRecorderRef.current;
+      if (mr && mr.state !== "inactive") {
+        mr.stop();
+
+        // If onstop doesn’t fire, recover anyway (prevents “stuck transcribing”)
+        if (!stopGraceRef.current) {
+          stopGraceRef.current = setTimeout(() => {
+            // If we’re still not idle, force recover
+            if (sttStateRef.current !== "idle") {
+              forceResetStt("Speech processing failed");
+            }
+          }, STOP_GRACE_MS);
+        }
+      } else {
+        forceResetStt();
+      }
+    } catch (err) {
+      console.error(err);
+      forceResetStt("Speech processing failed");
+    }
+  }
+
+  function cancelStt() {
+    // immediate cancel / reset
+    forceResetStt();
+  }
 
   const micLabel = (() => {
-    if (micUiState === "recording") return "Listening…";
-    if (micUiState === "transcribing") return "Transcribing…";
+    if (sttState === "recording") return "Listening…";
+    if (sttState === "transcribing") return "Transcribing…";
+    if (sttState === "translating") return "Translating…";
     return "Hold to speak";
   })();
 
-  const micDisabled = translating || micUiState === "transcribing";
+  const micDisabled =
+    translating || sttState === "transcribing" || sttState === "translating";
 
   const micClasses = (() => {
     const base =
       "w-full rounded-2xl px-5 py-4 font-semibold select-none " +
-      "transition-transform duration-150 active:scale-[0.99] border ";
+      "transition-transform duration-150 active:scale-[0.99] " +
+      "border ";
 
-    if (!sttSupported) {
-      return base + "bg-zinc-900/80 text-zinc-300 border-zinc-700";
+    if (!sttSupported()) {
+      return base + "bg-zinc-900/60 text-zinc-500 border-zinc-800";
     }
 
-    if (micUiState === "recording") {
+    if (sttState === "recording") {
       return (
         base +
         "bg-emerald-500 text-black border-emerald-400 " +
@@ -452,7 +697,7 @@ export default function HomeView({
       );
     }
 
-    if (micUiState === "transcribing") {
+    if (sttState === "transcribing" || sttState === "translating") {
       return (
         base +
         "bg-emerald-600 text-black border-emerald-400 " +
@@ -466,15 +711,6 @@ export default function HomeView({
       "shadow-[0_0_20px_rgba(0,0,0,0.25)] hover:bg-zinc-900"
     );
   })();
-
-  const toggleAutoTranslate = () => {
-    const next = !autoTranslate;
-    setAutoTranslate(next);
-    try {
-      localStorage.setItem(LSK_AUTO_TRANSLATE, next ? "1" : "0");
-    } catch {}
-    showToast?.(next ? "Auto-translate on" : "Auto-translate off");
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
@@ -508,25 +744,7 @@ export default function HomeView({
 
       {/* Input */}
       <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <label className="block text-sm">What would you like to say?</label>
-
-          <button
-            type="button"
-            className={
-              "text-xs px-3 py-1 rounded-full border transition-colors select-none " +
-              (autoTranslate
-                ? "bg-emerald-600 text-black border-emerald-500"
-                : "bg-zinc-900 text-zinc-200 border-zinc-700 hover:bg-zinc-800")
-            }
-            onClick={() => {
-              blurTextarea();
-              toggleAutoTranslate();
-            }}
-          >
-            Auto: {autoTranslate ? "On" : "Off"}
-          </button>
-        </div>
+        <label className="block text-sm mb-2">What would you like to say?</label>
 
         <textarea
           ref={textareaRef}
@@ -536,46 +754,37 @@ export default function HomeView({
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {/* Big mic button */}
+        {/* Big mic button (press-and-hold) */}
         <div className="mb-3">
           <button
             type="button"
             className={micClasses + (micDisabled ? " opacity-80" : "")}
-            // IMPORTANT: do NOT disable for !sttSupported; we want a toast on press.
-            disabled={micDisabled}
+            disabled={micDisabled || !sttSupported()}
             onMouseDown={(e) => {
               e.preventDefault();
               if (micDisabled) return;
-              if (!sttSupported) {
-                showToast?.("Speech input not supported on this device/browser");
-                return;
-              }
-              start();
+              startRecording();
             }}
             onMouseUp={(e) => {
               e.preventDefault();
-              stop();
+              stopRecording();
             }}
             onMouseLeave={(e) => {
               e.preventDefault();
-              stop();
+              stopRecording();
             }}
             onTouchStart={(e) => {
               e.preventDefault();
               if (micDisabled) return;
-              if (!sttSupported) {
-                showToast?.("Speech input not supported on this device/browser");
-                return;
-              }
-              start();
+              startRecording();
             }}
             onTouchEnd={(e) => {
               e.preventDefault();
-              stop();
+              stopRecording();
             }}
             onTouchCancel={(e) => {
               e.preventDefault();
-              cancel();
+              cancelStt();
             }}
           >
             <div className="flex items-center justify-center gap-3">
@@ -583,13 +792,8 @@ export default function HomeView({
               <span className="text-base">{micLabel}</span>
             </div>
             <div className="text-xs mt-1 opacity-80">
-              {micUiState === "idle" ? "Press and hold (max 15s)" : "Release to stop"}
+              {sttState === "idle" ? "Press and hold (max 15s)" : "Release to stop"}
             </div>
-            {sttDebug && (
-              <div className="text-[11px] mt-2 opacity-70">
-                debug: supported={String(sttSupported)} state={String(sttState)}
-              </div>
-            )}
           </button>
         </div>
 
@@ -617,14 +821,14 @@ export default function HomeView({
               select-none
             "
             onClick={handleClear}
-            disabled={micUiState !== "idle"}
+            disabled={sttState !== "idle"}
           >
             Clear
           </button>
         </div>
       </div>
 
-      {/* Duplicate warning */}
+      {/* Duplicate warning / existing entry view */}
       {duplicateEntry && (
         <div className="bg-amber-950/70 border border-amber-500/70 rounded-2xl p-4 mb-5">
           <div className="flex items-start justify-between gap-3 mb-2">
