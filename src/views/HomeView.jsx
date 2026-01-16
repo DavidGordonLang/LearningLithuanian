@@ -573,30 +573,25 @@ export default function HomeView({
           <button
             type="button"
             className={micClasses + (micDisabled ? " opacity-80" : "")}
+            style={{ touchAction: "none" }}
             disabled={micDisabled || !sttSupported}
-            onMouseDown={(e) => {
+            onPointerDown={(e) => {
               e.preventDefault();
               if (micDisabled) return;
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId);
+              } catch {}
               start();
             }}
-            onMouseUp={(e) => {
+            onPointerUp={(e) => {
               e.preventDefault();
               stop();
             }}
-            onMouseLeave={(e) => {
+            onPointerLeave={(e) => {
               e.preventDefault();
               stop();
             }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              if (micDisabled) return;
-              start();
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              stop();
-            }}
-            onTouchCancel={(e) => {
+            onPointerCancel={(e) => {
               e.preventDefault();
               cancel();
             }}
@@ -606,7 +601,9 @@ export default function HomeView({
               <span className="text-base">{micLabel}</span>
             </div>
             <div className="text-xs mt-1 opacity-80">
-              {micUiState === "idle" ? "Press and hold (max 15s)" : "Release to stop"}
+              {micUiState === "idle"
+                ? "Press and hold (max 15s)"
+                : "Release to stop"}
             </div>
           </button>
         </div>
@@ -651,7 +648,8 @@ export default function HomeView({
                 Similar entry already in your library
               </div>
               <div className="text-xs text-amber-200/80 mt-0.5">
-                You can use this one, or translate anyway if you really want a new version.
+                You can use this one, or translate anyway if you really want a
+                new version.
               </div>
             </div>
             <button
@@ -746,7 +744,9 @@ export default function HomeView({
 
           <div>
             <label className="block text-sm mb-1">Lithuanian</label>
-            <div className="text-lg font-semibold break-words">{result.ltOut}</div>
+            <div className="text-lg font-semibold break-words">
+              {result.ltOut}
+            </div>
 
             {result.phonetics && (
               <div className="text-sm text-zinc-400 mt-1">{result.phonetics}</div>
@@ -760,7 +760,9 @@ export default function HomeView({
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">Literal meaning: </span>
+                <span className="font-semibold text-zinc-300">
+                  Literal meaning:{" "}
+                </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
