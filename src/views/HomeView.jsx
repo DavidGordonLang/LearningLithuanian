@@ -155,13 +155,17 @@ export default function HomeView({
   const [tone, setTone] = useState("friendly");
   const [duplicateEntry, setDuplicateEntry] = useState(null);
 
-  // STT state machine
-  // idle | recording | transcribing | translating
+  // STT state machine: idle | recording | transcribing | translating
   const [sttState, setSttState] = useState("idle");
   const sttStateRef = useRef("idle");
+
   const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
   const chunksRef = useRef([]);
+
   const stopTimerRef = useRef(null);
+  const stopGraceRef = useRef(null);
+  const processWatchdogRef = useRef(null);
 
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
@@ -178,12 +182,61 @@ export default function HomeView({
     setSttState(next);
   }
 
+  function clearStopTimers() {
+    if (stopTimerRef.current) {
+      clearTimeout(stopTimerRef.current);
+      stopTimerRef.current = null;
+    }
+    if (stopGraceRef.current) {
+      clearTimeout(stopGraceRef.current);
+      stopGraceRef.current = null;
+    }
+  }
+
+  function clearProcessWatchdog() {
+    if (processWatchdogRef.current) {
+      clearTimeout(processWatchdogRef.current);
+      processWatchdogRef.current = null;
+    }
+  }
+
+  function forceResetStt(reasonToast) {
+    clearStopTimers();
+    clearProcessWatchdog();
+
+    try {
+      const mr = mediaRecorderRef.current;
+      if (mr && mr.state !== "inactive") {
+        try {
+          mr.ondataavailable = null;
+          mr.onstop = null;
+          mr.stop();
+        } catch {}
+      }
+    } catch {}
+
+    try {
+      const s = streamRef.current;
+      if (s) {
+        try {
+          s.getTracks().forEach((t) => t.stop());
+        } catch {}
+      }
+    } catch {}
+
+    mediaRecorderRef.current = null;
+    streamRef.current = null;
+    chunksRef.current = [];
+
+    setSttStateSafe("idle");
+    if (reasonToast) showToast?.(reasonToast);
+  }
+
   // IMPORTANT: translate *a specific string* to avoid React state race when STT sets input then translates.
   async function translateText(text, force = false) {
     const cleaned = (text || "").trim();
     if (!cleaned) return;
 
-    // Pre-translation duplicate check (unless forced)
     if (!force) {
       const dup = findDuplicateInLibrary(cleaned, rows);
       if (dup) {
@@ -432,17 +485,17 @@ export default function HomeView({
 
   // -------------------- STT helpers --------------------
 
-  function sttSupported() {
-    return typeof navigator !== "undefined" &&
-      !!navigator.mediaDevices?.getUserMedia &&
-      typeof MediaRecorder !== "undefined";
-  }
+  const STT_MAX_MS = 15000;
+  const STT_FETCH_TIMEOUT_MS = 20000; // stt should be quick for short clips
+  const STT_PROCESS_WATCHDOG_MS = 30000; // absolute UI recovery cap
+  const STOP_GRACE_MS = 2500; // if onstop never fires, recover
 
-  function clearStopTimer() {
-    if (stopTimerRef.current) {
-      clearTimeout(stopTimerRef.current);
-      stopTimerRef.current = null;
-    }
+  function sttSupported() {
+    return (
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia &&
+      typeof MediaRecorder !== "undefined"
+    );
   }
 
   async function startRecording() {
@@ -459,15 +512,11 @@ export default function HomeView({
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
       chunksRef.current = [];
 
-      // Prefer a broadly supported mime type where available
-      const candidates = [
-        "audio/webm;codecs=opus",
-        "audio/webm",
-        "audio/mp4",
-      ];
+      const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
       const mimeType = candidates.find((t) => {
         try {
           return MediaRecorder.isTypeSupported(t);
@@ -477,95 +526,110 @@ export default function HomeView({
       });
 
       const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = mr;
 
       mr.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
 
       mr.onstop = async () => {
-        // stop mic tracks immediately
+        clearStopTimers();
+
+        // Stop mic tracks immediately
         try {
-          stream.getTracks().forEach((t) => t.stop());
+          const s = streamRef.current;
+          if (s) s.getTracks().forEach((t) => t.stop());
         } catch {}
 
-        clearStopTimer();
+        // If user cancelled and we pre-set idle, ignore work
+        if (sttStateRef.current === "idle") {
+          return;
+        }
 
-        // If user cancelled mid-flight
-        if (sttStateRef.current === "idle") return;
+        // Start watchdog so we never get stuck
+        clearProcessWatchdog();
+        processWatchdogRef.current = setTimeout(() => {
+          forceResetStt("Speech processing timed out");
+        }, STT_PROCESS_WATCHDOG_MS);
 
         const blob = new Blob(chunksRef.current, {
           type: mr.mimeType || "audio/webm",
         });
 
+        // “No audio” case
         if (!blob || blob.size < 1000) {
-          setSttStateSafe("idle");
-          showToast?.("No speech captured");
+          forceResetStt("No audio detected");
           return;
         }
 
-        // Transcribe
         setSttStateSafe("transcribing");
+
+        // Abortable STT fetch
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), STT_FETCH_TIMEOUT_MS);
 
         try {
           const fd = new FormData();
           fd.append("file", blob, "speech.webm");
-
-          // Model choice: good quality, fast for short clips
-          // If you later want to swap, do it here (no UI refactor).
           fd.append("model", "gpt-4o-mini-transcribe");
-
-          // Server will see this in the multipart; we can use it later for gating.
           fd.append("max_seconds", "15");
 
           const resp = await fetch("/api/stt", {
             method: "POST",
             body: fd,
+            signal: controller.signal,
           });
 
-          const data = await resp.json().catch(() => ({}));
+          let data = {};
+          try {
+            data = await resp.json();
+          } catch {
+            data = {};
+          }
 
           if (!resp.ok) {
             console.error("STT failed:", data);
-            setSttStateSafe("idle");
-            showToast?.("Speech recognition failed");
+            forceResetStt("Speech recognition failed");
             return;
           }
 
           const text = String(data?.text || "").trim();
           if (!text) {
-            setSttStateSafe("idle");
-            showToast?.("Didn’t catch that — try again");
+            forceResetStt("Didn’t catch that — try again");
             return;
           }
 
-          // Populate input and immediately translate (v1 default)
           setInput(text);
 
           setSttStateSafe("translating");
           await translateText(text, false);
 
-          setSttStateSafe("idle");
+          forceResetStt(); // returns to idle, clears timers
         } catch (err) {
           console.error(err);
-          setSttStateSafe("idle");
-          showToast?.("Speech recognition failed");
+          if (err?.name === "AbortError") {
+            forceResetStt("Speech recognition timed out");
+          } else {
+            forceResetStt("Speech recognition failed");
+          }
+        } finally {
+          clearTimeout(t);
         }
       };
 
-      mediaRecorderRef.current = mr;
       setSttStateSafe("recording");
-
       mr.start();
 
       // Hard stop at 15 seconds
+      clearStopTimers();
       stopTimerRef.current = setTimeout(() => {
         try {
           stopRecording();
         } catch {}
-      }, 15000);
+      }, STT_MAX_MS);
     } catch (err) {
       console.error(err);
-      setSttStateSafe("idle");
+      forceResetStt();
       if (String(err?.name || "").includes("NotAllowed")) {
         showToast?.("Microphone permission denied");
       } else {
@@ -576,30 +640,33 @@ export default function HomeView({
 
   function stopRecording() {
     if (sttStateRef.current !== "recording") return;
+
     try {
       const mr = mediaRecorderRef.current;
-      if (mr && mr.state !== "inactive") mr.stop();
+      if (mr && mr.state !== "inactive") {
+        mr.stop();
+
+        // If onstop doesn’t fire, recover anyway (prevents “stuck transcribing”)
+        if (!stopGraceRef.current) {
+          stopGraceRef.current = setTimeout(() => {
+            // If we’re still not idle, force recover
+            if (sttStateRef.current !== "idle") {
+              forceResetStt("Speech processing failed");
+            }
+          }, STOP_GRACE_MS);
+        }
+      } else {
+        forceResetStt();
+      }
     } catch (err) {
       console.error(err);
-      setSttStateSafe("idle");
+      forceResetStt("Speech processing failed");
     }
   }
 
   function cancelStt() {
     // immediate cancel / reset
-    clearStopTimer();
-    try {
-      const mr = mediaRecorderRef.current;
-      if (mr && mr.state !== "inactive") {
-        // stop will fire; mark idle first so we ignore
-        setSttStateSafe("idle");
-        mr.stop();
-      } else {
-        setSttStateSafe("idle");
-      }
-    } catch {
-      setSttStateSafe("idle");
-    }
+    forceResetStt();
   }
 
   const micLabel = (() => {
@@ -609,7 +676,8 @@ export default function HomeView({
     return "Hold to speak";
   })();
 
-  const micDisabled = translating || sttState === "transcribing" || sttState === "translating";
+  const micDisabled =
+    translating || sttState === "transcribing" || sttState === "translating";
 
   const micClasses = (() => {
     const base =
@@ -702,7 +770,6 @@ export default function HomeView({
               stopRecording();
             }}
             onMouseLeave={(e) => {
-              // If user drags off while holding, stop safely
               e.preventDefault();
               stopRecording();
             }}
@@ -770,8 +837,7 @@ export default function HomeView({
                 Similar entry already in your library
               </div>
               <div className="text-xs text-amber-200/80 mt-0.5">
-                You can use this one, or translate anyway if you really want a
-                new version.
+                You can use this one, or translate anyway if you really want a new version.
               </div>
             </div>
             <button
@@ -790,9 +856,7 @@ export default function HomeView({
             </button>
           </div>
 
-          <div className="text-sm font-semibold truncate">
-            {duplicateEntry.English || "—"}
-          </div>
+          <div className="text-sm font-semibold truncate">{duplicateEntry.English || "—"}</div>
           <div className="text-sm text-emerald-300 truncate">
             {duplicateEntry.Lithuanian || "—"}
           </div>
@@ -830,10 +894,7 @@ export default function HomeView({
                 transition-transform duration-150 active:scale-95
                 select-none
               "
-              onClick={() =>
-                duplicateEntry.Lithuanian &&
-                handlePlay(duplicateEntry.Lithuanian)
-              }
+              onClick={() => duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)}
             >
               ▶ Play
             </button>
