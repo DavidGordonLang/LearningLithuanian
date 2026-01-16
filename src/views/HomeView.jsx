@@ -11,12 +11,11 @@ function normalise(str) {
   if (!str) return "";
   return stripDiacritics(str)
     .toLowerCase()
-    .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "") // punctuation
+    .replace(/[!?,.:;…“”"'(){}\[\]\-–—*@#\/\\]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-// Lightweight Levenshtein distance with early bailout
 function levenshtein(a, b) {
   if (a === b) return 0;
   const m = a.length;
@@ -51,12 +50,6 @@ function areNearDuplicatesText(a, b) {
   return levenshtein(na, nb) <= 1;
 }
 
-/**
- * Pre-translation duplicate check:
- * We don't assume source language, so we check BOTH:
- * - Input ≈ any saved English (EnglishOriginal/English)
- * - Input ≈ any saved Lithuanian (Lithuanian/LithuanianOriginal)
- */
 function findDuplicateInLibrary(inputText, rows) {
   const target = normalise(inputText);
   if (!target) return null;
@@ -64,20 +57,14 @@ function findDuplicateInLibrary(inputText, rows) {
   for (const r of rows) {
     const candidateEn = r.EnglishOriginal || r.English || "";
     const candidateLt = r.LithuanianOriginal || r.Lithuanian || "";
-
     if (areNearDuplicatesText(candidateEn, target)) return r;
     if (areNearDuplicatesText(candidateLt, target)) return r;
   }
   return null;
 }
 
-/**
- * Map enrich-controlled vocab → your current app categories (to avoid dropdown mismatch)
- * We only map when needed; otherwise keep as-is.
- */
 function mapEnrichCategoryToApp(category) {
   const c = String(category || "").trim();
-
   const map = {
     Food: "Food & Drink",
     Emergencies: "Emergency",
@@ -85,7 +72,6 @@ function mapEnrichCategoryToApp(category) {
     Emotions: "General",
     Relationships: "Social",
   };
-
   return map[c] || c || DEFAULT_CATEGORY;
 }
 
@@ -97,7 +83,7 @@ const EMPTY_RESULT = {
   usageOut: "",
   notesOut: "",
   categoryOut: DEFAULT_CATEGORY,
-  sourceLang: "en", // "en" | "lt"
+  sourceLang: "en",
 };
 
 const Segmented = memo(function Segmented({ value, onChange, options }) {
@@ -164,8 +150,16 @@ export default function HomeView({
       if (v === "0") return false;
       if (v === "1") return true;
     } catch {}
-    return true; // default ON for “premium feel”
+    return true;
   });
+
+  const sttDebug = useMemo(() => {
+    try {
+      return localStorage.getItem("lt_stt_debug") === "1";
+    } catch {
+      return false;
+    }
+  }, []);
 
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
@@ -177,7 +171,6 @@ export default function HomeView({
     setResult(EMPTY_RESULT);
   }, []);
 
-  // IMPORTANT: translate *a specific string* to avoid React state race when STT sets input then translates.
   async function translateText(text, force = false) {
     const cleaned = (text || "").trim();
     if (!cleaned) return;
@@ -200,11 +193,7 @@ export default function HomeView({
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: cleaned,
-          tone,
-          gender,
-        }),
+        body: JSON.stringify({ text: cleaned, tone, gender }),
       });
 
       const data = await res.json();
@@ -229,17 +218,11 @@ export default function HomeView({
           sourceLang: inferred,
         });
       } else {
-        setResult({
-          ...EMPTY_RESULT,
-          ltOut: "Translation error.",
-        });
+        setResult({ ...EMPTY_RESULT, ltOut: "Translation error." });
       }
     } catch (err) {
       console.error(err);
-      setResult({
-        ...EMPTY_RESULT,
-        ltOut: "Translation error.",
-      });
+      setResult({ ...EMPTY_RESULT, ltOut: "Translation error." });
     } finally {
       setTranslating(false);
     }
@@ -284,7 +267,6 @@ export default function HomeView({
       const CategoryRaw = String(data?.Category || "").trim();
       const Usage = String(data?.Usage || "").trim();
       const Notes = String(data?.Notes || "").trim();
-
       if (!CategoryRaw || !Usage || !Notes) return;
 
       const Category = mapEnrichCategoryToApp(CategoryRaw);
@@ -292,12 +274,7 @@ export default function HomeView({
       setRows((prev) =>
         prev.map((r) =>
           r._id === row._id
-            ? {
-                ...r,
-                Category: Category || r.Category || DEFAULT_CATEGORY,
-                Usage,
-                Notes,
-              }
+            ? { ...r, Category: Category || r.Category || DEFAULT_CATEGORY, Usage, Notes }
             : r
         )
       );
@@ -308,7 +285,6 @@ export default function HomeView({
 
   const handleSaveToLibrary = useCallback(() => {
     blurTextarea();
-
     if (!canSave) return;
 
     const rawInput = input.trim();
@@ -339,17 +315,14 @@ export default function HomeView({
       EnglishNatural: englishToSave,
 
       Lithuanian: lithuanianToSave,
-      LithuanianOriginal:
-        result.sourceLang === "lt" ? rawInput : lithuanianToSave,
+      LithuanianOriginal: result.sourceLang === "lt" ? rawInput : lithuanianToSave,
 
       Phonetic: result.phonetics || "",
-
       Category: DEFAULT_CATEGORY,
       Usage: "",
       Notes: "",
 
       SourceLang: result.sourceLang,
-
       "RAG Icon": "🟠",
       Sheet: "Phrases",
 
@@ -428,52 +401,47 @@ export default function HomeView({
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
 
-  // -------------------- STT hook (Option A) --------------------
-  const { sttState, supported: sttSupported, start, stop, cancel } =
-    useSttPressHold({
-      endpoint: "/api/stt",
-      maxMs: 15000,
-      fetchTimeoutMs: 20000,
-      processWatchdogMs: 30000,
-      stopGraceMs: 2500,
-      disabled: translating,
-      onToast: (m) => showToast?.(m),
-      onTranscript: async (text) => {
-        blurTextarea();
-        setDuplicateEntry(null);
-        resetResult();
-        setInput(text);
+  // -------------------- STT hook --------------------
+  const { sttState, supported: sttSupported, start, stop, cancel } = useSttPressHold({
+    endpoint: "/api/stt",
+    maxMs: 15000,
+    fetchTimeoutMs: 20000,
+    processWatchdogMs: 30000,
+    stopGraceMs: 2500,
+    disabled: translating,
+    debug: sttDebug,
+    onToast: (m) => showToast?.(m),
+    onTranscript: async (text) => {
+      blurTextarea();
+      setDuplicateEntry(null);
+      resetResult();
+      setInput(text);
 
-        if (autoTranslate) {
-          await translateText(text, false);
-        } else {
-          showToast?.("Speech captured");
-        }
-      },
-    });
+      if (autoTranslate) {
+        await translateText(text, false);
+      } else {
+        showToast?.("Speech captured");
+      }
+    },
+  });
 
-  // UI state: show mic “working” glow when translating too (premium feel)
-  const micUiState =
-    sttState !== "idle" ? sttState : translating ? "translating" : "idle";
+  const micUiState = sttState !== "idle" ? sttState : translating ? "transcribing" : "idle";
 
   const micLabel = (() => {
     if (micUiState === "recording") return "Listening…";
     if (micUiState === "transcribing") return "Transcribing…";
-    if (micUiState === "translating") return "Translating…";
     return "Hold to speak";
   })();
 
-  const micDisabled =
-    translating || micUiState === "transcribing" || micUiState === "translating";
+  const micDisabled = translating || micUiState === "transcribing";
 
   const micClasses = (() => {
     const base =
       "w-full rounded-2xl px-5 py-4 font-semibold select-none " +
-      "transition-transform duration-150 active:scale-[0.99] " +
-      "border ";
+      "transition-transform duration-150 active:scale-[0.99] border ";
 
     if (!sttSupported) {
-      return base + "bg-zinc-900/60 text-zinc-500 border-zinc-800";
+      return base + "bg-zinc-900/80 text-zinc-300 border-zinc-700";
     }
 
     if (micUiState === "recording") {
@@ -484,7 +452,7 @@ export default function HomeView({
       );
     }
 
-    if (micUiState === "transcribing" || micUiState === "translating") {
+    if (micUiState === "transcribing") {
       return (
         base +
         "bg-emerald-600 text-black border-emerald-400 " +
@@ -568,30 +536,44 @@ export default function HomeView({
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {/* Big mic button (press-and-hold) */}
+        {/* Big mic button */}
         <div className="mb-3">
           <button
             type="button"
             className={micClasses + (micDisabled ? " opacity-80" : "")}
-            style={{ touchAction: "none" }}
-            disabled={micDisabled || !sttSupported}
-            onPointerDown={(e) => {
+            // IMPORTANT: do NOT disable for !sttSupported; we want a toast on press.
+            disabled={micDisabled}
+            onMouseDown={(e) => {
               e.preventDefault();
               if (micDisabled) return;
-              try {
-                e.currentTarget.setPointerCapture(e.pointerId);
-              } catch {}
+              if (!sttSupported) {
+                showToast?.("Speech input not supported on this device/browser");
+                return;
+              }
               start();
             }}
-            onPointerUp={(e) => {
+            onMouseUp={(e) => {
               e.preventDefault();
               stop();
             }}
-            onPointerLeave={(e) => {
+            onMouseLeave={(e) => {
               e.preventDefault();
               stop();
             }}
-            onPointerCancel={(e) => {
+            onTouchStart={(e) => {
+              e.preventDefault();
+              if (micDisabled) return;
+              if (!sttSupported) {
+                showToast?.("Speech input not supported on this device/browser");
+                return;
+              }
+              start();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              stop();
+            }}
+            onTouchCancel={(e) => {
               e.preventDefault();
               cancel();
             }}
@@ -601,10 +583,13 @@ export default function HomeView({
               <span className="text-base">{micLabel}</span>
             </div>
             <div className="text-xs mt-1 opacity-80">
-              {micUiState === "idle"
-                ? "Press and hold (max 15s)"
-                : "Release to stop"}
+              {micUiState === "idle" ? "Press and hold (max 15s)" : "Release to stop"}
             </div>
+            {sttDebug && (
+              <div className="text-[11px] mt-2 opacity-70">
+                debug: supported={String(sttSupported)} state={String(sttState)}
+              </div>
+            )}
           </button>
         </div>
 
@@ -639,7 +624,7 @@ export default function HomeView({
         </div>
       </div>
 
-      {/* Duplicate warning / existing entry view */}
+      {/* Duplicate warning */}
       {duplicateEntry && (
         <div className="bg-amber-950/70 border border-amber-500/70 rounded-2xl p-4 mb-5">
           <div className="flex items-start justify-between gap-3 mb-2">
@@ -648,8 +633,7 @@ export default function HomeView({
                 Similar entry already in your library
               </div>
               <div className="text-xs text-amber-200/80 mt-0.5">
-                You can use this one, or translate anyway if you really want a
-                new version.
+                You can use this one, or translate anyway if you really want a new version.
               </div>
             </div>
             <button
@@ -668,9 +652,7 @@ export default function HomeView({
             </button>
           </div>
 
-          <div className="text-sm font-semibold truncate">
-            {duplicateEntry.English || "—"}
-          </div>
+          <div className="text-sm font-semibold truncate">{duplicateEntry.English || "—"}</div>
           <div className="text-sm text-emerald-300 truncate">
             {duplicateEntry.Lithuanian || "—"}
           </div>
@@ -708,9 +690,7 @@ export default function HomeView({
                 transition-transform duration-150 active:scale-95
                 select-none
               "
-              onClick={() =>
-                duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)
-              }
+              onClick={() => duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)}
             >
               ▶ Play
             </button>
@@ -744,9 +724,7 @@ export default function HomeView({
 
           <div>
             <label className="block text-sm mb-1">Lithuanian</label>
-            <div className="text-lg font-semibold break-words">
-              {result.ltOut}
-            </div>
+            <div className="text-lg font-semibold break-words">{result.ltOut}</div>
 
             {result.phonetics && (
               <div className="text-sm text-zinc-400 mt-1">{result.phonetics}</div>
@@ -760,9 +738,7 @@ export default function HomeView({
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">
-                  Literal meaning:{" "}
-                </span>
+                <span className="font-semibold text-zinc-300">Literal meaning: </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
