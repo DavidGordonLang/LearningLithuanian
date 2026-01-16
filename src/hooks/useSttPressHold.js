@@ -1,10 +1,10 @@
 // src/hooks/useSttPressHold.js
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Press-and-hold Speech-to-Text hook.
  *
- * Option A (recommended): this hook returns transcripts only.
+ * Option A: this hook returns transcripts only.
  * The view decides what to do next (e.g. auto-translate toggle).
  *
  * State machine: idle | recording | transcribing
@@ -18,6 +18,7 @@ export default function useSttPressHold({
   disabled = false,
   onTranscript,
   onToast,
+  debug = false,
 }) {
   const [sttState, setSttState] = useState("idle");
   const sttStateRef = useRef("idle");
@@ -29,6 +30,16 @@ export default function useSttPressHold({
   const stopTimerRef = useRef(null);
   const stopGraceRef = useRef(null);
   const processWatchdogRef = useRef(null);
+
+  const dbg = useCallback(
+    (msg) => {
+      if (!debug) return;
+      try {
+        onToast?.(String(msg));
+      } catch {}
+    },
+    [debug, onToast]
+  );
 
   const setSttStateSafe = useCallback((next) => {
     sttStateRef.current = next;
@@ -53,12 +64,16 @@ export default function useSttPressHold({
     }
   }, []);
 
-  const supported = useCallback(() => {
-    return (
-      typeof navigator !== "undefined" &&
-      !!navigator.mediaDevices?.getUserMedia &&
-      typeof MediaRecorder !== "undefined"
-    );
+  const supportedBool = useMemo(() => {
+    try {
+      return (
+        typeof navigator !== "undefined" &&
+        !!navigator.mediaDevices?.getUserMedia &&
+        typeof MediaRecorder !== "undefined"
+      );
+    } catch {
+      return false;
+    }
   }, []);
 
   const forceReset = useCallback(
@@ -102,6 +117,7 @@ export default function useSttPressHold({
     try {
       const mr = mediaRecorderRef.current;
       if (mr && mr.state !== "inactive") {
+        dbg("STT: stop() -> mr.stop()");
         mr.stop();
 
         if (!stopGraceRef.current) {
@@ -112,27 +128,42 @@ export default function useSttPressHold({
           }, stopGraceMs);
         }
       } else {
+        dbg("STT: stop() -> no active recorder");
         forceReset();
       }
     } catch (err) {
       console.error(err);
       forceReset("Speech processing failed");
     }
-  }, [forceReset, stopGraceMs]);
+  }, [dbg, forceReset, stopGraceMs]);
 
   const cancel = useCallback(() => {
+    dbg("STT: cancel()");
     forceReset();
-  }, [forceReset]);
+  }, [dbg, forceReset]);
 
   const start = useCallback(async () => {
-    if (disabled) return;
-    if (!supported()) {
+    dbg("STT: start() called");
+
+    if (disabled) {
+      dbg("STT: start() blocked (disabled=true)");
+      onToast?.("Can't record while translating");
+      return;
+    }
+
+    if (!supportedBool) {
+      dbg("STT: start() blocked (unsupported)");
       onToast?.("Speech input not supported on this device/browser");
       return;
     }
-    if (sttStateRef.current !== "idle") return;
+
+    if (sttStateRef.current !== "idle") {
+      dbg(`STT: start() blocked (state=${sttStateRef.current})`);
+      return;
+    }
 
     try {
+      dbg("STT: requesting microphone permission");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
@@ -147,11 +178,15 @@ export default function useSttPressHold({
         }
       });
 
+      dbg(`STT: MediaRecorder mime=${mimeType || "default"}`);
+
       const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mr;
 
       mr.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data && e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
 
       mr.onstop = async () => {
@@ -162,7 +197,10 @@ export default function useSttPressHold({
           if (s) s.getTracks().forEach((t) => t.stop());
         } catch {}
 
-        if (sttStateRef.current === "idle") return;
+        if (sttStateRef.current === "idle") {
+          dbg("STT: onstop ignored (already idle)");
+          return;
+        }
 
         clearProcessWatchdog();
         processWatchdogRef.current = setTimeout(() => {
@@ -173,7 +211,8 @@ export default function useSttPressHold({
           type: mr.mimeType || "audio/webm",
         });
 
-        // “No audio” case
+        dbg(`STT: blob size=${blob?.size || 0}`);
+
         if (!blob || blob.size < 1000) {
           forceReset("No audio detected");
           return;
@@ -190,6 +229,7 @@ export default function useSttPressHold({
           fd.append("model", "gpt-4o-mini-transcribe");
           fd.append("max_seconds", String(Math.ceil(maxMs / 1000)));
 
+          dbg("STT: calling /api/stt");
           const resp = await fetch(endpoint, {
             method: "POST",
             body: fd,
@@ -203,6 +243,8 @@ export default function useSttPressHold({
             data = {};
           }
 
+          dbg(`STT: /api/stt status=${resp.status}`);
+
           if (!resp.ok) {
             console.error("STT failed:", data);
             forceReset("Speech recognition failed");
@@ -210,12 +252,13 @@ export default function useSttPressHold({
           }
 
           const text = String(data?.text || "").trim();
+          dbg(`STT: transcript len=${text.length}`);
+
           if (!text) {
             forceReset("Didn’t catch that — try again");
             return;
           }
 
-          // Option A: return transcript only
           try {
             onTranscript?.(text);
           } catch {}
@@ -234,6 +277,7 @@ export default function useSttPressHold({
       };
 
       setSttStateSafe("recording");
+      dbg("STT: recording started");
       mr.start();
 
       clearStopTimers();
@@ -245,15 +289,18 @@ export default function useSttPressHold({
     } catch (err) {
       console.error(err);
       forceReset();
-      if (String(err?.name || "").includes("NotAllowed")) {
+
+      const name = String(err?.name || "");
+      if (name.includes("NotAllowed") || name.includes("PermissionDenied")) {
         onToast?.("Microphone permission denied");
+      } else if (name.includes("NotFound")) {
+        onToast?.("No microphone found");
       } else {
         onToast?.("Couldn’t access microphone");
       }
     }
   }, [
-    clearProcessWatchdog,
-    clearStopTimers,
+    dbg,
     disabled,
     endpoint,
     fetchTimeoutMs,
@@ -264,10 +311,11 @@ export default function useSttPressHold({
     processWatchdogMs,
     setSttStateSafe,
     stop,
-    supported,
+    supportedBool,
+    clearProcessWatchdog,
+    clearStopTimers,
   ]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       try {
@@ -278,7 +326,7 @@ export default function useSttPressHold({
 
   return {
     sttState,
-    supported: supported(),
+    supported: supportedBool,
     start,
     stop,
     cancel,
