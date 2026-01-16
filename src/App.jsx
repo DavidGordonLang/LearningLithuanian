@@ -112,7 +112,9 @@ export default function App() {
   /* PAGE */
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
   const swipeTabs = ["home", "library", "settings"];
-  const swipeIndex = swipeTabs.includes(page) ? swipeTabs.indexOf(page) : swipeTabs.indexOf("settings");
+  const swipeIndex = swipeTabs.includes(page)
+    ? swipeTabs.indexOf(page)
+    : swipeTabs.indexOf("settings");
 
   const [swipeProgress, setSwipeProgress] = useState(swipeIndex);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -153,6 +155,30 @@ export default function App() {
   const [sortMode, setSortMode] = useLocalStorageState(LSK_SORT, "RAG");
 
   const T = STR;
+
+  /* -------------------- TOAST (global, minimal) -------------------- */
+  const [toast, setToast] = useState(null); // { id, msg }
+  const toastTimerRef = useRef(null);
+
+  function showToast(msg, ms = 2200) {
+    const text = String(msg || "").trim();
+    if (!text) return;
+
+    const id = Date.now() + Math.random();
+    setToast({ id, msg: text });
+
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, ms);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   /* VOICE */
   const { voice: azureVoiceShortName, setVoice: setAzureVoiceShortName, playText } =
@@ -426,6 +452,7 @@ export default function App() {
                 setRows={setRows}
                 genId={genId}
                 nowTs={nowTs}
+                showToast={showToast}
                 rows={visibleRows}
                 onOpenAddForm={() => {
                   setEditRowId(null);
@@ -492,6 +519,27 @@ export default function App() {
           </SwipePager>
         )}
       </main>
+
+      {/* TOAST */}
+      {toast && (
+        <div className="fixed left-0 right-0 bottom-6 z-[90] flex justify-center px-4 pointer-events-none">
+          <div
+            key={toast.id}
+            className="
+              pointer-events-none
+              max-w-md w-full
+              bg-zinc-900/95 border border-zinc-700
+              text-zinc-100
+              rounded-2xl px-4 py-3
+              shadow-[0_10px_30px_rgba(0,0,0,0.45)]
+              backdrop-blur
+              text-sm
+            "
+          >
+            {toast.msg}
+          </div>
+        </div>
+      )}
 
       {/* DAILY RECALL MODAL */}
       {dailyRecall.isOpen && dailyRecall.phrase && (
