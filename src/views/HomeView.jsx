@@ -93,11 +93,9 @@ const EMPTY_RESULT = {
   enLiteral: "",
   enNatural: "",
   phonetics: "",
-  // Translate no longer produces these; kept for compatibility if ever populated.
   usageOut: "",
   notesOut: "",
   categoryOut: DEFAULT_CATEGORY,
-  // Inferred: if input ≈ ltOut, source is Lithuanian
   sourceLang: "en", // "en" | "lt"
 };
 
@@ -143,7 +141,6 @@ export default function HomeView({
   const blurTextarea = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
-    // Only blur if it's actually focused
     if (document.activeElement === el) {
       try {
         el.blur();
@@ -153,13 +150,18 @@ export default function HomeView({
 
   const [input, setInput] = useState("");
   const [translating, setTranslating] = useState(false);
-
   const [result, setResult] = useState(EMPTY_RESULT);
-
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
-
   const [duplicateEntry, setDuplicateEntry] = useState(null);
+
+  // STT state machine
+  // idle | recording | transcribing | translating
+  const [sttState, setSttState] = useState("idle");
+  const sttStateRef = useRef("idle");
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const stopTimerRef = useRef(null);
 
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
@@ -171,13 +173,19 @@ export default function HomeView({
     setResult(EMPTY_RESULT);
   }, []);
 
-  async function handleTranslate(force = false) {
-    const text = input.trim();
-    if (!text) return;
+  function setSttStateSafe(next) {
+    sttStateRef.current = next;
+    setSttState(next);
+  }
+
+  // IMPORTANT: translate *a specific string* to avoid React state race when STT sets input then translates.
+  async function translateText(text, force = false) {
+    const cleaned = (text || "").trim();
+    if (!cleaned) return;
 
     // Pre-translation duplicate check (unless forced)
     if (!force) {
-      const dup = findDuplicateInLibrary(text, rows);
+      const dup = findDuplicateInLibrary(cleaned, rows);
       if (dup) {
         setDuplicateEntry(dup);
         resetResult();
@@ -195,7 +203,7 @@ export default function HomeView({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text,
+          text: cleaned,
           tone,
           gender,
         }),
@@ -209,11 +217,9 @@ export default function HomeView({
         const nat = String(data.en_natural || "").trim();
         const pho = String(data.phonetics || "").trim();
 
-        // Infer source language (no brittle diacritics rules)
         const inferred =
-          areNearDuplicatesText(normalise(text), normalise(lt)) ? "lt" : "en";
+          areNearDuplicatesText(normalise(cleaned), normalise(lt)) ? "lt" : "en";
 
-        // Translate must NOT provide usage/notes/category — we ignore if present.
         setResult({
           ltOut: lt,
           enLiteral: lit,
@@ -241,6 +247,10 @@ export default function HomeView({
     }
   }
 
+  async function handleTranslate(force = false) {
+    return translateText(input, force);
+  }
+
   const handleClear = useCallback(() => {
     blurTextarea();
     setInput("");
@@ -252,7 +262,6 @@ export default function HomeView({
     try {
       if (!row?._id) return;
 
-      // One-time guard: if Usage/Notes already exist, do nothing.
       if (
         (row.Usage && String(row.Usage).trim()) ||
         (row.Notes && String(row.Notes).trim())
@@ -282,7 +291,6 @@ export default function HomeView({
 
       const Category = mapEnrichCategoryToApp(CategoryRaw);
 
-      // Patch ONLY additive fields, matched by _id
       setRows((prev) =>
         prev.map((r) =>
           r._id === row._id
@@ -296,7 +304,6 @@ export default function HomeView({
         )
       );
     } catch (err) {
-      // Silent by design
       console.error("Enrich failed (silent):", err);
     }
   }
@@ -313,7 +320,6 @@ export default function HomeView({
     const lithuanianToSave = (result.ltOut || "").trim();
     if (!englishToSave || !lithuanianToSave) return;
 
-    // Prevent exact duplicates (case/spacing-insensitive)
     const already = rows.some((r) => {
       const en = (r.EnglishNatural || r.EnglishLiteral || r.English || "").trim();
       const lt = (r.Lithuanian || "").trim();
@@ -340,12 +346,11 @@ export default function HomeView({
 
       Phonetic: result.phonetics || "",
 
-      // Enrich will overwrite these later (additive only)
       Category: DEFAULT_CATEGORY,
       Usage: "",
       Notes: "",
 
-      SourceLang: result.sourceLang, // optional metadata (harmless if unused)
+      SourceLang: result.sourceLang,
 
       "RAG Icon": "🟠",
       Sheet: "Phrases",
@@ -361,8 +366,6 @@ export default function HomeView({
 
     setRows((prev) => [row, ...prev]);
     showToast?.("Entry saved to library");
-
-    // Silent enrich (runs once, guarded) — fire-and-forget
     enrichSavedRowSilently(row);
   }, [
     blurTextarea,
@@ -399,7 +402,7 @@ export default function HomeView({
   const handleTranslateClick = useCallback(() => {
     blurTextarea();
     handleTranslate(false);
-  }, [blurTextarea, input, tone, gender, rows]); // dependencies for lint friendliness
+  }, [blurTextarea, input, tone, gender, rows]);
 
   const handleTranslateAnywayClick = useCallback(() => {
     blurTextarea();
@@ -426,6 +429,220 @@ export default function HomeView({
     blurTextarea();
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
+
+  // -------------------- STT helpers --------------------
+
+  function sttSupported() {
+    return typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia &&
+      typeof MediaRecorder !== "undefined";
+  }
+
+  function clearStopTimer() {
+    if (stopTimerRef.current) {
+      clearTimeout(stopTimerRef.current);
+      stopTimerRef.current = null;
+    }
+  }
+
+  async function startRecording() {
+    if (!sttSupported()) {
+      showToast?.("Speech input not supported on this device/browser");
+      return;
+    }
+    if (sttStateRef.current !== "idle") return;
+    if (translating) return;
+
+    blurTextarea();
+    setDuplicateEntry(null);
+    resetResult();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      chunksRef.current = [];
+
+      // Prefer a broadly supported mime type where available
+      const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+      ];
+      const mimeType = candidates.find((t) => {
+        try {
+          return MediaRecorder.isTypeSupported(t);
+        } catch {
+          return false;
+        }
+      });
+
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mr.onstop = async () => {
+        // stop mic tracks immediately
+        try {
+          stream.getTracks().forEach((t) => t.stop());
+        } catch {}
+
+        clearStopTimer();
+
+        // If user cancelled mid-flight
+        if (sttStateRef.current === "idle") return;
+
+        const blob = new Blob(chunksRef.current, {
+          type: mr.mimeType || "audio/webm",
+        });
+
+        if (!blob || blob.size < 1000) {
+          setSttStateSafe("idle");
+          showToast?.("No speech captured");
+          return;
+        }
+
+        // Transcribe
+        setSttStateSafe("transcribing");
+
+        try {
+          const fd = new FormData();
+          fd.append("file", blob, "speech.webm");
+
+          // Model choice: good quality, fast for short clips
+          // If you later want to swap, do it here (no UI refactor).
+          fd.append("model", "gpt-4o-mini-transcribe");
+
+          // Server will see this in the multipart; we can use it later for gating.
+          fd.append("max_seconds", "15");
+
+          const resp = await fetch("/api/stt", {
+            method: "POST",
+            body: fd,
+          });
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            console.error("STT failed:", data);
+            setSttStateSafe("idle");
+            showToast?.("Speech recognition failed");
+            return;
+          }
+
+          const text = String(data?.text || "").trim();
+          if (!text) {
+            setSttStateSafe("idle");
+            showToast?.("Didn’t catch that — try again");
+            return;
+          }
+
+          // Populate input and immediately translate (v1 default)
+          setInput(text);
+
+          setSttStateSafe("translating");
+          await translateText(text, false);
+
+          setSttStateSafe("idle");
+        } catch (err) {
+          console.error(err);
+          setSttStateSafe("idle");
+          showToast?.("Speech recognition failed");
+        }
+      };
+
+      mediaRecorderRef.current = mr;
+      setSttStateSafe("recording");
+
+      mr.start();
+
+      // Hard stop at 15 seconds
+      stopTimerRef.current = setTimeout(() => {
+        try {
+          stopRecording();
+        } catch {}
+      }, 15000);
+    } catch (err) {
+      console.error(err);
+      setSttStateSafe("idle");
+      if (String(err?.name || "").includes("NotAllowed")) {
+        showToast?.("Microphone permission denied");
+      } else {
+        showToast?.("Couldn’t access microphone");
+      }
+    }
+  }
+
+  function stopRecording() {
+    if (sttStateRef.current !== "recording") return;
+    try {
+      const mr = mediaRecorderRef.current;
+      if (mr && mr.state !== "inactive") mr.stop();
+    } catch (err) {
+      console.error(err);
+      setSttStateSafe("idle");
+    }
+  }
+
+  function cancelStt() {
+    // immediate cancel / reset
+    clearStopTimer();
+    try {
+      const mr = mediaRecorderRef.current;
+      if (mr && mr.state !== "inactive") {
+        // stop will fire; mark idle first so we ignore
+        setSttStateSafe("idle");
+        mr.stop();
+      } else {
+        setSttStateSafe("idle");
+      }
+    } catch {
+      setSttStateSafe("idle");
+    }
+  }
+
+  const micLabel = (() => {
+    if (sttState === "recording") return "Listening…";
+    if (sttState === "transcribing") return "Transcribing…";
+    if (sttState === "translating") return "Translating…";
+    return "Hold to speak";
+  })();
+
+  const micDisabled = translating || sttState === "transcribing" || sttState === "translating";
+
+  const micClasses = (() => {
+    const base =
+      "w-full rounded-2xl px-5 py-4 font-semibold select-none " +
+      "transition-transform duration-150 active:scale-[0.99] " +
+      "border ";
+
+    if (!sttSupported()) {
+      return base + "bg-zinc-900/60 text-zinc-500 border-zinc-800";
+    }
+
+    if (sttState === "recording") {
+      return (
+        base +
+        "bg-emerald-500 text-black border-emerald-400 " +
+        "shadow-[0_0_30px_rgba(16,185,129,0.35)]"
+      );
+    }
+
+    if (sttState === "transcribing" || sttState === "translating") {
+      return (
+        base +
+        "bg-emerald-600 text-black border-emerald-400 " +
+        "shadow-[0_0_30px_rgba(16,185,129,0.25)]"
+      );
+    }
+
+    return (
+      base +
+      "bg-zinc-900/95 text-zinc-100 border-zinc-800 " +
+      "shadow-[0_0_20px_rgba(0,0,0,0.25)] hover:bg-zinc-900"
+    );
+  })();
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
@@ -469,6 +686,50 @@ export default function HomeView({
           onChange={(e) => setInput(e.target.value)}
         />
 
+        {/* Big mic button (press-and-hold) */}
+        <div className="mb-3">
+          <button
+            type="button"
+            className={micClasses + (micDisabled ? " opacity-80" : "")}
+            disabled={micDisabled || !sttSupported()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              if (micDisabled) return;
+              startRecording();
+            }}
+            onMouseUp={(e) => {
+              e.preventDefault();
+              stopRecording();
+            }}
+            onMouseLeave={(e) => {
+              // If user drags off while holding, stop safely
+              e.preventDefault();
+              stopRecording();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              if (micDisabled) return;
+              startRecording();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              stopRecording();
+            }}
+            onTouchCancel={(e) => {
+              e.preventDefault();
+              cancelStt();
+            }}
+          >
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-xl">🎤</span>
+              <span className="text-base">{micLabel}</span>
+            </div>
+            <div className="text-xs mt-1 opacity-80">
+              {sttState === "idle" ? "Press and hold (max 15s)" : "Release to stop"}
+            </div>
+          </button>
+        </div>
+
         <div className="flex gap-3 flex-wrap">
           <button
             type="button"
@@ -493,6 +754,7 @@ export default function HomeView({
               select-none
             "
             onClick={handleClear}
+            disabled={sttState !== "idle"}
           >
             Clear
           </button>
@@ -605,14 +867,10 @@ export default function HomeView({
 
           <div>
             <label className="block text-sm mb-1">Lithuanian</label>
-            <div className="text-lg font-semibold break-words">
-              {result.ltOut}
-            </div>
+            <div className="text-lg font-semibold break-words">{result.ltOut}</div>
 
             {result.phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">
-                {result.phonetics}
-              </div>
+              <div className="text-sm text-zinc-400 mt-1">{result.phonetics}</div>
             )}
           </div>
 
@@ -623,39 +881,12 @@ export default function HomeView({
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">
-                  Literal meaning:{" "}
-                </span>
+                <span className="font-semibold text-zinc-300">Literal meaning: </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
           </div>
 
-          {/* (Translate does not populate these; kept for compatibility) */}
-          {(result.usageOut || result.notesOut || result.categoryOut) && (
-            <div className="border-t border-zinc-800 pt-3 space-y-2 text-sm">
-              {result.categoryOut && (
-                <div>
-                  <span className="font-semibold">Category: </span>
-                  <span>{result.categoryOut}</span>
-                </div>
-              )}
-              {result.usageOut && (
-                <div>
-                  <span className="font-semibold">Usage: </span>
-                  <span>{result.usageOut}</span>
-                </div>
-              )}
-              {result.notesOut && (
-                <div>
-                  <span className="font-semibold">Notes: </span>
-                  <span className="whitespace-pre-line">{result.notesOut}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Play + Copy + Save */}
           <div className="flex items-center gap-3 flex-wrap pt-2">
             <button
               type="button"
