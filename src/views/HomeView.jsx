@@ -1,6 +1,8 @@
 // src/views/HomeView.jsx
 import React, { memo, useCallback, useMemo, useRef, useState } from "react";
 import { DEFAULT_CATEGORY } from "../constants/categories";
+import useLocalStorageState from "../hooks/useLocalStorageState";
+import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
 
 function stripDiacritics(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -155,17 +157,13 @@ export default function HomeView({
   const [tone, setTone] = useState("friendly");
   const [duplicateEntry, setDuplicateEntry] = useState(null);
 
-  // STT state machine: idle | recording | transcribing | translating
-  const [sttState, setSttState] = useState("idle");
-  const sttStateRef = useRef("idle");
-
-  const mediaRecorderRef = useRef(null);
-  const streamRef = useRef(null);
-  const chunksRef = useRef([]);
-
-  const stopTimerRef = useRef(null);
-  const stopGraceRef = useRef(null);
-  const processWatchdogRef = useRef(null);
+  // Auto-Translate toggle (persisted)
+  // Stored as "1" or "0" because useLocalStorageState stores strings.
+  const [autoTranslateLS, setAutoTranslateLS] = useLocalStorageState(
+    "zodis_auto_translate",
+    "1"
+  );
+  const autoTranslate = autoTranslateLS === "1";
 
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
@@ -176,61 +174,6 @@ export default function HomeView({
   const resetResult = useCallback(() => {
     setResult(EMPTY_RESULT);
   }, []);
-
-  function setSttStateSafe(next) {
-    sttStateRef.current = next;
-    setSttState(next);
-  }
-
-  function clearStopTimers() {
-    if (stopTimerRef.current) {
-      clearTimeout(stopTimerRef.current);
-      stopTimerRef.current = null;
-    }
-    if (stopGraceRef.current) {
-      clearTimeout(stopGraceRef.current);
-      stopGraceRef.current = null;
-    }
-  }
-
-  function clearProcessWatchdog() {
-    if (processWatchdogRef.current) {
-      clearTimeout(processWatchdogRef.current);
-      processWatchdogRef.current = null;
-    }
-  }
-
-  function forceResetStt(reasonToast) {
-    clearStopTimers();
-    clearProcessWatchdog();
-
-    try {
-      const mr = mediaRecorderRef.current;
-      if (mr && mr.state !== "inactive") {
-        try {
-          mr.ondataavailable = null;
-          mr.onstop = null;
-          mr.stop();
-        } catch {}
-      }
-    } catch {}
-
-    try {
-      const s = streamRef.current;
-      if (s) {
-        try {
-          s.getTracks().forEach((t) => t.stop());
-        } catch {}
-      }
-    } catch {}
-
-    mediaRecorderRef.current = null;
-    streamRef.current = null;
-    chunksRef.current = [];
-
-    setSttStateSafe("idle");
-    if (reasonToast) showToast?.(reasonToast);
-  }
 
   // IMPORTANT: translate *a specific string* to avoid React state race when STT sets input then translates.
   async function translateText(text, force = false) {
@@ -483,191 +426,21 @@ export default function HomeView({
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
 
-  // -------------------- STT helpers --------------------
+  // -------------------- STT hook (extracted) --------------------
 
-  const STT_MAX_MS = 15000;
-  const STT_FETCH_TIMEOUT_MS = 20000; // stt should be quick for short clips
-  const STT_PROCESS_WATCHDOG_MS = 30000; // absolute UI recovery cap
-  const STOP_GRACE_MS = 2500; // if onstop never fires, recover
-
-  function sttSupported() {
-    return (
-      typeof navigator !== "undefined" &&
-      !!navigator.mediaDevices?.getUserMedia &&
-      typeof MediaRecorder !== "undefined"
-    );
-  }
-
-  async function startRecording() {
-    if (!sttSupported()) {
-      showToast?.("Speech input not supported on this device/browser");
-      return;
-    }
-    if (sttStateRef.current !== "idle") return;
-    if (translating) return;
-
-    blurTextarea();
-    setDuplicateEntry(null);
-    resetResult();
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-
-      chunksRef.current = [];
-
-      const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
-      const mimeType = candidates.find((t) => {
-        try {
-          return MediaRecorder.isTypeSupported(t);
-        } catch {
-          return false;
-        }
-      });
-
-      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      mediaRecorderRef.current = mr;
-
-      mr.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mr.onstop = async () => {
-        clearStopTimers();
-
-        // Stop mic tracks immediately
-        try {
-          const s = streamRef.current;
-          if (s) s.getTracks().forEach((t) => t.stop());
-        } catch {}
-
-        // If user cancelled and we pre-set idle, ignore work
-        if (sttStateRef.current === "idle") {
-          return;
-        }
-
-        // Start watchdog so we never get stuck
-        clearProcessWatchdog();
-        processWatchdogRef.current = setTimeout(() => {
-          forceResetStt("Speech processing timed out");
-        }, STT_PROCESS_WATCHDOG_MS);
-
-        const blob = new Blob(chunksRef.current, {
-          type: mr.mimeType || "audio/webm",
-        });
-
-        // “No audio” case
-        if (!blob || blob.size < 1000) {
-          forceResetStt("No audio detected");
-          return;
-        }
-
-        setSttStateSafe("transcribing");
-
-        // Abortable STT fetch
-        const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), STT_FETCH_TIMEOUT_MS);
-
-        try {
-          const fd = new FormData();
-          fd.append("file", blob, "speech.webm");
-          fd.append("model", "gpt-4o-mini-transcribe");
-          fd.append("max_seconds", "15");
-
-          const resp = await fetch("/api/stt", {
-            method: "POST",
-            body: fd,
-            signal: controller.signal,
-          });
-
-          let data = {};
-          try {
-            data = await resp.json();
-          } catch {
-            data = {};
-          }
-
-          if (!resp.ok) {
-            console.error("STT failed:", data);
-            forceResetStt("Speech recognition failed");
-            return;
-          }
-
-          const text = String(data?.text || "").trim();
-          if (!text) {
-            forceResetStt("Didn’t catch that — try again");
-            return;
-          }
-
-          setInput(text);
-
-          setSttStateSafe("translating");
-          await translateText(text, false);
-
-          forceResetStt(); // returns to idle, clears timers
-        } catch (err) {
-          console.error(err);
-          if (err?.name === "AbortError") {
-            forceResetStt("Speech recognition timed out");
-          } else {
-            forceResetStt("Speech recognition failed");
-          }
-        } finally {
-          clearTimeout(t);
-        }
-      };
-
-      setSttStateSafe("recording");
-      mr.start();
-
-      // Hard stop at 15 seconds
-      clearStopTimers();
-      stopTimerRef.current = setTimeout(() => {
-        try {
-          stopRecording();
-        } catch {}
-      }, STT_MAX_MS);
-    } catch (err) {
-      console.error(err);
-      forceResetStt();
-      if (String(err?.name || "").includes("NotAllowed")) {
-        showToast?.("Microphone permission denied");
-      } else {
-        showToast?.("Couldn’t access microphone");
-      }
-    }
-  }
-
-  function stopRecording() {
-    if (sttStateRef.current !== "recording") return;
-
-    try {
-      const mr = mediaRecorderRef.current;
-      if (mr && mr.state !== "inactive") {
-        mr.stop();
-
-        // If onstop doesn’t fire, recover anyway (prevents “stuck transcribing”)
-        if (!stopGraceRef.current) {
-          stopGraceRef.current = setTimeout(() => {
-            // If we’re still not idle, force recover
-            if (sttStateRef.current !== "idle") {
-              forceResetStt("Speech processing failed");
-            }
-          }, STOP_GRACE_MS);
-        }
-      } else {
-        forceResetStt();
-      }
-    } catch (err) {
-      console.error(err);
-      forceResetStt("Speech processing failed");
-    }
-  }
-
-  function cancelStt() {
-    // immediate cancel / reset
-    forceResetStt();
-  }
+  const { sttState, sttSupported, startRecording, stopRecording, cancelStt } =
+    useSpeechToTextHold({
+      showToast,
+      blurTextarea,
+      translating,
+      setInput,
+      autoTranslate,
+      onTranslateText: async (text) => translateText(text, false),
+      onSpeechCaptured: () => {
+        setDuplicateEntry(null);
+        resetResult();
+      },
+    });
 
   const micLabel = (() => {
     if (sttState === "recording") return "Listening…";
@@ -753,6 +526,39 @@ export default function HomeView({
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
+
+        {/* Auto-Translate toggle */}
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="text-xs text-zinc-400">
+            Auto-Translate after speech
+          </div>
+
+          <button
+            type="button"
+            className={
+              "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors select-none " +
+              (autoTranslate
+                ? "bg-emerald-500 border-emerald-400"
+                : "bg-zinc-800 border-zinc-700")
+            }
+            onClick={() => {
+              blurTextarea();
+              setAutoTranslateLS(autoTranslate ? "0" : "1");
+              showToast?.(
+                autoTranslate ? "Auto-Translate off" : "Auto-Translate on"
+              );
+            }}
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
+          >
+            <span
+              className={
+                "inline-block h-6 w-6 transform rounded-full bg-black/80 shadow transition-transform " +
+                (autoTranslate ? "translate-x-5" : "translate-x-0.5")
+              }
+            />
+          </button>
+        </div>
 
         {/* Big mic button (press-and-hold) */}
         <div className="mb-3">
