@@ -3,16 +3,8 @@ import React, { memo, useCallback, useMemo, useRef, useState } from "react";
 import { DEFAULT_CATEGORY } from "../constants/categories";
 import useLocalStorageState from "../hooks/useLocalStorageState";
 import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
-import {
-  normalise,
-  areNearDuplicatesText,
-  findDuplicateInLibrary,
-} from "../utils/textNormalise";
+import useTranslate from "../hooks/useTranslate";
 
-/**
- * Map enrich-controlled vocab → your current app categories (to avoid dropdown mismatch)
- * We only map when needed; otherwise keep as-is.
- */
 function mapEnrichCategoryToApp(category) {
   const c = String(category || "").trim();
 
@@ -26,17 +18,6 @@ function mapEnrichCategoryToApp(category) {
 
   return map[c] || c || DEFAULT_CATEGORY;
 }
-
-const EMPTY_RESULT = {
-  ltOut: "",
-  enLiteral: "",
-  enNatural: "",
-  phonetics: "",
-  usageOut: "",
-  notesOut: "",
-  categoryOut: DEFAULT_CATEGORY,
-  sourceLang: "en", // "en" | "lt"
-};
 
 const Segmented = memo(function Segmented({ value, onChange, options }) {
   return (
@@ -88,11 +69,8 @@ export default function HomeView({
   }, []);
 
   const [input, setInput] = useState("");
-  const [translating, setTranslating] = useState(false);
-  const [result, setResult] = useState(EMPTY_RESULT);
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
-  const [duplicateEntry, setDuplicateEntry] = useState(null);
 
   // Auto-Translate toggle (persisted)
   // Stored as "1" or "0" because useLocalStorageState stores strings.
@@ -102,94 +80,32 @@ export default function HomeView({
   );
   const autoTranslate = autoTranslateLS === "1";
 
+  // Translation hook (extracted)
+  const {
+    translating,
+    result,
+    duplicateEntry,
+    setDuplicateEntry,
+    translateText,
+    resetTranslation,
+  } = useTranslate({
+    rows,
+    tone,
+    gender,
+    showToast,
+  });
+
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
     () => !!result.ltOut && !!(result.enNatural || result.enLiteral),
     [result.ltOut, result.enNatural, result.enLiteral]
   );
 
-  const resetResult = useCallback(() => {
-    setResult(EMPTY_RESULT);
-  }, []);
-
-  // IMPORTANT: translate *a specific string* to avoid React state race when STT sets input then translates.
-  async function translateText(text, force = false) {
-    const cleaned = (text || "").trim();
-    if (!cleaned) return;
-
-    if (!force) {
-      const dup = findDuplicateInLibrary(cleaned, rows);
-      if (dup) {
-        setDuplicateEntry(dup);
-        resetResult();
-        showToast?.("Similar entry already in your library");
-        return;
-      }
-    }
-
-    setDuplicateEntry(null);
-    setTranslating(true);
-    resetResult();
-
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: cleaned,
-          tone,
-          gender,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data?.lt && (data?.en_literal || data?.en_natural)) {
-        const lt = String(data.lt || "").trim();
-        const lit = String(data.en_literal || "").trim();
-        const nat = String(data.en_natural || "").trim();
-        const pho = String(data.phonetics || "").trim();
-
-        const inferred =
-          areNearDuplicatesText(normalise(cleaned), normalise(lt)) ? "lt" : "en";
-
-        setResult({
-          ltOut: lt,
-          enLiteral: lit,
-          enNatural: nat || lit,
-          phonetics: pho,
-          usageOut: "",
-          notesOut: "",
-          categoryOut: DEFAULT_CATEGORY,
-          sourceLang: inferred,
-        });
-      } else {
-        setResult({
-          ...EMPTY_RESULT,
-          ltOut: "Translation error.",
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      setResult({
-        ...EMPTY_RESULT,
-        ltOut: "Translation error.",
-      });
-    } finally {
-      setTranslating(false);
-    }
-  }
-
-  async function handleTranslate(force = false) {
-    return translateText(input, force);
-  }
-
   const handleClear = useCallback(() => {
     blurTextarea();
     setInput("");
-    resetResult();
-    setDuplicateEntry(null);
-  }, [blurTextarea, resetResult]);
+    resetTranslation();
+  }, [blurTextarea, resetTranslation]);
 
   async function enrichSavedRowSilently(row) {
     try {
@@ -334,13 +250,13 @@ export default function HomeView({
 
   const handleTranslateClick = useCallback(() => {
     blurTextarea();
-    handleTranslate(false);
-  }, [blurTextarea, input, tone, gender, rows]);
+    translateText(input, false);
+  }, [blurTextarea, input, translateText]);
 
   const handleTranslateAnywayClick = useCallback(() => {
     blurTextarea();
-    handleTranslate(true);
-  }, [blurTextarea, input, tone, gender, rows]);
+    translateText(input, true);
+  }, [blurTextarea, input, translateText]);
 
   const handlePlay = useCallback(
     (text, opts) => {
@@ -374,8 +290,7 @@ export default function HomeView({
       autoTranslate,
       onTranslateText: async (text) => translateText(text, false),
       onSpeechCaptured: () => {
-        setDuplicateEntry(null);
-        resetResult();
+        resetTranslation();
       },
     });
 
@@ -535,7 +450,9 @@ export default function HomeView({
               <span className="text-base">{micLabel}</span>
             </div>
             <div className="text-xs mt-1 opacity-80">
-              {sttState === "idle" ? "Press and hold (max 15s)" : "Release to stop"}
+              {sttState === "idle"
+                ? "Press and hold (max 15s)"
+                : "Release to stop"}
             </div>
           </button>
         </div>
@@ -580,7 +497,8 @@ export default function HomeView({
                 Similar entry already in your library
               </div>
               <div className="text-xs text-amber-200/80 mt-0.5">
-                You can use this one, or translate anyway if you really want a new version.
+                You can use this one, or translate anyway if you really want a new
+                version.
               </div>
             </div>
             <button
@@ -599,7 +517,9 @@ export default function HomeView({
             </button>
           </div>
 
-          <div className="text-sm font-semibold truncate">{duplicateEntry.English || "—"}</div>
+          <div className="text-sm font-semibold truncate">
+            {duplicateEntry.English || "—"}
+          </div>
           <div className="text-sm text-emerald-300 truncate">
             {duplicateEntry.Lithuanian || "—"}
           </div>
@@ -637,7 +557,9 @@ export default function HomeView({
                 transition-transform duration-150 active:scale-95
                 select-none
               "
-              onClick={() => duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)}
+              onClick={() =>
+                duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)
+              }
             >
               ▶ Play
             </button>
@@ -685,7 +607,9 @@ export default function HomeView({
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">Literal meaning: </span>
+                <span className="font-semibold text-zinc-300">
+                  Literal meaning:{" "}
+                </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
