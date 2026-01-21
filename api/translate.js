@@ -72,7 +72,7 @@ Rules:
 
 For LITHUANIAN input:
 - "lt" MUST be the original Lithuanian input unchanged.
-- "phonetics" MUST still be provided for that Lithuanian.
+- "phonetics" MUST still be provided for that Lithuanuanian.
 - "en_literal" and "en_natural" must both be correct English.
 
 ────────────────────────────────
@@ -103,6 +103,17 @@ Examples of frames that MUST be preserved:
 - “ran into (someone)” meaning met unexpectedly → translate as an unexpected meeting, not physical collision.
 
 If no single Lithuanian idiom exists, paraphrase naturally in Lithuanian while keeping the same meaning and tone.
+
+────────────────────────────────
+FRAME LOCKS (MOMENTUM + GIVING UP)
+────────────────────────────────
+Momentum / “took off”:
+- When English means rapid growth, momentum, acceleration, or “taking off” (e.g., a business/project took off), prefer Lithuanian that expresses gaining momentum or accelerating.
+- Avoid using neutral “rose/raised” verbs as the main translation (e.g., “pakilo”) unless the English is literally about rising.
+
+Giving up / stopping effort:
+- When English means abandoning effort or giving up trying, prefer direct everyday Lithuanian verbs that express stopping/abandoning the attempt (e.g., “mečiau bandyti…”, “pasidaviau…”).
+- Avoid metaphorical idioms (e.g., “nuleidau rankas”) unless the English is also metaphorical.
 
 ────────────────────────────────
 SEXUAL MEANING (PRESERVE, DON’T INVENT)
