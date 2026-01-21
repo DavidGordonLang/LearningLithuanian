@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   }
 
   // ---------------------------------------------------------------------------
-  // NORMALISATION (CRITICAL)
+  // NORMALISATION (for category matching)
   // ---------------------------------------------------------------------------
   const normalise = (s) =>
     s
@@ -37,13 +37,9 @@ export default async function handler(req, res) {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
-  // ---------------------------------------------------------------------------
-  // SINGLE SOURCE OF TRUTH FOR CATEGORY
-  // ---------------------------------------------------------------------------
   function determineCategory() {
     const s = normalise(`${lt} ${en_natural} ${en_literal}`);
 
-    // Relationships (sexual / attraction / intimacy)
     if (
       s.includes("turns me on") ||
       s.includes("sexual") ||
@@ -56,7 +52,6 @@ export default async function handler(req, res) {
       return "Relationships";
     }
 
-    // Social (swearing / confrontation)
     if (
       s.includes("fuck off") ||
       s.includes("atsiknisk") ||
@@ -65,7 +60,6 @@ export default async function handler(req, res) {
       return "Social";
     }
 
-    // Emergencies / boundaries
     if (
       s.includes("dont touch") ||
       s.includes("hands off") ||
@@ -76,7 +70,6 @@ export default async function handler(req, res) {
       return "Emergencies";
     }
 
-    // Work
     if (
       s.includes("business") ||
       s.includes("project") ||
@@ -86,7 +79,6 @@ export default async function handler(req, res) {
       return "Work";
     }
 
-    // Emotions
     if (
       s.includes("it hit me") ||
       s.includes("realised") ||
@@ -95,7 +87,7 @@ export default async function handler(req, res) {
       return "Emotions";
     }
 
-    return "Social"; // safe conversational default
+    return "Social";
   }
 
   const Category = determineCategory();
@@ -106,11 +98,20 @@ You are a language enrichment engine for English speakers learning Lithuanian.
 Your job is NOT to translate.
 Your job is to ENRICH an existing, already-correct translation.
 
-Return ONLY:
+You MUST return ONE valid JSON object and NOTHING else.
+
+The JSON object MUST have EXACTLY these keys:
 {
   "Usage": "",
   "Notes": ""
 }
+
+Rules:
+- Do NOT include Category.
+- Do NOT include explanations.
+- Do NOT include markdown.
+- Do NOT include extra keys.
+- Do NOT include text outside the JSON.
 `.trim();
 
   const userMessage = `
@@ -147,8 +148,19 @@ ${en_literal || "(not provided)"}
     });
 
     const json = await response.json();
-    const raw = json?.choices?.[0]?.message?.content;
+    let raw = json?.choices?.[0]?.message?.content;
+
+    // Defensive cleanup: strip anything before/after the JSON
+    raw = raw?.trim();
+    if (raw?.startsWith("```")) {
+      raw = raw.replace(/```json|```/g, "").trim();
+    }
+
     const payload = JSON.parse(raw);
+
+    if (!payload?.Usage || !payload?.Notes) {
+      throw new Error("Incomplete enrich payload");
+    }
 
     return res.status(200).json({
       Category,
@@ -157,6 +169,7 @@ ${en_literal || "(not provided)"}
     });
   } catch (err) {
     console.error("Enrich error:", err);
+
     return res.status(200).json({
       Category,
       Usage: "Used when a Lithuanian speaker would naturally say this in context.",
