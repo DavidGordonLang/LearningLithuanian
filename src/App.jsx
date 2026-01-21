@@ -15,6 +15,7 @@ import SearchBox from "./components/SearchBox";
 import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
+import TrainingView from "./views/TrainingView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
 import AnalyticsView from "./views/AnalyticsView";
 import ChangeLogModal from "./components/ChangeLogModal";
@@ -71,6 +72,7 @@ const STR = {
   subtitle: "",
   navHome: "Home",
   navLibrary: "Library",
+  navTraining: "Training",
   navSettings: "Settings",
   search: "Search…",
   sort: "Sort:",
@@ -207,7 +209,10 @@ export default function App() {
 
   /* PAGE */
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
-  const swipeTabs = ["home", "library", "settings"];
+
+  // NOTE: Training tab inserted between Library and Settings.
+  const swipeTabs = ["home", "library", "training", "settings"];
+
   const swipeIndex = swipeTabs.includes(page)
     ? swipeTabs.indexOf(page)
     : swipeTabs.indexOf("settings");
@@ -532,7 +537,8 @@ export default function App() {
             index={swipeIndex}
             onIndexChange={(i) => goToPage(swipeTabs[i])}
             onProgress={(p, dragging) => {
-              const clamped = Math.max(-0.25, Math.min(2.25, p));
+              // 4 tabs => clamp to [-0.25, 3.25]
+              const clamped = Math.max(-0.25, Math.min(3.25, p));
               setSwipeProgress(clamped);
               setIsSwiping(!!dragging);
             }}
@@ -586,6 +592,11 @@ export default function App() {
                   setAddOpen(true);
                 }}
               />
+            </div>
+
+            {/* TRAINING */}
+            <div className="h-full overflow-y-auto overscroll-contain">
+              <TrainingView T={T} rows={visibleRows} />
             </div>
 
             {/* SETTINGS */}
