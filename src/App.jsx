@@ -596,7 +596,7 @@ export default function App() {
 
             {/* TRAINING */}
             <div className="h-full overflow-y-auto overscroll-contain">
-              <TrainingView T={T} rows={visibleRows} />
+              <TrainingView T={T} rows={visibleRows} playText={playTextTracked} />
             </div>
 
             {/* SETTINGS */}
