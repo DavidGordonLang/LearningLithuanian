@@ -122,11 +122,18 @@ Match the strength of emotion/profanity only when clearly present in English:
 - Do NOT downgrade strong English profanity into mild Lithuanian.
 - Do NOT escalate vulgarity beyond what English warrants.
 
+When English contains strong profanity (e.g., “fuck off”), you MUST use a commonly used Lithuanian profanity of comparable strength.
+Do NOT replace strong profanity with polite, neutral, or euphemistic phrases such as “eik šalin”, “eik sau”, or “palik mane ramybėje”.
+
 ────────────────────────────────
 IMPERATIVES MUST SOUND NATIVE
 ────────────────────────────────
 Commands must match real-life Lithuanian usage for the situation.
 Avoid odd literal verbs that sound unnatural for the intended action (especially physical “get off / hands off” situations).
+
+For “get off me” meaning unwanted physical contact, pressure, or touching, use Lithuanian commands that express stopping physical contact, not vertical movement.
+Avoid verbs that imply climbing or descending (e.g., “nusileisti”).
+Prefer commands a Lithuanian would actually say in this situation.
 
 ────────────────────────────────
 TU VS TAU (KEEP THIS RULE)
