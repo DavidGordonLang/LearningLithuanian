@@ -5,7 +5,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Vercel sometimes passes body as a string
   let body = req.body;
   if (!body || typeof body === "string") {
     try {
@@ -17,22 +16,12 @@ export default async function handler(req, res) {
 
   const { lt, phonetics, en_natural, en_literal } = body;
 
-  if (!lt || !String(lt).trim()) {
-    return res.status(400).json({ error: "Missing lt" });
-  }
-  if (!phonetics || !String(phonetics).trim()) {
-    return res.status(400).json({ error: "Missing phonetics" });
-  }
-  if (!en_natural || !String(en_natural).trim()) {
-    return res.status(400).json({ error: "Missing en_natural" });
-  }
-  if (!en_literal || !String(en_literal).trim()) {
-    return res.status(400).json({ error: "Missing en_literal" });
+  if (!lt || !phonetics || !en_natural || !en_literal) {
+    return res.status(400).json({ error: "Missing fields" });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.error("OPENAI_API_KEY is not set");
     return res.status(500).json({ error: "Server config error" });
   }
 
@@ -54,144 +43,96 @@ OUTPUT FORMAT (STRICT)
 ────────────────────────────────
 Return ONE valid JSON object, and NOTHING else.
 
-Exact shape required:
-
 {
   "Category": "",
   "Usage": "",
   "Notes": ""
 }
 
-Rules:
-- No extra keys.
-- No missing keys.
-- No markdown.
-- Every value must be a non-empty string.
-
 ────────────────────────────────
-CATEGORY RULES (FOLLOW THESE STRICTLY)
+CATEGORY RULES (DETERMINISTIC)
 ────────────────────────────────
-Choose ONE category only from this list:
+You MUST choose the category using these rules, in order:
 
-Social
-Travel
-Food
-Work
-Health
-Emotions
-Relationships
-Daily life
-Emergencies
-Education
-General
+1) If the phrase expresses sexual attraction, arousal, flirting, desire, intimacy, or sex → Category MUST be "Relationships".
+2) If the phrase is swearing, insults, confrontation → "Social".
+3) If the phrase is physical boundaries or safety (don’t touch me, get off me) → "Emergencies".
+4) If the phrase is about emotions, realisations, emotional impact → "Emotions".
+5) If the phrase is about business or work → "Work".
+6) Otherwise choose the closest category.
+7) Use "General" ONLY if nothing fits.
 
-Pick the most useful category for a learner.
-Avoid "General" when a more specific category clearly fits.
-
-STRICT mapping rules (use these first):
-- If the phrase is about attraction, flirting, sex, arousal, dating, intimacy → Category MUST be "Relationships".
-- If the phrase is swearing, insults, arguments, blunt confrontation → Category MUST be "Social".
-- If the phrase is physical boundaries, safety, “don’t touch me”, threats → Category MUST be "Emergencies".
-- If the phrase is feelings, realisations, emotional impact → Category MUST be "Emotions".
-- If the phrase is business, work, jobs, office talk → Category MUST be "Work".
-
-Only if none of these match, choose the closest category.
-Use "General" ONLY if truly unclear.
-
-Never invent new categories.
+You are NOT allowed to override rule 1.
 
 ────────────────────────────────
 USAGE RULES
 ────────────────────────────────
-Usage must be 1–2 sentences:
-- Describe WHEN a Lithuanian speaker would actually use this phrase.
-- Describe realistic situations (not abstract).
-- Avoid vague filler like “used in everyday conversation”.
-- Do NOT add assumptions that aren't present (e.g., do not assume “towards a man/woman” unless the Lithuanian itself changes).
-
-Do NOT explain grammar here.
+1–2 sentences describing when a Lithuanian speaker would use this phrase.
+No assumptions about gender or target unless the Lithuanian wording changes.
 
 ────────────────────────────────
-NOTES RULES (LEARNER-FOCUSED)
+NOTES RULES
 ────────────────────────────────
-Notes must be:
-- Multi-line
-- Clear spacing between ideas (blank lines between blocks)
-- Plain, human British English
-- No grammar terminology (no “genitive/dative/reflexive/etc.”)
-
-Notes should focus on:
-1) What the phrase is doing/expressing (meaning + tone)
-2) What an English speaker might get wrong (common misconception)
-3) Variants (see below) ONLY if useful and ONLY as real Lithuanian variants
+Notes must:
+- Be multi-line
+- Use plain British English
+- Explain meaning, tone, and common learner mistakes
+- Avoid grammar jargon
 
 ────────────────────────────────
-VARIANTS — STRICT FORMAT AND CONTENT
+VARIANTS — STRICT RULES
 ────────────────────────────────
-Include variants ONLY when they help a learner avoid sounding rude/awkward AND the Lithuanian wording actually changes.
+Include variants ONLY if:
+- The Lithuanian wording is different
+- The variant helps a learner avoid sounding rude or inappropriate
 
-Allowed reasons to include variants:
-- Formal/polite vs friendly (common greetings, requests, etc.)
-- Male vs female form ONLY if the Lithuanian wording changes
-- A common alternative wording used in the same situation (if truly useful)
+DO NOT:
+- Repeat the base phrase as a variant
+- Put explanations inside the Variants list
 
-IMPORTANT:
-- The “Variants:” section may ONLY contain Lithuanian phrases.
-- Do NOT put commentary inside Variants.
-- If there are no useful variants, DO NOT include a Variants section.
-
-Formatting rule (mandatory):
-For every Lithuanian variant you include, put the phonetics on the NEXT LINE underneath it.
-
-Example:
+If variants exist, format like this:
 
 Variants:
 - Formal / polite: Kaip Jūs?
   Phonetics: kai-p yoos
-- Friendly (to one person): Kaip tu?
-  Phonetics: kai-p too
 
-If there are NO useful variants:
-- Add one line in Notes: “No useful variants for this phrase.”
+If NO useful variants exist:
+- Add one line in Notes: "No useful variants for this phrase."
 
 ────────────────────────────────
 ALTERNATIVE PHRASE (OPTIONAL)
 ────────────────────────────────
-If there is a genuinely useful alternative phrase (different meaning/usage), include ONE alternative using this exact structure:
+Include ONE alternative only if it adds real learning value.
+
+Format:
 
 An alternative phrase is:
 
-[Lithuanian phrase] — [natural English meaning]
+[Lithuanian phrase] — [English meaning]
 [phonetics]
 
-[blank line]
-
-A short explanation (1–2 sentences) of how it differs in meaning or usage.
-
-Only include an alternative if it adds real learning value.
+Then a short explanation.
 
 ────────────────────────────────
 ABSOLUTE BANS
 ────────────────────────────────
-- No placeholders
-- No boilerplate tips
+- No retranslation
 - No emojis
 - No commentary outside JSON
-- No re-translation
 `.trim();
 
   const userMessage = `
-LITHUANIAN (FINAL, DO NOT CHANGE):
-${String(lt).trim()}
+LITHUANIAN:
+${lt}
 
-PHONETICS (FINAL, DO NOT CHANGE):
-${String(phonetics).trim()}
+PHONETICS:
+${phonetics}
 
-ENGLISH MEANING (NATURAL, FINAL, DO NOT CHANGE):
-${String(en_natural).trim()}
+ENGLISH (NATURAL):
+${en_natural}
 
-ENGLISH MEANING (LITERAL, FINAL, DO NOT CHANGE):
-${String(en_literal).trim()}
+ENGLISH (LITERAL):
+${en_literal}
 `.trim();
 
   try {
@@ -199,7 +140,7 @@ ${String(en_literal).trim()}
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: \`Bearer \${apiKey}\`,
       },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
@@ -208,40 +149,22 @@ ${String(en_literal).trim()}
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
-        temperature: 0.2,
-        max_tokens: 450,
+        temperature: 0.15,
+        max_tokens: 400,
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("OpenAI API error:", response.status, errText);
-      return res.status(500).json({ error: "OpenAI API error" });
-    }
-
     const json = await response.json();
     const raw = json?.choices?.[0]?.message?.content;
+    const payload = JSON.parse(raw);
 
-    let payload;
-    try {
-      payload = typeof raw === "string" ? JSON.parse(raw) : raw;
-    } catch {
-      console.error("Bad JSON from OpenAI:", raw);
-      return res.status(500).json({ error: "Bad JSON from OpenAI" });
-    }
-
-    const Category = String(payload?.Category || "").trim();
-    const Usage = String(payload?.Usage || "").trim();
-    const Notes = String(payload?.Notes || "").trim();
-
-    if (!Category || !Usage || !Notes) {
-      console.error("Incomplete enrich payload:", payload);
-      return res.status(500).json({ error: "Incomplete enrichment" });
-    }
-
-    return res.status(200).json({ Category, Usage, Notes });
+    return res.status(200).json({
+      Category: payload.Category.trim(),
+      Usage: payload.Usage.trim(),
+      Notes: payload.Notes.trim(),
+    });
   } catch (err) {
-    console.error("Enrich function error:", err);
+    console.error(err);
     return res.status(500).json({ error: "Enrichment failed" });
   }
 }
