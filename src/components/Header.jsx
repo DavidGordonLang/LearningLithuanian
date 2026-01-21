@@ -49,7 +49,7 @@ const Header = forwardRef(function Header(
       };
     }
 
-    // Only set metrics once all tabs are measured
+    // only set once all buttons are measured
     if (tabs.every((t) => out[t.id])) setMetrics(out);
   };
 
@@ -104,9 +104,7 @@ const Header = forwardRef(function Header(
   }, [page, swipeProgress, metrics]);
 
   useLayoutEffect(() => {
-    const onResize = () => {
-      measureAll();
-    };
+    const onResize = () => measureAll();
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
     return () => {
@@ -183,4 +181,17 @@ const Header = forwardRef(function Header(
                   )}
                   onClick={() => setPage(tab.id)}
                   onMouseDown={(e) => e.preventDefault()}
-                 
+                  onTouchStart={(e) => e.preventDefault()}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
+    </header>
+  );
+});
+
+export default Header;
