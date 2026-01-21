@@ -16,9 +16,9 @@ export default async function handler(req, res) {
 
   const { lt, phonetics, en_natural, en_literal } = body;
 
-  if (!lt || !phonetics || !en_natural || !en_literal) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
+  if (!lt || !String(lt).trim()) {
+  return res.status(400).json({ error: "Missing lt" });
+}
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
