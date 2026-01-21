@@ -1,6 +1,7 @@
 // src/views/TrainingView.jsx
 import React, { useMemo, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
+import RecallFlipView from "./training/RecallFlipView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 
 export default function TrainingView({ T, rows }) {
@@ -38,27 +39,12 @@ export default function TrainingView({ T, rows }) {
   }, [rows, focus]);
 
   if (screen === "recallFlip") {
-    // Placeholder — Tool A implementation lands next step.
     return (
-      <div className="max-w-xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            className="text-sm text-zinc-300 hover:text-zinc-100"
-            onClick={() => setScreen("home")}
-          >
-            ← Back
-          </button>
-          <div className="text-sm text-zinc-400">Training</div>
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
-          <div className="text-lg font-semibold">Recall Flip</div>
-          <div className="text-sm text-zinc-300 mt-2">
-            Stub screen. The full card flow ships next.
-          </div>
-        </div>
-      </div>
+      <RecallFlipView
+        rows={rows}
+        focus={focus}
+        onBack={() => setScreen("home")}
+      />
     );
   }
 
