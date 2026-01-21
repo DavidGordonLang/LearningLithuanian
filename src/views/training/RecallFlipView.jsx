@@ -10,7 +10,13 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
  * - EN ↔ LT direction toggle
  * - Self-grade AFTER reveal:
  *    - "Got it right" (Correct) => successGlow(strong)
+ *    - "I was close" (Near-miss) => successGlow(soft)
  *    - "Got it wrong" (Incorrect) => ghostFade()
+ *
+ * Audio (LT only):
+ * - Always plays Lithuanian text only
+ * - EN → LT: LT is the answer, so audio is enabled only AFTER reveal
+ * - LT → EN: LT is the prompt, so audio is enabled immediately
  *
  * Phase 1: no persistence yet. This view only runs the UX.
  *
@@ -18,8 +24,9 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
  * - rows: visible rows (already excludes _deleted in App)
  * - focus: "phrases" | "words" | "numbers" | "all"  (phrases includes Questions)
  * - onBack: () => void
+ * - playText?: (text: string, opts?: any) => Promise<any> | any   (existing TTS hook)
  */
-export default function RecallFlipView({ rows, focus, onBack }) {
+export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const list = Array.isArray(rows) ? rows : [];
 
   // Direction: prompt -> answer
@@ -29,8 +36,11 @@ export default function RecallFlipView({ rows, focus, onBack }) {
   // Card state
   const [revealed, setRevealed] = useState(false);
   const [busy, setBusy] = useState(false); // blocks double taps during fx
-  const [fx, setFx] = useState(null); // "flip" | "correct" | "wrong"
+  const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
   const fxTimerRef = useRef(null);
+
+  // Audio state
+  const [audioBusy, setAudioBusy] = useState(false);
 
   // Session queue
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
@@ -44,6 +54,7 @@ export default function RecallFlipView({ rows, focus, onBack }) {
     setRevealed(false);
     setFx(null);
     setBusy(false);
+    setAudioBusy(false);
   }, [focus, eligible.length]); // intentional: avoid deep deps
 
   useEffect(() => {
@@ -56,6 +67,37 @@ export default function RecallFlipView({ rows, focus, onBack }) {
 
   const canReveal = !!current && !revealed && !busy;
   const canGrade = !!current && revealed && !busy;
+
+  const prompt = useMemo(
+    () => getPromptText(current, direction),
+    [current, direction]
+  );
+  const answer = useMemo(
+    () => getAnswerText(current, direction),
+    [current, direction]
+  );
+
+  // LT-only audio text (never English)
+  const ltText = useMemo(() => {
+    if (!current) return "";
+    return safeStr(
+      current?.LT ??
+        current?.Lithuanian ??
+        current?.lt ??
+        current?.lithuanian ??
+        ""
+    );
+  }, [current]);
+
+  // Audio rule:
+  // - EN→LT: LT is the answer -> only after reveal
+  // - LT→EN: LT is the prompt -> anytime
+  const canPlayLt =
+    !!ltText &&
+    typeof playText === "function" &&
+    !audioBusy &&
+    !busy &&
+    (direction === "lt_to_en" || revealed);
 
   function triggerFx(kind, ms = 520) {
     setFx(kind);
@@ -74,6 +116,7 @@ export default function RecallFlipView({ rows, focus, onBack }) {
     setRevealed(false);
     setFx(null);
     setBusy(false);
+    setAudioBusy(false);
 
     setIdx((prev) => {
       const next = prev + 1;
@@ -89,23 +132,39 @@ export default function RecallFlipView({ rows, focus, onBack }) {
   function handleGrade(outcome) {
     if (!canGrade) return;
 
-    // outcome: "correct" | "wrong"
+    // outcome: "correct" | "close" | "wrong"
     setBusy(true);
 
     if (outcome === "correct") {
-      // successGlow(strong)
       triggerFx("correct", 700);
       setTimeout(nextCard, 420);
       return;
     }
 
-    // ghostFade()
+    if (outcome === "close") {
+      triggerFx("close", 650);
+      setTimeout(nextCard, 420);
+      return;
+    }
+
     triggerFx("wrong", 700);
     setTimeout(nextCard, 420);
   }
 
-  const prompt = useMemo(() => getPromptText(current, direction), [current, direction]);
-  const answer = useMemo(() => getAnswerText(current, direction), [current, direction]);
+  async function handlePlayLt() {
+    if (!canPlayLt) return;
+
+    try {
+      setAudioBusy(true);
+      const res = playText(ltText);
+      // support both promise + sync implementations
+      if (res && typeof res.then === "function") await res;
+    } catch {
+      // silent fail (no regression / no noisy alerts from a practice tool)
+    } finally {
+      setAudioBusy(false);
+    }
+  }
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
@@ -129,7 +188,7 @@ export default function RecallFlipView({ rows, focus, onBack }) {
             label="EN → LT"
             sub="Recall Lithuanian"
             onClick={() => {
-              if (busy) return;
+              if (busy || audioBusy) return;
               setDirection("en_to_lt");
               setRevealed(false);
               setFx(null);
@@ -140,7 +199,7 @@ export default function RecallFlipView({ rows, focus, onBack }) {
             label="LT → EN"
             sub="Recall English"
             onClick={() => {
-              if (busy) return;
+              if (busy || audioBusy) return;
               setDirection("lt_to_en");
               setRevealed(false);
               setFx(null);
@@ -162,8 +221,37 @@ export default function RecallFlipView({ rows, focus, onBack }) {
       {/* Card */}
       {!!current && (
         <div className="mt-6">
-          <div className="text-xs text-zinc-500 mb-2">
-            {Math.min(idx + 1, queue.length)} / {queue.length}
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-zinc-500">
+              {Math.min(idx + 1, queue.length)} / {queue.length}
+            </div>
+
+            <button
+              type="button"
+              className={cn(
+                "rf-audio-btn",
+                canPlayLt
+                  ? "rf-audio-enabled"
+                  : "rf-audio-disabled"
+              )}
+              onClick={handlePlayLt}
+              disabled={!canPlayLt}
+              aria-label="Play Lithuanian audio"
+              title={
+                typeof playText !== "function"
+                  ? "Audio unavailable"
+                  : direction === "en_to_lt" && !revealed
+                  ? "Reveal first"
+                  : "Play Lithuanian"
+              }
+            >
+              <span className="rf-audio-icon" aria-hidden="true">
+                🔊
+              </span>
+              <span className="text-xs font-semibold">
+                {audioBusy ? "Playing…" : "Listen"}
+              </span>
+            </button>
           </div>
 
           <div className="relative">
@@ -172,6 +260,7 @@ export default function RecallFlipView({ rows, focus, onBack }) {
               className={cn(
                 "pointer-events-none absolute inset-0 rounded-3xl",
                 fx === "correct" ? "rf-success-strong" : "",
+                fx === "close" ? "rf-success-soft" : "",
                 fx === "wrong" ? "rf-ghost-fade" : ""
               )}
             />
@@ -192,7 +281,7 @@ export default function RecallFlipView({ rows, focus, onBack }) {
                 {/* FRONT */}
                 <div className="rf-face rf-front p-6">
                   <div className="text-sm text-zinc-400">Prompt</div>
-                  <div className="mt-2 text-xl font-semibold leading-snug">
+                  <div className="mt-2 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
                     {prompt || "—"}
                   </div>
 
@@ -211,16 +300,22 @@ export default function RecallFlipView({ rows, focus, onBack }) {
                       Reveal
                     </button>
                   </div>
+
+                  <div className="mt-4 text-xs text-zinc-500">
+                    {direction === "en_to_lt"
+                      ? "Try to recall Lithuanian before revealing."
+                      : "Hear the Lithuanian if you need it."}
+                  </div>
                 </div>
 
                 {/* BACK */}
                 <div className="rf-face rf-back p-6">
                   <div className="text-sm text-zinc-400">Answer</div>
-                  <div className="mt-2 text-xl font-semibold leading-snug">
+                  <div className="mt-2 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
                     {answer || "—"}
                   </div>
 
-                  <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       type="button"
                       className={cn(
@@ -233,6 +328,20 @@ export default function RecallFlipView({ rows, focus, onBack }) {
                       disabled={!canGrade}
                     >
                       Got it wrong
+                    </button>
+
+                    <button
+                      type="button"
+                      className={cn(
+                        "rounded-2xl px-4 py-3 text-sm font-semibold transition border",
+                        canGrade
+                          ? "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 text-zinc-100"
+                          : "border-zinc-900 bg-zinc-950/20 text-zinc-500 cursor-not-allowed"
+                      )}
+                      onClick={() => handleGrade("close")}
+                      disabled={!canGrade}
+                    >
+                      I was close
                     </button>
 
                     <button
@@ -255,15 +364,14 @@ export default function RecallFlipView({ rows, focus, onBack }) {
                       type="button"
                       className={cn(
                         "w-full text-xs text-zinc-400 hover:text-zinc-200 py-2",
-                        busy ? "cursor-not-allowed opacity-60" : ""
+                        busy || audioBusy ? "cursor-not-allowed opacity-60" : ""
                       )}
                       onClick={() => {
-                        if (busy) return;
-                        // flip back
+                        if (busy || audioBusy) return;
                         setRevealed(false);
                         setFx(null);
                       }}
-                      disabled={busy}
+                      disabled={busy || audioBusy}
                     >
                       Hide answer
                     </button>
@@ -306,7 +414,6 @@ function buildQueue(eligible, n = 20) {
   const list = Array.isArray(eligible) ? eligible : [];
   if (!list.length) return [];
 
-  // MVP: shuffle and take N
   const shuffled = [...list];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -317,16 +424,46 @@ function buildQueue(eligible, n = 20) {
 
 function getPromptText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt") return safeStr(row?.EN || row?.English || "");
-  // lt_to_en
-  return safeStr(row?.LT || row?.Lithuanian || "");
+
+  if (direction === "en_to_lt") {
+    return safeStr(
+      row?.EN ??
+        row?.English ??
+        row?.en ??
+        row?.english ??
+        ""
+    );
+  }
+
+  return safeStr(
+    row?.LT ??
+      row?.Lithuanian ??
+      row?.lt ??
+      row?.lithuanian ??
+      ""
+  );
 }
 
 function getAnswerText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt") return safeStr(row?.LT || row?.Lithuanian || "");
-  // lt_to_en
-  return safeStr(row?.EN || row?.English || "");
+
+  if (direction === "en_to_lt") {
+    return safeStr(
+      row?.LT ??
+        row?.Lithuanian ??
+        row?.lt ??
+        row?.lithuanian ??
+        ""
+    );
+  }
+
+  return safeStr(
+    row?.EN ??
+      row?.English ??
+      row?.en ??
+      row?.english ??
+      ""
+  );
 }
 
 function safeStr(v) {
@@ -361,6 +498,7 @@ function ToggleButton({ active, label, sub, onClick }) {
  * Implemented here as scoped CSS classes:
  * - rf-card / rf-flipped (cardFlip3D)
  * - rf-success-strong (successGlow strong)
+ * - rf-success-soft (successGlow soft)
  * - rf-ghost-fade (ghostFade)
  */
 const css = `
@@ -371,7 +509,7 @@ const css = `
   position: relative;
   transform-style: preserve-3d;
   transition: transform 520ms cubic-bezier(.2,.9,.2,1);
-  min-height: 260px;
+  min-height: 270px;
 }
 .rf-face{
   position: absolute;
@@ -389,9 +527,39 @@ const css = `
   transform: rotateY(180deg);
 }
 
-/* small optional "flip pulse" – still cardFlip3D only (no extra system) */
+/* still within cardFlip3D primitive */
 .rf-flip-pulse{
   will-change: transform;
+}
+
+/* audio pill */
+.rf-audio-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(39,39,42,1);
+  background: rgba(9,9,11,0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform 140ms ease, background 140ms ease, opacity 140ms ease;
+}
+.rf-audio-icon{
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+.rf-audio-enabled{
+  cursor: pointer;
+  opacity: 1;
+}
+.rf-audio-enabled:hover{
+  background: rgba(9,9,11,0.55);
+  transform: translateY(-1px);
+}
+.rf-audio-disabled{
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 /* successGlow(strong) */
@@ -403,21 +571,23 @@ const css = `
   animation: rfGlowStrong 700ms ease-out forwards;
 }
 @keyframes rfGlowStrong{
-  0%{
-    opacity: 0.0;
-    transform: scale(0.995);
-    filter: blur(0px);
-  }
-  25%{
-    opacity: 1.0;
-    transform: scale(1.01);
-    filter: blur(0.2px);
-  }
-  100%{
-    opacity: 0.0;
-    transform: scale(1.02);
-    filter: blur(0.6px);
-  }
+  0%{ opacity: 0.0; transform: scale(0.995); filter: blur(0px); }
+  25%{ opacity: 1.0; transform: scale(1.01); filter: blur(0.2px); }
+  100%{ opacity: 0.0; transform: scale(1.02); filter: blur(0.6px); }
+}
+
+/* successGlow(soft) */
+.rf-success-soft{
+  box-shadow:
+    0 0 0 0 rgba(52, 211, 153, 0.0),
+    0 0 26px 6px rgba(52, 211, 153, 0.12),
+    0 0 60px 16px rgba(52, 211, 153, 0.07);
+  animation: rfGlowSoft 620ms ease-out forwards;
+}
+@keyframes rfGlowSoft{
+  0%{ opacity: 0.0; transform: scale(0.996); filter: blur(0px); }
+  30%{ opacity: 0.85; transform: scale(1.008); filter: blur(0.2px); }
+  100%{ opacity: 0.0; transform: scale(1.015); filter: blur(0.55px); }
 }
 
 /* ghostFade() */
@@ -425,20 +595,8 @@ const css = `
   animation: rfGhost 700ms ease-out forwards;
 }
 @keyframes rfGhost{
-  0%{
-    opacity: 0.0;
-    transform: scale(1);
-    filter: blur(0px) saturate(1);
-  }
-  30%{
-    opacity: 0.6;
-    transform: scale(0.995);
-    filter: blur(0.6px) saturate(0.85);
-  }
-  100%{
-    opacity: 0.0;
-    transform: scale(0.985);
-    filter: blur(1.0px) saturate(0.65);
-  }
+  0%{ opacity: 0.0; transform: scale(1); filter: blur(0px) saturate(1); }
+  30%{ opacity: 0.6; transform: scale(0.995); filter: blur(0.6px) saturate(0.85); }
+  100%{ opacity: 0.0; transform: scale(0.985); filter: blur(1.0px) saturate(0.65); }
 }
 `;
