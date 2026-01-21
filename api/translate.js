@@ -85,6 +85,7 @@ Hard requirements:
 - Avoid calques and “translated-sounding” Lithuanian.
 - Choose the MOST common native phrasing.
 - Grammar and morphology must be correct.
+- Do NOT invent words or output non-standard made-up Lithuanian forms.
 
 If there are multiple natural variants, choose the most common one.
 Do NOT list alternates here.
@@ -128,6 +129,11 @@ Do NOT replace strong profanity with polite, neutral, or euphemistic phrases suc
 Intent lock for dismissal profanity:
 - Dismissal profanity like “fuck off” means “leave me alone / go away” (aggressive), NOT physical contact.
 - Do NOT use verbs that describe physical movement, contact, climbing, or position (e.g., “nusileisk”, “nulipk”) for dismissal profanity.
+
+Hard preference for “fuck off”:
+- Translate “fuck off” as a common native dismissal profanity such as “Atsipisk” or “Atsiknisk”.
+- Do NOT invent alternatives or output non-standard forms (e.g., made-up imperatives).
+- If you choose to include “nuo manęs”, only do so when the English implies “off me”.
 
 ────────────────────────────────
 IMPERATIVES MUST SOUND NATIVE
