@@ -119,12 +119,20 @@ Variants are considered USEFUL EVEN IF:
 - none of the variants are softer or more polite
 - the original phrase is already very direct
 
-If native speakers commonly use alternative phrasing in the same situation, those alternatives MUST be included for learning value, as long as the Lithuanian wording actually changes.
+Include variants ONLY when there are genuinely commonly used, idiomatic alternatives that native Lithuanian speakers would realistically say in the same situation.
 
-VARIANT COUNT RULE (MANDATORY):
-- If variants are included, include AT LEAST 1 and NO MORE THAN 3 variants.
-- Prefer 2 variants where possible.
-- Never include more than 3 variants.
+Variants should reflect:
+- what people actually say in real life
+- differences in tone, vividness, or casualness
+- natural spoken Lithuanian, not artificial or formal constructions
+
+Do NOT include variants simply to meet a quota.
+It is acceptable to include:
+- no variants
+- one strong, commonly used variant
+- two variants if both are genuinely natural
+
+Rarely include three, and ONLY if all are in common real use.
 
 If variants ARE included, they MUST follow this exact structure:
 
