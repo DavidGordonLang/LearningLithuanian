@@ -25,28 +25,38 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.error("OPENAI_API_KEY is not set");
     return res.status(500).json({ error: "Server config error" });
   }
+
+  // ---------------------------------------------------------------------------
+  // NORMALISATION (CRITICAL)
+  // ---------------------------------------------------------------------------
+  const normalise = (s) =>
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 
   // ---------------------------------------------------------------------------
   // SINGLE SOURCE OF TRUTH FOR CATEGORY
   // ---------------------------------------------------------------------------
   function determineCategory() {
-    const s = `${lt} ${en_natural} ${en_literal}`.toLowerCase();
+    const s = normalise(`${lt} ${en_natural} ${en_literal}`);
 
+    // Relationships (sexual / attraction / intimacy)
     if (
       s.includes("turns me on") ||
       s.includes("sexual") ||
       s.includes("arousal") ||
       s.includes("slept with") ||
-      s.includes("užveda") ||
+      s.includes("uzveda") ||
       s.includes("kaitina") ||
-      s.includes("mylėjausi")
+      s.includes("mylejausi")
     ) {
       return "Relationships";
     }
 
+    // Social (swearing / confrontation)
     if (
       s.includes("fuck off") ||
       s.includes("atsiknisk") ||
@@ -55,8 +65,9 @@ export default async function handler(req, res) {
       return "Social";
     }
 
+    // Emergencies / boundaries
     if (
-      s.includes("don't touch") ||
+      s.includes("dont touch") ||
       s.includes("hands off") ||
       s.includes("get off me") ||
       s.includes("neliesk") ||
@@ -65,6 +76,7 @@ export default async function handler(req, res) {
       return "Emergencies";
     }
 
+    // Work
     if (
       s.includes("business") ||
       s.includes("project") ||
@@ -74,6 +86,7 @@ export default async function handler(req, res) {
       return "Work";
     }
 
+    // Emotions
     if (
       s.includes("it hit me") ||
       s.includes("realised") ||
@@ -82,7 +95,7 @@ export default async function handler(req, res) {
       return "Emotions";
     }
 
-    return "Social"; // safe default for conversational language
+    return "Social"; // safe conversational default
   }
 
   const Category = determineCategory();
@@ -93,25 +106,11 @@ You are a language enrichment engine for English speakers learning Lithuanian.
 Your job is NOT to translate.
 Your job is to ENRICH an existing, already-correct translation.
 
-You MUST NOT change:
-- The Lithuanian phrase
-- The English meanings
-- The phonetics
-
-You ONLY add learning context.
-
-────────────────────────────────
-OUTPUT FORMAT (STRICT)
-────────────────────────────────
-Return ONE valid JSON object with ONLY:
-
+Return ONLY:
 {
   "Usage": "",
   "Notes": ""
 }
-
-Do NOT include Category.
-Do NOT include any other fields.
 `.trim();
 
   const userMessage = `
@@ -158,7 +157,6 @@ ${en_literal || "(not provided)"}
     });
   } catch (err) {
     console.error("Enrich error:", err);
-
     return res.status(200).json({
       Category,
       Usage: "Used when a Lithuanian speaker would naturally say this in context.",
