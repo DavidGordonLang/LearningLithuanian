@@ -112,7 +112,7 @@ Notes should cover, when relevant:
 ────────────────────────────────
 VARIANTS (VERY IMPORTANT — STRICT FORMAT)
 ────────────────────────────────
-Include variants ONLY if they genuinely help a learner avoid sounding rude, awkward, or misleading AND the Lithuanian wording actually changes.
+Include variants if they help a learner understand natural alternative ways native speakers might express the same idea, including differences in tone, directness, vividness, or register — even if all variants are sexual or explicit — AND the Lithuanian wording actually changes.
 
 If variants ARE included, they MUST follow this exact structure:
 
