@@ -4,7 +4,7 @@ import TrainingHome from "./training/TrainingHome";
 import RecallFlipView from "./training/RecallFlipView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 
-export default function TrainingView({ T, rows }) {
+export default function TrainingView({ T, rows, playText }) {
   const [screen, setScreen] = useState("home"); // "home" | "recallFlip"
   const [focus, setFocus] = useTrainingFocus();
 
@@ -43,6 +43,7 @@ export default function TrainingView({ T, rows }) {
       <RecallFlipView
         rows={rows}
         focus={focus}
+        playText={playText}
         onBack={() => setScreen("home")}
       />
     );
