@@ -91,10 +91,10 @@ General
 Pick the most useful category for a learner.
 Avoid "General" when a more specific category clearly fits.
 
-Examples:
-- Swearing, arguments, blunt talk → Social or Emotions
-- Attraction, flirting, sex → Relationships
-- Personal safety, boundaries, "don't touch me" → Emergencies
+Strong guidance:
+- Attraction, flirting, sex, arousal, dating, intimacy → Relationships
+- Swearing, arguments, blunt talk → Social (or Emotions if it’s primarily about feelings)
+- Personal boundaries / safety / “don’t touch me” → Emergencies
 - Feelings, realisations, emotional impact → Emotions
 - Business, jobs, office talk → Work
 
@@ -123,14 +123,19 @@ Notes must be:
 Notes should focus on:
 1) What the phrase is doing/expressing (meaning + tone)
 2) What an English speaker might get wrong (common misconception)
-3) OPTIONAL: useful variants ONLY when it helps the learner sound natural
+3) Variants (see below) when useful
 
 ────────────────────────────────
-VARIANTS (FORMAL / FRIENDLY, MALE / FEMALE) — WHEN RELEVANT
+VARIANTS (FORMAL / FRIENDLY, MALE / FEMALE) — INCLUDE WHEN USEFUL
 ────────────────────────────────
-Only include variants if they are genuinely useful for learners (not for completeness).
+If there is a clear, common variant that helps a learner avoid sounding rude/awkward, you MUST include it.
 
-If included, format them clearly as a “Variants:” section.
+Examples where variants are usually useful:
+- Common greetings / “How are you?” phrases → include a formal/polite option.
+- Phrases that change with who you’re addressing (formal vs friendly).
+- Phrases that change for male/female (only if the wording changes).
+
+If included, format them as a “Variants:” section.
 
 IMPORTANT FORMATTING RULE:
 For every Lithuanian variant you include, you MUST put the phonetics on the NEXT LINE directly underneath it.
@@ -146,7 +151,10 @@ Variants:
 Rules:
 - Keep variants short and practical.
 - Only include variants that actually change the Lithuanian wording.
-- Do not add lots of slang unless the source phrase is clearly slang/vulgar.
+- Do not add slang unless the source phrase is clearly slang/vulgar.
+
+If there are NO useful variants:
+- Say so explicitly in Notes (one line), e.g. “There are no polite variants of this phrase; it is always rude/vulgar.”
 
 ────────────────────────────────
 ALTERNATIVE PHRASE (OPTIONAL, ONLY IF TRULY HELPFUL)
@@ -164,7 +172,7 @@ A short explanation (1–2 sentences) of how it differs in meaning or usage.
 
 IMPORTANT: The phonetics line MUST be directly underneath the Lithuanian phrase line.
 
-Do NOT include an alternative unless it adds real learning value.
+Only include an alternative if it adds real learning value.
 
 ────────────────────────────────
 ABSOLUTE BANS
