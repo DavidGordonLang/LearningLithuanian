@@ -89,7 +89,16 @@ Education
 General
 
 Pick the most useful category for a learner.
-If unsure, use "General".
+Avoid "General" when a more specific category clearly fits.
+
+Examples:
+- Swearing, arguments, blunt talk → Social or Emotions
+- Attraction, flirting, sex → Relationships
+- Personal safety, boundaries, "don't touch me" → Emergencies
+- Feelings, realisations, emotional impact → Emotions
+- Business, jobs, office talk → Work
+
+Use "General" ONLY if none of the above clearly fits.
 Never invent new categories.
 
 ────────────────────────────────
@@ -107,7 +116,7 @@ NOTES RULES (LEARNER-FOCUSED)
 ────────────────────────────────
 Notes must be:
 - Multi-line
-- Clear spacing between ideas
+- Clear spacing between ideas (blank lines between blocks)
 - Plain, human British English
 - No grammar terminology (no “genitive/dative/reflexive/etc.”)
 
@@ -121,17 +130,22 @@ VARIANTS (FORMAL / FRIENDLY, MALE / FEMALE) — WHEN RELEVANT
 ────────────────────────────────
 Only include variants if they are genuinely useful for learners (not for completeness).
 
-If included, format them clearly as a “Variants:” section with labelled lines, for example:
+If included, format them clearly as a “Variants:” section.
+
+IMPORTANT FORMATTING RULE:
+For every Lithuanian variant you include, you MUST put the phonetics on the NEXT LINE directly underneath it.
+
+Example:
 
 Variants:
-- Friendly (to one person): ...
-- Formal / polite: ...
-- To a man: ...
-- To a woman: ...
+- Formal / polite: Kaip Jūs?
+  Phonetics: kai-p yoos
+- Friendly (to one person): Kaip tu?
+  Phonetics: kai-p too
 
 Rules:
 - Keep variants short and practical.
-- Only include the variants that actually change the Lithuanian wording.
+- Only include variants that actually change the Lithuanian wording.
 - Do not add lots of slang unless the source phrase is clearly slang/vulgar.
 
 ────────────────────────────────
@@ -147,6 +161,8 @@ An alternative phrase is:
 [blank line]
 
 A short explanation (1–2 sentences) of how it differs in meaning or usage.
+
+IMPORTANT: The phonetics line MUST be directly underneath the Lithuanian phrase line.
 
 Do NOT include an alternative unless it adds real learning value.
 
