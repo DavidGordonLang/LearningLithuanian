@@ -21,6 +21,7 @@ const Header = forwardRef(function Header(
     () => [
       { id: "home", label: T.navHome },
       { id: "library", label: T.navLibrary },
+      { id: "training", label: T.navTraining || "Training" },
       { id: "settings", label: T.navSettings },
     ],
     [T]
@@ -48,7 +49,8 @@ const Header = forwardRef(function Header(
       };
     }
 
-    if (out.home && out.library && out.settings) setMetrics(out);
+    // Only set metrics once all tabs are measured
+    if (tabs.every((t) => out[t.id])) setMetrics(out);
   };
 
   const updateIndicatorForPage = () => {
@@ -181,17 +183,4 @@ const Header = forwardRef(function Header(
                   )}
                   onClick={() => setPage(tab.id)}
                   onMouseDown={(e) => e.preventDefault()}
-                  onTouchStart={(e) => e.preventDefault()}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
-    </header>
-  );
-});
-
-export default Header;
+                 
