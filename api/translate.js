@@ -125,11 +125,19 @@ Match the strength of emotion/profanity only when clearly present in English:
 When English contains strong profanity (e.g., “fuck off”), you MUST use a commonly used Lithuanian profanity of comparable strength.
 Do NOT replace strong profanity with polite, neutral, or euphemistic phrases such as “eik šalin”, “eik sau”, or “palik mane ramybėje”.
 
+Intent lock for dismissal profanity:
+- Dismissal profanity like “fuck off” means “leave me alone / go away” (aggressive), NOT physical contact.
+- Do NOT use verbs that describe physical movement, contact, climbing, or position (e.g., “nusileisk”, “nulipk”) for dismissal profanity.
+
 ────────────────────────────────
 IMPERATIVES MUST SOUND NATIVE
 ────────────────────────────────
 Commands must match real-life Lithuanian usage for the situation.
 Avoid odd literal verbs that sound unnatural for the intended action (especially physical “get off / hands off” situations).
+
+Physical imperative gate:
+- Only use physical-contact imperatives (e.g., “nulipk”, “trauktis”, “patrauk rankas”) when the English explicitly refers to physical contact with the speaker’s body (e.g., “get off me”, “hands off me”).
+- Do NOT use physical-contact imperatives for dismissal-only phrases like “fuck off”.
 
 For “get off me” meaning unwanted physical contact, pressure, or touching, use Lithuanian commands that express stopping physical contact, not vertical movement.
 Avoid verbs that imply climbing or descending (e.g., “nusileisti”).
