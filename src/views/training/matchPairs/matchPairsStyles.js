@@ -53,7 +53,13 @@ export const matchPairsCss = `
   word-break: break-word;
   line-height: 1.15;
 
-  transition: transform 120ms ease, background 160ms ease, border-color 160ms ease, opacity 220ms ease;
+  transition:
+    transform 120ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 220ms ease,
+    box-shadow 220ms ease;
+
   user-select: none;
 }
 
@@ -61,28 +67,48 @@ export const matchPairsCss = `
   transform: scale(0.985);
 }
 
-.mp-tile-selected {
-  border-color: rgba(16,185,129,0.45);
-  background: rgba(16,185,129,0.08);
+/* Amber select (soft, pale) */
+.mp-tile-amber {
+  border-color: rgba(251,191,36,0.42);
+  background: rgba(251,191,36,0.07);
+  box-shadow: 0 0 0 1px rgba(251,191,36,0.08), 0 10px 26px rgba(0,0,0,0.25);
 }
 
 .mp-tile-cleared {
-  opacity: 0.12;
-  border-color: rgba(39,39,42,0.4);
-  background: rgba(9,9,11,0.12);
+  opacity: 0.08;
+  border-color: rgba(39,39,42,0.35);
+  background: rgba(9,9,11,0.10);
   pointer-events: none;
 }
 
-@keyframes mp-mismatch {
-  0%   { opacity: 1;   background: rgba(9,9,11,0.35); }
-  35%  { opacity: 0.45; background: rgba(113,113,122,0.14); }
-  100% { opacity: 1;   background: rgba(9,9,11,0.35); }
+/* Pulses (correct larger than wrong) */
+@keyframes mp-green-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.00); border-color: rgba(39,39,42,0.9); }
+  35%  { box-shadow: 0 0 0 6px rgba(16,185,129,0.16), 0 0 28px rgba(16,185,129,0.18); border-color: rgba(16,185,129,0.62); }
+  70%  { box-shadow: 0 0 0 12px rgba(16,185,129,0.10), 0 0 38px rgba(16,185,129,0.16); border-color: rgba(16,185,129,0.58); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.00); border-color: rgba(39,39,42,0.9); }
 }
 
-.mp-tile-mismatch {
-  animation: mp-mismatch 520ms ease;
+@keyframes mp-red-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(244,63,94,0.00); border-color: rgba(39,39,42,0.9); }
+  40%  { box-shadow: 0 0 0 5px rgba(244,63,94,0.14), 0 0 18px rgba(244,63,94,0.10); border-color: rgba(244,63,94,0.48); }
+  100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.00); border-color: rgba(39,39,42,0.9); }
 }
 
+.mp-pulse-correct {
+  animation: mp-green-pulse 520ms ease;
+}
+
+.mp-pulse-wrong {
+  animation: mp-red-pulse 420ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-tile:active { transform: none; }
+  .mp-pulse-correct, .mp-pulse-wrong { animation: none; }
+}
+
+/* Page fades */
 .mp-grid-wrap {
   transition: opacity 260ms ease;
 }
