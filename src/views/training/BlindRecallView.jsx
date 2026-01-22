@@ -18,7 +18,7 @@ const SESSION_SIZE = 10;
  * - User types OR uses press-and-hold STT to produce Lithuanian
  * - User can edit STT output
  * - Reveal correct Lithuanian (no notes shown in training)
- * - Self-grade: Right / Close enough / Missed it
+ * - Self-grade: Right / Close enough / Missed it (labels customized)
  * - End summary: review mistakes, another 10, finish
  *
  * Phase 1: no persistence.
@@ -165,6 +165,9 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
   const canPlayLt = !!a.canPlayLt;
 
   const hasAttempt = !!attempt?.trim();
+
+  // Taller, uniform grade button height
+  const gradeBtnExtra = "py-4";
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6 rf-root">
@@ -329,7 +332,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                   </div>
                 </div>
 
-                {/* BACK: correct answer always visible + optional your answer + grade */}
+                {/* BACK: hero + audio + centered "your answer" + grade */}
                 <div className="rf-face rf-back p-6 flex flex-col">
                   {/* Hero answer header */}
                   <div className="text-center">
@@ -351,21 +354,19 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                     </div>
                   </div>
 
-                  {/* Optional: your answer (scrollable, but doesn't crowd the hero) */}
-                  <div className="flex-1 min-h-0 mt-4">
+                  {/* Centered "Your answer" (priority comparison moment) */}
+                  <div className="flex-1 min-h-0 mt-5 flex items-start justify-center">
                     {hasAttempt ? (
-                      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/35 p-3">
-                        <div className="text-[11px] text-zinc-500">Your answer</div>
-                        <div className="mt-2 max-h-[140px] overflow-y-auto pr-1">
-                          <div className="text-sm text-zinc-200 whitespace-pre-wrap">
+                      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950/35 p-3">
+                        <div className="text-[11px] text-zinc-500 text-center">Your answer</div>
+                        <div className="mt-2 max-h-[150px] overflow-y-auto pr-1">
+                          <div className="text-sm text-zinc-200 whitespace-pre-wrap text-center">
                             {attempt.trim()}
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-xs text-zinc-500 text-center mt-1">
-                        (No answer entered)
-                      </div>
+                      <div className="text-xs text-zinc-500 text-center mt-1">(No answer entered)</div>
                     )}
                   </div>
 
@@ -376,18 +377,20 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         type="button"
                         className={cn(
                           "rf-grade-btn rf-grade-wrong",
+                          gradeBtnExtra,
                           s.canGrade ? "" : "rf-grade-disabled"
                         )}
                         onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
-                        Missed it
+                        I was wrong
                       </button>
 
                       <button
                         type="button"
                         className={cn(
                           "rf-grade-btn rf-grade-close",
+                          gradeBtnExtra,
                           s.canGrade ? "" : "rf-grade-disabled"
                         )}
                         onClick={() => handleGrade("close")}
@@ -400,17 +403,17 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         type="button"
                         className={cn(
                           "rf-grade-btn rf-grade-right",
+                          gradeBtnExtra,
                           s.canGrade ? "" : "rf-grade-disabled"
                         )}
                         onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
-                        Right
+                        I was right
                       </button>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="text-[11px] text-zinc-500">(You can flip back.)</div>
+                    <div className="mt-3 flex items-center justify-end">
                       <button
                         type="button"
                         className="text-[11px] text-zinc-300 hover:text-zinc-100 underline underline-offset-4"
@@ -438,7 +441,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
           right={s.countRight}
           close={s.countClose}
           wrong={s.countWrong}
-          labels={{ right: "Right", close: "Close enough", wrong: "Missed it" }}
+          labels={{ right: "I was right", close: "Close enough", wrong: "I was wrong" }}
           canReview={s.countClose + s.countWrong > 0}
           onReview={() => s.reviewMistakes?.()}
           onAgain={() => s.runAgain?.()}
