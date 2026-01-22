@@ -1,6 +1,7 @@
 // src/views/training/RecallFlipView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRecallFlipSession } from "../../hooks/training/useRecallFlipSession";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -35,44 +36,30 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   // Direction: prompt -> answer
   const [direction, setDirection] = useState("en_to_lt"); // "en_to_lt" | "lt_to_en"
 
-  // Card state
-  const [revealed, setRevealed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  // Visual FX (kept in-view)
   const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
+  const fxTimerRef = useRef(null);
 
-  // Audio state
+  // Audio state (kept in-view)
   const [audioBusy, setAudioBusy] = useState(false);
 
-  // Session state
+  // Eligible list
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
-  const [queue, setQueue] = useState(() => buildQueue(eligible, SESSION_SIZE));
-  const [idx, setIdx] = useState(0);
 
-  const [countRight, setCountRight] = useState(0);
-  const [countClose, setCountClose] = useState(0);
-  const [countWrong, setCountWrong] = useState(0);
+  // Session hook owns: queue/idx/revealed/busy/summary/scoring/mistakes
+  const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  const mistakesRef = useRef([]);
-  const [showSummary, setShowSummary] = useState(false);
-
-  // Timers we must be able to cancel
-  const fxTimerRef = useRef(null);
-  const gradeTimerRef = useRef(null);
-
-  // Keep queue fresh if focus changes or library changes substantially
-  useEffect(() => {
-    resetSession(buildQueue(eligible, SESSION_SIZE));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus, eligible.length]);
-
+  // Cleanup FX timer
   useEffect(() => {
     return () => {
-      clearAllTimers();
+      if (fxTimerRef.current) {
+        clearTimeout(fxTimerRef.current);
+        fxTimerRef.current = null;
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const current = queue[idx] || null;
+  const current = s.current;
 
   const prompt = useMemo(
     () => getPromptText(current, direction),
@@ -100,116 +87,22 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   // - LT→EN: LT is prompt => visible BEFORE reveal (front)
   const isLtVisible = useMemo(() => {
     if (!current) return false;
-    if (direction === "en_to_lt") return !!revealed;
-    return !revealed;
-  }, [current, direction, revealed]);
+    if (direction === "en_to_lt") return !!s.revealed;
+    return !s.revealed;
+  }, [current, direction, s.revealed]);
 
   const canPlayLt =
     !!ltText &&
     typeof playText === "function" &&
     !audioBusy &&
-    !busy &&
-    !showSummary &&
+    !s.busy &&
+    !s.showSummary &&
     isLtVisible;
-
-  const canGrade = !!current && revealed && !busy && !showSummary;
-
-  function clearAllTimers() {
-    if (fxTimerRef.current) {
-      clearTimeout(fxTimerRef.current);
-      fxTimerRef.current = null;
-    }
-    if (gradeTimerRef.current) {
-      clearTimeout(gradeTimerRef.current);
-      gradeTimerRef.current = null;
-    }
-  }
 
   function triggerFx(kind, ms = 520) {
     setFx(kind);
     if (fxTimerRef.current) clearTimeout(fxTimerRef.current);
     fxTimerRef.current = setTimeout(() => setFx(null), ms);
-  }
-
-  function resetSession(nextQueue) {
-    clearAllTimers();
-
-    setShowSummary(false);
-    setQueue(Array.isArray(nextQueue) ? nextQueue : []);
-    setIdx(0);
-
-    setRevealed(false);
-    setFx(null);
-    setBusy(false);
-    setAudioBusy(false);
-
-    setCountRight(0);
-    setCountClose(0);
-    setCountWrong(0);
-    mistakesRef.current = [];
-  }
-
-  function finishSession() {
-    clearAllTimers();
-
-    setBusy(false);
-    setAudioBusy(false);
-    setRevealed(false);
-    setFx(null);
-    setShowSummary(true);
-  }
-
-  function nextCardOrFinish() {
-    setRevealed(false);
-    setFx(null);
-    setBusy(false);
-    setAudioBusy(false);
-
-    const next = idx + 1;
-    if (next < queue.length) {
-      setIdx(next);
-      return;
-    }
-    finishSession();
-  }
-
-  function noteMistake(rowObj) {
-    if (!rowObj) return;
-    mistakesRef.current = [...(mistakesRef.current || []), rowObj];
-  }
-
-  function scheduleNext(ms = 420) {
-    if (gradeTimerRef.current) clearTimeout(gradeTimerRef.current);
-    gradeTimerRef.current = setTimeout(() => {
-      gradeTimerRef.current = null;
-      nextCardOrFinish();
-    }, ms);
-  }
-
-  function handleGrade(outcome) {
-    if (!canGrade) return;
-
-    setBusy(true);
-
-    if (outcome === "correct") {
-      setCountRight((n) => n + 1);
-      triggerFx("correct", 700);
-      scheduleNext(420);
-      return;
-    }
-
-    if (outcome === "close") {
-      setCountClose((n) => n + 1);
-      noteMistake(current);
-      triggerFx("close", 650);
-      scheduleNext(420);
-      return;
-    }
-
-    setCountWrong((n) => n + 1);
-    noteMistake(current);
-    triggerFx("wrong", 700);
-    scheduleNext(420);
   }
 
   async function playLt(opts) {
@@ -226,44 +119,29 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     }
   }
 
-  function buildMistakeRun() {
-    const mistakes = Array.isArray(mistakesRef.current) ? mistakesRef.current : [];
-    const unique = uniqById(mistakes);
-    if (!unique.length) return [];
-    return buildQueue(unique, Math.min(SESSION_SIZE, unique.length));
-  }
-
-  const progressLabel = useMemo(() => {
-    const total = queue.length;
-    if (!total) return "0 / 0";
-    return `${Math.min(idx + 1, total)} / ${total}`;
-  }, [idx, queue.length]);
-
-  const summaryTotal = countRight + countClose + countWrong;
-
   function hardExit() {
     // Back must ALWAYS work.
-    clearAllTimers();
-    setBusy(false);
+    if (fxTimerRef.current) {
+      clearTimeout(fxTimerRef.current);
+      fxTimerRef.current = null;
+    }
+    s.clearTimers?.();
     setAudioBusy(false);
-    setShowSummary(false);
     setFx(null);
-    setRevealed(false);
     onBack?.();
   }
 
   function toggleCardFlip() {
     if (!current) return;
-    if (showSummary) return;
-    if (busy || audioBusy) return;
+    if (s.showSummary) return;
+    if (s.busy || audioBusy) return;
 
-    // Tap to flip either way
-    if (!revealed) {
-      setRevealed(true);
+    if (!s.revealed) {
+      s.setRevealed(true);
       triggerFx("flip", 520);
     } else {
-      setRevealed(false);
-      // no need to pulse FX on flip-back; keep it calm/premium
+      s.setRevealed(false);
+      // calm flip-back (no pulse)
     }
   }
 
@@ -289,9 +167,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="EN → LT"
             sub="Recall Lithuanian"
             onClick={() => {
-              if (busy || audioBusy || showSummary) return;
+              if (s.busy || audioBusy || s.showSummary) return;
               setDirection("en_to_lt");
-              setRevealed(false);
+              s.setRevealed(false);
               setFx(null);
             }}
           />
@@ -300,9 +178,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="LT → EN"
             sub="Recall English"
             onClick={() => {
-              if (busy || audioBusy || showSummary) return;
+              if (s.busy || audioBusy || s.showSummary) return;
               setDirection("lt_to_en");
-              setRevealed(false);
+              s.setRevealed(false);
               setFx(null);
             }}
           />
@@ -310,7 +188,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       </div>
 
       {/* Empty state */}
-      {!current && !showSummary && (
+      {!current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
           <div className="text-sm text-zinc-300 mt-2">
@@ -320,13 +198,13 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       )}
 
       {/* Card */}
-      {!!current && !showSummary && (
+      {!!current && !s.showSummary && (
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-zinc-500">{progressLabel}</div>
+            <div className="text-xs text-zinc-500">{s.progressLabel}</div>
 
             <div className="text-xs text-zinc-500">
-              Right {countRight} · Close {countClose} · Wrong {countWrong}
+              Right {s.countRight} · Close {s.countClose} · Wrong {s.countWrong}
             </div>
           </div>
 
@@ -340,11 +218,16 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
               )}
             />
 
-            <div className={cn("rf-perspective", busy ? "pointer-events-none select-none" : "")}>
+            <div
+              className={cn(
+                "rf-perspective",
+                s.busy ? "pointer-events-none select-none" : ""
+              )}
+            >
               <div
                 className={cn(
                   "rf-card rounded-3xl border border-zinc-800 bg-zinc-950/70 shadow-[0_18px_60px_rgba(0,0,0,0.55)]",
-                  revealed ? "rf-flipped" : "",
+                  s.revealed ? "rf-flipped" : "",
                   fx === "flip" ? "rf-flip-pulse" : ""
                 )}
                 role="button"
@@ -371,7 +254,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         onPlay={() => playLt(undefined)}
                         onPlaySlow={() => playLt({ slow: true })}
                         disabledReason={
-                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                          typeof playText !== "function"
+                            ? "Audio unavailable"
+                            : "Play Lithuanian"
                         }
                       />
                     )}
@@ -380,9 +265,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                   <div className="rf-center-zone">
                     <div className="rf-hero-text">{prompt || "—"}</div>
 
-                    {!revealed && (
-                      <div className="rf-hint">Tap the card to reveal</div>
-                    )}
+                    {!s.revealed && <div className="rf-hint">Tap the card to reveal</div>}
                   </div>
 
                   <div className="rf-bottom-spacer" aria-hidden="true" />
@@ -401,7 +284,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         onPlay={() => playLt(undefined)}
                         onPlaySlow={() => playLt({ slow: true })}
                         disabledReason={
-                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                          typeof playText !== "function"
+                            ? "Audio unavailable"
+                            : "Play Lithuanian"
                         }
                       />
                     )}
@@ -411,7 +296,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     {/* Lithuanian as hero */}
                     <div className="rf-hero-text">{answer || "—"}</div>
 
-                    {/* English shown underneath (smaller + lighter), to support flip-back UX */}
+                    {/* English shown underneath (smaller + lighter) */}
                     <div className="rf-sub-text">{prompt || ""}</div>
                   </div>
 
@@ -421,10 +306,16 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         type="button"
                         className={cn(
                           "rf-grade-btn rf-grade-wrong",
-                          canGrade ? "" : "rf-grade-disabled"
+                          s.canGrade ? "" : "rf-grade-disabled"
                         )}
-                        onClick={() => handleGrade("wrong")}
-                        disabled={!canGrade}
+                        onClick={() =>
+                          s.grade("wrong", {
+                            row: current,
+                            onFx: () => triggerFx("wrong", 700),
+                            advanceDelayMs: 420,
+                          })
+                        }
+                        disabled={!s.canGrade}
                       >
                         Wrong
                       </button>
@@ -433,10 +324,16 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         type="button"
                         className={cn(
                           "rf-grade-btn rf-grade-close",
-                          canGrade ? "" : "rf-grade-disabled"
+                          s.canGrade ? "" : "rf-grade-disabled"
                         )}
-                        onClick={() => handleGrade("close")}
-                        disabled={!canGrade}
+                        onClick={() =>
+                          s.grade("close", {
+                            row: current,
+                            onFx: () => triggerFx("close", 650),
+                            advanceDelayMs: 420,
+                          })
+                        }
+                        disabled={!s.canGrade}
                       >
                         Close
                       </button>
@@ -445,18 +342,22 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         type="button"
                         className={cn(
                           "rf-grade-btn rf-grade-right",
-                          canGrade ? "" : "rf-grade-disabled"
+                          s.canGrade ? "" : "rf-grade-disabled"
                         )}
-                        onClick={() => handleGrade("correct")}
-                        disabled={!canGrade}
+                        onClick={() =>
+                          s.grade("correct", {
+                            row: current,
+                            onFx: () => triggerFx("correct", 700),
+                            advanceDelayMs: 420,
+                          })
+                        }
+                        disabled={!s.canGrade}
                       >
                         Right
                       </button>
                     </div>
 
-                    <div className="rf-footnote">
-                      (Tap the card to flip back.)
-                    </div>
+                    <div className="rf-footnote">(Tap the card to flip back.)</div>
                   </div>
                 </div>
               </div>
@@ -466,20 +367,19 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       )}
 
       {/* Summary modal */}
-      {showSummary && (
+      {s.showSummary && (
         <SummaryModal
           title="Session complete"
-          subtitle={`${summaryTotal} ${summaryTotal === 1 ? "card" : "cards"}`}
-          right={countRight}
-          close={countClose}
-          wrong={countWrong}
-          canReview={countClose + countWrong > 0}
+          subtitle={`${s.summaryTotal} ${s.summaryTotal === 1 ? "card" : "cards"}`}
+          right={s.countRight}
+          close={s.countClose}
+          wrong={s.countWrong}
+          canReview={s.countClose + s.countWrong > 0}
           onReview={() => {
-            if (countClose + countWrong === 0) return;
-            const next = buildMistakeRun();
-            resetSession(next);
+            if (s.countClose + s.countWrong === 0) return;
+            s.reviewMistakes();
           }}
-          onAgain={() => resetSession(buildQueue(eligible, SESSION_SIZE))}
+          onAgain={() => s.runAgain()}
           onFinish={hardExit}
         />
       )}
@@ -504,34 +404,6 @@ function filterByFocus(rows, focus) {
 
     return true;
   });
-}
-
-function uniqById(list) {
-  const arr = Array.isArray(list) ? list : [];
-  const seen = new Set();
-  const out = [];
-  for (const r of arr) {
-    const id = String(r?._id ?? r?.id ?? "");
-    const key = id || JSON.stringify(r);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(r);
-  }
-  return out;
-}
-
-function buildQueue(eligible, n = SESSION_SIZE) {
-  const list = Array.isArray(eligible) ? eligible : [];
-  if (!list.length) return [];
-
-  const shuffled = [...list];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
-  const want = Math.max(1, Math.min(n, shuffled.length));
-  return shuffled.slice(0, want);
 }
 
 function getPromptText(row, direction) {
