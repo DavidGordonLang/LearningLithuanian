@@ -1,26 +1,19 @@
 // src/views/training/RecallFlipView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 const SESSION_SIZE = 10;
-const LONG_PRESS_MS = 550;
 
 /**
  * Tool A — Recall Flip (Active Recall)
  *
- * - Card-based reveal (3D flip)
- * - EN ↔ LT direction toggle
- * - Self-grade AFTER reveal:
- *    - "Got it right" (Correct) => successGlow(strong)
- *    - "I was close" (Near-miss) => successGlow(soft)
- *    - "Got it wrong" (Incorrect) => ghostFade()
- *
  * Audio (LT only):
- * - Always plays Lithuanian text only
- * - EN → LT: LT is the answer, so audio is enabled only AFTER reveal
- * - LT → EN: LT is the prompt, so audio is enabled immediately
- * - Long-press plays slow audio using the app's existing slow mode (opts: { slow: true })
+ * - Two buttons: Play + Slow (slow uses opts: { slow: true })
+ * - Audio controls ONLY appear when Lithuanian is currently visible on the card:
+ *    - EN → LT: LT is on the back => visible AFTER reveal
+ *    - LT → EN: LT is on the front => visible BEFORE reveal
  *
  * Session:
  * - 10 cards per run
@@ -41,7 +34,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const [revealed, setRevealed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
-  const fxTimerRef = useRef(null);
 
   // Audio state
   const [audioBusy, setAudioBusy] = useState(false);
@@ -58,10 +50,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const mistakesRef = useRef([]); // store row objects for "close" + "wrong" in this session
   const [showSummary, setShowSummary] = useState(false);
 
-  // Long-press handling for audio
-  const pressTimerRef = useRef(null);
-  const longPressFiredRef = useRef(false);
-  const pressActiveRef = useRef(false);
+  // Timers we must be able to cancel (prevents “stuck busy” + improves reliability on mobile)
+  const fxTimerRef = useRef(null);
+  const gradeTimerRef = useRef(null);
 
   // Keep queue fresh if focus changes or library changes substantially
   useEffect(() => {
@@ -71,9 +62,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
   useEffect(() => {
     return () => {
-      if (fxTimerRef.current) clearTimeout(fxTimerRef.current);
-      clearPressTimer();
+      clearAllTimers();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const current = queue[idx] || null;
@@ -96,16 +87,33 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     );
   }, [current]);
 
-  // Audio rule:
-  // - EN→LT: LT is the answer -> only after reveal
-  // - LT→EN: LT is the prompt -> anytime
+  // LT is visible only on one side depending on direction:
+  // - EN→LT: LT is answer => visible AFTER reveal (back)
+  // - LT→EN: LT is prompt => visible BEFORE reveal (front)
+  const isLtVisible = useMemo(() => {
+    if (!current) return false;
+    if (direction === "en_to_lt") return !!revealed;
+    return !revealed;
+  }, [current, direction, revealed]);
+
   const canPlayLt =
     !!ltText &&
     typeof playText === "function" &&
     !audioBusy &&
     !busy &&
     !showSummary &&
-    (direction === "lt_to_en" || revealed);
+    isLtVisible;
+
+  function clearAllTimers() {
+    if (fxTimerRef.current) {
+      clearTimeout(fxTimerRef.current);
+      fxTimerRef.current = null;
+    }
+    if (gradeTimerRef.current) {
+      clearTimeout(gradeTimerRef.current);
+      gradeTimerRef.current = null;
+    }
+  }
 
   function triggerFx(kind, ms = 520) {
     setFx(kind);
@@ -120,9 +128,12 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   }
 
   function resetSession(nextQueue) {
+    clearAllTimers();
+
     setShowSummary(false);
     setQueue(Array.isArray(nextQueue) ? nextQueue : []);
     setIdx(0);
+
     setRevealed(false);
     setFx(null);
     setBusy(false);
@@ -135,6 +146,8 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   }
 
   function finishSession() {
+    clearAllTimers();
+
     setBusy(false);
     setAudioBusy(false);
     setRevealed(false);
@@ -155,7 +168,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       return;
     }
 
-    // End of this run
     finishSession();
   }
 
@@ -164,16 +176,23 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     mistakesRef.current = [...(mistakesRef.current || []), rowObj];
   }
 
+  function scheduleNext(ms = 420) {
+    if (gradeTimerRef.current) clearTimeout(gradeTimerRef.current);
+    gradeTimerRef.current = setTimeout(() => {
+      gradeTimerRef.current = null;
+      nextCardOrFinish();
+    }, ms);
+  }
+
   function handleGrade(outcome) {
     if (!canGrade) return;
 
-    // outcome: "correct" | "close" | "wrong"
     setBusy(true);
 
     if (outcome === "correct") {
       setCountRight((n) => n + 1);
       triggerFx("correct", 700);
-      setTimeout(nextCardOrFinish, 420);
+      scheduleNext(420);
       return;
     }
 
@@ -181,14 +200,14 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       setCountClose((n) => n + 1);
       noteMistake(current);
       triggerFx("close", 650);
-      setTimeout(nextCardOrFinish, 420);
+      scheduleNext(420);
       return;
     }
 
     setCountWrong((n) => n + 1);
     noteMistake(current);
     triggerFx("wrong", 700);
-    setTimeout(nextCardOrFinish, 420);
+    scheduleNext(420);
   }
 
   async function playLt(opts) {
@@ -199,60 +218,17 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       const res = playText(ltText, opts);
       if (res && typeof res.then === "function") await res;
     } catch {
-      // silent fail (practice tool should not scream)
+      // silent fail
     } finally {
       setAudioBusy(false);
     }
   }
 
-  function clearPressTimer() {
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
-  }
-
-  function startAudioPress() {
-    if (!canPlayLt) return;
-    if (pressActiveRef.current) return;
-
-    pressActiveRef.current = true;
-    longPressFiredRef.current = false;
-
-    clearPressTimer();
-    pressTimerRef.current = setTimeout(() => {
-      if (!pressActiveRef.current) return;
-      longPressFiredRef.current = true;
-      playLt({ slow: true });
-    }, LONG_PRESS_MS);
-  }
-
-  function endAudioPress() {
-    if (!pressActiveRef.current) return;
-
-    pressActiveRef.current = false;
-    clearPressTimer();
-
-    // If long-press already fired, do nothing else.
-    if (longPressFiredRef.current) {
-      longPressFiredRef.current = false;
-      return;
-    }
-
-    // Otherwise: normal tap behaviour
-    playLt(undefined);
-  }
-
-  function cancelAudioPress() {
-    pressActiveRef.current = false;
-    longPressFiredRef.current = false;
-    clearPressTimer();
-  }
-
   function buildMistakeRun() {
     const mistakes = Array.isArray(mistakesRef.current) ? mistakesRef.current : [];
     const unique = uniqById(mistakes);
-    return buildQueue(unique, Math.min(SESSION_SIZE, unique.length || 0));
+    if (!unique.length) return [];
+    return buildQueue(unique, Math.min(SESSION_SIZE, unique.length));
   }
 
   const progressLabel = useMemo(() => {
@@ -263,26 +239,28 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
   const summaryTotal = countRight + countClose + countWrong;
 
+  function hardExit() {
+    // Back must ALWAYS work.
+    clearAllTimers();
+    setBusy(false);
+    setAudioBusy(false);
+    setShowSummary(false);
+    setFx(null);
+    setRevealed(false);
+    onBack?.();
+  }
+
   return (
-    <div className="max-w-xl mx-auto px-4 py-6">
+    <div className="max-w-xl mx-auto px-4 py-6 rf-root">
       {/* Top bar */}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          className="rf-top-btn"
-          onClick={() => {
-            if (busy || audioBusy) return;
-            onBack?.();
-          }}
-          disabled={busy || audioBusy}
-        >
+        <button type="button" className="rf-top-btn" onClick={hardExit}>
           <span aria-hidden="true">←</span>
           <span>Back</span>
         </button>
 
         <div className="text-sm text-zinc-400">Recall Flip</div>
 
-        {/* spacer for symmetry */}
         <div className="w-[82px]" aria-hidden="true" />
       </div>
 
@@ -336,7 +314,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           </div>
 
           <div className="relative">
-            {/* successGlow / ghostFade overlays (anchored to the card) */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 rounded-3xl",
@@ -357,31 +334,26 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                 {/* FRONT */}
                 <div className="rf-face rf-front p-6">
                   <div className="rf-card-top">
-                    <div className="text-sm text-zinc-400">Prompt</div>
+                    <div className="rf-side-chip">Front</div>
 
-                    <AudioInsideCard
-                      canPlayLt={canPlayLt}
-                      audioBusy={audioBusy}
-                      direction={direction}
-                      revealed={revealed}
-                      onPressStart={startAudioPress}
-                      onPressEnd={endAudioPress}
-                      onPressCancel={cancelAudioPress}
-                      disabledReason={
-                        typeof playText !== "function"
-                          ? "Audio unavailable"
-                          : direction === "en_to_lt" && !revealed
-                          ? "Reveal first"
-                          : "Play Lithuanian"
-                      }
-                    />
+                    {isLtVisible && (
+                      <AudioButtons
+                        canPlayLt={canPlayLt}
+                        audioBusy={audioBusy}
+                        onPlay={() => playLt(undefined)}
+                        onPlaySlow={() => playLt({ slow: true })}
+                        disabledReason={
+                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                        }
+                      />
+                    )}
                   </div>
 
-                  <div className="mt-3 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
+                  <div className="mt-4 text-2xl font-semibold leading-snug whitespace-pre-wrap break-words text-center">
                     {prompt || "—"}
                   </div>
 
-                  <div className="mt-7">
+                  <div className="mt-auto pt-6">
                     <button
                       type="button"
                       className={cn(
@@ -395,178 +367,130 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     >
                       Reveal
                     </button>
-                  </div>
 
-                  <div className="mt-4 text-xs text-zinc-500">
-                    {direction === "en_to_lt"
-                      ? "Try to recall Lithuanian before revealing."
-                      : "Hear the Lithuanian if you need it."}
+                    <div className="mt-4 text-xs text-zinc-500 text-center">
+                      {direction === "en_to_lt"
+                        ? "Recall Lithuanian before revealing."
+                        : "Recall English. (Audio appears only on the LT side.)"}
+                    </div>
                   </div>
                 </div>
 
                 {/* BACK */}
                 <div className="rf-face rf-back p-6">
                   <div className="rf-card-top">
-                    <div className="text-sm text-zinc-400">Answer</div>
+                    <div className="rf-side-chip">Back</div>
 
-                    <AudioInsideCard
-                      canPlayLt={canPlayLt}
-                      audioBusy={audioBusy}
-                      direction={direction}
-                      revealed={revealed}
-                      onPressStart={startAudioPress}
-                      onPressEnd={endAudioPress}
-                      onPressCancel={cancelAudioPress}
-                      disabledReason={
-                        typeof playText !== "function"
-                          ? "Audio unavailable"
-                          : direction === "en_to_lt" && !revealed
-                          ? "Reveal first"
-                          : "Play Lithuanian"
-                      }
-                    />
+                    {isLtVisible && (
+                      <AudioButtons
+                        canPlayLt={canPlayLt}
+                        audioBusy={audioBusy}
+                        onPlay={() => playLt(undefined)}
+                        onPlaySlow={() => playLt({ slow: true })}
+                        disabledReason={
+                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                        }
+                      />
+                    )}
                   </div>
 
-                  <div className="mt-3 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
+                  <div className="mt-4 text-2xl font-semibold leading-snug whitespace-pre-wrap break-words text-center">
                     {answer || "—"}
                   </div>
 
-                  <div className="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <button
-                      type="button"
-                      className={cn(
-                        "rounded-2xl px-4 py-3 text-sm font-semibold transition border",
-                        canGrade
-                          ? "border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950/70 text-zinc-100"
-                          : "border-zinc-900 bg-zinc-950/20 text-zinc-500 cursor-not-allowed"
-                      )}
-                      onClick={() => handleGrade("wrong")}
-                      disabled={!canGrade}
-                    >
-                      Got it wrong
-                    </button>
+                  <div className="mt-auto pt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <button
+                        type="button"
+                        className={cn(
+                          "rounded-2xl px-4 py-3 text-sm font-semibold transition border",
+                          canGrade
+                            ? "border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950/70 text-zinc-100"
+                            : "border-zinc-900 bg-zinc-950/20 text-zinc-500 cursor-not-allowed"
+                        )}
+                        onClick={() => handleGrade("wrong")}
+                        disabled={!canGrade}
+                      >
+                        Got it wrong
+                      </button>
 
-                    <button
-                      type="button"
-                      className={cn(
-                        "rounded-2xl px-4 py-3 text-sm font-semibold transition border",
-                        canGrade
-                          ? "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 text-zinc-100"
-                          : "border-zinc-900 bg-zinc-950/20 text-zinc-500 cursor-not-allowed"
-                      )}
-                      onClick={() => handleGrade("close")}
-                      disabled={!canGrade}
-                    >
-                      I was close
-                    </button>
+                      <button
+                        type="button"
+                        className={cn(
+                          "rounded-2xl px-4 py-3 text-sm font-semibold transition border",
+                          canGrade
+                            ? "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 text-zinc-100"
+                            : "border-zinc-900 bg-zinc-950/20 text-zinc-500 cursor-not-allowed"
+                        )}
+                        onClick={() => handleGrade("close")}
+                        disabled={!canGrade}
+                      >
+                        I was close
+                      </button>
 
-                    <button
-                      type="button"
-                      className={cn(
-                        "rounded-2xl px-4 py-3 text-sm font-semibold transition",
-                        canGrade
-                          ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
-                          : "bg-zinc-800 text-zinc-400 cursor-not-allowed"
-                      )}
-                      onClick={() => handleGrade("correct")}
-                      disabled={!canGrade}
-                    >
-                      Got it right
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        className={cn(
+                          "rounded-2xl px-4 py-3 text-sm font-semibold transition",
+                          canGrade
+                            ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                            : "bg-zinc-800 text-zinc-400 cursor-not-allowed"
+                        )}
+                        onClick={() => handleGrade("correct")}
+                        disabled={!canGrade}
+                      >
+                        Got it right
+                      </button>
+                    </div>
 
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      className={cn(
-                        "w-full rf-secondary-btn",
-                        busy || audioBusy ? "opacity-60 cursor-not-allowed" : ""
-                      )}
-                      onClick={() => {
-                        if (busy || audioBusy) return;
-                        setRevealed(false);
-                        setFx(null);
-                      }}
-                      disabled={busy || audioBusy}
-                    >
-                      Hide answer
-                    </button>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        className={cn(
+                          "w-full rf-secondary-btn",
+                          busy || audioBusy ? "opacity-60 cursor-not-allowed" : ""
+                        )}
+                        onClick={() => {
+                          if (busy || audioBusy) return;
+                          setRevealed(false);
+                          setFx(null);
+                        }}
+                        disabled={busy || audioBusy}
+                      >
+                        Hide answer
+                      </button>
+                    </div>
+
+                    <div className="mt-4 text-xs text-zinc-500 text-center">
+                      Self-grade only. No auto-checking.
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="mt-4 text-xs text-zinc-500">
-            Self-grade only. No auto-checking in this tool.
           </div>
         </div>
       )}
 
       {/* Summary modal */}
       {showSummary && (
-        <div
-          className="rf-modal-backdrop"
-          onClick={() => {
-            // keep it stable: click-out does nothing (user chooses)
+        <SummaryModal
+          title="Session complete"
+          subtitle={`${summaryTotal} ${summaryTotal === 1 ? "card" : "cards"}`}
+          right={countRight}
+          close={countClose}
+          wrong={countWrong}
+          canReview={(countClose + countWrong) > 0}
+          onReview={() => {
+            if ((countClose + countWrong) === 0) return;
+            const next = buildMistakeRun();
+            resetSession(next);
           }}
-        >
-          <div className="rf-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="text-lg font-semibold">Session complete</div>
-            <div className="mt-1 text-sm text-zinc-400">
-              {summaryTotal} {summaryTotal === 1 ? "card" : "cards"}
-            </div>
-
-            <div className="mt-5 grid grid-cols-3 gap-3">
-              <StatPill label="Right" value={countRight} />
-              <StatPill label="Close" value={countClose} />
-              <StatPill label="Wrong" value={countWrong} />
-            </div>
-
-            <div className="mt-6 grid gap-3">
-              <button
-                type="button"
-                className={cn(
-                  "rf-primary-btn",
-                  (countClose + countWrong) === 0 ? "opacity-50 cursor-not-allowed" : ""
-                )}
-                onClick={() => {
-                  if ((countClose + countWrong) === 0) return;
-                  const next = buildMistakeRun();
-                  resetSession(next);
-                }}
-                disabled={(countClose + countWrong) === 0}
-              >
-                Review mistakes
-              </button>
-
-              <button
-                type="button"
-                className="rf-secondary-btn"
-                onClick={() => {
-                  resetSession(buildQueue(eligible, SESSION_SIZE));
-                }}
-              >
-                Let’s do another 10
-              </button>
-
-              <button
-                type="button"
-                className="rf-ghost-btn"
-                onClick={() => onBack?.()}
-              >
-                Finish
-              </button>
-            </div>
-
-            <div className="mt-5 text-xs text-zinc-500">
-              Tip: long-press the speaker icon for slow playback.
-            </div>
-          </div>
-        </div>
+          onAgain={() => resetSession(buildQueue(eligible, SESSION_SIZE))}
+          onFinish={hardExit}
+        />
       )}
 
-      {/* Local CSS for the 3 primitives + tool UI */}
       <style>{css}</style>
     </div>
   );
@@ -659,6 +583,97 @@ function ToggleButton({ active, label, sub, onClick }) {
   );
 }
 
+function AudioButtons({ canPlayLt, audioBusy, onPlay, onPlaySlow, disabledReason }) {
+  const disabled = !canPlayLt;
+
+  return (
+    <div className="rf-audio-wrap" aria-label="Lithuanian audio controls">
+      <button
+        type="button"
+        className={cn("rf-audio-btn", disabled ? "rf-audio-disabled" : "rf-audio-enabled")}
+        disabled={disabled}
+        title={disabledReason}
+        onClick={() => {
+          if (disabled) return;
+          onPlay?.();
+        }}
+      >
+        <span className="rf-audio-icon" aria-hidden="true">
+          🔊
+        </span>
+        <span className="text-xs font-semibold">{audioBusy ? "…" : "Play"}</span>
+      </button>
+
+      <button
+        type="button"
+        className={cn("rf-audio-btn", disabled ? "rf-audio-disabled" : "rf-audio-enabled")}
+        disabled={disabled}
+        title={disabledReason}
+        onClick={() => {
+          if (disabled) return;
+          onPlaySlow?.();
+        }}
+      >
+        <span className="rf-audio-icon" aria-hidden="true">
+          🐢
+        </span>
+        <span className="text-xs font-semibold">{audioBusy ? "…" : "Slow"}</span>
+      </button>
+    </div>
+  );
+}
+
+function SummaryModal({
+  title,
+  subtitle,
+  right,
+  close,
+  wrong,
+  canReview,
+  onReview,
+  onAgain,
+  onFinish,
+}) {
+  const modal = (
+    <div className="rf-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="rf-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="text-lg font-semibold">{title}</div>
+        <div className="mt-1 text-sm text-zinc-400">{subtitle}</div>
+
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          <StatPill label="Right" value={right} />
+          <StatPill label="Close" value={close} />
+          <StatPill label="Wrong" value={wrong} />
+        </div>
+
+        <div className="mt-6 grid gap-3">
+          <button
+            type="button"
+            className={cn("rf-primary-btn", !canReview ? "opacity-50 cursor-not-allowed" : "")}
+            onClick={() => {
+              if (!canReview) return;
+              onReview?.();
+            }}
+            disabled={!canReview}
+          >
+            Review mistakes
+          </button>
+
+          <button type="button" className="rf-secondary-btn" onClick={() => onAgain?.()}>
+            Let’s do another 10
+          </button>
+
+          <button type="button" className="rf-ghost-btn" onClick={() => onFinish?.()}>
+            Finish
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return createPortal(modal, document.body);
+}
+
 function StatPill({ label, value }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-3 text-center">
@@ -668,76 +683,13 @@ function StatPill({ label, value }) {
   );
 }
 
-function AudioInsideCard({
-  canPlayLt,
-  audioBusy,
-  onPressStart,
-  onPressEnd,
-  onPressCancel,
-  disabledReason,
-}) {
-  const disabled = !canPlayLt;
+/* ----------------------------- CSS ----------------------------- */
 
-  return (
-    <button
-      type="button"
-      className={cn(
-        "rf-audio-chip",
-        disabled ? "rf-audio-disabled" : "rf-audio-enabled"
-      )}
-      disabled={disabled}
-      aria-label="Play Lithuanian audio"
-      title={disabledReason}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        if (disabled) return;
-        onPressStart?.();
-      }}
-      onMouseUp={(e) => {
-        e.preventDefault();
-        if (disabled) return;
-        onPressEnd?.();
-      }}
-      onMouseLeave={(e) => {
-        e.preventDefault();
-        onPressCancel?.();
-      }}
-      onTouchStart={(e) => {
-        e.preventDefault();
-        if (disabled) return;
-        onPressStart?.();
-      }}
-      onTouchEnd={(e) => {
-        e.preventDefault();
-        if (disabled) return;
-        onPressEnd?.();
-      }}
-      onTouchCancel={(e) => {
-        e.preventDefault();
-        onPressCancel?.();
-      }}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <span className="rf-audio-icon" aria-hidden="true">
-        🔊
-      </span>
-      <span className="text-xs font-semibold">
-        {audioBusy ? "Playing…" : "Listen"}
-      </span>
-    </button>
-  );
+const css = `
+.rf-root{
+  position: relative;
 }
 
-/* ----------------------------- motion primitives + tool UI ----------------------------- */
-/**
- * Allowed outcome primitives only:
- * - cardFlip3D()
- * - successGlow(level)
- * - ghostFade()
- *
- * Modal uses simple layout; outcome FX remains limited to the above.
- */
-const css = `
 .rf-perspective{
   perspective: 1200px;
 }
@@ -745,7 +697,7 @@ const css = `
   position: relative;
   transform-style: preserve-3d;
   transition: transform 520ms cubic-bezier(.2,.9,.2,1);
-  min-height: 340px; /* taller to avoid cramped layout */
+  min-height: 420px;
 }
 .rf-face{
   position: absolute;
@@ -759,17 +711,23 @@ const css = `
 .rf-back{ transform: rotateY(180deg); }
 .rf-flipped{ transform: rotateY(180deg); }
 
+.rf-flip-pulse{ will-change: transform; }
+
 .rf-card-top{
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
+.rf-side-chip{
+  font-size: 11px;
+  color: rgba(161,161,170,1);
+  border: 1px solid rgba(39,39,42,1);
+  background: rgba(9,9,11,0.35);
+  padding: 6px 10px;
+  border-radius: 999px;
+}
 
-/* still within cardFlip3D primitive */
-.rf-flip-pulse{ will-change: transform; }
-
-/* top/back buttons */
 .rf-top-btn{
   display: inline-flex;
   align-items: center;
@@ -785,7 +743,6 @@ const css = `
   background: rgba(9,9,11,0.55);
   transform: translateY(-1px);
 }
-.rf-top-btn:disabled{ opacity: 0.6; cursor: not-allowed; transform: none; }
 
 .rf-primary-btn{
   width: 100%;
@@ -827,8 +784,11 @@ const css = `
 }
 .rf-ghost-btn:hover{ transform: translateY(-1px); color: rgba(244,244,245,1); }
 
-/* audio chip inside card */
-.rf-audio-chip{
+.rf-audio-wrap{
+  display: inline-flex;
+  gap: 8px;
+}
+.rf-audio-btn{
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -848,11 +808,10 @@ const css = `
 .rf-audio-enabled:hover{ background: rgba(9,9,11,0.55); transform: translateY(-1px); }
 .rf-audio-disabled{ cursor: not-allowed; opacity: 0.45; transform: none; }
 
-/* modal */
 .rf-modal-backdrop{
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 9999;
   background: rgba(0,0,0,0.62);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
