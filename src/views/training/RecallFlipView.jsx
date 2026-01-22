@@ -13,80 +13,120 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 const SESSION_SIZE = 10;
 
+/**
+ * Tool A — Recall Flip (Active Recall)
+ *
+ * Interaction:
+ * - Tap anywhere on the card to flip (front <-> back)
+ *
+ * Audio (LT only):
+ * - Two buttons: Play + Slow (slow uses opts: { slow: true })
+ * - Audio controls ONLY appear when Lithuanian is visible on the card:
+ *    - EN → LT: LT is on the back => visible AFTER reveal
+ *    - LT → EN: LT is on the front => visible BEFORE reveal
+ *
+ * Session:
+ * - 10 cards per run
+ * - At end: summary modal (Right / Close / Wrong)
+ *   - Review mistakes (close+wrong)
+ *   - Let’s do another 10 (fresh)
+ *   - Finish (back)
+ *
+ * Phase 1: no persistence. Session scoring only, resets every run.
+ */
 export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const list = Array.isArray(rows) ? rows : [];
 
   // Direction: prompt -> answer
   const [direction, setDirection] = useState("en_to_lt"); // "en_to_lt" | "lt_to_en"
 
-  // Visual FX (kept in-view)
+  // Visual FX (allowed primitives only)
   const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
   const fxTimerRef = useRef(null);
 
+  // Eligible rows by focus
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
 
-  // Session hook owns: queue/idx/revealed/busy/summary/scoring/mistakes
+  // Session hook (YOUR version)
   const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  // Audio hook owns: ltText/isLtVisible/canPlayLt/audioBusy + play handlers
+  // Audio hook
   const a = useRecallFlipAudio({
-    current: s.current,
-    direction,
-    revealed: s.revealed,
-    busy: s.busy,
-    showSummary: s.showSummary,
     playText,
+    ltText: getLtText(s.current),
+    enabled: !s.showSummary && !s.busy,
   });
 
-  // Cleanup FX timer
-  useEffect(() => {
-    return () => {
-      if (fxTimerRef.current) {
-        clearTimeout(fxTimerRef.current);
-        fxTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  const current = s.current;
-
+  // Derived texts for current card
   const prompt = useMemo(
-    () => getPromptText(current, direction),
-    [current, direction]
+    () => getPromptText(s.current, direction),
+    [s.current, direction]
   );
   const answer = useMemo(
-    () => getAnswerText(current, direction),
-    [current, direction]
+    () => getAnswerText(s.current, direction),
+    [s.current, direction]
   );
 
-  function triggerFx(kind, ms = 520) {
-    setFx(kind);
-    if (fxTimerRef.current) clearTimeout(fxTimerRef.current);
-    fxTimerRef.current = setTimeout(() => setFx(null), ms);
-  }
+  // LT is visible only on one side depending on direction:
+  // - EN→LT: LT is answer => visible AFTER reveal (back)
+  // - LT→EN: LT is prompt => visible BEFORE reveal (front)
+  const isLtVisible = useMemo(() => {
+    if (!s.current) return false;
+    if (direction === "en_to_lt") return !!s.revealed;
+    return !s.revealed;
+  }, [s.current, direction, s.revealed]);
 
-  function hardExit() {
+  const canPlayLt = isLtVisible && a.canPlay;
+
+  function clearFxTimer() {
     if (fxTimerRef.current) {
       clearTimeout(fxTimerRef.current);
       fxTimerRef.current = null;
     }
+  }
+
+  function triggerFx(kind, ms = 520) {
+    setFx(kind);
+    clearFxTimer();
+    fxTimerRef.current = setTimeout(() => setFx(null), ms);
+  }
+
+  useEffect(() => {
+    return () => {
+      clearFxTimer();
+    };
+  }, []);
+
+  function hardExit() {
+    // Back must ALWAYS work.
+    clearFxTimer();
     s.clearTimers?.();
-    a.resetAudio?.();
+    a.reset?.();
     setFx(null);
     onBack?.();
   }
 
   function toggleCardFlip() {
-    if (!current) return;
+    if (!s.current) return;
     if (s.showSummary) return;
-    if (s.busy || a.audioBusy) return;
+    if (s.busy || a.busy) return;
 
-    if (!s.revealed) {
-      s.setRevealed(true);
-      triggerFx("flip", 520);
-    } else {
-      s.setRevealed(false);
-    }
+    // Use session hook’s helper
+    if (!s.revealed) triggerFx("flip", 520);
+    s.toggleReveal?.();
+  }
+
+  function handleGrade(outcome) {
+    // s.grade guards internally via canGrade
+    s.grade(outcome, {
+      row: s.current,
+      advanceDelayMs: 420,
+      onFx: (o) => {
+        if (o === "correct") triggerFx("correct", 700);
+        else if (o === "close") triggerFx("close", 650);
+        else triggerFx("wrong", 700);
+      },
+    });
   }
 
   return (
@@ -111,9 +151,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="EN → LT"
             sub="Recall Lithuanian"
             onClick={() => {
-              if (s.busy || a.audioBusy || s.showSummary) return;
+              if (s.busy || a.busy || s.showSummary) return;
               setDirection("en_to_lt");
-              s.setRevealed(false);
+              s.setRevealed?.(false);
               setFx(null);
             }}
           />
@@ -122,9 +162,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="LT → EN"
             sub="Recall English"
             onClick={() => {
-              if (s.busy || a.audioBusy || s.showSummary) return;
+              if (s.busy || a.busy || s.showSummary) return;
               setDirection("lt_to_en");
-              s.setRevealed(false);
+              s.setRevealed?.(false);
               setFx(null);
             }}
           />
@@ -132,7 +172,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       </div>
 
       {/* Empty state */}
-      {!current && !s.showSummary && (
+      {!s.current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
           <div className="text-sm text-zinc-300 mt-2">
@@ -142,17 +182,17 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       )}
 
       {/* Card */}
-      {!!current && !s.showSummary && (
+      {!!s.current && !s.showSummary && (
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs text-zinc-500">{s.progressLabel}</div>
-
             <div className="text-xs text-zinc-500">
               Right {s.countRight} · Close {s.countClose} · Wrong {s.countWrong}
             </div>
           </div>
 
           <div className="relative">
+            {/* FX overlay */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 rounded-3xl",
@@ -162,12 +202,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
               )}
             />
 
-            <div
-              className={cn(
-                "rf-perspective",
-                s.busy ? "pointer-events-none select-none" : ""
-              )}
-            >
+            <div className={cn("rf-perspective", s.busy ? "pointer-events-none select-none" : "")}>
               <div
                 className={cn(
                   "rf-card rounded-3xl border border-zinc-800 bg-zinc-950/70 shadow-[0_18px_60px_rgba(0,0,0,0.55)]",
@@ -185,22 +220,18 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                   }
                 }}
               >
-                {/* FRONT (Prompt) */}
+                {/* FRONT */}
                 <div className="rf-face rf-front p-6">
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
-
-                    {/* Audio only if LT is visible on this side (LT→EN front) */}
-                    {a.isLtVisible && (
+                    {isLtVisible && (
                       <AudioButtons
-                        canPlayLt={a.canPlayLt}
-                        audioBusy={a.audioBusy}
-                        onPlay={a.playNormal}
-                        onPlaySlow={a.playSlow}
+                        canPlayLt={canPlayLt}
+                        audioBusy={a.busy}
+                        onPlay={() => a.play?.()}
+                        onPlaySlow={() => a.playSlow?.()}
                         disabledReason={
-                          typeof playText !== "function"
-                            ? "Audio unavailable"
-                            : "Play Lithuanian"
+                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
                         }
                       />
                     )}
@@ -214,22 +245,18 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                   <div className="rf-bottom-spacer" aria-hidden="true" />
                 </div>
 
-                {/* BACK (Answer) */}
+                {/* BACK */}
                 <div className="rf-face rf-back p-6">
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
-
-                    {/* Audio only if LT is visible on this side (EN→LT back) */}
-                    {a.isLtVisible && (
+                    {isLtVisible && (
                       <AudioButtons
-                        canPlayLt={a.canPlayLt}
-                        audioBusy={a.audioBusy}
-                        onPlay={a.playNormal}
-                        onPlaySlow={a.playSlow}
+                        canPlayLt={canPlayLt}
+                        audioBusy={a.busy}
+                        onPlay={() => a.play?.()}
+                        onPlaySlow={() => a.playSlow?.()}
                         disabledReason={
-                          typeof playText !== "function"
-                            ? "Audio unavailable"
-                            : "Play Lithuanian"
+                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
                         }
                       />
                     )}
@@ -248,13 +275,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                           "rf-grade-btn rf-grade-wrong",
                           s.canGrade ? "" : "rf-grade-disabled"
                         )}
-                        onClick={() =>
-                          s.grade("wrong", {
-                            row: current,
-                            onFx: () => triggerFx("wrong", 700),
-                            advanceDelayMs: 420,
-                          })
-                        }
+                        onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
                         Wrong
@@ -266,13 +287,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                           "rf-grade-btn rf-grade-close",
                           s.canGrade ? "" : "rf-grade-disabled"
                         )}
-                        onClick={() =>
-                          s.grade("close", {
-                            row: current,
-                            onFx: () => triggerFx("close", 650),
-                            advanceDelayMs: 420,
-                          })
-                        }
+                        onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
                         Close
@@ -284,13 +299,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                           "rf-grade-btn rf-grade-right",
                           s.canGrade ? "" : "rf-grade-disabled"
                         )}
-                        onClick={() =>
-                          s.grade("correct", {
-                            row: current,
-                            onFx: () => triggerFx("correct", 700),
-                            advanceDelayMs: 420,
-                          })
-                        }
+                        onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
                         Right
@@ -315,8 +324,8 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           close={s.countClose}
           wrong={s.countWrong}
           canReview={s.countClose + s.countWrong > 0}
-          onReview={() => s.reviewMistakes()}
-          onAgain={() => s.runAgain()}
+          onReview={() => s.reviewMistakes?.()}
+          onAgain={() => s.runAgain?.()}
           onFinish={hardExit}
         />
       )}
@@ -343,26 +352,27 @@ function filterByFocus(rows, focus) {
   });
 }
 
-function safeStr(v) {
-  return String(v ?? "").trim();
+function getLtText(row) {
+  if (!row) return "";
+  return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
 }
 
 function getPromptText(row, direction) {
   if (!row) return "";
-
   if (direction === "en_to_lt") {
     return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
   }
-
   return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
 }
 
 function getAnswerText(row, direction) {
   if (!row) return "";
-
   if (direction === "en_to_lt") {
     return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
   }
-
   return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
+}
+
+function safeStr(v) {
+  return String(v ?? "").trim();
 }
