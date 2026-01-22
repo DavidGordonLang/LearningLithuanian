@@ -2,10 +2,11 @@
 import React, { useMemo, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
 import RecallFlipView from "./training/RecallFlipView";
+import BlindRecallView from "./training/BlindRecallView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 
-export default function TrainingView({ T, rows, playText }) {
-  const [screen, setScreen] = useState("home"); // "home" | "recallFlip"
+export default function TrainingView({ T, rows, playText, showToast }) {
+  const [screen, setScreen] = useState("home"); // "home" | "recallFlip" | "blindRecall"
   const [focus, setFocus] = useTrainingFocus();
 
   const counts = useMemo(() => {
@@ -49,6 +50,18 @@ export default function TrainingView({ T, rows, playText }) {
     );
   }
 
+  if (screen === "blindRecall") {
+    return (
+      <BlindRecallView
+        rows={rows}
+        focus={focus}
+        playText={playText}
+        showToast={showToast}
+        onBack={() => setScreen("home")}
+      />
+    );
+  }
+
   return (
     <TrainingHome
       T={T}
@@ -57,6 +70,7 @@ export default function TrainingView({ T, rows, playText }) {
       counts={counts}
       eligibleCount={eligibleCount}
       onStartRecallFlip={() => setScreen("recallFlip")}
+      onStartBlindRecall={() => setScreen("blindRecall")}
     />
   );
 }
