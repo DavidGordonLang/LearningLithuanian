@@ -9,9 +9,14 @@ const SESSION_SIZE = 10;
 /**
  * Tool A — Recall Flip (Active Recall)
  *
+ * Interaction:
+ * - Tap anywhere on the card to flip (front <-> back)
+ * - No Reveal button
+ * - No Hide Answer button
+ *
  * Audio (LT only):
  * - Two buttons: Play + Slow (slow uses opts: { slow: true })
- * - Audio controls ONLY appear when Lithuanian is currently visible on the card:
+ * - Audio controls ONLY appear when Lithuanian is visible on the card:
  *    - EN → LT: LT is on the back => visible AFTER reveal
  *    - LT → EN: LT is on the front => visible BEFORE reveal
  *
@@ -47,10 +52,10 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const [countClose, setCountClose] = useState(0);
   const [countWrong, setCountWrong] = useState(0);
 
-  const mistakesRef = useRef([]); // store row objects for "close" + "wrong" in this session
+  const mistakesRef = useRef([]);
   const [showSummary, setShowSummary] = useState(false);
 
-  // Timers we must be able to cancel (prevents “stuck busy” + improves reliability on mobile)
+  // Timers we must be able to cancel
   const fxTimerRef = useRef(null);
   const gradeTimerRef = useRef(null);
 
@@ -69,11 +74,14 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
   const current = queue[idx] || null;
 
-  const canReveal = !!current && !revealed && !busy && !showSummary;
-  const canGrade = !!current && revealed && !busy && !showSummary;
-
-  const prompt = useMemo(() => getPromptText(current, direction), [current, direction]);
-  const answer = useMemo(() => getAnswerText(current, direction), [current, direction]);
+  const prompt = useMemo(
+    () => getPromptText(current, direction),
+    [current, direction]
+  );
+  const answer = useMemo(
+    () => getAnswerText(current, direction),
+    [current, direction]
+  );
 
   // LT-only audio text (never English)
   const ltText = useMemo(() => {
@@ -87,7 +95,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     );
   }, [current]);
 
-  // LT is visible only on one side depending on direction:
+  // Determine which side currently contains Lithuanian
   // - EN→LT: LT is answer => visible AFTER reveal (back)
   // - LT→EN: LT is prompt => visible BEFORE reveal (front)
   const isLtVisible = useMemo(() => {
@@ -104,6 +112,8 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     !showSummary &&
     isLtVisible;
 
+  const canGrade = !!current && revealed && !busy && !showSummary;
+
   function clearAllTimers() {
     if (fxTimerRef.current) {
       clearTimeout(fxTimerRef.current);
@@ -119,12 +129,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     setFx(kind);
     if (fxTimerRef.current) clearTimeout(fxTimerRef.current);
     fxTimerRef.current = setTimeout(() => setFx(null), ms);
-  }
-
-  function handleReveal() {
-    if (!canReveal) return;
-    setRevealed(true);
-    triggerFx("flip", 520);
   }
 
   function resetSession(nextQueue) {
@@ -156,7 +160,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   }
 
   function nextCardOrFinish() {
-    // reset for next card
     setRevealed(false);
     setFx(null);
     setBusy(false);
@@ -167,7 +170,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       setIdx(next);
       return;
     }
-
     finishSession();
   }
 
@@ -250,6 +252,21 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     onBack?.();
   }
 
+  function toggleCardFlip() {
+    if (!current) return;
+    if (showSummary) return;
+    if (busy || audioBusy) return;
+
+    // Tap to flip either way
+    if (!revealed) {
+      setRevealed(true);
+      triggerFx("flip", 520);
+    } else {
+      setRevealed(false);
+      // no need to pulse FX on flip-back; keep it calm/premium
+    }
+  }
+
   return (
     <div className="max-w-xl mx-auto px-4 py-6 rf-root">
       {/* Top bar */}
@@ -330,12 +347,23 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                   revealed ? "rf-flipped" : "",
                   fx === "flip" ? "rf-flip-pulse" : ""
                 )}
+                role="button"
+                tabIndex={0}
+                aria-label="Flip card"
+                onClick={toggleCardFlip}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleCardFlip();
+                  }
+                }}
               >
-                {/* FRONT */}
+                {/* FRONT (Prompt) */}
                 <div className="rf-face rf-front p-6">
-                  <div className="rf-card-top">
-                    <div className="rf-side-chip">Front</div>
+                  <div className="rf-card-top-min">
+                    <div className="rf-top-spacer" aria-hidden="true" />
 
+                    {/* Audio only if LT is visible on this side (LT→EN front) */}
                     {isLtVisible && (
                       <AudioButtons
                         canPlayLt={canPlayLt}
@@ -349,38 +377,23 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     )}
                   </div>
 
-                  <div className="mt-4 text-2xl font-semibold leading-snug whitespace-pre-wrap break-words text-center">
-                    {prompt || "—"}
+                  <div className="rf-center-zone">
+                    <div className="rf-hero-text">{prompt || "—"}</div>
+
+                    {!revealed && (
+                      <div className="rf-hint">Tap the card to reveal</div>
+                    )}
                   </div>
 
-                  <div className="mt-auto pt-6">
-                    <button
-                      type="button"
-                      className={cn(
-                        "w-full rounded-2xl px-4 py-3 text-sm font-medium transition",
-                        canReveal
-                          ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
-                          : "bg-zinc-800 text-zinc-400 cursor-not-allowed"
-                      )}
-                      onClick={handleReveal}
-                      disabled={!canReveal}
-                    >
-                      Reveal
-                    </button>
-
-                    <div className="mt-4 text-xs text-zinc-500 text-center">
-                      {direction === "en_to_lt"
-                        ? "Recall Lithuanian before revealing."
-                        : "Recall English. (Audio appears only on the LT side.)"}
-                    </div>
-                  </div>
+                  <div className="rf-bottom-spacer" aria-hidden="true" />
                 </div>
 
-                {/* BACK */}
+                {/* BACK (Answer) */}
                 <div className="rf-face rf-back p-6">
-                  <div className="rf-card-top">
-                    <div className="rf-side-chip">Back</div>
+                  <div className="rf-card-top-min">
+                    <div className="rf-top-spacer" aria-hidden="true" />
 
+                    {/* Audio only if LT is visible on this side (EN→LT back) */}
                     {isLtVisible && (
                       <AudioButtons
                         canPlayLt={canPlayLt}
@@ -394,75 +407,55 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     )}
                   </div>
 
-                  <div className="mt-4 text-2xl font-semibold leading-snug whitespace-pre-wrap break-words text-center">
-                    {answer || "—"}
+                  <div className="rf-center-zone">
+                    {/* Lithuanian as hero */}
+                    <div className="rf-hero-text">{answer || "—"}</div>
+
+                    {/* English shown underneath (smaller + lighter), to support flip-back UX */}
+                    <div className="rf-sub-text">{prompt || ""}</div>
                   </div>
 
-                  <div className="mt-auto pt-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rf-grade-zone" onClick={(e) => e.stopPropagation()}>
+                    <div className="rf-grade-grid">
                       <button
                         type="button"
                         className={cn(
-                          "rounded-2xl px-4 py-3 text-sm font-semibold transition border",
-                          canGrade
-                            ? "border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950/70 text-zinc-100"
-                            : "border-zinc-900 bg-zinc-950/20 text-zinc-500 cursor-not-allowed"
+                          "rf-grade-btn rf-grade-wrong",
+                          canGrade ? "" : "rf-grade-disabled"
                         )}
                         onClick={() => handleGrade("wrong")}
                         disabled={!canGrade}
                       >
-                        Got it wrong
+                        Wrong
                       </button>
 
                       <button
                         type="button"
                         className={cn(
-                          "rounded-2xl px-4 py-3 text-sm font-semibold transition border",
-                          canGrade
-                            ? "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 text-zinc-100"
-                            : "border-zinc-900 bg-zinc-950/20 text-zinc-500 cursor-not-allowed"
+                          "rf-grade-btn rf-grade-close",
+                          canGrade ? "" : "rf-grade-disabled"
                         )}
                         onClick={() => handleGrade("close")}
                         disabled={!canGrade}
                       >
-                        I was close
+                        Close
                       </button>
 
                       <button
                         type="button"
                         className={cn(
-                          "rounded-2xl px-4 py-3 text-sm font-semibold transition",
-                          canGrade
-                            ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
-                            : "bg-zinc-800 text-zinc-400 cursor-not-allowed"
+                          "rf-grade-btn rf-grade-right",
+                          canGrade ? "" : "rf-grade-disabled"
                         )}
                         onClick={() => handleGrade("correct")}
                         disabled={!canGrade}
                       >
-                        Got it right
+                        Right
                       </button>
                     </div>
 
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        className={cn(
-                          "w-full rf-secondary-btn",
-                          busy || audioBusy ? "opacity-60 cursor-not-allowed" : ""
-                        )}
-                        onClick={() => {
-                          if (busy || audioBusy) return;
-                          setRevealed(false);
-                          setFx(null);
-                        }}
-                        disabled={busy || audioBusy}
-                      >
-                        Hide answer
-                      </button>
-                    </div>
-
-                    <div className="mt-4 text-xs text-zinc-500 text-center">
-                      Self-grade only. No auto-checking.
+                    <div className="rf-footnote">
+                      (Tap the card to flip back.)
                     </div>
                   </div>
                 </div>
@@ -480,9 +473,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           right={countRight}
           close={countClose}
           wrong={countWrong}
-          canReview={(countClose + countWrong) > 0}
+          canReview={countClose + countWrong > 0}
           onReview={() => {
-            if ((countClose + countWrong) === 0) return;
+            if (countClose + countWrong === 0) return;
             const next = buildMistakeRun();
             resetSession(next);
           }}
@@ -587,7 +580,13 @@ function AudioButtons({ canPlayLt, audioBusy, onPlay, onPlaySlow, disabledReason
   const disabled = !canPlayLt;
 
   return (
-    <div className="rf-audio-wrap" aria-label="Lithuanian audio controls">
+    <div
+      className="rf-audio-wrap"
+      aria-label="Lithuanian audio controls"
+      onClick={(e) => e.stopPropagation()} // don’t flip card when tapping audio
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
       <button
         type="button"
         className={cn("rf-audio-btn", disabled ? "rf-audio-disabled" : "rf-audio-enabled")}
@@ -698,6 +697,11 @@ const css = `
   transform-style: preserve-3d;
   transition: transform 520ms cubic-bezier(.2,.9,.2,1);
   min-height: 420px;
+  cursor: pointer;
+  outline: none;
+}
+.rf-card:focus{
+  box-shadow: 0 0 0 2px rgba(52,211,153,0.22);
 }
 .rf-face{
   position: absolute;
@@ -713,21 +717,112 @@ const css = `
 
 .rf-flip-pulse{ will-change: transform; }
 
-.rf-card-top{
+.rf-card-top-min{
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-end;
+  min-height: 40px;
 }
-.rf-side-chip{
-  font-size: 11px;
-  color: rgba(161,161,170,1);
-  border: 1px solid rgba(39,39,42,1);
-  background: rgba(9,9,11,0.35);
-  padding: 6px 10px;
-  border-radius: 999px;
+.rf-top-spacer{
+  flex: 1;
 }
 
+.rf-center-zone{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 6px;
+  text-align: center;
+}
+
+.rf-hero-text{
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+@media (min-width: 640px){
+  .rf-hero-text{ font-size: 30px; }
+}
+
+.rf-sub-text{
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(161,161,170,1);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.rf-hint{
+  margin-top: 18px;
+  font-size: 12px;
+  color: rgba(113,113,122,1);
+}
+
+.rf-bottom-spacer{
+  min-height: 84px;
+}
+
+.rf-grade-zone{
+  padding-top: 8px;
+}
+
+.rf-grade-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.rf-grade-btn{
+  border-radius: 16px;
+  padding: 12px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid rgba(39,39,42,1);
+  background: rgba(9,9,11,0.30);
+  color: rgba(244,244,245,1);
+  transition: transform 140ms ease, background 140ms ease, opacity 140ms ease, filter 140ms ease;
+}
+.rf-grade-btn:hover{
+  background: rgba(9,9,11,0.52);
+  transform: translateY(-1px);
+}
+.rf-grade-disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.rf-grade-right{
+  border-color: rgba(52, 211, 153, 0.55);
+  background: rgba(52, 211, 153, 0.12);
+  color: rgba(244,244,245,1);
+}
+.rf-grade-right:hover{
+  background: rgba(52, 211, 153, 0.16);
+}
+
+.rf-grade-close{
+  border-color: rgba(52, 211, 153, 0.30);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.rf-grade-wrong{
+  border-color: rgba(39,39,42,1);
+}
+
+.rf-footnote{
+  margin-top: 10px;
+  font-size: 11px;
+  color: rgba(113,113,122,1);
+  text-align: center;
+}
+
+/* Top button */
 .rf-top-btn{
   display: inline-flex;
   align-items: center;
@@ -744,6 +839,7 @@ const css = `
   transform: translateY(-1px);
 }
 
+/* Buttons (modal) */
 .rf-primary-btn{
   width: 100%;
   border-radius: 16px;
@@ -784,6 +880,7 @@ const css = `
 }
 .rf-ghost-btn:hover{ transform: translateY(-1px); color: rgba(244,244,245,1); }
 
+/* Audio */
 .rf-audio-wrap{
   display: inline-flex;
   gap: 8px;
@@ -808,6 +905,7 @@ const css = `
 .rf-audio-enabled:hover{ background: rgba(9,9,11,0.55); transform: translateY(-1px); }
 .rf-audio-disabled{ cursor: not-allowed; opacity: 0.45; transform: none; }
 
+/* Modal */
 .rf-modal-backdrop{
   position: fixed;
   inset: 0;
