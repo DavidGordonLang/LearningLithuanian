@@ -59,6 +59,9 @@ export default function MatchPairsView({ rows, onBack }) {
     eligibleRows: eligible,
     totalPairs: 20,
     pagePairs: 5,
+    rightSelectAmberMs: 140,
+    correctPulseMs: 520,
+    wrongPulseMs: 420,
   });
 
   const pct = s.progress.total
@@ -71,6 +74,9 @@ export default function MatchPairsView({ rows, onBack }) {
       : s.phase === "pageFadeIn"
       ? "mp-grid-fadein"
       : "mp-grid-fadein";
+
+  const pulseIds = s.pulse?.ids || [];
+  const pulseKind = s.pulse?.kind || null;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6 mp-root">
@@ -131,8 +137,13 @@ export default function MatchPairsView({ rows, onBack }) {
             <div className="mp-col">
               {s.leftTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
-                const selected = s.selectedLeftId === t.id;
-                const mismatched = s.mismatchIds.includes(t.id);
+                const amber = s.selectedLeftId === t.id;
+                const pulse =
+                  pulseIds.includes(t.id) && pulseKind
+                    ? pulseKind === "correct"
+                      ? "mp-pulse-correct"
+                      : "mp-pulse-wrong"
+                    : "";
 
                 return (
                   <button
@@ -141,13 +152,13 @@ export default function MatchPairsView({ rows, onBack }) {
                     className={cn(
                       "mp-tile",
                       tileTextClass(t.text),
-                      selected ? "mp-tile-selected" : "",
+                      amber ? "mp-tile-amber" : "",
                       matched ? "mp-tile-cleared" : "",
-                      mismatched ? "mp-tile-mismatch" : ""
+                      pulse
                     )}
                     onClick={() => s.tapLeft(t.id)}
                     disabled={matched || s.busy}
-                    aria-pressed={selected}
+                    aria-pressed={amber}
                   >
                     {t.text}
                   </button>
@@ -159,7 +170,13 @@ export default function MatchPairsView({ rows, onBack }) {
             <div className="mp-col">
               {s.rightTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
-                const mismatched = s.mismatchIds.includes(t.id);
+                const amber = s.selectedRightId === t.id;
+                const pulse =
+                  pulseIds.includes(t.id) && pulseKind
+                    ? pulseKind === "correct"
+                      ? "mp-pulse-correct"
+                      : "mp-pulse-wrong"
+                    : "";
 
                 return (
                   <button
@@ -168,8 +185,9 @@ export default function MatchPairsView({ rows, onBack }) {
                     className={cn(
                       "mp-tile",
                       tileTextClass(t.text),
+                      amber ? "mp-tile-amber" : "",
                       matched ? "mp-tile-cleared" : "",
-                      mismatched ? "mp-tile-mismatch" : ""
+                      pulse
                     )}
                     onClick={() => s.tapRight(t.id)}
                     disabled={matched || s.busy}
