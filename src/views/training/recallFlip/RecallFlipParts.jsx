@@ -86,11 +86,16 @@ export function SummaryModal({
   right,
   close,
   wrong,
+  labels,
   canReview,
   onReview,
   onAgain,
   onFinish,
 }) {
+  const rightLabel = String(labels?.right || "Right");
+  const closeLabel = String(labels?.close || "Close");
+  const wrongLabel = String(labels?.wrong || "Wrong");
+
   const modal = (
     <div className="rf-modal-backdrop" role="dialog" aria-modal="true">
       <div className="rf-modal" onClick={(e) => e.stopPropagation()}>
@@ -98,9 +103,9 @@ export function SummaryModal({
         <div className="mt-1 text-sm text-zinc-400">{subtitle}</div>
 
         <div className="mt-5 grid grid-cols-3 gap-3">
-          <StatPill label="Right" value={right} />
-          <StatPill label="Close" value={close} />
-          <StatPill label="Wrong" value={wrong} />
+          <StatPill label={rightLabel} value={right} />
+          <StatPill label={closeLabel} value={close} />
+          <StatPill label={wrongLabel} value={wrong} />
         </div>
 
         <div className="mt-6 grid gap-3">
