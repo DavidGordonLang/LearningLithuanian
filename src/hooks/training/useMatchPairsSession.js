@@ -35,15 +35,20 @@ function getLt(row) {
  * - Total 20 pairs per run, delivered as 4 pages x 5 pairs
  * - EN always left, LT always right
  * - User matches left -> right
- * - Correct match: tiles "fade to almost nothing" but remain in layout
- * - Wrong match: both tiles grey-fade briefly then revert
+ * - Correct: big green pulse on both, then tiles "fade to almost nothing" (remain in layout)
+ * - Wrong: smaller red pulse on both, then revert
+ * - Amber selection: left persists until outcome; right shows briefly on tap
  * - Page cleared: grid fades out, new page fades in
  */
 export function useMatchPairsSession({
   eligibleRows,
   totalPairs = 20,
   pagePairs = 5,
-  mismatchMs = 520,
+
+  // timings
+  rightSelectAmberMs = 140,
+  correctPulseMs = 520,
+  wrongPulseMs = 420,
   pageFadeOutMs = 280,
   pageFadeInMs = 220,
 }) {
@@ -51,15 +56,18 @@ export function useMatchPairsSession({
   const [pageIndex, setPageIndex] = useState(0);
 
   const [selectedLeftId, setSelectedLeftId] = useState(null);
-  const [matchedPairIds, setMatchedPairIds] = useState(() => new Set()); // for CURRENT page
-  const [mismatchIds, setMismatchIds] = useState([]);
+  const [selectedRightId, setSelectedRightId] = useState(null);
 
+  const [matchedPairIds, setMatchedPairIds] = useState(() => new Set()); // CURRENT page matched
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState("ready"); // "ready" | "pageFadeOut" | "pageFadeIn"
   const [mistakes, setMistakes] = useState(0);
   const [overallMatched, setOverallMatched] = useState(0);
   const [startedAt, setStartedAt] = useState(Date.now());
   const [showDone, setShowDone] = useState(false);
+
+  // pulse state replaces old mismatch animation
+  const [pulse, setPulse] = useState(null); // { kind: "correct"|"wrong", ids: [leftId,rightId] }
 
   const timersRef = useRef([]);
 
@@ -86,10 +94,8 @@ export function useMatchPairsSession({
   function buildRun() {
     clearTimers();
 
-    // Build 20 pairs first
     const base = pickRandomUnique(eligibleRows, requiredPairs);
 
-    // Turn into pair objects, skipping invalids
     const pairs = [];
     for (let i = 0; i < base.length; i++) {
       const row = base[i];
@@ -106,30 +112,28 @@ export function useMatchPairsSession({
       if (pairs.length >= requiredPairs) break;
     }
 
-    // If we failed to assemble enough valid pairs (empty EN/LT entries), block start
     if (pairs.length < requiredPairs) {
       setPages([]);
       setPageIndex(0);
       setSelectedLeftId(null);
+      setSelectedRightId(null);
       setMatchedPairIds(new Set());
-      setMismatchIds([]);
       setBusy(false);
       setPhase("ready");
       setMistakes(0);
       setOverallMatched(0);
       setStartedAt(Date.now());
       setShowDone(false);
+      setPulse(null);
       return;
     }
 
-    // Split into pages of 5
     const builtPages = [];
     let idx = 0;
     for (let p = 0; p < requiredPages; p++) {
       const chunk = pairs.slice(idx, idx + pagePairs);
       idx += pagePairs;
 
-      // left tiles EN, right tiles LT; shuffle inside each column independently
       const left = shuffle(
         chunk.map((x) => ({
           id: `t_en_${x.pairId}`,
@@ -154,14 +158,15 @@ export function useMatchPairsSession({
     setPages(builtPages);
     setPageIndex(0);
     setSelectedLeftId(null);
+    setSelectedRightId(null);
     setMatchedPairIds(new Set());
-    setMismatchIds([]);
     setBusy(false);
     setPhase("ready");
     setMistakes(0);
     setOverallMatched(0);
     setStartedAt(Date.now());
     setShowDone(false);
+    setPulse(null);
   }
 
   useEffect(() => {
@@ -192,12 +197,14 @@ export function useMatchPairsSession({
   function startPageFadeTo(nextIndex) {
     setPhase("pageFadeOut");
     setBusy(true);
+    setPulse(null);
 
     const t1 = setTimeout(() => {
       setPageIndex(nextIndex);
       setMatchedPairIds(new Set());
-      setMismatchIds([]);
       setSelectedLeftId(null);
+      setSelectedRightId(null);
+      setPulse(null);
       setPhase("pageFadeIn");
 
       const t2 = setTimeout(() => {
@@ -215,6 +222,9 @@ export function useMatchPairsSession({
     setShowDone(true);
     setBusy(false);
     setPhase("ready");
+    setPulse(null);
+    setSelectedLeftId(null);
+    setSelectedRightId(null);
   }
 
   function tapLeft(tileId) {
@@ -225,13 +235,16 @@ export function useMatchPairsSession({
     if (!tile) return;
 
     if (isMatched(tile.pairId)) return;
-    if (mismatchIds.length) return;
 
-    // Toggle selection / switch selection
+    // Toggle selection
     if (selectedLeftId === tileId) {
       setSelectedLeftId(null);
+      setSelectedRightId(null);
+      setPulse(null);
     } else {
       setSelectedLeftId(tileId);
+      setSelectedRightId(null);
+      setPulse(null);
     }
   }
 
@@ -243,7 +256,6 @@ export function useMatchPairsSession({
     if (!tile) return;
 
     if (isMatched(tile.pairId)) return;
-    if (mismatchIds.length) return;
 
     // Must have left selected first
     if (!selectedLeftId) return;
@@ -252,53 +264,76 @@ export function useMatchPairsSession({
     const right = tile;
     if (!left || !right) {
       setSelectedLeftId(null);
+      setSelectedRightId(null);
+      setPulse(null);
       return;
     }
 
-    if (left.pairId === right.pairId) {
-      // MATCH
-      const next = new Set(matchedPairIds);
-      next.add(left.pairId);
-      setMatchedPairIds(next);
-      setSelectedLeftId(null);
+    // Brief amber on right before outcome pulse
+    setSelectedRightId(tileId);
 
-      setOverallMatched((n) => n + 1);
+    // lock input while we resolve
+    setBusy(true);
 
-      // Page complete?
-      if (next.size >= pagePairs) {
-        const nextPage = pageIndex + 1;
+    const tAmber = setTimeout(() => {
+      // decide outcome
+      if (left.pairId === right.pairId) {
+        // CORRECT pulse (larger)
+        setPulse({ kind: "correct", ids: [left.id, right.id] });
 
-        // Last page -> done
-        if (nextPage >= requiredPages) {
-          // Fade out then show done modal for a clean finish
-          setPhase("pageFadeOut");
-          setBusy(true);
+        const tPulse = setTimeout(() => {
+          // commit match
+          const next = new Set(matchedPairIds);
+          next.add(left.pairId);
+          setMatchedPairIds(next);
 
-          const t = setTimeout(() => {
-            completeRun();
-          }, pageFadeOutMs);
+          setOverallMatched((n) => n + 1);
 
-          timersRef.current.push(t);
-        } else {
-          startPageFadeTo(nextPage);
-        }
+          setSelectedLeftId(null);
+          setSelectedRightId(null);
+          setPulse(null);
+
+          // Page complete?
+          if (next.size >= pagePairs) {
+            const nextPage = pageIndex + 1;
+
+            if (nextPage >= requiredPages) {
+              // final page: fade out then done
+              setPhase("pageFadeOut");
+
+              const tDone = setTimeout(() => {
+                completeRun();
+              }, pageFadeOutMs);
+
+              timersRef.current.push(tDone);
+            } else {
+              startPageFadeTo(nextPage);
+            }
+          } else {
+            setBusy(false);
+          }
+        }, correctPulseMs);
+
+        timersRef.current.push(tPulse);
+        return;
       }
 
-      return;
-    }
+      // WRONG pulse (smaller)
+      setPulse({ kind: "wrong", ids: [left.id, right.id] });
+      setMistakes((m) => m + 1);
 
-    // MISMATCH
-    setBusy(true);
-    setMismatchIds([left.id, right.id]);
-    setMistakes((m) => m + 1);
+      const tPulse = setTimeout(() => {
+        // revert
+        setPulse(null);
+        setSelectedLeftId(null);
+        setSelectedRightId(null);
+        setBusy(false);
+      }, wrongPulseMs);
 
-    const t = setTimeout(() => {
-      setMismatchIds([]);
-      setSelectedLeftId(null);
-      setBusy(false);
-    }, mismatchMs);
+      timersRef.current.push(tPulse);
+    }, rightSelectAmberMs);
 
-    timersRef.current.push(t);
+    timersRef.current.push(tAmber);
   }
 
   return {
@@ -311,8 +346,10 @@ export function useMatchPairsSession({
     rightTiles: currentPage?.right || [],
 
     selectedLeftId,
+    selectedRightId,
+
     matchedPairIds,
-    mismatchIds,
+    pulse, // {kind, ids}
     busy,
     phase,
     mistakes,
