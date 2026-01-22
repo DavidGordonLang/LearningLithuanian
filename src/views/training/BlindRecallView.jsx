@@ -17,11 +17,12 @@ const SESSION_SIZE = 10;
  * - Show English intention
  * - User types OR uses press-and-hold STT to produce Lithuanian
  * - User can edit STT output
- * - Reveal correct Lithuanian (+ notes)
+ * - Reveal correct Lithuanian (no notes shown in training)
  * - Self-grade: Right / Close enough / Missed it
  * - End summary: review mistakes, another 10, finish
  *
  * Phase 1: no persistence.
+ * Notes: Notes are intentionally NOT displayed here (library only).
  */
 export default function BlindRecallView({ rows, focus, onBack, playText, showToast }) {
   const list = Array.isArray(rows) ? rows : [];
@@ -45,10 +46,9 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     playText,
   });
 
-  // Prompt + answer + notes
+  // Prompt + answer
   const promptEn = useMemo(() => getEnglish(s.current), [s.current]);
   const answerLt = useMemo(() => getLithuanian(s.current), [s.current]);
-  const notes = useMemo(() => getNotes(s.current), [s.current]);
 
   // User attempt
   const [attempt, setAttempt] = useState("");
@@ -164,6 +164,8 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
   const isLtVisible = !!a.isLtVisible;
   const canPlayLt = !!a.canPlayLt;
 
+  const hasAttempt = !!attempt?.trim();
+
   return (
     <div className="max-w-xl mx-auto px-4 py-6 rf-root">
       {/* Top bar */}
@@ -219,12 +221,12 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
               >
                 {/* FRONT: prompt + attempt + bottom actions */}
                 <div className="rf-face rf-front p-6 flex flex-col">
-                  {/* Top spacer only (keep clean) */}
+                  {/* Top spacer only (clean) */}
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
                   </div>
 
-                  {/* Scrollable content area (prevents layout squeeze on small screens) */}
+                  {/* Scrollable content area */}
                   <div className="rf-center-zone flex-1 min-h-0 overflow-y-auto pr-1">
                     <div className="rf-hero-text">{promptEn || "—"}</div>
 
@@ -242,9 +244,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         )}
                         placeholder="Type here…"
                         disabled={s.busy || s.showSummary}
-                        onFocus={() => {
-                          a.resetAudio?.();
-                        }}
+                        onFocus={() => a.resetAudio?.()}
                       />
                       <div className="mt-2 text-[11px] text-zinc-500">
                         Tip: speak, then edit. You’re training production, not perfection.
@@ -329,52 +329,47 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                   </div>
                 </div>
 
-                {/* BACK: correct answer + (scrollable) notes + grade */}
+                {/* BACK: correct answer always visible + optional your answer + grade */}
                 <div className="rf-face rf-back p-6 flex flex-col">
-                  <div className="rf-card-top-min">
-                    <div className="rf-top-spacer" aria-hidden="true" />
-                    {isLtVisible && (
-                      <AudioButtons
-                        canPlayLt={canPlayLt}
-                        audioBusy={a.audioBusy}
-                        onPlay={() => a.playNormal?.()}
-                        onPlaySlow={() => a.playSlow?.()}
-                        disabledReason={
-                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
-                        }
-                      />
-                    )}
-                  </div>
-
-                  {/* Make center area scroll so long notes never overlap the grade zone */}
-                  <div className="rf-center-zone flex-1 min-h-0 overflow-y-auto pr-1">
+                  {/* Hero answer header */}
+                  <div className="text-center">
                     <div className="rf-hero-text">{answerLt || "—"}</div>
-                    <div className="rf-sub-text">{promptEn || ""}</div>
+                    <div className="rf-sub-text mt-2">{promptEn || ""}</div>
 
-                    {!!attempt?.trim() && (
-                      <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-3">
-                        <div className="text-[11px] text-zinc-500">Your answer</div>
-                        <div className="mt-1 text-sm text-zinc-200 whitespace-pre-wrap">
-                          {attempt.trim()}
-                        </div>
-                      </div>
-                    )}
-
-                    {!!notes && (
-                      <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-3">
-                        <div className="text-[11px] text-zinc-500">Notes</div>
-
-                        {/* Notes scroll internally to keep the box visually stable */}
-                        <div className="mt-2 max-h-[200px] overflow-y-auto pr-1">
-                          <div className="text-sm text-zinc-200 whitespace-pre-wrap">{notes}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Spacer so the last line never sits under the grade zone */}
-                    <div className="h-3" />
+                    <div className="mt-3 flex justify-center">
+                      {isLtVisible && (
+                        <AudioButtons
+                          canPlayLt={canPlayLt}
+                          audioBusy={a.audioBusy}
+                          onPlay={() => a.playNormal?.()}
+                          onPlaySlow={() => a.playSlow?.()}
+                          disabledReason={
+                            typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
 
+                  {/* Optional: your answer (scrollable, but doesn't crowd the hero) */}
+                  <div className="flex-1 min-h-0 mt-4">
+                    {hasAttempt ? (
+                      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/35 p-3">
+                        <div className="text-[11px] text-zinc-500">Your answer</div>
+                        <div className="mt-2 max-h-[140px] overflow-y-auto pr-1">
+                          <div className="text-sm text-zinc-200 whitespace-pre-wrap">
+                            {attempt.trim()}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-zinc-500 text-center mt-1">
+                        (No answer entered)
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Grade zone */}
                   <div className="rf-grade-zone" onClick={(e) => e.stopPropagation()}>
                     <div className="rf-grade-grid">
                       <button
@@ -485,9 +480,4 @@ function getEnglish(row) {
 function getLithuanian(row) {
   if (!row) return "";
   return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
-}
-
-function getNotes(row) {
-  if (!row) return "";
-  return safeStr(row?.Notes ?? row?.notes ?? "");
 }
