@@ -3,10 +3,11 @@ import React, { useMemo, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
+import MatchPairsView from "./training/MatchPairsView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 
 export default function TrainingView({ T, rows, playText, showToast }) {
-  const [screen, setScreen] = useState("home"); // "home" | "recallFlip" | "blindRecall"
+  const [screen, setScreen] = useState("home"); // "home" | "recallFlip" | "blindRecall" | "matchPairs"
   const [focus, setFocus] = useTrainingFocus();
 
   const counts = useMemo(() => {
@@ -62,6 +63,10 @@ export default function TrainingView({ T, rows, playText, showToast }) {
     );
   }
 
+  if (screen === "matchPairs") {
+    return <MatchPairsView rows={rows} onBack={() => setScreen("home")} />;
+  }
+
   return (
     <TrainingHome
       T={T}
@@ -71,6 +76,7 @@ export default function TrainingView({ T, rows, playText, showToast }) {
       eligibleCount={eligibleCount}
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
+      onStartMatchPairs={() => setScreen("matchPairs")}
     />
   );
 }
