@@ -30,6 +30,7 @@ export default function TrainingHome({
   counts,
   eligibleCount,
   onStartRecallFlip,
+  onStartBlindRecall,
 }) {
   const minNeeded = 5;
   const tooFew = useMemo(() => eligibleCount < minNeeded, [eligibleCount]);
@@ -126,11 +127,34 @@ export default function TrainingHome({
             </div>
           </button>
 
+          <button
+            type="button"
+            className={cn(
+              "w-full rounded-2xl border px-4 py-4 text-left transition",
+              tooFew
+                ? "border-zinc-800 bg-zinc-950/30 opacity-60 cursor-not-allowed"
+                : "border-zinc-800 bg-zinc-950/50 hover:bg-zinc-950/70"
+            )}
+            onClick={() => {
+              if (tooFew) return;
+              onStartBlindRecall?.();
+            }}
+            disabled={tooFew}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-base font-semibold">Blind Recall</div>
+                <div className="text-sm text-zinc-300 mt-1">
+                  Produce Lithuanian first. Type or hold-to-speak, then reveal.
+                </div>
+              </div>
+              <div className="text-sm text-zinc-400">→</div>
+            </div>
+          </button>
+
           <div className="w-full rounded-2xl border border-zinc-900 bg-zinc-950/20 px-4 py-4">
             <div className="text-sm font-medium text-zinc-300">Coming next</div>
-            <div className="text-xs text-zinc-500 mt-1">
-              Blind Recall (with mic), Quick Practice, and reinforcement flow.
-            </div>
+            <div className="text-xs text-zinc-500 mt-1">Quick Practice and reinforcement flow.</div>
           </div>
         </div>
       </div>
