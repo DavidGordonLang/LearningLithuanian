@@ -24,7 +24,7 @@ function tileTextClass(text) {
   return "text-base";
 }
 
-function DoneModal({ mistakes, elapsedSec, onAgain, onFinish }) {
+function DoneModal({ mistakes, elapsedSec, wrongPairs, onAgain, onFinish }) {
   const modal = (
     <div className="mp-modal-backdrop" role="dialog" aria-modal="true">
       <div className="mp-modal" onClick={(e) => e.stopPropagation()}>
@@ -32,6 +32,38 @@ function DoneModal({ mistakes, elapsedSec, onAgain, onFinish }) {
         <div className="mt-1 text-sm text-zinc-400">
           20 pairs · {mistakes} mistake{mistakes === 1 ? "" : "s"} · {elapsedSec}s
         </div>
+
+        {Array.isArray(wrongPairs) && wrongPairs.length > 0 && (
+          <div className="mt-5">
+            <div className="text-sm font-semibold">Review mistakes</div>
+            <div className="text-xs text-zinc-400 mt-1">
+              Correct pairs for anything involved in a mismatch.
+            </div>
+
+            <div
+              className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-3"
+              style={{ maxHeight: "38vh", overflowY: "auto" }}
+            >
+              <div className="grid gap-2">
+                {wrongPairs.map((p, i) => (
+                  <div
+                    key={`${p.en}-${p.lt}-${i}`}
+                    className="rounded-xl border border-zinc-800 bg-zinc-950/30 px-3 py-2"
+                  >
+                    <div className="grid grid-cols-2 gap-3 items-start">
+                      <div className="text-sm text-zinc-200 whitespace-pre-wrap break-words">
+                        {p.en}
+                      </div>
+                      <div className="text-sm text-zinc-200 whitespace-pre-wrap break-words text-right">
+                        {p.lt}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 grid gap-3">
           <button type="button" className="mp-btn-primary" onClick={onAgain}>
@@ -78,6 +110,9 @@ export default function MatchPairsView({ rows, onBack }) {
   const pulseIds = s.pulse?.ids || [];
   const pulseKind = s.pulse?.kind || null;
 
+  // amber should appear for selected tile on either side, plus pulse overlay
+  const selectedId = s.selected?.id || null;
+
   return (
     <div className="max-w-xl mx-auto px-4 py-6 mp-root">
       {/* Top bar */}
@@ -94,9 +129,9 @@ export default function MatchPairsView({ rows, onBack }) {
 
       {/* Title + progress */}
       <div className="mt-5">
-        <div className="text-xl font-semibold mp-title">Match from left to right</div>
+        <div className="text-xl font-semibold mp-title">Match either way</div>
         <div className="mt-1 text-sm text-zinc-400">
-          English on the left · Lithuanian on the right
+          Tap any tile, then match it with the opposite side
         </div>
 
         <div className="mt-3 mp-progress-track">
@@ -111,7 +146,6 @@ export default function MatchPairsView({ rows, onBack }) {
         </div>
       </div>
 
-      {/* Not enough entries */}
       {!s.canStart && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Not enough items</div>
@@ -122,7 +156,6 @@ export default function MatchPairsView({ rows, onBack }) {
         </div>
       )}
 
-      {/* Columns (scrolls only when needed) */}
       {s.canStart && (
         <div
           className={cn("mt-6 mp-grid-wrap", gridPhaseClass)}
@@ -137,7 +170,7 @@ export default function MatchPairsView({ rows, onBack }) {
             <div className="mp-col">
               {s.leftTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
-                const amber = s.selectedLeftId === t.id;
+                const amber = selectedId === t.id;
                 const pulse =
                   pulseIds.includes(t.id) && pulseKind
                     ? pulseKind === "correct"
@@ -156,7 +189,7 @@ export default function MatchPairsView({ rows, onBack }) {
                       matched ? "mp-tile-cleared" : "",
                       pulse
                     )}
-                    onClick={() => s.tapLeft(t.id)}
+                    onClick={() => s.tap(t.id)}
                     disabled={matched || s.busy}
                     aria-pressed={amber}
                   >
@@ -170,7 +203,7 @@ export default function MatchPairsView({ rows, onBack }) {
             <div className="mp-col">
               {s.rightTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
-                const amber = s.selectedRightId === t.id;
+                const amber = selectedId === t.id;
                 const pulse =
                   pulseIds.includes(t.id) && pulseKind
                     ? pulseKind === "correct"
@@ -189,7 +222,7 @@ export default function MatchPairsView({ rows, onBack }) {
                       matched ? "mp-tile-cleared" : "",
                       pulse
                     )}
-                    onClick={() => s.tapRight(t.id)}
+                    onClick={() => s.tap(t.id)}
                     disabled={matched || s.busy}
                   >
                     {t.text}
@@ -205,6 +238,7 @@ export default function MatchPairsView({ rows, onBack }) {
         <DoneModal
           mistakes={s.mistakes}
           elapsedSec={s.elapsedSec}
+          wrongPairs={s.wrongPairs}
           onAgain={() => s.runAgain()}
           onFinish={onBack}
         />
