@@ -31,6 +31,7 @@ export default function TrainingHome({
   eligibleCount,
   onStartRecallFlip,
   onStartBlindRecall,
+  onStartMatchPairs,
 }) {
   const minNeeded = 5;
   const tooFew = useMemo(() => eligibleCount < minNeeded, [eligibleCount]);
@@ -43,6 +44,9 @@ export default function TrainingHome({
       : focus === "numbers"
       ? "Numbers"
       : "All";
+
+  const wordsNumbersCount = (counts?.words || 0) + (counts?.numbers || 0);
+  const matchPairsDisabled = wordsNumbersCount < 10;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
@@ -90,8 +94,8 @@ export default function TrainingHome({
           <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-4">
             <div className="text-sm font-medium">Not enough entries</div>
             <div className="text-xs text-zinc-400 mt-1">
-              You’ve only got {eligibleCount} in <b>{focusLabel}</b>. Add a few
-              more, or switch focus.
+              You’ve only got {eligibleCount} in <b>{focusLabel}</b>. Add a few more, or switch
+              focus.
             </div>
           </div>
         )}
@@ -99,7 +103,9 @@ export default function TrainingHome({
 
       <div className="mt-8">
         <div className="text-sm font-semibold">Tools</div>
-        <div className="text-xs text-zinc-400 mt-1">Phase 1 starts with Recall Flip.</div>
+        <div className="text-xs text-zinc-400 mt-1">
+          Build recall, then reinforce through repetition.
+        </div>
 
         <div className="mt-3 space-y-3">
           <button
@@ -152,10 +158,35 @@ export default function TrainingHome({
             </div>
           </button>
 
-          <div className="w-full rounded-2xl border border-zinc-900 bg-zinc-950/20 px-4 py-4">
-            <div className="text-sm font-medium text-zinc-300">Coming next</div>
-            <div className="text-xs text-zinc-500 mt-1">Quick Practice and reinforcement flow.</div>
-          </div>
+          <button
+            type="button"
+            className={cn(
+              "w-full rounded-2xl border px-4 py-4 text-left transition",
+              matchPairsDisabled
+                ? "border-zinc-800 bg-zinc-950/30 opacity-60 cursor-not-allowed"
+                : "border-zinc-800 bg-zinc-950/50 hover:bg-zinc-950/70"
+            )}
+            onClick={() => {
+              if (matchPairsDisabled) return;
+              onStartMatchPairs?.();
+            }}
+            disabled={matchPairsDisabled}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-base font-semibold">Match Pairs</div>
+                <div className="text-sm text-zinc-300 mt-1">
+                  Words & numbers only. Tap two tiles to match EN ↔ LT.
+                </div>
+                {matchPairsDisabled && (
+                  <div className="text-xs text-zinc-500 mt-2">
+                    Add at least <b>10</b> words/numbers to unlock (you have {wordsNumbersCount}).
+                  </div>
+                )}
+              </div>
+              <div className="text-sm text-zinc-400">→</div>
+            </div>
+          </button>
         </div>
       </div>
 
