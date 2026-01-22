@@ -63,12 +63,14 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
   // Visual FX (reuse allowed primitives)
   const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
   const fxTimerRef = useRef(null);
+
   function clearFxTimer() {
     if (fxTimerRef.current) {
       clearTimeout(fxTimerRef.current);
       fxTimerRef.current = null;
     }
   }
+
   function triggerFx(kind, ms = 520) {
     setFx(kind);
     clearFxTimer();
@@ -215,77 +217,18 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                 role="group"
                 aria-label="Blind recall card"
               >
-                {/* FRONT: prompt + attempt */}
-                <div className="rf-face rf-front p-6">
+                {/* FRONT: prompt + attempt + bottom actions */}
+                <div className="rf-face rf-front p-6 flex flex-col">
+                  {/* Top spacer only (keep clean) */}
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
-                    <div className="flex items-center gap-2" onMouseDown={(e) => e.preventDefault()}>
-                      <button
-                        type="button"
-                        className={cn(
-                          "rounded-full border px-3 py-2 text-xs font-semibold transition select-none",
-                          micDisabled
-                            ? "border-zinc-800 bg-zinc-950/30 text-zinc-500 cursor-not-allowed"
-                            : "border-zinc-700 bg-zinc-950/50 text-zinc-200 hover:bg-zinc-950/70"
-                        )}
-                        disabled={micDisabled || !sttSupported()}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          if (micDisabled) return;
-                          startRecording();
-                        }}
-                        onMouseUp={(e) => {
-                          e.preventDefault();
-                          stopRecording();
-                        }}
-                        onMouseLeave={(e) => {
-                          e.preventDefault();
-                          stopRecording();
-                        }}
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          if (micDisabled) return;
-                          startRecording();
-                        }}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          stopRecording();
-                        }}
-                        onTouchCancel={(e) => {
-                          e.preventDefault();
-                          cancelStt();
-                        }}
-                        title={!sttSupported() ? "Speech input not supported" : "Press and hold"}
-                      >
-                        <span className="mr-1" aria-hidden="true">
-                          🎤
-                        </span>
-                        {micLabel}
-                      </button>
-
-                      <button
-                        type="button"
-                        className={cn(
-                          "rounded-full border px-3 py-2 text-xs font-semibold transition select-none",
-                          s.busy || s.showSummary
-                            ? "border-zinc-800 bg-zinc-950/30 text-zinc-500 cursor-not-allowed"
-                            : "border-zinc-700 bg-zinc-950/50 text-zinc-200 hover:bg-zinc-950/70"
-                        )}
-                        onClick={() => {
-                          if (s.busy || s.showSummary) return;
-                          reveal();
-                        }}
-                        disabled={s.busy || s.showSummary}
-                      >
-                        Reveal
-                      </button>
-                    </div>
                   </div>
 
-                  <div className="rf-center-zone">
+                  {/* Scrollable content area (prevents layout squeeze on small screens) */}
+                  <div className="rf-center-zone flex-1 min-h-0 overflow-y-auto pr-1">
                     <div className="rf-hero-text">{promptEn || "—"}</div>
 
-                    <div className="mt-4">
+                    <div className="mt-6">
                       <div className="text-xs text-zinc-400 mb-2">Your Lithuanian</div>
                       <textarea
                         ref={inputRef}
@@ -309,11 +252,85 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                     </div>
                   </div>
 
-                  <div className="rf-bottom-spacer" aria-hidden="true" />
+                  {/* Bottom thumb bar */}
+                  <div
+                    className={cn(
+                      "mt-4 pt-3",
+                      "sticky bottom-0",
+                      "bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+                    )}
+                    style={{
+                      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)",
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition select-none",
+                          micDisabled || !sttSupported()
+                            ? "border-zinc-800 bg-zinc-950/30 text-zinc-500 cursor-not-allowed"
+                            : "border-zinc-700 bg-zinc-950/55 text-zinc-200 hover:bg-zinc-950/75"
+                        )}
+                        disabled={micDisabled || !sttSupported()}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          if (micDisabled || !sttSupported()) return;
+                          startRecording();
+                        }}
+                        onMouseUp={(e) => {
+                          e.preventDefault();
+                          stopRecording();
+                        }}
+                        onMouseLeave={(e) => {
+                          e.preventDefault();
+                          stopRecording();
+                        }}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          if (micDisabled || !sttSupported()) return;
+                          startRecording();
+                        }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          stopRecording();
+                        }}
+                        onTouchCancel={(e) => {
+                          e.preventDefault();
+                          cancelStt();
+                        }}
+                        title={!sttSupported() ? "Speech input not supported" : "Press and hold"}
+                      >
+                        <span className="mr-2" aria-hidden="true">
+                          🎤
+                        </span>
+                        {micLabel}
+                      </button>
+
+                      <button
+                        type="button"
+                        className={cn(
+                          "rounded-2xl border px-4 py-3 text-sm font-semibold transition select-none",
+                          s.busy || s.showSummary
+                            ? "border-zinc-800 bg-zinc-950/30 text-zinc-500 cursor-not-allowed"
+                            : "border-emerald-500/40 bg-emerald-500/10 text-zinc-100 hover:bg-emerald-500/15"
+                        )}
+                        onClick={() => {
+                          if (s.busy || s.showSummary) return;
+                          reveal();
+                        }}
+                        disabled={s.busy || s.showSummary}
+                      >
+                        Reveal
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* BACK: correct answer + grade */}
-                <div className="rf-face rf-back p-6">
+                {/* BACK: correct answer + (scrollable) notes + grade */}
+                <div className="rf-face rf-back p-6 flex flex-col">
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
                     {isLtVisible && (
@@ -322,35 +339,50 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         audioBusy={a.audioBusy}
                         onPlay={() => a.playNormal?.()}
                         onPlaySlow={() => a.playSlow?.()}
-                        disabledReason={typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"}
+                        disabledReason={
+                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                        }
                       />
                     )}
                   </div>
 
-                  <div className="rf-center-zone">
+                  {/* Make center area scroll so long notes never overlap the grade zone */}
+                  <div className="rf-center-zone flex-1 min-h-0 overflow-y-auto pr-1">
                     <div className="rf-hero-text">{answerLt || "—"}</div>
                     <div className="rf-sub-text">{promptEn || ""}</div>
 
                     {!!attempt?.trim() && (
                       <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-3">
                         <div className="text-[11px] text-zinc-500">Your answer</div>
-                        <div className="mt-1 text-sm text-zinc-200 whitespace-pre-wrap">{attempt.trim()}</div>
+                        <div className="mt-1 text-sm text-zinc-200 whitespace-pre-wrap">
+                          {attempt.trim()}
+                        </div>
                       </div>
                     )}
 
                     {!!notes && (
                       <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-3">
                         <div className="text-[11px] text-zinc-500">Notes</div>
-                        <div className="mt-1 text-sm text-zinc-200 whitespace-pre-wrap">{notes}</div>
+
+                        {/* Notes scroll internally to keep the box visually stable */}
+                        <div className="mt-2 max-h-[200px] overflow-y-auto pr-1">
+                          <div className="text-sm text-zinc-200 whitespace-pre-wrap">{notes}</div>
+                        </div>
                       </div>
                     )}
+
+                    {/* Spacer so the last line never sits under the grade zone */}
+                    <div className="h-3" />
                   </div>
 
                   <div className="rf-grade-zone" onClick={(e) => e.stopPropagation()}>
                     <div className="rf-grade-grid">
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-wrong", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-wrong",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
@@ -359,7 +391,10 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-close", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-close",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
@@ -368,7 +403,10 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-right", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-right",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
