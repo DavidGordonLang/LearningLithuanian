@@ -30,173 +30,300 @@ function getLt(row) {
 }
 
 /**
- * Duolingo-style Match Pairs session (in-memory)
+ * Match Pairs session (paged)
  * - Words + Numbers only (caller filters)
- * - 10 pairs by default
- * - Correct: both tiles lock + green
- * - Wrong: both tiles grey-fade briefly then revert
+ * - Total 20 pairs per run, delivered as 4 pages x 5 pairs
+ * - EN always left, LT always right
+ * - User matches left -> right
+ * - Correct match: tiles "fade to almost nothing" but remain in layout
+ * - Wrong match: both tiles grey-fade briefly then revert
+ * - Page cleared: grid fades out, new page fades in
  */
-export function useMatchPairsSession({ eligibleRows, pairCount = 10 }) {
-  const [tiles, setTiles] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [matchedPairIds, setMatchedPairIds] = useState(() => new Set());
+export function useMatchPairsSession({
+  eligibleRows,
+  totalPairs = 20,
+  pagePairs = 5,
+  mismatchMs = 520,
+  pageFadeOutMs = 280,
+  pageFadeInMs = 220,
+}) {
+  const [pages, setPages] = useState([]); // [{ pageIndex, left:[], right:[] }]
+  const [pageIndex, setPageIndex] = useState(0);
+
+  const [selectedLeftId, setSelectedLeftId] = useState(null);
+  const [matchedPairIds, setMatchedPairIds] = useState(() => new Set()); // for CURRENT page
   const [mismatchIds, setMismatchIds] = useState([]);
+
   const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState("ready"); // "ready" | "pageFadeOut" | "pageFadeIn"
   const [mistakes, setMistakes] = useState(0);
+  const [overallMatched, setOverallMatched] = useState(0);
   const [startedAt, setStartedAt] = useState(Date.now());
   const [showDone, setShowDone] = useState(false);
 
-  const timeoutRef = useRef(null);
+  const timersRef = useRef([]);
+
+  function clearTimers() {
+    timersRef.current.forEach((t) => clearTimeout(t));
+    timersRef.current = [];
+  }
+
+  const requiredPairs = totalPairs;
+  const requiredPages = Math.ceil(totalPairs / pagePairs);
 
   const canStart = useMemo(() => {
     const list = Array.isArray(eligibleRows) ? eligibleRows : [];
-    // need at least pairCount unique entries
-    return list.length >= pairCount;
-  }, [eligibleRows, pairCount]);
+    return list.length >= requiredPairs;
+  }, [eligibleRows, requiredPairs]);
 
-  const progress = useMemo(() => {
-    const done = matchedPairIds.size;
-    return { done, total: pairCount };
-  }, [matchedPairIds, pairCount]);
+  const currentPage = useMemo(() => pages[pageIndex] || null, [pages, pageIndex]);
 
   const elapsedSec = useMemo(() => {
     const ms = Date.now() - startedAt;
     return Math.max(0, Math.round(ms / 1000));
-  }, [startedAt, showDone]); // recompute when done toggles
-
-  function clearTimers() {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  }
+  }, [startedAt, showDone]);
 
   function buildRun() {
     clearTimers();
-    const base = pickRandomUnique(eligibleRows, pairCount);
 
-    const built = [];
-    base.forEach((row, idx) => {
-      const pairId = `p_${idx}_${Math.random().toString(16).slice(2)}`;
+    // Build 20 pairs first
+    const base = pickRandomUnique(eligibleRows, requiredPairs);
+
+    // Turn into pair objects, skipping invalids
+    const pairs = [];
+    for (let i = 0; i < base.length; i++) {
+      const row = base[i];
       const en = getEn(row);
       const lt = getLt(row);
+      if (!en || !lt) continue;
 
-      // If either side is empty, skip this entry
-      if (!en || !lt) return;
-
-      built.push({
-        id: `t_en_${pairId}`,
-        pairId,
-        side: "en",
-        text: en,
+      pairs.push({
+        pairId: `p_${i}_${Math.random().toString(16).slice(2)}`,
+        en,
+        lt,
       });
 
-      built.push({
-        id: `t_lt_${pairId}`,
-        pairId,
-        side: "lt",
-        text: lt,
-      });
-    });
+      if (pairs.length >= requiredPairs) break;
+    }
 
-    const shuffled = shuffle(built);
+    // If we failed to assemble enough valid pairs (empty EN/LT entries), block start
+    if (pairs.length < requiredPairs) {
+      setPages([]);
+      setPageIndex(0);
+      setSelectedLeftId(null);
+      setMatchedPairIds(new Set());
+      setMismatchIds([]);
+      setBusy(false);
+      setPhase("ready");
+      setMistakes(0);
+      setOverallMatched(0);
+      setStartedAt(Date.now());
+      setShowDone(false);
+      return;
+    }
 
-    setTiles(shuffled);
-    setSelectedId(null);
+    // Split into pages of 5
+    const builtPages = [];
+    let idx = 0;
+    for (let p = 0; p < requiredPages; p++) {
+      const chunk = pairs.slice(idx, idx + pagePairs);
+      idx += pagePairs;
+
+      // left tiles EN, right tiles LT; shuffle inside each column independently
+      const left = shuffle(
+        chunk.map((x) => ({
+          id: `t_en_${x.pairId}`,
+          pairId: x.pairId,
+          side: "en",
+          text: x.en,
+        }))
+      );
+
+      const right = shuffle(
+        chunk.map((x) => ({
+          id: `t_lt_${x.pairId}`,
+          pairId: x.pairId,
+          side: "lt",
+          text: x.lt,
+        }))
+      );
+
+      builtPages.push({ pageIndex: p, left, right });
+    }
+
+    setPages(builtPages);
+    setPageIndex(0);
+    setSelectedLeftId(null);
     setMatchedPairIds(new Set());
     setMismatchIds([]);
     setBusy(false);
+    setPhase("ready");
     setMistakes(0);
+    setOverallMatched(0);
     setStartedAt(Date.now());
     setShowDone(false);
   }
 
   useEffect(() => {
-    // Auto-build only if we can start
     if (canStart) buildRun();
     return () => clearTimers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canStart, pairCount]);
+  }, [canStart, requiredPairs, pagePairs]);
 
-  const selectedTile = useMemo(
-    () => tiles.find((t) => t.id === selectedId) || null,
-    [tiles, selectedId]
+  const progress = useMemo(
+    () => ({
+      matched: overallMatched,
+      total: totalPairs,
+      page: pageIndex + 1,
+      pages: requiredPages,
+    }),
+    [overallMatched, totalPairs, pageIndex, requiredPages]
   );
 
-  function isMatched(tile) {
-    return matchedPairIds.has(tile.pairId);
+  const selectedLeftTile = useMemo(() => {
+    const list = currentPage?.left || [];
+    return list.find((t) => t.id === selectedLeftId) || null;
+  }, [currentPage, selectedLeftId]);
+
+  function isMatched(pairId) {
+    return matchedPairIds.has(pairId);
   }
 
-  function tapTile(tileId) {
-    if (busy) return;
-    if (showDone) return;
+  function startPageFadeTo(nextIndex) {
+    setPhase("pageFadeOut");
+    setBusy(true);
 
-    const tile = tiles.find((t) => t.id === tileId);
+    const t1 = setTimeout(() => {
+      setPageIndex(nextIndex);
+      setMatchedPairIds(new Set());
+      setMismatchIds([]);
+      setSelectedLeftId(null);
+      setPhase("pageFadeIn");
+
+      const t2 = setTimeout(() => {
+        setPhase("ready");
+        setBusy(false);
+      }, pageFadeInMs);
+
+      timersRef.current.push(t2);
+    }, pageFadeOutMs);
+
+    timersRef.current.push(t1);
+  }
+
+  function completeRun() {
+    setShowDone(true);
+    setBusy(false);
+    setPhase("ready");
+  }
+
+  function tapLeft(tileId) {
+    if (busy || showDone) return;
+    if (!currentPage) return;
+
+    const tile = currentPage.left.find((t) => t.id === tileId);
     if (!tile) return;
 
-    if (isMatched(tile)) return;
+    if (isMatched(tile.pairId)) return;
     if (mismatchIds.length) return;
 
-    if (!selectedId) {
-      setSelectedId(tileId);
+    // Toggle selection / switch selection
+    if (selectedLeftId === tileId) {
+      setSelectedLeftId(null);
+    } else {
+      setSelectedLeftId(tileId);
+    }
+  }
+
+  function tapRight(tileId) {
+    if (busy || showDone) return;
+    if (!currentPage) return;
+
+    const tile = currentPage.right.find((t) => t.id === tileId);
+    if (!tile) return;
+
+    if (isMatched(tile.pairId)) return;
+    if (mismatchIds.length) return;
+
+    // Must have left selected first
+    if (!selectedLeftId) return;
+
+    const left = selectedLeftTile;
+    const right = tile;
+    if (!left || !right) {
+      setSelectedLeftId(null);
       return;
     }
 
-    if (selectedId === tileId) {
-      setSelectedId(null);
-      return;
-    }
-
-    const a = selectedTile;
-    const b = tile;
-    if (!a || !b) {
-      setSelectedId(null);
-      return;
-    }
-
-    // Must not allow selecting two tiles from the same side? Duolingo allows but it’s pointless.
-    // We'll allow it; mismatch will happen unless same pairId.
-    if (a.pairId === b.pairId) {
-      // match
+    if (left.pairId === right.pairId) {
+      // MATCH
       const next = new Set(matchedPairIds);
-      next.add(a.pairId);
+      next.add(left.pairId);
       setMatchedPairIds(next);
-      setSelectedId(null);
+      setSelectedLeftId(null);
 
-      // done?
-      if (next.size >= pairCount) {
-        setShowDone(true);
+      setOverallMatched((n) => n + 1);
+
+      // Page complete?
+      if (next.size >= pagePairs) {
+        const nextPage = pageIndex + 1;
+
+        // Last page -> done
+        if (nextPage >= requiredPages) {
+          // Fade out then show done modal for a clean finish
+          setPhase("pageFadeOut");
+          setBusy(true);
+
+          const t = setTimeout(() => {
+            completeRun();
+          }, pageFadeOutMs);
+
+          timersRef.current.push(t);
+        } else {
+          startPageFadeTo(nextPage);
+        }
       }
+
       return;
     }
 
-    // mismatch
+    // MISMATCH
     setBusy(true);
-    setMismatchIds([a.id, b.id]);
+    setMismatchIds([left.id, right.id]);
     setMistakes((m) => m + 1);
 
-    timeoutRef.current = setTimeout(() => {
+    const t = setTimeout(() => {
       setMismatchIds([]);
-      setSelectedId(null);
+      setSelectedLeftId(null);
       setBusy(false);
-      timeoutRef.current = null;
-    }, 520);
+    }, mismatchMs);
+
+    timersRef.current.push(t);
   }
 
   return {
     canStart,
-    tiles,
-    selectedId,
+    pageIndex,
+    pagesTotal: requiredPages,
+    progress,
+
+    leftTiles: currentPage?.left || [],
+    rightTiles: currentPage?.right || [],
+
+    selectedLeftId,
     matchedPairIds,
     mismatchIds,
     busy,
+    phase,
     mistakes,
-    progress,
+
     showDone,
     elapsedSec,
-    tapTile,
+
+    tapLeft,
+    tapRight,
+
     runAgain: buildRun,
-    finish: () => setShowDone(false),
     clearTimers,
   };
 }
