@@ -3,6 +3,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
+const SESSION_SIZE = 10;
+const LONG_PRESS_MS = 550;
+
 /**
  * Tool A — Recall Flip (Active Recall)
  *
@@ -17,65 +20,69 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
  * - Always plays Lithuanian text only
  * - EN → LT: LT is the answer, so audio is enabled only AFTER reveal
  * - LT → EN: LT is the prompt, so audio is enabled immediately
+ * - Long-press plays slow audio using the app's existing slow mode (opts: { slow: true })
  *
- * Phase 1: no persistence yet. This view only runs the UX.
+ * Session:
+ * - 10 cards per run
+ * - At end: summary modal (Right / Close / Wrong)
+ *   - Review mistakes (close+wrong)
+ *   - Let’s do another 10 (fresh)
+ *   - Finish (back)
  *
- * Props:
- * - rows: visible rows (already excludes _deleted in App)
- * - focus: "phrases" | "words" | "numbers" | "all"  (phrases includes Questions)
- * - onBack: () => void
- * - playText?: (text: string, opts?: any) => Promise<any> | any   (existing TTS hook)
+ * Phase 1: no persistence. Session scoring only, resets every run.
  */
 export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const list = Array.isArray(rows) ? rows : [];
 
   // Direction: prompt -> answer
-  // default: EN -> LT (intention in English, recall Lithuanian)
   const [direction, setDirection] = useState("en_to_lt"); // "en_to_lt" | "lt_to_en"
 
   // Card state
   const [revealed, setRevealed] = useState(false);
-  const [busy, setBusy] = useState(false); // blocks double taps during fx
+  const [busy, setBusy] = useState(false);
   const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
   const fxTimerRef = useRef(null);
 
   // Audio state
   const [audioBusy, setAudioBusy] = useState(false);
 
-  // Session queue
+  // Session state
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
-  const [queue, setQueue] = useState(() => buildQueue(eligible, 20));
+  const [queue, setQueue] = useState(() => buildQueue(eligible, SESSION_SIZE));
   const [idx, setIdx] = useState(0);
+
+  const [countRight, setCountRight] = useState(0);
+  const [countClose, setCountClose] = useState(0);
+  const [countWrong, setCountWrong] = useState(0);
+
+  const mistakesRef = useRef([]); // store row objects for "close" + "wrong" in this session
+  const [showSummary, setShowSummary] = useState(false);
+
+  // Long-press handling for audio
+  const pressTimerRef = useRef(null);
+  const longPressFiredRef = useRef(false);
+  const pressActiveRef = useRef(false);
 
   // Keep queue fresh if focus changes or library changes substantially
   useEffect(() => {
-    setQueue(buildQueue(eligible, 20));
-    setIdx(0);
-    setRevealed(false);
-    setFx(null);
-    setBusy(false);
-    setAudioBusy(false);
-  }, [focus, eligible.length]); // intentional: avoid deep deps
+    resetSession(buildQueue(eligible, SESSION_SIZE));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, eligible.length]);
 
   useEffect(() => {
     return () => {
       if (fxTimerRef.current) clearTimeout(fxTimerRef.current);
+      clearPressTimer();
     };
   }, []);
 
   const current = queue[idx] || null;
 
-  const canReveal = !!current && !revealed && !busy;
-  const canGrade = !!current && revealed && !busy;
+  const canReveal = !!current && !revealed && !busy && !showSummary;
+  const canGrade = !!current && revealed && !busy && !showSummary;
 
-  const prompt = useMemo(
-    () => getPromptText(current, direction),
-    [current, direction]
-  );
-  const answer = useMemo(
-    () => getAnswerText(current, direction),
-    [current, direction]
-  );
+  const prompt = useMemo(() => getPromptText(current, direction), [current, direction]);
+  const answer = useMemo(() => getAnswerText(current, direction), [current, direction]);
 
   // LT-only audio text (never English)
   const ltText = useMemo(() => {
@@ -97,6 +104,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     typeof playText === "function" &&
     !audioBusy &&
     !busy &&
+    !showSummary &&
     (direction === "lt_to_en" || revealed);
 
   function triggerFx(kind, ms = 520) {
@@ -111,22 +119,49 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     triggerFx("flip", 520);
   }
 
-  function nextCard() {
-    // reset for next
+  function resetSession(nextQueue) {
+    setShowSummary(false);
+    setQueue(Array.isArray(nextQueue) ? nextQueue : []);
+    setIdx(0);
     setRevealed(false);
     setFx(null);
     setBusy(false);
     setAudioBusy(false);
 
-    setIdx((prev) => {
-      const next = prev + 1;
-      if (next < queue.length) return next;
+    setCountRight(0);
+    setCountClose(0);
+    setCountWrong(0);
+    mistakesRef.current = [];
+  }
 
-      // Session end: rebuild a new queue and start over
-      const fresh = buildQueue(eligible, 20);
-      setQueue(fresh);
-      return 0;
-    });
+  function finishSession() {
+    setBusy(false);
+    setAudioBusy(false);
+    setRevealed(false);
+    setFx(null);
+    setShowSummary(true);
+  }
+
+  function nextCardOrFinish() {
+    // reset for next card
+    setRevealed(false);
+    setFx(null);
+    setBusy(false);
+    setAudioBusy(false);
+
+    const next = idx + 1;
+    if (next < queue.length) {
+      setIdx(next);
+      return;
+    }
+
+    // End of this run
+    finishSession();
+  }
+
+  function noteMistake(rowObj) {
+    if (!rowObj) return;
+    mistakesRef.current = [...(mistakesRef.current || []), rowObj];
   }
 
   function handleGrade(outcome) {
@@ -136,35 +171,97 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     setBusy(true);
 
     if (outcome === "correct") {
+      setCountRight((n) => n + 1);
       triggerFx("correct", 700);
-      setTimeout(nextCard, 420);
+      setTimeout(nextCardOrFinish, 420);
       return;
     }
 
     if (outcome === "close") {
+      setCountClose((n) => n + 1);
+      noteMistake(current);
       triggerFx("close", 650);
-      setTimeout(nextCard, 420);
+      setTimeout(nextCardOrFinish, 420);
       return;
     }
 
+    setCountWrong((n) => n + 1);
+    noteMistake(current);
     triggerFx("wrong", 700);
-    setTimeout(nextCard, 420);
+    setTimeout(nextCardOrFinish, 420);
   }
 
-  async function handlePlayLt() {
+  async function playLt(opts) {
     if (!canPlayLt) return;
 
     try {
       setAudioBusy(true);
-      const res = playText(ltText);
-      // support both promise + sync implementations
+      const res = playText(ltText, opts);
       if (res && typeof res.then === "function") await res;
     } catch {
-      // silent fail (no regression / no noisy alerts from a practice tool)
+      // silent fail (practice tool should not scream)
     } finally {
       setAudioBusy(false);
     }
   }
+
+  function clearPressTimer() {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  }
+
+  function startAudioPress() {
+    if (!canPlayLt) return;
+    if (pressActiveRef.current) return;
+
+    pressActiveRef.current = true;
+    longPressFiredRef.current = false;
+
+    clearPressTimer();
+    pressTimerRef.current = setTimeout(() => {
+      if (!pressActiveRef.current) return;
+      longPressFiredRef.current = true;
+      playLt({ slow: true });
+    }, LONG_PRESS_MS);
+  }
+
+  function endAudioPress() {
+    if (!pressActiveRef.current) return;
+
+    pressActiveRef.current = false;
+    clearPressTimer();
+
+    // If long-press already fired, do nothing else.
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      return;
+    }
+
+    // Otherwise: normal tap behaviour
+    playLt(undefined);
+  }
+
+  function cancelAudioPress() {
+    pressActiveRef.current = false;
+    longPressFiredRef.current = false;
+    clearPressTimer();
+  }
+
+  function buildMistakeRun() {
+    const mistakes = Array.isArray(mistakesRef.current) ? mistakesRef.current : [];
+    const unique = uniqById(mistakes);
+    return buildQueue(unique, Math.min(SESSION_SIZE, unique.length || 0));
+  }
+
+  const progressLabel = useMemo(() => {
+    const total = queue.length;
+    if (!total) return "0 / 0";
+    return `${Math.min(idx + 1, total)} / ${total}`;
+  }, [idx, queue.length]);
+
+  const summaryTotal = countRight + countClose + countWrong;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
@@ -172,12 +269,21 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          className="text-sm text-zinc-300 hover:text-zinc-100"
-          onClick={onBack}
+          className="rf-top-btn"
+          onClick={() => {
+            if (busy || audioBusy) return;
+            onBack?.();
+          }}
+          disabled={busy || audioBusy}
         >
-          ← Back
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
         </button>
+
         <div className="text-sm text-zinc-400">Recall Flip</div>
+
+        {/* spacer for symmetry */}
+        <div className="w-[82px]" aria-hidden="true" />
       </div>
 
       {/* Direction toggle */}
@@ -188,7 +294,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="EN → LT"
             sub="Recall Lithuanian"
             onClick={() => {
-              if (busy || audioBusy) return;
+              if (busy || audioBusy || showSummary) return;
               setDirection("en_to_lt");
               setRevealed(false);
               setFx(null);
@@ -199,7 +305,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="LT → EN"
             sub="Recall English"
             onClick={() => {
-              if (busy || audioBusy) return;
+              if (busy || audioBusy || showSummary) return;
               setDirection("lt_to_en");
               setRevealed(false);
               setFx(null);
@@ -209,7 +315,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       </div>
 
       {/* Empty state */}
-      {!current && (
+      {!current && !showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
           <div className="text-sm text-zinc-300 mt-2">
@@ -219,39 +325,14 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       )}
 
       {/* Card */}
-      {!!current && (
+      {!!current && !showSummary && (
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-zinc-500">
-              {Math.min(idx + 1, queue.length)} / {queue.length}
-            </div>
+            <div className="text-xs text-zinc-500">{progressLabel}</div>
 
-            <button
-              type="button"
-              className={cn(
-                "rf-audio-btn",
-                canPlayLt
-                  ? "rf-audio-enabled"
-                  : "rf-audio-disabled"
-              )}
-              onClick={handlePlayLt}
-              disabled={!canPlayLt}
-              aria-label="Play Lithuanian audio"
-              title={
-                typeof playText !== "function"
-                  ? "Audio unavailable"
-                  : direction === "en_to_lt" && !revealed
-                  ? "Reveal first"
-                  : "Play Lithuanian"
-              }
-            >
-              <span className="rf-audio-icon" aria-hidden="true">
-                🔊
-              </span>
-              <span className="text-xs font-semibold">
-                {audioBusy ? "Playing…" : "Listen"}
-              </span>
-            </button>
+            <div className="text-xs text-zinc-500">
+              Right {countRight} · Close {countClose} · Wrong {countWrong}
+            </div>
           </div>
 
           <div className="relative">
@@ -265,12 +346,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
               )}
             />
 
-            <div
-              className={cn(
-                "rf-perspective",
-                busy ? "pointer-events-none select-none" : ""
-              )}
-            >
+            <div className={cn("rf-perspective", busy ? "pointer-events-none select-none" : "")}>
               <div
                 className={cn(
                   "rf-card rounded-3xl border border-zinc-800 bg-zinc-950/70 shadow-[0_18px_60px_rgba(0,0,0,0.55)]",
@@ -280,12 +356,32 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
               >
                 {/* FRONT */}
                 <div className="rf-face rf-front p-6">
-                  <div className="text-sm text-zinc-400">Prompt</div>
-                  <div className="mt-2 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
+                  <div className="rf-card-top">
+                    <div className="text-sm text-zinc-400">Prompt</div>
+
+                    <AudioInsideCard
+                      canPlayLt={canPlayLt}
+                      audioBusy={audioBusy}
+                      direction={direction}
+                      revealed={revealed}
+                      onPressStart={startAudioPress}
+                      onPressEnd={endAudioPress}
+                      onPressCancel={cancelAudioPress}
+                      disabledReason={
+                        typeof playText !== "function"
+                          ? "Audio unavailable"
+                          : direction === "en_to_lt" && !revealed
+                          ? "Reveal first"
+                          : "Play Lithuanian"
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-3 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
                     {prompt || "—"}
                   </div>
 
-                  <div className="mt-6">
+                  <div className="mt-7">
                     <button
                       type="button"
                       className={cn(
@@ -310,12 +406,32 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                 {/* BACK */}
                 <div className="rf-face rf-back p-6">
-                  <div className="text-sm text-zinc-400">Answer</div>
-                  <div className="mt-2 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
+                  <div className="rf-card-top">
+                    <div className="text-sm text-zinc-400">Answer</div>
+
+                    <AudioInsideCard
+                      canPlayLt={canPlayLt}
+                      audioBusy={audioBusy}
+                      direction={direction}
+                      revealed={revealed}
+                      onPressStart={startAudioPress}
+                      onPressEnd={endAudioPress}
+                      onPressCancel={cancelAudioPress}
+                      disabledReason={
+                        typeof playText !== "function"
+                          ? "Audio unavailable"
+                          : direction === "en_to_lt" && !revealed
+                          ? "Reveal first"
+                          : "Play Lithuanian"
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-3 text-xl font-semibold leading-snug whitespace-pre-wrap break-words">
                     {answer || "—"}
                   </div>
 
-                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       type="button"
                       className={cn(
@@ -359,12 +475,12 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     </button>
                   </div>
 
-                  <div className="mt-3">
+                  <div className="mt-4">
                     <button
                       type="button"
                       className={cn(
-                        "w-full text-xs text-zinc-400 hover:text-zinc-200 py-2",
-                        busy || audioBusy ? "cursor-not-allowed opacity-60" : ""
+                        "w-full rf-secondary-btn",
+                        busy || audioBusy ? "opacity-60 cursor-not-allowed" : ""
                       )}
                       onClick={() => {
                         if (busy || audioBusy) return;
@@ -387,7 +503,70 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
         </div>
       )}
 
-      {/* Local CSS for the 3 primitives */}
+      {/* Summary modal */}
+      {showSummary && (
+        <div
+          className="rf-modal-backdrop"
+          onClick={() => {
+            // keep it stable: click-out does nothing (user chooses)
+          }}
+        >
+          <div className="rf-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="text-lg font-semibold">Session complete</div>
+            <div className="mt-1 text-sm text-zinc-400">
+              {summaryTotal} {summaryTotal === 1 ? "card" : "cards"}
+            </div>
+
+            <div className="mt-5 grid grid-cols-3 gap-3">
+              <StatPill label="Right" value={countRight} />
+              <StatPill label="Close" value={countClose} />
+              <StatPill label="Wrong" value={countWrong} />
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              <button
+                type="button"
+                className={cn(
+                  "rf-primary-btn",
+                  (countClose + countWrong) === 0 ? "opacity-50 cursor-not-allowed" : ""
+                )}
+                onClick={() => {
+                  if ((countClose + countWrong) === 0) return;
+                  const next = buildMistakeRun();
+                  resetSession(next);
+                }}
+                disabled={(countClose + countWrong) === 0}
+              >
+                Review mistakes
+              </button>
+
+              <button
+                type="button"
+                className="rf-secondary-btn"
+                onClick={() => {
+                  resetSession(buildQueue(eligible, SESSION_SIZE));
+                }}
+              >
+                Let’s do another 10
+              </button>
+
+              <button
+                type="button"
+                className="rf-ghost-btn"
+                onClick={() => onBack?.()}
+              >
+                Finish
+              </button>
+            </div>
+
+            <div className="mt-5 text-xs text-zinc-500">
+              Tip: long-press the speaker icon for slow playback.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Local CSS for the 3 primitives + tool UI */}
       <style>{css}</style>
     </div>
   );
@@ -410,7 +589,21 @@ function filterByFocus(rows, focus) {
   });
 }
 
-function buildQueue(eligible, n = 20) {
+function uniqById(list) {
+  const arr = Array.isArray(list) ? list : [];
+  const seen = new Set();
+  const out = [];
+  for (const r of arr) {
+    const id = String(r?._id ?? r?.id ?? "");
+    const key = id || JSON.stringify(r);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+  }
+  return out;
+}
+
+function buildQueue(eligible, n = SESSION_SIZE) {
   const list = Array.isArray(eligible) ? eligible : [];
   if (!list.length) return [];
 
@@ -419,51 +612,29 @@ function buildQueue(eligible, n = 20) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return shuffled.slice(0, Math.max(1, Math.min(n, shuffled.length)));
+
+  const want = Math.max(1, Math.min(n, shuffled.length));
+  return shuffled.slice(0, want);
 }
 
 function getPromptText(row, direction) {
   if (!row) return "";
 
   if (direction === "en_to_lt") {
-    return safeStr(
-      row?.EN ??
-        row?.English ??
-        row?.en ??
-        row?.english ??
-        ""
-    );
+    return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
   }
 
-  return safeStr(
-    row?.LT ??
-      row?.Lithuanian ??
-      row?.lt ??
-      row?.lithuanian ??
-      ""
-  );
+  return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
 }
 
 function getAnswerText(row, direction) {
   if (!row) return "";
 
   if (direction === "en_to_lt") {
-    return safeStr(
-      row?.LT ??
-        row?.Lithuanian ??
-        row?.lt ??
-        row?.lithuanian ??
-        ""
-    );
+    return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
   }
 
-  return safeStr(
-    row?.EN ??
-      row?.English ??
-      row?.en ??
-      row?.english ??
-      ""
-  );
+  return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
 }
 
 function safeStr(v) {
@@ -488,18 +659,83 @@ function ToggleButton({ active, label, sub, onClick }) {
   );
 }
 
-/* ----------------------------- motion primitives ----------------------------- */
+function StatPill({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-3 text-center">
+      <div className="text-xs text-zinc-400">{label}</div>
+      <div className="mt-1 text-xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function AudioInsideCard({
+  canPlayLt,
+  audioBusy,
+  onPressStart,
+  onPressEnd,
+  onPressCancel,
+  disabledReason,
+}) {
+  const disabled = !canPlayLt;
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "rf-audio-chip",
+        disabled ? "rf-audio-disabled" : "rf-audio-enabled"
+      )}
+      disabled={disabled}
+      aria-label="Play Lithuanian audio"
+      title={disabledReason}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        if (disabled) return;
+        onPressStart?.();
+      }}
+      onMouseUp={(e) => {
+        e.preventDefault();
+        if (disabled) return;
+        onPressEnd?.();
+      }}
+      onMouseLeave={(e) => {
+        e.preventDefault();
+        onPressCancel?.();
+      }}
+      onTouchStart={(e) => {
+        e.preventDefault();
+        if (disabled) return;
+        onPressStart?.();
+      }}
+      onTouchEnd={(e) => {
+        e.preventDefault();
+        if (disabled) return;
+        onPressEnd?.();
+      }}
+      onTouchCancel={(e) => {
+        e.preventDefault();
+        onPressCancel?.();
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <span className="rf-audio-icon" aria-hidden="true">
+        🔊
+      </span>
+      <span className="text-xs font-semibold">
+        {audioBusy ? "Playing…" : "Listen"}
+      </span>
+    </button>
+  );
+}
+
+/* ----------------------------- motion primitives + tool UI ----------------------------- */
 /**
- * Allowed primitives only:
+ * Allowed outcome primitives only:
  * - cardFlip3D()
  * - successGlow(level)
  * - ghostFade()
  *
- * Implemented here as scoped CSS classes:
- * - rf-card / rf-flipped (cardFlip3D)
- * - rf-success-strong (successGlow strong)
- * - rf-success-soft (successGlow soft)
- * - rf-ghost-fade (ghostFade)
+ * Modal uses simple layout; outcome FX remains limited to the above.
  */
 const css = `
 .rf-perspective{
@@ -509,31 +745,90 @@ const css = `
   position: relative;
   transform-style: preserve-3d;
   transition: transform 520ms cubic-bezier(.2,.9,.2,1);
-  min-height: 270px;
+  min-height: 340px; /* taller to avoid cramped layout */
 }
 .rf-face{
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
 }
-.rf-front{
-  transform: rotateY(0deg);
-}
-.rf-back{
-  transform: rotateY(180deg);
-}
-.rf-flipped{
-  transform: rotateY(180deg);
+.rf-front{ transform: rotateY(0deg); }
+.rf-back{ transform: rotateY(180deg); }
+.rf-flipped{ transform: rotateY(180deg); }
+
+.rf-card-top{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 /* still within cardFlip3D primitive */
-.rf-flip-pulse{
-  will-change: transform;
-}
+.rf-flip-pulse{ will-change: transform; }
 
-/* audio pill */
-.rf-audio-btn{
+/* top/back buttons */
+.rf-top-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(39,39,42,1);
+  background: rgba(9,9,11,0.35);
+  color: rgba(228,228,231,1);
+  transition: transform 140ms ease, background 140ms ease, opacity 140ms ease;
+}
+.rf-top-btn:hover{
+  background: rgba(9,9,11,0.55);
+  transform: translateY(-1px);
+}
+.rf-top-btn:disabled{ opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.rf-primary-btn{
+  width: 100%;
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  background: rgba(52, 211, 153, 1);
+  color: rgba(9,9,11,1);
+  transition: filter 140ms ease, transform 140ms ease, opacity 140ms ease;
+}
+.rf-primary-btn:hover{ filter: brightness(1.03); transform: translateY(-1px); }
+.rf-primary-btn:disabled{ opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.rf-secondary-btn{
+  width: 100%;
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 650;
+  border: 1px solid rgba(39,39,42,1);
+  background: rgba(9,9,11,0.35);
+  color: rgba(244,244,245,1);
+  transition: transform 140ms ease, background 140ms ease, opacity 140ms ease;
+}
+.rf-secondary-btn:hover{ background: rgba(9,9,11,0.55); transform: translateY(-1px); }
+.rf-secondary-btn:disabled{ opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.rf-ghost-btn{
+  width: 100%;
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 650;
+  border: 1px solid rgba(39,39,42,1);
+  background: transparent;
+  color: rgba(161,161,170,1);
+  transition: transform 140ms ease, opacity 140ms ease, color 140ms ease;
+}
+.rf-ghost-btn:hover{ transform: translateY(-1px); color: rgba(244,244,245,1); }
+
+/* audio chip inside card */
+.rf-audio-chip{
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -544,22 +839,36 @@ const css = `
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   transition: transform 140ms ease, background 140ms ease, opacity 140ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
-.rf-audio-icon{
-  line-height: 1;
-  transform: translateY(-0.5px);
+.rf-audio-icon{ line-height: 1; transform: translateY(-0.5px); }
+.rf-audio-enabled{ cursor: pointer; opacity: 1; }
+.rf-audio-enabled:hover{ background: rgba(9,9,11,0.55); transform: translateY(-1px); }
+.rf-audio-disabled{ cursor: not-allowed; opacity: 0.45; transform: none; }
+
+/* modal */
+.rf-modal-backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(0,0,0,0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
 }
-.rf-audio-enabled{
-  cursor: pointer;
-  opacity: 1;
-}
-.rf-audio-enabled:hover{
-  background: rgba(9,9,11,0.55);
-  transform: translateY(-1px);
-}
-.rf-audio-disabled{
-  cursor: not-allowed;
-  opacity: 0.45;
+.rf-modal{
+  width: 100%;
+  max-width: 420px;
+  border-radius: 22px;
+  border: 1px solid rgba(39,39,42,1);
+  background: rgba(9,9,11,0.90);
+  box-shadow: 0 22px 70px rgba(0,0,0,0.65);
+  padding: 18px;
 }
 
 /* successGlow(strong) */
