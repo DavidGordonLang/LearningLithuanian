@@ -2,11 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRecallFlipSession } from "../../hooks/training/useRecallFlipSession";
 import { useRecallFlipAudio } from "../../hooks/training/useRecallFlipAudio";
-import {
-  AudioButtons,
-  SummaryModal,
-  ToggleButton,
-} from "./recallFlip/RecallFlipParts";
+import { AudioButtons, SummaryModal, ToggleButton } from "./recallFlip/RecallFlipParts";
 import { recallFlipCss } from "./recallFlip/recallFlipStyles";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -47,36 +43,26 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   // Eligible rows by focus
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
 
-  // Session hook (YOUR version)
+  // Session hook
   const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  // Audio hook
+  // Audio hook (MATCHES your actual useRecallFlipAudio.js)
   const a = useRecallFlipAudio({
+    current: s.current,
+    direction,
+    revealed: s.revealed,
+    busy: s.busy,
+    showSummary: s.showSummary,
     playText,
-    ltText: getLtText(s.current),
-    enabled: !s.showSummary && !s.busy,
   });
 
   // Derived texts for current card
-  const prompt = useMemo(
-    () => getPromptText(s.current, direction),
-    [s.current, direction]
-  );
-  const answer = useMemo(
-    () => getAnswerText(s.current, direction),
-    [s.current, direction]
-  );
+  const prompt = useMemo(() => getPromptText(s.current, direction), [s.current, direction]);
+  const answer = useMemo(() => getAnswerText(s.current, direction), [s.current, direction]);
 
-  // LT is visible only on one side depending on direction:
-  // - EN→LT: LT is answer => visible AFTER reveal (back)
-  // - LT→EN: LT is prompt => visible BEFORE reveal (front)
-  const isLtVisible = useMemo(() => {
-    if (!s.current) return false;
-    if (direction === "en_to_lt") return !!s.revealed;
-    return !s.revealed;
-  }, [s.current, direction, s.revealed]);
-
-  const canPlayLt = isLtVisible && a.canPlay;
+  // Use the audio hook’s own truth for LT visibility
+  const isLtVisible = !!a.isLtVisible;
+  const canPlayLt = !!a.canPlayLt;
 
   function clearFxTimer() {
     if (fxTimerRef.current) {
@@ -101,7 +87,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     // Back must ALWAYS work.
     clearFxTimer();
     s.clearTimers?.();
-    a.reset?.();
+    a.resetAudio?.();
     setFx(null);
     onBack?.();
   }
@@ -109,7 +95,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   function toggleCardFlip() {
     if (!s.current) return;
     if (s.showSummary) return;
-    if (s.busy || a.busy) return;
+    if (s.busy || a.audioBusy) return;
 
     // Use session hook’s helper
     if (!s.revealed) triggerFx("flip", 520);
@@ -151,10 +137,11 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="EN → LT"
             sub="Recall Lithuanian"
             onClick={() => {
-              if (s.busy || a.busy || s.showSummary) return;
+              if (s.busy || a.audioBusy || s.showSummary) return;
               setDirection("en_to_lt");
               s.setRevealed?.(false);
               setFx(null);
+              a.resetAudio?.();
             }}
           />
           <ToggleButton
@@ -162,10 +149,11 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             label="LT → EN"
             sub="Recall English"
             onClick={() => {
-              if (s.busy || a.busy || s.showSummary) return;
+              if (s.busy || a.audioBusy || s.showSummary) return;
               setDirection("lt_to_en");
               s.setRevealed?.(false);
               setFx(null);
+              a.resetAudio?.();
             }}
           />
         </div>
@@ -175,9 +163,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       {!s.current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
-          <div className="text-sm text-zinc-300 mt-2">
-            Add a few entries first, or switch focus.
-          </div>
+          <div className="text-sm text-zinc-300 mt-2">Add a few entries first, or switch focus.</div>
         </div>
       )}
 
@@ -227,8 +213,8 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     {isLtVisible && (
                       <AudioButtons
                         canPlayLt={canPlayLt}
-                        audioBusy={a.busy}
-                        onPlay={() => a.play?.()}
+                        audioBusy={a.audioBusy}
+                        onPlay={() => a.playNormal?.()}
                         onPlaySlow={() => a.playSlow?.()}
                         disabledReason={
                           typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
@@ -252,8 +238,8 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     {isLtVisible && (
                       <AudioButtons
                         canPlayLt={canPlayLt}
-                        audioBusy={a.busy}
-                        onPlay={() => a.play?.()}
+                        audioBusy={a.audioBusy}
+                        onPlay={() => a.playNormal?.()}
                         onPlaySlow={() => a.playSlow?.()}
                         disabledReason={
                           typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
@@ -271,10 +257,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     <div className="rf-grade-grid">
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-wrong",
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-wrong", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
@@ -283,10 +266,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-close",
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-close", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
@@ -295,10 +275,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-right",
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-right", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
@@ -352,24 +329,15 @@ function filterByFocus(rows, focus) {
   });
 }
 
-function getLtText(row) {
-  if (!row) return "";
-  return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
-}
-
 function getPromptText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt") {
-    return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
-  }
+  if (direction === "en_to_lt") return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
   return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
 }
 
 function getAnswerText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt") {
-    return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
-  }
+  if (direction === "en_to_lt") return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
   return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
 }
 
