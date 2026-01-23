@@ -1,3 +1,4 @@
+// src/components/SearchDock.jsx
 import React from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -15,10 +16,14 @@ export default function SearchDock({
 
   return (
     <div
-      className="sticky z-40 border-b border-zinc-800 bg-zinc-950"
+      className="
+        sticky z-40
+        border-b border-white/8
+        bg-zinc-950/92 backdrop-blur
+      "
       style={{ top: offsetTop }}
     >
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 space-y-2">
+      <div className="z-page py-2">
         {isLibrary && (
           <div className="space-y-2 pb-1">
             {/* Search */}
@@ -32,19 +37,23 @@ export default function SearchDock({
 
               {["RAG", "Newest", "Oldest"].map((mode) => {
                 const active = sortMode === mode;
+
                 return (
                   <button
                     key={mode}
                     type="button"
+                    data-press
                     className={cn(
                       "px-2.5 py-1 rounded-full border text-xs sm:text-sm select-none",
+                      "transition-colors",
                       active
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
-                        : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
+                        ? "border-amber-400/60 bg-amber-400/10 text-amber-200"
+                        : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/8"
                     )}
                     onClick={() => setSortMode(mode)}
                     onMouseDown={(e) => e.preventDefault()}
                     onTouchStart={(e) => e.preventDefault()}
+                    aria-pressed={active}
                   >
                     {mode === "RAG"
                       ? T.rag
