@@ -1,6 +1,33 @@
 // src/views/LibraryView.jsx
-import React, { useMemo, useState, useSyncExternalStore, useEffect } from "react";
+import React, { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
 import { searchStore } from "../searchStore";
+import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
+
+const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+function KebabIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5">
+      <span className="text-zinc-300 leading-none">···</span>
+    </span>
+  );
+}
+
+function PlayCircle({ children }) {
+  return (
+    <span
+      className="
+        inline-flex items-center justify-center
+        w-10 h-10 rounded-full
+        border border-emerald-300/20
+        bg-emerald-500/10
+        shadow-[0_0_22px_rgba(16,185,129,0.18)]
+      "
+    >
+      {children}
+    </span>
+  );
+}
 
 export default function LibraryView({
   T,
@@ -14,6 +41,11 @@ export default function LibraryView({
   onOpenAddForm,
 }) {
   const [expanded, setExpanded] = useState(new Set());
+  const [category, setCategory] = useState("ALL");
+
+  // menu state
+  const [menuOpenFor, setMenuOpenFor] = useState(null);
+  const menuRef = useRef(null);
 
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
@@ -21,6 +53,26 @@ export default function LibraryView({
     searchStore.getServerSnapshot
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
+
+  /* SEARCH OVERRIDES CATEGORY */
+  useEffect(() => {
+    if (qNorm && category !== "ALL") setCategory("ALL");
+  }, [qNorm, category]);
+
+  /* CLOSE MENU ON OUTSIDE TAP */
+  useEffect(() => {
+    if (!menuOpenFor) return;
+
+    const onDown = (e) => {
+      const el = menuRef.current;
+      if (!el) return;
+      if (el.contains(e.target)) return;
+      setMenuOpenFor(null);
+    };
+
+    window.addEventListener("pointerdown", onDown, { passive: true });
+    return () => window.removeEventListener("pointerdown", onDown);
+  }, [menuOpenFor]);
 
   /* FILTER + SORT */
   const filteredRows = useMemo(() => {
@@ -32,25 +84,19 @@ export default function LibraryView({
         const lt = (r.Lithuanian || "").toLowerCase();
         return en.includes(qNorm) || lt.includes(qNorm);
       });
+    } else if (category !== "ALL") {
+      base = base.filter((r) => (r.Category || DEFAULT_CATEGORY) === category);
     }
 
-    if (sortMode === "Newest")
-      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
-    if (sortMode === "Oldest")
-      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+    if (sortMode === "Newest") return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+    if (sortMode === "Oldest") return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
 
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...base].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
-        (order[normalizeRag(b["RAG Icon"])] ?? 1)
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
-  }, [rows, qNorm, sortMode, normalizeRag]);
-
-  /* If search active, collapse expanded for sanity (presentation only) */
-  useEffect(() => {
-    if (qNorm) setExpanded(new Set());
-  }, [qNorm]);
+  }, [rows, qNorm, category, sortMode, normalizeRag]);
 
   /* AUDIO (tap = normal, long press = slow, BUT cancel if finger moves) */
   function blurActiveInput() {
@@ -83,7 +129,6 @@ export default function LibraryView({
     const start = (e) => {
       e.preventDefault();
       e.stopPropagation();
-
       if (!text) return;
 
       blurActiveInput();
@@ -149,56 +194,86 @@ export default function LibraryView({
 
   return (
     <div className="z-page z-page-y pb-28">
-      <div className="z-stack-lg">
+      {/* Header */}
+      <div className="z-stack">
         <div>
           <div className="z-title">{T.libraryTitle}</div>
-          <div className="z-subtitle mt-1">
-            Browse, search, and manage your saved entries.
-          </div>
+          <div className="z-subtitle mt-1">Browse, search, and manage your saved entries.</div>
         </div>
 
-        {typeof onOpenAddForm === "function" ? (
-          <div>
-            <button
-              type="button"
-              data-press
-              className="
-                z-btn px-5 py-3 rounded-2xl
-                bg-emerald-600/90 hover:bg-emerald-500
-                border border-emerald-300/20
-                text-black font-semibold
-              "
-              onClick={onOpenAddForm}
-            >
-              + Add Entry
-            </button>
-          </div>
-        ) : null}
+        {typeof onOpenAddForm === "function" && (
+          <button
+            type="button"
+            data-press
+            className="
+              z-btn
+              w-fit
+              px-5 py-3 rounded-2xl
+              bg-emerald-600/90 hover:bg-emerald-500
+              border border-emerald-300/20
+              text-black font-semibold
+            "
+            onClick={onOpenAddForm}
+          >
+            + Add Entry
+          </button>
+        )}
+      </div>
 
-        <div className="z-helper">
-          {filteredRows.length} / {rows.length} entries
-          {qNorm ? (
-            <span className="text-zinc-600"> • search active</span>
-          ) : null}
-        </div>
+      {/* Controls surface */}
+      <div className="mt-4 z-card p-4 sm:p-5">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="z-section-title">Category</div>
+              <select
+                className="z-input !py-2 !px-3 !rounded-2xl w-auto"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                disabled={!!qNorm}
+              >
+                <option value="ALL">All</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {filteredRows.length === 0 ? (
-          <div className="z-inset p-4">
-            <div className="text-sm text-zinc-300">No entries found.</div>
-            <div className="z-helper mt-1">
-              Try a different search term, or add a new entry.
+            <div className="text-sm text-zinc-400">
+              {filteredRows.length} / {rows.length} entries
             </div>
           </div>
+
+          {qNorm ? (
+            <div className="text-xs text-zinc-500">Search active – showing all categories</div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* List */}
+      <div className="mt-4 z-card overflow-hidden">
+        {filteredRows.length === 0 ? (
+          <div className="p-5 text-sm text-zinc-400">No entries found.</div>
         ) : (
-          <div className="z-stack">
+          <div className="divide-y divide-white/5">
             {filteredRows.map((r) => {
               const isOpen = expanded.has(r._id);
+              const rag = normalizeRag(r["RAG Icon"]);
+              const rowOpen = menuOpenFor === r._id;
 
               return (
-                <article key={r._id} className="z-card p-4 sm:p-5">
-                  {/* HEADER */}
-                  <div
-                    className="flex items-start gap-3 cursor-pointer"
+                <div key={r._id} className="relative">
+                  <button
+                    type="button"
+                    className="
+                      w-full text-left
+                      px-4 sm:px-5 py-4
+                      hover:bg-white/[0.03]
+                      transition
+                      select-none
+                    "
                     onClick={() =>
                       setExpanded((prev) => {
                         const next = new Set(prev);
@@ -207,130 +282,165 @@ export default function LibraryView({
                       })
                     }
                   >
-                    {/* RAG */}
-                    <button
-                      type="button"
-                      data-press
-                      className="
-                        w-10 h-10 rounded-2xl
-                        bg-white/5 border border-white/10
-                        flex items-center justify-center text-sm
-                        shrink-0
-                        hover:bg-white/10
-                      "
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRows((prev) =>
-                          prev.map((x) =>
-                            x._id === r._id
-                              ? {
-                                  ...x,
-                                  "RAG Icon":
-                                    normalizeRag(x["RAG Icon"]) === "🔴"
-                                      ? "🟠"
-                                      : normalizeRag(x["RAG Icon"]) === "🟠"
-                                      ? "🟢"
-                                      : "🔴",
-                                }
-                              : x
-                          )
-                        );
-                      }}
-                    >
-                      {normalizeRag(r["RAG Icon"])}
-                    </button>
+                    <div className="flex items-start gap-3">
+                      {/* Play + rag dot */}
+                      <div className="shrink-0 pt-0.5 flex flex-col items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="Play"
+                          className="select-none"
+                          {...pressHandlers(r.Lithuanian || "")}
+                          onClick={(e) => {
+                            // allow pressHandlers to handle play; just block row expand on tap
+                            e.stopPropagation();
+                          }}
+                        >
+                          <PlayCircle>
+                            <span className="text-emerald-200 text-[16px] leading-none">▶</span>
+                          </PlayCircle>
+                        </button>
 
-                    {/* TEXT */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[15px] font-semibold text-emerald-200 break-words">
-                        {r.Lithuanian || "—"}
+                        <button
+                          type="button"
+                          aria-label="RAG"
+                          className="w-7 h-7 rounded-full border border-white/10 bg-white/5 text-[13px]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRows((prev) =>
+                              prev.map((x) =>
+                                x._id === r._id
+                                  ? {
+                                      ...x,
+                                      "RAG Icon":
+                                        normalizeRag(x["RAG Icon"]) === "🔴"
+                                          ? "🟠"
+                                          : normalizeRag(x["RAG Icon"]) === "🟠"
+                                          ? "🟢"
+                                          : "🔴",
+                                    }
+                                  : x
+                              )
+                            );
+                          }}
+                        >
+                          {rag}
+                        </button>
                       </div>
 
-                      <div className="text-[13px] text-zinc-400 mt-0.5 break-words">
-                        {r.English || "—"}
-                      </div>
+                      {/* Text */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-[15px] font-semibold text-emerald-200 break-words">
+                              {r.Lithuanian || "—"}
+                            </div>
+                            <div className="text-[13px] text-zinc-400 mt-0.5 break-words">
+                              {r.English || "—"}
+                            </div>
+                            {r.Phonetic ? (
+                              <div className="text-[12px] text-zinc-500 italic mt-0.5 break-words">
+                                {r.Phonetic}
+                              </div>
+                            ) : null}
+                          </div>
 
-                      {!isOpen && r.Phonetic ? (
-                        <div className="text-[12px] text-zinc-500 italic mt-1 break-words">
-                          {r.Phonetic}
+                          {/* kebab */}
+                          <button
+                            type="button"
+                            className="shrink-0"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setMenuOpenFor((cur) => (cur === r._id ? null : r._id));
+                            }}
+                            aria-label="More"
+                          >
+                            <KebabIcon />
+                          </button>
                         </div>
-                      ) : null}
+
+                        {/* Expanded */}
+                        {isOpen ? (
+                          <div className="mt-3 text-sm text-zinc-300">
+                            {r.Usage ? (
+                              <div className="mt-3">
+                                <div className="z-section-title mb-1">{T.usage}</div>
+                                <div className="text-sm text-zinc-300 leading-relaxed">
+                                  {r.Usage}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {r.Notes ? (
+                              <div className="mt-3">
+                                <div className="z-section-title mb-2">{T.notes}</div>
+                                <div className="whitespace-pre-line leading-[1.75] text-zinc-300">
+                                  {r.Notes}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {r.Category ? (
+                              <div className="mt-3 text-xs text-zinc-500">
+                                {T.category}: <span className="text-zinc-300">{r.Category}</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
+                  </button>
 
-                    <div className="text-zinc-600 pt-1">›</div>
-                  </div>
+                  {/* Kebab menu */}
+                  {rowOpen ? (
+                    <div
+                      ref={menuRef}
+                      className="
+                        absolute right-4 sm:right-5 top-16
+                        z-20
+                        w-40
+                        rounded-2xl
+                        border border-white/10
+                        bg-zinc-950/85
+                        backdrop-blur
+                        shadow-[0_20px_50px_rgba(0,0,0,0.6)]
+                        overflow-hidden
+                      "
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        data-press
+                        className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/[0.06]"
+                        onClick={() => {
+                          setMenuOpenFor(null);
+                          onEditRow?.(r._id);
+                        }}
+                      >
+                        Edit
+                      </button>
 
-                  {/* EXPANDED */}
-                  {isOpen ? (
-                    <div className="mt-4 z-inset p-4 space-y-4">
-                      {r.Phonetic ? (
-                        <div className="text-sm italic text-zinc-400">
-                          {r.Phonetic}
-                        </div>
-                      ) : null}
-
-                      {r.Usage ? (
-                        <div>
-                          <div className="z-section-title mb-1">{T.usage}</div>
-                          <div className="text-sm text-zinc-300 leading-relaxed">
-                            {r.Usage}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {r.Notes ? (
-                        <div>
-                          <div className="z-section-title mb-2">{T.notes}</div>
-                          <div className="text-sm text-zinc-300 whitespace-pre-line leading-relaxed">
-                            {r.Notes}
-                          </div>
-                        </div>
-                      ) : null}
+                      <button
+                        type="button"
+                        data-press
+                        className="w-full text-left px-4 py-3 text-sm text-red-200 hover:bg-red-500/10"
+                        onClick={() => {
+                          setMenuOpenFor(null);
+                          if (window.confirm(T.confirm)) removePhrase(r._id);
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   ) : null}
-
-                  {/* ACTIONS */}
-                  <div className="mt-4 flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      data-press
-                      className="
-                        z-btn px-4 py-2 rounded-2xl
-                        bg-emerald-600/90 hover:bg-emerald-500
-                        border border-emerald-300/20
-                        text-black font-semibold
-                      "
-                      {...pressHandlers(r.Lithuanian || "")}
-                    >
-                      ▶ Play
-                    </button>
-
-                    <button
-                      type="button"
-                      data-press
-                      className="z-btn z-btn-secondary px-4 py-2 rounded-2xl"
-                      onClick={() => onEditRow(r._id)}
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      data-press
-                      className="z-btn px-4 py-2 rounded-2xl bg-red-500/90 hover:bg-red-500 border border-white/10 text-white"
-                      onClick={() => {
-                        if (window.confirm(T.confirm)) removePhrase(r._id);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
+                </div>
               );
             })}
           </div>
         )}
       </div>
+
+      <div className="h-8" />
     </div>
   );
 }
