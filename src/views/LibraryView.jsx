@@ -5,6 +5,7 @@ import React, {
   useSyncExternalStore,
   useEffect,
   useRef,
+  useCallback,
 } from "react";
 import { searchStore } from "../searchStore";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
@@ -66,6 +67,19 @@ export default function LibraryView({
   const search = searchStore.getSnapshot().q || "";
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
 
+  // Per-row details open state (restored)
+  const [openDetails, setOpenDetails] = useState(() => new Set());
+
+  const toggleDetails = useCallback((id) => {
+    if (!id) return;
+    setOpenDetails((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
   // Context menu / row actions
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
@@ -116,17 +130,13 @@ export default function LibraryView({
   };
 
   function sortRows(list) {
-    // NOTE: sortMode is now effectively “oldest/newest” only in your latest UI.
-    // Keeping this function stable to avoid behavioural regressions.
     const copy = Array.isArray(list) ? [...list] : [];
 
-    // Oldest/newest based on _ts (fallback to 0)
     if (sortMode === "oldest") {
       copy.sort((a, b) => (a?._ts || 0) - (b?._ts || 0));
       return copy;
     }
 
-    // default newest
     copy.sort((a, b) => (b?._ts || 0) - (a?._ts || 0));
     return copy;
   }
@@ -142,9 +152,7 @@ export default function LibraryView({
       const l = normalize(r?.Lithuanian);
       const p = normalize(r?.Phonetic);
       const n = normalize(r?.Notes);
-      return (
-        e.includes(q) || l.includes(q) || p.includes(q) || n.includes(q)
-      );
+      return e.includes(q) || l.includes(q) || p.includes(q) || n.includes(q);
     };
 
     const base = (Array.isArray(rows) ? rows : [])
@@ -156,8 +164,8 @@ export default function LibraryView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, search, category, sortMode]);
 
-  const countLabel = `${filtered.length} / ${rows?.filter?.((r) => !r._deleted)?.length || 0
-    } entries`;
+  const totalActive = rows?.filter?.((r) => !r._deleted)?.length || 0;
+  const countLabel = `${filtered.length} / ${totalActive} entries`;
 
   return (
     <div className="z-page z-page-y pb-28 space-y-4">
@@ -186,7 +194,7 @@ export default function LibraryView({
         </button>
       </div>
 
-      {/* Category selector (slightly tighter) */}
+      {/* Category selector (tighter) */}
       <div className="z-card p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[12px] uppercase tracking-wide text-zinc-400">
@@ -216,6 +224,8 @@ export default function LibraryView({
         {filtered.map((r) => {
           const id = r?.id || r?._id;
           const isMenuOpen = menuOpenId === id;
+          const detailsOpen = openDetails.has(id);
+          const hasNotes = !!String(r?.Notes || "").trim();
 
           return (
             <div key={id} className="z-card p-4">
@@ -235,7 +245,6 @@ export default function LibraryView({
                   )}
                   {...pressHandlers(() => playText?.(r?.Lithuanian || ""))}
                   onClick={(e) => {
-                    // keep this click from toggling row-level interactions
                     e.stopPropagation();
                     playText?.(r?.Lithuanian || "");
                   }}
@@ -255,6 +264,18 @@ export default function LibraryView({
                     <div className="text-xs text-zinc-500 mt-1 truncate italic">
                       {r.Phonetic}
                     </div>
+                  ) : null}
+
+                  {/* Inline details toggle (restored) */}
+                  {hasNotes ? (
+                    <button
+                      type="button"
+                      data-press
+                      className="mt-3 text-xs text-zinc-300 underline underline-offset-4"
+                      onClick={() => toggleDetails(id)}
+                    >
+                      {detailsOpen ? (T.hideDetails || "Hide") : (T.showDetails || "Details")}
+                    </button>
                   ) : null}
                 </div>
 
@@ -286,16 +307,18 @@ export default function LibraryView({
                       "
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
-                        type="button"
-                        className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-                        onClick={() => {
-                          setMenuOpenId(null);
-                          // you may have a details toggle elsewhere; leaving stable
-                        }}
-                      >
-                        {T.showDetails || "Details"}
-                      </button>
+                      {hasNotes ? (
+                        <button
+                          type="button"
+                          className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
+                          onClick={() => {
+                            setMenuOpenId(null);
+                            toggleDetails(id);
+                          }}
+                        >
+                          {detailsOpen ? (T.hideDetails || "Hide") : (T.showDetails || "Details")}
+                        </button>
+                      ) : null}
 
                       <button
                         type="button"
@@ -323,10 +346,10 @@ export default function LibraryView({
                 </div>
               </div>
 
-              {/* Notes (optional) */}
-              {r?.Notes ? (
+              {/* Details (now truly collapsible again) */}
+              {hasNotes && detailsOpen ? (
                 <div className="mt-3 text-sm text-zinc-400 whitespace-pre-wrap">
-                  {r.Notes}
+                  {String(r.Notes)}
                 </div>
               ) : null}
             </div>
