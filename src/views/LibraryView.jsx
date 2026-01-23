@@ -1,7 +1,7 @@
 // src/views/LibraryView.jsx
 import React, { useMemo, useState, useSyncExternalStore, useEffect } from "react";
 import { searchStore } from "../searchStore";
-import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
+import { DEFAULT_CATEGORY } from "../constants/categories";
 
 export default function LibraryView({
   T,
@@ -15,7 +15,7 @@ export default function LibraryView({
   onOpenAddForm,
 }) {
   const [expanded, setExpanded] = useState(new Set());
-  const [category, setCategory] = useState("ALL");
+  const [category, setCategory] = useState("ALL"); // UI hidden for now (render alignment)
 
   const qFilter = useSyncExternalStore(
     searchStore.subscribe,
@@ -24,7 +24,7 @@ export default function LibraryView({
   );
   const qNorm = (qFilter || "").trim().toLowerCase();
 
-  /* SEARCH OVERRIDES CATEGORY */
+  /* SEARCH OVERRIDES CATEGORY (behaviour unchanged) */
   useEffect(() => {
     if (qNorm && category !== "ALL") setCategory("ALL");
   }, [qNorm, category]);
@@ -40,9 +40,7 @@ export default function LibraryView({
         return en.includes(qNorm) || lt.includes(qNorm);
       });
     } else if (category !== "ALL") {
-      base = base.filter(
-        (r) => (r.Category || DEFAULT_CATEGORY) === category
-      );
+      base = base.filter((r) => (r.Category || DEFAULT_CATEGORY) === category);
     }
 
     if (sortMode === "Newest")
@@ -58,7 +56,7 @@ export default function LibraryView({
     );
   }, [rows, qNorm, category, sortMode, normalizeRag]);
 
-  /* AUDIO (tap = normal, long press = slow, cancel on move) */
+  /* AUDIO (tap = normal, long press = slow, BUT cancel if finger moves) */
   function blurActiveInput() {
     const ae = document.activeElement;
     if (!ae) return;
@@ -111,13 +109,14 @@ export default function LibraryView({
 
     const move = (e) => {
       if (!state.pressed) return;
+
       const x = e?.clientX ?? e?.touches?.[0]?.clientX ?? 0;
       const y = e?.clientY ?? e?.touches?.[0]?.clientY ?? 0;
 
-      if (
-        Math.abs(x - state.startX) > 10 ||
-        Math.abs(y - state.startY) > 10
-      ) {
+      const dx = x - state.startX;
+      const dy = y - state.startY;
+
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
         state.moved = true;
         if (state.timer) clearTimeout(state.timer);
         state.timer = null;
@@ -127,6 +126,7 @@ export default function LibraryView({
     const finish = (e) => {
       e.preventDefault();
       e.stopPropagation();
+
       if (!state.pressed) return;
 
       state.pressed = false;
@@ -137,246 +137,218 @@ export default function LibraryView({
       if (!state.firedSlow) playText(text);
     };
 
+    const cancel = () => cancelAll();
+
     return {
       onPointerDown: start,
       onPointerMove: move,
       onPointerUp: finish,
-      onPointerLeave: cancelAll,
-      onPointerCancel: cancelAll,
+      onPointerLeave: cancel,
+      onPointerCancel: cancel,
       onContextMenu: (e) => e.preventDefault(),
       onTouchStart: (e) => e.preventDefault(),
     };
   }
 
   return (
-    <div className="z-page pb-28">
-      {/* Header */}
-      <div className="pt-4 sm:pt-5 mb-4">
-        <h2 className="z-title">{T.libraryTitle}</h2>
-        <p className="z-subtitle mt-1">
-          Browse, search, and manage your saved entries.
-        </p>
+    <div className="z-page z-page-y pb-28">
+      <div className="z-stack-lg">
+        <div className="z-stack">
+          <div className="z-title">{T.libraryTitle}</div>
+          <div className="z-subtitle">
+            Browse, search, and manage your saved entries.
+          </div>
 
-        {typeof onOpenAddForm === "function" && (
-          <div className="mt-4">
-            <button
-              type="button"
-              className="
-                z-btn px-5 py-3 rounded-2xl
-                bg-emerald-500 text-black font-semibold
-                hover:bg-emerald-400 active:bg-emerald-300
-                border border-emerald-300/20
-              "
-              onClick={onOpenAddForm}
-              data-press
-            >
-              + Add Entry
-            </button>
+          {typeof onOpenAddForm === "function" && (
+            <div className="pt-2">
+              <button
+                type="button"
+                data-press
+                className="
+                  z-btn px-5 py-3 rounded-2xl
+                  bg-emerald-600/90 hover:bg-emerald-500
+                  border border-emerald-300/20
+                  text-black font-semibold
+                "
+                onClick={onOpenAddForm}
+              >
+                + Add Entry
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="text-sm text-zinc-400">
+          {filteredRows.length} / {rows.length} entries
+        </div>
+
+        {filteredRows.length === 0 ? (
+          <div className="z-card p-5">
+            <div className="text-sm text-zinc-400">No entries found.</div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredRows.map((r) => {
+              const isOpen = expanded.has(r._id);
+              const rag = normalizeRag(r["RAG Icon"]);
+
+              return (
+                <article key={r._id} className="z-card p-4">
+                  {/* Header row (tap to expand) */}
+                  <button
+                    type="button"
+                    data-press
+                    className="w-full text-left"
+                    onClick={() =>
+                      setExpanded((prev) => {
+                        const next = new Set(prev);
+                        next.has(r._id) ? next.delete(r._id) : next.add(r._id);
+                        return next;
+                      })
+                    }
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* RAG */}
+                      <button
+                        type="button"
+                        data-press
+                        className="
+                          w-9 h-9 rounded-full
+                          border border-white/10
+                          bg-zinc-950/50
+                          flex items-center justify-center
+                          text-sm
+                          shrink-0
+                        "
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRows((prev) =>
+                            prev.map((x) =>
+                              x._id === r._id
+                                ? {
+                                    ...x,
+                                    "RAG Icon":
+                                      normalizeRag(x["RAG Icon"]) === "🔴"
+                                        ? "🟠"
+                                        : normalizeRag(x["RAG Icon"]) === "🟠"
+                                        ? "🟢"
+                                        : "🔴",
+                                  }
+                                : x
+                            )
+                          );
+                        }}
+                        aria-label="Cycle RAG icon"
+                        title="Cycle RAG icon"
+                      >
+                        {rag}
+                      </button>
+
+                      {/* Text */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[15px] font-semibold text-emerald-200 break-words">
+                          {r.Lithuanian || "—"}
+                        </div>
+                        <div className="text-sm text-zinc-400 mt-0.5 break-words">
+                          {r.English || "—"}
+                        </div>
+
+                        {!isOpen && r.Phonetic && (
+                          <div className="text-xs text-zinc-500 italic mt-1 break-words">
+                            {r.Phonetic}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-zinc-500 text-lg pt-0.5">
+                        {isOpen ? "▾" : "▸"}
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Expanded */}
+                  {isOpen && (
+                    <div className="mt-4 border-t border-white/10 pt-4 z-stack">
+                      {r.Phonetic && (
+                        <div className="text-sm text-zinc-400 italic">
+                          {r.Phonetic}
+                        </div>
+                      )}
+
+                      {r.Usage && (
+                        <div className="z-stack">
+                          <div className="z-section-title">{T.usage}</div>
+                          <div className="text-sm text-zinc-300 leading-relaxed">
+                            {r.Usage}
+                          </div>
+                        </div>
+                      )}
+
+                      {r.Notes && (
+                        <div className="z-stack">
+                          <div className="z-section-title">{T.notes}</div>
+                          <div className="text-sm text-zinc-300 whitespace-pre-line leading-[1.75]">
+                            {r.Notes}
+                          </div>
+                        </div>
+                      )}
+
+                      {r.Category && (
+                        <div className="text-xs text-zinc-500">
+                          {T.category}:{" "}
+                          <span className="text-zinc-300">{r.Category}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="mt-4 flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      data-press
+                      className="
+                        z-btn px-4 py-2 rounded-full text-sm
+                        bg-emerald-600/90 hover:bg-emerald-500
+                        border border-emerald-300/20
+                        text-black font-semibold
+                      "
+                      {...pressHandlers(r.Lithuanian || "")}
+                    >
+                      ▶ Play
+                    </button>
+
+                    <button
+                      type="button"
+                      data-press
+                      className="z-btn z-btn-secondary px-4 py-2 rounded-full text-sm"
+                      onClick={() => onEditRow(r._id)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      data-press
+                      className="
+                        z-btn px-4 py-2 rounded-full text-sm
+                        bg-red-500/90 hover:bg-red-500
+                        border border-white/10
+                        text-white font-semibold
+                      "
+                      onClick={() => {
+                        if (window.confirm(T.confirm)) removePhrase(r._id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
-
-      {/* Controls */}
-      <div className="z-card p-4 sm:p-5 mb-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-zinc-400">Category</label>
-            <select
-              className="z-input !w-auto !py-2 !px-3 !rounded-2xl text-sm"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              disabled={!!qNorm}
-            >
-              <option value="ALL">All</option>
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="text-sm text-zinc-400">
-            {filteredRows.length} / {rows.length} entries
-          </div>
-        </div>
-
-        {qNorm && (
-          <div className="mt-3 z-inset px-4 py-3">
-            <div className="text-sm text-zinc-200 font-medium">
-              Search active
-            </div>
-            <div className="text-xs text-zinc-500 mt-0.5">
-              Showing all categories while searching.
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* List */}
-      {filteredRows.length === 0 ? (
-        <div className="z-card p-4 sm:p-5">
-          <div className="text-sm text-zinc-300 font-medium">
-            No entries found
-          </div>
-          <div className="z-subtitle mt-1">
-            Try clearing search or selecting a different category.
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredRows.map((r) => {
-            const isOpen = expanded.has(r._id);
-
-            return (
-              <article key={r._id} className="z-card p-4 sm:p-5">
-                {/* Header */}
-                <div
-                  className="flex gap-3 cursor-pointer"
-                  onClick={() =>
-                    setExpanded((prev) => {
-                      const next = new Set(prev);
-                      next.has(r._id)
-                        ? next.delete(r._id)
-                        : next.add(r._id);
-                      return next;
-                    })
-                  }
-                >
-                  {/* RAG */}
-                  <button
-                    type="button"
-                    className="
-                      w-9 h-9 rounded-full
-                      border border-white/10
-                      bg-white/[0.06] hover:bg-white/10
-                      flex items-center justify-center text-sm
-                      select-none shrink-0
-                    "
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRows((prev) =>
-                        prev.map((x) =>
-                          x._id === r._id
-                            ? {
-                                ...x,
-                                "RAG Icon":
-                                  normalizeRag(x["RAG Icon"]) === "🔴"
-                                    ? "🟠"
-                                    : normalizeRag(x["RAG Icon"]) === "🟠"
-                                    ? "🟢"
-                                    : "🔴",
-                              }
-                            : x
-                        )
-                      );
-                    }}
-                    data-press
-                  >
-                    {normalizeRag(r["RAG Icon"])}
-                  </button>
-
-                  {/* Text */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[15px] sm:text-[16px] font-semibold text-zinc-100 break-words">
-                      {r.Lithuanian || "—"}
-                    </div>
-
-                    <div className="text-sm text-zinc-400 mt-1 break-words">
-                      {r.English || "—"}
-                    </div>
-
-                    {!isOpen && r.Phonetic && (
-                      <div className="text-xs text-zinc-500 italic mt-1 break-words">
-                        {r.Phonetic}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Expanded */}
-                {isOpen && (
-                  <div className="mt-4 pt-4 border-t border-white/10 space-y-4 text-sm text-zinc-300">
-                    {r.Phonetic && (
-                      <div className="z-inset px-4 py-3 italic">
-                        {r.Phonetic}
-                      </div>
-                    )}
-
-                    {r.Usage && (
-                      <div className="z-inset px-4 py-3">
-                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
-                          {T.usage}
-                        </div>
-                        <div className="leading-relaxed">{r.Usage}</div>
-                      </div>
-                    )}
-
-                    {r.Notes && (
-                      <div className="z-inset px-4 py-3">
-                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
-                          {T.notes}
-                        </div>
-                        <div className="whitespace-pre-line leading-[1.75]">
-                          {r.Notes}
-                        </div>
-                      </div>
-                    )}
-
-                    {r.Category && (
-                      <div className="text-xs text-zinc-500">
-                        {T.category}:{" "}
-                        <span className="text-zinc-300">{r.Category}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex flex-wrap justify-end gap-2 mt-4">
-                  <button
-                    type="button"
-                    className="
-                      z-btn !px-4 !py-2 !rounded-2xl
-                      bg-emerald-500 text-black font-semibold
-                      hover:bg-emerald-400 active:bg-emerald-300
-                      border border-emerald-300/20
-                    "
-                    {...pressHandlers(r.Lithuanian || "")}
-                    data-press
-                  >
-                    ▶ Play
-                  </button>
-
-                  <button
-                    type="button"
-                    className="z-btn z-btn-secondary !px-4 !py-2 !rounded-2xl text-sm"
-                    onClick={() => onEditRow(r._id)}
-                    data-press
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    type="button"
-                    className="
-                      z-btn !px-4 !py-2 !rounded-2xl text-sm
-                      bg-red-500 text-white border border-red-400/20
-                      hover:bg-red-400 active:bg-red-300
-                    "
-                    onClick={() => {
-                      if (window.confirm(T.confirm)) removePhrase(r._id);
-                    }}
-                    data-press
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
