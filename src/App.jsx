@@ -275,7 +275,9 @@ export default function App() {
   }
 
   function dismissToast(id) {
-    setToasts((prev) => (Array.isArray(prev) ? prev.filter((t) => t.id !== id) : []));
+    setToasts((prev) =>
+      Array.isArray(prev) ? prev.filter((t) => t.id !== id) : []
+    );
   }
 
   /* VOICE */
@@ -327,178 +329,106 @@ export default function App() {
   const fetchStarter = (kind) =>
     fetchStarterIO(kind, { STARTERS, mergeStarterRowsImpl: mergeStarterRows });
 
-  const importJsonFile = (file) =>
-    importJsonFileIO(file, { mergeRowsImpl: mergeRows });
+  const importJsonFile = (file) => importJsonFileIO(file, { mergeRowsImpl: mergeRows });
 
   const clearLibrary = () => clearLibraryIO({ T, setRows });
 
   const [addOpen, setAddOpen] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
 
-  const editingRow = useMemo(
-    () => visibleRows.find((r) => r._id === editRowId) || null,
-    [visibleRows, editRowId]
-  );
-  const isEditing = !!editingRow;
+  const isEditing = editRowId != null;
 
-  function removePhraseById(id) {
-    try {
-      trackEvent("phrase_delete", { phrase_id: id }, { app_version: APP_VERSION });
-    } catch {}
+  const editRow = useMemo(() => {
+    if (!isEditing) return null;
+    return rows.find((r) => r.id === editRowId) || null;
+  }, [isEditing, rows, editRowId]);
 
+  /* Delete */
+  const removePhraseById = (id) => {
+    if (!id) return;
+    if (!confirm(T.confirm)) return;
     setRows((prev) =>
-      prev.map((r) =>
-        r._id === id ? { ...r, _deleted: true, _deleted_ts: Date.now() } : r
-      )
+      Array.isArray(prev)
+        ? prev.map((r) => (r.id === id ? { ...r, _deleted: true, _ts: nowTs() } : r))
+        : prev
     );
-  }
+  };
 
-  useModalScrollLock({ active: addOpen, disabled: authLoading });
-  useAppBodyScrollLock({ active: !!user });
-
-  const [showChangeLog, setShowChangeLog] = useState(false);
-  const [showUserGuide, setShowUserGuide] = useState(false);
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
-
-  useEffect(() => {
-    if (!localStorage.getItem(LSK_USER_GUIDE)) setShowUserGuide(true);
-  }, []);
-
-  useEffect(() => {
-    if (localStorage.getItem(LSK_LAST_SEEN_VERSION) !== APP_VERSION)
-      setShowWhatsNew(true);
-  }, []);
-
-  function goToPage(next) {
-    setAddOpen(false);
-    setEditRowId(null);
-    setShowChangeLog(false);
-    setShowUserGuide(false);
-    setShowWhatsNew(false);
-    setPage(next);
-  }
+  /* Top-level page transition (keep as-is, but smooth) */
+  const goToPage = (next) => {
+    if (!next) return;
+    startTransition(() => {
+      setPage(next);
+    });
+  };
 
   function handleLogoClick() {
-    startTransition(() => searchStore.clear());
-
-    const ae = document.activeElement;
-    if (
-      ae &&
-      (ae.tagName === "INPUT" ||
-        ae.tagName === "TEXTAREA" ||
-        ae.tagName === "SELECT")
-    ) {
-      try {
-        ae.blur();
-      } catch {}
-    }
-
+    // Clicking logo takes you home and resets local HomeView state.
     setHomeResetKey((k) => k + 1);
     goToPage("home");
   }
 
-  /* DAILY RECALL */
-  const dailyBlocked =
-    addOpen ||
-    showWhatsNew ||
-    showUserGuide ||
-    showChangeLog ||
-    page === "dupes" ||
-    page === "analytics";
-
+  /* Daily recall */
   const dailyRecall = useDailyRecall({
     rows: visibleRows,
-    blocked: dailyBlocked,
-    minLibraryForUserMode: 8,
+    appVersion: APP_VERSION,
   });
 
-  /* ---------- ANALYTICS: session + views + global errors ---------- */
+  // Modals: changelog/user guide/whats new
+  const [showChangeLog, setShowChangeLog] = useState(false);
+  const [showUserGuide, setShowUserGuide] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
 
-  // Global JS error capture
+  // Track if user has seen guide + version
+  const [seenUserGuide, setSeenUserGuide] = useLocalStorageState(LSK_USER_GUIDE, false);
+  const [lastSeenVersion, setLastSeenVersion] = useLocalStorageState(
+    LSK_LAST_SEEN_VERSION,
+    ""
+  );
+
   useEffect(() => {
-    function onError(event) {
-      try {
-        trackError(
-          event?.error || new Error(event?.message || "window_error"),
-          { source: "window_error" },
-          { app_version: APP_VERSION }
-        );
-      } catch {}
+    // show whats new on version bump (non-blocking)
+    if (!lastSeenVersion) {
+      setLastSeenVersion(APP_VERSION);
+      return;
     }
-
-    function onRejection(event) {
-      try {
-        const reason = event?.reason;
-        trackError(
-          reason instanceof Error
-            ? reason
-            : new Error(String(reason || "unhandled_rejection")),
-          { source: "unhandled_rejection" },
-          { app_version: APP_VERSION }
-        );
-      } catch {}
+    if (lastSeenVersion !== APP_VERSION) {
+      setShowWhatsNew(true);
+      setLastSeenVersion(APP_VERSION);
     }
+  }, [lastSeenVersion, setLastSeenVersion]);
 
-    window.addEventListener("error", onError);
-    window.addEventListener("unhandledrejection", onRejection);
-
-    return () => {
-      window.removeEventListener("error", onError);
-      window.removeEventListener("unhandledrejection", onRejection);
-    };
-  }, []);
-
-  // session_start once per authenticated allowlisted render
-  const sessionStartedRef = useRef(false);
   useEffect(() => {
-    if (!user) return;
-    if (!allowlistChecked || !isAllowlisted) return;
-    if (sessionStartedRef.current) return;
+    // show user guide once after first login (non-blocking)
+    if (!user?.id) return;
+    if (seenUserGuide) return;
+    setShowUserGuide(true);
+    setSeenUserGuide(true);
+  }, [user?.id, seenUserGuide, setSeenUserGuide]);
 
-    sessionStartedRef.current = true;
+  // Scroll locks
+  useModalScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
+  useAppBodyScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
 
-    try {
-      trackEvent(
-        "session_start",
-        { initial_page: page },
-        { app_version: APP_VERSION }
-      );
-    } catch {}
-  }, [user, allowlistChecked, isAllowlisted]); // intentionally not depending on page
+  // Header highlight: keep the normal tabs. Analytics should look like "Settings" is active.
+  const headerPage = swipeTabs.includes(page) ? page : "settings";
 
-  // view tracking on page changes
-  useEffect(() => {
-    if (!user) return;
-    if (!allowlistChecked || !isAllowlisted) return;
-
-    try {
-      trackEvent(`view_${page}`, {}, { app_version: APP_VERSION });
-    } catch {}
-  }, [page, user, allowlistChecked, isAllowlisted]);
-
-  /* RENDER GATE */
-  if (authLoading && !user) {
-    return <div className="min-h-[100dvh] bg-zinc-950" />;
+  // Guardrails: auth/beta
+  if (authLoading || !allowlistChecked) {
+    return (
+      <div className="min-h-[100dvh] bg-zinc-950 text-zinc-100 flex items-center justify-center">
+        <div className="text-sm text-zinc-400">Loading…</div>
+      </div>
+    );
   }
 
   if (!user) {
     return <AuthGate />;
   }
 
-  if (!allowlistChecked) {
-    return (
-      <div className="min-h-[100dvh] bg-zinc-950 text-zinc-200 flex items-center justify-center">
-        Checking beta access…
-      </div>
-    );
-  }
-
   if (!isAllowlisted) {
-    return <BetaBlocked email={user.email} />;
+    return <BetaBlocked />;
   }
-
-  // Header highlight: keep the normal tabs. Analytics should look like "Settings" is active.
-  const headerPage = swipeTabs.includes(page) ? page : "settings";
 
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
@@ -512,25 +442,23 @@ export default function App() {
         isSwiping={isSwiping}
       />
 
-      <main
-        className="flex-1 overflow-hidden"
-        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
-      >
+      <main className="flex-1 overflow-hidden" style={{ height: `calc(100dvh - ${headerHeight}px)` }}>
         {page === "dupes" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
-            <DuplicateScannerView
-              T={T}
-              rows={visibleRows}
-              removePhrase={removePhraseById}
-              onBack={() => goToPage("settings")}
-            />
+            <div className="z-page z-page-y">
+              <DuplicateScannerView
+                T={T}
+                rows={visibleRows}
+                removePhrase={removePhraseById}
+                onBack={() => goToPage("settings")}
+              />
+            </div>
           </div>
         ) : page === "analytics" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
-            <AnalyticsView
-              appVersion={APP_VERSION}
-              onBack={() => goToPage("settings")}
-            />
+            <div className="z-page z-page-y">
+              <AnalyticsView appVersion={APP_VERSION} onBack={() => goToPage("settings")} />
+            </div>
           </div>
         ) : (
           <SwipePager
@@ -597,11 +525,11 @@ export default function App() {
             {/* TRAINING */}
             <div className="h-full overflow-y-auto overscroll-contain">
               <TrainingView
-  T={T}
-  rows={visibleRows}
-  playText={playTextTracked}
-  showToast={showToast}
-/>
+                T={T}
+                rows={visibleRows}
+                playText={playTextTracked}
+                showToast={showToast}
+              />
             </div>
 
             {/* SETTINGS */}
@@ -654,14 +582,12 @@ export default function App() {
             style={{ paddingTop: headerHeight + 16 }}
           >
             <div
-              className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-y-auto flex flex-col"
+              className="w-full max-w-2xl z-card shadow-2xl overflow-y-auto flex flex-col"
               style={{ height: `calc(100dvh - ${headerHeight + 32}px)` }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-5 pb-3 border-b border-zinc-800 shrink-0">
-                <h3 className="text-lg font-semibold">
-                  {isEditing ? T.edit : T.addEntry}
-                </h3>
+              <div className="p-5 pb-3 border-b border-white/10 shrink-0">
+                <h3 className="z-title">{isEditing ? T.edit : T.addEntry}</h3>
               </div>
 
               <div className="p-5 pt-4 flex-1 min-h-0">
@@ -669,40 +595,14 @@ export default function App() {
                   T={T}
                   genId={genId}
                   nowTs={nowTs}
-                  normalizeRag={normalizeRag}
-                  mode={isEditing ? "edit" : "add"}
-                  initialRow={editingRow || undefined}
-                  onSubmit={(row) => {
-                    if (isEditing) {
-                      try {
-                        trackEvent(
-                          "phrase_edit",
-                          { phrase_id: row?._id || null },
-                          { app_version: APP_VERSION }
-                        );
-                      } catch {}
-
-                      const index = rows.findIndex((r) => r._id === row._id);
-                      if (index !== -1) saveEditedPhrase(index, row);
-                    } else {
-                      try {
-                        trackEvent(
-                          "phrase_add",
-                          { phrase_id: row?._id || null },
-                          { app_version: APP_VERSION }
-                        );
-                      } catch {}
-
-                      addPhrase(row);
-                    }
-
+                  addPhrase={addPhrase}
+                  saveEditedPhrase={saveEditedPhrase}
+                  editRow={editRow}
+                  onClose={() => {
                     setAddOpen(false);
                     setEditRowId(null);
                   }}
-                  onCancel={() => {
-                    setAddOpen(false);
-                    setEditRowId(null);
-                  }}
+                  showToast={showToast}
                 />
               </div>
             </div>
@@ -710,33 +610,20 @@ export default function App() {
         </div>
       )}
 
-      {showWhatsNew && (
-        <WhatsNewModal
-          version={APP_VERSION}
-          topOffset={headerHeight}
-          onClose={() => {
-            localStorage.setItem(LSK_LAST_SEEN_VERSION, APP_VERSION);
-            setShowWhatsNew(false);
-          }}
-          onViewChangelog={() => {
-            localStorage.setItem(LSK_LAST_SEEN_VERSION, APP_VERSION);
-            setShowWhatsNew(false);
-            setShowChangeLog(true);
-          }}
+      {/* CHANGELOG */}
+      {showChangeLog && (
+        <ChangeLogModal
+          appVersion={APP_VERSION}
+          onClose={() => setShowChangeLog(false)}
         />
       )}
 
-      {showChangeLog && <ChangeLogModal onClose={() => setShowChangeLog(false)} />}
+      {/* USER GUIDE */}
+      {showUserGuide && <UserGuideModal onClose={() => setShowUserGuide(false)} />}
 
-      {showUserGuide && (
-        <UserGuideModal
-          topOffset={headerHeight}
-          onClose={() => {
-            setShowUserGuide(false);
-            localStorage.setItem(LSK_USER_GUIDE, "1");
-          }}
-          firstLaunch
-        />
+      {/* WHAT’S NEW */}
+      {showWhatsNew && (
+        <WhatsNewModal appVersion={APP_VERSION} onClose={() => setShowWhatsNew(false)} />
       )}
     </div>
   );
