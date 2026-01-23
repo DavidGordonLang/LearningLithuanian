@@ -2,38 +2,17 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRecallFlipSession } from "../../hooks/training/useRecallFlipSession";
 import { useRecallFlipAudio } from "../../hooks/training/useRecallFlipAudio";
-import { AudioButtons, SummaryModal, ToggleButton } from "./recallFlip/RecallFlipParts";
+import { AudioButtons, SummaryModal } from "./recallFlip/RecallFlipParts";
 import { recallFlipCss } from "./recallFlip/recallFlipStyles";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 const SESSION_SIZE = 10;
 
-/**
- * Tool A — Recall Flip (Active Recall)
- *
- * Interaction:
- * - Tap anywhere on the card to flip (front <-> back)
- *
- * Audio (LT only):
- * - Two buttons: Play + Slow (slow uses opts: { slow: true })
- * - Audio controls ONLY appear when Lithuanian is visible on the card:
- *    - EN → LT: LT is on the back => visible AFTER reveal
- *    - LT → EN: LT is on the front => visible BEFORE reveal
- *
- * Session:
- * - 10 cards per run
- * - At end: summary modal (Right / Close / Wrong)
- *   - Review mistakes (close+wrong)
- *   - Let’s do another 10 (fresh)
- *   - Finish (back)
- *
- * Phase 1: no persistence. Session scoring only, resets every run.
- */
 export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const list = Array.isArray(rows) ? rows : [];
 
-  // Direction: prompt -> answer
+  // Direction stays in code (you’ll wire it to Settings later), but UI is removed for now.
   const [direction, setDirection] = useState("en_to_lt"); // "en_to_lt" | "lt_to_en"
 
   // Visual FX (allowed primitives only)
@@ -46,7 +25,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   // Session hook
   const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  // Audio hook (MATCHES your actual useRecallFlipAudio.js)
+  // Audio hook
   const a = useRecallFlipAudio({
     current: s.current,
     direction,
@@ -57,8 +36,14 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   });
 
   // Derived texts for current card
-  const prompt = useMemo(() => getPromptText(s.current, direction), [s.current, direction]);
-  const answer = useMemo(() => getAnswerText(s.current, direction), [s.current, direction]);
+  const prompt = useMemo(
+    () => getPromptText(s.current, direction),
+    [s.current, direction]
+  );
+  const answer = useMemo(
+    () => getAnswerText(s.current, direction),
+    [s.current, direction]
+  );
 
   // Use the audio hook’s own truth for LT visibility
   const isLtVisible = !!a.isLtVisible;
@@ -84,7 +69,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   }, []);
 
   function hardExit() {
-    // Back must ALWAYS work.
     clearFxTimer();
     s.clearTimers?.();
     a.resetAudio?.();
@@ -113,27 +97,39 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     });
   }
 
-  // Keep the direction UI for now (you’ll wire it to Settings later),
-  // but tighten the top header spacing so everything fits cleanly.
   return (
     <div className="max-w-xl mx-auto px-4 py-6 rf-root">
       {/* Header row: centered title with equal side weights */}
-      <div className="grid grid-cols-[44px_1fr_44px] items-center">
+      <div className="grid grid-cols-[48px_1fr_48px] items-center">
         <button
           type="button"
           onClick={hardExit}
           aria-label="Back"
           className={cn(
-            "h-11 w-11 rounded-full",
-            "border border-white/10 bg-white/[0.05] backdrop-blur",
+            "h-12 w-12 rounded-full",
+            "border border-white/10 bg-white/[0.06] backdrop-blur",
             "shadow-[0_10px_30px_rgba(0,0,0,0.35)]",
             "flex items-center justify-center",
-            "text-zinc-200 hover:bg-white/[0.08] active:scale-[0.99] transition"
+            "text-zinc-200 hover:bg-white/[0.09] active:scale-[0.99] transition"
           )}
         >
-          <span className="text-xl leading-none" aria-hidden="true">
-            ←
-          </span>
+          {/* Premium arrow: SVG (optically centered) */}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className="translate-x-[-0.5px]" // optical centering (glyphs often look right-shifted)
+          >
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
 
         <div className="text-center">
@@ -143,54 +139,29 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
         </div>
 
         {/* right spacer to keep title perfectly centered */}
-        <div className="h-11 w-11" aria-hidden="true" />
+        <div className="h-12 w-12" aria-hidden="true" />
       </div>
 
-      {/* Direction toggle (still visible for now) */}
-      <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-2">
-        <div className="grid grid-cols-2 gap-2">
-          <ToggleButton
-            active={direction === "en_to_lt"}
-            label="EN → LT"
-            sub="Recall Lithuanian"
-            onClick={() => {
-              if (s.busy || a.audioBusy || s.showSummary) return;
-              setDirection("en_to_lt");
-              s.setRevealed?.(false);
-              setFx(null);
-              a.resetAudio?.();
-            }}
-          />
-          <ToggleButton
-            active={direction === "lt_to_en"}
-            label="LT → EN"
-            sub="Recall English"
-            onClick={() => {
-              if (s.busy || a.audioBusy || s.showSummary) return;
-              setDirection("lt_to_en");
-              s.setRevealed?.(false);
-              setFx(null);
-              a.resetAudio?.();
-            }}
-          />
-        </div>
-      </div>
+      {/* (Direction UI removed for now — kept in code for later settings wiring) */}
 
       {/* Empty state */}
       {!s.current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
-          <div className="text-sm text-zinc-300 mt-2">Add a few entries first, or switch focus.</div>
+          <div className="text-sm text-zinc-300 mt-2">
+            Add a few entries first, or switch focus.
+          </div>
         </div>
       )}
 
       {/* Card */}
       {!!s.current && !s.showSummary && (
-        <div className="mt-6">
+        <div className="mt-5">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs text-zinc-500">{s.progressLabel}</div>
             <div className="text-xs text-zinc-500">
-              Right {s.countRight} · Close enough {s.countClose} · Wrong {s.countWrong}
+              Right {s.countRight} · Close enough {s.countClose} · Wrong{" "}
+              {s.countWrong}
             </div>
           </div>
 
@@ -205,7 +176,12 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
               )}
             />
 
-            <div className={cn("rf-perspective", s.busy ? "pointer-events-none select-none" : "")}>
+            <div
+              className={cn(
+                "rf-perspective",
+                s.busy ? "pointer-events-none select-none" : ""
+              )}
+            >
               <div
                 className={cn(
                   "rf-card rounded-3xl border border-zinc-800 bg-zinc-950/70 shadow-[0_18px_60px_rgba(0,0,0,0.55)]",
@@ -234,7 +210,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         onPlay={() => a.playNormal?.()}
                         onPlaySlow={() => a.playSlow?.()}
                         disabledReason={
-                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                          typeof playText !== "function"
+                            ? "Audio unavailable"
+                            : "Play Lithuanian"
                         }
                       />
                     )}
@@ -242,7 +220,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                   <div className="rf-center-zone">
                     <div className="rf-hero-text">{prompt || "—"}</div>
-                    {!s.revealed && <div className="rf-hint">Tap the card to reveal</div>}
+                    {!s.revealed && (
+                      <div className="rf-hint">Tap the card to reveal</div>
+                    )}
                   </div>
 
                   <div className="rf-bottom-spacer" aria-hidden="true" />
@@ -259,7 +239,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         onPlay={() => a.playNormal?.()}
                         onPlaySlow={() => a.playSlow?.()}
                         disabledReason={
-                          typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                          typeof playText !== "function"
+                            ? "Audio unavailable"
+                            : "Play Lithuanian"
                         }
                       />
                     )}
@@ -270,11 +252,17 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     <div className="rf-sub-text">{prompt || ""}</div>
                   </div>
 
-                  <div className="rf-grade-zone" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="rf-grade-zone"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="rf-grade-grid">
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-wrong", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-wrong",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
@@ -283,7 +271,10 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-close", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-close",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
@@ -292,7 +283,10 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-right", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-right",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
@@ -313,7 +307,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       {s.showSummary && (
         <SummaryModal
           title="Session complete"
-          subtitle={`${s.summaryTotal} ${s.summaryTotal === 1 ? "card" : "cards"}`}
+          subtitle={`${s.summaryTotal} ${
+            s.summaryTotal === 1 ? "card" : "cards"
+          }`}
           right={s.countRight}
           close={s.countClose}
           wrong={s.countWrong}
@@ -349,13 +345,15 @@ function filterByFocus(rows, focus) {
 
 function getPromptText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt") return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
+  if (direction === "en_to_lt")
+    return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
   return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
 }
 
 function getAnswerText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt") return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
+  if (direction === "en_to_lt")
+    return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
   return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
 }
 
