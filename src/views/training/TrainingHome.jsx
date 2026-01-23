@@ -3,49 +3,31 @@ import React, { useMemo } from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-function FocusPillBar({ focus, setFocus, counts }) {
-  const items = [
-    { id: "phrases", label: "Phrases", count: counts?.phrases ?? 0 },
-    { id: "words", label: "Words", count: counts?.words ?? 0 },
-    { id: "numbers", label: "Numbers", count: counts?.numbers ?? 0 },
-    { id: "all", label: "All", count: counts?.all ?? 0 },
-  ];
-
+function FocusPill({ active, label, sub, onClick }) {
   return (
-    <div className="z-pillbar" role="tablist" aria-label="Training focus">
-      {items.map((it) => {
-        const active = focus === it.id;
-        return (
-          <button
-            key={it.id}
-            type="button"
-            data-press
-            className={cn("z-pill", active ? "z-pill-on" : "z-pill-off")}
-            onClick={() => setFocus(it.id)}
-            role="tab"
-            aria-selected={active}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <span>{it.label}</span>
-              <span className="text-xs text-zinc-400">{it.count}</span>
-            </div>
-          </button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      data-press
+      className={cn("z-pill", active ? "z-pill-active" : "")}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-center gap-2">
+        <span className="font-medium">{label}</span>
+        <span className="text-[11px] opacity-80">{sub}</span>
+      </div>
+    </button>
   );
 }
 
-function ToolRow({ disabled, icon, title, desc, onClick }) {
+function ModuleRow({ icon, title, desc, disabled, onClick, hint }) {
   return (
     <button
       type="button"
       data-press
       className={cn(
-        "w-full text-left",
-        "z-card px-4 py-4",
-        "transition",
-        disabled ? "opacity-55 cursor-not-allowed" : "hover:bg-white/[0.09]"
+        "w-full text-left z-inset px-4 py-4 transition",
+        "border border-white/10",
+        disabled ? "opacity-55 cursor-not-allowed" : "hover:bg-white/5"
       )}
       onClick={() => {
         if (disabled) return;
@@ -53,25 +35,26 @@ function ToolRow({ disabled, icon, title, desc, onClick }) {
       }}
       disabled={disabled}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className="
-            w-10 h-10 rounded-full
-            border border-white/10
-            bg-zinc-950/40
-            flex items-center justify-center
-            shrink-0
-          "
-        >
-          <span className="text-lg">{icon}</span>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+            <span className="text-lg">{icon}</span>
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-[15px] font-semibold text-zinc-100 truncate">
+              {title}
+            </div>
+            <div className="text-[13px] text-zinc-400 mt-0.5 leading-snug">
+              {desc}
+            </div>
+            {hint ? (
+              <div className="text-[12px] text-zinc-500 mt-2">{hint}</div>
+            ) : null}
+          </div>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-semibold text-zinc-100">{title}</div>
-          <div className="text-sm text-zinc-400 mt-0.5 leading-snug">{desc}</div>
-        </div>
-
-        <div className="text-zinc-500 text-lg">›</div>
+        <div className="text-zinc-500 pt-1">›</div>
       </div>
     </button>
   );
@@ -105,86 +88,99 @@ export default function TrainingHome({
   return (
     <div className="z-page z-page-y pb-28">
       <div className="z-stack-lg">
-        <div className="z-stack">
+        <div>
           <div className="z-title">{T?.navTraining || "Training"}</div>
-          <div className="z-subtitle">
+          <div className="z-subtitle mt-1">
             Practise what you’ve saved. Calm, consistent, and on your terms.
           </div>
         </div>
 
-        {/* Focus */}
-        <div className="z-card p-4 sm:p-5 z-stack">
+        {/* FOCUS */}
+        <section className="z-card p-4 sm:p-5">
           <div className="z-section-title">Focus</div>
-          <div className="z-subtitle -mt-1">
+          <div className="z-subtitle mt-1">
             Choose what kind of entries you want in your sessions.
           </div>
 
-          <FocusPillBar focus={focus} setFocus={setFocus} counts={counts} />
+          <div className="mt-3 z-pillbar">
+            <FocusPill
+              active={focus === "phrases"}
+              label="Phrases"
+              sub={`${counts.phrases}`}
+              onClick={() => setFocus("phrases")}
+            />
+            <FocusPill
+              active={focus === "words"}
+              label="Words"
+              sub={`${counts.words}`}
+              onClick={() => setFocus("words")}
+            />
+            <FocusPill
+              active={focus === "numbers"}
+              label="Numbers"
+              sub={`${counts.numbers}`}
+              onClick={() => setFocus("numbers")}
+            />
+            <FocusPill
+              active={focus === "all"}
+              label="All"
+              sub={`${counts.all}`}
+              onClick={() => setFocus("all")}
+            />
+          </div>
 
-          {tooFew && (
-            <div className="z-inset p-4">
-              <div className="text-sm font-semibold text-zinc-200">
+          {tooFew ? (
+            <div className="mt-4 z-inset p-4 border border-amber-500/20 bg-amber-950/15">
+              <div className="text-sm font-semibold text-amber-200">
                 Not enough entries
               </div>
-              <div className="text-sm text-zinc-400 mt-1">
+              <div className="text-sm text-zinc-300 mt-1">
                 You’ve only got {eligibleCount} in{" "}
-                <span className="text-zinc-200 font-semibold">{focusLabel}</span>.
+                <span className="text-zinc-100 font-semibold">{focusLabel}</span>.
                 Add a few more, or switch focus.
               </div>
             </div>
-          )}
-        </div>
+          ) : null}
+        </section>
 
-        {/* Modules */}
-        <div className="z-card p-4 sm:p-5 z-stack">
+        {/* MODULES */}
+        <section className="z-card p-4 sm:p-5">
           <div className="z-section-title">Modules</div>
-          <div className="z-subtitle -mt-1">
-            Start with recall, then reinforce with repetition.
+          <div className="z-subtitle mt-1">
+            Start with recall, then reinforce through repetition.
           </div>
 
-          <div className="z-stack">
-            <ToolRow
-              disabled={tooFew}
+          <div className="mt-3 z-stack">
+            <ModuleRow
               icon="🧠"
               title="Recognise"
               desc="Reveal-based recall. Self-grade and move on."
+              disabled={tooFew}
               onClick={onStartRecallFlip}
             />
 
-            <ToolRow
-              disabled={tooFew}
+            <ModuleRow
               icon="⌨️"
               title="Produce"
               desc="Produce Lithuanian first. Type (or speak), then reveal."
+              disabled={tooFew}
               onClick={onStartBlindRecall}
             />
 
-            <ToolRow
-              disabled={matchPairsDisabled}
+            <ModuleRow
               icon="🧩"
               title="Reinforce"
               desc="Words & numbers only. Tap two tiles to match EN ↔ LT."
+              disabled={matchPairsDisabled}
               onClick={onStartMatchPairs}
+              hint={
+                matchPairsDisabled
+                  ? `Add at least 10 words/numbers to unlock (you have ${wordsNumbersCount}).`
+                  : null
+              }
             />
-
-            {matchPairsDisabled && (
-              <div className="z-helper">
-                Add at least <span className="text-zinc-200 font-semibold">10</span>{" "}
-                words/numbers to unlock (you have {wordsNumbersCount}).
-              </div>
-            )}
           </div>
-
-          {/* Keep the gating explanation subtle */}
-          {tooFew && (
-            <div className="z-helper">
-              Tools need at least{" "}
-              <span className="text-zinc-200 font-semibold">{minNeeded}</span>{" "}
-              eligible entries in{" "}
-              <span className="text-zinc-200 font-semibold">{focusLabel}</span>.
-            </div>
-          )}
-        </div>
+        </section>
       </div>
     </div>
   );
