@@ -7,9 +7,10 @@ import useSaveToLibrary from "../hooks/useSaveToLibrary";
 
 const Segmented = memo(function Segmented({ value, onChange, options }) {
   return (
-    <div className="flex w-full bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] overflow-hidden">
+    <div className="z-inset p-1 flex w-full overflow-hidden rounded-2xl">
       {options.map((opt, idx) => {
         const active = value === opt.value;
+
         return (
           <button
             key={opt.value}
@@ -18,11 +19,11 @@ const Segmented = memo(function Segmented({ value, onChange, options }) {
             onMouseDown={(e) => e.preventDefault()}
             onTouchStart={(e) => e.preventDefault()}
             className={
-              "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none " +
+              "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none rounded-2xl " +
               (active
-                ? "bg-emerald-600 text-black"
-                : "bg-zinc-950/60 text-zinc-200 hover:bg-zinc-800/60") +
-              (idx !== options.length - 1 ? " border-r border-zinc-800" : "")
+                ? "bg-emerald-600/90 text-black border border-emerald-300/20"
+                : "bg-transparent text-zinc-200 hover:bg-white/5 border border-transparent") +
+              (idx !== options.length - 1 ? " mr-1" : "")
             }
           >
             {opt.label}
@@ -185,37 +186,42 @@ export default function HomeView({
       "border ";
 
     if (!sttSupported()) {
-      return base + "bg-zinc-900/60 text-zinc-500 border-zinc-800";
+      return base + "bg-white/5 text-zinc-500 border-white/10";
     }
 
+    // Held = expanded glow
     if (sttState === "recording") {
       return (
         base +
-        "bg-emerald-500 text-black border-emerald-400 " +
-        "shadow-[0_0_30px_rgba(16,185,129,0.35)]"
+        "bg-emerald-600/90 text-black border-emerald-300/25 " +
+        "shadow-[0_0_38px_rgba(16,185,129,0.35)]"
       );
     }
 
+    // Translating/transcribing = calm pulse (no spinner)
     if (sttState === "transcribing" || sttState === "translating") {
       return (
         base +
-        "bg-emerald-600 text-black border-emerald-400 " +
-        "shadow-[0_0_30px_rgba(16,185,129,0.25)]"
+        "bg-emerald-600/90 text-black border-emerald-300/20 " +
+        "shadow-[0_0_34px_rgba(16,185,129,0.25)] z-pulse"
       );
     }
 
+    // Idle = subtle glow
     return (
       base +
-      "bg-zinc-900/95 text-zinc-100 border-zinc-800 " +
-      "shadow-[0_0_20px_rgba(0,0,0,0.25)] hover:bg-zinc-900"
+      "bg-white/[0.06] text-zinc-100 border-white/10 " +
+      "shadow-[0_0_22px_rgba(16,185,129,0.10)] hover:bg-white/10"
     );
   })();
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28">
-      {/* Speaking to */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
-        <div className="text-sm font-semibold mb-2">Speaking to…</div>
+    <div className="z-page pb-28 space-y-4">
+      {/* Speaking to… */}
+      <div className="z-card p-4 sm:p-5">
+        <div className="text-sm font-semibold text-zinc-100 mb-2">
+          Speaking to…
+        </div>
         <Segmented
           value={gender}
           onChange={handleGenderChange}
@@ -228,8 +234,8 @@ export default function HomeView({
       </div>
 
       {/* Tone */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
-        <div className="text-sm font-semibold mb-2">Tone</div>
+      <div className="z-card p-4 sm:p-5">
+        <div className="text-sm font-semibold text-zinc-100 mb-2">Tone</div>
         <Segmented
           value={tone}
           onChange={handleToneChange}
@@ -242,30 +248,30 @@ export default function HomeView({
       </div>
 
       {/* Input */}
-      <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 mb-5">
-        <label className="block text-sm mb-2">What would you like to say?</label>
+      <div className="z-card p-4 sm:p-5">
+        <label className="block text-sm text-zinc-200 mb-2">
+          What would you like to say?
+        </label>
 
         <textarea
           ref={textareaRef}
           rows={3}
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-sm mb-3"
+          className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm mb-3"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
 
         {/* Auto-Translate toggle */}
         <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="text-xs text-zinc-400">
-            Auto-Translate after speech
-          </div>
+          <div className="text-xs text-zinc-500">Auto-Translate after speech</div>
 
           <button
             type="button"
             className={
               "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors select-none " +
               (autoTranslate
-                ? "bg-emerald-500 border-emerald-400"
-                : "bg-zinc-800 border-zinc-700")
+                ? "bg-emerald-600/90 border-emerald-300/20"
+                : "bg-white/5 border-white/10")
             }
             onClick={() => {
               blurTextarea();
@@ -323,7 +329,7 @@ export default function HomeView({
               <span className="text-xl">🎤</span>
               <span className="text-base">{micLabel}</span>
             </div>
-            <div className="text-xs mt-1 opacity-80">
+            <div className="text-xs mt-1 text-zinc-200/80">
               {sttState === "idle"
                 ? "Press and hold (max 15s)"
                 : "Release to stop"}
@@ -334,12 +340,12 @@ export default function HomeView({
         <div className="flex gap-3 flex-wrap">
           <button
             type="button"
-            className="
-              bg-emerald-500 text-black rounded-full px-5 py-2
-              font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300
-              transition-transform duration-150 active:scale-95
-              select-none
-            "
+            data-press
+            className={
+              "z-btn px-5 py-3 rounded-2xl font-semibold " +
+              (translating || !canTranslate ? "z-disabled " : "") +
+              "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+            }
             onClick={handleTranslateClick}
             disabled={translating || !canTranslate}
           >
@@ -348,12 +354,8 @@ export default function HomeView({
 
           <button
             type="button"
-            className="
-              bg-zinc-800 text-zinc-200 rounded-full px-5 py-2
-              font-medium hover:bg-zinc-700 active:bg-zinc-600
-              transition-transform duration-150 active:scale-95
-              select-none
-            "
+            data-press
+            className={"z-btn z-btn-secondary px-5 py-3 rounded-2xl " + (sttState !== "idle" ? "z-disabled" : "")}
             onClick={handleClear}
             disabled={sttState !== "idle"}
           >
@@ -364,8 +366,8 @@ export default function HomeView({
 
       {/* Duplicate warning / existing entry view */}
       {duplicateEntry && (
-        <div className="bg-amber-950/70 border border-amber-500/70 rounded-2xl p-4 mb-5">
-          <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="z-card p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15">
+          <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <div className="text-sm font-semibold text-amber-300">
                 Similar entry already in your library
@@ -377,11 +379,8 @@ export default function HomeView({
             </div>
             <button
               type="button"
-              className="
-                text-xs px-3 py-1 rounded-full
-                bg-zinc-900/80 text-zinc-200
-                hover:bg-zinc-800 active:bg-zinc-700
-              "
+              data-press
+              className="z-btn z-btn-quiet px-3 py-2 rounded-xl text-xs"
               onClick={() => {
                 blurTextarea();
                 setDuplicateEntry(null);
@@ -391,21 +390,21 @@ export default function HomeView({
             </button>
           </div>
 
-          <div className="text-sm font-semibold truncate">
+          <div className="text-sm font-semibold text-zinc-100 truncate">
             {duplicateEntry.English || "—"}
           </div>
-          <div className="text-sm text-emerald-300 truncate">
+          <div className="text-sm text-zinc-200 truncate">
             {duplicateEntry.Lithuanian || "—"}
           </div>
 
           {duplicateEntry.Phonetic && (
-            <div className="text-[11px] text-zinc-300 italic mt-1 truncate">
+            <div className="text-[11px] text-zinc-400 italic mt-1 truncate">
               {duplicateEntry.Phonetic}
             </div>
           )}
 
           {(duplicateEntry.Usage || duplicateEntry.Notes) && (
-            <div className="mt-2 text-[11px] text-zinc-200 space-y-2">
+            <div className="mt-3 text-[11px] text-zinc-200 space-y-2">
               {duplicateEntry.Usage && (
                 <div>
                   <span className="text-zinc-500">Usage: </span>
@@ -421,15 +420,15 @@ export default function HomeView({
             </div>
           )}
 
-          <div className="flex gap-3 flex-wrap pt-3">
+          <div className="flex gap-3 flex-wrap pt-4">
             <button
               type="button"
+              data-press
               className="
-                bg-emerald-500 text-black rounded-full
-                px-4 py-2 text-sm font-semibold shadow
-                hover:bg-emerald-400 active:bg-emerald-300
-                transition-transform duration-150 active:scale-95
-                select-none
+                z-btn px-4 py-2 rounded-2xl text-sm
+                bg-emerald-600/90 hover:bg-emerald-500
+                border border-emerald-300/20
+                text-black font-semibold
               "
               onClick={() =>
                 duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)
@@ -440,13 +439,8 @@ export default function HomeView({
 
             <button
               type="button"
-              className="
-                bg-zinc-800 text-zinc-200 rounded-full
-                px-4 py-2 text-sm font-medium
-                hover:bg-zinc-700 active:bg-zinc-600
-                transition-transform duration-150 active:scale-95
-                select-none
-              "
+              data-press
+              className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
               onClick={handleTranslateAnywayClick}
             >
               Translate anyway
@@ -457,7 +451,7 @@ export default function HomeView({
 
       {/* Output */}
       {result.ltOut && (
-        <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)] p-4 space-y-3">
+        <div className="z-card p-4 sm:p-5 space-y-3">
           <div className="text-xs text-zinc-500">
             Detected input:{" "}
             <span className="text-zinc-300">
@@ -466,15 +460,21 @@ export default function HomeView({
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Lithuanian</label>
-            <div className="text-lg font-semibold break-words">{result.ltOut}</div>
+            <label className="block text-sm text-zinc-300 mb-1">
+              Lithuanian
+            </label>
+            <div className="text-lg font-semibold text-zinc-100 break-words">
+              {result.ltOut}
+            </div>
 
             {result.phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">{result.phonetics}</div>
+              <div className="text-sm text-zinc-400 mt-1">
+                {result.phonetics}
+              </div>
             )}
           </div>
 
-          <div className="border-t border-zinc-800 pt-3 space-y-1 text-sm">
+          <div className="border-t border-white/10 pt-3 space-y-1 text-sm text-zinc-200">
             <div>
               <span className="font-semibold">English meaning (natural): </span>
               <span>{result.enNatural || result.enLiteral}</span>
@@ -492,12 +492,12 @@ export default function HomeView({
           <div className="flex items-center gap-3 flex-wrap pt-2">
             <button
               type="button"
+              data-press
               className="
-                bg-emerald-500 text-black rounded-full
-                px-5 py-2 text-[18px] shadow
-                hover:bg-emerald-400 active:bg-emerald-300
-                transition-transform duration-150 active:scale-95
-                select-none
+                z-btn px-5 py-3 rounded-2xl text-base
+                bg-emerald-600/90 hover:bg-emerald-500
+                border border-emerald-300/20
+                text-black font-semibold
               "
               onClick={() => handlePlay(result.ltOut)}
             >
@@ -506,12 +506,12 @@ export default function HomeView({
 
             <button
               type="button"
+              data-press
               className="
-                bg-emerald-700 text-black rounded-full
-                px-5 py-2 text-[18px] shadow
-                hover:bg-emerald-600 active:bg-emerald-500
-                transition-transform duration-150 active:scale-95
-                select-none
+                z-btn px-5 py-3 rounded-2xl text-base
+                bg-emerald-700/90 hover:bg-emerald-600
+                border border-emerald-300/15
+                text-black font-semibold
               "
               onClick={() => handlePlay(result.ltOut, { slow: true })}
             >
@@ -520,27 +520,20 @@ export default function HomeView({
 
             <button
               type="button"
-              className="
-                bg-zinc-800 text-zinc-200 rounded-full
-                px-5 py-2 text-sm font-medium
-                hover:bg-zinc-700 active:bg-zinc-600
-                transition-transform duration-150 active:scale-95
-                select-none
-              "
+              data-press
+              className="z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm"
               onClick={handleCopy}
             >
               Copy
             </button>
 
             <button
-              className="
-                bg-zinc-800 text-zinc-200 rounded-full
-                px-5 py-2 text-sm font-medium
-                hover:bg-zinc-700 active:bg-zinc-600
-                transition-transform duration-150 active:scale-95
-                select-none
-                disabled:opacity-60
-              "
+              type="button"
+              data-press
+              className={
+                "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm " +
+                (!canSave ? "z-disabled" : "")
+              }
               onClick={handleSaveToLibrary}
               disabled={!canSave}
             >
@@ -553,12 +546,16 @@ export default function HomeView({
       {/* Add Entry manually */}
       {typeof onOpenAddForm === "function" && (
         <button
+          type="button"
+          data-press
           className="
-            w-full mt-6 bg-emerald-500 text-black rounded-full
-            px-5 py-3 font-semibold shadow text-center
-            hover:bg-emerald-400 active:bg-emerald-300
-            transition-transform duration-150 active:scale-95
-            select-none
+            w-full
+            z-btn px-5 py-4 rounded-2xl
+            bg-emerald-600/90 hover:bg-emerald-500
+            border border-emerald-300/20
+            text-black font-semibold
+            shadow-[0_12px_40px_rgba(0,0,0,0.30)]
+            active:scale-[0.99] transition
           "
           onClick={handleOpenAdd}
         >
