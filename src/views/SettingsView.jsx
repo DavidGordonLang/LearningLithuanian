@@ -238,9 +238,11 @@ export default function SettingsView({
     try {
       if (pendingConflicts.length) {
         try {
-          trackEvent("sync_conflicts_review_open", {}, {
-            app_version: appVersion,
-          });
+          trackEvent(
+            "sync_conflicts_review_open",
+            {},
+            { app_version: appVersion }
+          );
         } catch {}
         setShowConflictModal(true);
         return;
@@ -337,9 +339,11 @@ export default function SettingsView({
       alert("Sync completed ✅");
     } catch (e) {
       try {
-        trackError(e, { source: "sync_conflicts_finish" }, {
-          app_version: appVersion,
-        });
+        trackError(
+          e,
+          { source: "sync_conflicts_finish" },
+          { app_version: appVersion }
+        );
       } catch {}
       alert("Finish sync failed: " + (e?.message || "Unknown error"));
     } finally {
@@ -353,7 +357,9 @@ export default function SettingsView({
     if (pendingConflicts.length) {
       return (
         <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">
-          <div className="text-sm font-semibold text-amber-300">Sync paused</div>
+          <div className="text-sm font-semibold text-amber-300">
+            Sync paused
+          </div>
           <div className="text-sm text-zinc-300 mt-1">
             {pendingConflicts.length} conflict(s) found. Review to finish syncing.
           </div>
@@ -369,9 +375,11 @@ export default function SettingsView({
               "
               onClick={() => {
                 try {
-                  trackEvent("sync_conflicts_review_open", {}, {
-                    app_version: appVersion,
-                  });
+                  trackEvent(
+                    "sync_conflicts_review_open",
+                    {},
+                    { app_version: appVersion }
+                  );
                 } catch {}
                 setShowConflictModal(true);
               }}
@@ -422,6 +430,16 @@ export default function SettingsView({
     );
   })();
 
+  const Section = ({ title, subtitle, children }) => (
+    <section className="z-card p-4 sm:p-5 space-y-4">
+      <div>
+        <div className="text-[15px] font-semibold text-zinc-100">{title}</div>
+        {subtitle ? <div className="z-subtitle mt-1">{subtitle}</div> : null}
+      </div>
+      {children}
+    </section>
+  );
+
   return (
     <div className="z-page z-page-y pb-28 space-y-6">
       <ConflictReviewModal
@@ -431,18 +449,19 @@ export default function SettingsView({
         onFinish={finishConflictSync}
       />
 
-      {/* DAILY RECALL */}
-      <section className="z-card p-4 sm:p-5 space-y-4">
-        <div>
-          <div className="text-[15px] font-semibold text-zinc-100">
-            Daily Recall
-          </div>
-          <div className="z-subtitle mt-1">
-            Show one saved phrase when you open the app. Designed for light recall,
-            not streaks.
-          </div>
-        </div>
+      {/* PAGE HEADER */}
+      <div className="pt-2">
+        <h2 className="z-title">{T.navSettings || "Settings"}</h2>
+        <p className="z-subtitle mt-1">
+          Account, voice, data, and diagnostics.
+        </p>
+      </div>
 
+      {/* DAILY RECALL */}
+      <Section
+        title="Daily Recall"
+        subtitle="Show one saved phrase when you open the app. Designed for light recall, not streaks."
+      >
         <div className="z-inset p-4 space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -478,20 +497,13 @@ export default function SettingsView({
             </button>
           </div>
         </div>
-      </section>
+      </Section>
 
       {/* STARTER PACK */}
-      <section className="z-card p-4 sm:p-5 space-y-4">
-        <div>
-          <div className="text-[15px] font-semibold text-zinc-100">
-            Starter Pack
-          </div>
-          <div className="z-subtitle mt-1">
-            Adds the starter library to this device. Re-installing won’t duplicate
-            entries.
-          </div>
-        </div>
-
+      <Section
+        title="Starter Pack"
+        subtitle="Adds the starter library to this device. Re-installing won’t duplicate entries."
+      >
         <button
           type="button"
           data-press
@@ -510,23 +522,17 @@ export default function SettingsView({
         >
           Install starter pack
         </button>
-      </section>
+      </Section>
 
       {/* ACCOUNT & SYNC */}
-      <section className="z-card p-4 sm:p-5 space-y-4">
-        <div>
-          <div className="text-[15px] font-semibold text-zinc-100">
-            Account &amp; Sync
-          </div>
-          {user ? (
-            <div className="z-subtitle mt-1">
-              Signed in as <span className="text-zinc-200">{user.email}</span>
-            </div>
-          ) : (
-            <div className="z-subtitle mt-1">Sign in to enable cloud sync.</div>
-          )}
-        </div>
-
+      <Section
+        title="Account & Sync"
+        subtitle={
+          user
+            ? `Signed in as ${user.email}`
+            : "Sign in to enable cloud sync."
+        }
+      >
         {syncBanner}
 
         <div className="flex flex-wrap gap-3">
@@ -620,14 +626,10 @@ export default function SettingsView({
             </div>
           </div>
         ) : null}
-      </section>
+      </Section>
 
       {/* VOICE SETTINGS */}
-      <section className="z-card p-4 sm:p-5 space-y-4">
-        <div className="text-[15px] font-semibold text-zinc-100">
-          Voice Settings
-        </div>
-
+      <Section title="Voice" subtitle="Text-to-speech voice for Lithuanian audio.">
         <div className="z-inset p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm text-zinc-300">Voice</div>
@@ -657,17 +659,14 @@ export default function SettingsView({
             </button>
           </div>
         </div>
-      </section>
+      </Section>
 
       {/* YOUR DATA */}
-      <section className="z-card p-4 sm:p-5 space-y-4">
-        <div className="text-[15px] font-semibold text-zinc-100">Your Data</div>
-
+      <Section
+        title="Your Data"
+        subtitle="Export/Import is a file on this device (not cloud)."
+      >
         <div className="z-inset p-4 space-y-3">
-          <div className="text-sm text-zinc-400">
-            Export/Import is a file on this device (not cloud).
-          </div>
-
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <input
               type="file"
@@ -706,12 +705,10 @@ export default function SettingsView({
             Clear library
           </button>
         </div>
-      </section>
+      </Section>
 
       {/* ABOUT */}
-      <section className="z-card p-4 sm:p-5 space-y-4">
-        <div className="text-[15px] font-semibold text-zinc-100">About</div>
-
+      <Section title="About" subtitle={`Version ${appVersion}`}>
         <div className="grid gap-3 sm:grid-cols-2">
           <button
             type="button"
@@ -748,22 +745,18 @@ export default function SettingsView({
             </button>
           ) : null}
         </div>
+      </Section>
 
-        <div className="text-xs text-zinc-500">
-          Version {appVersion}
-        </div>
-      </section>
-
-      {/* DIAGNOSTICS (fenced at bottom) */}
+      {/* DIAGNOSTICS (fenced at bottom, quiet) */}
       <section className="z-inset p-4 sm:p-5 space-y-4 border border-white/10">
         <div className="text-[13px] font-semibold text-zinc-200">
           Diagnostics
         </div>
 
         <p className="text-sm text-zinc-400 leading-relaxed">
-          During beta, we track basic usage (screens and feature clicks) and collect
-          error reports. This helps improve stability and understand what people
-          actually use. We do{" "}
+          During beta, we track basic usage (screens and feature clicks) and
+          collect error reports. This helps improve stability and understand what
+          people actually use. We do{" "}
           <span className="text-zinc-200 font-semibold">not</span> collect your
           phrase content.
         </p>
