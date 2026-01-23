@@ -46,83 +46,90 @@ export default function WhatsNewModal({
       className="
         fixed inset-0 z-[210]
         bg-black/60 backdrop-blur-sm
-        flex items-center justify-center p-4
+        flex items-start justify-center px-4
+        pb-[calc(env(safe-area-inset-bottom)+12px)]
       "
-      style={{ paddingTop: padTop }}
+      style={{
+        paddingTop: `calc(env(safe-area-inset-top) + ${padTop}px)`,
+      }}
       onPointerDown={onClose}
     >
       <div
-        className="
-          w-full max-w-md
-          max-h-[80vh] overflow-y-auto
-          z-card
-          p-5
-        "
+        className="w-full max-w-md z-card overflow-hidden flex flex-col"
+        style={{
+          maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${padTop}px - 24px)`,
+        }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <div className="min-w-0">
-            <h2 className="z-title">What’s New</h2>
-            <div className="text-xs text-zinc-400 mt-0.5">
-              App Version: {version}
-              {date && <span className="text-zinc-500"> • {date}</span>}
+        <div className="z-inset border-b border-white/10">
+          <div className="flex items-start justify-between gap-4 px-5 py-4">
+            <div className="min-w-0">
+              <h2 className="z-title text-[18px] sm:text-[20px]">What’s New</h2>
+              <div className="z-helper mt-0.5">
+                App Version: <span className="text-zinc-300">{version}</span>
+                {date ? <span className="text-zinc-500"> • {date}</span> : null}
+              </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            data-press
-            className="z-btn z-btn-quiet px-3 py-2 rounded-xl text-xs"
-            onClick={onClose}
-          >
-            Close
-          </button>
+            <button
+              type="button"
+              className="z-btn z-btn-secondary px-4 py-2 text-[13px]"
+              onClick={onClose}
+              data-press
+            >
+              Close
+            </button>
+          </div>
         </div>
 
-        <p className="text-sm text-zinc-300 mb-3">
-          Here’s what changed in the latest update:
-        </p>
+        {/* BODY */}
+        <div className="flex-1 overflow-y-auto p-5">
+          <p className="z-subtitle mb-4">
+            Here’s what changed in the latest update:
+          </p>
 
-        {loading ? (
-          <div className="text-sm text-zinc-400 mb-4">Loading…</div>
-        ) : changes.length > 0 ? (
-          <div className="z-inset p-4 mb-4">
-            <ul className="list-disc list-inside space-y-1.5 text-sm text-zinc-300">
-              {changes.slice(0, 8).map((c, idx) => (
-                <li key={idx}>{c}</li>
-              ))}
-            </ul>
+          {loading ? (
+            <div className="z-subtitle mb-4">Loading…</div>
+          ) : changes.length > 0 ? (
+            <div className="z-inset px-4 py-3 mb-5">
+              <ul className="list-disc list-inside space-y-1 text-[13px] sm:text-[14px] text-zinc-200">
+                {changes.slice(0, 8).map((c, idx) => (
+                  <li key={idx}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="z-inset px-4 py-3 mb-5">
+              <div className="z-subtitle">No release notes available.</div>
+            </div>
+          )}
+
+          <div className="flex gap-3 justify-end flex-wrap">
+            <button
+              type="button"
+              className="z-btn z-btn-secondary px-5 py-2"
+              onClick={onClose}
+              data-press
+            >
+              OK
+            </button>
+
+            <button
+              type="button"
+              className="
+                inline-flex items-center justify-center
+                rounded-2xl px-5 py-2 text-[14px] font-semibold
+                bg-emerald-500 text-black
+                hover:bg-emerald-400 active:bg-emerald-300
+                transition select-none
+              "
+              onClick={onViewChangelog}
+              data-press
+            >
+              View full changelog
+            </button>
           </div>
-        ) : (
-          <div className="text-sm text-zinc-400 mb-4">
-            No release notes available for this version.
-          </div>
-        )}
-
-        <div className="flex gap-3 justify-end flex-wrap">
-          <button
-            type="button"
-            data-press
-            className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
-            onClick={onClose}
-          >
-            OK
-          </button>
-
-          <button
-            type="button"
-            data-press
-            className="
-              z-btn px-4 py-2 rounded-2xl text-sm
-              bg-emerald-600/90 hover:bg-emerald-500
-              border border-emerald-300/20
-              text-black font-semibold
-            "
-            onClick={onViewChangelog}
-          >
-            View full changelog
-          </button>
         </div>
       </div>
     </div>
