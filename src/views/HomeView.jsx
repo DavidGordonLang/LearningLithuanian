@@ -7,12 +7,54 @@ import useSaveToLibrary from "../hooks/useSaveToLibrary";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-const Segmented = memo(function Segmented({ value, onChange, options, compact = false }) {
+/* -------------------- Small UI atoms -------------------- */
+
+const MicIcon = memo(function MicIcon({ className }) {
   return (
-    <div className={cn("z-inset p-1 flex w-full overflow-hidden rounded-2xl", compact ? "p-1" : "p-1.5")}>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+    >
+      <path
+        d="M12 14.25c1.66 0 3-1.34 3-3V6.75c0-1.66-1.34-3-3-3s-3 1.34-3 3v4.5c0 1.66 1.34 3 3 3Z"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M19 11.25c0 3.87-3.13 7-7 7s-7-3.13-7-7"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 18.25v2.5"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9.5 20.75h5"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+});
+
+const SegmentedCompact = memo(function SegmentedCompact({
+  value,
+  onChange,
+  options,
+}) {
+  return (
+    <div className="z-inset p-1 flex w-full overflow-hidden rounded-2xl">
       {options.map((opt, idx) => {
         const active = value === opt.value;
-
         return (
           <button
             key={opt.value}
@@ -22,7 +64,7 @@ const Segmented = memo(function Segmented({ value, onChange, options, compact = 
             onTouchStart={(e) => e.preventDefault()}
             className={cn(
               "flex-1 select-none rounded-2xl border transition-colors",
-              compact ? "px-2.5 py-2 text-[13px] font-semibold" : "px-3 py-2 text-sm font-medium",
+              "px-2.5 py-2 text-[13px] font-semibold",
               active
                 ? "bg-emerald-600/90 text-black border-emerald-300/20"
                 : "bg-transparent text-zinc-200 hover:bg-white/5 border-transparent",
@@ -36,6 +78,31 @@ const Segmented = memo(function Segmented({ value, onChange, options, compact = 
     </div>
   );
 });
+
+function Toggle({ on, onClick }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors select-none",
+        on ? "bg-emerald-600/90 border-emerald-300/20" : "bg-white/5 border-white/10"
+      )}
+      onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
+      onTouchStart={(e) => e.preventDefault()}
+      aria-label="Auto-Translate after speech"
+    >
+      <span
+        className={cn(
+          "inline-block h-6 w-6 transform rounded-full bg-black/80 shadow transition-transform",
+          on ? "translate-x-5" : "translate-x-0.5"
+        )}
+      />
+    </button>
+  );
+}
+
+/* ===================================================================== */
 
 export default function HomeView({
   playText,
@@ -170,69 +237,99 @@ export default function HomeView({
       },
     });
 
-  const micLabel = (() => {
-    if (sttState === "recording") return "Listening…";
-    if (sttState === "transcribing") return "Transcribing…";
-    if (sttState === "translating") return "Translating…";
-    return "Hold to speak";
-  })();
-
   const micDisabled =
     translating || sttState === "transcribing" || sttState === "translating";
 
-  const micRing = (() => {
+  // Ring intensity tuned to look like the render (subtle idle, stronger active)
+  const ringClass = (() => {
     if (!sttSupported()) return "shadow-[0_0_0_rgba(0,0,0,0)]";
     if (sttState === "recording")
-      return "shadow-[0_0_46px_rgba(16,185,129,0.40)]";
+      return "shadow-[0_0_62px_rgba(16,185,129,0.42)]";
     if (sttState === "transcribing" || sttState === "translating")
-      return "shadow-[0_0_40px_rgba(16,185,129,0.28)] z-pulse";
-    return "shadow-[0_0_28px_rgba(16,185,129,0.14)]";
+      return "shadow-[0_0_54px_rgba(16,185,129,0.30)] z-pulse";
+    return "shadow-[0_0_38px_rgba(16,185,129,0.18)]";
   })();
 
-  const micOuter = cn(
+  const micOuterClass = cn(
     "mx-auto rounded-full border select-none transition-transform active:scale-[0.99]",
-    "bg-white/[0.04] border-white/10",
-    micRing,
-    micDisabled || !sttSupported() ? "opacity-70" : "hover:bg-white/[0.06]"
+    "bg-white/[0.035] border-white/10",
+    ringClass,
+    micDisabled || !sttSupported() ? "opacity-70" : "hover:bg-white/[0.05]"
+  );
+
+  const micInnerClass = cn(
+    "h-[84px] w-[84px] rounded-full flex items-center justify-center",
+    "border border-white/10",
+    sttState === "recording" || sttState === "transcribing" || sttState === "translating"
+      ? "bg-emerald-600/90 text-black"
+      : "bg-zinc-950/30 text-emerald-200"
+  );
+
+  const translatePillClass = cn(
+    "px-6 py-2.5 rounded-full font-semibold text-[14px] leading-none",
+    "border transition",
+    translating || !canTranslate ? "opacity-60 cursor-not-allowed" : "active:scale-[0.99]",
+    "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+  );
+
+  const clearPillClass = cn(
+    "px-6 py-2.5 rounded-full font-semibold text-[14px] leading-none",
+    "border border-white/10 bg-white/[0.05] hover:bg-white/[0.08] text-zinc-100 transition",
+    sttState !== "idle" ? "opacity-60 cursor-not-allowed" : "active:scale-[0.99]"
   );
 
   return (
     <div className="z-page pb-24">
-      {/* HERO PANEL (matches render structure) */}
+      {/* HERO PANEL */}
       <section className="z-card p-4 sm:p-5">
-        {/* Controls */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
-              Speaking to
+        {/* Top controls (match render: label left, control right) */}
+        <div className="space-y-2.5">
+          {/* Speaking to */}
+          <div className="flex items-center gap-3">
+            <div className="w-24 text-[12px] text-zinc-400">Speaking to</div>
+            <div className="flex-1">
+              <SegmentedCompact
+                value={gender}
+                onChange={handleGenderChange}
+                options={[
+                  { value: "neutral", label: "Neutral" },
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                ]}
+              />
             </div>
           </div>
-          <Segmented
-            compact
-            value={gender}
-            onChange={handleGenderChange}
-            options={[
-              { value: "neutral", label: "Neutral" },
-              { value: "male", label: "Male" },
-              { value: "female", label: "Female" },
-            ]}
-          />
 
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
-              Tone
+          {/* Tone + Auto toggle on same row (top area) */}
+          <div className="flex items-center gap-3">
+            <div className="w-24 text-[12px] text-zinc-400">Tone</div>
+            <div className="flex-1">
+              <SegmentedCompact
+                value={tone}
+                onChange={handleToneChange}
+                options={[
+                  { value: "friendly", label: "Friendly" },
+                  { value: "neutral", label: "Neutral" },
+                  { value: "polite", label: "Polite" },
+                ]}
+              />
+            </div>
+
+            {/* Auto-translate toggle lives here now */}
+            <div className="flex items-center gap-2">
+              <div className="text-[11px] text-zinc-500 hidden sm:block">
+                Auto
+              </div>
+              <Toggle
+                on={autoTranslate}
+                onClick={() => {
+                  blurTextarea();
+                  setAutoTranslateLS(autoTranslate ? "0" : "1");
+                  showToast?.(autoTranslate ? "Auto-Translate off" : "Auto-Translate on");
+                }}
+              />
             </div>
           </div>
-          <Segmented
-            compact
-            value={tone}
-            onChange={handleToneChange}
-            options={[
-              { value: "friendly", label: "Friendly" },
-              { value: "neutral", label: "Neutral" },
-              { value: "polite", label: "Polite" },
-            ]}
-          />
         </div>
 
         {/* Prompt + input */}
@@ -250,43 +347,14 @@ export default function HomeView({
               onChange={(e) => setInput(e.target.value)}
             />
           </div>
-
-          {/* Auto-Translate toggle (render-like row, compact) */}
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="text-xs text-zinc-500">Auto-Translate after speech</div>
-
-            <button
-              type="button"
-              className={cn(
-                "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors select-none",
-                autoTranslate
-                  ? "bg-emerald-600/90 border-emerald-300/20"
-                  : "bg-white/5 border-white/10"
-              )}
-              onClick={() => {
-                blurTextarea();
-                setAutoTranslateLS(autoTranslate ? "0" : "1");
-                showToast?.(autoTranslate ? "Auto-Translate off" : "Auto-Translate on");
-              }}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-            >
-              <span
-                className={cn(
-                  "inline-block h-6 w-6 transform rounded-full bg-black/80 shadow transition-transform",
-                  autoTranslate ? "translate-x-5" : "translate-x-0.5"
-                )}
-              />
-            </button>
-          </div>
         </div>
 
-        {/* MIC centrepiece */}
-        <div className="mt-5">
+        {/* Mic centrepiece (render-like) */}
+        <div className="mt-5 flex flex-col items-center">
           <button
             type="button"
-            className={cn(micOuter)}
-            style={{ width: 130, height: 130 }}
+            className={micOuterClass}
+            style={{ width: 140, height: 140 }}
             disabled={micDisabled || !sttSupported()}
             onMouseDown={(e) => {
               e.preventDefault();
@@ -314,37 +382,26 @@ export default function HomeView({
               e.preventDefault();
               cancelStt();
             }}
+            aria-label="Hold to speak"
           >
-            <div className="h-full w-full flex flex-col items-center justify-center gap-2">
-              <div
-                className={cn(
-                  "h-12 w-12 rounded-full flex items-center justify-center",
-                  sttState === "recording" || sttState === "transcribing" || sttState === "translating"
-                    ? "bg-emerald-600/90 text-black"
-                    : "bg-white/[0.05] text-zinc-100 border border-white/10"
-                )}
-              >
-                <span className="text-2xl">🎤</span>
-              </div>
-
-              <div className="text-sm font-semibold text-zinc-100">{micLabel}</div>
-              <div className="text-[11px] text-zinc-400">
-                {sttState === "idle" ? "Press & hold (max 15s)" : "Release to stop"}
+            <div className="h-full w-full flex items-center justify-center">
+              <div className={micInnerClass}>
+                <MicIcon className="h-9 w-9" />
               </div>
             </div>
           </button>
+
+          {/* Text BELOW the button, per render */}
+          <div className="mt-3 text-[14px] font-semibold text-zinc-100">
+            Hold to speak
+          </div>
         </div>
 
-        {/* Translate / Clear buttons (render-like row) */}
+        {/* Translate / Clear buttons (premium pill style) */}
         <div className="mt-5 flex justify-center gap-3">
           <button
             type="button"
-            data-press
-            className={cn(
-              "z-btn px-6 py-3 rounded-2xl font-semibold",
-              translating || !canTranslate ? "z-disabled" : "",
-              "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
-            )}
+            className={translatePillClass}
             onClick={handleTranslateClick}
             disabled={translating || !canTranslate}
           >
@@ -353,8 +410,7 @@ export default function HomeView({
 
           <button
             type="button"
-            data-press
-            className={cn("z-btn z-btn-secondary px-6 py-3 rounded-2xl", sttState !== "idle" ? "z-disabled" : "")}
+            className={clearPillClass}
             onClick={handleClear}
             disabled={sttState !== "idle"}
           >
@@ -362,13 +418,12 @@ export default function HomeView({
           </button>
         </div>
 
-        {/* Add Entry manually (render-like, subtle) */}
+        {/* Add Entry manually (subtle, lighter) */}
         {typeof onOpenAddForm === "function" && (
           <div className="mt-4 flex justify-center">
             <button
               type="button"
-              data-press
-              className="z-btn z-btn-quiet px-4 py-2 rounded-2xl text-sm"
+              className="px-2 py-1 rounded-xl text-[13px] font-medium text-zinc-300 hover:text-zinc-100 transition"
               onClick={handleOpenAdd}
             >
               + Add Entry Manually
@@ -391,7 +446,6 @@ export default function HomeView({
             </div>
             <button
               type="button"
-              data-press
               className="z-btn z-btn-quiet px-3 py-2 rounded-xl text-xs"
               onClick={() => {
                 blurTextarea();
@@ -435,16 +489,16 @@ export default function HomeView({
           <div className="flex gap-3 flex-wrap pt-4">
             <button
               type="button"
-              data-press
               className="z-btn px-4 py-2 rounded-2xl text-sm bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
-              onClick={() => duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)}
+              onClick={() =>
+                duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)
+              }
             >
               ▶ Play
             </button>
 
             <button
               type="button"
-              data-press
               className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
               onClick={handleTranslateAnywayClick}
             >
@@ -484,7 +538,9 @@ export default function HomeView({
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">Literal meaning: </span>
+                <span className="font-semibold text-zinc-300">
+                  Literal meaning:{" "}
+                </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
@@ -493,7 +549,6 @@ export default function HomeView({
           <div className="flex items-center gap-3 flex-wrap pt-2">
             <button
               type="button"
-              data-press
               className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
               onClick={() => handlePlay(result.ltOut)}
             >
@@ -502,7 +557,6 @@ export default function HomeView({
 
             <button
               type="button"
-              data-press
               className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-700/90 hover:bg-emerald-600 border-emerald-300/15 text-black font-semibold"
               onClick={() => handlePlay(result.ltOut, { slow: true })}
             >
@@ -511,7 +565,6 @@ export default function HomeView({
 
             <button
               type="button"
-              data-press
               className="z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm"
               onClick={handleCopy}
             >
@@ -520,8 +573,10 @@ export default function HomeView({
 
             <button
               type="button"
-              data-press
-              className={cn("z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm", !canSave ? "z-disabled" : "")}
+              className={cn(
+                "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm",
+                !canSave ? "z-disabled" : ""
+              )}
               onClick={handleSaveToLibrary}
               disabled={!canSave}
             >
