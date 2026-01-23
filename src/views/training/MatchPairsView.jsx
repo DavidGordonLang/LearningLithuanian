@@ -90,7 +90,7 @@ export default function MatchPairsView({ rows, onBack }) {
   const s = useMatchPairsSession({
     eligibleRows: eligible,
     totalPairs: 20,
-    pagePairs: 5, // keep at 5 so the grid should fit without scroll
+    pagePairs: 5,
     rightSelectAmberMs: 140,
     correctPulseMs: 520,
     wrongPulseMs: 420,
@@ -111,10 +111,14 @@ export default function MatchPairsView({ rows, onBack }) {
   const pulseKind = s.pulse?.kind || null;
   const selectedId = s.selected?.id || null;
 
-  // ↓ About ~25% tighter tiles (inline beats CSS)
+  // Force-fit: tile height + tighter padding + tighter gaps
+  const TILE_H = 52; // ~25% shorter than typical 68–72px tiles
+  const COL_GAP = 12; // reduce vertical spacing between tiles
+
   const tileStyle = {
-    minHeight: 46, // tighter than typical 60–64px tiles
-    padding: "10px 12px",
+    height: TILE_H,
+    minHeight: TILE_H,
+    padding: "8px 10px",
   };
 
   const BackCircle = (
@@ -191,11 +195,12 @@ export default function MatchPairsView({ rows, onBack }) {
           style={{
             height: "calc(100vh - 260px)",
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+            overflow: "hidden", // if it STILL scrolls after this, it’s definitely CSS !important
           }}
         >
           <div className="mp-cols" style={{ height: "100%", alignItems: "stretch" }}>
             {/* LEFT: EN */}
-            <div className="mp-col" style={{ height: "100%" }}>
+            <div className="mp-col" style={{ height: "100%", gap: COL_GAP }}>
               {s.leftTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
                 const amber = selectedId === t.id;
@@ -229,7 +234,7 @@ export default function MatchPairsView({ rows, onBack }) {
             </div>
 
             {/* RIGHT: LT */}
-            <div className="mp-col" style={{ height: "100%" }}>
+            <div className="mp-col" style={{ height: "100%", gap: COL_GAP }}>
               {s.rightTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
                 const amber = selectedId === t.id;
