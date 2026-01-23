@@ -189,6 +189,46 @@ function ToastItem({ toast, onDismiss }) {
 }
 
 /* ============================================================================ */
+
+function AppBackground() {
+  // Render-inspired: subtle top glow, centre bloom, vignette, and soft texture feel.
+  // No behaviour changes; pointer-events disabled.
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Base gradient */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(1200px 700px at 50% -120px, rgba(16,185,129,0.16), rgba(0,0,0,0) 55%)," +
+            "radial-gradient(900px 520px at 50% 38%, rgba(16,185,129,0.09), rgba(0,0,0,0) 62%)," +
+            "linear-gradient(180deg, rgba(10,10,11,1) 0%, rgba(8,8,10,1) 45%, rgba(6,6,8,1) 100%)",
+        }}
+      />
+
+      {/* Soft vignette */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 50% 30%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.78) 100%)",
+        }}
+      />
+
+      {/* Very subtle “film” texture (cheap + effective, no assets) */}
+      <div
+        className="absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage:
+            "radial-gradient(rgba(255,255,255,0.25) 1px, rgba(0,0,0,0) 1px)",
+          backgroundSize: "3px 3px",
+          mixBlendMode: "overlay",
+        }}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   useEffect(() => {
     initAuthListener();
@@ -274,17 +314,20 @@ export default function App() {
   }
 
   /* VOICE */
-  const { voice: azureVoiceShortName, setVoice: setAzureVoiceShortName, playText } =
-    useTTSPlayer({
-      initialVoice: "lt-LT-LeonasNeural",
-      maxIdbEntries: 200,
-      onError: (e) => {
-        try {
-          trackError(e, { source: "tts_player" }, { app_version: APP_VERSION });
-        } catch {}
-        alert("Voice error: " + (e?.message || "Unknown error"));
-      },
-    });
+  const {
+    voice: azureVoiceShortName,
+    setVoice: setAzureVoiceShortName,
+    playText,
+  } = useTTSPlayer({
+    initialVoice: "lt-LT-LeonasNeural",
+    maxIdbEntries: 200,
+    onError: (e) => {
+      try {
+        trackError(e, { source: "tts_player" }, { app_version: APP_VERSION });
+      } catch {}
+      alert("Voice error: " + (e?.message || "Unknown error"));
+    },
+  });
 
   const playTextTracked = (text, opts) => {
     try {
@@ -322,7 +365,8 @@ export default function App() {
   const fetchStarter = (kind) =>
     fetchStarterIO(kind, { STARTERS, mergeStarterRowsImpl: mergeStarterRows });
 
-  const importJsonFile = (file) => importJsonFileIO(file, { mergeRowsImpl: mergeRows });
+  const importJsonFile = (file) =>
+    importJsonFileIO(file, { mergeRowsImpl: mergeRows });
 
   const clearLibrary = () => clearLibraryIO({ T, setRows });
 
@@ -342,7 +386,9 @@ export default function App() {
     if (!confirm(T.confirm)) return;
     setRows((prev) =>
       Array.isArray(prev)
-        ? prev.map((r) => (r.id === id ? { ...r, _deleted: true, _ts: nowTs() } : r))
+        ? prev.map((r) =>
+            r.id === id ? { ...r, _deleted: true, _ts: nowTs() } : r
+          )
         : prev
     );
   };
@@ -369,7 +415,10 @@ export default function App() {
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
 
-  const [seenUserGuide, setSeenUserGuide] = useLocalStorageState(LSK_USER_GUIDE, false);
+  const [seenUserGuide, setSeenUserGuide] = useLocalStorageState(
+    LSK_USER_GUIDE,
+    false
+  );
   const [lastSeenVersion, setLastSeenVersion] = useLocalStorageState(
     LSK_LAST_SEEN_VERSION,
     ""
@@ -415,7 +464,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-[100dvh] h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden">
+      <AppBackground />
+
       <Header
         ref={headerRef}
         T={T}
@@ -427,7 +478,7 @@ export default function App() {
       />
 
       <main
-        className="flex-1 overflow-hidden"
+        className="flex-1 overflow-hidden relative"
         style={{ height: `calc(100dvh - ${headerHeight}px)` }}
       >
         {page === "dupes" ? (
@@ -444,7 +495,10 @@ export default function App() {
         ) : page === "analytics" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
             <div className="z-page z-page-y">
-              <AnalyticsView appVersion={APP_VERSION} onBack={() => goToPage("settings")} />
+              <AnalyticsView
+                appVersion={APP_VERSION}
+                onBack={() => goToPage("settings")}
+              />
             </div>
           </div>
         ) : (
@@ -570,7 +624,9 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 pb-3 border-b border-white/10 shrink-0">
-                <h3 className="z-title">{isEditing ? T.editEntry : T.addEntry}</h3>
+                <h3 className="z-title">
+                  {isEditing ? T.editEntry : T.addEntry}
+                </h3>
               </div>
 
               <div className="p-5 pt-4 flex-1 min-h-0">
@@ -601,13 +657,19 @@ export default function App() {
       )}
 
       {showChangeLog && (
-        <ChangeLogModal appVersion={APP_VERSION} onClose={() => setShowChangeLog(false)} />
+        <ChangeLogModal
+          appVersion={APP_VERSION}
+          onClose={() => setShowChangeLog(false)}
+        />
       )}
 
       {showUserGuide && <UserGuideModal onClose={() => setShowUserGuide(false)} />}
 
       {showWhatsNew && (
-        <WhatsNewModal appVersion={APP_VERSION} onClose={() => setShowWhatsNew(false)} />
+        <WhatsNewModal
+          appVersion={APP_VERSION}
+          onClose={() => setShowWhatsNew(false)}
+        />
       )}
     </div>
   );
