@@ -90,7 +90,7 @@ export default function MatchPairsView({ rows, onBack }) {
   const s = useMatchPairsSession({
     eligibleRows: eligible,
     totalPairs: 20,
-    pagePairs: 5, // keep at 5 so grid fits without scroll
+    pagePairs: 5, // keep at 5 so the grid should fit without scroll
     rightSelectAmberMs: 140,
     correctPulseMs: 520,
     wrongPulseMs: 420,
@@ -110,6 +110,12 @@ export default function MatchPairsView({ rows, onBack }) {
   const pulseIds = s.pulse?.ids || [];
   const pulseKind = s.pulse?.kind || null;
   const selectedId = s.selected?.id || null;
+
+  // ↓ About ~25% tighter tiles (inline beats CSS)
+  const tileStyle = {
+    minHeight: 46, // tighter than typical 60–64px tiles
+    padding: "10px 12px",
+  };
 
   const BackCircle = (
     <button
@@ -139,7 +145,7 @@ export default function MatchPairsView({ rows, onBack }) {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 mp-root">
-      {/* Header (matches Modules 1/2) */}
+      {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <div className="flex items-center justify-start">{BackCircle}</div>
 
@@ -150,7 +156,7 @@ export default function MatchPairsView({ rows, onBack }) {
         <div aria-hidden="true" />
       </div>
 
-      {/* Title + progress (compact to keep space) */}
+      {/* Title + progress */}
       <div className="mt-4">
         <div className="text-[15px] font-semibold mp-title">Match either way</div>
         <div className="mt-1 text-[12px] text-zinc-400">
@@ -183,19 +189,11 @@ export default function MatchPairsView({ rows, onBack }) {
         <div
           className={cn("mt-4 mp-grid-wrap", gridPhaseClass)}
           style={{
-            // Aim: no scroll. The session is already paged (5 pairs => 10 tiles/side).
-            // This clamps the grid to the remaining screen height cleanly.
             height: "calc(100vh - 260px)",
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
           }}
         >
-          <div
-            className="mp-cols"
-            style={{
-              height: "100%",
-              alignItems: "stretch",
-            }}
-          >
+          <div className="mp-cols" style={{ height: "100%", alignItems: "stretch" }}>
             {/* LEFT: EN */}
             <div className="mp-col" style={{ height: "100%" }}>
               {s.leftTiles.map((t) => {
@@ -212,6 +210,7 @@ export default function MatchPairsView({ rows, onBack }) {
                   <button
                     key={t.id}
                     type="button"
+                    style={tileStyle}
                     className={cn(
                       "mp-tile",
                       tileTextClass(t.text),
@@ -245,6 +244,7 @@ export default function MatchPairsView({ rows, onBack }) {
                   <button
                     key={t.id}
                     type="button"
+                    style={tileStyle}
                     className={cn(
                       "mp-tile",
                       tileTextClass(t.text),
