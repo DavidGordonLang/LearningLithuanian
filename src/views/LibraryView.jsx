@@ -64,8 +64,6 @@ export default function LibraryView({
     if (!menuOpenFor) return;
 
     const onDown = (e) => {
-      // If user tapped the kebab button for the open row, don't auto-close here.
-      // Let the button's onClick toggle it closed cleanly.
       const toggleEl = e.target?.closest?.(`[data-menu-toggle="${menuOpenFor}"]`);
       if (toggleEl) return;
 
@@ -287,9 +285,10 @@ export default function LibraryView({
                       })
                     }
                   >
-                    <div className="flex items-start gap-3">
-                      {/* LEFT: Play only */}
-                      <div className="shrink-0 pt-0.5">
+                    {/* CHANGED: items-center so the Play button sits vertically centered */}
+                    <div className="flex items-center gap-3">
+                      {/* LEFT: Play */}
+                      <div className="shrink-0">
                         <button
                           type="button"
                           aria-label="Play"
@@ -338,15 +337,18 @@ export default function LibraryView({
                               <KebabIcon />
                             </button>
 
+                            {/* CHANGED: remove the circle around RAG; show as a bare pill */}
                             <button
                               type="button"
                               aria-label="RAG"
                               className="
-                                w-7 h-7 rounded-full
-                                border border-white/10
-                                bg-white/5
+                                px-2 py-1
+                                rounded-full
                                 text-[13px]
-                                hover:bg-white/[0.07]
+                                text-zinc-200
+                                bg-transparent
+                                hover:bg-white/[0.06]
+                                transition
                               "
                               onClick={(e) => {
                                 e.preventDefault();
