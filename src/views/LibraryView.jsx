@@ -1,5 +1,5 @@
 // src/views/LibraryView.jsx
-import React, { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
+import React, { useMemo, useState, useSyncExternalStore, useEffect } from "react";
 import { searchStore } from "../searchStore";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
 
@@ -43,13 +43,16 @@ export default function LibraryView({
       base = base.filter((r) => (r.Category || DEFAULT_CATEGORY) === category);
     }
 
-    if (sortMode === "Newest") return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
-    if (sortMode === "Oldest") return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
+    if (sortMode === "Newest")
+      return [...base].sort((a, b) => (b._ts || 0) - (a._ts || 0));
+    if (sortMode === "Oldest")
+      return [...base].sort((a, b) => (a._ts || 0) - (b._ts || 0));
 
     const order = { "🔴": 0, "🟠": 1, "🟢": 2 };
     return [...base].sort(
       (a, b) =>
-        (order[normalizeRag(a["RAG Icon"])] ?? 1) - (order[normalizeRag(b["RAG Icon"])] ?? 1)
+        (order[normalizeRag(a["RAG Icon"])] ?? 1) -
+        (order[normalizeRag(b["RAG Icon"])] ?? 1)
     );
   }, [rows, qNorm, category, sortMode, normalizeRag]);
 
@@ -158,57 +161,86 @@ export default function LibraryView({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-28">
-      <h2 className="text-2xl font-bold">{T.libraryTitle}</h2>
+    <div className="z-page pb-28">
+      {/* Header */}
+      <div className="pt-4 sm:pt-5 mb-4">
+        <h2 className="z-title">{T.libraryTitle}</h2>
+        <p className="z-subtitle mt-1">
+          Browse, search, and manage your saved entries.
+        </p>
 
-      {typeof onOpenAddForm === "function" && (
-        <button
-          className="mt-3 mb-4 bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold shadow hover:bg-emerald-400 active:bg-emerald-300 transition-transform active:scale-95 select-none"
-          onClick={onOpenAddForm}
-        >
-          + Add Entry
-        </button>
-      )}
+        {typeof onOpenAddForm === "function" && (
+          <div className="mt-4">
+            <button
+              type="button"
+              className="
+                z-btn px-5 py-3 rounded-2xl
+                bg-emerald-500 text-black font-semibold
+                hover:bg-emerald-400 active:bg-emerald-300
+                border border-emerald-300/20
+              "
+              onClick={onOpenAddForm}
+              data-press
+            >
+              + Add Entry
+            </button>
+          </div>
+        )}
+      </div>
 
-      {/* CONTROLS */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-zinc-400">Category</label>
-          <select
-            className="bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1.5 text-sm"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            disabled={!!qNorm}
-          >
-            <option value="ALL">All</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+      {/* Controls (Utility layout — quiet) */}
+      <div className="z-card p-4 sm:p-5 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-zinc-400">Category</label>
+            <select
+              className="z-input !w-auto !py-2 !px-3 !rounded-2xl text-sm"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              disabled={!!qNorm}
+            >
+              <option value="ALL">All</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="text-sm text-zinc-400">
+            {filteredRows.length} / {rows.length} entries
+          </div>
         </div>
 
-        {qNorm && <div className="text-xs text-zinc-500">Search active – showing all categories</div>}
+        {qNorm && (
+          <div className="mt-3 z-inset px-4 py-3">
+            <div className="text-sm text-zinc-200 font-medium">
+              Search active
+            </div>
+            <div className="text-xs text-zinc-500 mt-0.5">
+              Showing all categories while searching.
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="mb-3 text-sm text-zinc-400">
-        {filteredRows.length} / {rows.length} entries
-      </div>
-
+      {/* List */}
       {filteredRows.length === 0 ? (
-        <p className="text-sm text-zinc-400">No entries found.</p>
+        <div className="z-card p-4 sm:p-5">
+          <div className="text-sm text-zinc-300 font-medium">No entries found</div>
+          <div className="z-subtitle mt-1">
+            Try clearing search or selecting a different category.
+          </div>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredRows.map((r) => {
             const isOpen = expanded.has(r._id);
 
             return (
-              <article
-                key={r._id}
-                className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_12px_rgba(0,0,0,0.15)]"
-              >
-                {/* HEADER */}
+              <article key={r._id} className="z-card p-4 sm:p-5">
+                {/* Header */}
                 <div
                   className="flex gap-3 cursor-pointer"
                   onClick={() =>
@@ -219,10 +251,16 @@ export default function LibraryView({
                     })
                   }
                 >
-                  {/* RAG */}
+                  {/* RAG (semantic colour lives in emoji only; button stays quiet) */}
                   <button
                     type="button"
-                    className="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center text-sm bg-zinc-950/60 hover:bg-zinc-800/60 select-none shrink-0"
+                    className="
+                      w-9 h-9 rounded-full
+                      border border-white/10
+                      bg-white/[0.06] hover:bg-white/10
+                      flex items-center justify-center text-sm
+                      select-none shrink-0
+                    "
                     onClick={(e) => {
                       e.stopPropagation();
                       setRows((prev) =>
@@ -241,34 +279,46 @@ export default function LibraryView({
                         )
                       );
                     }}
+                    data-press
                   >
                     {normalizeRag(r["RAG Icon"])}
                   </button>
 
-                  {/* TEXT */}
+                  {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-base font-semibold text-emerald-300 break-words">
+                    <div className="text-[15px] sm:text-[16px] font-semibold text-zinc-100 break-words">
                       {r.Lithuanian || "—"}
                     </div>
 
-                    <div className="text-sm text-zinc-400 mt-0.5 break-words">{r.English || "—"}</div>
+                    <div className="text-sm text-zinc-400 mt-1 break-words">
+                      {r.English || "—"}
+                    </div>
 
                     {!isOpen && r.Phonetic && (
-                      <div className="text-xs text-zinc-500 italic mt-0.5 break-words">
+                      <div className="text-xs text-zinc-500 italic mt-1 break-words">
                         {r.Phonetic}
                       </div>
                     )}
                   </div>
+
+                  {/* Chevron */}
+                  <div className="shrink-0 text-zinc-500 pt-1">
+                    {isOpen ? "▾" : "▸"}
+                  </div>
                 </div>
 
-                {/* EXPANDED CONTENT */}
+                {/* Expanded content */}
                 {isOpen && (
-                  <div className="mt-5 border-t border-zinc-800 pt-4 space-y-6 text-sm text-zinc-300">
-                    {r.Phonetic && <div className="italic text-zinc-400">{r.Phonetic}</div>}
+                  <div className="mt-4 pt-4 border-t border-white/10 space-y-4 text-sm text-zinc-300">
+                    {r.Phonetic && (
+                      <div className="z-inset px-4 py-3 italic text-zinc-300">
+                        {r.Phonetic}
+                      </div>
+                    )}
 
                     {r.Usage && (
-                      <div className="leading-relaxed">
-                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
+                      <div className="z-inset px-4 py-3">
+                        <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
                           {T.usage}
                         </div>
                         <div className="leading-relaxed">{r.Usage}</div>
@@ -276,28 +326,35 @@ export default function LibraryView({
                     )}
 
                     {r.Notes && (
-                      <div className="leading-relaxed">
+                      <div className="z-inset px-4 py-3">
                         <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
                           {T.notes}
                         </div>
-
-                        <div className="whitespace-pre-line leading-[1.75] space-y-4">{r.Notes}</div>
+                        <div className="whitespace-pre-line leading-[1.75] space-y-4">
+                          {r.Notes}
+                        </div>
                       </div>
                     )}
 
                     {r.Category && (
-                      <div className="text-xs text-zinc-500 pt-2">
-                        {T.category}: <span className="text-zinc-300">{r.Category}</span>
+                      <div className="text-xs text-zinc-500">
+                        {T.category}:{" "}
+                        <span className="text-zinc-300">{r.Category}</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* ACTIONS */}
-                <div className="flex justify-center gap-4 mt-5">
+                {/* Actions */}
+                <div className="flex flex-wrap items-center justify-end gap-2 mt-4">
                   <button
                     type="button"
-                    className="bg-emerald-500 text-black rounded-full px-5 py-2 text-[18px] select-none"
+                    className="
+                      z-btn !px-4 !py-2 !rounded-2xl
+                      bg-emerald-500 text-black font-semibold
+                      hover:bg-emerald-400 active:bg-emerald-300
+                      border border-emerald-300/20
+                    "
                     style={{
                       WebkitUserSelect: "none",
                       userSelect: "none",
@@ -305,22 +362,31 @@ export default function LibraryView({
                       touchAction: "manipulation",
                     }}
                     {...pressHandlers(r.Lithuanian || "")}
+                    data-press
                   >
-                    ▶
+                    ▶ Play
                   </button>
 
                   <button
-                    className="bg-zinc-800 text-zinc-200 rounded-full px-4 py-2 text-sm"
+                    type="button"
+                    className="z-btn z-btn-secondary !px-4 !py-2 !rounded-2xl text-sm"
                     onClick={() => onEditRow(r._id)}
+                    data-press
                   >
                     Edit
                   </button>
 
                   <button
-                    className="bg-red-500 text-white rounded-full px-4 py-2 text-sm"
+                    type="button"
+                    className="
+                      z-btn !px-4 !py-2 !rounded-2xl text-sm
+                      bg-red-500 text-white border border-red-400/20
+                      hover:bg-red-400 active:bg-red-300
+                    "
                     onClick={() => {
                       if (window.confirm(T.confirm)) removePhrase(r._id);
                     }}
+                    data-press
                   >
                     Delete
                   </button>
