@@ -111,14 +111,15 @@ export default function MatchPairsView({ rows, onBack }) {
   const pulseKind = s.pulse?.kind || null;
   const selectedId = s.selected?.id || null;
 
-  // Force-fit: tile height + tighter padding + tighter gaps
-  const TILE_H = 52; // ~25% shorter than typical 68–72px tiles
-  const COL_GAP = 12; // reduce vertical spacing between tiles
+  // Tuned: a bit taller than the "collapsed" version, but we CLOSE GAPS hard.
+  const TILE_H = 60;
+  const COL_GAP = 10;
 
   const tileStyle = {
     height: TILE_H,
     minHeight: TILE_H,
-    padding: "8px 10px",
+    padding: "10px 12px",
+    margin: 0, // kills any mp-tile margin spacing unless CSS uses !important
   };
 
   const BackCircle = (
@@ -152,11 +153,9 @@ export default function MatchPairsView({ rows, onBack }) {
       {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <div className="flex items-center justify-start">{BackCircle}</div>
-
         <div className="text-center">
           <div className="text-[16px] font-semibold text-zinc-100">Reinforce</div>
         </div>
-
         <div aria-hidden="true" />
       </div>
 
@@ -183,24 +182,31 @@ export default function MatchPairsView({ rows, onBack }) {
         <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Not enough items</div>
           <div className="text-sm text-zinc-300 mt-2">
-            Reinforce uses <b>Words + Numbers</b> only and needs <b>20</b> entries to run a full
-            session.
+            Reinforce uses <b>Words + Numbers</b> only and needs <b>20</b> entries to run a full session.
           </div>
         </div>
       )}
 
       {s.canStart && (
         <div
-          className={cn("mt-4 mp-grid-wrap", gridPhaseClass)}
+          className={cn("mt-4", "mp-grid-wrap", gridPhaseClass)}
           style={{
             height: "calc(100vh - 260px)",
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-            overflow: "hidden", // if it STILL scrolls after this, it’s definitely CSS !important
+            overflow: "hidden",
           }}
         >
           <div className="mp-cols" style={{ height: "100%", alignItems: "stretch" }}>
             {/* LEFT: EN */}
-            <div className="mp-col" style={{ height: "100%", gap: COL_GAP }}>
+            <div
+              className="mp-col"
+              style={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                gap: COL_GAP,
+              }}
+            >
               {s.leftTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
                 const amber = selectedId === t.id;
@@ -234,7 +240,15 @@ export default function MatchPairsView({ rows, onBack }) {
             </div>
 
             {/* RIGHT: LT */}
-            <div className="mp-col" style={{ height: "100%", gap: COL_GAP }}>
+            <div
+              className="mp-col"
+              style={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                gap: COL_GAP,
+              }}
+            >
               {s.rightTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
                 const amber = selectedId === t.id;
