@@ -40,7 +40,9 @@ export default function LibraryView({
         return en.includes(qNorm) || lt.includes(qNorm);
       });
     } else if (category !== "ALL") {
-      base = base.filter((r) => (r.Category || DEFAULT_CATEGORY) === category);
+      base = base.filter(
+        (r) => (r.Category || DEFAULT_CATEGORY) === category
+      );
     }
 
     if (sortMode === "Newest")
@@ -56,7 +58,7 @@ export default function LibraryView({
     );
   }, [rows, qNorm, category, sortMode, normalizeRag]);
 
-  /* AUDIO (tap = normal, long press = slow, BUT cancel if finger moves) */
+  /* AUDIO (tap = normal, long press = slow, cancel on move) */
   function blurActiveInput() {
     const ae = document.activeElement;
     if (!ae) return;
@@ -69,7 +71,6 @@ export default function LibraryView({
   }
 
   function pressHandlers(text) {
-    // All state per-press lives in refs so rerenders don't break timing
     const state = {
       timer: null,
       firedSlow: false,
@@ -86,10 +87,8 @@ export default function LibraryView({
     };
 
     const start = (e) => {
-      // Prevent text selection + prevent focus changes on the button itself
       e.preventDefault();
       e.stopPropagation();
-
       if (!text) return;
 
       blurActiveInput();
@@ -98,7 +97,6 @@ export default function LibraryView({
       state.firedSlow = false;
       state.moved = false;
 
-      // PointerEvent preferred; fall back to touches if needed
       const x = e?.clientX ?? e?.touches?.[0]?.clientX ?? 0;
       const y = e?.clientY ?? e?.touches?.[0]?.clientY ?? 0;
       state.startX = x;
@@ -113,15 +111,13 @@ export default function LibraryView({
 
     const move = (e) => {
       if (!state.pressed) return;
-
       const x = e?.clientX ?? e?.touches?.[0]?.clientX ?? 0;
       const y = e?.clientY ?? e?.touches?.[0]?.clientY ?? 0;
 
-      const dx = x - state.startX;
-      const dy = y - state.startY;
-
-      // If the finger moves, treat it as swipe/scroll and cancel play
-      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      if (
+        Math.abs(x - state.startX) > 10 ||
+        Math.abs(y - state.startY) > 10
+      ) {
         state.moved = true;
         if (state.timer) clearTimeout(state.timer);
         state.timer = null;
@@ -131,31 +127,23 @@ export default function LibraryView({
     const finish = (e) => {
       e.preventDefault();
       e.stopPropagation();
-
       if (!state.pressed) return;
 
       state.pressed = false;
       if (state.timer) clearTimeout(state.timer);
       state.timer = null;
 
-      // If user moved finger, do NOTHING (swipe/scroll)
       if (state.moved) return;
-
-      // If slow already fired, do not also fire normal
       if (!state.firedSlow) playText(text);
     };
-
-    const cancel = () => cancelAll();
 
     return {
       onPointerDown: start,
       onPointerMove: move,
       onPointerUp: finish,
-      onPointerLeave: cancel,
-      onPointerCancel: cancel,
-      // Extra safety for long-press menu
+      onPointerLeave: cancelAll,
+      onPointerCancel: cancelAll,
       onContextMenu: (e) => e.preventDefault(),
-      // Mobile Safari callout suppression
       onTouchStart: (e) => e.preventDefault(),
     };
   }
@@ -188,7 +176,7 @@ export default function LibraryView({
         )}
       </div>
 
-      {/* Controls (Utility layout — quiet) */}
+      {/* Controls */}
       <div className="z-card p-4 sm:p-5 mb-4">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
@@ -228,7 +216,9 @@ export default function LibraryView({
       {/* List */}
       {filteredRows.length === 0 ? (
         <div className="z-card p-4 sm:p-5">
-          <div className="text-sm text-zinc-300 font-medium">No entries found</div>
+          <div className="text-sm text-zinc-300 font-medium">
+            No entries found
+          </div>
           <div className="z-subtitle mt-1">
             Try clearing search or selecting a different category.
           </div>
@@ -246,12 +236,14 @@ export default function LibraryView({
                   onClick={() =>
                     setExpanded((prev) => {
                       const next = new Set(prev);
-                      next.has(r._id) ? next.delete(r._id) : next.add(r._id);
+                      next.has(r._id)
+                        ? next.delete(r._id)
+                        : next.add(r._id);
                       return next;
                     })
                   }
                 >
-                  {/* RAG (semantic colour lives in emoji only; button stays quiet) */}
+                  {/* RAG */}
                   <button
                     type="button"
                     className="
@@ -300,18 +292,13 @@ export default function LibraryView({
                       </div>
                     )}
                   </div>
-
-                  {/* Chevron */}
-                  <div className="shrink-0 text-zinc-500 pt-1">
-                    {isOpen ? "▾" : "▸"}
-                  </div>
                 </div>
 
-                {/* Expanded content */}
+                {/* Expanded */}
                 {isOpen && (
                   <div className="mt-4 pt-4 border-t border-white/10 space-y-4 text-sm text-zinc-300">
                     {r.Phonetic && (
-                      <div className="z-inset px-4 py-3 italic text-zinc-300">
+                      <div className="z-inset px-4 py-3 italic">
                         {r.Phonetic}
                       </div>
                     )}
@@ -330,7 +317,7 @@ export default function LibraryView({
                         <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
                           {T.notes}
                         </div>
-                        <div className="whitespace-pre-line leading-[1.75] space-y-4">
+                        <div className="whitespace-pre-line leading-[1.75]">
                           {r.Notes}
                         </div>
                       </div>
@@ -346,7 +333,7 @@ export default function LibraryView({
                 )}
 
                 {/* Actions */}
-                <div className="flex flex-wrap items-center justify-end gap-2 mt-4">
+                <div className="flex flex-wrap justify-end gap-2 mt-4">
                   <button
                     type="button"
                     className="
@@ -355,12 +342,6 @@ export default function LibraryView({
                       hover:bg-emerald-400 active:bg-emerald-300
                       border border-emerald-300/20
                     "
-                    style={{
-                      WebkitUserSelect: "none",
-                      userSelect: "none",
-                      WebkitTouchCallout: "none",
-                      touchAction: "manipulation",
-                    }}
                     {...pressHandlers(r.Lithuanian || "")}
                     data-press
                   >
