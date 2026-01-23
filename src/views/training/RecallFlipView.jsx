@@ -13,34 +13,13 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 const SESSION_SIZE = 10;
 
-/**
- * Tool A — Recall Flip (Active Recall)
- *
- * Interaction:
- * - Tap anywhere on the card to flip (front <-> back)
- *
- * Audio (LT only):
- * - Two buttons: Play + Slow (slow uses opts: { slow: true })
- * - Audio controls ONLY appear when Lithuanian is visible on the card:
- *    - EN → LT: LT is on the back => visible AFTER reveal
- *    - LT → EN: LT is on the front => visible BEFORE reveal
- *
- * Session:
- * - 10 cards per run
- * - At end: summary modal (Right / Close / Wrong)
- *   - Review mistakes (close+wrong)
- *   - Let’s do another 10 (fresh)
- *   - Finish (back)
- *
- * Phase 1: no persistence. Session scoring only, resets every run.
- */
 export default function RecallFlipView({ rows, focus, onBack, playText }) {
   const list = Array.isArray(rows) ? rows : [];
 
-  // Direction: prompt -> answer
+  // Direction (keep code; UI removed for now — will be wired to Settings later)
   const [direction, setDirection] = useState("en_to_lt"); // "en_to_lt" | "lt_to_en"
 
-  // Visual FX (allowed primitives only)
+  // Visual FX
   const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
   const fxTimerRef = useRef(null);
 
@@ -50,7 +29,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   // Session hook
   const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  // Audio hook (MATCHES your actual useRecallFlipAudio.js)
+  // Audio hook
   const a = useRecallFlipAudio({
     current: s.current,
     direction,
@@ -60,7 +39,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     playText,
   });
 
-  // Derived texts for current card
   const prompt = useMemo(
     () => getPromptText(s.current, direction),
     [s.current, direction]
@@ -70,7 +48,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     [s.current, direction]
   );
 
-  // Use the audio hook’s own truth for LT visibility
   const isLtVisible = !!a.isLtVisible;
   const canPlayLt = !!a.canPlayLt;
 
@@ -94,7 +71,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   }, []);
 
   function hardExit() {
-    // Back must ALWAYS work.
     clearFxTimer();
     s.clearTimers?.();
     a.resetAudio?.();
@@ -112,7 +88,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   }
 
   function handleGrade(outcome) {
-    // s.grade guards internally via canGrade
     s.grade(outcome, {
       row: s.current,
       advanceDelayMs: 420,
@@ -124,56 +99,52 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     });
   }
 
-  return (
-    <div className="z-page z-page-y rf-root pb-8">
-      {/* Top bar (premium + consistent) */}
-      <div className="z-card px-4 py-3">
-        <div className="flex items-center justify-between">
-          <button type="button" className="rf-top-btn" onClick={hardExit}>
-            <span aria-hidden="true">←</span>
-            <span>Back</span>
-          </button>
-
-          <div className="text-sm text-zinc-300 font-medium">Recognise</div>
-
-          <div className="w-[82px]" aria-hidden="true" />
-        </div>
+  // --- Direction UI removed (kept for later wiring) ---
+  // Keeping this here so we don’t “forget” the intended wiring.
+  // eslint-disable-next-line no-unused-vars
+  const __directionUiPlaceholder = (
+    <div className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-2">
+      <div className="grid grid-cols-2 gap-2">
+        <ToggleButton
+          active={direction === "en_to_lt"}
+          label="EN → LT"
+          sub="Recall Lithuanian"
+          onClick={() => {
+            if (s.busy || a.audioBusy || s.showSummary) return;
+            setDirection("en_to_lt");
+            s.setRevealed?.(false);
+            setFx(null);
+            a.resetAudio?.();
+          }}
+        />
+        <ToggleButton
+          active={direction === "lt_to_en"}
+          label="LT → EN"
+          sub="Recall English"
+          onClick={() => {
+            if (s.busy || a.audioBusy || s.showSummary) return;
+            setDirection("lt_to_en");
+            s.setRevealed?.(false);
+            setFx(null);
+            a.resetAudio?.();
+          }}
+        />
       </div>
+    </div>
+  );
 
-      {/* Direction toggle (contained, matches app surfaces) */}
-      <div className="mt-3 z-card p-3">
-        <div className="text-[11px] uppercase tracking-wide text-zinc-500 mb-2">
-          Direction
-        </div>
+  return (
+    <div className="z-page py-4 rf-root h-full flex flex-col pb-6">
+      {/* Top row (no box, compact) */}
+      <div className="flex items-center justify-between">
+        <button type="button" className="rf-top-btn" onClick={hardExit}>
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
 
-        <div className="z-inset p-2">
-          <div className="grid grid-cols-2 gap-2">
-            <ToggleButton
-              active={direction === "en_to_lt"}
-              label="EN → LT"
-              sub="Recall Lithuanian"
-              onClick={() => {
-                if (s.busy || a.audioBusy || s.showSummary) return;
-                setDirection("en_to_lt");
-                s.setRevealed?.(false);
-                setFx(null);
-                a.resetAudio?.();
-              }}
-            />
-            <ToggleButton
-              active={direction === "lt_to_en"}
-              label="LT → EN"
-              sub="Recall English"
-              onClick={() => {
-                if (s.busy || a.audioBusy || s.showSummary) return;
-                setDirection("lt_to_en");
-                s.setRevealed?.(false);
-                setFx(null);
-                a.resetAudio?.();
-              }}
-            />
-          </div>
-        </div>
+        <div className="text-sm text-zinc-300 font-medium">Recognise</div>
+
+        <div className="w-[82px]" aria-hidden="true" />
       </div>
 
       {/* Empty state */}
@@ -188,9 +159,10 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
         </div>
       )}
 
-      {/* Card */}
+      {/* Card section (take remaining height; avoid scroll) */}
       {!!s.current && !s.showSummary && (
-        <div className="mt-4">
+        <div className="mt-3 flex-1 min-h-0 flex flex-col">
+          {/* Progress line (tight) */}
           <div className="flex items-center justify-between mb-2 px-1">
             <div className="text-xs text-zinc-500">{s.progressLabel}</div>
             <div className="text-xs text-zinc-500">
@@ -198,7 +170,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative flex-1 min-h-0">
             {/* FX overlay */}
             <div
               className={cn(
@@ -210,11 +182,14 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             />
 
             <div
-              className={cn("rf-perspective", s.busy ? "pointer-events-none select-none" : "")}
+              className={cn(
+                "rf-perspective h-full",
+                s.busy ? "pointer-events-none select-none" : ""
+              )}
             >
               <div
                 className={cn(
-                  "rf-card rounded-3xl border border-white/10 bg-white/[0.06] shadow-[0_18px_60px_rgba(0,0,0,0.55)]",
+                  "rf-card h-full rounded-3xl border border-white/10 bg-white/[0.06] shadow-[0_18px_60px_rgba(0,0,0,0.55)]",
                   s.revealed ? "rf-flipped" : "",
                   fx === "flip" ? "rf-flip-pulse" : ""
                 )}
@@ -230,7 +205,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                 }}
               >
                 {/* FRONT */}
-                <div className="rf-face rf-front p-6">
+                <div className="rf-face rf-front p-5">
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
                     {isLtVisible && (
@@ -259,7 +234,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                 </div>
 
                 {/* BACK */}
-                <div className="rf-face rf-back p-6">
+                <div className="rf-face rf-back p-5">
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
                     {isLtVisible && (
