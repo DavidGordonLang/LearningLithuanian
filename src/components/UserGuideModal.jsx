@@ -38,7 +38,8 @@ export default function UserGuideModal({
   }
 
   function Icon({ type }) {
-    const cls = "w-12 h-12 text-emerald-400 mx-auto mb-4";
+    const cls =
+      "w-12 h-12 text-emerald-400/90 mx-auto mb-4 drop-shadow-[0_0_18px_rgba(52,211,153,0.25)]";
 
     if (type === "speech") {
       return (
@@ -107,7 +108,8 @@ export default function UserGuideModal({
   return (
     <div
       className="
-        fixed inset-0 z-[11000] bg-black/60 backdrop-blur-sm
+        fixed inset-0 z-[11000]
+        bg-black/60 backdrop-blur-sm
         flex items-start justify-center px-4
         pb-[calc(env(safe-area-inset-bottom)+12px)]
       "
@@ -122,8 +124,7 @@ export default function UserGuideModal({
       <div
         className="
           w-full max-w-2xl
-          bg-zinc-900 border border-zinc-800
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
+          z-card
           overflow-hidden flex flex-col
         "
         style={{
@@ -132,18 +133,20 @@ export default function UserGuideModal({
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800">
+        <div className="sticky top-0 z-10 border-b border-white/10 bg-zinc-950/55 backdrop-blur">
           <div className="flex items-center justify-between px-5 py-4">
-            <h2 className="text-xl font-bold">User Guide</h2>
+            <div>
+              <h2 className="z-title">User Guide</h2>
+              <div className="z-subtitle mt-0.5">
+                Quick orientation — calm, no pressure.
+              </div>
+            </div>
 
             {!firstLaunch && (
               <button
-                className="
-                  bg-zinc-800 text-zinc-200 rounded-full
-                  px-4 py-1.5 text-sm font-medium
-                  hover:bg-zinc-700 active:bg-zinc-600
-                  select-none
-                "
+                type="button"
+                data-press
+                className="z-btn z-btn-quiet px-4 py-2 rounded-xl"
                 onClick={onClose}
               >
                 Close
@@ -165,30 +168,37 @@ export default function UserGuideModal({
             <div className="text-center select-none">
               <Icon type={current.icon} />
 
-              <h3 className="text-lg font-semibold mb-1">{current.title}</h3>
+              <h3 className="text-[18px] font-semibold text-zinc-100 mb-1">
+                {current.title}
+              </h3>
 
               {current.subtitle ? (
                 <p className="text-sm text-zinc-400 mb-4">{current.subtitle}</p>
               ) : null}
 
-              <ul className="text-left list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
-                {(current.points || []).map((p, i) => (
-                  <li key={i}>{p}</li>
-                ))}
-              </ul>
+              <div className="z-inset p-4 sm:p-5 text-left">
+                <ul className="list-disc list-inside space-y-1.5 text-sm text-zinc-300">
+                  {(current.points || []).map((p, i) => (
+                    <li key={i}>{p}</li>
+                  ))}
+                </ul>
+              </div>
 
               {current.linkUrl && current.linkText && (
                 <a
                   href={current.linkUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  data-press
                   className="
                     inline-flex items-center justify-center
-                    bg-emerald-500 text-black rounded-full
-                    px-5 py-2 text-sm font-semibold
-                    hover:bg-emerald-400 active:bg-emerald-300
-                    select-none
-                    mb-2
+                    mt-4
+                    rounded-2xl px-5 py-2.5 text-sm font-semibold
+                    bg-emerald-600/90 hover:bg-emerald-500
+                    border border-emerald-300/20
+                    text-black
+                    shadow-[0_12px_40px_rgba(0,0,0,0.30)]
+                    active:scale-[0.99] transition
                   "
                 >
                   {current.linkText}
@@ -198,12 +208,12 @@ export default function UserGuideModal({
               {/* Navigation */}
               <div className="flex items-center justify-between mt-6">
                 <button
-                  className="
-                    bg-zinc-800 text-zinc-200 rounded-full
-                    px-5 py-2 text-sm font-medium
-                    hover:bg-zinc-700 active:bg-zinc-600
-                    disabled:opacity-40 select-none
-                  "
+                  type="button"
+                  data-press
+                  className={
+                    "z-btn z-btn-secondary px-5 py-2.5 rounded-2xl " +
+                    (index === 0 ? "z-disabled" : "")
+                  }
                   onClick={prev}
                   disabled={index === 0}
                 >
@@ -212,11 +222,13 @@ export default function UserGuideModal({
 
                 {index < slides.length - 1 ? (
                   <button
+                    type="button"
+                    data-press
                     className="
-                      bg-emerald-500 text-black rounded-full
-                      px-5 py-2 font-semibold shadow
-                      hover:bg-emerald-400 active:bg-emerald-300
-                      select-none
+                      z-btn px-5 py-2.5 rounded-2xl
+                      bg-emerald-600/90 hover:bg-emerald-500
+                      border border-emerald-300/20
+                      text-black font-semibold
                     "
                     onClick={next}
                   >
@@ -224,11 +236,13 @@ export default function UserGuideModal({
                   </button>
                 ) : (
                   <button
+                    type="button"
+                    data-press
                     className="
-                      bg-emerald-500 text-black rounded-full
-                      px-5 py-2 font-semibold shadow
-                      hover:bg-emerald-400 active:bg-emerald-300
-                      select-none
+                      z-btn px-5 py-2.5 rounded-2xl
+                      bg-emerald-600/90 hover:bg-emerald-500
+                      border border-emerald-300/20
+                      text-black font-semibold
                     "
                     onClick={finish}
                   >
