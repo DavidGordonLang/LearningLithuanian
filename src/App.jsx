@@ -95,14 +95,15 @@ const STR = {
   azure: "Azure Speech",
   addEntry: "Add Entry",
   edit: "Edit Entry",
+  delete: "Delete",
+  showDetails: "Details",
+  hideDetails: "Hide",
 };
 
-/* -------------------- Premium Toast UI (stack + animation) -------------------- */
+/* -------------------- Toast UI (stack + animation) -------------------- */
 
 function ToastStack({ toasts, onDismiss }) {
-  // Show at most 3 to keep it clean.
   const visible = Array.isArray(toasts) ? toasts.slice(0, 3) : [];
-
   if (!visible.length) return null;
 
   return (
@@ -121,10 +122,7 @@ function ToastItem({ toast, onDismiss }) {
   const closeRef = useRef(false);
 
   useEffect(() => {
-    // Enter animation
     const raf = requestAnimationFrame(() => setShow(true));
-
-    // Auto-dismiss timer
     const ms = typeof toast?.ms === "number" ? toast.ms : 2200;
     const timer = setTimeout(() => {
       if (closeRef.current) return;
@@ -138,17 +136,14 @@ function ToastItem({ toast, onDismiss }) {
     };
   }, [toast?.id]);
 
-  // After exit animation, remove from stack
   useEffect(() => {
     if (!toast?.id) return;
     if (show) return;
-
-    // Only run exit cleanup if we’ve already entered once
     if (!closeRef.current) return;
 
     const t = setTimeout(() => {
       onDismiss?.(toast.id);
-    }, 180); // matches transition duration
+    }, 180);
 
     return () => clearTimeout(t);
   }, [show, toast?.id, onDismiss]);
@@ -257,19 +252,17 @@ export default function App() {
 
   const T = STR;
 
-  /* -------------------- TOAST (global, premium-ish) -------------------- */
+  /* TOAST */
   const [toasts, setToasts] = useState([]); // [{ id, msg, ms }]
-  const toastMaxRef = useRef(6); // keep memory bounded
+  const toastMaxRef = useRef(6);
 
   function showToast(msg, ms = 2200) {
     const text = String(msg || "").trim();
     if (!text) return;
 
     const id = Date.now() + Math.random();
-
     setToasts((prev) => {
       const next = [{ id, msg: text, ms }, ...(Array.isArray(prev) ? prev : [])];
-      // hard bound to avoid weird growth
       return next.slice(0, toastMaxRef.current);
     });
   }
@@ -340,7 +333,7 @@ export default function App() {
 
   const editRow = useMemo(() => {
     if (!isEditing) return null;
-    return rows.find((r) => r.id === editRowId) || null;
+    return rows.find((r) => r.id === editRowId || r._id === editRowId) || null;
   }, [isEditing, rows, editRowId]);
 
   /* Delete */
@@ -354,7 +347,6 @@ export default function App() {
     );
   };
 
-  /* Top-level page transition (keep as-is, but smooth) */
   const goToPage = (next) => {
     if (!next) return;
     startTransition(() => {
@@ -363,7 +355,6 @@ export default function App() {
   };
 
   function handleLogoClick() {
-    // Clicking logo takes you home and resets local HomeView state.
     setHomeResetKey((k) => k + 1);
     goToPage("home");
   }
@@ -374,12 +365,10 @@ export default function App() {
     appVersion: APP_VERSION,
   });
 
-  // Modals: changelog/user guide/whats new
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
 
-  // Track if user has seen guide + version
   const [seenUserGuide, setSeenUserGuide] = useLocalStorageState(LSK_USER_GUIDE, false);
   const [lastSeenVersion, setLastSeenVersion] = useLocalStorageState(
     LSK_LAST_SEEN_VERSION,
@@ -387,7 +376,6 @@ export default function App() {
   );
 
   useEffect(() => {
-    // show whats new on version bump (non-blocking)
     if (!lastSeenVersion) {
       setLastSeenVersion(APP_VERSION);
       return;
@@ -399,21 +387,17 @@ export default function App() {
   }, [lastSeenVersion, setLastSeenVersion]);
 
   useEffect(() => {
-    // show user guide once after first login (non-blocking)
     if (!user?.id) return;
     if (seenUserGuide) return;
     setShowUserGuide(true);
     setSeenUserGuide(true);
   }, [user?.id, seenUserGuide, setSeenUserGuide]);
 
-  // Scroll locks
   useModalScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
   useAppBodyScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
 
-  // Header highlight: keep the normal tabs. Analytics should look like "Settings" is active.
   const headerPage = swipeTabs.includes(page) ? page : "settings";
 
-  // Guardrails: auth/beta
   if (authLoading || !allowlistChecked) {
     return (
       <div className="min-h-[100dvh] bg-zinc-950 text-zinc-100 flex items-center justify-center">
@@ -442,7 +426,10 @@ export default function App() {
         isSwiping={isSwiping}
       />
 
-      <main className="flex-1 overflow-hidden" style={{ height: `calc(100dvh - ${headerHeight}px)` }}>
+      <main
+        className="flex-1 overflow-hidden"
+        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
+      >
         {page === "dupes" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
             <div className="z-page z-page-y">
@@ -465,7 +452,6 @@ export default function App() {
             index={swipeIndex}
             onIndexChange={(i) => goToPage(swipeTabs[i])}
             onProgress={(p, dragging) => {
-              // 4 tabs => clamp to [-0.25, 3.25]
               const clamped = Math.max(-0.25, Math.min(3.25, p));
               setSwipeProgress(clamped);
               setIsSwiping(!!dragging);
@@ -499,7 +485,6 @@ export default function App() {
                   T={T}
                   offsetTop={headerHeight}
                   page={"library"}
-                  setPage={goToPage}
                 />
               </div>
 
@@ -557,10 +542,8 @@ export default function App() {
         )}
       </main>
 
-      {/* TOASTS */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
-      {/* DAILY RECALL MODAL */}
       {dailyRecall.isOpen && dailyRecall.phrase && (
         <DailyRecallModal
           phrase={dailyRecall.phrase}
@@ -587,7 +570,7 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 pb-3 border-b border-white/10 shrink-0">
-                <h3 className="z-title">{isEditing ? T.edit : T.addEntry}</h3>
+                <h3 className="z-title">{isEditing ? T.editEntry : T.addEntry}</h3>
               </div>
 
               <div className="p-5 pt-4 flex-1 min-h-0">
@@ -595,14 +578,21 @@ export default function App() {
                   T={T}
                   genId={genId}
                   nowTs={nowTs}
-                  addPhrase={addPhrase}
-                  saveEditedPhrase={saveEditedPhrase}
-                  editRow={editRow}
-                  onClose={() => {
+                  normalizeRag={normalizeRag}
+                  mode={isEditing ? "edit" : "add"}
+                  initialRow={editRow}
+                  onSubmit={(row) => {
+                    if (isEditing) saveEditedPhrase(row);
+                    else addPhrase(row);
+
+                    setAddOpen(false);
+                    setEditRowId(null);
+                    showToast(isEditing ? "Saved" : "Added");
+                  }}
+                  onCancel={() => {
                     setAddOpen(false);
                     setEditRowId(null);
                   }}
-                  showToast={showToast}
                 />
               </div>
             </div>
@@ -610,18 +600,12 @@ export default function App() {
         </div>
       )}
 
-      {/* CHANGELOG */}
       {showChangeLog && (
-        <ChangeLogModal
-          appVersion={APP_VERSION}
-          onClose={() => setShowChangeLog(false)}
-        />
+        <ChangeLogModal appVersion={APP_VERSION} onClose={() => setShowChangeLog(false)} />
       )}
 
-      {/* USER GUIDE */}
       {showUserGuide && <UserGuideModal onClose={() => setShowUserGuide(false)} />}
 
-      {/* WHAT’S NEW */}
       {showWhatsNew && (
         <WhatsNewModal appVersion={APP_VERSION} onClose={() => setShowWhatsNew(false)} />
       )}
