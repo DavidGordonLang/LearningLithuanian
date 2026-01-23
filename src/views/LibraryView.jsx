@@ -59,14 +59,19 @@ export default function LibraryView({
     if (qNorm && category !== "ALL") setCategory("ALL");
   }, [qNorm, category]);
 
-  /* CLOSE MENU ON OUTSIDE TAP */
+  /* CLOSE MENU ON OUTSIDE TAP (but NOT when tapping the same kebab toggle) */
   useEffect(() => {
     if (!menuOpenFor) return;
 
     const onDown = (e) => {
+      // If user tapped the kebab button for the open row, don't auto-close here.
+      // Let the button's onClick toggle it closed cleanly.
+      const toggleEl = e.target?.closest?.(`[data-menu-toggle="${menuOpenFor}"]`);
+      if (toggleEl) return;
+
       const el = menuRef.current;
-      if (!el) return;
-      if (el.contains(e.target)) return;
+      if (el && el.contains(e.target)) return;
+
       setMenuOpenFor(null);
     };
 
@@ -283,15 +288,14 @@ export default function LibraryView({
                     }
                   >
                     <div className="flex items-start gap-3">
-                      {/* Play + rag dot */}
-                      <div className="shrink-0 pt-0.5 flex flex-col items-center gap-2">
+                      {/* LEFT: Play only */}
+                      <div className="shrink-0 pt-0.5">
                         <button
                           type="button"
                           aria-label="Play"
                           className="select-none"
                           {...pressHandlers(r.Lithuanian || "")}
                           onClick={(e) => {
-                            // allow pressHandlers to handle play; just block row expand on tap
                             e.stopPropagation();
                           }}
                         >
@@ -299,35 +303,9 @@ export default function LibraryView({
                             <span className="text-emerald-200 text-[16px] leading-none">▶</span>
                           </PlayCircle>
                         </button>
-
-                        <button
-                          type="button"
-                          aria-label="RAG"
-                          className="w-7 h-7 rounded-full border border-white/10 bg-white/5 text-[13px]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRows((prev) =>
-                              prev.map((x) =>
-                                x._id === r._id
-                                  ? {
-                                      ...x,
-                                      "RAG Icon":
-                                        normalizeRag(x["RAG Icon"]) === "🔴"
-                                          ? "🟠"
-                                          : normalizeRag(x["RAG Icon"]) === "🟠"
-                                          ? "🟢"
-                                          : "🔴",
-                                    }
-                                  : x
-                              )
-                            );
-                          }}
-                        >
-                          {rag}
-                        </button>
                       </div>
 
-                      {/* Text */}
+                      {/* TEXT */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -344,19 +322,56 @@ export default function LibraryView({
                             ) : null}
                           </div>
 
-                          {/* kebab */}
-                          <button
-                            type="button"
-                            className="shrink-0"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setMenuOpenFor((cur) => (cur === r._id ? null : r._id));
-                            }}
-                            aria-label="More"
-                          >
-                            <KebabIcon />
-                          </button>
+                          {/* RIGHT: kebab + rag under it */}
+                          <div className="shrink-0 flex flex-col items-end gap-2">
+                            <button
+                              type="button"
+                              className="shrink-0"
+                              data-menu-toggle={r._id}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setMenuOpenFor((cur) => (cur === r._id ? null : r._id));
+                              }}
+                              aria-label="More"
+                            >
+                              <KebabIcon />
+                            </button>
+
+                            <button
+                              type="button"
+                              aria-label="RAG"
+                              className="
+                                w-7 h-7 rounded-full
+                                border border-white/10
+                                bg-white/5
+                                text-[13px]
+                                hover:bg-white/[0.07]
+                              "
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setRows((prev) =>
+                                  prev.map((x) =>
+                                    x._id === r._id
+                                      ? {
+                                          ...x,
+                                          "RAG Icon":
+                                            normalizeRag(x["RAG Icon"]) === "🔴"
+                                              ? "🟠"
+                                              : normalizeRag(x["RAG Icon"]) === "🟠"
+                                              ? "🟢"
+                                              : "🔴",
+                                        }
+                                      : x
+                                  )
+                                );
+                              }}
+                              title="RAG"
+                            >
+                              {rag}
+                            </button>
+                          </div>
                         </div>
 
                         {/* Expanded */}
