@@ -236,10 +236,11 @@ export default function SettingsView({
     if (!user) return;
 
     try {
-      // If already paused, just reopen review UI
       if (pendingConflicts.length) {
         try {
-          trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion });
+          trackEvent("sync_conflicts_review_open", {}, {
+            app_version: appVersion,
+          });
         } catch {}
         setShowConflictModal(true);
         return;
@@ -263,7 +264,6 @@ export default function SettingsView({
           );
         } catch {}
 
-        // Pause: store conflicts + proposed merged rows, open review immediately
         setPendingConflicts(result.conflicts);
         setPendingMergedRows(result.mergedRows || []);
         setShowConflictModal(true);
@@ -295,7 +295,6 @@ export default function SettingsView({
   async function finishConflictSync(resolutions) {
     if (!user) return;
 
-    // If state somehow got cleared, just close modal safely
     if (!pendingMergedRows.length || !pendingConflicts.length) {
       setShowConflictModal(false);
       return;
@@ -318,13 +317,11 @@ export default function SettingsView({
         resolutions
       );
 
-      // Now that user has decided, it is safe to write
       await replaceUserPhrases(finalRows);
 
       setRows(finalRows);
       markSynced("Synced");
 
-      // Clear paused state
       setPendingConflicts([]);
       setPendingMergedRows([]);
       setShowConflictModal(false);
@@ -340,7 +337,9 @@ export default function SettingsView({
       alert("Sync completed ✅");
     } catch (e) {
       try {
-        trackError(e, { source: "sync_conflicts_finish" }, { app_version: appVersion });
+        trackError(e, { source: "sync_conflicts_finish" }, {
+          app_version: appVersion,
+        });
       } catch {}
       alert("Finish sync failed: " + (e?.message || "Unknown error"));
     } finally {
@@ -353,32 +352,42 @@ export default function SettingsView({
 
     if (pendingConflicts.length) {
       return (
-        <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-4 py-3 text-sm space-y-2">
-          <div className="font-semibold text-amber-300">Sync paused</div>
-          <div className="text-zinc-300">
+        <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">
+          <div className="text-sm font-semibold text-amber-300">Sync paused</div>
+          <div className="text-sm text-zinc-300 mt-1">
             {pendingConflicts.length} conflict(s) found. Review to finish syncing.
           </div>
-          <button
-            type="button"
-            className="bg-amber-500 text-black rounded-full px-4 py-1.5 text-xs font-semibold"
-            onClick={() => {
-              try {
-                trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion });
-              } catch {}
-              setShowConflictModal(true);
-            }}
-          >
-            Review conflicts
-          </button>
+          <div className="mt-3">
+            <button
+              type="button"
+              data-press
+              className="
+                z-btn px-4 py-2 rounded-2xl text-sm
+                bg-amber-500/90 hover:bg-amber-400
+                border border-amber-300/20
+                text-black font-semibold
+              "
+              onClick={() => {
+                try {
+                  trackEvent("sync_conflicts_review_open", {}, {
+                    app_version: appVersion,
+                  });
+                } catch {}
+                setShowConflictModal(true);
+              }}
+            >
+              Review conflicts
+            </button>
+          </div>
         </div>
       );
     }
 
     if (syncDirty) {
       return (
-        <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-4 py-3 text-sm">
-          <div className="font-semibold text-amber-300">Not synced</div>
-          <div className="text-zinc-300 mt-1">
+        <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">
+          <div className="text-sm font-semibold text-amber-300">Not synced</div>
+          <div className="text-sm text-zinc-300 mt-1">
             Changes on this device haven’t been synced to cloud yet. Use{" "}
             <span className="text-amber-200 font-semibold">Sync (merge)</span>{" "}
             when you’re ready.
@@ -389,19 +398,23 @@ export default function SettingsView({
 
     if (lastSyncLabel) {
       return (
-        <div className="rounded-xl border border-emerald-800 bg-emerald-950/20 px-4 py-3 text-sm">
-          <div className="font-semibold text-emerald-300">{lastSyncLabel}</div>
+        <div className="z-inset p-4 border border-emerald-500/20 bg-emerald-950/15">
+          <div className="text-sm font-semibold text-emerald-300">
+            {lastSyncLabel}
+          </div>
           {lastSyncAt ? (
-            <div className="text-zinc-300 mt-1">{formatWhen(lastSyncAt)}</div>
+            <div className="text-sm text-zinc-300 mt-1">
+              {formatWhen(lastSyncAt)}
+            </div>
           ) : null}
         </div>
       );
     }
 
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 text-sm">
-        <div className="font-semibold text-zinc-200">Sync status</div>
-        <div className="text-zinc-400 mt-1">
+      <div className="z-inset p-4">
+        <div className="text-sm font-semibold text-zinc-200">Sync status</div>
+        <div className="text-sm text-zinc-400 mt-1">
           Use <span className="text-zinc-200 font-semibold">Sync (merge)</span>{" "}
           to keep devices aligned.
         </div>
@@ -410,7 +423,7 @@ export default function SettingsView({
   })();
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-28 space-y-8">
+    <div className="z-page z-page-y pb-28 space-y-6">
       <ConflictReviewModal
         open={showConflictModal}
         conflicts={pendingConflicts}
@@ -419,14 +432,18 @@ export default function SettingsView({
       />
 
       {/* DAILY RECALL */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Daily Recall</div>
-        <p className="text-sm text-zinc-400">
-          Show one saved phrase when you open the app. Designed for light recall,
-          not streaks.
-        </p>
+      <section className="z-card p-4 sm:p-5 space-y-4">
+        <div>
+          <div className="text-[15px] font-semibold text-zinc-100">
+            Daily Recall
+          </div>
+          <div className="z-subtitle mt-1">
+            Show one saved phrase when you open the app. Designed for light recall,
+            not streaks.
+          </div>
+        </div>
 
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 space-y-3">
+        <div className="z-inset p-4 space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-zinc-200">
@@ -437,11 +454,12 @@ export default function SettingsView({
 
             <button
               type="button"
+              data-press
               className={
-                "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
+                "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
                 (dailyRecallEnabled
-                  ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
-                  : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
+                  ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+                  : "z-btn-secondary text-zinc-100")
               }
               onClick={() => setDailyRecallEnabled?.(!dailyRecallEnabled)}
             >
@@ -452,12 +470,8 @@ export default function SettingsView({
           <div className="flex justify-end">
             <button
               type="button"
-              className="
-                bg-zinc-800 text-zinc-200 rounded-full
-                px-4 py-2 text-sm font-medium
-                hover:bg-zinc-700 active:bg-zinc-600
-                select-none
-              "
+              data-press
+              className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
               onClick={showDailyRecallNow}
             >
               Show today’s recall
@@ -467,15 +481,26 @@ export default function SettingsView({
       </section>
 
       {/* STARTER PACK */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Starter Pack</div>
-        <div className="text-sm text-zinc-400">
-          Adds the starter library to this device. Re-installing won’t duplicate
-          entries.
+      <section className="z-card p-4 sm:p-5 space-y-4">
+        <div>
+          <div className="text-[15px] font-semibold text-zinc-100">
+            Starter Pack
+          </div>
+          <div className="z-subtitle mt-1">
+            Adds the starter library to this device. Re-installing won’t duplicate
+            entries.
+          </div>
         </div>
 
         <button
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
+          type="button"
+          data-press
+          className="
+            z-btn px-5 py-3 rounded-2xl
+            bg-emerald-600/90 hover:bg-emerald-500
+            border border-emerald-300/20
+            text-black font-semibold
+          "
           onClick={() => {
             try {
               trackEvent("starter_install", {}, { app_version: appVersion });
@@ -488,23 +513,32 @@ export default function SettingsView({
       </section>
 
       {/* ACCOUNT & SYNC */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Account &amp; Sync</div>
-
-        {user ? (
-          <div className="text-sm text-zinc-400">
-            Signed in as <span className="text-zinc-200">{user.email}</span>
+      <section className="z-card p-4 sm:p-5 space-y-4">
+        <div>
+          <div className="text-[15px] font-semibold text-zinc-100">
+            Account &amp; Sync
           </div>
-        ) : (
-          <div className="text-sm text-zinc-400">Sign in to enable cloud sync.</div>
-        )}
+          {user ? (
+            <div className="z-subtitle mt-1">
+              Signed in as <span className="text-zinc-200">{user.email}</span>
+            </div>
+          ) : (
+            <div className="z-subtitle mt-1">Sign in to enable cloud sync.</div>
+          )}
+        </div>
 
         {syncBanner}
 
         <div className="flex flex-wrap gap-3">
           {!user ? (
             <button
-              className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
+              type="button"
+              data-press
+              className={
+                "z-btn px-5 py-3 rounded-2xl font-semibold " +
+                (loading ? "z-disabled " : "") +
+                "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+              }
               onClick={signInWithGoogle}
               disabled={loading}
             >
@@ -513,7 +547,13 @@ export default function SettingsView({
           ) : (
             <>
               <button
-                className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
+                type="button"
+                data-press
+                className={
+                  "z-btn px-5 py-3 rounded-2xl font-semibold " +
+                  (merging ? "z-disabled " : "") +
+                  "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+                }
                 onClick={mergeLibraryWithCloud}
                 disabled={merging}
               >
@@ -521,7 +561,9 @@ export default function SettingsView({
               </button>
 
               <button
-                className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
+                type="button"
+                data-press
+                className="z-btn z-btn-secondary px-5 py-3 rounded-2xl"
                 onClick={signOut}
               >
                 Sign out
@@ -532,22 +574,31 @@ export default function SettingsView({
 
         {user ? (
           <button
+            type="button"
+            data-press
             className="text-xs text-zinc-400 underline underline-offset-4"
             onClick={() => setShowAdvanced((v) => !v)}
           >
-            {showAdvanced ? "Hide advanced sync options" : "Show advanced sync options"}
+            {showAdvanced
+              ? "Hide advanced sync options"
+              : "Show advanced sync options"}
           </button>
         ) : null}
 
         {user && showAdvanced ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3 space-y-3">
+          <div className="z-inset p-4 space-y-3">
             <div className="text-sm text-zinc-300">
               Advanced options overwrite one side completely. Use carefully.
             </div>
 
             <div className="flex flex-wrap gap-3">
               <button
-                className="bg-blue-600 text-white rounded-full px-5 py-2"
+                type="button"
+                data-press
+                className={
+                  "z-btn px-5 py-3 rounded-2xl bg-blue-600 text-white border border-white/10 " +
+                  (syncingUp || syncingDown || merging ? "z-disabled" : "")
+                }
                 onClick={uploadLibraryToCloud}
                 disabled={syncingUp || syncingDown || merging}
               >
@@ -555,7 +606,12 @@ export default function SettingsView({
               </button>
 
               <button
-                className="bg-blue-600 text-white rounded-full px-5 py-2"
+                type="button"
+                data-press
+                className={
+                  "z-btn px-5 py-3 rounded-2xl bg-blue-600 text-white border border-white/10 " +
+                  (syncingUp || syncingDown || merging ? "z-disabled" : "")
+                }
                 onClick={downloadLibraryFromCloud}
                 disabled={syncingUp || syncingDown || merging}
               >
@@ -567,55 +623,84 @@ export default function SettingsView({
       </section>
 
       {/* VOICE SETTINGS */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Voice Settings</div>
+      <section className="z-card p-4 sm:p-5 space-y-4">
+        <div className="text-[15px] font-semibold text-zinc-100">
+          Voice Settings
+        </div>
 
-        <select
-          className="w-full bg-zinc-950/30 border border-zinc-800 rounded-xl px-3 py-2 text-zinc-200"
-          value={azureVoiceShortName}
-          onChange={(e) => setAzureVoiceShortName(e.target.value)}
-        >
-          <option value="lt-LT-LeonasNeural">Leonas (male)</option>
-          <option value="lt-LT-OnaNeural">Ona (female)</option>
-        </select>
+        <div className="z-inset p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm text-zinc-300">Voice</div>
+            <select
+              className="z-input !py-2 !px-3 !rounded-2xl w-auto"
+              value={azureVoiceShortName}
+              onChange={(e) => setAzureVoiceShortName(e.target.value)}
+            >
+              <option value="lt-LT-LeonasNeural">Leonas (male)</option>
+              <option value="lt-LT-OnaNeural">Ona (female)</option>
+            </select>
+          </div>
 
-        <button
-          className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-          onClick={() => playText("Sveiki!")}
-        >
-          Play sample
-        </button>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              data-press
+              className="
+                z-btn px-4 py-2 rounded-2xl
+                bg-emerald-600/90 hover:bg-emerald-500
+                border border-emerald-300/20
+                text-black font-semibold
+              "
+              onClick={() => playText("Sveiki!")}
+            >
+              Play sample
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* YOUR DATA */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Your Data</div>
+      <section className="z-card p-4 sm:p-5 space-y-4">
+        <div className="text-[15px] font-semibold text-zinc-100">Your Data</div>
 
-        <div className="space-y-2">
+        <div className="z-inset p-4 space-y-3">
           <div className="text-sm text-zinc-400">
             Export/Import is a file on this device (not cloud).
           </div>
 
-          <input type="file" accept="application/json" onChange={handleImportFile} />
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <input
+              type="file"
+              accept="application/json"
+              onChange={handleImportFile}
+              className="text-sm text-zinc-300"
+            />
 
-          <button
-            className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
-            onClick={exportJson}
-          >
-            Export JSON (file)
-          </button>
+            <button
+              type="button"
+              data-press
+              className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
+              onClick={exportJson}
+            >
+              Export JSON (file)
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-2">
+        <div className="flex flex-wrap gap-3">
           <button
-            className="bg-blue-600 text-white rounded-full px-5 py-2"
+            type="button"
+            data-press
+            className="z-btn px-5 py-3 rounded-2xl bg-blue-600 text-white border border-white/10"
             onClick={onOpenDuplicateScanner}
           >
             Duplicate scanner
           </button>
 
           <button
-            className="bg-red-500 text-white rounded-full px-5 py-2"
+            type="button"
+            data-press
+            className="z-btn px-5 py-3 rounded-2xl bg-red-500 text-white border border-white/10"
             onClick={handleClearLibrary}
           >
             Clear library
@@ -624,43 +709,66 @@ export default function SettingsView({
       </section>
 
       {/* ABOUT */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">About</div>
+      <section className="z-card p-4 sm:p-5 space-y-4">
+        <div className="text-[15px] font-semibold text-zinc-100">About</div>
 
-        <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
-          onClick={onOpenUserGuide}
-        >
-          User Guide
-        </button>
-
-        <button
-          className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2"
-          onClick={onOpenChangeLog}
-        >
-          Change log
-        </button>
-
-        {isAdmin ? (
+        <div className="grid gap-3 sm:grid-cols-2">
           <button
-            className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold"
-            onClick={() => onOpenAnalytics?.()}
+            type="button"
+            data-press
+            className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center"
+            onClick={onOpenUserGuide}
           >
-            Analytics (admin)
+            User Guide
           </button>
-        ) : null}
+
+          <button
+            type="button"
+            data-press
+            className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center"
+            onClick={onOpenChangeLog}
+          >
+            Change log
+          </button>
+
+          {isAdmin ? (
+            <button
+              type="button"
+              data-press
+              className="
+                z-btn px-5 py-3 rounded-2xl
+                bg-emerald-600/90 hover:bg-emerald-500
+                border border-emerald-300/20
+                text-black font-semibold
+                sm:col-span-2
+              "
+              onClick={() => onOpenAnalytics?.()}
+            >
+              Analytics (admin)
+            </button>
+          ) : null}
+        </div>
+
+        <div className="text-xs text-zinc-500">
+          Version {appVersion}
+        </div>
       </section>
 
-      {/* DIAGNOSTICS (moved to bottom) */}
-      <section className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 space-y-4">
-        <div className="text-lg font-semibold">Diagnostics</div>
-        <p className="text-sm text-zinc-400">
-          During beta, we track basic usage (screens and feature clicks) and collect error reports.
-          This helps improve stability and understand what people actually use.
-          We do <span className="text-zinc-200 font-semibold">not</span> collect your phrase content.
+      {/* DIAGNOSTICS (fenced at bottom) */}
+      <section className="z-inset p-4 sm:p-5 space-y-4 border border-white/10">
+        <div className="text-[13px] font-semibold text-zinc-200">
+          Diagnostics
+        </div>
+
+        <p className="text-sm text-zinc-400 leading-relaxed">
+          During beta, we track basic usage (screens and feature clicks) and collect
+          error reports. This helps improve stability and understand what people
+          actually use. We do{" "}
+          <span className="text-zinc-200 font-semibold">not</span> collect your
+          phrase content.
         </p>
 
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/20 px-4 py-3">
+        <div className="z-inset p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-zinc-200">
@@ -673,11 +781,12 @@ export default function SettingsView({
 
             <button
               type="button"
+              data-press
               className={
-                "px-4 py-2 rounded-full text-sm font-semibold select-none transition " +
+                "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
                 (diagnosticsOn
-                  ? "bg-emerald-500 text-black hover:bg-emerald-400 active:bg-emerald-300"
-                  : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 active:bg-zinc-600")
+                  ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+                  : "z-btn-secondary text-zinc-100")
               }
               onClick={() => {
                 const next = !diagnosticsOn;
@@ -702,7 +811,9 @@ export default function SettingsView({
   );
 
   async function handleClearLibrary() {
-    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
+    const ok = window.confirm(
+      "Clear your entire local library? This cannot be undone."
+    );
     if (!ok) return;
     try {
       await clearLibrary?.();
