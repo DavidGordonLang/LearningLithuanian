@@ -57,14 +57,8 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   });
 
   // Derived texts for current card
-  const prompt = useMemo(
-    () => getPromptText(s.current, direction),
-    [s.current, direction]
-  );
-  const answer = useMemo(
-    () => getAnswerText(s.current, direction),
-    [s.current, direction]
-  );
+  const prompt = useMemo(() => getPromptText(s.current, direction), [s.current, direction]);
+  const answer = useMemo(() => getAnswerText(s.current, direction), [s.current, direction]);
 
   // Use the audio hook’s own truth for LT visibility
   const isLtVisible = !!a.isLtVisible;
@@ -103,13 +97,11 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     if (s.showSummary) return;
     if (s.busy || a.audioBusy) return;
 
-    // Use session hook’s helper
     if (!s.revealed) triggerFx("flip", 520);
     s.toggleReveal?.();
   }
 
   function handleGrade(outcome) {
-    // s.grade guards internally via canGrade
     s.grade(outcome, {
       row: s.current,
       advanceDelayMs: 420,
@@ -121,32 +113,40 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     });
   }
 
+  // Keep the direction UI for now (you’ll wire it to Settings later),
+  // but tighten the top header spacing so everything fits cleanly.
   return (
     <div className="max-w-xl mx-auto px-4 py-6 rf-root">
-      {/* Top row (quiet back, title leads) */}
-      <div className="flex items-center justify-between">
+      {/* Header row: centered title with equal side weights */}
+      <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <button
           type="button"
           onClick={hardExit}
-          className="
-            text-zinc-400
-            hover:text-zinc-200
-            transition
-            text-lg
-            leading-none
-            px-1
-          "
           aria-label="Back"
+          className={cn(
+            "h-11 w-11 rounded-full",
+            "border border-white/10 bg-white/[0.05] backdrop-blur",
+            "shadow-[0_10px_30px_rgba(0,0,0,0.35)]",
+            "flex items-center justify-center",
+            "text-zinc-200 hover:bg-white/[0.08] active:scale-[0.99] transition"
+          )}
         >
-          ←
+          <span className="text-xl leading-none" aria-hidden="true">
+            ←
+          </span>
         </button>
 
-        <div className="text-sm text-zinc-300 font-medium">Recognise</div>
+        <div className="text-center">
+          <div className="text-[16px] sm:text-[17px] font-semibold text-zinc-100 tracking-tight">
+            Recognise
+          </div>
+        </div>
 
-        <div className="w-[24px]" aria-hidden="true" />
+        {/* right spacer to keep title perfectly centered */}
+        <div className="h-11 w-11" aria-hidden="true" />
       </div>
 
-      {/* Direction toggle (keep code, but remove UI later if desired) */}
+      {/* Direction toggle (still visible for now) */}
       <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-2">
         <div className="grid grid-cols-2 gap-2">
           <ToggleButton
@@ -180,9 +180,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
       {!s.current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
-          <div className="text-sm text-zinc-300 mt-2">
-            Add a few entries first, or switch focus.
-          </div>
+          <div className="text-sm text-zinc-300 mt-2">Add a few entries first, or switch focus.</div>
         </div>
       )}
 
@@ -276,10 +274,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                     <div className="rf-grade-grid">
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-wrong",
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-wrong", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
@@ -288,10 +283,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-close",
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-close", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
@@ -300,10 +292,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
 
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-right",
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-right", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
@@ -360,15 +349,13 @@ function filterByFocus(rows, focus) {
 
 function getPromptText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt")
-    return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
+  if (direction === "en_to_lt") return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
   return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
 }
 
 function getAnswerText(row, direction) {
   if (!row) return "";
-  if (direction === "en_to_lt")
-    return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
+  if (direction === "en_to_lt") return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
   return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
 }
 
