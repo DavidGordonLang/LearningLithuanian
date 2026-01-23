@@ -3,18 +3,41 @@
 @tailwind utilities;
 
 /* Mobile-friendly defaults */
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
+
 body {
   background-color: #0a0a0b; /* matches bg-zinc-950 */
-  color: #e5e7eb;            /* text-zinc-200-ish */
+  color: #e5e7eb; /* text-zinc-200-ish */
   overscroll-behavior-y: none; /* avoid scroll chaining that can bump focus */
 }
 
 /* Safe areas for notches */
 :root {
   --safe-bottom: env(safe-area-inset-bottom);
+
+  /* UI tokens (presentation only) */
+  --z-bg: #0a0a0b;
+  --z-text: #e5e7eb;
+
+  /* Surfaces */
+  --z-surface: rgba(255, 255, 255, 0.06);
+  --z-surface-strong: rgba(255, 255, 255, 0.08);
+  --z-inset: rgba(0, 0, 0, 0.28);
+
+  /* Borders (“felt, not seen”) */
+  --z-border: rgba(255, 255, 255, 0.10);
+  --z-border-soft: rgba(255, 255, 255, 0.08);
+
+  /* Radii */
+  --z-radius: 16px; /* 2xl-ish */
+  --z-radius-lg: 20px;
+
+  /* Focus ring */
+  --z-ring: rgba(255, 255, 255, 0.18);
 }
 
 /* Disable selection/callout/highlight on pressable audio buttons */
@@ -27,6 +50,100 @@ body {
 }
 
 /* Prevent accidental focus loss caused by pointer ripple overlays (none here, but safe) */
-button, [role="button"] {
+button,
+[role="button"] {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ------------------------------
+   Shared UI primitives (Tailwind)
+   ------------------------------ */
+@layer components {
+  /* Layout rhythm */
+  .z-page {
+    @apply w-full max-w-[760px] mx-auto px-4 sm:px-5;
+  }
+
+  .z-page-y {
+    @apply py-4 sm:py-5;
+  }
+
+  .z-stack {
+    @apply flex flex-col gap-3;
+  }
+
+  .z-stack-lg {
+    @apply flex flex-col gap-4;
+  }
+
+  /* Surfaces */
+  .z-surface {
+    border-radius: var(--z-radius);
+    border: 1px solid var(--z-border-soft);
+    background: var(--z-surface);
+    @apply shadow-sm;
+  }
+
+  .z-card {
+    border-radius: var(--z-radius-lg);
+    border: 1px solid var(--z-border);
+    background: var(--z-surface-strong);
+    @apply shadow-sm;
+  }
+
+  .z-inset {
+    border-radius: var(--z-radius);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--z-inset);
+  }
+
+  /* Typography */
+  .z-title {
+    @apply text-[20px] sm:text-[22px] font-semibold tracking-tight text-zinc-100;
+  }
+
+  .z-subtitle {
+    @apply text-[13px] sm:text-[14px] text-zinc-400 leading-snug;
+  }
+
+  .z-section-title {
+    @apply text-[12px] uppercase tracking-wide text-zinc-400;
+  }
+
+  .z-helper {
+    @apply text-[12px] text-zinc-500 leading-snug;
+  }
+
+  /* Inputs */
+  .z-input {
+    @apply w-full rounded-2xl bg-zinc-950/60 border border-white/10
+      px-3 py-3 text-zinc-100 placeholder:text-zinc-500
+      outline-none;
+  }
+
+  .z-input:focus {
+    box-shadow: 0 0 0 3px var(--z-ring);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  /* Buttons (hierarchy only; colours remain semantic in components) */
+  .z-btn {
+    @apply inline-flex items-center justify-center gap-2 select-none
+      rounded-2xl px-4 py-3 text-[14px] font-medium
+      border border-white/10 bg-white/5 text-zinc-100
+      active:scale-[0.99] transition;
+  }
+
+  .z-btn-quiet {
+    @apply bg-transparent border-white/0 text-zinc-300 hover:bg-white/5;
+  }
+
+  .z-btn-secondary {
+    @apply bg-white/6 border-white/10 text-zinc-100;
+  }
+
+  /* Disabled states */
+  .z-disabled {
+    @apply opacity-50 pointer-events-none;
+  }
 }
