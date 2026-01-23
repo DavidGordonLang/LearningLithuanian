@@ -10,32 +10,14 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 const SESSION_SIZE = 10;
 
-/**
- * Module 2 — Produce (Blind Recall / Production)
- *
- * Flow:
- * - Show English intention
- * - User types Lithuanian (primary)
- * - Optional STT via small mic icon (tap to toggle), visually demoted
- * - Reveal correct Lithuanian
- * - Self-grade: I was right / Close enough / I was wrong
- * - Summary modal: review mistakes, another 10, finish
- *
- * Phase 1: no persistence.
- */
 export default function BlindRecallView({ rows, focus, onBack, playText, showToast }) {
   const list = Array.isArray(rows) ? rows : [];
 
-  // Eligible rows by focus
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
-
-  // Session engine
   const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  // Always EN -> LT for this module
   const direction = "en_to_lt";
 
-  // Audio hook (LT only; available once revealed)
   const a = useRecallFlipAudio({
     current: s.current,
     direction,
@@ -48,7 +30,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
   const promptEn = useMemo(() => getEnglish(s.current), [s.current]);
   const answerLt = useMemo(() => getLithuanian(s.current), [s.current]);
 
-  // User attempt
   const [attempt, setAttempt] = useState("");
   const inputRef = useRef(null);
 
@@ -58,8 +39,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     } catch {}
   };
 
-  // FX (reuse allowed primitives)
-  const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
+  const [fx, setFx] = useState(null);
   const fxTimerRef = useRef(null);
 
   function clearFxTimer() {
@@ -75,7 +55,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     fxTimerRef.current = setTimeout(() => setFx(null), ms);
   }
 
-  // STT: demoted UI. Tap-to-toggle recording.
   const {
     sttState,
     sttSupported,
@@ -93,10 +72,8 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     onSpeechCaptured: () => {},
   });
 
-  const sttBusy =
-    sttState === "transcribing" || sttState === "translating";
+  const sttBusy = sttState === "transcribing" || sttState === "translating";
   const micDisabled = s.busy || s.showSummary || !sttSupported() || sttBusy;
-
   const micActive = sttState === "recording" || sttBusy;
 
   const toggleMic = () => {
@@ -106,17 +83,12 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     }
     if (s.busy || s.showSummary) return;
 
-    // Tap-to-toggle:
-    // - Idle -> start recording
-    // - Recording -> stop recording
-    // - Transcribing/translating -> do nothing (busy)
     if (sttState === "recording") {
       stopRecording?.();
       return;
     }
     if (sttBusy) return;
 
-    // Starting a new capture should feel frictionless: keep typing primary
     blurInput();
     startRecording?.();
   };
@@ -127,7 +99,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     };
   }, []);
 
-  // Reset attempt + state when we advance cards
   useEffect(() => {
     setAttempt("");
     setFx(null);
@@ -188,7 +159,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
   const hasAttempt = !!attempt?.trim();
 
-  // Back button: circular, centred arrow (matches Module 1 style)
   const BackCircle = (
     <button
       type="button"
@@ -202,13 +172,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
       )}
       aria-label="Back"
     >
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
           d="M15 18l-6-6 6-6"
           stroke="currentColor"
@@ -223,20 +187,17 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 rf-root">
-      {/* Header (aligned to Module 1): left circle, centred title, right spacer */}
+      {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <div className="flex items-center justify-start">{BackCircle}</div>
 
         <div className="text-center">
-          <div className="text-[16px] font-semibold text-zinc-100">
-            Produce
-          </div>
+          <div className="text-[16px] font-semibold text-zinc-100">Produce</div>
         </div>
 
         <div aria-hidden="true" />
       </div>
 
-      {/* Empty state */}
       {!s.current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
@@ -246,10 +207,8 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
         </div>
       )}
 
-      {/* Card */}
       {!!s.current && !s.showSummary && (
         <div className="mt-4">
-          {/* Progress row */}
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs text-zinc-500">{s.progressLabel}</div>
             <div className="text-xs text-zinc-500">
@@ -258,7 +217,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
           </div>
 
           <div className="relative">
-            {/* FX overlay */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 rounded-3xl",
@@ -278,7 +236,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                 role="group"
                 aria-label="Produce card"
               >
-                {/* FRONT: prompt + attempt + centred Reveal */}
+                {/* FRONT */}
                 <div className="rf-face rf-front p-6 flex flex-col">
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
@@ -287,19 +245,24 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                   <div className="rf-center-zone flex-1 min-h-0">
                     <div className="rf-hero-text">{promptEn || "—"}</div>
 
-                    {/* Attempt input (bigger + premium; mic demoted to icon) */}
-                    <div className="mt-6">
-                      <div className="text-xs text-zinc-400 mb-2">Your Lithuanian</div>
+                    {/* BIGGER input block: full width, taller textarea */}
+                    <div className="mt-6 w-full">
+                      <div className="text-xs text-zinc-400 mb-2 text-center">
+                        Your Lithuanian
+                      </div>
 
-                      <div className="relative">
+                      <div className="relative w-full">
                         <textarea
                           ref={inputRef}
-                          rows={4} // + height (approx +20%)
+                          rows={4}
                           value={attempt}
                           onChange={(e) => setAttempt(e.target.value)}
                           className={cn(
-                            "w-full rounded-2xl border bg-zinc-950/40 px-4 py-4 text-sm",
+                            "w-full rounded-2xl border bg-zinc-950/40 text-sm",
                             "border-zinc-800 focus:border-emerald-500/60 focus:outline-none",
+                            // taller + feels “premium”
+                            "px-4 py-4",
+                            "min-h-[124px]",
                             s.busy ? "opacity-70" : ""
                           )}
                           placeholder="Type here…"
@@ -307,7 +270,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           onFocus={() => a.resetAudio?.()}
                         />
 
-                        {/* Mic icon: tap-to-toggle + small pulse ring */}
+                        {/* ICON-ONLY mic (no circle). pushed into corner */}
                         <button
                           type="button"
                           data-press
@@ -319,12 +282,12 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           }}
                           disabled={micDisabled}
                           className={cn(
-                            "absolute bottom-3 right-3",
-                            "h-10 w-10 rounded-full border flex items-center justify-center",
-                            micDisabled
-                              ? "border-white/10 bg-white/[0.04] opacity-55 cursor-not-allowed"
-                              : "border-white/10 bg-white/[0.06] hover:bg-white/[0.08]",
-                            "shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition"
+                            "absolute bottom-2 right-2",
+                            "h-9 w-9",
+                            "flex items-center justify-center",
+                            "bg-transparent border-0",
+                            micDisabled ? "opacity-45 cursor-not-allowed" : "opacity-80 hover:opacity-100",
+                            "transition"
                           )}
                           title={
                             !sttSupported()
@@ -339,29 +302,17 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         >
                           {/* pulse ring */}
                           {micActive && (
-                            <span
-                              className={cn(
-                                "absolute inset-0 rounded-full",
-                                "br-mic-pulse-ring"
-                              )}
-                              aria-hidden="true"
-                            />
+                            <span className="absolute inset-0 rounded-full br-mic-pulse-ring" aria-hidden="true" />
                           )}
 
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            aria-hidden="true"
-                          >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path
                               d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3Z"
                               stroke="currentColor"
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              opacity={micDisabled ? "0.65" : "0.92"}
+                              opacity={micDisabled ? "0.60" : "0.92"}
                             />
                             <path
                               d="M19 11a7 7 0 0 1-14 0"
@@ -369,7 +320,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              opacity={micDisabled ? "0.55" : "0.85"}
+                              opacity={micDisabled ? "0.50" : "0.85"}
                             />
                             <path
                               d="M12 18v3"
@@ -377,7 +328,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              opacity={micDisabled ? "0.55" : "0.85"}
+                              opacity={micDisabled ? "0.50" : "0.85"}
                             />
                           </svg>
                         </button>
@@ -406,7 +357,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                   </div>
                 </div>
 
-                {/* BACK: answer + audio + your answer + grade */}
+                {/* BACK */}
                 <div className="rf-face rf-back p-6 flex flex-col">
                   <div className="text-center">
                     <div className="rf-hero-text">{answerLt || "—"}</div>
@@ -420,9 +371,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           onPlay={() => a.playNormal?.()}
                           onPlaySlow={() => a.playSlow?.()}
                           disabledReason={
-                            typeof playText !== "function"
-                              ? "Audio unavailable"
-                              : "Play Lithuanian"
+                            typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
                           }
                         />
                       )}
@@ -448,7 +397,11 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                     <div className="rf-grade-grid">
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-wrong", "py-4", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-wrong",
+                          "py-4",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
@@ -457,7 +410,11 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-close", "py-4", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-close",
+                          "py-4",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
@@ -466,7 +423,11 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
                       <button
                         type="button"
-                        className={cn("rf-grade-btn rf-grade-right", "py-4", s.canGrade ? "" : "rf-grade-disabled")}
+                        className={cn(
+                          "rf-grade-btn rf-grade-right",
+                          "py-4",
+                          s.canGrade ? "" : "rf-grade-disabled"
+                        )}
                         onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
@@ -491,12 +452,12 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
               </div>
             </div>
 
-            {/* Local CSS for the tiny mic pulse ring */}
+            {/* Local pulse CSS */}
             <style>{`
               @keyframes brMicPulse {
-                0%   { transform: scale(1);   opacity: 0.55; }
+                0%   { transform: scale(1); opacity: 0.55; }
                 55%  { transform: scale(1.18); opacity: 0.95; }
-                100% { transform: scale(1);   opacity: 0.55; }
+                100% { transform: scale(1); opacity: 0.55; }
               }
               .br-mic-pulse-ring {
                 box-shadow:
@@ -509,7 +470,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
         </div>
       )}
 
-      {/* Summary modal */}
       {s.showSummary && (
         <SummaryModal
           title="Session complete"
@@ -534,7 +494,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
 function filterByFocus(rows, focus) {
   const sheet = (r) => String(r?.Sheet || "Phrases");
-
   return rows.filter((r) => {
     const s = sheet(r);
     if (focus === "all") return true;
