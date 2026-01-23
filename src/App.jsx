@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, {
   useEffect,
   useMemo,
@@ -10,7 +9,6 @@ import React, {
 
 import Header from "./components/Header";
 import AddForm from "./components/AddForm";
-import SearchDock from "./components/SearchDock";
 import SearchBox from "./components/SearchBox";
 import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
@@ -57,7 +55,6 @@ import { trackEvent, trackError } from "./services/analytics";
 /* ============================================================================ */
 const APP_VERSION = "1.5.4-beta";
 
-const LSK_SORT = "lt_sort_v1";
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
 const LSK_LAST_SEEN_VERSION = "lt_last_seen_version";
@@ -191,8 +188,11 @@ function ToastItem({ toast, onDismiss }) {
 /* ============================================================================ */
 
 function AppBackground() {
+  // Render-inspired: subtle top glow, centre bloom, vignette, and soft texture feel.
+  // No behaviour changes; pointer-events disabled.
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Base gradient */}
       <div
         className="absolute inset-0"
         style={{
@@ -203,6 +203,7 @@ function AppBackground() {
         }}
       />
 
+      {/* Soft vignette */}
       <div
         className="absolute inset-0"
         style={{
@@ -211,6 +212,7 @@ function AppBackground() {
         }}
       />
 
+      {/* Very subtle “film” texture (cheap + effective, no assets) */}
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
@@ -222,28 +224,6 @@ function AppBackground() {
       />
     </div>
   );
-}
-
-function blurActiveElement() {
-  const ae = document.activeElement;
-  if (!ae) return;
-  // Only blur real focus targets
-  const tag = (ae.tagName || "").toUpperCase();
-  const isField =
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    ae.isContentEditable;
-  if (!isField) return;
-
-  try {
-    ae.blur();
-  } catch {}
-
-  // Nudge focus away from the previous input to prevent “re-focus” on mobile
-  try {
-    if (document.body) document.body.focus?.();
-  } catch {}
 }
 
 export default function App() {
@@ -303,9 +283,6 @@ export default function App() {
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
-
-  /* SORT */
-  const [sortMode, setSortMode] = useLocalStorageState(LSK_SORT, "RAG");
 
   const T = STR;
 
@@ -412,16 +389,12 @@ export default function App() {
 
   const goToPage = (next) => {
     if (!next) return;
-    // Critical for mobile: kill focus before route/tab changes
-    blurActiveElement();
-
     startTransition(() => {
       setPage(next);
     });
   };
 
   function handleLogoClick() {
-    blurActiveElement();
     setHomeResetKey((k) => k + 1);
     goToPage("home");
   }
@@ -498,11 +471,10 @@ export default function App() {
         isSwiping={isSwiping}
       />
 
-      {/* IMPORTANT:
-          Do NOT hard-size main using 100dvh - headerHeight.
-          On mobile keyboards this causes overlap/hit-test glitches.
-          Let flex layout handle it. */}
-      <main className="flex-1 overflow-hidden relative">
+      <main
+        className="flex-1 overflow-hidden relative"
+        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
+      >
         {page === "dupes" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
             <div className="z-page z-page-y">
@@ -552,25 +524,14 @@ export default function App() {
 
             {/* LIBRARY */}
             <div className="h-full">
-              <div className="pt-3">
-                <SearchDock
-                  SearchBox={SearchBox}
-                  sortMode={sortMode}
-                  setSortMode={setSortMode}
-                  placeholder={T.search}
-                  T={T}
-                  offsetTop={headerHeight}
-                  page={"library"}
-                />
-              </div>
-
               <LibraryView
                 T={T}
                 rows={visibleRows}
                 setRows={setRows}
                 normalizeRag={normalizeRag}
-                sortMode={sortMode}
                 playText={playTextTracked}
+                SearchBox={SearchBox}
+                searchPlaceholder={T.search}
                 removePhrase={removePhraseById}
                 onEditRow={(id) => {
                   setEditRowId(id);
