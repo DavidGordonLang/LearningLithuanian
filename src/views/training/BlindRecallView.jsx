@@ -11,18 +11,11 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 const SESSION_SIZE = 10;
 
 /**
- * Module 2 — Blind Recall (Production)
+ * Module — Produce (Blind Recall)
  *
- * Flow:
- * - Show English intention
- * - User types OR uses press-and-hold STT to produce Lithuanian
- * - User can edit STT output
- * - Reveal correct Lithuanian (no notes shown in training)
- * - Self-grade: Right / Close enough / Missed it (labels customized)
- * - End summary: review mistakes, another 10, finish
- *
- * Phase 1: no persistence.
- * Notes: Notes are intentionally NOT displayed here (library only).
+ * Demoted STT:
+ * - Typing is the primary path.
+ * - STT remains available as a smaller, secondary hold-to-speak button.
  */
 export default function BlindRecallView({ rows, focus, onBack, playText, showToast }) {
   const list = Array.isArray(rows) ? rows : [];
@@ -30,13 +23,13 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
   // Eligible rows by focus (same rules as Recall Flip)
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
 
-  // Session hook (reuse the stable session engine)
+  // Session hook (stable session engine)
   const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  // We are always EN -> LT in Module 2
+  // Always EN -> LT for Produce
   const direction = "en_to_lt";
 
-  // Audio hook (LT only; becomes available once revealed)
+  // Audio hook (LT only; available once revealed)
   const a = useRecallFlipAudio({
     current: s.current,
     direction,
@@ -77,7 +70,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     fxTimerRef.current = setTimeout(() => setFx(null), ms);
   }
 
-  // STT (press-and-hold). Reuse the proven hook but disable auto-translate.
+  // STT (press-and-hold). Reuse proven hook but no auto-translate.
   const {
     sttState,
     sttSupported,
@@ -104,6 +97,20 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
       : sttState === "transcribing"
       ? "Transcribing…"
       : "Hold to speak";
+
+  const micActive = sttState === "recording";
+  const micBusy = sttState === "transcribing" || sttState === "translating";
+
+  const micBtnClass = cn(
+    "inline-flex items-center justify-center gap-2 select-none",
+    "rounded-full border px-4 py-3 text-[13px] font-medium",
+    "transition active:scale-[0.99]",
+    micDisabled || !sttSupported()
+      ? "border-white/10 bg-white/[0.03] text-zinc-500 cursor-not-allowed"
+      : "border-white/10 bg-white/[0.05] text-zinc-100 hover:bg-white/[0.07]",
+    (micActive || micBusy) ? "shadow-[0_0_26px_rgba(16,185,129,0.22)]" : "",
+    micBusy ? "z-mic-pulse" : ""
+  );
 
   useEffect(() => {
     return () => {
@@ -178,7 +185,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
           <span>Back</span>
         </button>
 
-        <div className="text-sm text-zinc-400">Blind Recall</div>
+        <div className="text-sm text-zinc-400">Produce</div>
 
         <div className="w-[82px]" aria-hidden="true" />
       </div>
@@ -220,7 +227,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                   fx === "flip" ? "rf-flip-pulse" : ""
                 )}
                 role="group"
-                aria-label="Blind recall card"
+                aria-label="Produce card"
               >
                 {/* FRONT: prompt + attempt + bottom actions */}
                 <div className="rf-face rf-front p-6 flex flex-col">
@@ -249,13 +256,10 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         disabled={s.busy || s.showSummary}
                         onFocus={() => a.resetAudio?.()}
                       />
-                      <div className="mt-2 text-[11px] text-zinc-500">
-                        Tip: speak, then edit. You’re training production, not perfection.
-                      </div>
                     </div>
                   </div>
 
-                  {/* Bottom thumb bar */}
+                  {/* Bottom bar: STT (secondary, left) + Reveal (primary, right) */}
                   <div
                     className={cn(
                       "mt-4 pt-3",
@@ -268,15 +272,10 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                     onMouseDown={(e) => e.preventDefault()}
                     onTouchStart={(e) => e.stopPropagation()}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between gap-3">
                       <button
                         type="button"
-                        className={cn(
-                          "flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition select-none",
-                          micDisabled || !sttSupported()
-                            ? "border-zinc-800 bg-zinc-950/30 text-zinc-500 cursor-not-allowed"
-                            : "border-zinc-700 bg-zinc-950/55 text-zinc-200 hover:bg-zinc-950/75"
-                        )}
+                        className={micBtnClass}
                         disabled={micDisabled || !sttSupported()}
                         onMouseDown={(e) => {
                           e.preventDefault();
@@ -306,19 +305,17 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         }}
                         title={!sttSupported() ? "Speech input not supported" : "Press and hold"}
                       >
-                        <span className="mr-2" aria-hidden="true">
-                          🎤
-                        </span>
-                        {micLabel}
+                        <span aria-hidden="true">🎤</span>
+                        <span>{micLabel}</span>
                       </button>
 
                       <button
                         type="button"
                         className={cn(
-                          "rounded-2xl border px-4 py-3 text-sm font-semibold transition select-none",
+                          "rounded-full border px-6 py-3 text-[13px] font-semibold transition select-none",
                           s.busy || s.showSummary
-                            ? "border-zinc-800 bg-zinc-950/30 text-zinc-500 cursor-not-allowed"
-                            : "border-emerald-500/40 bg-emerald-500/10 text-zinc-100 hover:bg-emerald-500/15"
+                            ? "border-emerald-500/25 bg-emerald-500/10 text-zinc-500 cursor-not-allowed"
+                            : "border-emerald-500/40 bg-emerald-500/15 text-zinc-100 hover:bg-emerald-500/18"
                         )}
                         onClick={() => {
                           if (s.busy || s.showSummary) return;
@@ -354,7 +351,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                     </div>
                   </div>
 
-                  {/* Centered "Your answer" (priority comparison moment) */}
+                  {/* Centered "Your answer" (comparison moment) */}
                   <div className="flex-1 min-h-0 mt-5 flex items-start justify-center">
                     {hasAttempt ? (
                       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950/35 p-3">
