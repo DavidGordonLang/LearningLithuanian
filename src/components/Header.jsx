@@ -49,7 +49,6 @@ const Header = forwardRef(function Header(
       };
     }
 
-    // only set once all buttons are measured
     if (tabs.every((t) => out[t.id])) setMetrics(out);
   };
 
@@ -117,9 +116,13 @@ const Header = forwardRef(function Header(
   return (
     <header
       ref={ref}
-      className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800"
+      className="
+        sticky top-0 z-40
+        bg-zinc-950/92 backdrop-blur
+        border-b border-white/10
+      "
     >
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-3 pb-3">
+      <div className="max-w-6xl mx-auto px-4 sm:px-5 pt-3 pb-3">
         <div className="flex items-center justify-center">
           <button
             type="button"
@@ -138,7 +141,11 @@ const Header = forwardRef(function Header(
             <img
               src="/icons/bg-logoc.PNG"
               alt="Žodis logo"
-              className="h-14 w-14 sm:h-16 sm:w-16 select-none"
+              className="
+                h-14 w-14 sm:h-16 sm:w-16
+                select-none
+                drop-shadow-[0_10px_30px_rgba(0,0,0,0.45)]
+              "
               draggable={false}
             />
           </button>
@@ -150,13 +157,20 @@ const Header = forwardRef(function Header(
             className="
               relative inline-flex
               w-full max-w-md
-              rounded-full bg-zinc-900/80 border border-zinc-800
+              rounded-full
+              bg-white/[0.06] border border-white/10
               p-1
               text-xs sm:text-sm
+              shadow-[0_10px_30px_rgba(0,0,0,0.25)]
             "
           >
             <div
-              className="absolute top-1 bottom-1 rounded-full bg-emerald-500 shadow"
+              className="
+                absolute top-1 bottom-1 rounded-full
+                bg-emerald-600/90
+                shadow-[0_10px_30px_rgba(0,0,0,0.30)]
+                border border-emerald-300/10
+              "
               style={{
                 width: `${indicator.width}px`,
                 transform: `translateX(${indicator.left}px)`,
@@ -175,9 +189,12 @@ const Header = forwardRef(function Header(
                     if (el) btnRefs.current[tab.id] = el;
                   }}
                   type="button"
+                  data-press
                   className={cn(
                     "relative z-10 flex-1 px-4 sm:px-6 py-2 rounded-full font-medium select-none transition",
-                    active ? "text-zinc-950" : "text-zinc-300 hover:text-zinc-100"
+                    active
+                      ? "text-zinc-950"
+                      : "text-zinc-300 hover:text-zinc-100"
                   )}
                   onClick={() => setPage(tab.id)}
                   onMouseDown={(e) => e.preventDefault()}
