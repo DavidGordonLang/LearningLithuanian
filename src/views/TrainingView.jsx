@@ -7,6 +7,7 @@ import MatchPairsView from "./training/MatchPairsView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 
 export default function TrainingView({ T, rows, playText, showToast }) {
+  // Behaviour frozen: these screen IDs are internal routing only.
   const [screen, setScreen] = useState("home"); // "home" | "recallFlip" | "blindRecall" | "matchPairs"
   const [focus, setFocus] = useTrainingFocus();
 
