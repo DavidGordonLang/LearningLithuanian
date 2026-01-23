@@ -3,12 +3,19 @@ import { useEffect } from "react";
 
 /**
  * useAppBodyScrollLock
- * Locks BODY/HTML scrolling while the authenticated app shell is active,
- * so only the swipe panels scroll (premium, native-feel).
+ * Locks BODY/HTML scrolling while overlays/modals are active,
+ * so only the intended panels scroll (native-feel).
  *
- * Extracted from App.jsx unchanged in behaviour.
+ * Supports both call styles:
+ *   useAppBodyScrollLock(true)
+ *   useAppBodyScrollLock({ active: true })
  */
-export default function useAppBodyScrollLock({ active }) {
+export default function useAppBodyScrollLock(activeOrOpts) {
+  const active =
+    typeof activeOrOpts === "boolean"
+      ? activeOrOpts
+      : !!activeOrOpts?.active;
+
   useEffect(() => {
     if (!active) return;
 
