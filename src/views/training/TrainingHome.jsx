@@ -3,22 +3,84 @@ import React, { useMemo } from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-function FocusPill({ active, label, sub, onClick }) {
+function SegmentedFocus({ value, onChange, counts }) {
+  const items = [
+    { key: "phrases", label: "Phrases", count: counts?.phrases ?? 0 },
+    { key: "words", label: "Words", count: counts?.words ?? 0 },
+    { key: "numbers", label: "Numbers", count: counts?.numbers ?? 0 },
+    { key: "all", label: "All", count: counts?.all ?? 0 },
+  ];
+
+  return (
+    <div className="z-surface overflow-hidden">
+      <div className="grid grid-cols-4">
+        {items.map((it, idx) => {
+          const active = value === it.key;
+          return (
+            <button
+              key={it.key}
+              type="button"
+              data-press
+              onClick={() => onChange(it.key)}
+              className={cn(
+                "px-3 py-2.5 text-center transition",
+                idx !== items.length - 1 ? "border-r border-white/10" : "",
+                active
+                  ? "bg-amber-500/90 text-black"
+                  : "bg-transparent text-zinc-200 hover:bg-white/5"
+              )}
+            >
+              <div className="text-[12px] font-semibold leading-tight">
+                {it.label}
+              </div>
+              <div className={cn("text-[11px] leading-tight", active ? "text-black/70" : "text-zinc-500")}>
+                {it.count}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ToolRow({ disabled, onClick, icon, title, subtitle, rightHint }) {
   return (
     <button
       type="button"
-      className={cn(
-        "w-full text-left rounded-2xl border px-4 py-3 transition select-none",
-        active
-          ? "border-emerald-500/60 bg-emerald-500/10"
-          : "border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950/60"
-      )}
+      data-press
+      disabled={disabled}
       onClick={onClick}
+      className={cn(
+        "w-full text-left",
+        "z-card px-4 py-4",
+        "flex items-center gap-3",
+        "transition",
+        disabled ? "opacity-55 cursor-not-allowed" : "hover:bg-white/[0.06]"
+      )}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-medium">{label}</div>
-        <div className="text-xs text-zinc-400">{sub}</div>
+      <div
+        className={cn(
+          "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
+          "border border-white/10",
+          disabled ? "bg-white/5 text-zinc-500" : "bg-white/[0.06] text-zinc-200"
+        )}
+        aria-hidden="true"
+      >
+        <span className="text-[18px] leading-none">{icon}</span>
       </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="text-[15px] font-semibold text-zinc-100">{title}</div>
+        <div className="text-[12px] text-zinc-400 mt-0.5 truncate">
+          {subtitle}
+        </div>
+        {rightHint ? (
+          <div className="text-[11px] text-zinc-500 mt-2">{rightHint}</div>
+        ) : null}
+      </div>
+
+      <div className="text-zinc-500 text-lg leading-none shrink-0">›</div>
     </button>
   );
 }
@@ -49,148 +111,89 @@ export default function TrainingHome({
   const matchPairsDisabled = wordsNumbersCount < 10;
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-6">
-      <div>
-        <div className="text-xl font-semibold">{T?.navTraining || "Training"}</div>
-        <div className="text-sm text-zinc-400 mt-1">
+    <div className="z-page z-page-y pb-28">
+      {/* Header */}
+      <div className="z-stack">
+        <div className="z-title">{T?.navTraining || "Training"}</div>
+        <div className="z-subtitle">
           Practise what you’ve saved. Calm, consistent, and on your terms.
         </div>
       </div>
 
-      <div className="mt-6">
-        <div className="text-sm font-semibold">Focus</div>
-        <div className="text-xs text-zinc-400 mt-1">
+      {/* Focus */}
+      <div className="mt-6 z-stack">
+        <div className="z-section-title">Focus</div>
+        <div className="z-subtitle -mt-1">
           Choose what kind of entries you want in your sessions.
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <FocusPill
-            active={focus === "phrases"}
-            label="Phrases"
-            sub={`${counts.phrases}`}
-            onClick={() => setFocus("phrases")}
-          />
-          <FocusPill
-            active={focus === "words"}
-            label="Words"
-            sub={`${counts.words}`}
-            onClick={() => setFocus("words")}
-          />
-          <FocusPill
-            active={focus === "numbers"}
-            label="Numbers"
-            sub={`${counts.numbers}`}
-            onClick={() => setFocus("numbers")}
-          />
-          <FocusPill
-            active={focus === "all"}
-            label="All"
-            sub={`${counts.all}`}
-            onClick={() => setFocus("all")}
-          />
-        </div>
+        <SegmentedFocus
+          value={focus}
+          onChange={setFocus}
+          counts={counts}
+        />
 
         {tooFew && (
-          <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/50 p-4">
-            <div className="text-sm font-medium">Not enough entries</div>
-            <div className="text-xs text-zinc-400 mt-1">
-              You’ve only got {eligibleCount} in <b>{focusLabel}</b>. Add a few more, or switch
-              focus.
+          <div className="z-inset p-4">
+            <div className="text-sm font-semibold text-zinc-200">
+              Not enough entries
+            </div>
+            <div className="text-sm text-zinc-400 mt-1">
+              You’ve only got <span className="text-zinc-200 font-semibold">{eligibleCount}</span>{" "}
+              in <span className="text-zinc-200 font-semibold">{focusLabel}</span>.
+              Add a few more, or switch focus.
             </div>
           </div>
         )}
       </div>
 
-      <div className="mt-8">
-        <div className="text-sm font-semibold">Tools</div>
-        <div className="text-xs text-zinc-400 mt-1">
-          Build recall, then reinforce through repetition.
+      {/* Modules */}
+      <div className="mt-8 z-stack">
+        <div className="z-section-title">Modules</div>
+        <div className="z-subtitle -mt-1">
+          Start with recall, then reinforce with repetition.
         </div>
 
-        <div className="mt-3 space-y-3">
-          <button
-            type="button"
-            className={cn(
-              "w-full rounded-2xl border px-4 py-4 text-left transition",
-              tooFew
-                ? "border-zinc-800 bg-zinc-950/30 opacity-60 cursor-not-allowed"
-                : "border-zinc-800 bg-zinc-950/50 hover:bg-zinc-950/70"
-            )}
+        <div className="z-stack">
+          <ToolRow
+            disabled={tooFew}
             onClick={() => {
               if (tooFew) return;
-              onStartRecallFlip();
+              onStartRecallFlip?.();
             }}
-            disabled={tooFew}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-base font-semibold">Recall Flip</div>
-                <div className="text-sm text-zinc-300 mt-1">
-                  Reveal-based recall. Self-grade and move on.
-                </div>
-              </div>
-              <div className="text-sm text-zinc-400">→</div>
-            </div>
-          </button>
+            icon="🧠"
+            title="Recognise (Recall Flip)"
+            subtitle="Reveal-based recall. Self-grade and move on."
+          />
 
-          <button
-            type="button"
-            className={cn(
-              "w-full rounded-2xl border px-4 py-4 text-left transition",
-              tooFew
-                ? "border-zinc-800 bg-zinc-950/30 opacity-60 cursor-not-allowed"
-                : "border-zinc-800 bg-zinc-950/50 hover:bg-zinc-950/70"
-            )}
+          <ToolRow
+            disabled={tooFew}
             onClick={() => {
               if (tooFew) return;
               onStartBlindRecall?.();
             }}
-            disabled={tooFew}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-base font-semibold">Blind Recall</div>
-                <div className="text-sm text-zinc-300 mt-1">
-                  Produce Lithuanian first. Type or hold-to-speak, then reveal.
-                </div>
-              </div>
-              <div className="text-sm text-zinc-400">→</div>
-            </div>
-          </button>
+            icon="⌨️"
+            title="Produce (Blind Recall)"
+            subtitle="Produce Lithuanian first. Type (or speak), then reveal."
+          />
 
-          <button
-            type="button"
-            className={cn(
-              "w-full rounded-2xl border px-4 py-4 text-left transition",
-              matchPairsDisabled
-                ? "border-zinc-800 bg-zinc-950/30 opacity-60 cursor-not-allowed"
-                : "border-zinc-800 bg-zinc-950/50 hover:bg-zinc-950/70"
-            )}
+          <ToolRow
+            disabled={matchPairsDisabled}
             onClick={() => {
               if (matchPairsDisabled) return;
               onStartMatchPairs?.();
             }}
-            disabled={matchPairsDisabled}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-base font-semibold">Match Pairs</div>
-                <div className="text-sm text-zinc-300 mt-1">
-                  Words & numbers only. Tap two tiles to match EN ↔ LT.
-                </div>
-                {matchPairsDisabled && (
-                  <div className="text-xs text-zinc-500 mt-2">
-                    Add at least <b>10</b> words/numbers to unlock (you have {wordsNumbersCount}).
-                  </div>
-                )}
-              </div>
-              <div className="text-sm text-zinc-400">→</div>
-            </div>
-          </button>
+            icon="🧩"
+            title="Reinforce (Match Pairs)"
+            subtitle="Words & numbers only. Tap two tiles to match EN ↔ LT."
+            rightHint={
+              matchPairsDisabled
+                ? `Add at least 10 words/numbers to unlock (you have ${wordsNumbersCount}).`
+                : null
+            }
+          />
         </div>
       </div>
-
-      <div className="h-8" />
     </div>
   );
 }
