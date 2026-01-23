@@ -191,11 +191,8 @@ function ToastItem({ toast, onDismiss }) {
 /* ============================================================================ */
 
 function AppBackground() {
-  // Render-inspired: subtle top glow, centre bloom, vignette, and soft texture feel.
-  // No behaviour changes; pointer-events disabled.
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {/* Base gradient */}
       <div
         className="absolute inset-0"
         style={{
@@ -206,7 +203,6 @@ function AppBackground() {
         }}
       />
 
-      {/* Soft vignette */}
       <div
         className="absolute inset-0"
         style={{
@@ -215,7 +211,6 @@ function AppBackground() {
         }}
       />
 
-      {/* Very subtle “film” texture (cheap + effective, no assets) */}
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
@@ -227,6 +222,28 @@ function AppBackground() {
       />
     </div>
   );
+}
+
+function blurActiveElement() {
+  const ae = document.activeElement;
+  if (!ae) return;
+  // Only blur real focus targets
+  const tag = (ae.tagName || "").toUpperCase();
+  const isField =
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    ae.isContentEditable;
+  if (!isField) return;
+
+  try {
+    ae.blur();
+  } catch {}
+
+  // Nudge focus away from the previous input to prevent “re-focus” on mobile
+  try {
+    if (document.body) document.body.focus?.();
+  } catch {}
 }
 
 export default function App() {
@@ -395,12 +412,16 @@ export default function App() {
 
   const goToPage = (next) => {
     if (!next) return;
+    // Critical for mobile: kill focus before route/tab changes
+    blurActiveElement();
+
     startTransition(() => {
       setPage(next);
     });
   };
 
   function handleLogoClick() {
+    blurActiveElement();
     setHomeResetKey((k) => k + 1);
     goToPage("home");
   }
@@ -477,10 +498,11 @@ export default function App() {
         isSwiping={isSwiping}
       />
 
-      <main
-        className="flex-1 overflow-hidden relative"
-        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
-      >
+      {/* IMPORTANT:
+          Do NOT hard-size main using 100dvh - headerHeight.
+          On mobile keyboards this causes overlap/hit-test glitches.
+          Let flex layout handle it. */}
+      <main className="flex-1 overflow-hidden relative">
         {page === "dupes" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
             <div className="z-page z-page-y">
