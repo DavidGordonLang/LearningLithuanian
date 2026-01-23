@@ -48,46 +48,43 @@ const Segmented = memo(function Segmented({
 });
 
 function MicIcon({ active }) {
-  // Clean, “standard” mic icon via SVG (render-like, not emoji)
   return (
     <svg
-      width="34"
-      height="34"
+      width="30"
+      height="30"
       viewBox="0 0 24 24"
       fill="none"
-      aria-hidden="true"
       className={cn(
-        "block",
-        active ? "text-emerald-200" : "text-zinc-200"
+        "transition-colors",
+        active ? "text-zinc-950" : "text-zinc-100"
       )}
+      aria-hidden="true"
     >
       <path
-        d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3Z"
+        d="M12 14.25c1.656 0 3-1.344 3-3V6.75c0-1.656-1.344-3-3-3s-3 1.344-3 3v4.5c0 1.656 1.344 3 3 3Z"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M19 11a7 7 0 0 1-14 0"
+        d="M7.5 10.5v.75c0 2.485 2.015 4.5 4.5 4.5s4.5-2.015 4.5-4.5v-.75"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M12 18v3"
+        d="M12 15.75V19.5"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="1.6"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M8 21h8"
+        d="M9.75 19.5h4.5"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="1.6"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
@@ -118,7 +115,7 @@ export default function HomeView({
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
 
-  // Auto-Translate toggle (persisted) — KEEP LOGIC, REMOVE UI (per your request)
+  // Auto-Translate toggle (persisted) — KEEP LOGIC, UI REMOVED (per request)
   const [autoTranslateLS, setAutoTranslateLS] = useLocalStorageState(
     "zodis_auto_translate",
     "1"
@@ -152,7 +149,6 @@ export default function HomeView({
     resetTranslation();
   }, [blurTextarea, resetTranslation]);
 
-  // Save hook
   const { handleSaveToLibrary } = useSaveToLibrary({
     blurTextarea,
     canSave,
@@ -212,7 +208,7 @@ export default function HomeView({
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
 
-  // -------------------- STT hook --------------------
+  // STT hook
   const { sttState, sttSupported, startRecording, stopRecording, cancelStt } =
     useSpeechToTextHold({
       showToast,
@@ -229,93 +225,67 @@ export default function HomeView({
   const micDisabled =
     translating || sttState === "transcribing" || sttState === "translating";
 
-  const micActive =
-    sttState === "recording" ||
-    sttState === "transcribing" ||
-    sttState === "translating";
+  const micActive = sttState === "recording";
+  const micBusy = sttState === "transcribing" || sttState === "translating";
+  const micIdle = sttState === "idle";
 
-  const micPulsing =
-    sttState === "transcribing" || sttState === "translating";
+  // Render: label is under the button, not inside.
+  const micLabel = micBusy ? "Working…" : "Hold to speak";
 
-  const micLabel = (() => {
-    if (sttState === "recording") return "Listening…";
-    if (sttState === "transcribing") return "Transcribing…";
-    if (sttState === "translating") return "Translating…";
-    return "Hold to speak";
+  // Glow behaviour
+  const glowClass = (() => {
+    if (!sttSupported()) return "z-mic-glow-off";
+    if (micActive) return "z-mic-glow-strong";
+    if (micBusy) return "z-mic-glow-strong z-mic-pulse";
+    return "z-mic-glow-soft";
   })();
 
-  const micButtonClass = cn(
-    "relative mx-auto rounded-full select-none",
-    "transition-transform active:scale-[0.99]",
-    "border border-white/10",
-    "bg-white/[0.04] backdrop-blur",
-    "shadow-[0_24px_70px_rgba(0,0,0,0.55)]",
-    micDisabled || !sttSupported() ? "opacity-70" : "hover:bg-white/[0.06]"
-  );
-
-  const outerGlowClass = cn(
-    "absolute inset-0 rounded-full pointer-events-none",
-    micActive
-      ? "shadow-[0_0_70px_rgba(16,185,129,0.28)]"
-      : "shadow-[0_0_55px_rgba(16,185,129,0.12)]",
-    micPulsing ? "z-pulse" : ""
-  );
-
-  const ringClass = cn(
-    "absolute inset-[-10px] rounded-full pointer-events-none",
-    "border border-emerald-300/10",
-    micActive ? "shadow-[0_0_28px_rgba(16,185,129,0.20)]" : ""
-  );
-
-  const innerDiscClass = cn(
-    "absolute inset-[14px] rounded-full",
-    "bg-black/25 border border-white/10",
-    "shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-  );
-
-  const iconDiscClass = cn(
-    "relative z-10 h-16 w-16 rounded-full flex items-center justify-center",
-    "border border-white/10",
-    micActive ? "bg-emerald-600/20" : "bg-white/[0.03]",
-    micActive ? "shadow-[0_0_22px_rgba(16,185,129,0.22)]" : ""
-  );
+  const ringClass = (() => {
+    if (!sttSupported()) return "z-mic-ring-off";
+    if (micActive) return "z-mic-ring-strong";
+    if (micBusy) return "z-mic-ring-strong z-mic-pulse";
+    return "z-mic-ring-soft";
+  })();
 
   return (
     <div className="z-page pb-24">
-      {/* HERO PANEL */}
       <section className="z-card p-4 sm:p-5">
-        {/* Controls: 2-row layout like render */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-[96px_1fr] items-center gap-3">
-            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
+        {/* Top controls: labels left, pills right (2 rows total) */}
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-3">
+            <div className="w-24 text-[12px] uppercase tracking-wide text-zinc-400">
               Speaking to
             </div>
-            <Segmented
-              compact
-              value={gender}
-              onChange={handleGenderChange}
-              options={[
-                { value: "neutral", label: "Neutral" },
-                { value: "male", label: "Male" },
-                { value: "female", label: "Female" },
-              ]}
-            />
+            <div className="flex-1">
+              <Segmented
+                compact
+                value={gender}
+                onChange={handleGenderChange}
+                options={[
+                  { value: "neutral", label: "Neutral" },
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                ]}
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-[96px_1fr] items-center gap-3">
-            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
+          <div className="flex items-center gap-3">
+            <div className="w-24 text-[12px] uppercase tracking-wide text-zinc-400">
               Tone
             </div>
-            <Segmented
-              compact
-              value={tone}
-              onChange={handleToneChange}
-              options={[
-                { value: "friendly", label: "Friendly" },
-                { value: "neutral", label: "Neutral" },
-                { value: "polite", label: "Polite" },
-              ]}
-            />
+            <div className="flex-1">
+              <Segmented
+                compact
+                value={tone}
+                onChange={handleToneChange}
+                options={[
+                  { value: "friendly", label: "Friendly" },
+                  { value: "neutral", label: "Neutral" },
+                  { value: "polite", label: "Polite" },
+                ]}
+              />
+            </div>
           </div>
         </div>
 
@@ -334,22 +304,18 @@ export default function HomeView({
               onChange={(e) => setInput(e.target.value)}
             />
           </div>
-
-          {/* Auto-Translate UI removed intentionally.
-              Keeping the persisted state + wiring for later Settings placement. */}
-          <div className="hidden" aria-hidden="true">
-            <button
-              type="button"
-              onClick={() => setAutoTranslateLS(autoTranslate ? "0" : "1")}
-            />
-          </div>
         </div>
 
         {/* MIC centrepiece */}
         <div className="mt-5 flex flex-col items-center">
           <button
             type="button"
-            className={micButtonClass}
+            className={cn(
+              "relative select-none",
+              "rounded-full",
+              "transition-transform active:scale-[0.99]",
+              micDisabled || !sttSupported() ? "opacity-80" : ""
+            )}
             style={{ width: 140, height: 140 }}
             disabled={micDisabled || !sttSupported()}
             onMouseDown={(e) => {
@@ -380,32 +346,55 @@ export default function HomeView({
             }}
             aria-label="Hold to speak"
           >
-            <div className={outerGlowClass} />
-            <div className={ringClass} />
-            <div className={innerDiscClass} />
+            {/* outer glow */}
+            <div
+              className={cn(
+                "absolute inset-[-18px] rounded-full z-mic-glow",
+                glowClass
+              )}
+            />
 
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className={iconDiscClass}>
-                <MicIcon active={micActive} />
+            {/* rings */}
+            <div
+              className={cn(
+                "absolute inset-0 rounded-full z-mic-ring",
+                ringClass
+              )}
+            />
+
+            {/* inner disc */}
+            <div className="absolute inset-[10px] rounded-full z-mic-disc" />
+
+            {/* icon bubble */}
+            <div
+              className={cn(
+                "absolute inset-0 flex items-center justify-center",
+                "rounded-full"
+              )}
+            >
+              <div
+                className={cn(
+                  "z-mic-iconBubble",
+                  micActive || micBusy ? "z-mic-iconBubble-on" : "z-mic-iconBubble-off"
+                )}
+              >
+                <MicIcon active={micActive || micBusy} />
               </div>
             </div>
-
-            {/* subtle highlight */}
-            <div className="absolute left-1/2 top-5 -translate-x-1/2 h-10 w-24 rounded-full bg-white/[0.06] blur-xl pointer-events-none" />
           </button>
 
-          <div className="mt-3 text-sm font-semibold text-zinc-100">
+          <div className="mt-3 text-sm font-semibold text-zinc-200">
             {micLabel}
           </div>
         </div>
 
         {/* Translate / Clear buttons */}
-        <div className="mt-5 flex justify-center gap-3">
+        <div className="mt-4 flex justify-center gap-3">
           <button
             type="button"
             data-press
             className={cn(
-              "z-btn px-6 py-3 rounded-2xl font-semibold",
+              "z-btn z-home-pillBtn",
               translating || !canTranslate ? "z-disabled" : "",
               "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
             )}
@@ -419,7 +408,7 @@ export default function HomeView({
             type="button"
             data-press
             className={cn(
-              "z-btn z-btn-secondary px-6 py-3 rounded-2xl",
+              "z-btn z-home-pillBtn z-home-pillBtn-secondary",
               sttState !== "idle" ? "z-disabled" : ""
             )}
             onClick={handleClear}
@@ -435,7 +424,7 @@ export default function HomeView({
             <button
               type="button"
               data-press
-              className="z-btn z-btn-quiet px-4 py-2 rounded-2xl text-sm font-medium"
+              className="z-btn z-btn-quiet px-4 py-2 rounded-2xl text-sm font-medium text-zinc-300"
               onClick={handleOpenAdd}
             >
               + Add Entry Manually
@@ -444,7 +433,7 @@ export default function HomeView({
         )}
       </section>
 
-      {/* Duplicate warning / existing entry view */}
+      {/* Duplicate warning */}
       {duplicateEntry && (
         <section className="z-card mt-4 p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15">
           <div className="flex items-start justify-between gap-3 mb-3">
@@ -479,23 +468,6 @@ export default function HomeView({
           {duplicateEntry.Phonetic && (
             <div className="text-[11px] text-zinc-400 italic mt-1 truncate">
               {duplicateEntry.Phonetic}
-            </div>
-          )}
-
-          {(duplicateEntry.Usage || duplicateEntry.Notes) && (
-            <div className="mt-3 text-[11px] text-zinc-200 space-y-2">
-              {duplicateEntry.Usage && (
-                <div>
-                  <span className="text-zinc-500">Usage: </span>
-                  {duplicateEntry.Usage}
-                </div>
-              )}
-              {duplicateEntry.Notes && (
-                <div>
-                  <span className="text-zinc-500">Notes: </span>
-                  {duplicateEntry.Notes}
-                </div>
-              )}
             </div>
           )}
 
@@ -553,9 +525,7 @@ export default function HomeView({
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">
-                  Literal meaning:{" "}
-                </span>
+                <span className="font-semibold text-zinc-300">Literal meaning: </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
