@@ -5,9 +5,11 @@ import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
 import useTranslate from "../hooks/useTranslate";
 import useSaveToLibrary from "../hooks/useSaveToLibrary";
 
-const Segmented = memo(function Segmented({ value, onChange, options }) {
+const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+const Segmented = memo(function Segmented({ value, onChange, options, compact = false }) {
   return (
-    <div className="z-inset p-1 flex w-full overflow-hidden rounded-2xl">
+    <div className={cn("z-inset p-1 flex w-full overflow-hidden rounded-2xl", compact ? "p-1" : "p-1.5")}>
       {options.map((opt, idx) => {
         const active = value === opt.value;
 
@@ -18,13 +20,14 @@ const Segmented = memo(function Segmented({ value, onChange, options }) {
             onClick={() => onChange(opt.value)}
             onMouseDown={(e) => e.preventDefault()}
             onTouchStart={(e) => e.preventDefault()}
-            className={
-              "flex-1 px-3 py-2 text-sm font-medium transition-colors select-none rounded-2xl " +
-              (active
-                ? "bg-emerald-600/90 text-black border border-emerald-300/20"
-                : "bg-transparent text-zinc-200 hover:bg-white/5 border border-transparent") +
-              (idx !== options.length - 1 ? " mr-1" : "")
-            }
+            className={cn(
+              "flex-1 select-none rounded-2xl border transition-colors",
+              compact ? "px-2.5 py-2 text-[13px] font-semibold" : "px-3 py-2 text-sm font-medium",
+              active
+                ? "bg-emerald-600/90 text-black border-emerald-300/20"
+                : "bg-transparent text-zinc-200 hover:bg-white/5 border-transparent",
+              idx !== options.length - 1 ? "mr-1" : ""
+            )}
           >
             {opt.label}
           </button>
@@ -60,14 +63,13 @@ export default function HomeView({
   const [tone, setTone] = useState("friendly");
 
   // Auto-Translate toggle (persisted)
-  // Stored as "1" or "0" because useLocalStorageState stores strings.
   const [autoTranslateLS, setAutoTranslateLS] = useLocalStorageState(
     "zodis_auto_translate",
     "1"
   );
   const autoTranslate = autoTranslateLS === "1";
 
-  // Translation hook (extracted)
+  // Translation hook
   const {
     translating,
     result,
@@ -94,7 +96,7 @@ export default function HomeView({
     resetTranslation();
   }, [blurTextarea, resetTranslation]);
 
-  // Save hook (extracted)
+  // Save hook
   const { handleSaveToLibrary } = useSaveToLibrary({
     blurTextarea,
     canSave,
@@ -154,8 +156,7 @@ export default function HomeView({
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
 
-  // -------------------- STT hook (extracted) --------------------
-
+  // -------------------- STT hook --------------------
   const { sttState, sttSupported, startRecording, stopRecording, cancelStt } =
     useSpeechToTextHold({
       showToast,
@@ -179,124 +180,113 @@ export default function HomeView({
   const micDisabled =
     translating || sttState === "transcribing" || sttState === "translating";
 
-  const micClasses = (() => {
-    const base =
-      "w-full rounded-2xl px-5 py-4 font-semibold select-none " +
-      "transition-transform duration-150 active:scale-[0.99] " +
-      "border ";
-
-    if (!sttSupported()) {
-      return base + "bg-white/5 text-zinc-500 border-white/10";
-    }
-
-    // Held = expanded glow
-    if (sttState === "recording") {
-      return (
-        base +
-        "bg-emerald-600/90 text-black border-emerald-300/25 " +
-        "shadow-[0_0_38px_rgba(16,185,129,0.35)]"
-      );
-    }
-
-    // Translating/transcribing = calm pulse (no spinner)
-    if (sttState === "transcribing" || sttState === "translating") {
-      return (
-        base +
-        "bg-emerald-600/90 text-black border-emerald-300/20 " +
-        "shadow-[0_0_34px_rgba(16,185,129,0.25)] z-pulse"
-      );
-    }
-
-    // Idle = subtle glow
-    return (
-      base +
-      "bg-white/[0.06] text-zinc-100 border-white/10 " +
-      "shadow-[0_0_22px_rgba(16,185,129,0.10)] hover:bg-white/10"
-    );
+  const micRing = (() => {
+    if (!sttSupported()) return "shadow-[0_0_0_rgba(0,0,0,0)]";
+    if (sttState === "recording")
+      return "shadow-[0_0_46px_rgba(16,185,129,0.40)]";
+    if (sttState === "transcribing" || sttState === "translating")
+      return "shadow-[0_0_40px_rgba(16,185,129,0.28)] z-pulse";
+    return "shadow-[0_0_28px_rgba(16,185,129,0.14)]";
   })();
 
+  const micOuter = cn(
+    "mx-auto rounded-full border select-none transition-transform active:scale-[0.99]",
+    "bg-white/[0.04] border-white/10",
+    micRing,
+    micDisabled || !sttSupported() ? "opacity-70" : "hover:bg-white/[0.06]"
+  );
+
   return (
-    <div className="z-page pb-28 space-y-4">
-      {/* Speaking to… */}
-      <div className="z-card p-4 sm:p-5">
-        <div className="text-sm font-semibold text-zinc-100 mb-2">
-          Speaking to…
+    <div className="z-page pb-24">
+      {/* HERO PANEL (matches render structure) */}
+      <section className="z-card p-4 sm:p-5">
+        {/* Controls */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
+              Speaking to
+            </div>
+          </div>
+          <Segmented
+            compact
+            value={gender}
+            onChange={handleGenderChange}
+            options={[
+              { value: "neutral", label: "Neutral" },
+              { value: "male", label: "Male" },
+              { value: "female", label: "Female" },
+            ]}
+          />
+
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
+              Tone
+            </div>
+          </div>
+          <Segmented
+            compact
+            value={tone}
+            onChange={handleToneChange}
+            options={[
+              { value: "friendly", label: "Friendly" },
+              { value: "neutral", label: "Neutral" },
+              { value: "polite", label: "Polite" },
+            ]}
+          />
         </div>
-        <Segmented
-          value={gender}
-          onChange={handleGenderChange}
-          options={[
-            { value: "neutral", label: "Neutral" },
-            { value: "male", label: "Male" },
-            { value: "female", label: "Female" },
-          ]}
-        />
-      </div>
 
-      {/* Tone */}
-      <div className="z-card p-4 sm:p-5">
-        <div className="text-sm font-semibold text-zinc-100 mb-2">Tone</div>
-        <Segmented
-          value={tone}
-          onChange={handleToneChange}
-          options={[
-            { value: "friendly", label: "Friendly" },
-            { value: "neutral", label: "Neutral" },
-            { value: "polite", label: "Polite" },
-          ]}
-        />
-      </div>
+        {/* Prompt + input */}
+        <div className="mt-4">
+          <div className="text-center text-[16px] sm:text-[17px] font-semibold text-zinc-100">
+            What would you like to say?
+          </div>
 
-      {/* Input */}
-      <div className="z-card p-4 sm:p-5">
-        <label className="block text-sm text-zinc-200 mb-2">
-          What would you like to say?
-        </label>
-
-        <textarea
-          ref={textareaRef}
-          rows={3}
-          className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm mb-3"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-
-        {/* Auto-Translate toggle */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="text-xs text-zinc-500">Auto-Translate after speech</div>
-
-          <button
-            type="button"
-            className={
-              "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors select-none " +
-              (autoTranslate
-                ? "bg-emerald-600/90 border-emerald-300/20"
-                : "bg-white/5 border-white/10")
-            }
-            onClick={() => {
-              blurTextarea();
-              setAutoTranslateLS(autoTranslate ? "0" : "1");
-              showToast?.(
-                autoTranslate ? "Auto-Translate off" : "Auto-Translate on"
-              );
-            }}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-          >
-            <span
-              className={
-                "inline-block h-6 w-6 transform rounded-full bg-black/80 shadow transition-transform " +
-                (autoTranslate ? "translate-x-5" : "translate-x-0.5")
-              }
+          <div className="mt-3">
+            <textarea
+              ref={textareaRef}
+              rows={3}
+              className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
             />
-          </button>
+          </div>
+
+          {/* Auto-Translate toggle (render-like row, compact) */}
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="text-xs text-zinc-500">Auto-Translate after speech</div>
+
+            <button
+              type="button"
+              className={cn(
+                "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors select-none",
+                autoTranslate
+                  ? "bg-emerald-600/90 border-emerald-300/20"
+                  : "bg-white/5 border-white/10"
+              )}
+              onClick={() => {
+                blurTextarea();
+                setAutoTranslateLS(autoTranslate ? "0" : "1");
+                showToast?.(autoTranslate ? "Auto-Translate off" : "Auto-Translate on");
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
+            >
+              <span
+                className={cn(
+                  "inline-block h-6 w-6 transform rounded-full bg-black/80 shadow transition-transform",
+                  autoTranslate ? "translate-x-5" : "translate-x-0.5"
+                )}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* Big mic button (press-and-hold) */}
-        <div className="mb-3">
+        {/* MIC centrepiece */}
+        <div className="mt-5">
           <button
             type="button"
-            className={micClasses + (micDisabled ? " opacity-80" : "")}
+            className={cn(micOuter)}
+            style={{ width: 130, height: 130 }}
             disabled={micDisabled || !sttSupported()}
             onMouseDown={(e) => {
               e.preventDefault();
@@ -325,27 +315,36 @@ export default function HomeView({
               cancelStt();
             }}
           >
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-xl">🎤</span>
-              <span className="text-base">{micLabel}</span>
-            </div>
-            <div className="text-xs mt-1 text-zinc-200/80">
-              {sttState === "idle"
-                ? "Press and hold (max 15s)"
-                : "Release to stop"}
+            <div className="h-full w-full flex flex-col items-center justify-center gap-2">
+              <div
+                className={cn(
+                  "h-12 w-12 rounded-full flex items-center justify-center",
+                  sttState === "recording" || sttState === "transcribing" || sttState === "translating"
+                    ? "bg-emerald-600/90 text-black"
+                    : "bg-white/[0.05] text-zinc-100 border border-white/10"
+                )}
+              >
+                <span className="text-2xl">🎤</span>
+              </div>
+
+              <div className="text-sm font-semibold text-zinc-100">{micLabel}</div>
+              <div className="text-[11px] text-zinc-400">
+                {sttState === "idle" ? "Press & hold (max 15s)" : "Release to stop"}
+              </div>
             </div>
           </button>
         </div>
 
-        <div className="flex gap-3 flex-wrap">
+        {/* Translate / Clear buttons (render-like row) */}
+        <div className="mt-5 flex justify-center gap-3">
           <button
             type="button"
             data-press
-            className={
-              "z-btn px-5 py-3 rounded-2xl font-semibold " +
-              (translating || !canTranslate ? "z-disabled " : "") +
+            className={cn(
+              "z-btn px-6 py-3 rounded-2xl font-semibold",
+              translating || !canTranslate ? "z-disabled" : "",
               "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
-            }
+            )}
             onClick={handleTranslateClick}
             disabled={translating || !canTranslate}
           >
@@ -355,26 +354,39 @@ export default function HomeView({
           <button
             type="button"
             data-press
-            className={"z-btn z-btn-secondary px-5 py-3 rounded-2xl " + (sttState !== "idle" ? "z-disabled" : "")}
+            className={cn("z-btn z-btn-secondary px-6 py-3 rounded-2xl", sttState !== "idle" ? "z-disabled" : "")}
             onClick={handleClear}
             disabled={sttState !== "idle"}
           >
             Clear
           </button>
         </div>
-      </div>
+
+        {/* Add Entry manually (render-like, subtle) */}
+        {typeof onOpenAddForm === "function" && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              data-press
+              className="z-btn z-btn-quiet px-4 py-2 rounded-2xl text-sm"
+              onClick={handleOpenAdd}
+            >
+              + Add Entry Manually
+            </button>
+          </div>
+        )}
+      </section>
 
       {/* Duplicate warning / existing entry view */}
       {duplicateEntry && (
-        <div className="z-card p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15">
+        <section className="z-card mt-4 p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <div className="text-sm font-semibold text-amber-300">
                 Similar entry already in your library
               </div>
               <div className="text-xs text-amber-200/80 mt-0.5">
-                You can use this one, or translate anyway if you really want a new
-                version.
+                Use this one, or translate anyway for a new version.
               </div>
             </div>
             <button
@@ -424,15 +436,8 @@ export default function HomeView({
             <button
               type="button"
               data-press
-              className="
-                z-btn px-4 py-2 rounded-2xl text-sm
-                bg-emerald-600/90 hover:bg-emerald-500
-                border border-emerald-300/20
-                text-black font-semibold
-              "
-              onClick={() =>
-                duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)
-              }
+              className="z-btn px-4 py-2 rounded-2xl text-sm bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
+              onClick={() => duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)}
             >
               ▶ Play
             </button>
@@ -446,12 +451,12 @@ export default function HomeView({
               Translate anyway
             </button>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Output */}
       {result.ltOut && (
-        <div className="z-card p-4 sm:p-5 space-y-3">
+        <section className="z-card mt-4 p-4 sm:p-5 space-y-3">
           <div className="text-xs text-zinc-500">
             Detected input:{" "}
             <span className="text-zinc-300">
@@ -460,17 +465,15 @@ export default function HomeView({
           </div>
 
           <div>
-            <label className="block text-sm text-zinc-300 mb-1">
+            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
               Lithuanian
-            </label>
-            <div className="text-lg font-semibold text-zinc-100 break-words">
+            </div>
+            <div className="mt-1 text-lg font-semibold text-zinc-100 break-words">
               {result.ltOut}
             </div>
 
             {result.phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">
-                {result.phonetics}
-              </div>
+              <div className="text-sm text-zinc-400 mt-1">{result.phonetics}</div>
             )}
           </div>
 
@@ -481,9 +484,7 @@ export default function HomeView({
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">
-                  Literal meaning:{" "}
-                </span>
+                <span className="font-semibold text-zinc-300">Literal meaning: </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
@@ -493,12 +494,7 @@ export default function HomeView({
             <button
               type="button"
               data-press
-              className="
-                z-btn px-5 py-3 rounded-2xl text-base
-                bg-emerald-600/90 hover:bg-emerald-500
-                border border-emerald-300/20
-                text-black font-semibold
-              "
+              className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
               onClick={() => handlePlay(result.ltOut)}
             >
               ▶ Normal
@@ -507,12 +503,7 @@ export default function HomeView({
             <button
               type="button"
               data-press
-              className="
-                z-btn px-5 py-3 rounded-2xl text-base
-                bg-emerald-700/90 hover:bg-emerald-600
-                border border-emerald-300/15
-                text-black font-semibold
-              "
+              className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-700/90 hover:bg-emerald-600 border-emerald-300/15 text-black font-semibold"
               onClick={() => handlePlay(result.ltOut, { slow: true })}
             >
               🐢 Slow
@@ -530,37 +521,14 @@ export default function HomeView({
             <button
               type="button"
               data-press
-              className={
-                "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm " +
-                (!canSave ? "z-disabled" : "")
-              }
+              className={cn("z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm", !canSave ? "z-disabled" : "")}
               onClick={handleSaveToLibrary}
               disabled={!canSave}
             >
               Save to library
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Add Entry manually */}
-      {typeof onOpenAddForm === "function" && (
-        <button
-          type="button"
-          data-press
-          className="
-            w-full
-            z-btn px-5 py-4 rounded-2xl
-            bg-emerald-600/90 hover:bg-emerald-500
-            border border-emerald-300/20
-            text-black font-semibold
-            shadow-[0_12px_40px_rgba(0,0,0,0.30)]
-            active:scale-[0.99] transition
-          "
-          onClick={handleOpenAdd}
-        >
-          + Add Entry Manually
-        </button>
+        </section>
       )}
     </div>
   );
