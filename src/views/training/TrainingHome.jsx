@@ -7,92 +7,25 @@ function FocusPill({ active, label, count, onClick }) {
   return (
     <button
       type="button"
-      data-press
-      onClick={onClick}
       className={cn(
-        `
-        flex-1 rounded-full px-4 py-2
-        text-sm font-medium
-        transition
-        border
-        `,
+        "w-full rounded-full border px-2.5 py-2 transition select-none",
+        "text-[12px] leading-none font-medium",
+        "flex items-center justify-center gap-1.5",
         active
-          ? `
-            bg-emerald-500/15
-            border-emerald-400/40
-            text-emerald-200
-            shadow-[0_0_20px_rgba(16,185,129,0.25)]
-          `
-          : `
-            bg-zinc-950/40
-            border-white/10
-            text-zinc-400
-            hover:text-zinc-200
-            hover:bg-white/[0.04]
-          `
+          ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-200"
+          : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.06]"
       )}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span>{label}</span>
-        <span className="text-xs opacity-70">{count}</span>
-      </div>
-    </button>
-  );
-}
-
-function ModuleCard({ title, description, icon, disabled, onClick }) {
-  return (
-    <button
-      type="button"
-      data-press
-      disabled={disabled}
       onClick={onClick}
-      className={cn(
-        `
-        w-full text-left
-        rounded-2xl p-4
-        border
-        transition
-        `,
-        disabled
-          ? `
-            bg-zinc-950/30
-            border-white/5
-            text-zinc-500
-            opacity-60
-            cursor-not-allowed
-          `
-          : `
-            bg-zinc-950/55
-            border-white/10
-            hover:bg-white/[0.04]
-          `
-      )}
     >
-      <div className="flex items-center gap-4">
-        <div
-          className="
-            w-10 h-10 rounded-xl
-            flex items-center justify-center
-            bg-white/[0.06]
-            text-lg
-            shrink-0
-          "
-        >
-          {icon}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-semibold text-zinc-100">
-            {title}
-          </div>
-          <div className="text-sm text-zinc-400 mt-0.5">
-            {description}
-          </div>
-        </div>
-
-        <div className="text-zinc-500">→</div>
-      </div>
+      <span className="truncate">{label}</span>
+      <span
+        className={cn(
+          "shrink-0 rounded-full px-1.5 py-0.5 text-[11px] leading-none",
+          active ? "bg-emerald-400/20 text-emerald-100" : "bg-white/[0.06] text-zinc-300"
+        )}
+      >
+        {count}
+      </span>
     </button>
   );
 }
@@ -110,108 +43,155 @@ export default function TrainingHome({
   const minNeeded = 5;
   const tooFew = useMemo(() => eligibleCount < minNeeded, [eligibleCount]);
 
+  const focusLabel =
+    focus === "phrases"
+      ? "Phrases"
+      : focus === "words"
+      ? "Words"
+      : focus === "numbers"
+      ? "Numbers"
+      : "All";
+
   const wordsNumbersCount = (counts?.words || 0) + (counts?.numbers || 0);
   const matchPairsDisabled = wordsNumbersCount < 10;
 
   return (
-    <div className="z-page z-page-y pb-28">
+    <div className="max-w-xl mx-auto px-4 py-6">
       {/* Header */}
       <div>
-        <div className="z-title">{T?.navTraining || "Training"}</div>
-        <div className="z-subtitle mt-1">
+        <div className="text-xl font-semibold">{T?.navTraining || "Training"}</div>
+        <div className="text-sm text-zinc-400 mt-1">
           Practise what you’ve saved. Calm, consistent, and on your terms.
         </div>
       </div>
 
-      {/* Focus */}
-      <div className="mt-6 z-card p-4 sm:p-5">
-        <div className="z-section-title mb-2">Focus</div>
-        <div className="text-sm text-zinc-400 mb-3">
-          Choose what kind of entries you want in your sessions.
-        </div>
-
-        <div className="flex gap-2">
+      {/* Focus pills (single row, no scroll) */}
+      <div className="mt-5">
+        <div className="grid grid-cols-4 gap-2">
           <FocusPill
             active={focus === "phrases"}
             label="Phrases"
-            count={counts.phrases}
+            count={counts?.phrases ?? 0}
             onClick={() => setFocus("phrases")}
           />
           <FocusPill
             active={focus === "words"}
             label="Words"
-            count={counts.words}
+            count={counts?.words ?? 0}
             onClick={() => setFocus("words")}
           />
           <FocusPill
             active={focus === "numbers"}
             label="Numbers"
-            count={counts.numbers}
+            count={counts?.numbers ?? 0}
             onClick={() => setFocus("numbers")}
           />
           <FocusPill
             active={focus === "all"}
             label="All"
-            count={counts.all}
+            count={counts?.all ?? 0}
             onClick={() => setFocus("all")}
           />
         </div>
 
         {tooFew && (
-          <div className="mt-4 z-inset p-4">
-            <div className="text-sm font-medium text-zinc-200">
-              Not enough entries
-            </div>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="text-sm font-medium text-zinc-100">Not enough entries</div>
             <div className="text-xs text-zinc-400 mt-1">
-              Add a few more entries or switch focus to begin training.
+              You’ve only got {eligibleCount} in <b>{focusLabel}</b>. Add a few more, or switch
+              focus.
             </div>
           </div>
         )}
       </div>
 
       {/* Modules */}
-      <div className="mt-6">
-        <div className="z-section-title mb-2">Modules</div>
-        <div className="text-sm text-zinc-400 mb-3">
+      <div className="mt-7">
+        <div className="text-xs uppercase tracking-wide text-zinc-500">Modules</div>
+        <div className="text-xs text-zinc-400 mt-1">
           Start with recall, then reinforce through repetition.
         </div>
 
-        <div className="space-y-3">
-          <ModuleCard
-            icon="🧠"
-            title="Recognise"
-            description="Reveal-based recall. Self-grade and move on."
+        <div className="mt-3 space-y-3">
+          <button
+            type="button"
+            className={cn(
+              "w-full rounded-2xl border px-4 py-4 text-left transition",
+              tooFew
+                ? "border-white/10 bg-white/[0.03] opacity-60 cursor-not-allowed"
+                : "border-white/10 bg-white/[0.04] hover:bg-white/[0.06]"
+            )}
+            onClick={() => {
+              if (tooFew) return;
+              onStartRecallFlip();
+            }}
             disabled={tooFew}
-            onClick={() => {
-              if (!tooFew) onStartRecallFlip();
-            }}
-          />
-
-          <ModuleCard
-            icon="⌨️"
-            title="Produce"
-            description="Produce Lithuanian first, then reveal."
-            disabled={tooFew}
-            onClick={() => {
-              if (!tooFew) onStartBlindRecall?.();
-            }}
-          />
-
-          <ModuleCard
-            icon="🧩"
-            title="Reinforce"
-            description="Match English and Lithuanian pairs."
-            disabled={matchPairsDisabled}
-            onClick={() => {
-              if (!matchPairsDisabled) onStartMatchPairs?.();
-            }}
-          />
-
-          {matchPairsDisabled && (
-            <div className="text-xs text-zinc-500 mt-2">
-              Add at least <b>10</b> words or numbers to unlock Reinforce.
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-base font-semibold">Recognise</div>
+                <div className="text-sm text-zinc-300 mt-1">
+                  Reveal-based recall. Self-grade and move on.
+                </div>
+              </div>
+              <div className="text-sm text-zinc-400">→</div>
             </div>
-          )}
+          </button>
+
+          <button
+            type="button"
+            className={cn(
+              "w-full rounded-2xl border px-4 py-4 text-left transition",
+              tooFew
+                ? "border-white/10 bg-white/[0.03] opacity-60 cursor-not-allowed"
+                : "border-white/10 bg-white/[0.04] hover:bg-white/[0.06]"
+            )}
+            onClick={() => {
+              if (tooFew) return;
+              onStartBlindRecall?.();
+            }}
+            disabled={tooFew}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-base font-semibold">Produce</div>
+                <div className="text-sm text-zinc-300 mt-1">
+                  Produce Lithuanian first, then reveal.
+                </div>
+              </div>
+              <div className="text-sm text-zinc-400">→</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={cn(
+              "w-full rounded-2xl border px-4 py-4 text-left transition",
+              matchPairsDisabled
+                ? "border-white/10 bg-white/[0.03] opacity-60 cursor-not-allowed"
+                : "border-white/10 bg-white/[0.04] hover:bg-white/[0.06]"
+            )}
+            onClick={() => {
+              if (matchPairsDisabled) return;
+              onStartMatchPairs?.();
+            }}
+            disabled={matchPairsDisabled}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-base font-semibold">Reinforce</div>
+                <div className="text-sm text-zinc-300 mt-1">
+                  Match English and Lithuanian pairs.
+                </div>
+                {matchPairsDisabled && (
+                  <div className="text-xs text-zinc-500 mt-2">
+                    Add at least <b>10</b> words/numbers to unlock (you have {wordsNumbersCount}).
+                  </div>
+                )}
+              </div>
+              <div className="text-sm text-zinc-400">→</div>
+            </div>
+          </button>
         </div>
       </div>
 
