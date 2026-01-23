@@ -11,22 +11,28 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 const SESSION_SIZE = 10;
 
 /**
- * Module — Produce (Blind Recall)
+ * Module 2 — Produce (Blind Recall / Production)
  *
- * Demoted STT:
- * - Typing is the primary path.
- * - STT remains available as a smaller, secondary hold-to-speak button.
+ * Flow:
+ * - Show English intention
+ * - User types Lithuanian (primary)
+ * - Optional STT via small mic icon (tap to toggle), visually demoted
+ * - Reveal correct Lithuanian
+ * - Self-grade: I was right / Close enough / I was wrong
+ * - Summary modal: review mistakes, another 10, finish
+ *
+ * Phase 1: no persistence.
  */
 export default function BlindRecallView({ rows, focus, onBack, playText, showToast }) {
   const list = Array.isArray(rows) ? rows : [];
 
-  // Eligible rows by focus (same rules as Recall Flip)
+  // Eligible rows by focus
   const eligible = useMemo(() => filterByFocus(list, focus), [list, focus]);
 
-  // Session hook (stable session engine)
+  // Session engine
   const s = useRecallFlipSession({ eligible, sessionSize: SESSION_SIZE });
 
-  // Always EN -> LT for Produce
+  // Always EN -> LT for this module
   const direction = "en_to_lt";
 
   // Audio hook (LT only; available once revealed)
@@ -39,7 +45,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     playText,
   });
 
-  // Prompt + answer
   const promptEn = useMemo(() => getEnglish(s.current), [s.current]);
   const answerLt = useMemo(() => getLithuanian(s.current), [s.current]);
 
@@ -53,7 +58,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     } catch {}
   };
 
-  // Visual FX (reuse allowed primitives)
+  // FX (reuse allowed primitives)
   const [fx, setFx] = useState(null); // "flip" | "correct" | "close" | "wrong"
   const fxTimerRef = useRef(null);
 
@@ -70,7 +75,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     fxTimerRef.current = setTimeout(() => setFx(null), ms);
   }
 
-  // STT (press-and-hold). Reuse proven hook but no auto-translate.
+  // STT: demoted UI. Tap-to-toggle recording.
   const {
     sttState,
     sttSupported,
@@ -88,29 +93,33 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     onSpeechCaptured: () => {},
   });
 
-  const micDisabled =
-    s.busy || s.showSummary || sttState === "transcribing" || sttState === "translating";
+  const sttBusy =
+    sttState === "transcribing" || sttState === "translating";
+  const micDisabled = s.busy || s.showSummary || !sttSupported() || sttBusy;
 
-  const micLabel =
-    sttState === "recording"
-      ? "Listening…"
-      : sttState === "transcribing"
-      ? "Transcribing…"
-      : "Hold to speak";
+  const micActive = sttState === "recording" || sttBusy;
 
-  const micActive = sttState === "recording";
-  const micBusy = sttState === "transcribing" || sttState === "translating";
+  const toggleMic = () => {
+    if (!sttSupported()) {
+      showToast?.("Speech input not supported on this device");
+      return;
+    }
+    if (s.busy || s.showSummary) return;
 
-  const micBtnClass = cn(
-    "inline-flex items-center justify-center gap-2 select-none",
-    "rounded-full border px-4 py-3 text-[13px] font-medium",
-    "transition active:scale-[0.99]",
-    micDisabled || !sttSupported()
-      ? "border-white/10 bg-white/[0.03] text-zinc-500 cursor-not-allowed"
-      : "border-white/10 bg-white/[0.05] text-zinc-100 hover:bg-white/[0.07]",
-    (micActive || micBusy) ? "shadow-[0_0_26px_rgba(16,185,129,0.22)]" : "",
-    micBusy ? "z-mic-pulse" : ""
-  );
+    // Tap-to-toggle:
+    // - Idle -> start recording
+    // - Recording -> stop recording
+    // - Transcribing/translating -> do nothing (busy)
+    if (sttState === "recording") {
+      stopRecording?.();
+      return;
+    }
+    if (sttBusy) return;
+
+    // Starting a new capture should feel frictionless: keep typing primary
+    blurInput();
+    startRecording?.();
+  };
 
   useEffect(() => {
     return () => {
@@ -118,11 +127,14 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     };
   }, []);
 
-  // Reset per-card attempt when we advance
+  // Reset attempt + state when we advance cards
   useEffect(() => {
     setAttempt("");
     setFx(null);
     a.resetAudio?.();
+    try {
+      cancelStt?.();
+    } catch {}
     forceResetStt?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.idx]);
@@ -131,6 +143,9 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     clearFxTimer();
     s.clearTimers?.();
     a.resetAudio?.();
+    try {
+      cancelStt?.();
+    } catch {}
     forceResetStt?.();
     setFx(null);
     onBack?.();
@@ -150,7 +165,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     s.setRevealed?.(true);
   }
 
-  function hide() {
+  function editAnswer() {
     if (s.busy || s.showSummary) return;
     s.setRevealed?.(false);
     a.resetAudio?.();
@@ -173,34 +188,68 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
   const hasAttempt = !!attempt?.trim();
 
-  // Taller, uniform grade button height
-  const gradeBtnExtra = "py-4";
+  // Back button: circular, centred arrow (matches Module 1 style)
+  const BackCircle = (
+    <button
+      type="button"
+      data-press
+      onClick={hardExit}
+      className={cn(
+        "h-10 w-10 rounded-full border flex items-center justify-center",
+        "bg-white/[0.06] border-white/10",
+        "shadow-[0_10px_30px_rgba(0,0,0,0.45)]",
+        "hover:bg-white/[0.08] active:scale-[0.99] transition"
+      )}
+      aria-label="Back"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M15 18l-6-6 6-6"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.95"
+        />
+      </svg>
+    </button>
+  );
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-6 rf-root">
-      {/* Top bar */}
-      <div className="flex items-center justify-between">
-        <button type="button" className="rf-top-btn" onClick={hardExit}>
-          <span aria-hidden="true">←</span>
-          <span>Back</span>
-        </button>
+    <div className="max-w-xl mx-auto px-4 py-5 rf-root">
+      {/* Header (aligned to Module 1): left circle, centred title, right spacer */}
+      <div className="grid grid-cols-[44px_1fr_44px] items-center">
+        <div className="flex items-center justify-start">{BackCircle}</div>
 
-        <div className="text-sm text-zinc-400">Produce</div>
+        <div className="text-center">
+          <div className="text-[16px] font-semibold text-zinc-100">
+            Produce
+          </div>
+        </div>
 
-        <div className="w-[82px]" aria-hidden="true" />
+        <div aria-hidden="true" />
       </div>
 
       {/* Empty state */}
       {!s.current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
-          <div className="text-sm text-zinc-300 mt-2">Add a few entries first, or switch focus.</div>
+          <div className="text-sm text-zinc-300 mt-2">
+            Add a few entries first, or switch focus.
+          </div>
         </div>
       )}
 
       {/* Card */}
       {!!s.current && !s.showSummary && (
-        <div className="mt-6">
+        <div className="mt-4">
+          {/* Progress row */}
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs text-zinc-500">{s.progressLabel}</div>
             <div className="text-xs text-zinc-500">
@@ -229,109 +278,136 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                 role="group"
                 aria-label="Produce card"
               >
-                {/* FRONT: prompt + attempt + bottom actions */}
+                {/* FRONT: prompt + attempt + centred Reveal */}
                 <div className="rf-face rf-front p-6 flex flex-col">
-                  {/* Top spacer only (clean) */}
                   <div className="rf-card-top-min">
                     <div className="rf-top-spacer" aria-hidden="true" />
                   </div>
 
-                  {/* Scrollable content area */}
-                  <div className="rf-center-zone flex-1 min-h-0 overflow-y-auto pr-1">
+                  <div className="rf-center-zone flex-1 min-h-0">
                     <div className="rf-hero-text">{promptEn || "—"}</div>
 
+                    {/* Attempt input (bigger + premium; mic demoted to icon) */}
                     <div className="mt-6">
                       <div className="text-xs text-zinc-400 mb-2">Your Lithuanian</div>
-                      <textarea
-                        ref={inputRef}
-                        rows={3}
-                        value={attempt}
-                        onChange={(e) => setAttempt(e.target.value)}
-                        className={cn(
-                          "w-full rounded-2xl border bg-zinc-950/40 px-4 py-3 text-sm",
-                          "border-zinc-800 focus:border-emerald-500/60 focus:outline-none",
-                          s.busy ? "opacity-70" : ""
-                        )}
-                        placeholder="Type here…"
-                        disabled={s.busy || s.showSummary}
-                        onFocus={() => a.resetAudio?.()}
-                      />
+
+                      <div className="relative">
+                        <textarea
+                          ref={inputRef}
+                          rows={4} // + height (approx +20%)
+                          value={attempt}
+                          onChange={(e) => setAttempt(e.target.value)}
+                          className={cn(
+                            "w-full rounded-2xl border bg-zinc-950/40 px-4 py-4 text-sm",
+                            "border-zinc-800 focus:border-emerald-500/60 focus:outline-none",
+                            s.busy ? "opacity-70" : ""
+                          )}
+                          placeholder="Type here…"
+                          disabled={s.busy || s.showSummary}
+                          onFocus={() => a.resetAudio?.()}
+                        />
+
+                        {/* Mic icon: tap-to-toggle + small pulse ring */}
+                        <button
+                          type="button"
+                          data-press
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (micDisabled) return;
+                            toggleMic();
+                          }}
+                          disabled={micDisabled}
+                          className={cn(
+                            "absolute bottom-3 right-3",
+                            "h-10 w-10 rounded-full border flex items-center justify-center",
+                            micDisabled
+                              ? "border-white/10 bg-white/[0.04] opacity-55 cursor-not-allowed"
+                              : "border-white/10 bg-white/[0.06] hover:bg-white/[0.08]",
+                            "shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition"
+                          )}
+                          title={
+                            !sttSupported()
+                              ? "Speech input not supported"
+                              : sttBusy
+                              ? "Working…"
+                              : sttState === "recording"
+                              ? "Tap to stop"
+                              : "Tap to speak"
+                          }
+                          aria-label="Tap to speak"
+                        >
+                          {/* pulse ring */}
+                          {micActive && (
+                            <span
+                              className={cn(
+                                "absolute inset-0 rounded-full",
+                                "br-mic-pulse-ring"
+                              )}
+                              aria-hidden="true"
+                            />
+                          )}
+
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3Z"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              opacity={micDisabled ? "0.65" : "0.92"}
+                            />
+                            <path
+                              d="M19 11a7 7 0 0 1-14 0"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              opacity={micDisabled ? "0.55" : "0.85"}
+                            />
+                            <path
+                              d="M12 18v3"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              opacity={micDisabled ? "0.55" : "0.85"}
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Bottom bar: STT (secondary, left) + Reveal (primary, right) */}
-                  <div
-                    className={cn(
-                      "mt-4 pt-3",
-                      "sticky bottom-0",
-                      "bg-gradient-to-t from-black/70 via-black/30 to-transparent"
-                    )}
-                    style={{
-                      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6px)",
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        className={micBtnClass}
-                        disabled={micDisabled || !sttSupported()}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          if (micDisabled || !sttSupported()) return;
-                          startRecording();
-                        }}
-                        onMouseUp={(e) => {
-                          e.preventDefault();
-                          stopRecording();
-                        }}
-                        onMouseLeave={(e) => {
-                          e.preventDefault();
-                          stopRecording();
-                        }}
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          if (micDisabled || !sttSupported()) return;
-                          startRecording();
-                        }}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          stopRecording();
-                        }}
-                        onTouchCancel={(e) => {
-                          e.preventDefault();
-                          cancelStt();
-                        }}
-                        title={!sttSupported() ? "Speech input not supported" : "Press and hold"}
-                      >
-                        <span aria-hidden="true">🎤</span>
-                        <span>{micLabel}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={cn(
-                          "rounded-full border px-6 py-3 text-[13px] font-semibold transition select-none",
-                          s.busy || s.showSummary
-                            ? "border-emerald-500/25 bg-emerald-500/10 text-zinc-500 cursor-not-allowed"
-                            : "border-emerald-500/40 bg-emerald-500/15 text-zinc-100 hover:bg-emerald-500/18"
-                        )}
-                        onClick={() => {
-                          if (s.busy || s.showSummary) return;
-                          reveal();
-                        }}
-                        disabled={s.busy || s.showSummary}
-                      >
-                        Reveal
-                      </button>
-                    </div>
+                  {/* Centred Reveal */}
+                  <div className="mt-5 flex justify-center">
+                    <button
+                      type="button"
+                      data-press
+                      className={cn(
+                        "z-btn z-home-pillBtn",
+                        "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold",
+                        s.busy || s.showSummary ? "z-disabled" : ""
+                      )}
+                      onClick={() => {
+                        if (s.busy || s.showSummary) return;
+                        reveal();
+                      }}
+                      disabled={s.busy || s.showSummary}
+                    >
+                      Reveal
+                    </button>
                   </div>
                 </div>
 
-                {/* BACK: hero + audio + centered "your answer" + grade */}
+                {/* BACK: answer + audio + your answer + grade */}
                 <div className="rf-face rf-back p-6 flex flex-col">
-                  {/* Hero answer header */}
                   <div className="text-center">
                     <div className="rf-hero-text">{answerLt || "—"}</div>
                     <div className="rf-sub-text mt-2">{promptEn || ""}</div>
@@ -344,19 +420,20 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           onPlay={() => a.playNormal?.()}
                           onPlaySlow={() => a.playSlow?.()}
                           disabledReason={
-                            typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                            typeof playText !== "function"
+                              ? "Audio unavailable"
+                              : "Play Lithuanian"
                           }
                         />
                       )}
                     </div>
                   </div>
 
-                  {/* Centered "Your answer" (comparison moment) */}
                   <div className="flex-1 min-h-0 mt-5 flex items-start justify-center">
                     {hasAttempt ? (
                       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950/35 p-3">
                         <div className="text-[11px] text-zinc-500 text-center">Your answer</div>
-                        <div className="mt-2 max-h-[150px] overflow-y-auto pr-1">
+                        <div className="mt-2 max-h-[160px] overflow-y-auto pr-1">
                           <div className="text-sm text-zinc-200 whitespace-pre-wrap text-center">
                             {attempt.trim()}
                           </div>
@@ -367,16 +444,11 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                     )}
                   </div>
 
-                  {/* Grade zone */}
                   <div className="rf-grade-zone" onClick={(e) => e.stopPropagation()}>
                     <div className="rf-grade-grid">
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-wrong",
-                          gradeBtnExtra,
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-wrong", "py-4", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("wrong")}
                         disabled={!s.canGrade}
                       >
@@ -385,11 +457,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-close",
-                          gradeBtnExtra,
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-close", "py-4", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
@@ -398,11 +466,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
                       <button
                         type="button"
-                        className={cn(
-                          "rf-grade-btn rf-grade-right",
-                          gradeBtnExtra,
-                          s.canGrade ? "" : "rf-grade-disabled"
-                        )}
+                        className={cn("rf-grade-btn rf-grade-right", "py-4", s.canGrade ? "" : "rf-grade-disabled")}
                         onClick={() => handleGrade("correct")}
                         disabled={!s.canGrade}
                       >
@@ -416,7 +480,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                         className="text-[11px] text-zinc-300 hover:text-zinc-100 underline underline-offset-4"
                         onClick={() => {
                           if (s.busy || s.showSummary) return;
-                          hide();
+                          editAnswer();
                         }}
                       >
                         Edit answer
@@ -426,6 +490,21 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                 </div>
               </div>
             </div>
+
+            {/* Local CSS for the tiny mic pulse ring */}
+            <style>{`
+              @keyframes brMicPulse {
+                0%   { transform: scale(1);   opacity: 0.55; }
+                55%  { transform: scale(1.18); opacity: 0.95; }
+                100% { transform: scale(1);   opacity: 0.55; }
+              }
+              .br-mic-pulse-ring {
+                box-shadow:
+                  0 0 0 2px rgba(16,185,129,0.28),
+                  0 0 18px rgba(16,185,129,0.20);
+                animation: brMicPulse 1.15s ease-in-out infinite;
+              }
+            `}</style>
           </div>
         </div>
       )}
@@ -458,12 +537,10 @@ function filterByFocus(rows, focus) {
 
   return rows.filter((r) => {
     const s = sheet(r);
-
     if (focus === "all") return true;
     if (focus === "phrases") return s === "Phrases" || s === "Questions";
     if (focus === "words") return s === "Words";
     if (focus === "numbers") return s === "Numbers";
-
     return true;
   });
 }
