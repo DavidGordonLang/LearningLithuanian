@@ -90,7 +90,7 @@ export default function MatchPairsView({ rows, onBack }) {
   const s = useMatchPairsSession({
     eligibleRows: eligible,
     totalPairs: 20,
-    pagePairs: 5,
+    pagePairs: 5, // keep at 5 so grid fits without scroll
     rightSelectAmberMs: 140,
     correctPulseMs: 520,
     wrongPulseMs: 420,
@@ -109,36 +109,59 @@ export default function MatchPairsView({ rows, onBack }) {
 
   const pulseIds = s.pulse?.ids || [];
   const pulseKind = s.pulse?.kind || null;
-
-  // amber should appear for selected tile on either side, plus pulse overlay
   const selectedId = s.selected?.id || null;
 
+  const BackCircle = (
+    <button
+      type="button"
+      data-press
+      onClick={onBack}
+      className={cn(
+        "h-10 w-10 rounded-full border flex items-center justify-center",
+        "bg-white/[0.06] border-white/10",
+        "shadow-[0_10px_30px_rgba(0,0,0,0.45)]",
+        "hover:bg-white/[0.08] active:scale-[0.99] transition"
+      )}
+      aria-label="Back"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M15 18l-6-6 6-6"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.95"
+        />
+      </svg>
+    </button>
+  );
+
   return (
-    <div className="max-w-xl mx-auto px-4 py-6 mp-root">
-      {/* Top bar */}
-      <div className="flex items-center justify-between">
-        <button type="button" className="rf-top-btn" onClick={onBack}>
-          <span aria-hidden="true">←</span>
-          <span>Back</span>
-        </button>
+    <div className="max-w-xl mx-auto px-4 py-5 mp-root">
+      {/* Header (matches Modules 1/2) */}
+      <div className="grid grid-cols-[44px_1fr_44px] items-center">
+        <div className="flex items-center justify-start">{BackCircle}</div>
 
-        <div className="text-sm text-zinc-400">Match Pairs</div>
+        <div className="text-center">
+          <div className="text-[16px] font-semibold text-zinc-100">Reinforce</div>
+        </div>
 
-        <div className="w-[82px]" aria-hidden="true" />
+        <div aria-hidden="true" />
       </div>
 
-      {/* Title + progress */}
-      <div className="mt-5">
-        <div className="text-xl font-semibold mp-title">Match either way</div>
-        <div className="mt-1 text-sm text-zinc-400">
-          Tap any tile, then match it with the opposite side
+      {/* Title + progress (compact to keep space) */}
+      <div className="mt-4">
+        <div className="text-[15px] font-semibold mp-title">Match either way</div>
+        <div className="mt-1 text-[12px] text-zinc-400">
+          Tap a tile, then match it with the opposite side
         </div>
 
         <div className="mt-3 mp-progress-track">
           <div className="mp-progress-fill" style={{ width: `${pct}%` }} />
         </div>
 
-        <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
+        <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500">
           <div>
             {s.progress.matched}/{s.progress.total} matched · Page {s.progress.page}/{s.progress.pages}
           </div>
@@ -147,10 +170,10 @@ export default function MatchPairsView({ rows, onBack }) {
       </div>
 
       {!s.canStart && (
-        <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
+        <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Not enough items</div>
           <div className="text-sm text-zinc-300 mt-2">
-            Match Pairs uses <b>Words + Numbers</b> only and needs <b>20</b> entries to run a full
+            Reinforce uses <b>Words + Numbers</b> only and needs <b>20</b> entries to run a full
             session.
           </div>
         </div>
@@ -158,16 +181,23 @@ export default function MatchPairsView({ rows, onBack }) {
 
       {s.canStart && (
         <div
-          className={cn("mt-6 mp-grid-wrap", gridPhaseClass)}
+          className={cn("mt-4 mp-grid-wrap", gridPhaseClass)}
           style={{
-            maxHeight: "calc(100vh - 290px)",
-            overflowY: "auto",
+            // Aim: no scroll. The session is already paged (5 pairs => 10 tiles/side).
+            // This clamps the grid to the remaining screen height cleanly.
+            height: "calc(100vh - 260px)",
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
           }}
         >
-          <div className="mp-cols">
+          <div
+            className="mp-cols"
+            style={{
+              height: "100%",
+              alignItems: "stretch",
+            }}
+          >
             {/* LEFT: EN */}
-            <div className="mp-col">
+            <div className="mp-col" style={{ height: "100%" }}>
               {s.leftTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
                 const amber = selectedId === t.id;
@@ -200,7 +230,7 @@ export default function MatchPairsView({ rows, onBack }) {
             </div>
 
             {/* RIGHT: LT */}
-            <div className="mp-col">
+            <div className="mp-col" style={{ height: "100%" }}>
               {s.rightTiles.map((t) => {
                 const matched = s.matchedPairIds.has(t.pairId);
                 const amber = selectedId === t.id;
