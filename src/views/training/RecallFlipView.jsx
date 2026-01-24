@@ -160,7 +160,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs text-zinc-500">{s.progressLabel}</div>
             <div className="text-xs text-zinc-500">
-              Right {s.countRight} · Close enough {s.countClose} · Wrong{" "}
+              Right {s.countRight} · Close... {s.countClose} · Wrong{" "}
               {s.countWrong}
             </div>
           </div>
@@ -278,7 +278,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                         onClick={() => handleGrade("close")}
                         disabled={!s.canGrade}
                       >
-                        Close enough
+                        Close...
                       </button>
 
                       <button
