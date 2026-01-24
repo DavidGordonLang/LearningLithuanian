@@ -25,7 +25,7 @@ function withTimeout(promise, ms, label = "timeout") {
  * - If allowlist query fails/hangs: checked=true, allowed=false (blocked, but NOT stuck)
  * - If allowlisted: checked=true, allowed=true
  */
-export function useBetaAllowlist(email) {
+function useBetaAllowlist(email) {
   const [checked, setChecked] = useState(false);
   const [allowed, setAllowed] = useState(false);
   const [error, setError] = useState(null);
@@ -96,3 +96,9 @@ export function useBetaAllowlist(email) {
 
   return { allowlistChecked: checked, isAllowlisted: allowed, allowlistError: error };
 }
+
+// Default export to match App.jsx import
+export default useBetaAllowlist;
+
+// Also export named, in case anything else uses it
+export { useBetaAllowlist };
