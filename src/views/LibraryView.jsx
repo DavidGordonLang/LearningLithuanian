@@ -46,17 +46,15 @@ function useBlurActiveInput() {
   };
 }
 
-function stopAll(e) {
-  // extra defensive: used on safe-zone interactions
-  try {
-    e.preventDefault?.();
-  } catch {}
+// IMPORTANT: do NOT call preventDefault here.
+// On mobile, preventing default on pointer/touch can cancel click generation.
+function stopProp(e) {
   try {
     e.stopPropagation?.();
   } catch {}
 }
 
-function PlayButton({ text, playText, blurActiveInput }) {
+function PlayButton({ text, playText, blurActiveInput, markSafeTap }) {
   const timerRef = useRef(0);
   const longFiredRef = useRef(false);
   const [pressing, setPressing] = useState(false);
@@ -67,8 +65,8 @@ function PlayButton({ text, playText, blurActiveInput }) {
   };
 
   const start = (e) => {
-    stopAll(e);
-
+    stopProp(e);
+    markSafeTap?.();
     if (e?.button != null && e.button !== 0) return;
 
     blurActiveInput?.();
@@ -83,19 +81,20 @@ function PlayButton({ text, playText, blurActiveInput }) {
   };
 
   const finish = (e) => {
-    stopAll(e);
+    stopProp(e);
+    markSafeTap?.();
     setPressing(false);
     clearTimer();
   };
 
   const handleClick = (e) => {
-    stopAll(e);
+    stopProp(e);
+    markSafeTap?.();
 
     if (longFiredRef.current) {
       longFiredRef.current = false;
       return;
     }
-
     playText?.(text || "");
   };
 
@@ -166,6 +165,17 @@ export default function LibraryView({
   // Menu state
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
+
+  // Suppress the "ghost click" that lands on the card after interacting with safe zones.
+  // Stored per-row (id) with a short expiry.
+  const suppressRef = useRef({ id: null, until: 0 });
+  const markSuppress = (id) => {
+    suppressRef.current = { id, until: Date.now() + 500 };
+  };
+  const shouldSuppress = (id) => {
+    const s = suppressRef.current;
+    return s.id === id && Date.now() < s.until;
+  };
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -277,7 +287,7 @@ export default function LibraryView({
         </button>
       </div>
 
-      {/* Category row (tight) */}
+      {/* Category row */}
       <div className="z-card px-4 py-2">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[11px] uppercase tracking-wide text-zinc-400">
@@ -310,15 +320,13 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
-          const onCardTap = (e) => {
-            // HARD RULE: if tap started in a safe zone, never toggle details.
-            const target = e?.target;
-            if (target && target.closest && target.closest('[data-safe="1"]')) {
-              return;
-            }
+          const onCardTap = () => {
             if (!hasNotes) return;
+            if (shouldSuppress(id)) return;
             toggleDetails(id);
           };
+
+          const markSafeTap = () => markSuppress(id);
 
           return (
             <div
@@ -331,17 +339,18 @@ export default function LibraryView({
                 if (!hasNotes) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  toggleDetails(id);
+                  onCardTap();
                 }
               }}
             >
               <div className="flex items-start gap-3">
                 {/* Play (safe zone) */}
-                <div data-safe="1">
+                <div onPointerDown={() => markSafeTap()}>
                   <PlayButton
                     text={r?.Lithuanian || ""}
                     playText={playText}
                     blurActiveInput={blurActiveInput}
+                    markSafeTap={markSafeTap}
                   />
                 </div>
 
@@ -361,15 +370,23 @@ export default function LibraryView({
                 </div>
 
                 {/* Menu (safe zone) */}
-                <div className="relative" data-safe="1">
+                <div
+                  className="relative"
+                  onPointerDown={() => markSafeTap()}
+                  onClick={(e) => stopProp(e)}
+                >
                   <button
                     ref={isMenuOpen ? menuBtnRef : null}
                     type="button"
                     data-press
                     className="select-none"
-                    onPointerDown={stopAll}
+                    onPointerDown={(e) => {
+                      stopProp(e);
+                      markSafeTap();
+                    }}
                     onClick={(e) => {
-                      stopAll(e);
+                      stopProp(e);
+                      markSafeTap();
                       setMenuOpenId((prev) => (prev === id ? null : id));
                     }}
                     aria-label="Row menu"
@@ -387,16 +404,19 @@ export default function LibraryView({
                         shadow-[0_16px_50px_rgba(0,0,0,0.65)]
                         overflow-hidden
                       "
-                      data-safe="1"
-                      onPointerDown={stopAll}
-                      onClick={stopAll}
+                      onPointerDown={() => markSafeTap()}
+                      onClick={(e) => stopProp(e)}
                     >
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-                        onPointerDown={stopAll}
+                        onPointerDown={(e) => {
+                          stopProp(e);
+                          markSafeTap();
+                        }}
                         onClick={(e) => {
-                          stopAll(e);
+                          stopProp(e);
+                          markSafeTap();
                           setMenuOpenId(null);
                           onEditRow?.(id);
                         }}
@@ -407,9 +427,13 @@ export default function LibraryView({
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-red-300 hover:bg-red-500/10"
-                        onPointerDown={stopAll}
+                        onPointerDown={(e) => {
+                          stopProp(e);
+                          markSafeTap();
+                        }}
                         onClick={(e) => {
-                          stopAll(e);
+                          stopProp(e);
+                          markSafeTap();
                           setMenuOpenId(null);
                           removePhrase?.(id);
                         }}
