@@ -46,6 +46,16 @@ function useBlurActiveInput() {
   };
 }
 
+function stopAll(e) {
+  // extra defensive: used on safe-zone interactions
+  try {
+    e.preventDefault?.();
+  } catch {}
+  try {
+    e.stopPropagation?.();
+  } catch {}
+}
+
 function PlayButton({ text, playText, blurActiveInput }) {
   const timerRef = useRef(0);
   const longFiredRef = useRef(false);
@@ -57,6 +67,8 @@ function PlayButton({ text, playText, blurActiveInput }) {
   };
 
   const start = (e) => {
+    stopAll(e);
+
     if (e?.button != null && e.button !== 0) return;
 
     blurActiveInput?.();
@@ -70,17 +82,20 @@ function PlayButton({ text, playText, blurActiveInput }) {
     }, LONG_PRESS_MS);
   };
 
-  const finish = () => {
+  const finish = (e) => {
+    stopAll(e);
     setPressing(false);
     clearTimer();
   };
 
   const handleClick = (e) => {
-    e.stopPropagation();
+    stopAll(e);
+
     if (longFiredRef.current) {
       longFiredRef.current = false;
       return;
     }
+
     playText?.(text || "");
   };
 
@@ -295,7 +310,12 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
-          const onCardTap = () => {
+          const onCardTap = (e) => {
+            // HARD RULE: if tap started in a safe zone, never toggle details.
+            const target = e?.target;
+            if (target && target.closest && target.closest('[data-safe="1"]')) {
+              return;
+            }
             if (!hasNotes) return;
             toggleDetails(id);
           };
@@ -307,28 +327,21 @@ export default function LibraryView({
               role={hasNotes ? "button" : undefined}
               tabIndex={hasNotes ? 0 : undefined}
               onClick={onCardTap}
-              onPointerDown={(e) => {
-                // default: let it bubble so card can toggle
-                // (safe zones below will stop propagation)
-              }}
               onKeyDown={(e) => {
                 if (!hasNotes) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onCardTap();
+                  toggleDetails(id);
                 }
               }}
             >
               <div className="flex items-start gap-3">
                 {/* Play (safe zone) */}
-                <div
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div data-safe="1">
                   <PlayButton
                     text={r?.Lithuanian || ""}
                     playText={playText}
-                    blurActiveInput={useBlurActiveInput()}
+                    blurActiveInput={blurActiveInput}
                   />
                 </div>
 
@@ -348,19 +361,15 @@ export default function LibraryView({
                 </div>
 
                 {/* Menu (safe zone) */}
-                <div
-                  className="relative"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="relative" data-safe="1">
                   <button
                     ref={isMenuOpen ? menuBtnRef : null}
                     type="button"
                     data-press
                     className="select-none"
-                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerDown={stopAll}
                     onClick={(e) => {
-                      e.stopPropagation();
+                      stopAll(e);
                       setMenuOpenId((prev) => (prev === id ? null : id));
                     }}
                     aria-label="Row menu"
@@ -378,14 +387,16 @@ export default function LibraryView({
                         shadow-[0_16px_50px_rgba(0,0,0,0.65)]
                         overflow-hidden
                       "
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
+                      data-safe="1"
+                      onPointerDown={stopAll}
+                      onClick={stopAll}
                     >
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => {
+                        onPointerDown={stopAll}
+                        onClick={(e) => {
+                          stopAll(e);
                           setMenuOpenId(null);
                           onEditRow?.(id);
                         }}
@@ -396,8 +407,9 @@ export default function LibraryView({
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-red-300 hover:bg-red-500/10"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => {
+                        onPointerDown={stopAll}
+                        onClick={(e) => {
+                          stopAll(e);
                           setMenuOpenId(null);
                           removePhrase?.(id);
                         }}
