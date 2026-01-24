@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { searchStore } from "../searchStore";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
+import SearchDock from "../components/SearchDock";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -31,7 +32,7 @@ function normalize(s) {
     .trim();
 }
 
-/* ---------- Mobile friendly long-press play (no swipe interference) ---------- */
+/* ---------- Mobile friendly long-press play (slow playback) ---------- */
 const LONG_PRESS_MS = 420;
 
 function useBlurActiveInput() {
@@ -52,22 +53,31 @@ export default function LibraryView({
   rows,
   setRows,
   normalizeRag,
-  sortMode,
   playText,
   removePhrase,
   onEditRow,
   onOpenAddForm,
+
+  // passed from App (exists already, just wasn’t used)
+  SearchBox,
+  searchPlaceholder,
 }) {
+  // subscribe so search updates re-render
   useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
 
-  const search = searchStore.getSnapshot().q || "";
+  // IMPORTANT: searchStore.getSnapshot() returns the debounced string, not { q }
+  const search = searchStore.getSnapshot() || "";
+
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
 
-  // Per-row details open state (restored)
+  // Sort mode (only Oldest/Newest). Keep local to avoid needing App changes.
+  const [sortMode, setSortMode] = useState("Newest");
+
+  // Per-row details open state
   const [openDetails, setOpenDetails] = useState(() => new Set());
 
   const toggleDetails = useCallback((id) => {
@@ -101,48 +111,75 @@ export default function LibraryView({
 
   const blurActiveInput = useBlurActiveInput();
 
-  const pressHandlers = (trigger) => {
-    const timer = useRef(0);
+  // Long-press handler that does NOT get overridden by click on release
+  const usePlayPressHandlers = (onLongPress) => {
+    const timerRef = useRef(0);
+    const longFiredRef = useRef(false);
     const [pressing, setPressing] = useState(false);
 
-    const start = () => {
+    const clearTimer = () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      timerRef.current = 0;
+    };
+
+    const start = (e) => {
+      // only primary button / touch
+      if (e?.button != null && e.button !== 0) return;
+
       blurActiveInput();
+      longFiredRef.current = false;
       setPressing(true);
-      if (timer.current) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => {
-        trigger?.();
+      clearTimer();
+
+      timerRef.current = window.setTimeout(() => {
+        longFiredRef.current = true;
+        onLongPress?.();
       }, LONG_PRESS_MS);
     };
 
     const finish = () => {
       setPressing(false);
-      if (timer.current) window.clearTimeout(timer.current);
-      timer.current = 0;
+      clearTimer();
+    };
+
+    const shouldSuppressClick = () => {
+      return longFiredRef.current;
+    };
+
+    const resetSuppress = () => {
+      // allow normal clicks again immediately after this interaction completes
+      longFiredRef.current = false;
     };
 
     return {
-      onPointerDown: start,
-      onPointerUp: finish,
-      onPointerCancel: finish,
-      onPointerLeave: finish,
-      "data-pressing": pressing ? "1" : "0",
+      pressProps: {
+        onPointerDown: start,
+        onPointerUp: finish,
+        onPointerCancel: finish,
+        onPointerLeave: finish,
+        "data-pressing": pressing ? "1" : "0",
+      },
+      shouldSuppressClick,
+      resetSuppress,
     };
   };
 
   function sortRows(list) {
     const copy = Array.isArray(list) ? [...list] : [];
 
-    if (sortMode === "oldest") {
+    if (String(sortMode).toLowerCase() === "oldest") {
       copy.sort((a, b) => (a?._ts || 0) - (b?._ts || 0));
       return copy;
     }
 
+    // Newest default
     copy.sort((a, b) => (b?._ts || 0) - (a?._ts || 0));
     return copy;
   }
 
   const filtered = useMemo(() => {
     const q = normalize(search);
+
     const inCat = (r) =>
       category === "All" || (r?.Category || DEFAULT_CATEGORY) === category;
 
@@ -194,6 +231,16 @@ export default function LibraryView({
         </button>
       </div>
 
+      {/* Search + Sort (restored) */}
+      <SearchDock
+        SearchBox={SearchBox}
+        placeholder={searchPlaceholder || T.search || "Search…"}
+        sortMode={sortMode}
+        setSortMode={setSortMode}
+        T={T}
+        page="library"
+      />
+
       {/* Category selector (tighter) */}
       <div className="z-card p-4">
         <div className="flex items-center justify-between gap-3">
@@ -227,6 +274,15 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
+          const lt = r?.Lithuanian || "";
+
+          // long-press triggers slow playback
+          const {
+            pressProps,
+            shouldSuppressClick,
+            resetSuppress,
+          } = usePlayPressHandlers(() => playText?.(lt, { slow: true }));
+
           return (
             <div key={id} className="z-card p-4">
               <div className="flex items-start gap-3">
@@ -237,16 +293,25 @@ export default function LibraryView({
                   data-swipe-block="true"
                   className={cn(
                     "select-none",
-                    "w-12 h-12 rounded-2xl",
-                    "border border-emerald-400/20",
-                    "bg-emerald-900/25 hover:bg-emerald-900/35",
-                    "shadow-[0_12px_35px_rgba(0,0,0,0.55)]",
-                    "flex items-center justify-center shrink-0"
+                    "w-12 h-12 rounded-full",
+                    "border border-emerald-300/20",
+                    "bg-emerald-900/20 hover:bg-emerald-900/30",
+                    "shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_26px_rgba(16,185,129,0.12),0_14px_40px_rgba(0,0,0,0.60)]",
+                    "flex items-center justify-center shrink-0",
+                    "transition-transform duration-150",
+                    pressProps["data-pressing"] === "1" ? "scale-[0.98]" : null
                   )}
-                  {...pressHandlers(() => playText?.(r?.Lithuanian || ""))}
+                  {...pressProps}
                   onClick={(e) => {
                     e.stopPropagation();
-                    playText?.(r?.Lithuanian || "");
+
+                    // If long-press already fired, do not override it with normal click.
+                    if (shouldSuppressClick()) {
+                      resetSuppress();
+                      return;
+                    }
+
+                    playText?.(lt);
                   }}
                 >
                   <span className="text-emerald-200 text-lg">▶</span>
@@ -266,7 +331,7 @@ export default function LibraryView({
                     </div>
                   ) : null}
 
-                  {/* Inline details toggle (restored) */}
+                  {/* Inline details toggle */}
                   {hasNotes ? (
                     <button
                       type="button"
@@ -274,7 +339,9 @@ export default function LibraryView({
                       className="mt-3 text-xs text-zinc-300 underline underline-offset-4"
                       onClick={() => toggleDetails(id)}
                     >
-                      {detailsOpen ? (T.hideDetails || "Hide") : (T.showDetails || "Details")}
+                      {detailsOpen
+                        ? T.hideDetails || "Hide"
+                        : T.showDetails || "Details"}
                     </button>
                   ) : null}
                 </div>
@@ -316,7 +383,9 @@ export default function LibraryView({
                             toggleDetails(id);
                           }}
                         >
-                          {detailsOpen ? (T.hideDetails || "Hide") : (T.showDetails || "Details")}
+                          {detailsOpen
+                            ? T.hideDetails || "Hide"
+                            : T.showDetails || "Details"}
                         </button>
                       ) : null}
 
@@ -346,7 +415,7 @@ export default function LibraryView({
                 </div>
               </div>
 
-              {/* Details (now truly collapsible again) */}
+              {/* Details */}
               {hasNotes && detailsOpen ? (
                 <div className="mt-3 text-sm text-zinc-400 whitespace-pre-wrap">
                   {String(r.Notes)}
