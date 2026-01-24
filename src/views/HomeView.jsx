@@ -1,5 +1,12 @@
 // src/views/HomeView.jsx
-import React, { memo, useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+} from "react";
 import useLocalStorageState from "../hooks/useLocalStorageState";
 import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
 import useTranslate from "../hooks/useTranslate";
@@ -32,7 +39,9 @@ const Segmented = memo(function Segmented({
             onTouchStart={(e) => e.preventDefault()}
             className={cn(
               "flex-1 select-none rounded-2xl border transition-colors",
-              compact ? "px-2.5 py-2 text-[13px] font-semibold" : "px-3 py-2 text-sm font-medium",
+              compact
+                ? "px-2.5 py-2 text-[13px] font-semibold"
+                : "px-3 py-2 text-sm font-medium",
               active
                 ? "bg-emerald-600/90 text-black border-emerald-300/20"
                 : "bg-transparent text-zinc-200 hover:bg-white/5 border-transparent",
@@ -247,6 +256,61 @@ export default function HomeView({
     return "z-mic-ring-soft";
   })();
 
+  /* ------------------------------------------------------------
+     Auto-scroll to focus on either:
+     - the duplicate warning card, or
+     - the translation output card
+     (smooth scroll, once per new "result")
+  ------------------------------------------------------------ */
+  const dupCardRef = useRef(null);
+  const outCardRef = useRef(null);
+  const lastScrollKeyRef = useRef("");
+
+  useEffect(() => {
+    // Prefer duplicate card if present, otherwise output card.
+    const hasDup = !!duplicateEntry;
+    const hasOut = !!result?.ltOut;
+
+    if (!hasDup && !hasOut) return;
+
+    const key = hasDup
+      ? `dup:${String(
+          duplicateEntry?._id ??
+            duplicateEntry?.id ??
+            duplicateEntry?.Lithuanian ??
+            duplicateEntry?.English ??
+            ""
+        )}`
+      : `out:${String(result?.ltOut ?? "")}`;
+
+    if (!key || key === lastScrollKeyRef.current) return;
+    lastScrollKeyRef.current = key;
+
+    const target = hasDup ? dupCardRef.current : outCardRef.current;
+    if (!target) return;
+
+    // Wait for layout to settle (especially on mobile)
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => {
+        try {
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+            inline: "nearest",
+          });
+        } catch {
+          // fallback
+          try {
+            target.scrollIntoView(true);
+          } catch {}
+        }
+      });
+      return () => cancelAnimationFrame(raf2);
+    });
+
+    return () => cancelAnimationFrame(raf1);
+  }, [duplicateEntry, result?.ltOut]);
+
   return (
     <div className="z-page pb-24">
       <section className="z-card p-4 sm:p-5">
@@ -356,10 +420,7 @@ export default function HomeView({
 
             {/* rings */}
             <div
-              className={cn(
-                "absolute inset-0 rounded-full z-mic-ring",
-                ringClass
-              )}
+              className={cn("absolute inset-0 rounded-full z-mic-ring", ringClass)}
             />
 
             {/* inner disc */}
@@ -375,7 +436,9 @@ export default function HomeView({
               <div
                 className={cn(
                   "z-mic-iconBubble",
-                  micActive || micBusy ? "z-mic-iconBubble-on" : "z-mic-iconBubble-off"
+                  micActive || micBusy
+                    ? "z-mic-iconBubble-on"
+                    : "z-mic-iconBubble-off"
                 )}
               >
                 <MicIcon active={micActive || micBusy} />
@@ -435,7 +498,10 @@ export default function HomeView({
 
       {/* Duplicate warning */}
       {duplicateEntry && (
-        <section className="z-card mt-4 p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15">
+        <section
+          ref={dupCardRef}
+          className="z-card mt-4 p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15"
+        >
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <div className="text-sm font-semibold text-amber-300">
@@ -477,7 +543,8 @@ export default function HomeView({
               data-press
               className="z-btn px-4 py-2 rounded-2xl text-sm bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
               onClick={() =>
-                duplicateEntry.Lithuanian && handlePlay(duplicateEntry.Lithuanian)
+                duplicateEntry.Lithuanian &&
+                handlePlay(duplicateEntry.Lithuanian)
               }
             >
               ▶ Play
@@ -497,7 +564,7 @@ export default function HomeView({
 
       {/* Output */}
       {result.ltOut && (
-        <section className="z-card mt-4 p-4 sm:p-5 space-y-3">
+        <section ref={outCardRef} className="z-card mt-4 p-4 sm:p-5 space-y-3">
           <div className="text-xs text-zinc-500">
             Detected input:{" "}
             <span className="text-zinc-300">
@@ -514,18 +581,24 @@ export default function HomeView({
             </div>
 
             {result.phonetics && (
-              <div className="text-sm text-zinc-400 mt-1">{result.phonetics}</div>
+              <div className="text-sm text-zinc-400 mt-1">
+                {result.phonetics}
+              </div>
             )}
           </div>
 
           <div className="border-t border-white/10 pt-3 space-y-1 text-sm text-zinc-200">
             <div>
-              <span className="font-semibold">English meaning (natural): </span>
+              <span className="font-semibold">
+                English meaning (natural):{" "}
+              </span>
               <span>{result.enNatural || result.enLiteral}</span>
             </div>
             {result.enLiteral && (
               <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">Literal meaning: </span>
+                <span className="font-semibold text-zinc-300">
+                  Literal meaning:{" "}
+                </span>
                 <span>{result.enLiteral}</span>
               </div>
             )}
