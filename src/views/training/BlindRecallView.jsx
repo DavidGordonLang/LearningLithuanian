@@ -477,7 +477,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
           right={s.countRight}
           close={s.countClose}
           wrong={s.countWrong}
-          labels={{ right: "I was right", close: "Close enough", wrong: "I was wrong" }}
+          labels={{ right: "I was right", close: "Close...", wrong: "I was wrong" }}
           canReview={s.countClose + s.countWrong > 0}
           onReview={() => s.reviewMistakes?.()}
           onAgain={() => s.runAgain?.()}
