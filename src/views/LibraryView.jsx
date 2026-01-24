@@ -32,7 +32,6 @@ function normalize(s) {
     .trim();
 }
 
-/* ---------- Mobile friendly long-press play (slow playback) ---------- */
 const LONG_PRESS_MS = 420;
 
 function useBlurActiveInput() {
@@ -48,6 +47,75 @@ function useBlurActiveInput() {
   };
 }
 
+function PlayButton({ text, playText, blurActiveInput }) {
+  const timerRef = useRef(0);
+  const longFiredRef = useRef(false);
+  const [pressing, setPressing] = useState(false);
+
+  const clearTimer = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = 0;
+  };
+
+  const start = (e) => {
+    // primary pointer only
+    if (e?.button != null && e.button !== 0) return;
+
+    blurActiveInput?.();
+    longFiredRef.current = false;
+    setPressing(true);
+    clearTimer();
+
+    timerRef.current = window.setTimeout(() => {
+      longFiredRef.current = true;
+      playText?.(text || "", { slow: true });
+    }, LONG_PRESS_MS);
+  };
+
+  const finish = () => {
+    setPressing(false);
+    clearTimer();
+    // do NOT reset longFired here; we need it to suppress the click on release
+  };
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+
+    if (longFiredRef.current) {
+      // Suppress the normal click that follows a long-press release
+      longFiredRef.current = false;
+      return;
+    }
+
+    playText?.(text || "");
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label="Play"
+      data-swipe-block="true"
+      className={cn(
+        "select-none",
+        "w-12 h-12 rounded-full",
+        "border border-emerald-300/20",
+        "bg-emerald-900/20 hover:bg-emerald-900/30",
+        "shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_26px_rgba(16,185,129,0.12),0_14px_40px_rgba(0,0,0,0.60)]",
+        "flex items-center justify-center shrink-0",
+        "transition-transform duration-150",
+        pressing ? "scale-[0.98]" : null
+      )}
+      onPointerDown={start}
+      onPointerUp={finish}
+      onPointerCancel={finish}
+      onPointerLeave={finish}
+      onClick={handleClick}
+    >
+      <span className="text-emerald-200 text-lg">▶</span>
+    </button>
+  );
+}
+
 export default function LibraryView({
   T,
   rows,
@@ -57,29 +125,24 @@ export default function LibraryView({
   removePhrase,
   onEditRow,
   onOpenAddForm,
-
-  // passed from App (exists already, just wasn’t used)
   SearchBox,
   searchPlaceholder,
 }) {
-  // subscribe so search updates re-render
   useSyncExternalStore(
     searchStore.subscribe,
     searchStore.getSnapshot,
     searchStore.getServerSnapshot
   );
 
-  // IMPORTANT: searchStore.getSnapshot() returns the debounced string, not { q }
+  // searchStore.getSnapshot() returns debounced string
   const search = searchStore.getSnapshot() || "";
 
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
 
-  // Sort mode (only Oldest/Newest). Keep local to avoid needing App changes.
+  // Local sort (Oldest/Newest) – SearchDock uses "Oldest"/"Newest" strings
   const [sortMode, setSortMode] = useState("Newest");
 
-  // Per-row details open state
   const [openDetails, setOpenDetails] = useState(() => new Set());
-
   const toggleDetails = useCallback((id) => {
     if (!id) return;
     setOpenDetails((prev) => {
@@ -90,7 +153,6 @@ export default function LibraryView({
     });
   }, []);
 
-  // Context menu / row actions
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
 
@@ -111,68 +173,12 @@ export default function LibraryView({
 
   const blurActiveInput = useBlurActiveInput();
 
-  // Long-press handler that does NOT get overridden by click on release
-  const usePlayPressHandlers = (onLongPress) => {
-    const timerRef = useRef(0);
-    const longFiredRef = useRef(false);
-    const [pressing, setPressing] = useState(false);
-
-    const clearTimer = () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-      timerRef.current = 0;
-    };
-
-    const start = (e) => {
-      // only primary button / touch
-      if (e?.button != null && e.button !== 0) return;
-
-      blurActiveInput();
-      longFiredRef.current = false;
-      setPressing(true);
-      clearTimer();
-
-      timerRef.current = window.setTimeout(() => {
-        longFiredRef.current = true;
-        onLongPress?.();
-      }, LONG_PRESS_MS);
-    };
-
-    const finish = () => {
-      setPressing(false);
-      clearTimer();
-    };
-
-    const shouldSuppressClick = () => {
-      return longFiredRef.current;
-    };
-
-    const resetSuppress = () => {
-      // allow normal clicks again immediately after this interaction completes
-      longFiredRef.current = false;
-    };
-
-    return {
-      pressProps: {
-        onPointerDown: start,
-        onPointerUp: finish,
-        onPointerCancel: finish,
-        onPointerLeave: finish,
-        "data-pressing": pressing ? "1" : "0",
-      },
-      shouldSuppressClick,
-      resetSuppress,
-    };
-  };
-
   function sortRows(list) {
     const copy = Array.isArray(list) ? [...list] : [];
-
     if (String(sortMode).toLowerCase() === "oldest") {
       copy.sort((a, b) => (a?._ts || 0) - (b?._ts || 0));
       return copy;
     }
-
-    // Newest default
     copy.sort((a, b) => (b?._ts || 0) - (a?._ts || 0));
     return copy;
   }
@@ -241,7 +247,7 @@ export default function LibraryView({
         page="library"
       />
 
-      {/* Category selector (tighter) */}
+      {/* Category selector */}
       <div className="z-card p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[12px] uppercase tracking-wide text-zinc-400">
@@ -274,48 +280,14 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
-          const lt = r?.Lithuanian || "";
-
-          // long-press triggers slow playback
-          const {
-            pressProps,
-            shouldSuppressClick,
-            resetSuppress,
-          } = usePlayPressHandlers(() => playText?.(lt, { slow: true }));
-
           return (
             <div key={id} className="z-card p-4">
               <div className="flex items-start gap-3">
-                {/* Play */}
-                <button
-                  type="button"
-                  aria-label="Play"
-                  data-swipe-block="true"
-                  className={cn(
-                    "select-none",
-                    "w-12 h-12 rounded-full",
-                    "border border-emerald-300/20",
-                    "bg-emerald-900/20 hover:bg-emerald-900/30",
-                    "shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_26px_rgba(16,185,129,0.12),0_14px_40px_rgba(0,0,0,0.60)]",
-                    "flex items-center justify-center shrink-0",
-                    "transition-transform duration-150",
-                    pressProps["data-pressing"] === "1" ? "scale-[0.98]" : null
-                  )}
-                  {...pressProps}
-                  onClick={(e) => {
-                    e.stopPropagation();
-
-                    // If long-press already fired, do not override it with normal click.
-                    if (shouldSuppressClick()) {
-                      resetSuppress();
-                      return;
-                    }
-
-                    playText?.(lt);
-                  }}
-                >
-                  <span className="text-emerald-200 text-lg">▶</span>
-                </button>
+                <PlayButton
+                  text={r?.Lithuanian || ""}
+                  playText={playText}
+                  blurActiveInput={blurActiveInput}
+                />
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
@@ -331,7 +303,6 @@ export default function LibraryView({
                     </div>
                   ) : null}
 
-                  {/* Inline details toggle */}
                   {hasNotes ? (
                     <button
                       type="button"
@@ -415,7 +386,6 @@ export default function LibraryView({
                 </div>
               </div>
 
-              {/* Details */}
               {hasNotes && detailsOpen ? (
                 <div className="mt-3 text-sm text-zinc-400 whitespace-pre-wrap">
                   {String(r.Notes)}
