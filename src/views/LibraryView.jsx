@@ -77,12 +77,10 @@ function PlayButton({ text, playText, blurActiveInput }) {
 
   const handleClick = (e) => {
     e.stopPropagation();
-
     if (longFiredRef.current) {
       longFiredRef.current = false;
       return;
     }
-
     playText?.(text || "");
   };
 
@@ -150,7 +148,7 @@ export default function LibraryView({
     });
   }, []);
 
-  // Context menu / row actions
+  // Menu state
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
 
@@ -264,8 +262,8 @@ export default function LibraryView({
         </button>
       </div>
 
-      {/* Category row (tighter again) */}
-      <div className="z-card px-4 py-2.5">
+      {/* Category row (tight) */}
+      <div className="z-card px-4 py-2">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[11px] uppercase tracking-wide text-zinc-400">
             {T.category || "Category"}
@@ -297,7 +295,6 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
-          // card tap toggles details (only if has notes)
           const onCardTap = () => {
             if (!hasNotes) return;
             toggleDetails(id);
@@ -310,6 +307,10 @@ export default function LibraryView({
               role={hasNotes ? "button" : undefined}
               tabIndex={hasNotes ? 0 : undefined}
               onClick={onCardTap}
+              onPointerDown={(e) => {
+                // default: let it bubble so card can toggle
+                // (safe zones below will stop propagation)
+              }}
               onKeyDown={(e) => {
                 if (!hasNotes) return;
                 if (e.key === "Enter" || e.key === " ") {
@@ -320,11 +321,14 @@ export default function LibraryView({
             >
               <div className="flex items-start gap-3">
                 {/* Play (safe zone) */}
-                <div onClick={(e) => e.stopPropagation()}>
+                <div
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <PlayButton
                     text={r?.Lithuanian || ""}
                     playText={playText}
-                    blurActiveInput={blurActiveInput}
+                    blurActiveInput={useBlurActiveInput()}
                   />
                 </div>
 
@@ -344,12 +348,17 @@ export default function LibraryView({
                 </div>
 
                 {/* Menu (safe zone) */}
-                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="relative"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     ref={isMenuOpen ? menuBtnRef : null}
                     type="button"
                     data-press
                     className="select-none"
+                    onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpenId((prev) => (prev === id ? null : id));
@@ -369,11 +378,13 @@ export default function LibraryView({
                         shadow-[0_16px_50px_rgba(0,0,0,0.65)]
                         overflow-hidden
                       "
+                      onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
+                        onPointerDown={(e) => e.stopPropagation()}
                         onClick={() => {
                           setMenuOpenId(null);
                           onEditRow?.(id);
@@ -385,6 +396,7 @@ export default function LibraryView({
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-red-300 hover:bg-red-500/10"
+                        onPointerDown={(e) => e.stopPropagation()}
                         onClick={() => {
                           setMenuOpenId(null);
                           removePhrase?.(id);
