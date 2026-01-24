@@ -53,7 +53,7 @@ import {
 import { trackEvent, trackError } from "./services/analytics";
 
 /* ============================================================================ */
-const APP_VERSION = "1.5.4-beta";
+const APP_VERSION = "2.0.0-beta";
 
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
