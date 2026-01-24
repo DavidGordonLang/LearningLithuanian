@@ -375,17 +375,25 @@ export default function App() {
   }, [isEditing, rows, editRowId]);
 
   /* Delete */
-  const removePhraseById = (id) => {
-    if (!id) return;
-    if (!confirm(T.confirm)) return;
-    setRows((prev) =>
-      Array.isArray(prev)
-        ? prev.map((r) =>
-            r.id === id ? { ...r, _deleted: true, _ts: nowTs() } : r
-          )
-        : prev
-    );
-  };
+const removePhraseById = (id) => {
+  if (!id) return;
+  if (!confirm(T.confirm)) return;
+
+  setRows((prev) =>
+    Array.isArray(prev)
+      ? prev.map((r) => {
+          const rid = r?.id ?? null;
+          const ruid = r?._id ?? null;
+
+          if (rid === id || ruid === id) {
+            return { ...r, _deleted: true, _ts: nowTs() };
+          }
+          return r;
+        })
+      : prev
+  );
+};
+
 
   const goToPage = (next) => {
     if (!next) return;
