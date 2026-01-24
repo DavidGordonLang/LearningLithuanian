@@ -61,6 +61,7 @@ function CollapsibleSection({
   // if no controlled state passed, fallback to internal
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isOpen = typeof open === "boolean" ? open : internalOpen;
+
   const toggle = () => {
     if (typeof setOpen === "function") setOpen(!isOpen);
     else setInternalOpen((v) => !v);
@@ -78,29 +79,18 @@ function CollapsibleSection({
       >
         <div className="flex items-start justify-between gap-4">
           <SectionHeader title={title} subtitle={subtitle} accent={!!accentTitle} />
-          <div
-            className={cn(
-              "shrink-0 mt-[2px] rounded-full",
-              "h-9 w-9 flex items-center justify-center",
-              "border border-white/10 bg-white/[0.04]",
-              "text-zinc-200"
-            )}
-            aria-hidden="true"
-          >
-            <span className={cn("transition-transform", isOpen ? "rotate-180" : "")}>⌄</span>
+
+          {/* Arrow only: right when closed, down when open */}
+          <div className="shrink-0 mt-[2px] pr-1" aria-hidden="true">
+            <span className="text-zinc-200 text-lg leading-none">
+              {isOpen ? "▾" : "▸"}
+            </span>
           </div>
         </div>
       </button>
 
       {isOpen ? (
-        <div
-          id={id}
-          className={cn(
-            "z-card",
-            "p-4 sm:p-5",
-            "space-y-4"
-          )}
-        >
+        <div id={id} className={cn("z-card", "p-4 sm:p-5", "space-y-4")}>
           {children}
         </div>
       ) : null}
@@ -148,10 +138,10 @@ export default function SettingsView({
   // Diagnostics toggle (local)
   const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
 
-  // Collapsible section state (per your preference)
-  // Voice + Learning open by default. Others collapsed.
-  const [openLearning, setOpenLearning] = useState(true);
-  const [openVoice, setOpenVoice] = useState(true);
+  // Collapsible section state
+  // All collapsed by default.
+  const [openLearning, setOpenLearning] = useState(false);
+  const [openVoice, setOpenVoice] = useState(false);
   const [openAccount, setOpenAccount] = useState(false);
   const [openData, setOpenData] = useState(false);
   const [openAbout, setOpenAbout] = useState(false);
@@ -527,7 +517,7 @@ export default function SettingsView({
         </p>
       </div>
 
-      {/* LEARNING (open by default) */}
+      {/* LEARNING (collapsed by default) */}
       <CollapsibleSection
         id="sec-learning"
         title="Learning"
@@ -605,7 +595,7 @@ export default function SettingsView({
         </div>
       </CollapsibleSection>
 
-      {/* VOICE (open by default) */}
+      {/* VOICE (collapsed by default) */}
       <CollapsibleSection
         id="sec-voice"
         title="Voice"
@@ -843,7 +833,7 @@ export default function SettingsView({
         </div>
       </CollapsibleSection>
 
-      {/* DIAGNOSTICS (quiet, collapsed by default) */}
+      {/* DIAGNOSTICS (collapsed by default) */}
       <CollapsibleSection
         id="sec-diagnostics"
         title="Diagnostics"
