@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { searchStore } from "../searchStore";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
-import SearchDock from "../components/SearchDock";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -58,7 +57,6 @@ function PlayButton({ text, playText, blurActiveInput }) {
   };
 
   const start = (e) => {
-    // primary pointer only
     if (e?.button != null && e.button !== 0) return;
 
     blurActiveInput?.();
@@ -75,14 +73,13 @@ function PlayButton({ text, playText, blurActiveInput }) {
   const finish = () => {
     setPressing(false);
     clearTimer();
-    // do NOT reset longFired here; we need it to suppress the click on release
+    // don't reset longFired here; it suppresses the click on release
   };
 
   const handleClick = (e) => {
     e.stopPropagation();
 
     if (longFiredRef.current) {
-      // Suppress the normal click that follows a long-press release
       longFiredRef.current = false;
       return;
     }
@@ -134,14 +131,18 @@ export default function LibraryView({
     searchStore.getServerSnapshot
   );
 
-  // searchStore.getSnapshot() returns debounced string
+  // debounced string
   const search = searchStore.getSnapshot() || "";
 
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
 
-  // Local sort (Oldest/Newest) – SearchDock uses "Oldest"/"Newest" strings
+  // Local sort: "Newest" | "Oldest"
   const [sortMode, setSortMode] = useState("Newest");
 
+  const toggleSort = () =>
+    setSortMode((m) => (m === "Newest" ? "Oldest" : "Newest"));
+
+  // Per-row details open state
   const [openDetails, setOpenDetails] = useState(() => new Set());
   const toggleDetails = useCallback((id) => {
     if (!id) return;
@@ -153,6 +154,7 @@ export default function LibraryView({
     });
   }, []);
 
+  // Context menu / row actions
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
 
@@ -212,43 +214,64 @@ export default function LibraryView({
 
   return (
     <div className="z-page z-page-y pb-28 space-y-4">
-      {/* Header + CTA */}
-      <div className="space-y-2">
-        <div>
-          <h2 className="z-title">{T.libraryTitle || "Library"}</h2>
-          <p className="z-subtitle mt-1">
-            Browse, search, and manage your saved entries.
-          </p>
+      {/* 3) Title + subtitle */}
+      <div className="space-y-1">
+        <h2 className="z-title">{T.libraryTitle || "Library"}</h2>
+        <p className="z-subtitle">Browse, search, and manage your saved entries.</p>
+      </div>
+
+      {/* 4) Search box (aligned with title) */}
+      {SearchBox ? (
+        <div className="w-full">
+          <SearchBox placeholder={searchPlaceholder || T.search || "Search…"} />
+        </div>
+      ) : null}
+
+      {/* 5) Sort left (glass) + Add Entry right (CTA emerald) */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-zinc-400 text-xs sm:text-sm">{T.sort}</span>
+
+          <button
+            type="button"
+            data-press
+            onClick={toggleSort}
+            className={cn(
+              "z-btn",
+              "px-3 py-1.5 rounded-full",
+              "text-xs sm:text-sm",
+              // glass style
+              "bg-white/[0.04] hover:bg-white/[0.06]",
+              "border border-white/10",
+              "text-zinc-100"
+            )}
+            aria-label="Toggle sort order"
+          >
+            {sortMode === "Oldest" ? T.oldest : T.newest}
+          </button>
         </div>
 
         <button
           type="button"
           data-press
-          className="
-            z-btn px-5 py-3 rounded-2xl
-            bg-emerald-600/90 hover:bg-emerald-500
-            border border-emerald-300/20
-            text-black font-semibold
-            w-fit
-          "
           onClick={onOpenAddForm}
+          className={cn(
+            "z-btn",
+            "px-3 py-1.5 rounded-full",
+            "text-xs sm:text-sm font-semibold",
+            // CTA style (current sort colouring)
+            "bg-emerald-600/40 hover:bg-emerald-600/50",
+            "text-emerald-200",
+            "border border-emerald-500/25"
+          )}
+          aria-label="Add entry"
         >
-          + {T.addEntry || "Add Entry"}
+          {T.addEntry || "Add Entry"}
         </button>
       </div>
 
-      {/* Search + Sort (restored) */}
-      <SearchDock
-        SearchBox={SearchBox}
-        placeholder={searchPlaceholder || T.search || "Search…"}
-        sortMode={sortMode}
-        setSortMode={setSortMode}
-        T={T}
-        page="library"
-      />
-
-      {/* Category selector */}
-      <div className="z-card p-4">
+      {/* 6) Category row (shorter) */}
+      <div className="z-card px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[12px] uppercase tracking-wide text-zinc-400">
             {T.category || "Category"}
@@ -256,7 +279,7 @@ export default function LibraryView({
 
           <div className="flex items-center gap-3">
             <select
-              className="z-input !py-2 !px-3 !rounded-2xl w-auto"
+              className="z-input !py-1.5 !px-3 !rounded-2xl w-auto"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
