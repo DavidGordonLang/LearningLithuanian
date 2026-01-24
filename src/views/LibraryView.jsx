@@ -57,7 +57,6 @@ function PlayButton({ text, playText, blurActiveInput }) {
   };
 
   const start = (e) => {
-    // only primary pointer
     if (e?.button != null && e.button !== 0) return;
 
     blurActiveInput?.();
@@ -67,7 +66,6 @@ function PlayButton({ text, playText, blurActiveInput }) {
 
     timerRef.current = window.setTimeout(() => {
       longFiredRef.current = true;
-      // SLOW playback on long press
       playText?.(text || "", { slow: true });
     }, LONG_PRESS_MS);
   };
@@ -78,10 +76,8 @@ function PlayButton({ text, playText, blurActiveInput }) {
   };
 
   const handleClick = (e) => {
-    // prevent card toggle
     e.stopPropagation();
 
-    // If long press already fired, suppress the normal click playback.
     if (longFiredRef.current) {
       longFiredRef.current = false;
       return;
@@ -157,22 +153,14 @@ export default function LibraryView({
   // Context menu / row actions
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
-  const menuPanelRef = useRef(null);
 
   useEffect(() => {
     const onDoc = (e) => {
       if (!menuOpenId) return;
-
       const btn = menuBtnRef.current;
       if (btn && btn.contains(e.target)) return;
-
-      const panel = menuPanelRef.current;
-      // CRITICAL: ignore clicks inside the menu panel
-      if (panel && panel.contains(e.target)) return;
-
       setMenuOpenId(null);
     };
-
     document.addEventListener("click", onDoc, true);
     document.addEventListener("touchstart", onDoc, true);
     return () => {
@@ -276,7 +264,7 @@ export default function LibraryView({
         </button>
       </div>
 
-      {/* Category row (tighter again) */}
+      {/* Category row (tighter) */}
       <div className="z-card px-4 py-2.5">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[11px] uppercase tracking-wide text-zinc-400">
@@ -309,6 +297,7 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
+          // card tap toggles details (only if has notes)
           const onCardTap = () => {
             if (!hasNotes) return;
             toggleDetails(id);
@@ -341,14 +330,17 @@ export default function LibraryView({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-semibold text-emerald-200 truncate">
+                  {/* NO TRUNCATION: wrap naturally */}
+                  <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words whitespace-normal">
                     {r?.Lithuanian || "—"}
                   </div>
-                  <div className="text-sm text-zinc-300 mt-0.5 truncate">
+
+                  <div className="text-sm text-zinc-300 mt-1 leading-snug break-words whitespace-normal">
                     {r?.English || "—"}
                   </div>
+
                   {r?.Phonetic ? (
-                    <div className="text-xs text-zinc-500 mt-1 truncate italic">
+                    <div className="text-xs text-zinc-500 mt-1 italic leading-snug break-words whitespace-normal">
                       {r.Phonetic}
                     </div>
                   ) : null}
@@ -372,7 +364,6 @@ export default function LibraryView({
 
                   {isMenuOpen ? (
                     <div
-                      ref={menuPanelRef}
                       className="
                         absolute right-0 mt-2 w-44
                         z-[40]
@@ -386,8 +377,7 @@ export default function LibraryView({
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={() => {
                           setMenuOpenId(null);
                           onEditRow?.(id);
                         }}
@@ -398,8 +388,7 @@ export default function LibraryView({
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-red-300 hover:bg-red-500/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={() => {
                           setMenuOpenId(null);
                           removePhrase?.(id);
                         }}
