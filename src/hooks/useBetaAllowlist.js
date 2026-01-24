@@ -1,56 +1,98 @@
 // src/hooks/useBetaAllowlist.js
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "../supabaseClient";
+
+const ALLOWLIST_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, ms, label = "timeout") {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(label)), ms);
+    Promise.resolve(promise)
+      .then((v) => {
+        clearTimeout(t);
+        resolve(v);
+      })
+      .catch((e) => {
+        clearTimeout(t);
+        reject(e);
+      });
+  });
+}
 
 /**
- * useBetaAllowlist
- * - Checks Supabase table `beta_allowlist` for the current user's email
- * - Returns { checked, allowed }
- * - Conservative: re-checks when email changes
+ * Preserve existing semantics:
+ * - If no email yet: checked=true, allowed=false (so app can route to AuthGate/BetaBlocked)
+ * - If allowlist query fails/hangs: checked=true, allowed=false (blocked, but NOT stuck)
+ * - If allowlisted: checked=true, allowed=true
  */
-export default function useBetaAllowlist({ userEmail, supabase }) {
+export function useBetaAllowlist(email) {
   const [checked, setChecked] = useState(false);
   const [allowed, setAllowed] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Prevent state updates after unmount / rapid email changes
+  const runIdRef = useRef(0);
 
   useEffect(() => {
-    let alive = true;
+    let cancelled = false;
+    const myRunId = ++runIdRef.current;
 
-    async function check() {
-      if (!userEmail) {
-        if (!alive) return;
+    async function checkAllowlist() {
+      // Important: do not hang on loading if email is missing
+      if (!email) {
         setAllowed(false);
+        setError(null);
         setChecked(true);
         return;
       }
 
       setChecked(false);
+      setAllowed(false);
+      setError(null);
 
-      const email = String(userEmail).toLowerCase();
+      try {
+        const query = supabase
+          .from("beta_allowlist")
+          .select("email")
+          .eq("email", email)
+          .limit(1)
+          .maybeSingle();
 
-      const { data, error } = await supabase
-        .from("beta_allowlist")
-        .select("email")
-        .eq("email", email)
-        .limit(1);
+        const { data, error: qErr } = await withTimeout(
+          query,
+          ALLOWLIST_TIMEOUT_MS,
+          "allowlist_query_timeout"
+        );
 
-      if (!alive) return;
+        if (cancelled || runIdRef.current !== myRunId) return;
 
-      if (error) {
-        console.warn("Allowlist check failed:", error);
-        setAllowed(false);
+        if (qErr) {
+          // Fail closed but never hang
+          console.warn("Allowlist query error:", qErr);
+          setAllowed(false);
+          setError(qErr);
+          setChecked(true);
+          return;
+        }
+
+        setAllowed(Boolean(data?.email));
         setChecked(true);
-        return;
+      } catch (err) {
+        if (cancelled || runIdRef.current !== myRunId) return;
+        // Fail closed but never hang
+        console.warn("Allowlist check failed:", err);
+        setAllowed(false);
+        setError(err);
+        setChecked(true);
       }
-
-      setAllowed((data?.length || 0) > 0);
-      setChecked(true);
     }
 
-    check();
+    checkAllowlist();
 
     return () => {
-      alive = false;
+      cancelled = true;
     };
-  }, [userEmail, supabase]);
+  }, [email]);
 
-  return { checked, allowed };
+  return { allowlistChecked: checked, isAllowlisted: allowed, allowlistError: error };
 }
