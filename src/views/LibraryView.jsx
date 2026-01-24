@@ -73,7 +73,6 @@ function PlayButton({ text, playText, blurActiveInput }) {
   const finish = () => {
     setPressing(false);
     clearTimer();
-    // don't reset longFired here; it suppresses the click on release
   };
 
   const handleClick = (e) => {
@@ -131,18 +130,15 @@ export default function LibraryView({
     searchStore.getServerSnapshot
   );
 
-  // debounced string
   const search = searchStore.getSnapshot() || "";
-
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
 
   // Local sort: "Newest" | "Oldest"
   const [sortMode, setSortMode] = useState("Newest");
-
   const toggleSort = () =>
     setSortMode((m) => (m === "Newest" ? "Oldest" : "Newest"));
 
-  // Per-row details open state
+  // Details open state
   const [openDetails, setOpenDetails] = useState(() => new Set());
   const toggleDetails = useCallback((id) => {
     if (!id) return;
@@ -214,20 +210,20 @@ export default function LibraryView({
 
   return (
     <div className="z-page z-page-y pb-28 space-y-4">
-      {/* 3) Title + subtitle */}
+      {/* Title + subtitle */}
       <div className="space-y-1">
         <h2 className="z-title">{T.libraryTitle || "Library"}</h2>
         <p className="z-subtitle">Browse, search, and manage your saved entries.</p>
       </div>
 
-      {/* 4) Search box (aligned with title) */}
+      {/* Search */}
       {SearchBox ? (
         <div className="w-full">
           <SearchBox placeholder={searchPlaceholder || T.search || "Search…"} />
         </div>
       ) : null}
 
-      {/* 5) Sort left (glass) + Add Entry right (CTA emerald) */}
+      {/* Sort left (glass) + Add Entry right (CTA emerald) */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-zinc-400 text-xs sm:text-sm">{T.sort}</span>
@@ -240,7 +236,6 @@ export default function LibraryView({
               "z-btn",
               "px-3 py-1.5 rounded-full",
               "text-xs sm:text-sm",
-              // glass style
               "bg-white/[0.04] hover:bg-white/[0.06]",
               "border border-white/10",
               "text-zinc-100"
@@ -259,7 +254,6 @@ export default function LibraryView({
             "z-btn",
             "px-3 py-1.5 rounded-full",
             "text-xs sm:text-sm font-semibold",
-            // CTA style (current sort colouring)
             "bg-emerald-600/40 hover:bg-emerald-600/50",
             "text-emerald-200",
             "border border-emerald-500/25"
@@ -270,16 +264,16 @@ export default function LibraryView({
         </button>
       </div>
 
-      {/* 6) Category row (shorter) */}
-      <div className="z-card px-4 py-3">
+      {/* Category row (tighter again) */}
+      <div className="z-card px-4 py-2.5">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-[12px] uppercase tracking-wide text-zinc-400">
+          <div className="text-[11px] uppercase tracking-wide text-zinc-400">
             {T.category || "Category"}
           </div>
 
           <div className="flex items-center gap-3">
             <select
-              className="z-input !py-1.5 !px-3 !rounded-2xl w-auto"
+              className="z-input !py-1 !px-3 !rounded-2xl w-auto"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -303,14 +297,36 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
+          // card tap toggles details (only if has notes)
+          const onCardTap = () => {
+            if (!hasNotes) return;
+            toggleDetails(id);
+          };
+
           return (
-            <div key={id} className="z-card p-4">
+            <div
+              key={id}
+              className="z-card p-4"
+              role={hasNotes ? "button" : undefined}
+              tabIndex={hasNotes ? 0 : undefined}
+              onClick={onCardTap}
+              onKeyDown={(e) => {
+                if (!hasNotes) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onCardTap();
+                }
+              }}
+            >
               <div className="flex items-start gap-3">
-                <PlayButton
-                  text={r?.Lithuanian || ""}
-                  playText={playText}
-                  blurActiveInput={blurActiveInput}
-                />
+                {/* Play (safe zone) */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <PlayButton
+                    text={r?.Lithuanian || ""}
+                    playText={playText}
+                    blurActiveInput={blurActiveInput}
+                  />
+                </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
@@ -325,23 +341,10 @@ export default function LibraryView({
                       {r.Phonetic}
                     </div>
                   ) : null}
-
-                  {hasNotes ? (
-                    <button
-                      type="button"
-                      data-press
-                      className="mt-3 text-xs text-zinc-300 underline underline-offset-4"
-                      onClick={() => toggleDetails(id)}
-                    >
-                      {detailsOpen
-                        ? T.hideDetails || "Hide"
-                        : T.showDetails || "Details"}
-                    </button>
-                  ) : null}
                 </div>
 
-                {/* Menu */}
-                <div className="relative">
+                {/* Menu (safe zone) */}
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <button
                     ref={isMenuOpen ? menuBtnRef : null}
                     type="button"
@@ -368,21 +371,6 @@ export default function LibraryView({
                       "
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {hasNotes ? (
-                        <button
-                          type="button"
-                          className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-                          onClick={() => {
-                            setMenuOpenId(null);
-                            toggleDetails(id);
-                          }}
-                        >
-                          {detailsOpen
-                            ? T.hideDetails || "Hide"
-                            : T.showDetails || "Details"}
-                        </button>
-                      ) : null}
-
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
@@ -409,6 +397,7 @@ export default function LibraryView({
                 </div>
               </div>
 
+              {/* Details */}
               {hasNotes && detailsOpen ? (
                 <div className="mt-3 text-sm text-zinc-400 whitespace-pre-wrap">
                   {String(r.Notes)}
