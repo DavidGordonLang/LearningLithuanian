@@ -313,7 +313,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           right={s.countRight}
           close={s.countClose}
           wrong={s.countWrong}
-          labels={{ right: "Right", close: "Close enough", wrong: "Wrong" }}
+          labels={{ right: "Right", close: "Close...", wrong: "Wrong" }}
           canReview={s.countClose + s.countWrong > 0}
           onReview={() => s.reviewMistakes?.()}
           onAgain={() => s.runAgain?.()}
