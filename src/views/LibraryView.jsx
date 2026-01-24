@@ -31,7 +31,6 @@ function normalize(s) {
     .trim();
 }
 
-/* ---------- Mobile friendly long-press play (no swipe interference) ---------- */
 const LONG_PRESS_MS = 420;
 
 function useBlurActiveInput() {
@@ -47,16 +46,87 @@ function useBlurActiveInput() {
   };
 }
 
+function PlayButton({ text, playText, blurActiveInput }) {
+  const timerRef = useRef(0);
+  const longFiredRef = useRef(false);
+  const [pressing, setPressing] = useState(false);
+
+  const clearTimer = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = 0;
+  };
+
+  const start = (e) => {
+    // only primary pointer
+    if (e?.button != null && e.button !== 0) return;
+
+    blurActiveInput?.();
+    longFiredRef.current = false;
+    setPressing(true);
+    clearTimer();
+
+    timerRef.current = window.setTimeout(() => {
+      longFiredRef.current = true;
+      // SLOW playback on long press
+      playText?.(text || "", { slow: true });
+    }, LONG_PRESS_MS);
+  };
+
+  const finish = () => {
+    setPressing(false);
+    clearTimer();
+  };
+
+  const handleClick = (e) => {
+    // prevent card toggle
+    e.stopPropagation();
+
+    // If long press already fired, suppress the normal click playback.
+    if (longFiredRef.current) {
+      longFiredRef.current = false;
+      return;
+    }
+
+    playText?.(text || "");
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label="Play"
+      data-swipe-block="true"
+      className={cn(
+        "select-none",
+        "w-12 h-12 rounded-full",
+        "border border-emerald-300/20",
+        "bg-emerald-900/20 hover:bg-emerald-900/30",
+        "shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_26px_rgba(16,185,129,0.12),0_14px_40px_rgba(0,0,0,0.60)]",
+        "flex items-center justify-center shrink-0",
+        "transition-transform duration-150",
+        pressing ? "scale-[0.98]" : null
+      )}
+      onPointerDown={start}
+      onPointerUp={finish}
+      onPointerCancel={finish}
+      onPointerLeave={finish}
+      onClick={handleClick}
+    >
+      <span className="text-emerald-200 text-lg">▶</span>
+    </button>
+  );
+}
+
 export default function LibraryView({
   T,
   rows,
   setRows,
   normalizeRag,
-  sortMode,
   playText,
   removePhrase,
   onEditRow,
   onOpenAddForm,
+  SearchBox,
+  searchPlaceholder,
 }) {
   useSyncExternalStore(
     searchStore.subscribe,
@@ -64,17 +134,16 @@ export default function LibraryView({
     searchStore.getServerSnapshot
   );
 
-  // NOTE: different builds of searchStore have returned either a string or an object.
-  // We support both without changing the UX.
-  const snap = searchStore.getSnapshot();
-  const search =
-    typeof snap === "string" ? snap : String(snap?.q || snap?.value || "");
-
+  const search = searchStore.getSnapshot() || "";
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
 
-  // Per-row details open state
-  const [openDetails, setOpenDetails] = useState(() => new Set());
+  // Local sort: "Newest" | "Oldest"
+  const [sortMode, setSortMode] = useState("Newest");
+  const toggleSort = () =>
+    setSortMode((m) => (m === "Newest" ? "Oldest" : "Newest"));
 
+  // Details open state
+  const [openDetails, setOpenDetails] = useState(() => new Set());
   const toggleDetails = useCallback((id) => {
     if (!id) return;
     setOpenDetails((prev) => {
@@ -88,88 +157,45 @@ export default function LibraryView({
   // Context menu / row actions
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
-
-  // Prevent "click-through" / ghost taps on mobile after closing the menu.
-  const suppressUntilRef = useRef(0);
-  const suppressFor = (ms = 420) => {
-    suppressUntilRef.current = Date.now() + ms;
-  };
-  const isSuppressed = () => Date.now() < suppressUntilRef.current;
+  const menuPanelRef = useRef(null);
 
   useEffect(() => {
     const onDoc = (e) => {
       if (!menuOpenId) return;
+
       const btn = menuBtnRef.current;
       if (btn && btn.contains(e.target)) return;
+
+      const panel = menuPanelRef.current;
+      // CRITICAL: ignore clicks inside the menu panel
+      if (panel && panel.contains(e.target)) return;
+
       setMenuOpenId(null);
-      suppressFor(350);
     };
+
     document.addEventListener("click", onDoc, true);
     document.addEventListener("touchstart", onDoc, true);
     return () => {
       document.removeEventListener("click", onDoc, true);
       document.removeEventListener("touchstart", onDoc, true);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menuOpenId]);
 
   const blurActiveInput = useBlurActiveInput();
 
-  const pressHandlers = (trigger) => {
-    const timer = useRef(0);
-    const [pressing, setPressing] = useState(false);
-
-    const start = () => {
-      blurActiveInput();
-      setPressing(true);
-      if (timer.current) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => {
-        trigger?.();
-      }, LONG_PRESS_MS);
-    };
-
-    const finish = () => {
-      setPressing(false);
-      if (timer.current) window.clearTimeout(timer.current);
-      timer.current = 0;
-    };
-
-    return {
-      onPointerDown: (e) => {
-        // stop any upstream tap handlers from getting this pointer sequence
-        e.stopPropagation();
-        start();
-      },
-      onPointerUp: (e) => {
-        e.stopPropagation();
-        finish();
-      },
-      onPointerCancel: (e) => {
-        e.stopPropagation();
-        finish();
-      },
-      onPointerLeave: (e) => {
-        e.stopPropagation();
-        finish();
-      },
-      "data-pressing": pressing ? "1" : "0",
-    };
-  };
-
   function sortRows(list) {
     const copy = Array.isArray(list) ? [...list] : [];
-
-    if (sortMode === "oldest") {
+    if (String(sortMode).toLowerCase() === "oldest") {
       copy.sort((a, b) => (a?._ts || 0) - (b?._ts || 0));
       return copy;
     }
-
     copy.sort((a, b) => (b?._ts || 0) - (a?._ts || 0));
     return copy;
   }
 
   const filtered = useMemo(() => {
     const q = normalize(search);
+
     const inCat = (r) =>
       category === "All" || (r?.Category || DEFAULT_CATEGORY) === category;
 
@@ -196,33 +222,62 @@ export default function LibraryView({
 
   return (
     <div className="z-page z-page-y pb-28 space-y-4">
-      {/* Header + CTA */}
-      <div className="space-y-2">
-        <div>
-          <h2 className="z-title">{T.libraryTitle || "Library"}</h2>
-          <p className="z-subtitle mt-1">
-            Browse, search, and manage your saved entries.
-          </p>
+      {/* Title + subtitle */}
+      <div className="space-y-1">
+        <h2 className="z-title">{T.libraryTitle || "Library"}</h2>
+        <p className="z-subtitle">Browse, search, and manage your saved entries.</p>
+      </div>
+
+      {/* Search */}
+      {SearchBox ? (
+        <div className="w-full">
+          <SearchBox placeholder={searchPlaceholder || T.search || "Search…"} />
+        </div>
+      ) : null}
+
+      {/* Sort left (glass) + Add Entry right (CTA emerald) */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-zinc-400 text-xs sm:text-sm">{T.sort}</span>
+
+          <button
+            type="button"
+            data-press
+            onClick={toggleSort}
+            className={cn(
+              "z-btn",
+              "px-3 py-1.5 rounded-full",
+              "text-xs sm:text-sm",
+              "bg-white/[0.04] hover:bg-white/[0.06]",
+              "border border-white/10",
+              "text-zinc-100"
+            )}
+            aria-label="Toggle sort order"
+          >
+            {sortMode === "Oldest" ? T.oldest : T.newest}
+          </button>
         </div>
 
         <button
           type="button"
           data-press
-          className="
-            z-btn px-5 py-3 rounded-2xl
-            bg-emerald-600/90 hover:bg-emerald-500
-            border border-emerald-300/20
-            text-black font-semibold
-            w-fit
-          "
           onClick={onOpenAddForm}
+          className={cn(
+            "z-btn",
+            "px-3 py-1.5 rounded-full",
+            "text-xs sm:text-sm font-semibold",
+            "bg-emerald-600/40 hover:bg-emerald-600/50",
+            "text-emerald-200",
+            "border border-emerald-500/25"
+          )}
+          aria-label="Add entry"
         >
-          + {T.addEntry || "Add Entry"}
+          {T.addEntry || "Add Entry"}
         </button>
       </div>
 
-      {/* Category selector (tighter) */}
-      <div className="z-card px-4 py-3">
+      {/* Category row (tighter again) */}
+      <div className="z-card px-4 py-2.5">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[11px] uppercase tracking-wide text-zinc-400">
             {T.category || "Category"}
@@ -230,7 +285,7 @@ export default function LibraryView({
 
           <div className="flex items-center gap-3">
             <select
-              className="z-input !py-1.5 !px-3 !rounded-2xl w-auto"
+              className="z-input !py-1 !px-3 !rounded-2xl w-auto"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -241,7 +296,7 @@ export default function LibraryView({
               ))}
             </select>
 
-            <div className="text-xs text-zinc-400">{countLabel}</div>
+            <div className="text-sm text-zinc-400">{countLabel}</div>
           </div>
         </div>
       </div>
@@ -254,57 +309,38 @@ export default function LibraryView({
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
 
+          const onCardTap = () => {
+            if (!hasNotes) return;
+            toggleDetails(id);
+          };
+
           return (
-            <div key={id} className="z-card p-4">
+            <div
+              key={id}
+              className="z-card p-4"
+              role={hasNotes ? "button" : undefined}
+              tabIndex={hasNotes ? 0 : undefined}
+              onClick={onCardTap}
+              onKeyDown={(e) => {
+                if (!hasNotes) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onCardTap();
+                }
+              }}
+            >
               <div className="flex items-start gap-3">
-                {/* Play (safe area) */}
-                <div
-                  className="shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    aria-label="Play"
-                    data-swipe-block="true"
-                    className={cn(
-                      "select-none",
-                      "w-12 h-12 rounded-full",
-                      "border border-emerald-400/25",
-                      "bg-emerald-900/20 hover:bg-emerald-900/30",
-                      "shadow-[0_10px_30px_rgba(0,0,0,0.55),0_0_22px_rgba(16,185,129,0.18)]",
-                      "flex items-center justify-center"
-                    )}
-                    {...pressHandlers(() => {
-                      suppressFor(350);
-                      playText?.(r?.Lithuanian || "");
-                    })}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      suppressFor(350);
-                      playText?.(r?.Lithuanian || "");
-                    }}
-                  >
-                    <span className="text-emerald-200 text-lg">▶</span>
-                  </button>
+                {/* Play (safe zone) */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <PlayButton
+                    text={r?.Lithuanian || ""}
+                    playText={playText}
+                    blurActiveInput={blurActiveInput}
+                  />
                 </div>
 
-                {/* Content (tap anywhere here toggles details) */}
-                <button
-                  type="button"
-                  className={cn(
-                    "flex-1 min-w-0 text-left",
-                    hasNotes ? "cursor-pointer" : "cursor-default"
-                  )}
-                  aria-expanded={hasNotes ? (detailsOpen ? "true" : "false") : undefined}
-                  onClick={(e) => {
-                    // If we just interacted with the menu, ignore "ghost" taps.
-                    if (isSuppressed()) return;
-                    if (!hasNotes) return;
-                    e.stopPropagation();
-                    toggleDetails(id);
-                  }}
-                >
+                {/* Content */}
+                <div className="flex-1 min-w-0">
                   <div className="text-[15px] font-semibold text-emerald-200 truncate">
                     {r?.Lithuanian || "—"}
                   </div>
@@ -316,40 +352,27 @@ export default function LibraryView({
                       {r.Phonetic}
                     </div>
                   ) : null}
-                </button>
+                </div>
 
-                {/* Menu (safe area) */}
-                <div
-                  className="relative shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    // Prevent mobile from generating a second "click" on underlying content.
-                    suppressFor(350);
-                  }}
-                >
+                {/* Menu (safe zone) */}
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <button
                     ref={isMenuOpen ? menuBtnRef : null}
                     type="button"
                     data-press
                     className="select-none"
-                    aria-label="Row menu"
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      // Avoid click-through on some mobile browsers
-                      suppressFor(350);
-                    }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      suppressFor(350);
                       setMenuOpenId((prev) => (prev === id ? null : id));
                     }}
+                    aria-label="Row menu"
                   >
                     <KebabIcon />
                   </button>
 
                   {isMenuOpen ? (
                     <div
+                      ref={menuPanelRef}
                       className="
                         absolute right-0 mt-2 w-44
                         z-[40]
@@ -357,23 +380,14 @@ export default function LibraryView({
                         bg-zinc-950/85 backdrop-blur
                         shadow-[0_16px_50px_rgba(0,0,0,0.65)]
                         overflow-hidden
-                        pointer-events-auto
                       "
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        suppressFor(450);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        suppressFor(450);
-                      }}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
                         onClick={(e) => {
                           e.stopPropagation();
-                          suppressFor(450);
                           setMenuOpenId(null);
                           onEditRow?.(id);
                         }}
@@ -386,7 +400,6 @@ export default function LibraryView({
                         className="w-full text-left px-4 py-3 text-sm text-red-300 hover:bg-red-500/10"
                         onClick={(e) => {
                           e.stopPropagation();
-                          suppressFor(450);
                           setMenuOpenId(null);
                           removePhrase?.(id);
                         }}
