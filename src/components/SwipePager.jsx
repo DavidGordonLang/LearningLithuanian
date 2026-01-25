@@ -18,6 +18,28 @@ function isTextFieldEl(el) {
   return false;
 }
 
+function blurActiveElement() {
+  const ae = document.activeElement;
+  if (!ae) return;
+
+  const tag = (ae.tagName || "").toUpperCase();
+  const isField =
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    ae.isContentEditable;
+
+  if (!isField) return;
+
+  try {
+    ae.blur();
+  } catch {}
+
+  try {
+    document.body?.focus?.();
+  } catch {}
+}
+
 /**
  * SwipePager
  * - Pixel-accurate widths (measures host)
@@ -116,6 +138,8 @@ export default function SwipePager({ index, onIndexChange, onProgress, children 
   }, [index]);
 
   useEffect(() => {
+    // If the index changes (tabs, programmatic), kill any focused input first
+    blurActiveElement();
     snapToIndex(index);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, vw]);
@@ -156,18 +180,7 @@ export default function SwipePager({ index, onIndexChange, onProgress, children 
 
         if (Math.abs(dx) > Math.abs(dy) * 1.15) {
           drag.current.locked = true;
-
-          const ae = document.activeElement;
-          if (
-            ae &&
-            (ae.tagName === "INPUT" ||
-              ae.tagName === "TEXTAREA" ||
-              ae.tagName === "SELECT")
-          ) {
-            try {
-              ae.blur();
-            } catch {}
-          }
+          blurActiveElement();
         } else {
           drag.current.active = false;
           drag.current.locked = false;

@@ -31,7 +31,7 @@ const SearchBox = memo(
           type="text"
           placeholder={placeholder}
           defaultValue=""
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm outline-none"
+          className="z-input pr-10"
           onCompositionStart={() => {
             composingRef.current = true;
           }}
@@ -47,7 +47,14 @@ const SearchBox = memo(
 
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
+          data-press
+          className="
+            absolute right-2 top-1/2 -translate-y-1/2
+            h-8 w-8 rounded-xl
+            text-zinc-400 hover:text-zinc-200
+            hover:bg-white/5 active:bg-white/10
+            flex items-center justify-center
+          "
           onClick={() => {
             const el = inputRef.current;
             if (el) {
@@ -56,8 +63,10 @@ const SearchBox = memo(
               startTransition(() => searchStore.clear());
             }
           }}
+          aria-label="Clear search"
+          title="Clear"
         >
-          ×
+          <span className="text-lg leading-none">×</span>
         </button>
       </div>
     );

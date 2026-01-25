@@ -1,22 +1,44 @@
 // src/hooks/useBetaAllowlist.js
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const ALLOWLIST_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, ms, label = "timeout") {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(label)), ms);
+    Promise.resolve(promise)
+      .then((v) => {
+        clearTimeout(t);
+        resolve(v);
+      })
+      .catch((e) => {
+        clearTimeout(t);
+        reject(e);
+      });
+  });
+}
 
 /**
  * useBetaAllowlist
  * - Checks Supabase table `beta_allowlist` for the current user's email
  * - Returns { checked, allowed }
- * - Conservative: re-checks when email changes
+ * - Defensive: checked ALWAYS becomes true (even on hang/error)
+ * - Preserves existing behavior and UI flow
  */
 export default function useBetaAllowlist({ userEmail, supabase }) {
   const [checked, setChecked] = useState(false);
   const [allowed, setAllowed] = useState(false);
 
+  // Avoid setState after unmount / rapid email changes
+  const runIdRef = useRef(0);
+
   useEffect(() => {
     let alive = true;
+    const myRunId = ++runIdRef.current;
 
     async function check() {
       if (!userEmail) {
-        if (!alive) return;
+        if (!alive || runIdRef.current !== myRunId) return;
         setAllowed(false);
         setChecked(true);
         return;
@@ -26,23 +48,36 @@ export default function useBetaAllowlist({ userEmail, supabase }) {
 
       const email = String(userEmail).toLowerCase();
 
-      const { data, error } = await supabase
-        .from("beta_allowlist")
-        .select("email")
-        .eq("email", email)
-        .limit(1);
+      try {
+        const query = supabase
+          .from("beta_allowlist")
+          .select("email")
+          .eq("email", email)
+          .limit(1);
 
-      if (!alive) return;
+        const { data, error } = await withTimeout(
+          query,
+          ALLOWLIST_TIMEOUT_MS,
+          "allowlist_query_timeout"
+        );
 
-      if (error) {
-        console.warn("Allowlist check failed:", error);
-        setAllowed(false);
+        if (!alive || runIdRef.current !== myRunId) return;
+
+        if (error) {
+          console.warn("Allowlist check failed:", error);
+          setAllowed(false);
+          setChecked(true);
+          return;
+        }
+
+        setAllowed((data?.length || 0) > 0);
         setChecked(true);
-        return;
+      } catch (err) {
+        if (!alive || runIdRef.current !== myRunId) return;
+        console.warn("Allowlist check failed (exception/timeout):", err);
+        setAllowed(false); // fail closed
+        setChecked(true); // but never hang
       }
-
-      setAllowed((data?.length || 0) > 0);
-      setChecked(true);
     }
 
     check();

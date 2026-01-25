@@ -1,5 +1,23 @@
 [
   {
+    "version": "2.0.0-beta",
+    "date": "2026-01-24",
+    "changes": [
+      "Introduced speech-to-text input for translation, supporting both English and Lithuanian spoken input.",
+      "Added a dedicated Training tab, introducing structured practice alongside translation and storage.",
+      "Launched three initial training modules: Recognise (reveal-based recall), Produce (Lithuanian-first production), and Reinforce (English–Lithuanian matching).",
+      "Training sessions now pull directly from the user’s saved library, with filters for phrases, words, numbers, or all entries.",
+      "Improved translation output structure with clearer separation between natural meaning and literal meaning where helpful.",
+      "Expanded usage notes to explain Lithuanian phrasing choices and highlight cases where English intuition can mislead learners.",
+      "Refined text-to-speech integration across the app, ensuring consistent audio controls in Translate, Library, and Training views.",
+      "Completed a broad UI overhaul focused on clarity, calmness, and long-session usability across Home, Library, Training, and Settings.",
+      "Standardised navigation layout so primary actions and tabs remain in consistent positions across screens.",
+      "Improved visual hierarchy, spacing, and touch targets to create a more predictable and mobile-friendly experience.",
+      "Added light, non-gamified learning support through optional daily recall surfaced on app open.",
+      "Positioned the app around a complete translate → save → practise learning loop rather than translation alone."
+    ]
+  },
+  {
     "version": "1.5.4-beta",
     "date": "2026-01-15",
     "changes": [

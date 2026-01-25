@@ -28,9 +28,7 @@ export default function EntryCard({
   const stableId = r?._id ?? r?.id ?? r?.key ?? null;
   const myIdx =
     stableId != null
-      ? rows.findIndex(
-          (x) => (x?._id ?? x?.id ?? x?.key ?? null) === stableId
-        )
+      ? rows.findIndex((x) => (x?._id ?? x?.id ?? x?.key ?? null) === stableId)
       : idx;
 
   const isEditing = editIdx === myIdx;
@@ -69,10 +67,9 @@ export default function EntryCard({
   return (
     <div
       className={cn(
-        "bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3",
-        lastAddedId && r._id === lastAddedId
-          ? "ring-2 ring-emerald-500/70"
-          : ""
+        // Surface + border (“felt, not seen”)
+        "z-card p-4 sm:p-5 flex flex-col gap-3",
+        lastAddedId && r._id === lastAddedId ? "ring-2 ring-emerald-500/60" : ""
       )}
     >
       {/* TOP ROW */}
@@ -80,14 +77,16 @@ export default function EntryCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span
-              className={`inline-flex items-center justify-center h-5 px-2 rounded-md text-xs ${
+              className={cn(
+                "inline-flex items-center justify-center h-5 px-2 rounded-md text-xs",
                 ragMap[rag]?.bg || "bg-zinc-700"
-              }`}
+              )}
+              title={showRagLabels ? ragMap[rag]?.text || "—" : undefined}
             >
               {showRagLabels ? ragMap[rag]?.text || "—" : rag}
             </span>
 
-            <div className="font-semibold truncate">
+            <div className="font-semibold truncate text-zinc-100">
               {r.Lithuanian}
             </div>
           </div>
@@ -103,8 +102,18 @@ export default function EntryCard({
           ) : null}
         </div>
 
+        {/* Play (keep semantic green, but calmer + consistent shape) */}
         <button
-          className="shrink-0 h-10 w-10 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-black font-bold"
+          type="button"
+          data-press
+          className="
+            shrink-0 h-10 w-10 rounded-2xl
+            bg-emerald-600/90 hover:bg-emerald-500
+            text-black font-bold
+            shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+            active:scale-[0.99] transition
+            flex items-center justify-center
+          "
           title="Play"
           aria-label={`Play '${r.Lithuanian || ""}'`}
           {...pressHandlers(r.Lithuanian || "")}
@@ -117,7 +126,7 @@ export default function EntryCard({
       {r.Usage && (
         <div
           className={cn(
-            "text-xs text-zinc-400",
+            "text-xs text-zinc-400 leading-snug",
             isExpanded ? "" : "line-clamp-2"
           )}
         >
@@ -128,29 +137,50 @@ export default function EntryCard({
 
       {/* NOTES */}
       {isExpanded && r.Notes && (
-        <div className="text-xs text-zinc-300 whitespace-pre-wrap border-t border-zinc-800 pt-2">
+        <div className="text-xs text-zinc-200 whitespace-pre-wrap border-t border-white/8 pt-3">
           {r.Notes}
         </div>
       )}
 
       {/* CONTROLS */}
-      <div className="flex items-center gap-2 pt-2">
+      <div className="flex flex-wrap items-center gap-2 pt-1">
         <button
-          className="text-xs px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700"
+          type="button"
+          data-press
+          className="
+            text-xs px-2.5 py-1.5 rounded-xl
+            bg-white/5 hover:bg-white/8
+            border border-white/10
+            text-zinc-300
+          "
           onClick={toggleExpanded}
         >
           {isExpanded ? T.hideDetails : T.showDetails}
         </button>
 
         <button
-          className="text-xs px-2 py-1 rounded-md bg-zinc-800 border border-zinc-700"
+          type="button"
+          data-press
+          className="
+            text-xs px-2.5 py-1.5 rounded-xl
+            bg-white/5 hover:bg-white/8
+            border border-white/10
+            text-zinc-300
+          "
           onClick={beginEdit}
         >
           {T.edit}
         </button>
 
         <button
-          className="text-xs px-2 py-1 rounded-md bg-red-800/40 border border-red-600"
+          type="button"
+          data-press
+          className="
+            text-xs px-2.5 py-1.5 rounded-xl
+            bg-red-500/10 hover:bg-red-500/15
+            border border-red-400/30
+            text-red-200
+          "
           onClick={() => remove(myIdx)}
         >
           {T.delete}
@@ -159,7 +189,7 @@ export default function EntryCard({
 
       {/* EDIT MODE UI */}
       {isEditing && (
-        <div className="border-t border-zinc-800 pt-3 space-y-2">
+        <div className="border-t border-white/8 pt-4 space-y-3">
           {[
             ["English", "text"],
             ["Lithuanian", "text"],
@@ -176,7 +206,7 @@ export default function EntryCard({
               {type === "textarea" ? (
                 <textarea
                   rows={3}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                  className="z-input rounded-2xl"
                   value={editDraft[key] || ""}
                   onChange={(e) =>
                     setEditDraft((d) => ({
@@ -187,7 +217,7 @@ export default function EntryCard({
                 />
               ) : (
                 <input
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2"
+                  className="z-input rounded-2xl"
                   value={editDraft[key] || ""}
                   onChange={(e) =>
                     setEditDraft((d) => ({
@@ -202,14 +232,23 @@ export default function EntryCard({
 
           <div className="flex items-center gap-2 pt-1">
             <button
-              className="px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700"
+              type="button"
+              data-press
+              className="z-btn z-btn-secondary px-3 py-2 rounded-xl"
               onClick={cancelEdit}
             >
               {T.cancel}
             </button>
 
             <button
-              className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-black font-semibold"
+              type="button"
+              data-press
+              className="
+                z-btn px-3 py-2 rounded-xl
+                bg-emerald-600/90 hover:bg-emerald-500
+                border border-emerald-300/20
+                text-black font-semibold
+              "
               onClick={commitSave}
             >
               {T.save}

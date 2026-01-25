@@ -96,38 +96,45 @@ export default function AddForm({
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSave}>
+    <form className="z-stack-lg" onSubmit={handleSave}>
       <div>
-        <label className="block text-xs mb-1">{T.english} *</label>
+        <label className="block text-xs text-zinc-400 mb-1">
+          {T.english} <span className="text-zinc-500">*</span>
+        </label>
         <input
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+          className="z-input"
           value={english}
           onChange={(e) => setEnglish(e.target.value)}
+          autoComplete="off"
         />
       </div>
 
       <div>
-        <label className="block text-xs mb-1">{T.lithuanian} *</label>
+        <label className="block text-xs text-zinc-400 mb-1">
+          {T.lithuanian} <span className="text-zinc-500">*</span>
+        </label>
         <input
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+          className="z-input"
           value={lithuanian}
           onChange={(e) => setLithuanian(e.target.value)}
+          autoComplete="off"
         />
       </div>
 
       <div>
-        <label className="block text-xs mb-1">{T.phonetic}</label>
+        <label className="block text-xs text-zinc-400 mb-1">{T.phonetic}</label>
         <input
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+          className="z-input"
           value={phonetic}
           onChange={(e) => setPhonetic(e.target.value)}
+          autoComplete="off"
         />
       </div>
 
       <div>
-        <label className="block text-xs mb-1">{T.category}</label>
+        <label className="block text-xs text-zinc-400 mb-1">{T.category}</label>
         <select
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+          className="z-input appearance-none"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
@@ -140,20 +147,20 @@ export default function AddForm({
       </div>
 
       <div>
-        <label className="block text-xs mb-1">{T.usage}</label>
+        <label className="block text-xs text-zinc-400 mb-1">{T.usage}</label>
         <textarea
           rows={3}
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+          className="z-input resize-none"
           value={usage}
           onChange={(e) => setUsage(e.target.value)}
         />
       </div>
 
       <div>
-        <label className="block text-xs mb-1">{T.notes}</label>
+        <label className="block text-xs text-zinc-400 mb-1">{T.notes}</label>
         <textarea
           rows={3}
-          className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+          className="z-input resize-none"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -162,9 +169,9 @@ export default function AddForm({
       {/* RAG + Actions row */}
       <div className="grid grid-cols-2 gap-3 items-end">
         <div>
-          <label className="block text-xs mb-1">{T.ragLabel}</label>
+          <label className="block text-xs text-zinc-400 mb-1">{T.ragLabel}</label>
           <select
-            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-2xl px-3 py-2 text-sm"
+            className="z-input appearance-none"
             value={rag}
             onChange={(e) => setRag(e.target.value)}
           >
@@ -174,10 +181,11 @@ export default function AddForm({
           </select>
         </div>
 
-        <div className="flex justify-end items-center gap-3 pt-5">
+        <div className="flex justify-end items-center gap-2 pt-5">
           <button
             type="button"
-            className="bg-zinc-800 text-zinc-200 rounded-full px-5 py-2 font-medium"
+            data-press
+            className="z-btn z-btn-quiet px-4 py-2 rounded-xl"
             onClick={() => {
               if (!isEdit) reset();
               onCancel?.();
@@ -188,7 +196,13 @@ export default function AddForm({
 
           <button
             type="submit"
-            className="bg-emerald-500 text-black rounded-full px-5 py-2 font-semibold disabled:opacity-60"
+            data-press
+            className={
+              "z-btn px-4 py-2 rounded-xl " +
+              "bg-emerald-600/90 hover:bg-emerald-500 " +
+              "border border-emerald-300/20 text-black font-semibold " +
+              (canSave ? "" : " z-disabled")
+            }
             disabled={!canSave}
           >
             {T.save}
@@ -196,7 +210,7 @@ export default function AddForm({
         </div>
       </div>
 
-      {/* ✅ Bottom breathing room — matches top spacing */}
+      {/* Bottom breathing room — matches top spacing */}
       <div className="h-10" />
     </form>
   );

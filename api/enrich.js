@@ -5,7 +5,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Vercel sometimes passes body as a string
   let body = req.body;
   if (!body || typeof body === "string") {
     try {
@@ -15,191 +14,217 @@ export default async function handler(req, res) {
     }
   }
 
-  const { lt, phonetics, en_natural, en_literal } = body;
+  const lt = typeof body.lt === "string" ? body.lt.trim() : "";
+  const phonetics = typeof body.phonetics === "string" ? body.phonetics.trim() : "";
+  const en_natural = typeof body.en_natural === "string" ? body.en_natural.trim() : "";
+  const en_literal = typeof body.en_literal === "string" ? body.en_literal.trim() : "";
 
-  if (!lt || !String(lt).trim()) {
+  if (!lt) {
     return res.status(400).json({ error: "Missing lt" });
-  }
-  if (!phonetics || !String(phonetics).trim()) {
-    return res.status(400).json({ error: "Missing phonetics" });
-  }
-  if (!en_natural || !String(en_natural).trim()) {
-    return res.status(400).json({ error: "Missing en_natural" });
-  }
-  if (!en_literal || !String(en_literal).trim()) {
-    return res.status(400).json({ error: "Missing en_literal" });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.error("OPENAI_API_KEY is not set");
     return res.status(500).json({ error: "Server config error" });
   }
 
   // ---------------------------------------------------------------------------
-  // SYSTEM PROMPT — ENRICH ONLY (ADDITIVE ONLY)
+  // AUTHORITATIVE CATEGORY LIST (LOCKED)
   // ---------------------------------------------------------------------------
-  const systemPrompt = `
-You are a language enrichment assistant for English speakers learning Lithuanian.
+  const CATEGORIES = [
+    "General",
+    "Travel",
+    "Food & Drink",
+    "Shopping",
+    "Health",
+    "Work",
+    "Housing",
+    "Bureaucracy",
+    "Emergency",
+    "Social",
+    "Romantic",
+    "Sexual",
+    "Parenting",
+    "Education",
+    "Numbers",
+    "Time & Dates",
+  ];
 
-Your task is NOT to translate.
-Your task is to ENRICH an existing, already-correct translation.
+  // ---------------------------------------------------------------------------
+  // ENRICHMENT PROMPT (USAGE + NOTES ONLY) — SPOKEN PRIORITY FIX
+  // ---------------------------------------------------------------------------
+  const enrichSystemPrompt = `
+You are a language enrichment engine for English speakers learning Lithuanian.
 
-You MUST always respond with a SINGLE valid JSON object.
-No extra text. No markdown. No explanations outside JSON.
+Your job is NOT to translate.
+Your job is to ENRICH an existing, already-correct translation.
+
+You MUST NOT change:
+- The Lithuanian phrase
+- The English meanings
+- The phonetics
+
+You ONLY add learning context.
 
 ────────────────────────────────
-INPUT CONTEXT (IMPORTANT)
+OUTPUT FORMAT (STRICT)
 ────────────────────────────────
+Return ONE valid JSON object, and NOTHING else.
 
-The user has already saved:
-• A Lithuanian phrase (correct and final)
-• Its English meaning
-• Its phonetic pronunciation
-
-You MUST NOT:
-• Change the Lithuanian phrase
-• Change the English meaning
-• Change phonetics
-• Re-translate anything
-
-You are ONLY adding learning context.
-
-────────────────────────────────
-OUTPUT JSON SHAPE (STRICT)
-────────────────────────────────
+Exact shape required:
 
 {
-  "Category": "",
   "Usage": "",
   "Notes": ""
 }
 
-All fields are REQUIRED.
-Never leave a field empty.
-Never use placeholder text.
-
-────────────────────────────────
-CATEGORY RULES
-────────────────────────────────
-
-Choose ONE category only from this list:
-
-• Social
-• Travel
-• Food
-• Work
-• Health
-• Emotions
-• Relationships
-• Daily life
-• Emergencies
-• Education
-• General
-
 Rules:
-• Pick the MOST useful category for a learner.
-• Do NOT overthink edge cases.
-• If nothing fits cleanly, use "General".
-• Never invent new categories.
+- No extra keys.
+- No missing keys.
+- No markdown.
+- Every value must be a non-empty string.
 
 ────────────────────────────────
 USAGE RULES
 ────────────────────────────────
-
-Usage must:
-• Be 1–2 sentences only.
-• Explain WHEN a Lithuanian speaker would actually use this phrase.
-• Describe real situations, not abstract ideas.
-
-Do NOT:
-• Explain grammar here
-• Say “used in everyday conversation”
-• Be vague or generic
+Usage must be 1–2 sentences:
+- Describe WHEN a Lithuanian speaker would actually use this phrase.
+- Describe realistic situations (not abstract or generic).
+- Avoid filler like “used in everyday conversation”.
+- Do NOT explain grammar here.
+- Do NOT assume gender unless the Lithuanian wording itself encodes it.
 
 ────────────────────────────────
-NOTES RULES
+NOTES RULES (LEARNER-FOCUSED)
 ────────────────────────────────
+Notes must be:
+- Multi-line
+- Clear spacing between ideas (blank lines between blocks)
+- Plain, natural British English
+- Focused on meaning, tone, and real usage
+- Free of formal grammar terminology (no tense names, cases, conjugation talk)
 
-Notes are for LEARNING, not linguistics.
+Notes should cover, when relevant:
+1) What the phrase is expressing (meaning + tone)
+2) What an English speaker might misunderstand
+3) Register or intensity (neutral, blunt, intimate, vulgar, etc.)
 
-Notes must:
-• Be multi-line
-• Have clear spacing between ideas
-• Be written in plain, human English
-• Assume the learner does NOT know grammar terms
+────────────────────────────────
+VARIANTS (VERY IMPORTANT — STRICT FORMAT)
+────────────────────────────────
+Include variants ONLY when there are genuinely commonly used, idiomatic alternatives that native Lithuanian speakers would realistically say in the same situation.
 
-Notes SHOULD include, when relevant:
-1. What the phrase is expressing or doing
-2. How this differs from what an English speaker might expect
-3. Related Lithuanian alternatives (ONLY if genuinely useful)
+Variants should reflect:
+- what people actually say in real life
+- differences in tone, vividness, or casualness
+- natural spoken Lithuanian, not artificial, formal, or clinical constructions
 
-WHEN INCLUDING ALTERNATIVES (IMPORTANT):
+CRITICAL SPOKEN-PRIORITY RULE:
+If the main Lithuanian phrase uses a more formal, clinical, or literary verb, and there exists a more commonly used SPOKEN alternative that native speakers would realistically use in everyday or intimate speech, that spoken alternative SHOULD be included as a variant.
 
-• Introduce the section with a short line such as:
-  “An alternative phrase is:” on its own line.
+Do NOT include variants simply to meet a quota.
+It is acceptable to include:
+- no variants
+- one strong, commonly used variant
+- two variants if both are genuinely natural
 
-• Then use THIS STRUCTURE exactly, preserving blank lines:
+Rarely include three, and ONLY if all are in common real use.
 
-Lithuanian phrase followed by its natural English meaning on the same line
-Phonetic pronunciation on the next line
+If variants ARE included, they MUST follow this exact structure:
 
-(blank line)
+Variants:
+- Lithuanian phrase — natural English meaning
+  phonetics
 
-A short explanation of how this alternative differs in meaning or usage.
+- Lithuanian phrase — natural English meaning
+  phonetics
 
-• Do NOT merge alternatives into a single paragraph.
-• Do NOT remove blank lines.
-• Do NOT include alternatives for completeness.
-• If no meaningful alternatives exist, OMIT the section entirely.
+STRICT RULES FOR VARIANTS:
+- Lithuanian phrase and English meaning MUST be on the SAME line.
+- Phonetics MUST be on the NEXT line directly underneath the Lithuanian phrase.
+- Phonetics apply ONLY to the Lithuanian phrase above them.
+- Do NOT put phonetics in parentheses.
+- Do NOT put explanations inside the variant lines.
+- Do NOT include commentary inside the Variants block.
 
-Explain differences simply:
-• Do NOT say “genitive”, “dative”, “reflexive”, etc.
-• Instead explain meaning in everyday language
+After the Variants block (if needed), you MAY add 1–2 sentences explaining:
+- Differences in tone
+- Vividness vs neutrality
+- How common each variant is in real speech
+
+If there are NO useful variants:
+- Include this exact sentence somewhere in Notes:
+  “No useful variants for this phrase.”
 
 ────────────────────────────────
 ABSOLUTE BANS
 ────────────────────────────────
-
-• No placeholders
-• No boilerplate tips
-• No repeated generic advice
-• No “you may also hear…”, unless followed by real examples
-• No teaching grammar terminology
-• No markdown
-• No emojis
-• No commentary outside JSON
-
-────────────────────────────────
-QUALITY BAR
-────────────────────────────────
-
-Write as if:
-• This will appear in a learning app
-• The learner will read it repeatedly
-• The notes may later be used to generate quizzes
-
-Clarity > completeness
-Precision > verbosity
-Omission > filler
+- No placeholders
+- No boilerplate advice
+- No emojis
+- No markdown formatting
+- No explanations outside the JSON object
+- No re-translation of the phrase
 `.trim();
 
-  const userMessage = `
-LITHUANIAN (FINAL, DO NOT CHANGE):
-${String(lt).trim()}
+  // ---------------------------------------------------------------------------
+  // CATEGORY CLASSIFICATION PROMPT (INTENT-BASED, DOMINANT RULES)
+  // ---------------------------------------------------------------------------
+  const categorySystemPrompt = `
+You are a strict intent classifier.
 
-PHONETICS (FINAL, DO NOT CHANGE):
-${String(phonetics).trim()}
+Your task:
+- Read the Lithuanian phrase and its English meanings.
+- Choose EXACTLY ONE category from the allowed list.
 
-ENGLISH MEANING (NATURAL, FINAL, DO NOT CHANGE):
-${String(en_natural).trim()}
+Allowed categories:
+${CATEGORIES.join(", ")}
 
-ENGLISH MEANING (LITERAL, FINAL, DO NOT CHANGE):
-${String(en_literal).trim()}
+CRITICAL DOMINANCE RULES (MUST FOLLOW):
+- If the phrase expresses sexual arousal, desire, sexual activity, or being "turned on", the category MUST be "Sexual".
+- Sexual intent OVERRIDES Romantic, Social, and General.
+- Romantic is ONLY for emotional bonding, affection, or love without sexual arousal.
+- Social is for greetings, small talk, arguments, or casual interaction without intimacy.
+- Use General ONLY if no other category clearly applies.
+
+Return ONLY this JSON:
+{ "Category": "<one category from the list>" }
+
+Rules:
+- Category must match one of the allowed values EXACTLY.
+- No explanation.
+- No extra keys.
+- No text outside JSON.
+`.trim();
+
+  const enrichUser = `
+LITHUANIAN:
+${lt}
+
+PHONETICS:
+${phonetics || "(not provided)"}
+
+ENGLISH (NATURAL):
+${en_natural || "(not provided)"}
+
+ENGLISH (LITERAL):
+${en_literal || "(not provided)"}
+`.trim();
+
+  const categoryUser = `
+LITHUANIAN:
+${lt}
+
+ENGLISH (NATURAL):
+${en_natural || "(not provided)"}
+
+ENGLISH (LITERAL):
+${en_literal || "(not provided)"}
 `.trim();
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // 1) Generate enrichment (Usage + Notes)
+    const enrichResp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -209,43 +234,61 @@ ${String(en_literal).trim()}
         model: "gpt-4.1-mini",
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
+          { role: "system", content: enrichSystemPrompt },
+          { role: "user", content: enrichUser },
         ],
         temperature: 0.2,
-        max_tokens: 450,
+        max_tokens: 420,
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("OpenAI API error:", response.status, errText);
-      return res.status(500).json({ error: "OpenAI API error" });
+    const enrichJson = await enrichResp.json();
+    const enrichRaw = enrichJson?.choices?.[0]?.message?.content;
+    const enrichPayload = JSON.parse(enrichRaw);
+
+    const Usage = String(enrichPayload?.Usage || "").trim();
+    const Notes = String(enrichPayload?.Notes || "").trim();
+
+    if (!Usage || !Notes) {
+      throw new Error("Incomplete enrichment payload");
     }
 
-    const json = await response.json();
-    const raw = json?.choices?.[0]?.message?.content;
+    // 2) Classify category (translation intent only)
+    const catResp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: categorySystemPrompt },
+          { role: "user", content: categoryUser },
+        ],
+        temperature: 0.0,
+        max_tokens: 60,
+      }),
+    });
 
-    let payload;
-    try {
-      payload = typeof raw === "string" ? JSON.parse(raw) : raw;
-    } catch {
-      console.error("Bad JSON from OpenAI:", raw);
-      return res.status(500).json({ error: "Bad JSON from OpenAI" });
-    }
+    const catJson = await catResp.json();
+    const catRaw = catJson?.choices?.[0]?.message?.content;
+    const catPayload = JSON.parse(catRaw);
 
-    const Category = String(payload?.Category || "").trim();
-    const Usage = String(payload?.Usage || "").trim();
-    const Notes = String(payload?.Notes || "").trim();
-
-    if (!Category || !Usage || !Notes) {
-      console.error("Incomplete enrich payload:", payload);
-      return res.status(500).json({ error: "Incomplete enrichment" });
+    let Category = String(catPayload?.Category || "").trim();
+    if (!CATEGORIES.includes(Category)) {
+      Category = "General";
     }
 
     return res.status(200).json({ Category, Usage, Notes });
   } catch (err) {
-    console.error("Enrich function error:", err);
-    return res.status(500).json({ error: "Enrichment failed" });
+    console.error("Enrich error:", err);
+
+    return res.status(200).json({
+      Category: "General",
+      Usage: "Used when a Lithuanian speaker would naturally say this in context.",
+      Notes: "Enrichment could not be generated this time.",
+    });
   }
 }

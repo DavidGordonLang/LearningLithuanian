@@ -38,7 +38,8 @@ export default function UserGuideModal({
   }
 
   function Icon({ type }) {
-    const cls = "w-12 h-12 text-emerald-400 mx-auto mb-4";
+    // keep icons semantic + calm (no glow, no oversized colour)
+    const cls = "w-12 h-12 text-emerald-400/90 mx-auto mb-4";
 
     if (type === "speech") {
       return (
@@ -107,7 +108,8 @@ export default function UserGuideModal({
   return (
     <div
       className="
-        fixed inset-0 z-[11000] bg-black/60 backdrop-blur-sm
+        fixed inset-0 z-[11000]
+        bg-black/60 backdrop-blur-sm
         flex items-start justify-center px-4
         pb-[calc(env(safe-area-inset-bottom)+12px)]
       "
@@ -122,9 +124,7 @@ export default function UserGuideModal({
       <div
         className="
           w-full max-w-2xl
-          bg-zinc-900 border border-zinc-800
-          rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.25)]
-          overflow-hidden flex flex-col
+          z-card overflow-hidden flex flex-col
         "
         style={{
           maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${topOffset}px - 24px)`,
@@ -132,19 +132,25 @@ export default function UserGuideModal({
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800">
+        <div className="sticky top-0 z-10 z-inset border-b border-white/10">
           <div className="flex items-center justify-between px-5 py-4">
-            <h2 className="text-xl font-bold">User Guide</h2>
+            <div className="min-w-0">
+              <h2 className="z-title text-[18px] sm:text-[20px]">User Guide</h2>
+              <div className="z-helper mt-0.5">
+                {loading
+                  ? "Loading…"
+                  : slides.length
+                  ? `Step ${Math.min(index + 1, slides.length)} of ${slides.length}`
+                  : " "}
+              </div>
+            </div>
 
             {!firstLaunch && (
               <button
-                className="
-                  bg-zinc-800 text-zinc-200 rounded-full
-                  px-4 py-1.5 text-sm font-medium
-                  hover:bg-zinc-700 active:bg-zinc-600
-                  select-none
-                "
+                type="button"
+                className="z-btn z-btn-secondary px-4 py-2 text-[13px]"
                 onClick={onClose}
+                data-press
               >
                 Close
               </button>
@@ -153,84 +159,93 @@ export default function UserGuideModal({
         </div>
 
         <div className="p-5 overflow-y-auto">
-          {loading && <div className="text-sm text-zinc-400">Loading…</div>}
+          {loading && <div className="z-subtitle">Loading…</div>}
 
           {!loading && slides.length === 0 && (
-            <div className="text-sm text-zinc-400">
-              User guide content not found.
-            </div>
+            <div className="z-subtitle">User guide content not found.</div>
           )}
 
           {!loading && current && (
-            <div className="text-center select-none">
-              <Icon type={current.icon} />
+            <div className="select-none">
+              <div className="text-center">
+                <Icon type={current.icon} />
 
-              <h3 className="text-lg font-semibold mb-1">{current.title}</h3>
+                <h3 className="text-[16px] sm:text-[17px] font-semibold text-zinc-100 mb-1">
+                  {current.title}
+                </h3>
 
-              {current.subtitle ? (
-                <p className="text-sm text-zinc-400 mb-4">{current.subtitle}</p>
-              ) : null}
+                {current.subtitle ? (
+                  <p className="z-subtitle mb-4">{current.subtitle}</p>
+                ) : (
+                  <div className="mb-4" />
+                )}
+              </div>
 
-              <ul className="text-left list-disc list-inside space-y-1 text-sm text-zinc-300 mb-4">
-                {(current.points || []).map((p, i) => (
-                  <li key={i}>{p}</li>
-                ))}
-              </ul>
+              <div className="z-inset px-4 py-3">
+                <ul className="list-disc list-inside space-y-1 text-[13px] sm:text-[14px] text-zinc-200">
+                  {(current.points || []).map((p, i) => (
+                    <li key={i}>{p}</li>
+                  ))}
+                </ul>
 
-              {current.linkUrl && current.linkText && (
-                <a
-                  href={current.linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="
-                    inline-flex items-center justify-center
-                    bg-emerald-500 text-black rounded-full
-                    px-5 py-2 text-sm font-semibold
-                    hover:bg-emerald-400 active:bg-emerald-300
-                    select-none
-                    mb-2
-                  "
-                >
-                  {current.linkText}
-                </a>
-              )}
+                {current.linkUrl && current.linkText && (
+                  <div className="pt-4">
+                    <a
+                      href={current.linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="
+                        inline-flex items-center justify-center
+                        rounded-2xl px-4 py-2 text-[13px] font-semibold
+                        bg-emerald-500 text-black
+                        hover:bg-emerald-400 active:bg-emerald-300
+                        transition select-none
+                      "
+                      data-press
+                    >
+                      {current.linkText}
+                    </a>
+                  </div>
+                )}
+              </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center justify-between gap-3 mt-5">
                 <button
-                  className="
-                    bg-zinc-800 text-zinc-200 rounded-full
-                    px-5 py-2 text-sm font-medium
-                    hover:bg-zinc-700 active:bg-zinc-600
-                    disabled:opacity-40 select-none
-                  "
+                  type="button"
+                  className="z-btn z-btn-secondary px-5 py-2"
                   onClick={prev}
                   disabled={index === 0}
+                  data-press
                 >
                   Prev
                 </button>
 
                 {index < slides.length - 1 ? (
                   <button
+                    type="button"
                     className="
-                      bg-emerald-500 text-black rounded-full
-                      px-5 py-2 font-semibold shadow
+                      rounded-2xl px-5 py-2 text-[14px] font-semibold
+                      bg-emerald-500 text-black
                       hover:bg-emerald-400 active:bg-emerald-300
-                      select-none
+                      transition select-none
                     "
                     onClick={next}
+                    data-press
                   >
                     Next
                   </button>
                 ) : (
                   <button
+                    type="button"
                     className="
-                      bg-emerald-500 text-black rounded-full
-                      px-5 py-2 font-semibold shadow
+                      rounded-2xl px-5 py-2 text-[14px] font-semibold
+                      bg-emerald-500 text-black
                       hover:bg-emerald-400 active:bg-emerald-300
-                      select-none
+                      transition select-none
                     "
                     onClick={finish}
+                    data-press
                   >
                     Finish
                   </button>
@@ -238,7 +253,7 @@ export default function UserGuideModal({
               </div>
 
               {firstLaunch && (
-                <p className="text-xs text-zinc-500 mt-4">
+                <p className="z-helper mt-4">
                   You can reopen this anytime from Settings.
                 </p>
               )}
