@@ -59,6 +59,13 @@ function PlayButton({ text, playText, blurActiveInput }) {
   const start = (e) => {
     if (e?.button != null && e.button !== 0) return;
 
+    // Capture the pointer so small finger drift doesn't cancel long-press
+    try {
+      if (e?.currentTarget?.setPointerCapture && e?.pointerId != null) {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
+    } catch {}
+
     blurActiveInput?.();
     longFiredRef.current = false;
     setPressing(true);
@@ -70,7 +77,14 @@ function PlayButton({ text, playText, blurActiveInput }) {
     }, LONG_PRESS_MS);
   };
 
-  const finish = () => {
+  const finish = (e) => {
+    // Release pointer capture (safe no-op if not captured)
+    try {
+      if (e?.currentTarget?.releasePointerCapture && e?.pointerId != null) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+
     setPressing(false);
     clearTimer();
   };
@@ -153,14 +167,21 @@ export default function LibraryView({
   // Context menu / row actions
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const onDoc = (e) => {
       if (!menuOpenId) return;
+
       const btn = menuBtnRef.current;
       if (btn && btn.contains(e.target)) return;
+
+      const menu = menuRef.current;
+      if (menu && menu.contains(e.target)) return;
+
       setMenuOpenId(null);
     };
+
     document.addEventListener("click", onDoc, true);
     document.addEventListener("touchstart", onDoc, true);
     return () => {
@@ -364,6 +385,7 @@ export default function LibraryView({
 
                   {isMenuOpen ? (
                     <div
+                      ref={menuRef}
                       className="
                         absolute right-0 mt-2 w-44
                         z-[40]
@@ -377,7 +399,8 @@ export default function LibraryView({
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setMenuOpenId(null);
                           onEditRow?.(id);
                         }}
@@ -388,7 +411,8 @@ export default function LibraryView({
                       <button
                         type="button"
                         className="w-full text-left px-4 py-3 text-sm text-red-300 hover:bg-red-500/10"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setMenuOpenId(null);
                           removePhrase?.(id);
                         }}
