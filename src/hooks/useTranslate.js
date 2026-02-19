@@ -12,6 +12,7 @@ const EMPTY_RESULT = {
   enLiteral: "",
   enNatural: "",
   phonetics: "",
+  phoneticsIpa: "",
   usageOut: "",
   notesOut: "",
   categoryOut: DEFAULT_CATEGORY,
@@ -65,6 +66,7 @@ export default function useTranslate({ rows, tone, gender, showToast } = {}) {
         const lit = String(data.en_literal || "").trim();
         const nat = String(data.en_natural || "").trim();
         const pho = String(data.phonetics || "").trim();
+        const ipa = String(data.phonetics_ipa || "").trim();
 
         const inferred =
           areNearDuplicatesText(normalise(cleaned), normalise(lt)) ? "lt" : "en";
@@ -74,6 +76,7 @@ export default function useTranslate({ rows, tone, gender, showToast } = {}) {
           enLiteral: lit,
           enNatural: nat || lit,
           phonetics: pho,
+          phoneticsIpa: ipa,
           usageOut: "",
           notesOut: "",
           categoryOut: DEFAULT_CATEGORY,
