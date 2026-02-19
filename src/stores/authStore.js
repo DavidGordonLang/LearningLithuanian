@@ -1,6 +1,7 @@
 // src/stores/authStore.js
 import { create } from "zustand";
 import { supabase } from "../supabaseClient";
+import { useSettingsStore } from "./settingsStore";
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
@@ -33,6 +34,12 @@ export const useAuthStore = create((set, get) => ({
       user: session?.user ?? null,
       loading: false,
     });
+
+    // Load per-user settings (safe/no-op if already loaded)
+    const uid = session?.user?.id;
+    if (uid) {
+      useSettingsStore.getState().ensureLoadedForUser(uid);
+    }
   },
 
   _clearSession: () => {
@@ -41,6 +48,9 @@ export const useAuthStore = create((set, get) => ({
       user: null,
       loading: false,
     });
+
+    // Reset settings to defaults on logout
+    useSettingsStore.getState().reset();
   },
 
   signInWithGoogle: async () => {
@@ -72,6 +82,8 @@ export const useAuthStore = create((set, get) => ({
         session: null,
         loading: false,
       });
+
+      useSettingsStore.getState().reset();
     }
   },
 }));
