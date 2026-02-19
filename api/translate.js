@@ -45,7 +45,7 @@ If input is ENGLISH:
 - Translate into natural, everyday Lithuanian (native usage).
 
 If input is LITHUANIAN:
-- Keep the Lithuanian text EXACTLY as provided (do not rewrite it).
+- Keep the Lithuanuanian text EXACTLY as provided (do not rewrite it).
 - Provide the correct English meaning.
 
 Preserve intent, tone, and implied meaning — not English word order.
@@ -60,6 +60,7 @@ Exact shape required:
 {
   "lt": "Lithuanian phrase",
   "phonetics": "English-style pronunciation",
+  "phonetics_ipa": "IPA pronunciation",
   "en_literal": "Literal English meaning",
   "en_natural": "Natural English meaning"
 }
@@ -73,6 +74,7 @@ Rules:
 For LITHUANIAN input:
 - "lt" MUST be the original Lithuanian input unchanged.
 - "phonetics" MUST still be provided for that Lithuanuanian.
+- "phonetics_ipa" MUST still be provided for that Lithuanuanian.
 - "en_literal" and "en_natural" must both be correct English.
 
 ────────────────────────────────
@@ -121,10 +123,6 @@ SEXUAL MEANING (PRESERVE, DON’T INVENT)
 If the English clearly implies sexual meaning, Lithuanian must preserve it.
 Do NOT sanitise sexual meaning into neutral “like/enjoy” wording.
 
-Examples:
-- “turns me on” must be sexual arousal in Lithuanian, not “I like him”.
-- “slept with (someone)” meaning sex must be unambiguous in Lithuanian (avoid ambiguous literal sleeping).
-
 If English is NOT sexual, do NOT introduce sexual wording.
 
 ────────────────────────────────
@@ -143,22 +141,18 @@ Intent lock for dismissal profanity:
 
 Hard preference for “fuck off”:
 - Translate “fuck off” as a common native dismissal profanity such as “Atsipisk” or “Atsiknisk”.
-- Do NOT invent alternatives or output non-standard forms (e.g., made-up imperatives).
+- Do NOT invent alternatives or output non-standard forms.
 - If you choose to include “nuo manęs”, only do so when the English implies “off me”.
 
 ────────────────────────────────
 IMPERATIVES MUST SOUND NATIVE
 ────────────────────────────────
 Commands must match real-life Lithuanian usage for the situation.
-Avoid odd literal verbs that sound unnatural for the intended action (especially physical “get off / hands off” situations).
+Avoid odd literal verbs that sound unnatural for the intended action.
 
 Physical imperative gate:
-- Only use physical-contact imperatives (e.g., “nulipk”, “trauktis”, “patrauk rankas”) when the English explicitly refers to physical contact with the speaker’s body (e.g., “get off me”, “hands off me”).
+- Only use physical-contact imperatives when the English explicitly refers to physical contact with the speaker’s body (e.g., “get off me”, “hands off me”).
 - Do NOT use physical-contact imperatives for dismissal-only phrases like “fuck off”.
-
-For “get off me” meaning unwanted physical contact, pressure, or touching, use Lithuanian commands that express stopping physical contact, not vertical movement.
-Avoid verbs that imply climbing or descending (e.g., “nusileisti”).
-Prefer commands a Lithuanian would actually say in this situation.
 
 ────────────────────────────────
 TU VS TAU (KEEP THIS RULE)
@@ -195,14 +189,24 @@ Preserve the user’s punctuation exactly.
 ────────────────────────────────
 PHONETICS (ENGLISH-READER FRIENDLY)
 ────────────────────────────────
+This is "phonetics" (NOT IPA):
 - English-reader friendly, hyphenated syllables.
-- No IPA.
+- No IPA characters.
 - No Lithuanian letters/diacritics in phonetics.
 - Must remain faithful to Lithuanian sounds and endings (don’t drop endings).
 
 Examples:
 - Labas → lah-bahs
 - Laba diena → lah-bah dyeh-nah
+
+────────────────────────────────
+IPA (OFFICIAL)
+────────────────────────────────
+This is "phonetics_ipa":
+- Must be IPA for Lithuanian pronunciation.
+- Use proper IPA symbols (including diacritics if needed).
+- Keep it as a single IPA string (no explanation).
+- Include stress markers if appropriate.
 
 ────────────────────────────────
 ENGLISH OUTPUT RULES
@@ -249,7 +253,7 @@ ENGLISH OUTPUT RULES
           { role: "user", content: text.trim() },
         ],
         temperature: 0.15,
-        max_tokens: 200,
+        max_tokens: 260,
       }),
     });
 
@@ -270,18 +274,19 @@ ENGLISH OUTPUT RULES
       return res.status(500).json({ error: "Bad JSON from OpenAI" });
     }
 
-    const { lt, phonetics, en_literal, en_natural } = payload || {};
+    const { lt, phonetics, phonetics_ipa, en_literal, en_natural } = payload || {};
 
-    if (!lt || !phonetics || !en_literal || !en_natural) {
+    if (!lt || !phonetics || !phonetics_ipa || !en_literal || !en_natural) {
       console.error("Incomplete translation payload:", payload);
       return res.status(500).json({ error: "Incomplete translation" });
     }
 
     return res.status(200).json({
-      lt: lt.trim(),
-      phonetics: phonetics.trim(),
-      en_literal: en_literal.trim(),
-      en_natural: en_natural.trim(),
+      lt: String(lt).trim(),
+      phonetics: String(phonetics).trim(),
+      phonetics_ipa: String(phonetics_ipa).trim(),
+      en_literal: String(en_literal).trim(),
+      en_natural: String(en_natural).trim(),
     });
   } catch (err) {
     console.error("Translation function error:", err);
