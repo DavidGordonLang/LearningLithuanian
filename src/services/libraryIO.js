@@ -12,6 +12,8 @@ export async function mergeRows(newRows, { setRows, normalizeRag, genId, nowTs }
       English: r.English?.trim() || "",
       Lithuanian: r.Lithuanian?.trim() || "",
       Phonetic: r.Phonetic?.trim() || "",
+      // ✅ Preserve IPA if present
+      PhoneticIPA: r.PhoneticIPA?.trim() || "",
       Category: r.Category?.trim() || "",
       Usage: r.Usage?.trim() || "",
       Notes: r.Notes?.trim() || "",
@@ -27,25 +29,30 @@ export async function mergeRows(newRows, { setRows, normalizeRag, genId, nowTs }
           amb: { ok: 0, bad: 0 },
           grn: { ok: 0, bad: 0 },
         },
+      // Preserve lifecycle flags if present (safe defaults)
+      Source: r.Source || "user",
+      Touched: r.Touched === false ? false : true,
+      _deleted: r._deleted === true,
+      _deleted_ts: r._deleted_ts ?? null,
+      contentKey: r.contentKey || r.content_key || "",
     }))
     .filter((r) => r.English || r.Lithuanian);
 
   setRows((prev) => [...cleaned, ...prev]);
 }
 
-export async function mergeStarterRows(newRows, {
-  setRows,
-  normalizeRag,
-  makeLtKey,
-  genId,
-  nowTs,
-}) {
+export async function mergeStarterRows(
+  newRows,
+  { setRows, normalizeRag, makeLtKey, genId, nowTs }
+) {
   const cleaned = newRows
     .map((r) => {
       const base = {
         English: r.English?.trim() || "",
         Lithuanian: r.Lithuanian?.trim() || "",
         Phonetic: r.Phonetic?.trim() || "",
+        // ✅ Preserve IPA if present in starter packs (or future packs)
+        PhoneticIPA: r.PhoneticIPA?.trim() || "",
         Category: r.Category?.trim() || "",
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
@@ -63,6 +70,8 @@ export async function mergeStarterRows(newRows, {
           },
         Source: "starter",
         Touched: false,
+        _deleted: r._deleted === true,
+        _deleted_ts: r._deleted_ts ?? null,
       };
 
       const ck = makeLtKey(base);
@@ -96,10 +105,7 @@ export async function mergeStarterRows(newRows, {
   });
 }
 
-export async function fetchStarter(kind, {
-  STARTERS,
-  mergeStarterRowsImpl,
-}) {
+export async function fetchStarter(kind, { STARTERS, mergeStarterRowsImpl }) {
   const url = STARTERS?.[kind];
   if (!url) return alert("Starter not found");
 
