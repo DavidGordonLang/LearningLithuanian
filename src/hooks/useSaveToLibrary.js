@@ -1,18 +1,18 @@
 // src/hooks/useSaveToLibrary.js
-import { DEFAULT_CATEGORY } from "../constants/categories";
+import { useCallback } from "react";
 
-function mapEnrichCategoryToApp(category) {
-  const c = String(category || "").trim();
+// Match phraseStore contentKey logic (diacritics removed + alnum only)
+function normalizeForKey(input = "") {
+  return String(input)
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
 
-  const map = {
-    Food: "Food & Drink",
-    Emergencies: "Emergency",
-    "Daily life": "General",
-    Emotions: "General",
-    Relationships: "Social",
-  };
-
-  return map[c] || c || DEFAULT_CATEGORY;
+function buildContentKeyFromLt(lt) {
+  return normalizeForKey(lt || "");
 }
 
 export default function useSaveToLibrary({
@@ -26,118 +26,85 @@ export default function useSaveToLibrary({
   nowTs,
   showToast,
 } = {}) {
-  async function enrichSavedRowSilently(row) {
-    try {
-      if (!row?._id) return;
-
-      if (
-        (row.Usage && String(row.Usage).trim()) ||
-        (row.Notes && String(row.Notes).trim())
-      ) {
-        return;
-      }
-
-      const res = await fetch("/api/enrich", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lt: row.Lithuanian,
-          phonetics: row.Phonetic,
-          en_natural: row.EnglishNatural || row.English || "",
-          en_literal: row.EnglishLiteral || row.English || "",
-        }),
-      });
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-      const CategoryRaw = String(data?.Category || "").trim();
-      const Usage = String(data?.Usage || "").trim();
-      const Notes = String(data?.Notes || "").trim();
-
-      if (!CategoryRaw || !Usage || !Notes) return;
-
-      const Category = mapEnrichCategoryToApp(CategoryRaw);
-
-      setRows?.((prev) =>
-        prev.map((r) =>
-          r._id === row._id
-            ? {
-                ...r,
-                Category: Category || r.Category || DEFAULT_CATEGORY,
-                Usage,
-                Notes,
-              }
-            : r
-        )
-      );
-    } catch (err) {
-      console.error("Enrich failed (silent):", err);
-    }
-  }
-
-  function handleSaveToLibrary() {
+  const handleSaveToLibrary = useCallback(() => {
     blurTextarea?.();
 
     if (!canSave) return;
 
-    const rawInput = String(input || "").trim();
-    if (!rawInput) return;
+    const lt = String(result?.ltOut || "").trim();
+    const enLit = String(result?.enLiteral || "").trim();
+    const enNat = String(result?.enNatural || "").trim();
+    const phoEn = String(result?.phonetics || "").trim();
+    const phoIpa = String(result?.phoneticsIpa || "").trim();
 
-    const englishToSave = String(result?.enNatural || result?.enLiteral || "").trim();
-    const lithuanianToSave = String(result?.ltOut || "").trim();
-    if (!englishToSave || !lithuanianToSave) return;
+    if (!lt) return;
 
-    const already = (rows || []).some((r) => {
-      const en = String(r.EnglishNatural || r.EnglishLiteral || r.English || "").trim();
-      const lt = String(r.Lithuanian || "").trim();
-      return (
-        en.toLowerCase() === englishToSave.toLowerCase() &&
-        lt.toLowerCase() === lithuanianToSave.toLowerCase()
-      );
-    });
+    const now = typeof nowTs === "function" ? nowTs() : Date.now();
+    const id = typeof genId === "function" ? genId() : Math.random().toString(36).slice(2);
 
-    if (already) {
-      showToast?.("Already in library");
-      return;
-    }
+    const sourceLang = result?.sourceLang === "lt" ? "lt" : "en";
 
-    const row = {
-      English: englishToSave,
-      EnglishOriginal: result?.sourceLang === "en" ? rawInput : englishToSave,
-      EnglishLiteral: String(result?.enLiteral || "").trim(),
-      EnglishNatural: englishToSave,
+    const newRow = {
+      _id: id,
+      _ts: now,
 
-      Lithuanian: lithuanianToSave,
-      LithuanianOriginal:
-        result?.sourceLang === "lt" ? rawInput : lithuanianToSave,
-
-      Phonetic: String(result?.phonetics || ""),
-
-      Category: DEFAULT_CATEGORY,
-      Usage: "",
-      Notes: "",
-
-      SourceLang: result?.sourceLang,
-
-      "RAG Icon": "🟠",
       Sheet: "Phrases",
+      Category: result?.categoryOut || "General",
 
-      _id: genId?.(),
-      _ts: nowTs?.(),
+      // Core content
+      Lithuanian: lt,
+      English: enNat || enLit || String(input || "").trim(),
+
+      // Keep originals (you already use these fields in some rows)
+      SourceLang: sourceLang,
+      EnglishLiteral: enLit || (enNat || ""),
+      EnglishNatural: enNat || (enLit || ""),
+      EnglishOriginal: String(input || "").trim(),
+      LithuanianOriginal: lt,
+
+      // Phonetics (both)
+      Phonetic: phoEn,
+      PhoneticIPA: phoIpa,
+
+      // Enrichment placeholders (we’ll fill later)
+      Usage: String(result?.usageOut || "").trim(),
+      Notes: String(result?.notesOut || "").trim(),
+
+      // Default RAG + stats
+      "RAG Icon": "🟠",
       _qstat: {
         red: { ok: 0, bad: 0 },
         amb: { ok: 0, bad: 0 },
         grn: { ok: 0, bad: 0 },
       },
+
+      // Ownership / lifecycle
+      Source: "user",
+      Touched: true,
+      _deleted: false,
+      _deleted_ts: null,
+
+      // Identity key (used by sync/merge logic)
+      contentKey: buildContentKeyFromLt(lt),
     };
 
-    setRows?.((prev) => [row, ...prev]);
-    showToast?.("Entry saved to library");
-    enrichSavedRowSilently(row);
-  }
+    // Insert at top (latest first)
+    setRows?.((prev) => {
+      const arr = Array.isArray(prev) ? prev : [];
+      return [newRow, ...arr];
+    });
 
-  return {
-    handleSaveToLibrary,
-  };
+    showToast?.("Saved to library");
+  }, [
+    blurTextarea,
+    canSave,
+    genId,
+    input,
+    nowTs,
+    result,
+    setRows,
+    showToast,
+  ]);
+
+  return { handleSaveToLibrary };
 }
