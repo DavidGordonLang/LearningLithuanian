@@ -61,10 +61,7 @@ export function mergeRows(localRows = [], incomingRows = []) {
     // ----- Both starter -----
     if (!existingIsUser && !incomingIsUser) {
       // Keep the newer starter (rare, but deterministic)
-      const chosen =
-        (incoming._ts || 0) > (existing._ts || 0)
-          ? incoming
-          : existing;
+      const chosen = (incoming._ts || 0) > (existing._ts || 0) ? incoming : existing;
 
       byKey.set(key, chosen);
       continue;
@@ -78,6 +75,8 @@ export function mergeRows(localRows = [], incomingRows = []) {
       existing.Usage !== incoming.Usage ||
       existing.Notes !== incoming.Notes ||
       existing.Phonetic !== incoming.Phonetic ||
+      // ✅ include IPA
+      existing.PhoneticIPA !== incoming.PhoneticIPA ||
       existing.Category !== incoming.Category ||
       existing["RAG Icon"] !== incoming["RAG Icon"];
 
@@ -92,9 +91,7 @@ export function mergeRows(localRows = [], incomingRows = []) {
 
     // Deterministic resolution for now: newer wins
     const chosen =
-      (incoming._ts || 0) > (existing._ts || 0)
-        ? incoming
-        : existing;
+      (incoming._ts || 0) > (existing._ts || 0) ? incoming : existing;
 
     byKey.set(key, chosen);
   }
