@@ -156,6 +156,8 @@ function computeCompletenessScore(r) {
   if (isMeaningful(r?.Lithuanian)) score += 3;
   if (isMeaningful(r?.English)) score += 1;
   if (isMeaningful(r?.Phonetic)) score += 1;
+  // ✅ IPA is real content; preserve it and treat it as meaningful
+  if (isMeaningful(r?.PhoneticIPA)) score += 1;
   if (isMeaningful(r?.Category)) score += 1;
   if (isMeaningful(r?.Usage)) score += 2;
   if (isMeaningful(r?.Notes)) score += 2;
@@ -288,6 +290,8 @@ function mergePair(localIn, cloudIn) {
     "English",
     "Lithuanian",
     "Phonetic",
+    // ✅ preserve IPA through merges
+    "PhoneticIPA",
     "Category",
     "Usage",
     "Notes",
@@ -349,7 +353,8 @@ function mergePair(localIn, cloudIn) {
         local: localRow,
         cloud: cloudRow,
         fields: fieldConflicts,
-        reason: "Both sides have meaningful differences in one or more fields (near-simultaneous edits).",
+        reason:
+          "Both sides have meaningful differences in one or more fields (near-simultaneous edits).",
       },
     };
   }
