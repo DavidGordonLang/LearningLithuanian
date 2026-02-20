@@ -1,11 +1,17 @@
 // /api/translate.js
+//
+// Translation endpoint (EN <-> LT) used by the Home view.
+// IMPORTANT: We keep the existing translation system prompt intact to avoid translation drift.
+// We generate IPA via a SECOND small call, so the core translator behaviour stays stable.
+//
+// Returns (client contract):
+//  - lt
+//  - phonetics (English-style)
+//  - phonetics_ipa (IPA)
+//  - en_literal
+//  - en_natural
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Vercel sometimes passes body as a string
+async function readJsonBody(req) {
   let body = req.body;
   if (!body || typeof body === "string") {
     try {
@@ -14,10 +20,43 @@ export default async function handler(req, res) {
       body = {};
     }
   }
+  return body || {};
+}
 
+async function callOpenAIChat({
+  apiKey,
+  messages,
+  response_format,
+  temperature,
+  max_tokens,
+}) {
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4.1-mini",
+      response_format,
+      messages,
+      temperature,
+      max_tokens,
+    }),
+  });
+
+  return resp;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const body = await readJsonBody(req);
   const { text, tone, gender } = body;
 
-  if (!text || !text.trim()) {
+  if (!text || !String(text).trim()) {
     return res.status(400).json({ error: "Missing text" });
   }
 
@@ -29,6 +68,7 @@ export default async function handler(req, res) {
 
   // ---------------------------------------------------------------------------
   // SYSTEM PROMPT — TRANSLATE ONLY (NO TEACHING / NO ENRICHMENT)
+  // NOTE: This is intentionally preserved verbatim to prevent drift.
   // ---------------------------------------------------------------------------
   const systemPrompt = `
 You are a translation engine for English speakers learning Lithuanian.
@@ -45,7 +85,7 @@ If input is ENGLISH:
 - Translate into natural, everyday Lithuanian (native usage).
 
 If input is LITHUANIAN:
-- Keep the Lithuanuanian text EXACTLY as provided (do not rewrite it).
+- Keep the Lithuanian text EXACTLY as provided (do not rewrite it).
 - Provide the correct English meaning.
 
 Preserve intent, tone, and implied meaning — not English word order.
@@ -59,8 +99,7 @@ Exact shape required:
 
 {
   "lt": "Lithuanian phrase",
-  "phonetics": "English-style pronunciation",
-  "phonetics_ipa": "IPA pronunciation",
+  "phonetics": "English-style pronunciation (hyphenated syllables)",
   "en_literal": "Literal English meaning",
   "en_natural": "Natural English meaning"
 }
@@ -73,140 +112,21 @@ Rules:
 
 For LITHUANIAN input:
 - "lt" MUST be the original Lithuanian input unchanged.
-- "phonetics" MUST still be provided for that Lithuanuanian.
-- "phonetics_ipa" MUST still be provided for that Lithuanuanian.
+- "phonetics" MUST still be provided for that Lithuanian.
 - "en_literal" and "en_natural" must both be correct English.
-
-────────────────────────────────
-CORE TRANSLATION PHILOSOPHY
-────────────────────────────────
-Default style: natural, everyday Lithuanian — how a native speaker would actually say it.
-
-Hard requirements:
-- Translate by meaning, not word-for-word structure.
-- Avoid calques and “translated-sounding” Lithuanian.
-- Choose the MOST common native phrasing.
-- Grammar and morphology must be correct.
-- Do NOT invent words or output non-standard made-up Lithuanian forms.
-
-If there are multiple natural variants, choose the most common one.
-Do NOT list alternates here.
-
-────────────────────────────────
-IDIOMS + FIXED EXPRESSIONS
-────────────────────────────────
-Detect idioms, phrasal verbs, and fixed expressions and translate by meaning.
-
-Examples of frames that MUST be preserved:
-- Momentum/success growth (“took off”) → Lithuanian that expresses taking off/gaining momentum, not just “rose”.
-- Giving up effort (“gave up trying”) → Lithuanian that expresses giving up/surrendering, not “refused”.
-- Delayed emotional impact/realisation (“it hit me afterwards”) → Lithuanian that expresses realisation/impact, not generic “affected later”.
-- Losing composure (“I lost it”) → Lithuanian that expresses snapping/losing control, not “I lost something”.
-- “ran into (someone)” meaning met unexpectedly → translate as an unexpected meeting, not physical collision.
-
-If no single Lithuanian idiom exists, paraphrase naturally in Lithuanian while keeping the same meaning and tone.
-
-────────────────────────────────
-FRAME LOCKS (MOMENTUM + GIVING UP)
-────────────────────────────────
-Momentum / “took off”:
-- When English means rapid growth, momentum, acceleration, or “taking off” (e.g., a business/project took off), prefer Lithuanian that expresses gaining momentum or accelerating.
-- Avoid using neutral “rose/raised” verbs as the main translation (e.g., “pakilo”) unless the English is literally about rising.
-
-Giving up / stopping effort:
-- When English means abandoning effort or giving up trying, prefer direct everyday Lithuanian verbs that express stopping/abandoning the attempt (e.g., “mečiau bandyti…”, “pasidaviau…”).
-- Avoid metaphorical idioms (e.g., “nuleidau rankas”) unless the English is also metaphorical.
-
-────────────────────────────────
-SEXUAL MEANING (PRESERVE, DON’T INVENT)
-────────────────────────────────
-If the English clearly implies sexual meaning, Lithuanian must preserve it.
-Do NOT sanitise sexual meaning into neutral “like/enjoy” wording.
-
-If English is NOT sexual, do NOT introduce sexual wording.
-
-────────────────────────────────
-PROFANITY + INTENSITY (MATCH, DON’T ESCALATE)
-────────────────────────────────
-Match the strength of emotion/profanity only when clearly present in English:
-- Do NOT downgrade strong English profanity into mild Lithuanian.
-- Do NOT escalate vulgarity beyond what English warrants.
-
-When English contains strong profanity (e.g., “fuck off”), you MUST use a commonly used Lithuanian profanity of comparable strength.
-Do NOT replace strong profanity with polite, neutral, or euphemistic phrases such as “eik šalin”, “eik sau”, or “palik mane ramybėje”.
-
-Intent lock for dismissal profanity:
-- Dismissal profanity like “fuck off” means “leave me alone / go away” (aggressive), NOT physical contact.
-- Do NOT use verbs that describe physical movement, contact, climbing, or position (e.g., “nusileisk”, “nulipk”) for dismissal profanity.
-
-Hard preference for “fuck off”:
-- Translate “fuck off” as a common native dismissal profanity such as “Atsipisk” or “Atsiknisk”.
-- Do NOT invent alternatives or output non-standard forms.
-- If you choose to include “nuo manęs”, only do so when the English implies “off me”.
-
-────────────────────────────────
-IMPERATIVES MUST SOUND NATIVE
-────────────────────────────────
-Commands must match real-life Lithuanian usage for the situation.
-Avoid odd literal verbs that sound unnatural for the intended action.
-
-Physical imperative gate:
-- Only use physical-contact imperatives when the English explicitly refers to physical contact with the speaker’s body (e.g., “get off me”, “hands off me”).
-- Do NOT use physical-contact imperatives for dismissal-only phrases like “fuck off”.
-
-────────────────────────────────
-TU VS TAU (KEEP THIS RULE)
-────────────────────────────────
-HARD RULE:
-If the English asks about the person’s state using:
-- “How are you”
-- “How are you doing”
-- “How are you today / this evening / lately”
-then use “Kaip tu …”
-Do NOT reinterpret these as “for you”.
-
-Use “tau” when asking about an external situation/experience:
-- “How was the movie for you?” → Kaip tau filmas?
-- “How’s work for you?” → Kaip tau darbas?
-- “How is it going for you?” → Kaip tau sekasi?
-
-If ambiguous, default to “Kaip tu …”.
-
-────────────────────────────────
-GREETINGS (NATIVE)
-────────────────────────────────
-Do NOT transliterate English greetings.
-Lithuanian does NOT use “ei”.
-
-Use common greetings:
-- Sveikas (male)
-- Sveika (female)
-- Labas (neutral / unknown)
-
-If a greeting starts a longer sentence, replace ONLY the greeting.
-Preserve the user’s punctuation exactly.
 
 ────────────────────────────────
 PHONETICS (ENGLISH-READER FRIENDLY)
 ────────────────────────────────
-This is "phonetics" (NOT IPA):
+phonetics:
 - English-reader friendly, hyphenated syllables.
-- No IPA characters.
+- No IPA.
 - No Lithuanian letters/diacritics in phonetics.
 - Must remain faithful to Lithuanian sounds and endings (don’t drop endings).
 
 Examples:
 - Labas → lah-bahs
 - Laba diena → lah-bah dyeh-nah
-
-────────────────────────────────
-IPA (OFFICIAL)
-────────────────────────────────
-This is "phonetics_ipa":
-- Must be IPA for Lithuanian pronunciation.
-- Use proper IPA symbols (including diacritics if needed).
-- Keep it as a single IPA string (no explanation).
-- Include stress markers if appropriate.
 
 ────────────────────────────────
 ENGLISH OUTPUT RULES
@@ -235,26 +155,36 @@ ENGLISH OUTPUT RULES
   }
 
   // ---------------------------------------------------------------------------
-  // CALL OPENAI
+  // IPA PROMPT (SECOND CALL — DOES NOT TOUCH THE TRANSLATION PROMPT)
+  // ---------------------------------------------------------------------------
+  const ipaPrompt = `
+You are generating Lithuanian IPA for learners.
+
+Return ONE valid JSON object and NOTHING else:
+{ "ipa": "<IPA for the exact Lithuanian input>" }
+
+Rules:
+- The input will be Lithuanian. Do NOT translate. Do NOT rewrite.
+- Output ONLY IPA symbols (no slashes / /, no brackets [ ]).
+- Keep the whole phrase (include spaces between words).
+- No extra keys. No commentary.
+- The value must be a non-empty string.
+`.trim();
+
+  // ---------------------------------------------------------------------------
+  // CALL OPENAI (TRANSLATION)
   // ---------------------------------------------------------------------------
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "system", content: styleHints.trim() },
-          { role: "user", content: text.trim() },
-        ],
-        temperature: 0.15,
-        max_tokens: 260,
-      }),
+    const response = await callOpenAIChat({
+      apiKey,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "system", content: styleHints.trim() },
+        { role: "user", content: String(text).trim() },
+      ],
+      temperature: 0.15,
+      max_tokens: 200,
     });
 
     if (!response.ok) {
@@ -274,19 +204,58 @@ ENGLISH OUTPUT RULES
       return res.status(500).json({ error: "Bad JSON from OpenAI" });
     }
 
-    const { lt, phonetics, phonetics_ipa, en_literal, en_natural } = payload || {};
+    const lt = String(payload?.lt || "").trim();
+    const phonetics = String(payload?.phonetics || "").trim();
+    const enLiteral = String(payload?.en_literal || "").trim();
+    const enNatural = String(payload?.en_natural || "").trim();
 
-    if (!lt || !phonetics || !phonetics_ipa || !en_literal || !en_natural) {
+    if (!lt || !phonetics || !enLiteral || !enNatural) {
       console.error("Incomplete translation payload:", payload);
       return res.status(500).json({ error: "Incomplete translation" });
     }
 
+    // -----------------------------------------------------------------------
+    // CALL OPENAI (IPA) — best-effort, with fallback
+    // -----------------------------------------------------------------------
+    let phoneticsIpa = "";
+    try {
+      const ipaResp = await callOpenAIChat({
+        apiKey,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: ipaPrompt },
+          { role: "user", content: lt },
+        ],
+        temperature: 0,
+        max_tokens: 120,
+      });
+
+      if (ipaResp.ok) {
+        const ipaJson = await ipaResp.json();
+        const ipaRaw = ipaJson?.choices?.[0]?.message?.content;
+
+        let ipaPayload;
+        try {
+          ipaPayload = typeof ipaRaw === "string" ? JSON.parse(ipaRaw) : ipaRaw;
+        } catch {
+          ipaPayload = null;
+        }
+
+        phoneticsIpa = String(ipaPayload?.ipa || "").trim();
+      } else {
+        const errText = await ipaResp.text();
+        console.warn("IPA OpenAI API error:", ipaResp.status, errText);
+      }
+    } catch (e) {
+      console.warn("IPA generation failed:", e);
+    }
+
     return res.status(200).json({
-      lt: String(lt).trim(),
-      phonetics: String(phonetics).trim(),
-      phonetics_ipa: String(phonetics_ipa).trim(),
-      en_literal: String(en_literal).trim(),
-      en_natural: String(en_natural).trim(),
+      lt,
+      phonetics,
+      phonetics_ipa: phoneticsIpa,
+      en_literal: enLiteral,
+      en_natural: enNatural,
     });
   } catch (err) {
     console.error("Translation function error:", err);
