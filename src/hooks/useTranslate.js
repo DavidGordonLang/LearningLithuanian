@@ -1,5 +1,5 @@
 // src/hooks/useTranslate.js
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 const EMPTY_RESULT = {
   ltOut: "",
@@ -21,13 +21,22 @@ export default function useTranslate({
 } = {}) {
   const [result, setResult] = useState(EMPTY_RESULT);
 
+  // Compatibility: HomeView expects `translating` state from the hook.
+  const [translating, setTranslating] = useState(false);
+
+  // Prevent stale finally() from flipping state if a newer translate started.
+  const inFlightIdRef = useRef(0);
+
   const translate = useCallback(
     async (text, { tone = "casual", gender = "neutral" } = {}) => {
       const input = String(text || "").trim();
       if (!input) return;
 
+      const myId = ++inFlightIdRef.current;
+
       try {
         setIsTranslating?.(true);
+        setTranslating(true);
 
         const res = await fetch("/api/translate", {
           method: "POST",
@@ -87,13 +96,13 @@ export default function useTranslate({
           const enrichData = await enrichRes.json().catch(() => ({}));
 
           if (enrichRes.ok) {
-            categoryOut = String(enrichData?.Category || categoryOut || "").trim();
+            categoryOut = String(
+              enrichData?.Category || categoryOut || ""
+            ).trim();
             usageOut = String(enrichData?.Usage || "").trim();
             notesOut = String(enrichData?.Notes || "").trim();
           } else {
             // Don't fail translate just because enrich failed
-            // (optional: toast/log if you want)
-            // showToast?.("Enrichment unavailable");
           }
         } catch {
           // swallow enrich errors (translation is primary)
@@ -111,11 +120,16 @@ export default function useTranslate({
           // translate endpoint does silent source-lang detection;
           // we keep existing default contract
           sourceLang:
-            String(data.source_lang || data.sourceLang || "en") === "lt" ? "lt" : "en",
+            String(data.source_lang || data.sourceLang || "en") === "lt"
+              ? "lt"
+              : "en",
         };
 
-        setResult(next);
-        onTranslated?.(next);
+        // Only update state if this is still the newest in-flight request.
+        if (inFlightIdRef.current === myId) {
+          setResult(next);
+          onTranslated?.(next);
+        }
 
         // Optional analytics hook placeholder (kept to preserve signature usage)
         try {
@@ -125,18 +139,61 @@ export default function useTranslate({
 
         return next;
       } finally {
-        setIsTranslating?.(false);
+        // Only end "translating" for the latest request.
+        if (inFlightIdRef.current === myId) {
+          setIsTranslating?.(false);
+          setTranslating(false);
+        }
       }
     },
     [appVersion, onTranslated, setIsTranslating, showToast]
   );
 
-  const reset = useCallback(() => setResult(EMPTY_RESULT), []);
+  const reset = useCallback(() => {
+    // Cancel any pending completion toggles
+    inFlightIdRef.current++;
+    setResult(EMPTY_RESULT);
+    setIsTranslating?.(false);
+    setTranslating(false);
+  }, [setIsTranslating]);
+
+  // ---------------------------------------------------------------------------
+  // Compatibility layer for HomeView (and other older callers)
+  // HomeView expects:
+  // - translating
+  // - translateText(input, force?)  (we ignore force; behaviour unchanged)
+  // - resetTranslation()
+  // - (sometimes) duplicateEntry + setDuplicateEntry
+  // ---------------------------------------------------------------------------
+
+  const [duplicateEntry, setDuplicateEntry] = useState(null);
+
+  const translateText = useCallback(
+    async (text, _force = false, opts = undefined) => {
+      // keep existing semantics: translate() uses default { tone, gender }
+      // callers can optionally pass opts as 3rd param without breaking old signature
+      return translate(text, opts || undefined);
+    },
+    [translate]
+  );
+
+  const resetTranslation = useCallback(() => {
+    setDuplicateEntry(null);
+    reset();
+  }, [reset]);
 
   return {
+    // current API
     result,
     setResult,
     translate,
     reset,
+
+    // compat API
+    translating,
+    translateText,
+    resetTranslation,
+    duplicateEntry,
+    setDuplicateEntry,
   };
 }
