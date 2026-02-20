@@ -2,62 +2,79 @@
 import { create } from "zustand";
 import { supabase } from "../supabaseClient";
 
+const TABLE_NAME = "user_settings";
+
+/**
+ * Defaults
+ * Keep these stable; add new keys here with safe defaults.
+ */
 const DEFAULTS = {
   phoneticsMode: "en", // "en" | "ipa"
-  sfxEnabled: true,    // we’ll wire this later (dopamine hits)
-  examMode: false,     // we’ll wire this later
 };
 
 function mergeDefaults(data) {
   return { ...DEFAULTS, ...(data || {}) };
 }
 
+function derive(data) {
+  const merged = mergeDefaults(data);
+  const pm = merged.phoneticsMode === "ipa" ? "ipa" : "en";
+  return { phoneticsMode: pm };
+}
+
+/**
+ * Settings store
+ *
+ * - `data` is the persisted JSON payload in Supabase.
+ * - We also mirror commonly used values at the top level (e.g. `phoneticsMode`)
+ *   so views can read primitives easily.
+ * - `setSetting` remains the single write path.
+ */
 export const useSettingsStore = create((set, get) => ({
-  loading: false,
+  loading: true,
   error: null,
 
-  // persisted settings payload (jsonb) from user_settings.data
+  // persisted blob from Supabase
   data: { ...DEFAULTS },
 
-  // internal
-  _userId: null,
+  // derived mirrors (UI-friendly)
+  ...derive(DEFAULTS),
+
+  /* -------------------- Internal -------------------- */
   _loadedForUserId: null,
 
-  // Read helpers
-  phoneticsMode: () => get().data.phoneticsMode || "en",
-  sfxEnabled: () => get().data.sfxEnabled !== false,
-  examMode: () => !!get().data.examMode,
-
-  // Called by auth lifecycle
+  /* -------------------- Load / init -------------------- */
   ensureLoadedForUser: async (userId) => {
     if (!userId) return;
 
     // Prevent refetch loops
-    if (get()._loadedForUserId === userId) return;
+    if (get()._loadedForUserId === userId) {
+      const d = mergeDefaults(get().data);
+      set({ data: d, ...derive(d), loading: false });
+      return;
+    }
 
-    set({ loading: true, error: null, _userId: userId });
+    set({ loading: true, error: null });
 
     try {
-      // Try read first
-      const { data: row, error: selErr } = await supabase
-        .from("user_settings")
-        .select("data")
+      const { data: row, error } = await supabase
+        .from(TABLE_NAME)
+        .select("*")
         .eq("user_id", userId)
-        .maybeSingle();
+        .single();
 
-      if (selErr) throw selErr;
-
-      if (!row) {
-        // Create defaults row
+      // If row does not exist, create it (new user)
+      if (error && (error.code === "PGRST116" || error.details?.includes("0 rows"))) {
         const defaults = { ...DEFAULTS };
-        const { error: insErr } = await supabase.from("user_settings").insert({
-          user_id: userId,
-          data: defaults,
-        });
-        if (insErr) throw insErr;
+        const { error: insertError } = await supabase
+          .from(TABLE_NAME)
+          .insert([{ user_id: userId, data: defaults }]);
+
+        if (insertError) throw insertError;
 
         set({
           data: defaults,
+          ...derive(defaults),
           loading: false,
           error: null,
           _loadedForUserId: userId,
@@ -65,68 +82,87 @@ export const useSettingsStore = create((set, get) => ({
         return;
       }
 
-      const merged = mergeDefaults(row.data);
-      // Optional: if defaults introduced new keys, write them back once
+      if (error) throw error;
+
+      const merged = mergeDefaults(row?.data);
+
+      // If defaults introduced new keys, write them back once.
       const needsWriteBack =
-        JSON.stringify(merged) !== JSON.stringify(row.data || {});
+        JSON.stringify(merged) !== JSON.stringify(row?.data || {});
 
       set({
         data: merged,
+        ...derive(merged),
         loading: false,
         error: null,
         _loadedForUserId: userId,
       });
 
       if (needsWriteBack) {
-        // fire-and-forget; don’t block UI
+        // fire-and-forget
         supabase
-          .from("user_settings")
+          .from(TABLE_NAME)
           .update({ data: merged, updated_at: new Date().toISOString() })
           .eq("user_id", userId);
       }
     } catch (e) {
-      console.warn("Settings load failed:", e);
+      console.error("Settings load error:", e);
       set({
-        loading: false,
-        error: e?.message || "Settings load failed",
-        // Keep defaults so app remains functional
         data: { ...DEFAULTS },
+        ...derive(DEFAULTS),
+        loading: false,
+        error: e?.message || "Failed to load settings",
         _loadedForUserId: userId,
       });
     }
   },
 
-  // Called on logout
   reset: () => {
     set({
-      loading: false,
+      loading: true,
       error: null,
       data: { ...DEFAULTS },
-      _userId: null,
+      ...derive(DEFAULTS),
       _loadedForUserId: null,
     });
   },
 
-  // Update a single setting key (persists immediately)
-  setSetting: async (key, value) => {
-    const userId = get()._userId;
-    const next = { ...get().data, [key]: value };
+  /* -------------------- Read helpers -------------------- */
 
-    set({ data: next });
+  getSetting: (key) => {
+    const d = get().data || {};
+    return d[key];
+  },
 
-    if (!userId) return; // not signed in; keep local state only
+  /* -------------------- Write helpers -------------------- */
+
+  setSetting: async (userId, key, value) => {
+    const nextData = mergeDefaults({ ...(get().data || {}), [key]: value });
+
+    // optimistic local update
+    set({ data: nextData, ...derive(nextData), error: null });
+
+    // Local-only safety
+    if (!userId) return;
 
     try {
       const { error } = await supabase
-        .from("user_settings")
-        .update({ data: next, updated_at: new Date().toISOString() })
+        .from(TABLE_NAME)
+        .update({ data: nextData, updated_at: new Date().toISOString() })
         .eq("user_id", userId);
 
       if (error) throw error;
     } catch (e) {
-      console.warn("Failed to persist setting:", e);
-      // Don’t revert automatically; we can add retry later if needed
+      console.error("Failed to persist setting:", e);
       set({ error: e?.message || "Failed to persist setting" });
     }
+  },
+
+  /**
+   * Convenience setters expected by UI.
+   */
+  setPhoneticsMode: async (userId, mode) => {
+    const next = mode === "ipa" ? "ipa" : "en";
+    return get().setSetting(userId, "phoneticsMode", next);
   },
 }));
