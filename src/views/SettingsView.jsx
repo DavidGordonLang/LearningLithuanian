@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { usePhraseStore } from "../stores/phraseStore";
+import { useSettingsStore } from "../stores/settingsStore";
 import {
   replaceUserPhrases,
   fetchUserPhrases,
@@ -119,6 +120,13 @@ export default function SettingsView({
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
+  const patchPhraseById = usePhraseStore((s) => s.patchPhraseById);
+
+  // Settings (local)
+  const phoneticsMode = useSettingsStore((s) => s.phoneticsMode);
+  const setPhoneticsMode = useSettingsStore((s) => s.setPhoneticsMode);
+  const sfxEnabled = useSettingsStore((s) => s.sfxEnabled);
+  const setSfxEnabled = useSettingsStore((s) => s.setSfxEnabled);
 
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
@@ -137,6 +145,8 @@ export default function SettingsView({
 
   // Diagnostics toggle (local)
   const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
+  const [backfillingIpa, setBackfillingIpa] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState({ done: 0, total: 0 });
 
   // Collapsible section state
   // All collapsed by default.
@@ -481,6 +491,64 @@ export default function SettingsView({
     );
   })();
 
+  async function backfillIpaForLocalLibrary() {
+    if (!user) return;
+
+    const all = getAllStoredPhrases().filter((r) => !r?._deleted);
+    const missing = all.filter(
+      (r) => !String(r?.PhoneticIPA || "").trim() && String(r?.Lithuanian || "").trim()
+    );
+
+    if (!missing.length) {
+      alert("No missing IPA found ✅");
+      return;
+    }
+
+    const ok = window.confirm(
+      `Generate IPA for ${missing.length} existing entries?\n\nThis will call the API once per entry (costs OpenAI usage).`
+    );
+    if (!ok) return;
+
+    setBackfillingIpa(true);
+    setBackfillProgress({ done: 0, total: missing.length });
+
+    try {
+      for (let i = 0; i < missing.length; i++) {
+        const r = missing[i];
+        const lt = String(r?.Lithuanian || "").trim();
+        const id = r?._id;
+
+        if (!lt || !id) {
+          setBackfillProgress((p) => ({ ...p, done: Math.min(p.done + 1, p.total) }));
+          continue;
+        }
+
+        try {
+          const resp = await fetch("/api/ipa", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lt }),
+          });
+
+          const data = await resp.json().catch(() => null);
+          const ipa = String(data?.ipa || "").trim();
+
+          if (resp.ok && ipa) {
+            patchPhraseById(id, { PhoneticIPA: ipa, _ts: Date.now() });
+          }
+        } catch (e) {
+          console.warn("IPA backfill failed for:", lt, e);
+        }
+
+        setBackfillProgress((p) => ({ ...p, done: Math.min(p.done + 1, p.total) }));
+      }
+
+      alert("IPA backfill completed ✅\n\nIf you use cloud sync, run Sync (merge) to push changes.");
+    } finally {
+      setBackfillingIpa(false);
+    }
+  }
+
   async function handleClearLibrary() {
     const ok = window.confirm("Clear your entire local library? This cannot be undone.");
     if (!ok) return;
@@ -559,6 +627,65 @@ export default function SettingsView({
                 onClick={showDailyRecallNow}
               >
                 Show today’s recall
+              </button>
+            </div>
+          </div>
+
+          <div className="z-inset p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-zinc-200">Phonetics display</div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  Choose how pronunciation is shown in the library
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  data-press
+                  className={
+                    "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
+                    (phoneticsMode === "en"
+                      ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+                      : "z-btn-secondary text-zinc-100")
+                  }
+                  onClick={() => setPhoneticsMode("en")}
+                >
+                  EN-style
+                </button>
+
+                <button
+                  type="button"
+                  data-press
+                  className={
+                    "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
+                    (phoneticsMode === "ipa"
+                      ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+                      : "z-btn-secondary text-zinc-100")
+                  }
+                  onClick={() => setPhoneticsMode("ipa")}
+                >
+                  IPA
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                data-press
+                className={cn(
+                  "z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm",
+                  backfillingIpa ? "z-disabled" : ""
+                )}
+                onClick={backfillIpaForLocalLibrary}
+                disabled={backfillingIpa}
+                title="Generate IPA for existing saved entries on this device"
+              >
+                {backfillingIpa
+                  ? `Generating… ${backfillProgress.done}/${backfillProgress.total}`
+                  : "Generate IPA for existing entries"}
               </button>
             </div>
           </div>
