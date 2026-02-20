@@ -11,6 +11,7 @@ import useLocalStorageState from "../hooks/useLocalStorageState";
 import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
 import useTranslate from "../hooks/useTranslate";
 import useSaveToLibrary from "../hooks/useSaveToLibrary";
+import { useSettingsStore } from "../stores/settingsStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -124,6 +125,9 @@ export default function HomeView({
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
 
+  // Per-user settings
+  const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
+
   // Auto-Translate toggle (persisted) — KEEP LOGIC, UI REMOVED (per request)
   const [autoTranslateLS, setAutoTranslateLS] = useLocalStorageState(
     "zodis_auto_translate",
@@ -151,6 +155,13 @@ export default function HomeView({
     () => !!result.ltOut && !!(result.enNatural || result.enLiteral),
     [result.ltOut, result.enNatural, result.enLiteral]
   );
+
+  const displayedPhonetics = useMemo(() => {
+    if (phoneticsMode === "ipa") {
+      return (result.phoneticsIpa || result.phonetics || "").trim();
+    }
+    return (result.phonetics || "").trim();
+  }, [phoneticsMode, result.phonetics, result.phoneticsIpa]);
 
   const handleClear = useCallback(() => {
     blurTextarea();
@@ -580,9 +591,9 @@ export default function HomeView({
               {result.ltOut}
             </div>
 
-            {result.phonetics && (
+            {displayedPhonetics && (
               <div className="text-sm text-zinc-400 mt-1">
-                {result.phonetics}
+                {displayedPhonetics}
               </div>
             )}
           </div>
