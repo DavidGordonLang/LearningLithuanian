@@ -73,30 +73,16 @@ function ensureIdTs(r) {
 
 /* --------------------------- Key normalisation --------------------------- */
 
-/**
- * Remove Lithuanian diacritics & normalise to a safe ASCII-ish key.
- * This must mirror phraseStore.js normalization behaviour as closely as possible.
- */
 function normaliseForKey(input) {
   let s = (input ?? "").toString().trim().toLowerCase();
   if (!s) return "";
 
-  // Unicode NFD + strip combining marks
   s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  // Remove punctuation/symbols/spaces entirely for compact key
   s = s.replace(/[^a-z0-9]+/g, "");
 
   return s;
 }
 
-/**
- * Secondary identity: Lithuanian-only content key.
- * IMPORTANT:
- * - We do NOT use English for identity.
- * - We do NOT include Sheet/Category for identity.
- * - Prefer row.contentKey when present (phraseStore is source of truth).
- */
 export function makeContentKeyFromRow(row) {
   const existing = row?.contentKey;
   if (typeof existing === "string" && existing.trim()) return existing.trim();
@@ -124,14 +110,9 @@ function chooseBestText(fieldName, localRow, cloudRow) {
 
   if (lts !== cts) return lts > cts ? lv : cv;
 
-  // Same timestamp: prefer longer (often more comprehensive notes/usage)
   return lv.length >= cv.length ? lv : cv;
 }
 
-/**
- * RAG is special: never block merge, never produce a conflict.
- * Prefer newer _ts; if tied, prefer local.
- */
 function chooseRagIcon(localRow, cloudRow) {
   const lv = meaningfulText(localRow?.["RAG Icon"]);
   const cv = meaningfulText(cloudRow?.["RAG Icon"]);
@@ -147,7 +128,6 @@ function chooseRagIcon(localRow, cloudRow) {
 
   if (lts !== cts) return lts > cts ? lv : cv;
 
-  // tie -> prefer local
   return lv;
 }
 
@@ -155,9 +135,11 @@ function computeCompletenessScore(r) {
   let score = 0;
   if (isMeaningful(r?.Lithuanian)) score += 3;
   if (isMeaningful(r?.English)) score += 1;
+
+  // Treat both phonetic modes as meaningful content.
   if (isMeaningful(r?.Phonetic)) score += 1;
-  // ✅ IPA is real content; preserve it and treat it as meaningful
   if (isMeaningful(r?.PhoneticIPA)) score += 1;
+
   if (isMeaningful(r?.Category)) score += 1;
   if (isMeaningful(r?.Usage)) score += 2;
   if (isMeaningful(r?.Notes)) score += 2;
@@ -166,19 +148,13 @@ function computeCompletenessScore(r) {
   return score;
 }
 
-/**
- * Merge two rows known to refer to the same “thing”.
- * Returns { merged, conflict } where conflict can be null.
- */
 function mergePair(localIn, cloudIn) {
   const localRow = ensureDeletionFields(ensureIdTs(localIn));
   const cloudRow = ensureDeletionFields(ensureIdTs(cloudIn));
 
-  // Preserve / derive keys (do not let them drift)
   const localKey = makeContentKeyFromRow(localRow);
   const cloudKey = makeContentKeyFromRow(cloudRow);
 
-  // Tombstones
   const lDel = localRow._deleted === true;
   const cDel = cloudRow._deleted === true;
   const lDelTs =
@@ -257,7 +233,6 @@ function mergePair(localIn, cloudIn) {
     };
   }
 
-  // Neither deleted → resolve field-by-field
   const tsGap = Math.abs(lEditTs - cEditTs);
   const base =
     tsGap > CONFLICT_TS_WINDOW_MS
@@ -272,25 +247,18 @@ function mergePair(localIn, cloudIn) {
 
   const merged = {
     ...base,
-
-    // identity (keep _id stable if possible)
     _id: base._id || other._id,
-
-    // keep latest edit time as _ts
     _ts: Math.max(lEditTs, cEditTs, base._ts || 0, other._ts || 0),
-
     _deleted: false,
     _deleted_ts: null,
-
-    // keep contentKey stable and aligned with phraseStore behaviour
     contentKey: localKey || cloudKey || base.contentKey || other.contentKey,
   };
 
+  // ✅ Add PhoneticIPA to the merge field list.
   const FIELDS = [
     "English",
     "Lithuanian",
     "Phonetic",
-    // ✅ preserve IPA through merges
     "PhoneticIPA",
     "Category",
     "Usage",
@@ -302,7 +270,6 @@ function mergePair(localIn, cloudIn) {
   const fieldConflicts = [];
 
   for (const f of FIELDS) {
-    // Special case: RAG never blocks merge
     if (f === "RAG Icon") {
       const chosen = chooseRagIcon(localRow, cloudRow);
       if (chosen) merged[f] = chosen;
@@ -326,9 +293,6 @@ function mergePair(localIn, cloudIn) {
       const chosen = chooseBestText(f, localRow, cloudRow);
       merged[f] = chosen;
 
-      // ✅ Conflicts should be rare:
-      // Only raise a conflict if edits are near-simultaneous / ambiguous.
-      // If one side is clearly newer, we auto-resolve and do NOT block merge.
       if (tsGap <= CONFLICT_TS_WINDOW_MS) {
         fieldConflicts.push({
           field: f,
@@ -340,10 +304,8 @@ function mergePair(localIn, cloudIn) {
     }
   }
 
-  // Preserve _qstat sensibly
   if (base._qstat || other._qstat) merged._qstat = base._qstat || other._qstat;
 
-  // Only raise conflict if there are meaningful diffs outside of RAG (and within the conflict window)
   if (fieldConflicts.length) {
     return {
       merged,
@@ -382,8 +344,6 @@ export function mergeUserPhrases(localRows, cloudRows) {
     deletionsApplied: 0,
     conflictsCount: 0,
     mergedCount: 0,
-
-    // useful extra signals (won’t break callers)
     cloudKeyCollisions: 0,
     localKeyCollisions: 0,
   };
@@ -392,8 +352,6 @@ export function mergeUserPhrases(localRows, cloudRows) {
 
   const cloudById = new Map();
   const cloudByKey = new Map();
-
-  // Track collisions (same key appears multiple times)
   const cloudKeyCounts = new Map();
 
   for (const r of cloud) {
@@ -403,7 +361,6 @@ export function mergeUserPhrases(localRows, cloudRows) {
     if (key) {
       cloudKeyCounts.set(key, (cloudKeyCounts.get(key) || 0) + 1);
 
-      // If collision, keep the most recently edited as primary
       if (!cloudByKey.has(key)) cloudByKey.set(key, r);
       else {
         const existing = cloudByKey.get(key);
@@ -421,16 +378,13 @@ export function mergeUserPhrases(localRows, cloudRows) {
   const usedCloudIds = new Set();
   const merged = [];
 
-  // First pass: merge local against cloud
   for (const l of local) {
     let c = null;
 
-    // 1) Match by _id
     if (l?._id && cloudById.has(l._id)) {
       c = cloudById.get(l._id);
       stats.matchedById++;
     } else {
-      // 2) Match by contentKey (Lithuanian-only)
       const lk = makeContentKeyFromRow(l);
       if (lk && cloudByKey.has(lk)) {
         c = cloudByKey.get(lk);
@@ -446,14 +400,12 @@ export function mergeUserPhrases(localRows, cloudRows) {
       merged.push(m);
     } else {
       if (l?._deleted) stats.deletionsApplied++;
-      // Ensure key exists if possible (helps downstream even if phraseStore missed it)
       const lk = makeContentKeyFromRow(l);
       merged.push(lk ? { ...l, contentKey: lk } : l);
       stats.createdFromLocal++;
     }
   }
 
-  // Second pass: add remaining cloud-only rows
   for (const c of cloud) {
     if (!c?._id) continue;
     if (usedCloudIds.has(c._id)) continue;
@@ -465,7 +417,6 @@ export function mergeUserPhrases(localRows, cloudRows) {
     if (c?._deleted) stats.deletionsApplied++;
   }
 
-  // Final: stable sort (non-deleted first, then newest)
   merged.sort((a, b) => {
     const ad = a?._deleted === true ? 1 : 0;
     const bd = b?._deleted === true ? 1 : 0;
