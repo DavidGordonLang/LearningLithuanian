@@ -153,6 +153,9 @@ export default function SettingsView({
   const [openAbout, setOpenAbout] = useState(false);
   const [openDiagnostics, setOpenDiagnostics] = useState(false);
 
+  // Admin backfill button state
+  const [backfillRunning, setBackfillRunning] = useState(false);
+
   const isAdmin =
     !!user?.email &&
     ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(String(user.email).toLowerCase());
@@ -487,6 +490,53 @@ export default function SettingsView({
     );
   })();
 
+  async function runBackfillIpaOnce() {
+    if (!user) return alert("Sign in first.");
+    if (!isAdmin) return alert("Admin only.");
+
+    try {
+      setBackfillRunning(true);
+
+      const res = await fetch("/api/backfill-ipa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg =
+          String(data?.error || data?.message || "") ||
+          `HTTP ${res.status} ${res.statusText}`;
+        alert("Backfill failed: " + msg);
+        return;
+      }
+
+      const pending = data?.pending ?? data?.stats?.pending;
+      const done = data?.done ?? data?.stats?.done;
+      const total = data?.total ?? data?.stats?.total;
+
+      if (
+        typeof pending === "number" ||
+        typeof done === "number" ||
+        typeof total === "number"
+      ) {
+        alert(
+          `Backfill batch complete ✅\n\nDone: ${done ?? "?"}\nPending: ${
+            pending ?? "?"
+          }\nTotal: ${total ?? "?"}`
+        );
+      } else {
+        alert("Backfill batch complete ✅");
+      }
+    } catch (e) {
+      alert("Backfill failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setBackfillRunning(false);
+    }
+  }
+
   async function handleClearLibrary() {
     const ok = window.confirm("Clear your entire local library? This cannot be undone.");
     if (!ok) return;
@@ -501,75 +551,6 @@ export default function SettingsView({
         trackError(e, { source: "library_clear" }, { app_version: appVersion });
       } catch {}
       alert("Could not clear: " + (e?.message || "Unknown error"));
-    }
-  }
-
-  /* ------------------------------
-     Admin: IPA Backfill button
-     ------------------------------ */
-  const [ipaBackfillRunning, setIpaBackfillRunning] = useState(false);
-  const [ipaBackfillMsg, setIpaBackfillMsg] = useState("");
-
-  async function runIpaBackfillBatch() {
-    if (!user) {
-      alert("Sign in first.");
-      return;
-    }
-
-    const ok = window.confirm(
-      "Backfill IPA (batch):\n\nThis will call /api/backfill-ipa once and fill IPA for a small batch of rows missing it.\n\nRun now?"
-    );
-    if (!ok) return;
-
-    try {
-      setIpaBackfillRunning(true);
-      setIpaBackfillMsg("");
-
-      try {
-        trackEvent("ipa_backfill_start", {}, { app_version: appVersion });
-      } catch {}
-
-      const res = await fetch("/api/backfill-ipa", { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        const msg = String(data?.error || "Backfill failed");
-        setIpaBackfillMsg(msg);
-        alert(msg);
-        return;
-      }
-
-      // Be tolerant of different response shapes
-      const total = Number(data?.total ?? data?.summary?.total ?? 0) || 0;
-      const done = Number(data?.done ?? data?.summary?.done ?? data?.filled ?? 0) || 0;
-      const pending =
-        Number(data?.pending ?? data?.summary?.pending ?? 0) || (total ? Math.max(0, total - done) : 0);
-
-      const msg =
-        total || done || pending
-          ? `Backfill batch complete. Done: ${done}. Pending: ${pending}.`
-          : "Backfill batch complete.";
-
-      setIpaBackfillMsg(msg);
-
-      try {
-        trackEvent(
-          "ipa_backfill_complete",
-          { done, pending, total },
-          { app_version: appVersion }
-        );
-      } catch {}
-
-      alert(msg);
-    } catch (e) {
-      try {
-        trackError(e, { source: "ipa_backfill" }, { app_version: appVersion });
-      } catch {}
-      const msg = "Backfill failed: " + (e?.message || "Unknown error");
-      setIpaBackfillMsg(msg);
-      alert(msg);
-    } finally {
-      setIpaBackfillRunning(false);
     }
   }
 
@@ -879,40 +860,23 @@ export default function SettingsView({
             </div>
           </div>
 
-          {/* ✅ Admin-only: Backfill IPA */}
-          {isAdmin ? (
-            <div className="z-inset p-4 space-y-2">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-zinc-200">Backfill IPA (admin)</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">
-                    Runs one batch via <span className="text-zinc-300">/api/backfill-ipa</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  data-press
-                  className={
-                    "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
-                    (ipaBackfillRunning
-                      ? "z-disabled bg-white/[0.06] text-zinc-200 border border-white/10"
-                      : "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black")
-                  }
-                  onClick={runIpaBackfillBatch}
-                  disabled={ipaBackfillRunning}
-                >
-                  {ipaBackfillRunning ? "Running…" : "Run batch"}
-                </button>
-              </div>
-
-              {ipaBackfillMsg ? (
-                <div className="text-xs text-zinc-400">{ipaBackfillMsg}</div>
-              ) : null}
-            </div>
-          ) : null}
-
           <div className="grid gap-3 sm:grid-cols-2">
+            {isAdmin ? (
+              <button
+                type="button"
+                data-press
+                className={
+                  "z-btn px-5 py-3 rounded-2xl justify-center " +
+                  "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold " +
+                  (backfillRunning ? "z-disabled" : "")
+                }
+                onClick={runBackfillIpaOnce}
+                disabled={backfillRunning}
+              >
+                {backfillRunning ? "Running…" : "Backfill IPA (admin)"}
+              </button>
+            ) : null}
+
             <button
               type="button"
               data-press
