@@ -504,6 +504,75 @@ export default function SettingsView({
     }
   }
 
+  /* ------------------------------
+     Admin: IPA Backfill button
+     ------------------------------ */
+  const [ipaBackfillRunning, setIpaBackfillRunning] = useState(false);
+  const [ipaBackfillMsg, setIpaBackfillMsg] = useState("");
+
+  async function runIpaBackfillBatch() {
+    if (!user) {
+      alert("Sign in first.");
+      return;
+    }
+
+    const ok = window.confirm(
+      "Backfill IPA (batch):\n\nThis will call /api/backfill-ipa once and fill IPA for a small batch of rows missing it.\n\nRun now?"
+    );
+    if (!ok) return;
+
+    try {
+      setIpaBackfillRunning(true);
+      setIpaBackfillMsg("");
+
+      try {
+        trackEvent("ipa_backfill_start", {}, { app_version: appVersion });
+      } catch {}
+
+      const res = await fetch("/api/backfill-ipa", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg = String(data?.error || "Backfill failed");
+        setIpaBackfillMsg(msg);
+        alert(msg);
+        return;
+      }
+
+      // Be tolerant of different response shapes
+      const total = Number(data?.total ?? data?.summary?.total ?? 0) || 0;
+      const done = Number(data?.done ?? data?.summary?.done ?? data?.filled ?? 0) || 0;
+      const pending =
+        Number(data?.pending ?? data?.summary?.pending ?? 0) || (total ? Math.max(0, total - done) : 0);
+
+      const msg =
+        total || done || pending
+          ? `Backfill batch complete. Done: ${done}. Pending: ${pending}.`
+          : "Backfill batch complete.";
+
+      setIpaBackfillMsg(msg);
+
+      try {
+        trackEvent(
+          "ipa_backfill_complete",
+          { done, pending, total },
+          { app_version: appVersion }
+        );
+      } catch {}
+
+      alert(msg);
+    } catch (e) {
+      try {
+        trackError(e, { source: "ipa_backfill" }, { app_version: appVersion });
+      } catch {}
+      const msg = "Backfill failed: " + (e?.message || "Unknown error");
+      setIpaBackfillMsg(msg);
+      alert(msg);
+    } finally {
+      setIpaBackfillRunning(false);
+    }
+  }
+
   return (
     <div className="z-page z-page-y pb-28 space-y-8">
       <ConflictReviewModal
@@ -809,6 +878,39 @@ export default function SettingsView({
               </button>
             </div>
           </div>
+
+          {/* ✅ Admin-only: Backfill IPA */}
+          {isAdmin ? (
+            <div className="z-inset p-4 space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-zinc-200">Backfill IPA (admin)</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">
+                    Runs one batch via <span className="text-zinc-300">/api/backfill-ipa</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  data-press
+                  className={
+                    "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
+                    (ipaBackfillRunning
+                      ? "z-disabled bg-white/[0.06] text-zinc-200 border border-white/10"
+                      : "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black")
+                  }
+                  onClick={runIpaBackfillBatch}
+                  disabled={ipaBackfillRunning}
+                >
+                  {ipaBackfillRunning ? "Running…" : "Run batch"}
+                </button>
+              </div>
+
+              {ipaBackfillMsg ? (
+                <div className="text-xs text-zinc-400">{ipaBackfillMsg}</div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <button
