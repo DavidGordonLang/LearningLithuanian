@@ -27,7 +27,6 @@ export function mergeRows(localRows = [], incomingRows = []) {
     const key = incoming.contentKey;
     const existing = byKey.get(key);
 
-    // No existing → accept incoming
     if (!existing) {
       byKey.set(key, incoming);
       continue;
@@ -48,10 +47,7 @@ export function mergeRows(localRows = [], incomingRows = []) {
     const existingIsUser = existing.Source === "user" || existing.Touched;
     const incomingIsUser = incoming.Source === "user" || incoming.Touched;
 
-    // User always beats starter
-    if (existingIsUser && !incomingIsUser) {
-      continue;
-    }
+    if (existingIsUser && !incomingIsUser) continue;
 
     if (!existingIsUser && incomingIsUser) {
       byKey.set(key, incoming);
@@ -60,23 +56,23 @@ export function mergeRows(localRows = [], incomingRows = []) {
 
     // ----- Both starter -----
     if (!existingIsUser && !incomingIsUser) {
-      // Keep the newer starter (rare, but deterministic)
-      const chosen = (incoming._ts || 0) > (existing._ts || 0) ? incoming : existing;
-
+      const chosen =
+        (incoming._ts || 0) > (existing._ts || 0) ? incoming : existing;
       byKey.set(key, chosen);
       continue;
     }
 
     // ----- Both user-owned -----
-    // Potential conflict
     const fieldsDiffer =
       existing.English !== incoming.English ||
       existing.Lithuanian !== incoming.Lithuanian ||
       existing.Usage !== incoming.Usage ||
       existing.Notes !== incoming.Notes ||
       existing.Phonetic !== incoming.Phonetic ||
-      // ✅ include IPA
+
+      // ✅ Include IPA
       existing.PhoneticIPA !== incoming.PhoneticIPA ||
+
       existing.Category !== incoming.Category ||
       existing["RAG Icon"] !== incoming["RAG Icon"];
 
@@ -89,7 +85,6 @@ export function mergeRows(localRows = [], incomingRows = []) {
       });
     }
 
-    // Deterministic resolution for now: newer wins
     const chosen =
       (incoming._ts || 0) > (existing._ts || 0) ? incoming : existing;
 
