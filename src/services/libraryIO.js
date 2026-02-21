@@ -11,9 +11,11 @@ export async function mergeRows(newRows, { setRows, normalizeRag, genId, nowTs }
     .map((r) => ({
       English: r.English?.trim() || "",
       Lithuanian: r.Lithuanian?.trim() || "",
+
+      // Preserve both phonetic modes.
       Phonetic: r.Phonetic?.trim() || "",
-      // ✅ Preserve IPA if present
       PhoneticIPA: r.PhoneticIPA?.trim() || "",
+
       Category: r.Category?.trim() || "",
       Usage: r.Usage?.trim() || "",
       Notes: r.Notes?.trim() || "",
@@ -29,12 +31,17 @@ export async function mergeRows(newRows, { setRows, normalizeRag, genId, nowTs }
           amb: { ok: 0, bad: 0 },
           grn: { ok: 0, bad: 0 },
         },
-      // Preserve lifecycle flags if present (safe defaults)
-      Source: r.Source || "user",
-      Touched: r.Touched === false ? false : true,
-      _deleted: r._deleted === true,
-      _deleted_ts: r._deleted_ts ?? null,
-      contentKey: r.contentKey || r.content_key || "",
+      _deleted: typeof r._deleted === "boolean" ? r._deleted : false,
+      _deleted_ts:
+        typeof r._deleted_ts === "number" ? r._deleted_ts : null,
+      contentKey: r.contentKey || "",
+      Source: r.Source || "",
+      Touched: typeof r.Touched === "boolean" ? r.Touched : false,
+      SourceLang: r.SourceLang || "",
+      EnglishLiteral: r.EnglishLiteral || "",
+      EnglishNatural: r.EnglishNatural || "",
+      EnglishOriginal: r.EnglishOriginal || "",
+      LithuanianOriginal: r.LithuanianOriginal || "",
     }))
     .filter((r) => r.English || r.Lithuanian);
 
@@ -50,9 +57,11 @@ export async function mergeStarterRows(
       const base = {
         English: r.English?.trim() || "",
         Lithuanian: r.Lithuanian?.trim() || "",
+
+        // Preserve both phonetic modes.
         Phonetic: r.Phonetic?.trim() || "",
-        // ✅ Preserve IPA if present in starter packs (or future packs)
         PhoneticIPA: r.PhoneticIPA?.trim() || "",
+
         Category: r.Category?.trim() || "",
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
@@ -70,8 +79,9 @@ export async function mergeStarterRows(
           },
         Source: "starter",
         Touched: false,
-        _deleted: r._deleted === true,
-        _deleted_ts: r._deleted_ts ?? null,
+        _deleted: typeof r._deleted === "boolean" ? r._deleted : false,
+        _deleted_ts:
+          typeof r._deleted_ts === "number" ? r._deleted_ts : null,
       };
 
       const ck = makeLtKey(base);
