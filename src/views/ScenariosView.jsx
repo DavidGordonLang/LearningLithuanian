@@ -1,9 +1,8 @@
-// src/views/ScenariosView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useScenarioStore } from "../stores/scenarioStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
-const MENU_WIDTH = 208; // matches w-52
+const MENU_WIDTH = 208;
 
 function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -104,14 +103,14 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
           <div
             ref={menuRef}
             className={cn(
-  "absolute top-full mt-2 z-30",
-  "w-52 max-w-[calc(100vw-32px)]",
-  "overflow-hidden rounded-2xl",
-  "border border-white/10",
-  "bg-zinc-950/90 backdrop-blur",
-  "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
-  menuSide === "right" ? "left-0" : "right-0"
-)}
+              "absolute top-full mt-2 z-30",
+              "w-52 max-w-[calc(100vw-32px)]",
+              "overflow-hidden rounded-2xl",
+              "border border-white/10",
+              "bg-zinc-950/90 backdrop-blur",
+              "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
+              menuSide === "right" ? "right-0" : "left-0"
+            )}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -290,7 +289,7 @@ function RenameScenarioModal({ open, scenario, onClose, onSave }) {
   );
 }
 
-export default function ScenariosView({ T, onCreateScenario }) {
+export default function ScenariosView({ T, onOpenScenario }) {
   const scenarios = useScenarioStore((s) => s.scenarios);
   const createScenario = useScenarioStore((s) => s.createScenario);
   const renameScenario = useScenarioStore((s) => s.renameScenario);
@@ -319,7 +318,7 @@ export default function ScenariosView({ T, onCreateScenario }) {
   }
 
   function handleOpenScenario(scenario) {
-    alert(`Scenario detail coming next:\n\n${scenario?.title || "Scenario"}`);
+    onOpenScenario?.(scenario?.id);
   }
 
   function handleRenameOpen(scenario) {
@@ -368,12 +367,7 @@ export default function ScenariosView({ T, onCreateScenario }) {
               border border-emerald-300/20
               text-black
             "
-            onClick={() => {
-              if (typeof onCreateScenario === "function") {
-                // kept harmlessly compatible
-              }
-              setCreateOpen(true);
-            }}
+            onClick={() => setCreateOpen(true)}
           >
             Create Scenario
           </button>
