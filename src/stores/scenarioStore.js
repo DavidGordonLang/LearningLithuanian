@@ -52,6 +52,22 @@ function sortScenarios(list) {
   );
 }
 
+function moveItem(list, fromIndex, toIndex) {
+  const arr = Array.isArray(list) ? [...list] : [];
+  if (
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= arr.length ||
+    toIndex >= arr.length
+  ) {
+    return arr;
+  }
+
+  const [moved] = arr.splice(fromIndex, 1);
+  arr.splice(toIndex, 0, moved);
+  return arr;
+}
+
 export const useScenarioStore = create((set, get) => ({
   scenarios: sortScenarios(loadScenarios().map(ensureScenario)),
 
@@ -208,6 +224,52 @@ export const useScenarioStore = create((set, get) => ({
           ? ensureScenario({
               ...s,
               phraseIds: currentIds.filter((id) => id !== phraseId),
+              updatedAt: Date.now(),
+            })
+          : s
+      )
+    );
+
+    saveScenarios(next);
+    set({ scenarios: next });
+
+    return { ok: true };
+  },
+
+  reorderPhraseInScenario: (scenarioId, fromIndex, toIndex) => {
+    if (!scenarioId) {
+      return { ok: false, error: "Scenario id is required." };
+    }
+
+    const existing = get().scenarios || [];
+    const target = existing.find((s) => s.id === scenarioId);
+
+    if (!target) {
+      return { ok: false, error: "Scenario not found." };
+    }
+
+    const currentIds = Array.isArray(target.phraseIds) ? target.phraseIds : [];
+    if (
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= currentIds.length ||
+      toIndex >= currentIds.length
+    ) {
+      return { ok: false, error: "Invalid reorder indexes." };
+    }
+
+    if (fromIndex === toIndex) {
+      return { ok: true };
+    }
+
+    const nextIds = moveItem(currentIds, fromIndex, toIndex);
+
+    const next = sortScenarios(
+      existing.map((s) =>
+        s.id === scenarioId
+          ? ensureScenario({
+              ...s,
+              phraseIds: nextIds,
               updatedAt: Date.now(),
             })
           : s
