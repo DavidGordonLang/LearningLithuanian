@@ -13,6 +13,9 @@ function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
+const INDICATOR_TEXT_PAD_X = 18;
+const INDICATOR_MIN_WIDTH = 78;
+
 const Header = forwardRef(function Header(
   { T, page, setPage, onLogoClick, swipeProgress, isSwiping },
   ref
@@ -42,30 +45,38 @@ const Header = forwardRef(function Header(
 
     for (const t of tabs) {
       const btn = btnRefs.current?.[t.id];
-      if (!btn) continue;
+      const label = labelRefs.current?.[t.id];
+      if (!btn || !label) continue;
+
       const bRect = btn.getBoundingClientRect();
+      const lRect = label.getBoundingClientRect();
+
+      const btnLeft = bRect.left - wRect.left;
+      const btnWidth = bRect.width;
+
+      const labelWidth = lRect.width;
+      const desiredWidth = Math.max(
+        INDICATOR_MIN_WIDTH,
+        labelWidth + INDICATOR_TEXT_PAD_X * 2
+      );
+
+      const safeWidth = Math.min(desiredWidth, btnWidth);
+      const left = btnLeft + (btnWidth - safeWidth) / 2;
+
       out[t.id] = {
-        left: bRect.left - wRect.left,
-        width: bRect.width,
+        left,
+        width: safeWidth,
       };
     }
 
-    if (tabs.every((t) => out[t.id])) setMetrics(out);
+    if (tabs.every((t) => out[t.id])) {
+      setMetrics(out);
+    }
   };
 
   const updateIndicatorForPage = () => {
     if (!metrics) {
-      const wrap = containerRef.current;
-      const btn = btnRefs.current?.[page];
-      if (!wrap || !btn) return;
-
-      const wRect = wrap.getBoundingClientRect();
-      const bRect = btn.getBoundingClientRect();
-
-      setIndicator({
-        left: bRect.left - wRect.left,
-        width: bRect.width,
-      });
+      measureAll();
       return;
     }
 
@@ -90,13 +101,15 @@ const Header = forwardRef(function Header(
     }
 
     const m = metrics[page];
-    if (m) setIndicator({ left: m.left, width: m.width });
+    if (m) {
+      setIndicator({ left: m.left, width: m.width });
+    }
   };
 
   useLayoutEffect(() => {
     measureAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabs.length]);
+  }, [tabs]);
 
   useLayoutEffect(() => {
     updateIndicatorForPage();
