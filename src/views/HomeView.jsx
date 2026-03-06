@@ -11,6 +11,7 @@ import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
 import useTranslate from "../hooks/useTranslate";
 import useSaveToLibrary from "../hooks/useSaveToLibrary";
 import { useSettingsStore } from "../stores/settingsStore";
+import InteractivePhraseText from "../components/audio/InteractivePhraseText";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -206,6 +207,15 @@ export default function HomeView({
       blurTextarea();
       if (!text) return;
       playText(text, opts);
+    },
+    [blurTextarea, playText]
+  );
+
+  const handleWordPlay = useCallback(
+    (text, opts) => {
+      blurTextarea();
+      if (!text) return;
+      return playText(text, opts);
     },
     [blurTextarea, playText]
   );
@@ -567,7 +577,11 @@ export default function HomeView({
               Lithuanian
             </div>
             <div className="mt-1 text-lg font-semibold text-zinc-100 break-words">
-              {result.ltOut}
+              <InteractivePhraseText
+                text={result.ltOut}
+                playText={handleWordPlay}
+                wordClassName="touch-manipulation"
+              />
             </div>
 
             {displayedPhonetics && (
