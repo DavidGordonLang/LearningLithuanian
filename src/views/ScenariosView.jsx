@@ -4,7 +4,33 @@ import { useScenarioStore } from "../stores/scenarioStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-function ScenarioCard({ scenario, onOpen, onMenu }) {
+function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuBtnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onDoc = (e) => {
+      const btn = menuBtnRef.current;
+      const menu = menuRef.current;
+
+      if (btn && btn.contains(e.target)) return;
+      if (menu && menu.contains(e.target)) return;
+
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("click", onDoc, true);
+    document.addEventListener("touchstart", onDoc, true);
+
+    return () => {
+      document.removeEventListener("click", onDoc, true);
+      document.removeEventListener("touchstart", onDoc, true);
+    };
+  }, [menuOpen]);
+
   return (
     <div
       role="button"
@@ -30,23 +56,61 @@ function ScenarioCard({ scenario, onOpen, onMenu }) {
         "focus:outline-none focus:ring-1 focus:ring-emerald-400/30"
       )}
     >
-      <button
-        type="button"
-        data-press
-        aria-label="Scenario actions"
-        className="
-          absolute top-3 right-3 z-10
-          text-zinc-400 hover:text-zinc-100
-          text-[22px] leading-none
-          px-2 py-1
-        "
-        onClick={(e) => {
-          e.stopPropagation();
-          onMenu?.(scenario);
-        }}
-      >
-        ⋯
-      </button>
+      <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
+        <button
+          ref={menuBtnRef}
+          type="button"
+          data-press
+          aria-label="Scenario actions"
+          className="
+            text-zinc-400 hover:text-zinc-100
+            text-[22px] leading-none
+            px-2 py-1
+          "
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((prev) => !prev);
+          }}
+        >
+          ⋯
+        </button>
+
+        {menuOpen ? (
+          <div
+            ref={menuRef}
+            className="
+              absolute right-0 top-full mt-2
+              w-52 overflow-hidden rounded-2xl
+              border border-white/10
+              bg-zinc-950/90 backdrop-blur
+              shadow-[0_16px_50px_rgba(0,0,0,0.65)]
+            "
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
+              onClick={() => {
+                setMenuOpen(false);
+                onRename?.(scenario);
+              }}
+            >
+              Rename scenario
+            </button>
+
+            <button
+              type="button"
+              className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete?.(scenario);
+              }}
+            >
+              Delete scenario
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       <div className="min-w-0 w-full flex items-center justify-center text-center">
         <div className="text-[18px] sm:text-[19px] font-semibold tracking-tight text-zinc-100 break-words">
@@ -117,9 +181,7 @@ function CreateScenarioModal({ open, onClose, onCreate }) {
                 "
                 onClick={() => {
                   const ok = onCreate?.(title);
-                  if (ok) {
-                    setTitle("");
-                  }
+                  if (ok) setTitle("");
                 }}
               >
                 Save
@@ -201,70 +263,6 @@ function RenameScenarioModal({ open, scenario, onClose, onSave }) {
   );
 }
 
-function ScenarioMenu({ scenario, anchorRef, open, onClose, onRename, onDelete }) {
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onDoc = (e) => {
-      const anchor = anchorRef?.current;
-      const menu = menuRef.current;
-
-      if (anchor && anchor.contains(e.target)) return;
-      if (menu && menu.contains(e.target)) return;
-
-      onClose?.();
-    };
-
-    document.addEventListener("click", onDoc, true);
-    document.addEventListener("touchstart", onDoc, true);
-
-    return () => {
-      document.removeEventListener("click", onDoc, true);
-      document.removeEventListener("touchstart", onDoc, true);
-    };
-  }, [open, anchorRef, onClose]);
-
-  if (!open || !scenario) return null;
-
-  return (
-    <div
-      ref={menuRef}
-      className="
-        fixed z-[60]
-        right-4 top-[220px]
-        w-52 overflow-hidden rounded-2xl
-        border border-white/10
-        bg-zinc-950/90 backdrop-blur
-        shadow-[0_16px_50px_rgba(0,0,0,0.65)]
-      "
-    >
-      <button
-        type="button"
-        className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-        onClick={() => {
-          onClose?.();
-          onRename?.(scenario);
-        }}
-      >
-        Rename scenario
-      </button>
-
-      <button
-        type="button"
-        className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
-        onClick={() => {
-          onClose?.();
-          onDelete?.(scenario);
-        }}
-      >
-        Delete scenario
-      </button>
-    </div>
-  );
-}
-
 export default function ScenariosView({ T, onCreateScenario }) {
   const scenarios = useScenarioStore((s) => s.scenarios);
   const createScenario = useScenarioStore((s) => s.createScenario);
@@ -274,9 +272,6 @@ export default function ScenariosView({ T, onCreateScenario }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameScenarioRow, setRenameScenarioRow] = useState(null);
-  const [menuScenario, setMenuScenario] = useState(null);
-
-  const menuAnchorRef = useRef(null);
 
   const hasScenarios = (scenarios?.length || 0) > 0;
 
@@ -298,10 +293,6 @@ export default function ScenariosView({ T, onCreateScenario }) {
 
   function handleOpenScenario(scenario) {
     alert(`Scenario detail coming next:\n\n${scenario?.title || "Scenario"}`);
-  }
-
-  function handleScenarioMenu(scenario) {
-    setMenuScenario(scenario);
   }
 
   function handleRenameOpen(scenario) {
@@ -400,16 +391,13 @@ export default function ScenariosView({ T, onCreateScenario }) {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {cards.map((scenario) => (
-              <div
+              <ScenarioCard
                 key={scenario.id}
-                ref={menuScenario?.id === scenario.id ? menuAnchorRef : null}
-              >
-                <ScenarioCard
-                  scenario={scenario}
-                  onOpen={handleOpenScenario}
-                  onMenu={handleScenarioMenu}
-                />
-              </div>
+                scenario={scenario}
+                onOpen={handleOpenScenario}
+                onRename={handleRenameOpen}
+                onDelete={handleDeleteScenario}
+              />
             ))}
           </div>
         )}
@@ -429,15 +417,6 @@ export default function ScenariosView({ T, onCreateScenario }) {
           setRenameScenarioRow(null);
         }}
         onSave={handleRenameSave}
-      />
-
-      <ScenarioMenu
-        scenario={menuScenario}
-        anchorRef={menuAnchorRef}
-        open={!!menuScenario}
-        onClose={() => setMenuScenario(null)}
-        onRename={handleRenameOpen}
-        onDelete={handleDeleteScenario}
       />
     </>
   );
