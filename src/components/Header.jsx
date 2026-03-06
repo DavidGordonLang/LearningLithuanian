@@ -13,6 +13,8 @@ function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
+const INDICATOR_INSET_X = 6;
+
 const Header = forwardRef(function Header(
   { T, page, setPage, onLogoClick, swipeProgress, isSwiping },
   ref
@@ -43,9 +45,13 @@ const Header = forwardRef(function Header(
       const btn = btnRefs.current?.[t.id];
       if (!btn) continue;
       const bRect = btn.getBoundingClientRect();
+
+      const rawLeft = bRect.left - wRect.left;
+      const rawWidth = bRect.width;
+
       out[t.id] = {
-        left: bRect.left - wRect.left,
-        width: bRect.width,
+        left: rawLeft + INDICATOR_INSET_X,
+        width: Math.max(0, rawWidth - INDICATOR_INSET_X * 2),
       };
     }
 
@@ -61,9 +67,12 @@ const Header = forwardRef(function Header(
       const wRect = wrap.getBoundingClientRect();
       const bRect = btn.getBoundingClientRect();
 
+      const rawLeft = bRect.left - wRect.left;
+      const rawWidth = bRect.width;
+
       setIndicator({
-        left: bRect.left - wRect.left,
-        width: bRect.width,
+        left: rawLeft + INDICATOR_INSET_X,
+        width: Math.max(0, rawWidth - INDICATOR_INSET_X * 2),
       });
       return;
     }
