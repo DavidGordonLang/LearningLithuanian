@@ -1,4 +1,3 @@
-// src/hooks/useSaveToLibrary.js
 import { useCallback } from "react";
 
 // Match phraseStore contentKey logic (diacritics removed + alnum only)
@@ -26,85 +25,101 @@ export default function useSaveToLibrary({
   nowTs,
   showToast,
 } = {}) {
+  const saveToLibrary = useCallback(
+    ({ suppressToast = false } = {}) => {
+      blurTextarea?.();
+
+      if (!canSave) return { ok: false, error: "Nothing to save." };
+
+      const lt = String(result?.ltOut || "").trim();
+      const enLit = String(result?.enLiteral || "").trim();
+      const enNat = String(result?.enNatural || "").trim();
+      const phoEn = String(result?.phonetics || "").trim();
+      const phoIpa = String(result?.phoneticsIpa || "").trim();
+
+      if (!lt) return { ok: false, error: "Missing Lithuanian output." };
+
+      const contentKey = buildContentKeyFromLt(lt);
+      const existingRows = Array.isArray(rows) ? rows : [];
+      const existing = existingRows.find(
+        (r) => !r?._deleted && String(r?.contentKey || "") === contentKey
+      );
+
+      if (existing) {
+        if (!suppressToast) showToast?.("Saved to library");
+        return { ok: true, row: existing, alreadyExisted: true };
+      }
+
+      const now = typeof nowTs === "function" ? nowTs() : Date.now();
+      const id =
+        typeof genId === "function"
+          ? genId()
+          : Math.random().toString(36).slice(2);
+
+      const sourceLang = result?.sourceLang === "lt" ? "lt" : "en";
+
+      const newRow = {
+        _id: id,
+        _ts: now,
+
+        Sheet: "Phrases",
+        Category: result?.categoryOut || "General",
+
+        Lithuanian: lt,
+        English: enNat || enLit || String(input || "").trim(),
+
+        SourceLang: sourceLang,
+        EnglishLiteral: enLit || enNat || "",
+        EnglishNatural: enNat || enLit || "",
+        EnglishOriginal: String(input || "").trim(),
+        LithuanianOriginal: lt,
+
+        Phonetic: phoEn,
+        PhoneticIPA: phoIpa,
+
+        Usage: String(result?.usageOut || "").trim(),
+        Notes: String(result?.notesOut || "").trim(),
+
+        "RAG Icon": "🟠",
+        _qstat: {
+          red: { ok: 0, bad: 0 },
+          amb: { ok: 0, bad: 0 },
+          grn: { ok: 0, bad: 0 },
+        },
+
+        Source: "user",
+        Touched: true,
+        _deleted: false,
+        _deleted_ts: null,
+
+        contentKey,
+      };
+
+      setRows?.((prev) => {
+        const arr = Array.isArray(prev) ? prev : [];
+        return [newRow, ...arr];
+      });
+
+      if (!suppressToast) showToast?.("Saved to library");
+
+      return { ok: true, row: newRow, alreadyExisted: false };
+    },
+    [
+      blurTextarea,
+      canSave,
+      genId,
+      input,
+      nowTs,
+      result,
+      rows,
+      setRows,
+      showToast,
+    ]
+  );
+
   const handleSaveToLibrary = useCallback(() => {
-    blurTextarea?.();
+    saveToLibrary();
+  }, [saveToLibrary]);
 
-    if (!canSave) return;
-
-    const lt = String(result?.ltOut || "").trim();
-    const enLit = String(result?.enLiteral || "").trim();
-    const enNat = String(result?.enNatural || "").trim();
-    const phoEn = String(result?.phonetics || "").trim();
-    const phoIpa = String(result?.phoneticsIpa || "").trim();
-
-    if (!lt) return;
-
-    const now = typeof nowTs === "function" ? nowTs() : Date.now();
-    const id = typeof genId === "function" ? genId() : Math.random().toString(36).slice(2);
-
-    const sourceLang = result?.sourceLang === "lt" ? "lt" : "en";
-
-    const newRow = {
-      _id: id,
-      _ts: now,
-
-      Sheet: "Phrases",
-      Category: result?.categoryOut || "General",
-
-      // Core content
-      Lithuanian: lt,
-      English: enNat || enLit || String(input || "").trim(),
-
-      // Keep originals (you already use these fields in some rows)
-      SourceLang: sourceLang,
-      EnglishLiteral: enLit || (enNat || ""),
-      EnglishNatural: enNat || (enLit || ""),
-      EnglishOriginal: String(input || "").trim(),
-      LithuanianOriginal: lt,
-
-      // Phonetics (both)
-      Phonetic: phoEn,
-      PhoneticIPA: phoIpa,
-
-      // Enrichment placeholders (we’ll fill later)
-      Usage: String(result?.usageOut || "").trim(),
-      Notes: String(result?.notesOut || "").trim(),
-
-      // Default RAG + stats
-      "RAG Icon": "🟠",
-      _qstat: {
-        red: { ok: 0, bad: 0 },
-        amb: { ok: 0, bad: 0 },
-        grn: { ok: 0, bad: 0 },
-      },
-
-      // Ownership / lifecycle
-      Source: "user",
-      Touched: true,
-      _deleted: false,
-      _deleted_ts: null,
-
-      // Identity key (used by sync/merge logic)
-      contentKey: buildContentKeyFromLt(lt),
-    };
-
-    // Insert at top (latest first)
-    setRows?.((prev) => {
-      const arr = Array.isArray(prev) ? prev : [];
-      return [newRow, ...arr];
-    });
-
-    showToast?.("Saved to library");
-  }, [
-    blurTextarea,
-    canSave,
-    genId,
-    input,
-    nowTs,
-    result,
-    setRows,
-    showToast,
-  ]);
-
-  return { handleSaveToLibrary };
+  return { handleSaveToLibrary, saveToLibrary };
 }
