@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { searchStore } from "../searchStore";
-import { CATEGORIES, DEFAULT_CATEGORY } from "../constants/categories";
+import { CATEGORIES } from "../constants/categories";
 import { useSettingsStore } from "../stores/settingsStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -60,7 +60,6 @@ function PlayButton({ text, playText, blurActiveInput }) {
   const start = (e) => {
     if (e?.button != null && e.button !== 0) return;
 
-    // Capture the pointer so small finger drift doesn't cancel long-press
     try {
       if (e?.currentTarget?.setPointerCapture && e?.pointerId != null) {
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -79,7 +78,6 @@ function PlayButton({ text, playText, blurActiveInput }) {
   };
 
   const finish = (e) => {
-    // Release pointer capture (safe no-op if not captured)
     try {
       if (e?.currentTarget?.releasePointerCapture && e?.pointerId != null) {
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -148,14 +146,12 @@ export default function LibraryView({
   const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
 
   const search = searchStore.getSnapshot() || "";
-  const [category, setCategory] = useState(DEFAULT_CATEGORY);
+  const [category, setCategory] = useState("All");
 
-  // Local sort: "Newest" | "Oldest"
   const [sortMode, setSortMode] = useState("Newest");
   const toggleSort = () =>
     setSortMode((m) => (m === "Newest" ? "Oldest" : "Newest"));
 
-  // Details open state
   const [openDetails, setOpenDetails] = useState(() => new Set());
   const toggleDetails = useCallback((id) => {
     if (!id) return;
@@ -167,7 +163,6 @@ export default function LibraryView({
     });
   }, []);
 
-  // Context menu / row actions
   const [menuOpenId, setMenuOpenId] = useState(null);
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
@@ -208,8 +203,7 @@ export default function LibraryView({
   const filtered = useMemo(() => {
     const q = normalize(search);
 
-    const inCat = (r) =>
-      category === "All" || (r?.Category || DEFAULT_CATEGORY) === category;
+    const inCat = (r) => category === "All" || (r?.Category || "General") === category;
 
     const matches = (r) => {
       if (!q) return true;
@@ -241,20 +235,17 @@ export default function LibraryView({
 
   return (
     <div className="z-page z-page-y pb-28 space-y-4">
-      {/* Title + subtitle */}
       <div className="space-y-1">
         <h2 className="z-title">{T.libraryTitle || "Library"}</h2>
         <p className="z-subtitle">Browse, search, and manage your saved entries.</p>
       </div>
 
-      {/* Search */}
       {SearchBox ? (
         <div className="w-full">
           <SearchBox placeholder={searchPlaceholder || T.search || "Search…"} />
         </div>
       ) : null}
 
-      {/* Sort left (glass) + Add Entry right (CTA emerald) */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-zinc-400 text-xs sm:text-sm">{T.sort}</span>
@@ -295,7 +286,6 @@ export default function LibraryView({
         </button>
       </div>
 
-      {/* Category row (tighter) */}
       <div className="z-card px-4 py-2.5">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[11px] uppercase tracking-wide text-zinc-400">
@@ -320,7 +310,6 @@ export default function LibraryView({
         </div>
       </div>
 
-      {/* List */}
       <div className="space-y-3">
         {filtered.map((r) => {
           const id = r?.id || r?._id;
@@ -333,7 +322,6 @@ export default function LibraryView({
               ? String(r?.PhoneticIPA || r?.Phonetic || "").trim()
               : String(r?.Phonetic || "").trim();
 
-          // card tap toggles details (only if has notes)
           const onCardTap = () => {
             if (!hasNotes) return;
             toggleDetails(id);
@@ -355,7 +343,6 @@ export default function LibraryView({
               }}
             >
               <div className="flex items-start gap-3">
-                {/* Play (safe zone) */}
                 <div onClick={(e) => e.stopPropagation()}>
                   <PlayButton
                     text={r?.Lithuanian || ""}
@@ -364,9 +351,7 @@ export default function LibraryView({
                   />
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  {/* NO TRUNCATION: wrap naturally */}
                   <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words whitespace-normal">
                     {r?.Lithuanian || "—"}
                   </div>
@@ -382,7 +367,6 @@ export default function LibraryView({
                   ) : null}
                 </div>
 
-                {/* Menu (safe zone) */}
                 <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <button
                     ref={isMenuOpen ? menuBtnRef : null}
@@ -439,7 +423,6 @@ export default function LibraryView({
                 </div>
               </div>
 
-              {/* Details */}
               {hasNotes && detailsOpen ? (
                 <div className="mt-3 text-sm text-zinc-400 whitespace-pre-wrap">
                   {String(r.Notes)}
