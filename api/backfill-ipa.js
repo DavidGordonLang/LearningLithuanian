@@ -7,10 +7,11 @@ const supabase = createClient(
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 100;
 
 async function generateIPA(lithuanian) {
   const input = String(lithuanian || "").trim();
+
   if (!input) {
     throw new Error("Missing Lithuanian text");
   }
@@ -27,7 +28,8 @@ async function generateIPA(lithuanian) {
       messages: [
         {
           role: "system",
-          content: "Return ONLY the Lithuanian IPA transcription. No explanation.",
+          content:
+            "Return ONLY the Lithuanian IPA transcription. No explanation.",
         },
         {
           role: "user",
@@ -43,15 +45,49 @@ async function generateIPA(lithuanian) {
   }
 
   const json = await res.json();
-  const ipa = json.choices?.[0]?.message?.content?.trim();
+  const ipa = json?.choices?.[0]?.message?.content?.trim();
 
-  if (!ipa) throw new Error("Empty IPA response");
+  if (!ipa) {
+    throw new Error("Empty IPA response");
+  }
 
   return ipa;
 }
 
+async function getJobCounts() {
+  const { data, error } = await supabase
+    .from("phonetic_ipa_backfill_jobs")
+    .select("status");
+
+  if (error) throw error;
+
+  const rows = Array.isArray(data) ? data : [];
+
+  const counts = {
+    total: rows.length,
+    pending: 0,
+    done: 0,
+    error: 0,
+  };
+
+  for (const row of rows) {
+    const status = String(row?.status || "").trim();
+    if (status === "pending") counts.pending += 1;
+    else if (status === "done") counts.done += 1;
+    else if (status === "error") counts.error += 1;
+  }
+
+  return counts;
+}
+
 export default async function handler(req, res) {
   try {
+    if (req.method !== "POST" && req.method !== "GET") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    const before = await getJobCounts();
+
     const { data: jobs, error: fetchError } = await supabase
       .from("phonetic_ipa_backfill_jobs")
       .select("*")
@@ -62,10 +98,20 @@ export default async function handler(req, res) {
     if (fetchError) throw fetchError;
 
     if (!jobs || jobs.length === 0) {
-      return res.json({ message: "No pending jobs.", processed: 0, results: [] });
+      return res.json({
+        message: "No pending jobs.",
+        batchSize: BATCH_SIZE,
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+        results: [],
+        counts: before,
+      });
     }
 
     const results = [];
+    let succeeded = 0;
+    let failed = 0;
 
     for (const job of jobs) {
       try {
@@ -85,6 +131,7 @@ export default async function handler(req, res) {
         if (phraseError) throw phraseError;
 
         const lithuanian = String(phraseRow?.data?.Lithuanian || "").trim();
+
         if (!lithuanian) {
           throw new Error("Phrase row missing data.Lithuanian");
         }
@@ -109,7 +156,11 @@ export default async function handler(req, res) {
           })
           .eq("id", job.id);
 
-        results.push({ phrase_id: job.phrase_id, status: "done" });
+        succeeded += 1;
+        results.push({
+          phrase_id: job.phrase_id,
+          status: "done",
+        });
       } catch (err) {
         await supabase
           .from("phonetic_ipa_backfill_jobs")
@@ -119,6 +170,7 @@ export default async function handler(req, res) {
           })
           .eq("id", job.id);
 
+        failed += 1;
         results.push({
           phrase_id: job.phrase_id,
           status: "error",
@@ -127,9 +179,17 @@ export default async function handler(req, res) {
       }
     }
 
+    const after = await getJobCounts();
+
     return res.json({
+      message: "Backfill batch complete.",
+      batchSize: BATCH_SIZE,
       processed: jobs.length,
+      succeeded,
+      failed,
       results,
+      counts: after,
+      countsBefore: before,
     });
   } catch (err) {
     console.error(err);
