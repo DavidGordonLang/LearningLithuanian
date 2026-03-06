@@ -13,6 +13,7 @@ import SearchBox from "./components/SearchBox";
 import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
+import ScenariosView from "./views/ScenariosView";
 import TrainingView from "./views/TrainingView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
 import AnalyticsView from "./views/AnalyticsView";
@@ -69,6 +70,7 @@ const STR = {
   subtitle: "",
   navHome: "Home",
   navLibrary: "Library",
+  navScenarios: "Scenarios",
   navTraining: "Training",
   navSettings: "Settings",
   search: "Search…",
@@ -188,11 +190,8 @@ function ToastItem({ toast, onDismiss }) {
 /* ============================================================================ */
 
 function AppBackground() {
-  // Render-inspired: subtle top glow, centre bloom, vignette, and soft texture feel.
-  // No behaviour changes; pointer-events disabled.
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {/* Base gradient */}
       <div
         className="absolute inset-0"
         style={{
@@ -203,7 +202,6 @@ function AppBackground() {
         }}
       />
 
-      {/* Soft vignette */}
       <div
         className="absolute inset-0"
         style={{
@@ -212,7 +210,6 @@ function AppBackground() {
         }}
       />
 
-      {/* Very subtle “film” texture (cheap + effective, no assets) */}
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
@@ -239,11 +236,9 @@ export default function App() {
     supabase,
   });
 
-  /* PAGE */
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
 
-  // NOTE: Training tab inserted between Library and Settings.
-  const swipeTabs = ["home", "library", "training", "settings"];
+  const swipeTabs = ["home", "library", "scenarios", "training", "settings"];
 
   const swipeIndex = swipeTabs.includes(page)
     ? swipeTabs.indexOf(page)
@@ -276,7 +271,6 @@ export default function App() {
     };
   }, []);
 
-  /* ROWS */
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
   const addPhrase = usePhraseStore((s) => s.addPhrase);
@@ -286,8 +280,7 @@ export default function App() {
 
   const T = STR;
 
-  /* TOAST */
-  const [toasts, setToasts] = useState([]); // [{ id, msg, ms }]
+  const [toasts, setToasts] = useState([]);
   const toastMaxRef = useRef(6);
 
   function showToast(msg, ms = 2200) {
@@ -307,7 +300,6 @@ export default function App() {
     );
   }
 
-  /* VOICE */
   const {
     voice: azureVoiceShortName,
     setVoice: setAzureVoiceShortName,
@@ -343,7 +335,6 @@ export default function App() {
     searchStore.getServerSnapshot
   );
 
-  /* LIBRARY IO */
   const mergeRows = (newRows) =>
     mergeRowsIO(newRows, { setRows, normalizeRag, genId, nowTs });
 
@@ -374,26 +365,24 @@ export default function App() {
     return rows.find((r) => r.id === editRowId || r._id === editRowId) || null;
   }, [isEditing, rows, editRowId]);
 
-  /* Delete */
-const removePhraseById = (id) => {
-  if (!id) return;
-  if (!confirm(T.confirm)) return;
+  const removePhraseById = (id) => {
+    if (!id) return;
+    if (!confirm(T.confirm)) return;
 
-  setRows((prev) =>
-    Array.isArray(prev)
-      ? prev.map((r) => {
-          const rid = r?.id ?? null;
-          const ruid = r?._id ?? null;
+    setRows((prev) =>
+      Array.isArray(prev)
+        ? prev.map((r) => {
+            const rid = r?.id ?? null;
+            const ruid = r?._id ?? null;
 
-          if (rid === id || ruid === id) {
-            return { ...r, _deleted: true, _ts: nowTs() };
-          }
-          return r;
-        })
-      : prev
-  );
-};
-
+            if (rid === id || ruid === id) {
+              return { ...r, _deleted: true, _ts: nowTs() };
+            }
+            return r;
+          })
+        : prev
+    );
+  };
 
   const goToPage = (next) => {
     if (!next) return;
@@ -407,7 +396,6 @@ const removePhraseById = (id) => {
     goToPage("home");
   }
 
-  /* Daily recall */
   const dailyRecall = useDailyRecall({
     rows: visibleRows,
     appVersion: APP_VERSION,
@@ -508,12 +496,11 @@ const removePhraseById = (id) => {
             index={swipeIndex}
             onIndexChange={(i) => goToPage(swipeTabs[i])}
             onProgress={(p, dragging) => {
-              const clamped = Math.max(-0.25, Math.min(3.25, p));
+              const clamped = Math.max(-0.25, Math.min(4.25, p));
               setSwipeProgress(clamped);
               setIsSwiping(!!dragging);
             }}
           >
-            {/* HOME */}
             <div className="h-full">
               <HomeView
                 key={homeResetKey}
@@ -530,7 +517,6 @@ const removePhraseById = (id) => {
               />
             </div>
 
-            {/* LIBRARY */}
             <div className="h-full">
               <LibraryView
                 T={T}
@@ -552,7 +538,13 @@ const removePhraseById = (id) => {
               />
             </div>
 
-            {/* TRAINING */}
+            <div className="h-full">
+              <ScenariosView
+                T={T}
+                onCreateScenario={() => showToast("Scenario creation coming next")}
+              />
+            </div>
+
             <div className="h-full overflow-y-auto overscroll-contain">
               <TrainingView
                 T={T}
@@ -562,7 +554,6 @@ const removePhraseById = (id) => {
               />
             </div>
 
-            {/* SETTINGS */}
             <div className="h-full">
               <SettingsView
                 T={T}
