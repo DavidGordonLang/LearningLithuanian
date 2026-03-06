@@ -323,7 +323,7 @@ export default function HomeView({
   }, [duplicateEntry, result?.ltOut]);
 
   return (
-    <div className="z-page pb-24">
+    <div className="z-page pt-3 pb-24">
       <section className="z-card p-4 sm:p-5">
         {/* Top controls: labels left, pills right (2 rows total) */}
         <div className="space-y-2.5">
