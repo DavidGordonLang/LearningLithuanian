@@ -2,14 +2,19 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // must be service role
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-const BATCH_SIZE = 10; // safe starting point
+const BATCH_SIZE = 10;
 
 async function generateIPA(lithuanian) {
+  const input = String(lithuanian || "").trim();
+  if (!input) {
+    throw new Error("Missing Lithuanian text");
+  }
+
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -22,12 +27,11 @@ async function generateIPA(lithuanian) {
       messages: [
         {
           role: "system",
-          content:
-            "Return ONLY the Lithuanian IPA transcription. No explanation.",
+          content: "Return ONLY the Lithuanian IPA transcription. No explanation.",
         },
         {
           role: "user",
-          content: lithuanian,
+          content: input,
         },
       ],
     }),
@@ -48,7 +52,6 @@ async function generateIPA(lithuanian) {
 
 export default async function handler(req, res) {
   try {
-    // 1️⃣ Fetch pending jobs
     const { data: jobs, error: fetchError } = await supabase
       .from("phonetic_ipa_backfill_jobs")
       .select("*")
@@ -59,24 +62,35 @@ export default async function handler(req, res) {
     if (fetchError) throw fetchError;
 
     if (!jobs || jobs.length === 0) {
-      return res.json({ message: "No pending jobs." });
+      return res.json({ message: "No pending jobs.", processed: 0, results: [] });
     }
 
     const results = [];
 
     for (const job of jobs) {
       try {
-        // mark processing attempt
         await supabase
           .from("phonetic_ipa_backfill_jobs")
           .update({
-            attempts: job.attempts + 1,
+            attempts: (job.attempts || 0) + 1,
           })
           .eq("id", job.id);
 
-        const ipa = await generateIPA(job.lithuanian);
+        const { data: phraseRow, error: phraseError } = await supabase
+          .from("phrases")
+          .select("id, data")
+          .eq("id", job.phrase_id)
+          .single();
 
-        // 2️⃣ Update phrase JSONB safely
+        if (phraseError) throw phraseError;
+
+        const lithuanian = String(phraseRow?.data?.Lithuanian || "").trim();
+        if (!lithuanian) {
+          throw new Error("Phrase row missing data.Lithuanian");
+        }
+
+        const ipa = await generateIPA(lithuanian);
+
         const { error: updateError } = await supabase.rpc(
           "update_phrase_phonetic_ipa",
           {
@@ -87,10 +101,12 @@ export default async function handler(req, res) {
 
         if (updateError) throw updateError;
 
-        // 3️⃣ Mark job done
         await supabase
           .from("phonetic_ipa_backfill_jobs")
-          .update({ status: "done" })
+          .update({
+            status: "done",
+            last_error: null,
+          })
           .eq("id", job.id);
 
         results.push({ phrase_id: job.phrase_id, status: "done" });
@@ -111,12 +127,12 @@ export default async function handler(req, res) {
       }
     }
 
-    res.json({
+    return res.json({
       processed: jobs.length,
       results,
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
