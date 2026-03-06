@@ -1,4 +1,3 @@
-// src/stores/scenarioStore.js
 import { create } from "zustand";
 
 const LS_KEY = "lt_scenarios_v1";
@@ -32,14 +31,16 @@ function normalizeTitle(s = "") {
 function ensureScenario(row) {
   const now = Date.now();
   const title = normalizeTitle(row?.title || "");
+  const phraseIds = Array.isArray(row?.phraseIds)
+    ? row.phraseIds.filter((x) => typeof x === "string" && x.trim())
+    : [];
 
   return {
     id: typeof row?.id === "string" && row.id ? row.id : makeId(),
     title,
-    createdAt:
-      typeof row?.createdAt === "number" ? row.createdAt : now,
-    updatedAt:
-      typeof row?.updatedAt === "number" ? row.updatedAt : now,
+    phraseIds,
+    createdAt: typeof row?.createdAt === "number" ? row.createdAt : now,
+    updatedAt: typeof row?.updatedAt === "number" ? row.updatedAt : now,
   };
 }
 
@@ -52,7 +53,7 @@ function sortScenarios(list) {
 }
 
 export const useScenarioStore = create((set, get) => ({
-  scenarios: sortScenarios(loadScenarios()),
+  scenarios: sortScenarios(loadScenarios().map(ensureScenario)),
 
   setScenarios: (update) => {
     set((state) => {
@@ -85,6 +86,7 @@ export const useScenarioStore = create((set, get) => ({
 
     const nextRow = ensureScenario({
       title: clean,
+      phraseIds: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -141,5 +143,42 @@ export const useScenarioStore = create((set, get) => ({
     const next = (get().scenarios || []).filter((s) => s.id !== id);
     saveScenarios(next);
     set({ scenarios: next });
+  },
+
+  addPhraseToScenario: (scenarioId, phraseId) => {
+    if (!scenarioId) {
+      return { ok: false, error: "Scenario id is required." };
+    }
+    if (!phraseId) {
+      return { ok: false, error: "Phrase id is required." };
+    }
+
+    const existing = get().scenarios || [];
+    const target = existing.find((s) => s.id === scenarioId);
+
+    if (!target) {
+      return { ok: false, error: "Scenario not found." };
+    }
+
+    if ((target.phraseIds || []).includes(phraseId)) {
+      return { ok: false, error: "This phrase is already in that scenario." };
+    }
+
+    const next = sortScenarios(
+      existing.map((s) =>
+        s.id === scenarioId
+          ? ensureScenario({
+              ...s,
+              phraseIds: [...(s.phraseIds || []), phraseId],
+              updatedAt: Date.now(),
+            })
+          : s
+      )
+    );
+
+    saveScenarios(next);
+    set({ scenarios: next });
+
+    return { ok: true };
   },
 }));
