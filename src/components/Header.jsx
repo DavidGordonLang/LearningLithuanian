@@ -15,6 +15,7 @@ function lerp(a, b, t) {
 
 const INDICATOR_TEXT_PAD_X = 18;
 const INDICATOR_MIN_WIDTH = 78;
+const INDICATOR_NUDGE_X = -4;
 
 const Header = forwardRef(function Header(
   { T, page, setPage, onLogoClick, swipeProgress, isSwiping },
@@ -63,7 +64,6 @@ const Header = forwardRef(function Header(
 
       const safeWidth = Math.min(desiredWidth, btnWidth);
       const labelCenter = labelLeft + labelWidth / 2;
-      const left = btnLeft + Math.max(0, (btnWidth - safeWidth) / 2);
 
       const anchoredLeft = Math.min(
         Math.max(labelCenter - safeWidth / 2, btnLeft),
@@ -71,7 +71,7 @@ const Header = forwardRef(function Header(
       );
 
       out[t.id] = {
-        left: anchoredLeft,
+        left: anchoredLeft + INDICATOR_NUDGE_X,
         width: safeWidth,
       };
     }
