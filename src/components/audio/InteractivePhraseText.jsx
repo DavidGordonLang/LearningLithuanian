@@ -1,5 +1,5 @@
 // src/components/audio/InteractivePhraseText.jsx
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useCallback } from "react";
 import tokenizePhrase from "../../utils/tokenizePhrase";
 import useWordAudio from "../../hooks/useWordAudio";
 
@@ -22,6 +22,10 @@ function WordToken({
     moveThresholdPx,
   });
 
+  const stopPropagation = useCallback((e) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <span
       role="button"
@@ -33,12 +37,33 @@ function WordToken({
         wordClassName,
         pressing ? activeWordClassName : null
       )}
-      {...handlers}
+      onClick={stopPropagation}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        handlers.onPointerDown?.(e);
+      }}
+      onPointerMove={(e) => {
+        e.stopPropagation();
+        handlers.onPointerMove?.(e);
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation();
+        handlers.onPointerUp?.(e);
+      }}
+      onPointerCancel={(e) => {
+        e.stopPropagation();
+        handlers.onPointerCancel?.(e);
+      }}
+      onContextMenu={(e) => {
+        e.stopPropagation();
+        handlers.onContextMenu?.(e);
+      }}
       onKeyDown={async (e) => {
         if (disabled) return;
         if (e.key !== "Enter" && e.key !== " ") return;
 
         e.preventDefault();
+        e.stopPropagation();
 
         try {
           await playText?.(token.text);
