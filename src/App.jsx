@@ -96,6 +96,7 @@ const STR = {
   azure: "Azure Speech",
   addEntry: "Add Entry",
   edit: "Edit Entry",
+  editEntry: "Edit Entry",
   delete: "Delete",
   showDetails: "Details",
   hideDetails: "Hide",
@@ -561,6 +562,80 @@ export default function App() {
     setScenarioPickerOpen(true);
   }
 
+  function getRowId(row) {
+    return row?._id || row?.id || null;
+  }
+
+  function buildPhraseContentKeyFromLithuanian(lt) {
+    return makeLtKey({ Lithuanian: String(lt || "").trim() });
+  }
+
+  function findActiveRowById(phraseId) {
+    if (!phraseId) return null;
+
+    return (
+      (Array.isArray(rows) ? rows : []).find(
+        (r) => !r?._deleted && getRowId(r) === phraseId
+      ) || null
+    );
+  }
+
+  function findActiveRowByLithuanian(lt) {
+    const key = String(buildPhraseContentKeyFromLithuanian(lt)).trim();
+    if (!key) return null;
+
+    return (
+      (Array.isArray(rows) ? rows : []).find((r) => {
+        if (r?._deleted) return false;
+
+        const rowKey = String(
+          r?.contentKey ||
+            buildPhraseContentKeyFromLithuanian(r?.Lithuanian || "")
+        ).trim();
+
+        return !!rowKey && rowKey === key;
+      }) || null
+    );
+  }
+
+  function findScenarioDuplicateByContent(scenarioId, candidateRow) {
+    if (!scenarioId || !candidateRow) return null;
+
+    const targetScenario =
+      (Array.isArray(scenarios) ? scenarios : []).find(
+        (s) => s.id === scenarioId
+      ) || null;
+
+    if (!targetScenario) return null;
+
+    const candidateKey = String(
+      candidateRow?.contentKey ||
+        buildPhraseContentKeyFromLithuanian(candidateRow?.Lithuanian || "")
+    ).trim();
+
+    if (!candidateKey) return null;
+
+    const linkedIds = Array.isArray(targetScenario.phraseIds)
+      ? targetScenario.phraseIds
+      : [];
+
+    for (const linkedId of linkedIds) {
+      const linkedRow = findActiveRowById(linkedId);
+      if (!linkedRow) continue;
+
+      const linkedKey = String(
+        linkedRow?.contentKey ||
+          buildPhraseContentKeyFromLithuanian(linkedRow?.Lithuanian || "")
+      ).trim();
+
+      if (linkedKey && linkedKey === candidateKey) {
+        return linkedRow;
+      }
+    }
+
+    return null;
+  }
+
   function buildSavedRowFromTranslation(payload) {
     const lt = String(payload?.result?.ltOut || "").trim();
     const enLit = String(payload?.result?.enLiteral || "").trim();
@@ -572,8 +647,16 @@ export default function App() {
       return { ok: false, error: "Could not save phrase." };
     }
 
+    const existing = findActiveRowByLithuanian(lt);
+    if (existing) {
+      return { ok: true, row: existing, alreadyExisted: true };
+    }
+
     const now = typeof nowTs === "function" ? nowTs() : Date.now();
-    const id = typeof genId === "function" ? genId() : Math.random().toString(36).slice(2);
+    const id =
+      typeof genId === "function"
+        ? genId()
+        : Math.random().toString(36).slice(2);
     const sourceLang = payload?.result?.sourceLang === "lt" ? "lt" : "en";
 
     const newRow = {
@@ -602,7 +685,7 @@ export default function App() {
       Touched: true,
       _deleted: false,
       _deleted_ts: null,
-      contentKey: makeLtKey(lt),
+      contentKey: buildPhraseContentKeyFromLithuanian(lt),
     };
 
     setRows((prev) => {
@@ -610,13 +693,30 @@ export default function App() {
       return [newRow, ...arr];
     });
 
-    return { ok: true, row: newRow };
+    return { ok: true, row: newRow, alreadyExisted: false };
   }
 
   function handleScenarioPick(scenarioId) {
     if (!scenarioId) return;
 
     if (scenarioPickerSource === "phrase") {
+      const sourceRow = findActiveRowById(pendingScenarioPhraseId);
+
+      if (!sourceRow) {
+        alert("Phrase not found.");
+        return;
+      }
+
+      const duplicateInScenario = findScenarioDuplicateByContent(
+        scenarioId,
+        sourceRow
+      );
+
+      if (duplicateInScenario) {
+        alert("This phrase is already in that scenario.");
+        return;
+      }
+
       const linked = addPhraseToScenario(scenarioId, pendingScenarioPhraseId);
 
       if (!linked?.ok) {
@@ -630,6 +730,25 @@ export default function App() {
     }
 
     if (scenarioPickerSource === "translation") {
+      const candidateLt = String(
+        pendingScenarioTranslationPayload?.result?.ltOut || ""
+      ).trim();
+
+      if (!candidateLt) {
+        alert("Could not save phrase.");
+        return;
+      }
+
+      const duplicateInScenario = findScenarioDuplicateByContent(scenarioId, {
+        Lithuanian: candidateLt,
+        contentKey: buildPhraseContentKeyFromLithuanian(candidateLt),
+      });
+
+      if (duplicateInScenario) {
+        alert("This phrase is already in that scenario.");
+        return;
+      }
+
       const saved = buildSavedRowFromTranslation(pendingScenarioTranslationPayload);
 
       if (!saved?.ok || !saved?.row) {
@@ -637,7 +756,7 @@ export default function App() {
         return;
       }
 
-      const phraseId = saved.row?._id || saved.row?.id;
+      const phraseId = getRowId(saved.row);
       const linked = addPhraseToScenario(scenarioId, phraseId);
 
       if (!linked?.ok) {
