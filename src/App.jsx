@@ -14,6 +14,7 @@ import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
 import ScenariosView from "./views/ScenariosView";
+import ScenarioDetailView from "./views/ScenarioDetailView";
 import TrainingView from "./views/TrainingView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
 import AnalyticsView from "./views/AnalyticsView";
@@ -30,6 +31,7 @@ import BetaBlocked from "./components/BetaBlocked";
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
+import { useScenarioStore } from "./stores/scenarioStore";
 import { initAuthListener, useAuthStore } from "./stores/authStore";
 import { supabase } from "./supabaseClient";
 
@@ -237,6 +239,7 @@ export default function App() {
   });
 
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
+  const [selectedScenarioId, setSelectedScenarioId] = useState(null);
 
   const swipeTabs = ["home", "library", "scenarios", "training", "settings"];
 
@@ -248,7 +251,7 @@ export default function App() {
   const [isSwiping, setIsSwiping] = useState(false);
 
   useEffect(() => {
-    if (page === "dupes" || page === "analytics") return;
+    if (page === "dupes" || page === "analytics" || page === "scenario-detail") return;
     setSwipeProgress(swipeIndex);
     setIsSwiping(false);
   }, [page, swipeIndex]);
@@ -275,6 +278,14 @@ export default function App() {
   const setRows = usePhraseStore((s) => s.setPhrases);
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
+
+  const scenarios = useScenarioStore((s) => s.scenarios);
+
+  const selectedScenario = useMemo(() => {
+    return (
+      (Array.isArray(scenarios) ? scenarios : []).find((s) => s.id === selectedScenarioId) || null
+    );
+  }, [scenarios, selectedScenarioId]);
 
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
@@ -393,7 +404,19 @@ export default function App() {
 
   function handleLogoClick() {
     setHomeResetKey((k) => k + 1);
+    setSelectedScenarioId(null);
     goToPage("home");
+  }
+
+  function handleOpenScenario(scenarioId) {
+    if (!scenarioId) return;
+    setSelectedScenarioId(scenarioId);
+    setPage("scenario-detail");
+  }
+
+  function handleBackFromScenarioDetail() {
+    setSelectedScenarioId(null);
+    setPage("scenarios");
   }
 
   const dailyRecall = useDailyRecall({
@@ -435,7 +458,7 @@ export default function App() {
   useModalScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
   useAppBodyScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
 
-  const headerPage = swipeTabs.includes(page) ? page : "settings";
+  const headerPage = swipeTabs.includes(page) ? page : "scenarios";
 
   if (authLoading || !allowlistChecked) {
     return (
@@ -461,7 +484,10 @@ export default function App() {
         ref={headerRef}
         T={T}
         page={headerPage}
-        setPage={goToPage}
+        setPage={(next) => {
+          setSelectedScenarioId(null);
+          goToPage(next);
+        }}
         onLogoClick={handleLogoClick}
         swipeProgress={swipeProgress}
         isSwiping={isSwiping}
@@ -488,6 +514,19 @@ export default function App() {
               <AnalyticsView
                 appVersion={APP_VERSION}
                 onBack={() => goToPage("settings")}
+              />
+            </div>
+          </div>
+        ) : page === "scenario-detail" ? (
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <div className="z-page z-page-y">
+              <ScenarioDetailView
+                T={T}
+                scenario={selectedScenario}
+                rows={visibleRows}
+                playText={playTextTracked}
+                onBack={handleBackFromScenarioDetail}
+                showToast={showToast}
               />
             </div>
           </div>
@@ -541,7 +580,7 @@ export default function App() {
             <div className="h-full">
               <ScenariosView
                 T={T}
-                onCreateScenario={() => showToast("Scenario creation coming next")}
+                onOpenScenario={handleOpenScenario}
               />
             </div>
 
