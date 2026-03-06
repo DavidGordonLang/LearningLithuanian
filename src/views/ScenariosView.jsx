@@ -3,9 +3,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useScenarioStore } from "../stores/scenarioStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+const MENU_WIDTH = 208; // matches w-52
 
 function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuSide, setMenuSide] = useState("right");
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -31,6 +33,29 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
     };
   }, [menuOpen]);
 
+  function toggleMenu(e) {
+    e.stopPropagation();
+
+    const btn = menuBtnRef.current;
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || 0;
+
+      const spaceToRight = viewportWidth - rect.right - 16;
+      const spaceToLeft = rect.left - 16;
+
+      if (spaceToRight >= MENU_WIDTH) {
+        setMenuSide("right");
+      } else if (spaceToLeft >= MENU_WIDTH) {
+        setMenuSide("left");
+      } else {
+        setMenuSide(spaceToRight >= spaceToLeft ? "right" : "left");
+      }
+    }
+
+    setMenuOpen((prev) => !prev);
+  }
+
   return (
     <div
       role="button"
@@ -49,14 +74,17 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
         "p-4 sm:p-5",
         "min-h-[148px]",
         "flex flex-col justify-center",
-        "relative",
+        "relative overflow-visible",
         "bg-[radial-gradient(120%_140%_at_50%_0%,rgba(16,185,129,0.10),rgba(255,255,255,0.02)_38%,rgba(255,255,255,0.01)_100%)]",
         "hover:bg-[radial-gradient(120%_140%_at_50%_0%,rgba(16,185,129,0.14),rgba(255,255,255,0.03)_38%,rgba(255,255,255,0.01)_100%)]",
         "transition-colors",
         "focus:outline-none focus:ring-1 focus:ring-emerald-400/30"
       )}
     >
-      <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="absolute top-3 right-3 z-20"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           ref={menuBtnRef}
           type="button"
@@ -67,10 +95,7 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
             text-[22px] leading-none
             px-2 py-1
           "
-          onClick={(e) => {
-            e.stopPropagation();
-            setMenuOpen((prev) => !prev);
-          }}
+          onClick={toggleMenu}
         >
           ⋯
         </button>
@@ -78,13 +103,15 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
         {menuOpen ? (
           <div
             ref={menuRef}
-            className="
-              absolute right-0 top-full mt-2
-              w-52 overflow-hidden rounded-2xl
-              border border-white/10
-              bg-zinc-950/90 backdrop-blur
-              shadow-[0_16px_50px_rgba(0,0,0,0.65)]
-            "
+            className={cn(
+              "absolute top-full mt-2 z-30",
+              "w-52 max-w-[calc(100vw-32px)]",
+              "overflow-hidden rounded-2xl",
+              "border border-white/10",
+              "bg-zinc-950/90 backdrop-blur",
+              "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
+              menuSide === "right" ? "right-0" : "left-0"
+            )}
             onClick={(e) => e.stopPropagation()}
           >
             <button
