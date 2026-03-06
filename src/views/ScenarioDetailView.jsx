@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useScenarioStore } from "../stores/scenarioStore";
+import InteractivePhraseText from "../components/audio/InteractivePhraseText";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -178,6 +179,14 @@ function ScenarioPhraseRow({
       ? String(row?.PhoneticIPA || row?.Phonetic || "").trim()
       : String(row?.Phonetic || "").trim();
 
+  const handleWordPlay = useCallback(
+    (text, opts) => {
+      if (!text) return;
+      return playText?.(text, opts);
+    },
+    [playText]
+  );
+
   function handleMoveUp() {
     const result = reorderPhraseInScenario(scenarioId, rowIndex, rowIndex - 1);
     if (!result?.ok) {
@@ -204,7 +213,11 @@ function ScenarioPhraseRow({
 
       <div className="min-w-0 flex-1">
         <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words">
-          {row?.Lithuanian || "—"}
+          <InteractivePhraseText
+            text={row?.Lithuanian || "—"}
+            playText={handleWordPlay}
+            wordClassName="touch-manipulation"
+          />
         </div>
 
         <div className="text-sm text-zinc-300 mt-1 leading-snug break-words">
