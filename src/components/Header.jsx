@@ -53,18 +53,25 @@ const Header = forwardRef(function Header(
 
       const btnLeft = bRect.left - wRect.left;
       const btnWidth = bRect.width;
-
+      const labelLeft = lRect.left - wRect.left;
       const labelWidth = lRect.width;
+
       const desiredWidth = Math.max(
         INDICATOR_MIN_WIDTH,
         labelWidth + INDICATOR_TEXT_PAD_X * 2
       );
 
       const safeWidth = Math.min(desiredWidth, btnWidth);
-      const left = btnLeft + (btnWidth - safeWidth) / 2;
+      const labelCenter = labelLeft + labelWidth / 2;
+      const left = btnLeft + Math.max(0, (btnWidth - safeWidth) / 2);
+
+      const anchoredLeft = Math.min(
+        Math.max(labelCenter - safeWidth / 2, btnLeft),
+        btnLeft + btnWidth - safeWidth
+      );
 
       out[t.id] = {
-        left,
+        left: anchoredLeft,
         width: safeWidth,
       };
     }
@@ -205,7 +212,7 @@ const Header = forwardRef(function Header(
                   type="button"
                   data-press
                   className={cn(
-                    "relative z-10 flex-1 px-4 sm:px-6 py-2 rounded-full font-medium select-none transition",
+                    "relative z-10 flex flex-1 items-center justify-center px-4 sm:px-6 py-2 rounded-full font-medium select-none transition",
                     active
                       ? "text-zinc-950"
                       : "text-zinc-300 hover:text-zinc-100"
@@ -218,7 +225,7 @@ const Header = forwardRef(function Header(
                     ref={(el) => {
                       if (el) labelRefs.current[tab.id] = el;
                     }}
-                    className="inline-block"
+                    className="inline-block text-center"
                   >
                     {tab.label}
                   </span>
