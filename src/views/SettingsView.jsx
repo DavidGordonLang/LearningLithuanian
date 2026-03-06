@@ -60,7 +60,6 @@ function CollapsibleSection({
   accentTitle,
   defaultOpen = false,
 }) {
-  // if no controlled state passed, fallback to internal
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isOpen = typeof open === "boolean" ? open : internalOpen;
 
@@ -80,9 +79,12 @@ function CollapsibleSection({
         aria-controls={id}
       >
         <div className="flex items-start justify-between gap-4">
-          <SectionHeader title={title} subtitle={subtitle} accent={!!accentTitle} />
+          <SectionHeader
+            title={title}
+            subtitle={subtitle}
+            accent={!!accentTitle}
+          />
 
-          {/* Arrow only: right when closed, down when open */}
           <div className="shrink-0 mt-[2px] pr-1" aria-hidden="true">
             <span className="text-zinc-200 text-lg leading-none">
               {isOpen ? "▾" : "▸"}
@@ -132,20 +134,17 @@ export default function SettingsView({
   const [lastSyncLabel, setLastSyncLabel] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState(null);
 
-  // Conflict flow
   const [pendingConflicts, setPendingConflicts] = useState([]);
   const [pendingMergedRows, setPendingMergedRows] = useState([]);
   const [showConflictModal, setShowConflictModal] = useState(false);
 
-  // Diagnostics toggle (local)
-  const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
+  const [diagnosticsOn, setDiagnosticsOn] = useState(() =>
+    getDiagnosticsEnabled()
+  );
 
-  // Phonetics display mode (EN vs IPA)
   const phoneticsMode = useSettingsStore((s) => s.phoneticsMode);
   const setPhoneticsMode = useSettingsStore((s) => s.setPhoneticsMode);
 
-  // Collapsible section state
-  // All collapsed by default.
   const [openLearning, setOpenLearning] = useState(false);
   const [openVoice, setOpenVoice] = useState(false);
   const [openAccount, setOpenAccount] = useState(false);
@@ -153,12 +152,14 @@ export default function SettingsView({
   const [openAbout, setOpenAbout] = useState(false);
   const [openDiagnostics, setOpenDiagnostics] = useState(false);
 
-  // Admin backfill button state
   const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillStats, setBackfillStats] = useState(null);
 
   const isAdmin =
     !!user?.email &&
-    ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(String(user.email).toLowerCase());
+    ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(
+      String(user.email).toLowerCase()
+    );
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
 
@@ -170,7 +171,9 @@ export default function SettingsView({
       const sig = all
         .map(
           (r) =>
-            `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`
+            `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${
+              r?._deleted ? 1 : 0
+            }`
         )
         .join("~");
       return String(sig.length) + ":" + String(sig.slice(0, 200));
@@ -268,7 +271,11 @@ export default function SettingsView({
       markSynced("Uploaded");
 
       try {
-        trackEvent("sync_upload_complete", { rows: allPhrases.length }, { app_version: appVersion });
+        trackEvent(
+          "sync_upload_complete",
+          { rows: allPhrases.length },
+          { app_version: appVersion }
+        );
       } catch {}
 
       alert("Uploaded to cloud ✅");
@@ -301,7 +308,11 @@ export default function SettingsView({
       markSynced("Downloaded");
 
       try {
-        trackEvent("sync_download_complete", { rows: cloudRows.length }, { app_version: appVersion });
+        trackEvent(
+          "sync_download_complete",
+          { rows: cloudRows.length },
+          { app_version: appVersion }
+        );
       } catch {}
 
       alert(`Downloaded ${cloudRows.length} entries ✅`);
@@ -392,7 +403,11 @@ export default function SettingsView({
         );
       } catch {}
 
-      const finalRows = applyMergeResolutions(pendingMergedRows, pendingConflicts, resolutions);
+      const finalRows = applyMergeResolutions(
+        pendingMergedRows,
+        pendingConflicts,
+        resolutions
+      );
 
       await replaceUserPhrases(finalRows);
 
@@ -462,7 +477,8 @@ export default function SettingsView({
           <div className="text-sm font-semibold text-amber-300">Not synced</div>
           <div className="text-sm text-zinc-300 mt-1">
             Changes on this device haven’t been synced to cloud yet. Use{" "}
-            <span className="text-amber-200 font-semibold">Sync (merge)</span> when you’re ready.
+            <span className="text-amber-200 font-semibold">Sync (merge)</span>{" "}
+            when you’re ready.
           </div>
         </div>
       );
@@ -471,7 +487,9 @@ export default function SettingsView({
     if (lastSyncLabel) {
       return (
         <div className="z-inset p-4 border border-emerald-500/20 bg-emerald-950/15">
-          <div className="text-sm font-semibold text-emerald-300">{lastSyncLabel}</div>
+          <div className="text-sm font-semibold text-emerald-300">
+            {lastSyncLabel}
+          </div>
           {lastSyncAt ? (
             <div className="text-sm text-zinc-300 mt-1">{formatWhen(lastSyncAt)}</div>
           ) : null}
@@ -483,8 +501,8 @@ export default function SettingsView({
       <div className="z-inset p-4">
         <div className="text-sm font-semibold text-zinc-200">Sync status</div>
         <div className="text-sm text-zinc-400 mt-1">
-          Use <span className="text-zinc-200 font-semibold">Sync (merge)</span> to keep devices
-          aligned.
+          Use <span className="text-zinc-200 font-semibold">Sync (merge)</span>{" "}
+          to keep devices aligned.
         </div>
       </div>
     );
@@ -513,23 +531,34 @@ export default function SettingsView({
         return;
       }
 
-      const pending = data?.pending ?? data?.stats?.pending;
-      const done = data?.done ?? data?.stats?.done;
-      const total = data?.total ?? data?.stats?.total;
+      const counts = data?.counts || {};
+      const total =
+        typeof counts?.total === "number" ? counts.total : null;
+      const pending =
+        typeof counts?.pending === "number" ? counts.pending : null;
+      const done =
+        typeof counts?.done === "number" ? counts.done : null;
+      const error =
+        typeof counts?.error === "number" ? counts.error : null;
 
-      if (
-        typeof pending === "number" ||
-        typeof done === "number" ||
-        typeof total === "number"
-      ) {
-        alert(
-          `Backfill batch complete ✅\n\nDone: ${done ?? "?"}\nPending: ${
-            pending ?? "?"
-          }\nTotal: ${total ?? "?"}`
-        );
-      } else {
-        alert("Backfill batch complete ✅");
-      }
+      const processed =
+        typeof data?.processed === "number" ? data.processed : 0;
+      const succeeded =
+        typeof data?.succeeded === "number" ? data.succeeded : 0;
+      const failed =
+        typeof data?.failed === "number" ? data.failed : 0;
+
+      setBackfillStats({
+        total,
+        pending,
+        done,
+        error,
+        processed,
+        succeeded,
+        failed,
+        message: String(data?.message || "").trim(),
+        updatedAt: Date.now(),
+      });
     } catch (e) {
       alert("Backfill failed: " + (e?.message || "Unknown error"));
     } finally {
@@ -538,7 +567,9 @@ export default function SettingsView({
   }
 
   async function handleClearLibrary() {
-    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
+    const ok = window.confirm(
+      "Clear your entire local library? This cannot be undone."
+    );
     if (!ok) return;
     try {
       await clearLibrary?.();
@@ -554,6 +585,20 @@ export default function SettingsView({
     }
   }
 
+  const backfillPercent =
+    backfillStats &&
+    typeof backfillStats.total === "number" &&
+    backfillStats.total > 0 &&
+    typeof backfillStats.done === "number"
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round((backfillStats.done / backfillStats.total) * 100)
+          )
+        )
+      : null;
+
   return (
     <div className="z-page z-page-y pb-28 space-y-8">
       <ConflictReviewModal
@@ -563,7 +608,6 @@ export default function SettingsView({
         onFinish={finishConflictSync}
       />
 
-      {/* PAGE HEADER (no box) */}
       <div className="pt-2">
         <h2 className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-zinc-100">
           {T?.navSettings || "Settings"}
@@ -573,7 +617,6 @@ export default function SettingsView({
         </p>
       </div>
 
-      {/* LEARNING (collapsed by default) */}
       <CollapsibleSection
         id="sec-learning"
         title="Learning"
@@ -586,7 +629,9 @@ export default function SettingsView({
           <div className="z-inset p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-zinc-200">Daily Recall</div>
+                <div className="text-sm font-semibold text-zinc-200">
+                  Daily Recall
+                </div>
                 <div className="text-xs text-zinc-500 mt-0.5">
                   Show one saved phrase when you open the app
                 </div>
@@ -622,7 +667,9 @@ export default function SettingsView({
           <div className="z-inset p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-zinc-200">Starter Pack</div>
+                <div className="text-sm font-semibold text-zinc-200">
+                  Starter Pack
+                </div>
                 <div className="text-xs text-zinc-500 mt-0.5">
                   Adds the starter library to this device
                 </div>
@@ -651,7 +698,6 @@ export default function SettingsView({
         </div>
       </CollapsibleSection>
 
-      {/* VOICE (collapsed by default) */}
       <CollapsibleSection
         id="sec-voice"
         title="Voice"
@@ -676,8 +722,12 @@ export default function SettingsView({
           <div className="z-inset p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-zinc-200">Phonetics display</div>
-                <div className="text-xs text-zinc-500 mt-0.5">Choose English-style or IPA</div>
+                <div className="text-sm font-semibold text-zinc-200">
+                  Phonetics display
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  Choose English-style or IPA
+                </div>
               </div>
 
               <div className="flex gap-2">
@@ -730,7 +780,6 @@ export default function SettingsView({
         </div>
       </CollapsibleSection>
 
-      {/* ACCOUNT & SYNC */}
       <CollapsibleSection
         id="sec-account"
         title="Account"
@@ -790,7 +839,9 @@ export default function SettingsView({
             className="text-xs text-zinc-400 underline underline-offset-4"
             onClick={() => setShowAdvanced((v) => !v)}
           >
-            {showAdvanced ? "Hide advanced sync options" : "Show advanced sync options"}
+            {showAdvanced
+              ? "Hide advanced sync options"
+              : "Show advanced sync options"}
           </button>
         ) : null}
 
@@ -831,7 +882,6 @@ export default function SettingsView({
         ) : null}
       </CollapsibleSection>
 
-      {/* DATA */}
       <CollapsibleSection
         id="sec-data"
         title="Data & Advanced"
@@ -860,23 +910,101 @@ export default function SettingsView({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {isAdmin ? (
-              <button
-                type="button"
-                data-press
-                className={
-                  "z-btn px-5 py-3 rounded-2xl justify-center " +
-                  "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold " +
-                  (backfillRunning ? "z-disabled" : "")
-                }
-                onClick={runBackfillIpaOnce}
-                disabled={backfillRunning}
-              >
-                {backfillRunning ? "Running…" : "Backfill IPA (admin)"}
-              </button>
-            ) : null}
+          {isAdmin ? (
+            <div className="z-inset p-4 space-y-3">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="text-sm font-semibold text-zinc-200">
+                    IPA backfill
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-0.5">
+                    Processes up to 100 queued entries per run.
+                  </div>
+                </div>
 
+                <button
+                  type="button"
+                  data-press
+                  className={
+                    "z-btn px-5 py-3 rounded-2xl " +
+                    "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold " +
+                    (backfillRunning ? "z-disabled" : "")
+                  }
+                  onClick={runBackfillIpaOnce}
+                  disabled={backfillRunning}
+                >
+                  {backfillRunning ? "Running…" : "Backfill IPA (admin)"}
+                </button>
+              </div>
+
+              {backfillStats ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <div className="text-zinc-300">
+                      {backfillStats.message || "Backfill batch complete."}
+                    </div>
+                    <div className="text-zinc-200 font-semibold">
+                      {typeof backfillPercent === "number"
+                        ? `${backfillPercent}%`
+                        : "—"}
+                    </div>
+                  </div>
+
+                  <div className="h-3 rounded-full bg-white/8 overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 transition-all duration-300"
+                      style={{
+                        width:
+                          typeof backfillPercent === "number"
+                            ? `${backfillPercent}%`
+                            : "0%",
+                      }}
+                    />
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-4 text-xs">
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-zinc-500">Done</div>
+                      <div className="text-zinc-100 font-semibold">
+                        {backfillStats.done ?? "—"}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-zinc-500">Pending</div>
+                      <div className="text-zinc-100 font-semibold">
+                        {backfillStats.pending ?? "—"}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-zinc-500">Errors</div>
+                      <div className="text-zinc-100 font-semibold">
+                        {backfillStats.error ?? "—"}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-zinc-500">Total</div>
+                      <div className="text-zinc-100 font-semibold">
+                        {backfillStats.total ?? "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-zinc-400">
+                    Last batch: processed {backfillStats.processed ?? 0}, succeeded{" "}
+                    {backfillStats.succeeded ?? 0}, failed {backfillStats.failed ?? 0}
+                    {backfillStats.updatedAt
+                      ? ` • ${formatWhen(backfillStats.updatedAt)}`
+                      : ""}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
               data-press
@@ -898,7 +1026,6 @@ export default function SettingsView({
         </div>
       </CollapsibleSection>
 
-      {/* ABOUT + ADMIN */}
       <CollapsibleSection
         id="sec-about"
         title="About"
@@ -944,7 +1071,6 @@ export default function SettingsView({
         </div>
       </CollapsibleSection>
 
-      {/* DIAGNOSTICS (collapsed by default) */}
       <CollapsibleSection
         id="sec-diagnostics"
         title="Diagnostics"
@@ -953,9 +1079,11 @@ export default function SettingsView({
         setOpen={setOpenDiagnostics}
       >
         <p className="text-sm text-zinc-400 leading-relaxed">
-          During beta, we track basic usage (screens and feature clicks) and collect error reports.
-          This helps improve stability and understand what people actually use. We do{" "}
-          <span className="text-zinc-200 font-semibold">not</span> collect your phrase content.
+          During beta, we track basic usage (screens and feature clicks) and
+          collect error reports. This helps improve stability and understand what
+          people actually use. We do{" "}
+          <span className="text-zinc-200 font-semibold">not</span> collect your
+          phrase content.
         </p>
 
         <div className="z-inset p-4">
