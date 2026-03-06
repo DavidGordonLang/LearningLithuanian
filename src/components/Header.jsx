@@ -14,7 +14,7 @@ function lerp(a, b, t) {
 }
 
 const INDICATOR_TEXT_PAD_X = 18;
-const INDICATOR_MIN_WIDTH = 78;
+const INDICATOR_MIN_WIDTH = 74;
 const INDICATOR_NUDGE_X = -4;
 
 const Header = forwardRef(function Header(
@@ -25,6 +25,7 @@ const Header = forwardRef(function Header(
     () => [
       { id: "home", label: T.navHome },
       { id: "library", label: T.navLibrary },
+      { id: "scenarios", label: T.navScenarios || "Scenarios" },
       { id: "training", label: T.navTraining || "Training" },
       { id: "settings", label: T.navSettings },
     ],
@@ -212,7 +213,9 @@ const Header = forwardRef(function Header(
                   type="button"
                   data-press
                   className={cn(
-                    "relative z-10 flex flex-1 items-center justify-center px-4 sm:px-6 py-2 rounded-full font-medium select-none transition",
+                    "relative z-10 flex flex-1 items-center justify-center",
+                    "px-2 sm:px-3 py-2 rounded-full",
+                    "font-medium select-none transition min-w-0",
                     active
                       ? "text-zinc-950"
                       : "text-zinc-300 hover:text-zinc-100"
@@ -225,7 +228,7 @@ const Header = forwardRef(function Header(
                     ref={(el) => {
                       if (el) labelRefs.current[tab.id] = el;
                     }}
-                    className="inline-block text-center"
+                    className="inline-block text-center whitespace-nowrap"
                   >
                     {tab.label}
                   </span>
