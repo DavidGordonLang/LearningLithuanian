@@ -230,7 +230,7 @@ export default function ScenariosView({ T, onCreateScenario }) {
             </div>
           </section>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             {cards.map((scenario) => (
               <ScenarioCard
                 key={scenario.id}
