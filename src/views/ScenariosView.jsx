@@ -104,14 +104,14 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
           <div
             ref={menuRef}
             className={cn(
-              "absolute top-full mt-2 z-30",
-              "w-52 max-w-[calc(100vw-32px)]",
-              "overflow-hidden rounded-2xl",
-              "border border-white/10",
-              "bg-zinc-950/90 backdrop-blur",
-              "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
-              menuSide === "right" ? "right-0" : "left-0"
-            )}
+  "absolute top-full mt-2 z-30",
+  "w-52 max-w-[calc(100vw-32px)]",
+  "overflow-hidden rounded-2xl",
+  "border border-white/10",
+  "bg-zinc-950/90 backdrop-blur",
+  "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
+  menuSide === "right" ? "left-0" : "right-0"
+)}
             onClick={(e) => e.stopPropagation()}
           >
             <button
