@@ -1,5 +1,6 @@
 // src/hooks/useTranslate.js
 import { useCallback, useRef, useState } from "react";
+import { makeLtKey } from "../utils/contentKey";
 
 const EMPTY_RESULT = {
   ltOut: "",
@@ -13,7 +14,19 @@ const EMPTY_RESULT = {
   sourceLang: "en",
 };
 
+function buildInputKey(text) {
+  return String(text || "")
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
 export default function useTranslate({
+  rows = [],
+  tone = "friendly",
+  gender = "neutral",
   onTranslated,
   setIsTranslating,
   showToast,
@@ -27,21 +40,73 @@ export default function useTranslate({
   // Prevent stale finally() from flipping state if a newer translate started.
   const inFlightIdRef = useRef(0);
 
+  const [duplicateEntry, setDuplicateEntry] = useState(null);
+
   const translate = useCallback(
-    async (text, { tone = "casual", gender = "neutral" } = {}) => {
+    async (
+      text,
+      {
+        tone: overrideTone,
+        gender: overrideGender,
+        force = false,
+      } = {}
+    ) => {
       const input = String(text || "").trim();
       if (!input) return;
+
+      const resolvedTone = overrideTone || tone || "friendly";
+      const resolvedGender = overrideGender || gender || "neutral";
+
+      const inputKey = buildInputKey(input);
+      const activeRows = Array.isArray(rows) ? rows.filter((r) => !r?._deleted) : [];
+
+      // Duplicate detection before translate:
+      // - If user typed English, match against saved English variants
+      // - If user typed Lithuanian, match against Lithuanian/contentKey
+      if (!force && inputKey) {
+        const existing = activeRows.find((r) => {
+          const ltKey = String(
+            r?.contentKey || makeLtKey({ Lithuanian: r?.Lithuanian || "" })
+          ).trim();
+
+          const englishKeys = [
+            String(r?.English || ""),
+            String(r?.EnglishNatural || ""),
+            String(r?.EnglishLiteral || ""),
+            String(r?.EnglishOriginal || ""),
+          ]
+            .map(buildInputKey)
+            .filter(Boolean);
+
+          return ltKey === inputKey || englishKeys.includes(inputKey);
+        });
+
+        if (existing) {
+          setDuplicateEntry(existing);
+          setResult(EMPTY_RESULT);
+          showToast?.("Similar entry found in your library");
+          return {
+            duplicate: true,
+            entry: existing,
+          };
+        }
+      }
 
       const myId = ++inFlightIdRef.current;
 
       try {
+        setDuplicateEntry(null);
         setIsTranslating?.(true);
         setTranslating(true);
 
         const res = await fetch("/api/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: input, tone, gender }),
+          body: JSON.stringify({
+            text: input,
+            tone: resolvedTone,
+            gender: resolvedGender,
+          }),
         });
 
         const data = await res.json().catch(() => ({}));
@@ -72,11 +137,7 @@ export default function useTranslate({
           throw new Error(msg);
         }
 
-        // -------------------------------------------------------------------
-        // Enrichment: Usage + Notes (separate endpoint by design).
-        // IMPORTANT: This does NOT change translation prompt semantics.
-        // If enrich fails, we keep translation result usable.
-        // -------------------------------------------------------------------
+        // Enrichment is optional for a usable translation result
         let usageOut = "";
         let notesOut = "";
         let categoryOut = cat || "";
@@ -101,11 +162,9 @@ export default function useTranslate({
             ).trim();
             usageOut = String(enrichData?.Usage || "").trim();
             notesOut = String(enrichData?.Notes || "").trim();
-          } else {
-            // Don't fail translate just because enrich failed
           }
         } catch {
-          // swallow enrich errors (translation is primary)
+          // swallow enrich errors; translation is still valid
         }
 
         const next = {
@@ -117,68 +176,52 @@ export default function useTranslate({
           enNatural: enNat,
           usageOut,
           notesOut,
-          // translate endpoint does silent source-lang detection;
-          // we keep existing default contract
           sourceLang:
             String(data.source_lang || data.sourceLang || "en") === "lt"
               ? "lt"
               : "en",
         };
 
-        // Only update state if this is still the newest in-flight request.
         if (inFlightIdRef.current === myId) {
           setResult(next);
           onTranslated?.(next);
         }
 
-        // Optional analytics hook placeholder (kept to preserve signature usage)
         try {
-          // eslint-disable-next-line no-unused-expressions
+          // kept to preserve signature usage
           appVersion;
         } catch {}
 
         return next;
       } finally {
-        // Only end "translating" for the latest request.
         if (inFlightIdRef.current === myId) {
           setIsTranslating?.(false);
           setTranslating(false);
         }
       }
     },
-    [appVersion, onTranslated, setIsTranslating, showToast]
+    [appVersion, gender, onTranslated, rows, setIsTranslating, showToast, tone]
   );
 
   const reset = useCallback(() => {
-    // Cancel any pending completion toggles
     inFlightIdRef.current++;
     setResult(EMPTY_RESULT);
+    setDuplicateEntry(null);
     setIsTranslating?.(false);
     setTranslating(false);
   }, [setIsTranslating]);
 
-  // ---------------------------------------------------------------------------
-  // Compatibility layer for HomeView (and other older callers)
-  // HomeView expects:
-  // - translating
-  // - translateText(input, force?)  (we ignore force; behaviour unchanged)
-  // - resetTranslation()
-  // - (sometimes) duplicateEntry + setDuplicateEntry
-  // ---------------------------------------------------------------------------
-
-  const [duplicateEntry, setDuplicateEntry] = useState(null);
-
   const translateText = useCallback(
-    async (text, _force = false, opts = undefined) => {
-      // keep existing semantics: translate() uses default { tone, gender }
-      // callers can optionally pass opts as 3rd param without breaking old signature
-      return translate(text, opts || undefined);
+    async (text, force = false, opts = undefined) => {
+      return translate(text, {
+        force: !!force,
+        ...(opts || {}),
+      });
     },
     [translate]
   );
 
   const resetTranslation = useCallback(() => {
-    setDuplicateEntry(null);
     reset();
   }, [reset]);
 
