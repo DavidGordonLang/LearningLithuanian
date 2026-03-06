@@ -249,6 +249,7 @@ export const useScenarioStore = create((set, get) => ({
     }
 
     const currentIds = Array.isArray(target.phraseIds) ? target.phraseIds : [];
+
     if (
       fromIndex < 0 ||
       toIndex < 0 ||
