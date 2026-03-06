@@ -181,4 +181,42 @@ export const useScenarioStore = create((set, get) => ({
 
     return { ok: true };
   },
+
+  removePhraseFromScenario: (scenarioId, phraseId) => {
+    if (!scenarioId) {
+      return { ok: false, error: "Scenario id is required." };
+    }
+    if (!phraseId) {
+      return { ok: false, error: "Phrase id is required." };
+    }
+
+    const existing = get().scenarios || [];
+    const target = existing.find((s) => s.id === scenarioId);
+
+    if (!target) {
+      return { ok: false, error: "Scenario not found." };
+    }
+
+    const currentIds = Array.isArray(target.phraseIds) ? target.phraseIds : [];
+    if (!currentIds.includes(phraseId)) {
+      return { ok: false, error: "Phrase is not in this scenario." };
+    }
+
+    const next = sortScenarios(
+      existing.map((s) =>
+        s.id === scenarioId
+          ? ensureScenario({
+              ...s,
+              phraseIds: currentIds.filter((id) => id !== phraseId),
+              updatedAt: Date.now(),
+            })
+          : s
+      )
+    );
+
+    saveScenarios(next);
+    set({ scenarios: next });
+
+    return { ok: true };
+  },
 }));
