@@ -1,3 +1,4 @@
+// src/views/ScenarioDetailView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useScenarioStore } from "../stores/scenarioStore";
@@ -417,22 +418,6 @@ export default function ScenarioDetailView({
             })}
           </div>
         )}
-
-        <div className="pt-2 flex flex-wrap gap-3">
-          <button
-            type="button"
-            data-press
-            className="
-              z-btn px-4 py-2 rounded-2xl text-sm font-semibold
-              bg-emerald-600/90 hover:bg-emerald-500
-              border border-emerald-300/20
-              text-black
-            "
-            onClick={() => showToast?.("Add phrases to scenario is next")}
-          >
-            Add phrases
-          </button>
-        </div>
       </section>
     </div>
   );
