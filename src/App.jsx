@@ -340,6 +340,7 @@ export default function App() {
 
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
   const [selectedScenarioId, setSelectedScenarioId] = useState(null);
+  const [libraryFocusPhraseId, setLibraryFocusPhraseId] = useState(null);
 
   const [scenarioPickerOpen, setScenarioPickerOpen] = useState(false);
   const [scenarioPickerSource, setScenarioPickerSource] = useState(null);
@@ -513,6 +514,7 @@ export default function App() {
   function handleLogoClick() {
     setHomeResetKey((k) => k + 1);
     setSelectedScenarioId(null);
+    setLibraryFocusPhraseId(null);
     goToPage("home");
   }
 
@@ -525,6 +527,17 @@ export default function App() {
   function handleBackFromScenarioDetail() {
     setSelectedScenarioId(null);
     setPage("scenarios");
+  }
+
+  function handleOpenPhraseInLibrary(phraseId) {
+    if (!phraseId) return;
+    setSelectedScenarioId(null);
+    setLibraryFocusPhraseId(phraseId);
+    setPage("library");
+  }
+
+  function handleLibraryFocusConsumed() {
+    setLibraryFocusPhraseId(null);
   }
 
   function closeScenarioPicker() {
@@ -719,6 +732,7 @@ export default function App() {
         page={headerPage}
         setPage={(next) => {
           setSelectedScenarioId(null);
+          setLibraryFocusPhraseId(null);
           goToPage(next);
         }}
         onLogoClick={handleLogoClick}
@@ -759,6 +773,7 @@ export default function App() {
                 rows={visibleRows}
                 playText={playTextTracked}
                 onBack={handleBackFromScenarioDetail}
+                onOpenPhraseInLibrary={handleOpenPhraseInLibrary}
                 showToast={showToast}
               />
             </div>
@@ -809,6 +824,8 @@ export default function App() {
                   setAddOpen(true);
                 }}
                 onOpenScenarioPickerForPhrase={openScenarioPickerForPhrase}
+                focusPhraseId={libraryFocusPhraseId}
+                onFocusPhraseHandled={handleLibraryFocusConsumed}
               />
             </div>
 
