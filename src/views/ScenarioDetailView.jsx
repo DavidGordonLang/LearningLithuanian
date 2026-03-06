@@ -1,4 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSettingsStore } from "../stores/settingsStore";
+import { useScenarioStore } from "../stores/scenarioStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -42,6 +44,217 @@ function EmptyState({ onBack }) {
   );
 }
 
+function PlayButton({ text, playText }) {
+  const timerRef = useRef(0);
+  const longFiredRef = useRef(false);
+  const [pressing, setPressing] = useState(false);
+
+  const clearTimer = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = 0;
+  };
+
+  const start = (e) => {
+    if (e?.button != null && e.button !== 0) return;
+
+    try {
+      if (e?.currentTarget?.setPointerCapture && e?.pointerId != null) {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
+    } catch {}
+
+    longFiredRef.current = false;
+    setPressing(true);
+    clearTimer();
+
+    timerRef.current = window.setTimeout(() => {
+      longFiredRef.current = true;
+      playText?.(text || "", { slow: true });
+    }, 420);
+  };
+
+  const finish = (e) => {
+    try {
+      if (e?.currentTarget?.releasePointerCapture && e?.pointerId != null) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+
+    setPressing(false);
+    clearTimer();
+  };
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+
+    if (longFiredRef.current) {
+      longFiredRef.current = false;
+      return;
+    }
+
+    playText?.(text || "");
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label="Play phrase"
+      data-swipe-block="true"
+      className={cn(
+        "select-none",
+        "w-11 h-11 rounded-full shrink-0",
+        "border border-emerald-300/20",
+        "bg-emerald-900/20 hover:bg-emerald-900/30",
+        "flex items-center justify-center",
+        "shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_22px_rgba(16,185,129,0.10),0_12px_30px_rgba(0,0,0,0.45)]",
+        "transition-transform duration-150",
+        pressing ? "scale-[0.98]" : null
+      )}
+      onPointerDown={start}
+      onPointerUp={finish}
+      onPointerCancel={finish}
+      onPointerLeave={finish}
+      onClick={handleClick}
+    >
+      <span className="text-emerald-200 text-base">▶</span>
+    </button>
+  );
+}
+
+function RowMenuButton() {
+  return (
+    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/[0.04]">
+      <span className="relative w-[3px] h-[3px] rounded-full bg-zinc-300">
+        <span className="absolute -top-[7px] left-0 w-[3px] h-[3px] rounded-full bg-zinc-300" />
+        <span className="absolute top-[7px] left-0 w-[3px] h-[3px] rounded-full bg-zinc-300" />
+      </span>
+    </span>
+  );
+}
+
+function ScenarioPhraseRow({
+  scenarioId,
+  row,
+  playText,
+  phoneticsMode,
+  showToast,
+}) {
+  const removePhraseFromScenario = useScenarioStore((s) => s.removePhraseFromScenario);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuBtnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onDoc = (e) => {
+      const btn = menuBtnRef.current;
+      const menu = menuRef.current;
+
+      if (btn && btn.contains(e.target)) return;
+      if (menu && menu.contains(e.target)) return;
+
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("click", onDoc, true);
+    document.addEventListener("touchstart", onDoc, true);
+
+    return () => {
+      document.removeEventListener("click", onDoc, true);
+      document.removeEventListener("touchstart", onDoc, true);
+    };
+  }, [menuOpen]);
+
+  const rowId = row?.id || row?._id;
+
+  const displayedPhonetic =
+    phoneticsMode === "ipa"
+      ? String(row?.PhoneticIPA || row?.Phonetic || "").trim()
+      : String(row?.Phonetic || "").trim();
+
+  return (
+    <div className="z-inset p-4 flex items-start gap-3">
+      <PlayButton text={row?.Lithuanian || ""} playText={playText} />
+
+      <div className="min-w-0 flex-1">
+        <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words">
+          {row?.Lithuanian || "—"}
+        </div>
+
+        <div className="text-sm text-zinc-300 mt-1 leading-snug break-words">
+          {row?.English || "—"}
+        </div>
+
+        {displayedPhonetic ? (
+          <div className="text-xs text-zinc-500 mt-1 italic leading-snug break-words">
+            {displayedPhonetic}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          ref={menuBtnRef}
+          type="button"
+          data-press
+          className="select-none"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((prev) => !prev);
+          }}
+          aria-label="Phrase actions"
+        >
+          <RowMenuButton />
+        </button>
+
+        {menuOpen ? (
+          <div
+            ref={menuRef}
+            className="
+              absolute right-0 mt-2 w-52
+              z-[40]
+              rounded-2xl border border-white/10
+              bg-zinc-950/85 backdrop-blur
+              shadow-[0_16px_50px_rgba(0,0,0,0.65)]
+              overflow-hidden
+            "
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
+              onClick={() => {
+                setMenuOpen(false);
+                showToast?.("Open in library is next");
+              }}
+            >
+              Open in library
+            </button>
+
+            <button
+              type="button"
+              className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
+              onClick={() => {
+                setMenuOpen(false);
+                const result = removePhraseFromScenario(scenarioId, rowId);
+                if (!result?.ok) {
+                  alert(result?.error || "Could not remove phrase from scenario.");
+                  return;
+                }
+                showToast?.("Removed from scenario");
+              }}
+            >
+              Remove from scenario
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function ScenarioDetailView({
   scenario,
   rows,
@@ -49,6 +262,8 @@ export default function ScenarioDetailView({
   onBack,
   showToast,
 }) {
+  const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
+
   const linkedRows = useMemo(() => {
     if (!scenario) return [];
 
@@ -79,9 +294,7 @@ export default function ScenarioDetailView({
 
       <div className="space-y-1">
         <h2 className="z-title">{scenario.title || "Untitled scenario"}</h2>
-        <p className="z-subtitle">
-          Curated phrases for one real-life situation.
-        </p>
+        <p className="z-subtitle">Curated phrases for one real-life situation.</p>
       </div>
 
       <section
@@ -92,16 +305,10 @@ export default function ScenarioDetailView({
           "bg-[radial-gradient(120%_140%_at_50%_0%,rgba(16,185,129,0.10),rgba(255,255,255,0.02)_38%,rgba(255,255,255,0.01)_100%)]"
         )}
       >
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <div className="text-sm font-semibold text-zinc-100">Scenario phrases</div>
-            <div className="text-xs text-zinc-500 mt-1">
-              Reordering and add-to-scenario are next.
-            </div>
-          </div>
-
-          <div className="text-sm text-zinc-400">
-            {linkedRows.length} phrase{linkedRows.length === 1 ? "" : "s"}
+        <div>
+          <div className="text-sm font-semibold text-zinc-100">Scenario phrases</div>
+          <div className="text-xs text-zinc-500 mt-1">
+            Reordering and add-to-scenario are next.
           </div>
         </div>
 
@@ -111,7 +318,7 @@ export default function ScenarioDetailView({
               No phrases in this scenario yet
             </div>
             <div className="text-sm text-zinc-400 mt-2 leading-relaxed">
-              Next step will let you add phrases from translation and library.
+              Add phrases from translation or library.
             </div>
           </div>
         ) : (
@@ -120,42 +327,14 @@ export default function ScenarioDetailView({
               const rowId = row?.id || row?._id;
 
               return (
-                <div
+                <ScenarioPhraseRow
                   key={rowId}
-                  className="z-inset p-4 flex items-start gap-3"
-                >
-                  <button
-                    type="button"
-                    data-press
-                    className="
-                      w-11 h-11 rounded-full shrink-0
-                      border border-emerald-300/20
-                      bg-emerald-900/20 hover:bg-emerald-900/30
-                      flex items-center justify-center
-                      shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_22px_rgba(16,185,129,0.10),0_12px_30px_rgba(0,0,0,0.45)]
-                    "
-                    onClick={() => playText?.(row?.Lithuanian || "")}
-                    aria-label="Play phrase"
-                  >
-                    <span className="text-emerald-200 text-base">▶</span>
-                  </button>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words">
-                      {row?.Lithuanian || "—"}
-                    </div>
-
-                    <div className="text-sm text-zinc-300 mt-1 leading-snug break-words">
-                      {row?.English || "—"}
-                    </div>
-
-                    {row?.Phonetic || row?.PhoneticIPA ? (
-                      <div className="text-xs text-zinc-500 mt-1 italic leading-snug break-words">
-                        {String(row?.PhoneticIPA || row?.Phonetic || "").trim()}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+                  scenarioId={scenario.id}
+                  row={row}
+                  playText={playText}
+                  phoneticsMode={phoneticsMode}
+                  showToast={showToast}
+                />
               );
             })}
           </div>
