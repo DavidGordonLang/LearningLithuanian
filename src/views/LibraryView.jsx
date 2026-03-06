@@ -136,6 +136,8 @@ export default function LibraryView({
   SearchBox,
   searchPlaceholder,
   onOpenScenarioPickerForPhrase,
+  focusPhraseId,
+  onFocusPhraseHandled,
 }) {
   useSyncExternalStore(
     searchStore.subscribe,
@@ -161,8 +163,11 @@ export default function LibraryView({
   }, []);
 
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
+
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
+  const rowRefs = useRef({});
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -229,6 +234,67 @@ export default function LibraryView({
     return sortRows(base);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, search, category, sortMode]);
+
+  const displayRows = useMemo(() => {
+    if (!focusPhraseId) return filtered;
+
+    const alreadyVisible = filtered.some((r) => (r?.id || r?._id) === focusPhraseId);
+    if (alreadyVisible) return filtered;
+
+    const target = (Array.isArray(rows) ? rows : []).find(
+      (r) => !r?._deleted && (r?.id || r?._id) === focusPhraseId
+    );
+
+    if (!target) return filtered;
+
+    return [target, ...filtered];
+  }, [filtered, focusPhraseId, rows]);
+
+  useEffect(() => {
+    if (!focusPhraseId) return;
+
+    setCategory("All");
+    setMenuOpenId(null);
+
+    const targetRow = (Array.isArray(rows) ? rows : []).find(
+      (r) => !r?._deleted && (r?.id || r?._id) === focusPhraseId
+    );
+
+    if (targetRow && String(targetRow?.Notes || "").trim()) {
+      setOpenDetails((prev) => {
+        const next = new Set(prev);
+        next.add(focusPhraseId);
+        return next;
+      });
+    }
+
+    const timer = window.setTimeout(() => {
+      const el = rowRefs.current?.[focusPhraseId];
+      if (el) {
+        try {
+          el.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        } catch {
+          try {
+            el.scrollIntoView(true);
+          } catch {}
+        }
+      }
+
+      setHighlightedId(focusPhraseId);
+
+      window.setTimeout(() => {
+        setHighlightedId((current) => (current === focusPhraseId ? null : current));
+      }, 2200);
+
+      onFocusPhraseHandled?.();
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [focusPhraseId, onFocusPhraseHandled, rows]);
 
   const totalActive = rows?.filter?.((r) => !r._deleted)?.length || 0;
   const countLabel = `${filtered.length} / ${totalActive} entries`;
@@ -311,11 +377,12 @@ export default function LibraryView({
       </div>
 
       <div className="space-y-3">
-        {filtered.map((r) => {
+        {displayRows.map((r) => {
           const id = r?.id || r?._id;
           const isMenuOpen = menuOpenId === id;
           const detailsOpen = openDetails.has(id);
           const hasNotes = !!String(r?.Notes || "").trim();
+          const isHighlighted = highlightedId === id;
 
           const displayedPhonetic =
             phoneticsMode === "ipa"
@@ -330,7 +397,15 @@ export default function LibraryView({
           return (
             <div
               key={id}
-              className="z-card p-4"
+              ref={(el) => {
+                if (el) rowRefs.current[id] = el;
+              }}
+              className={cn(
+                "z-card p-4 transition-all duration-500",
+                isHighlighted
+                  ? "ring-1 ring-emerald-400/40 shadow-[0_0_0_1px_rgba(16,185,129,0.18),0_0_40px_rgba(16,185,129,0.12),0_16px_50px_rgba(0,0,0,0.60)]"
+                  : null
+              )}
               role={hasNotes ? "button" : undefined}
               tabIndex={hasNotes ? 0 : undefined}
               onClick={onCardTap}
