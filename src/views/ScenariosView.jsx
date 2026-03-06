@@ -14,43 +14,36 @@ function ScenarioCard({ scenario, onOpen, onMenu }) {
         "z-card",
         "w-full text-left",
         "p-4 sm:p-5",
-        "min-h-[124px]",
-        "flex items-start justify-between gap-3",
+        "min-h-[148px]",
+        "flex flex-col justify-center",
+        "relative",
         "bg-[radial-gradient(120%_140%_at_50%_0%,rgba(16,185,129,0.10),rgba(255,255,255,0.02)_38%,rgba(255,255,255,0.01)_100%)]",
         "hover:bg-[radial-gradient(120%_140%_at_50%_0%,rgba(16,185,129,0.14),rgba(255,255,255,0.03)_38%,rgba(255,255,255,0.01)_100%)]",
         "transition-colors"
       )}
     >
-      <div className="min-w-0 flex-1">
+      <button
+        type="button"
+        data-press
+        aria-label="Scenario actions"
+        className="
+          absolute top-3 right-3
+          text-zinc-400 hover:text-zinc-100
+          text-[22px] leading-none
+          px-2 py-1
+        "
+        onClick={(e) => {
+          e.stopPropagation();
+          onMenu?.(scenario);
+        }}
+      >
+        ⋯
+      </button>
+
+      <div className="min-w-0 w-full flex items-center justify-center text-center">
         <div className="text-[18px] sm:text-[19px] font-semibold tracking-tight text-zinc-100 break-words">
           {scenario?.title || "Untitled scenario"}
         </div>
-
-        <div className="mt-2 text-sm text-zinc-400">
-          Curated phrases for one real-life situation.
-        </div>
-      </div>
-
-      <div
-        className="shrink-0"
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        <button
-          type="button"
-          data-press
-          aria-label="Scenario actions"
-          className="
-            inline-flex items-center justify-center
-            w-10 h-10 rounded-full
-            border border-white/10 bg-white/[0.04]
-            text-zinc-300 hover:text-zinc-100 hover:bg-white/[0.06]
-          "
-          onClick={() => onMenu?.(scenario)}
-        >
-          ⋯
-        </button>
       </div>
     </button>
   );
