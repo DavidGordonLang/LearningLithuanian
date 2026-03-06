@@ -1,5 +1,5 @@
 // src/views/ScenariosView.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useScenarioStore } from "../stores/scenarioStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -52,6 +52,10 @@ function ScenarioCard({ scenario, onOpen, onMenu }) {
 function CreateScenarioModal({ open, onClose, onCreate }) {
   const [title, setTitle] = useState("");
 
+  useEffect(() => {
+    if (!open) setTitle("");
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -89,10 +93,7 @@ function CreateScenarioModal({ open, onClose, onCreate }) {
                 type="button"
                 data-press
                 className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
-                onClick={() => {
-                  setTitle("");
-                  onClose?.();
-                }}
+                onClick={onClose}
               >
                 Cancel
               </button>
@@ -123,11 +124,151 @@ function CreateScenarioModal({ open, onClose, onCreate }) {
   );
 }
 
+function RenameScenarioModal({ open, scenario, onClose, onSave }) {
+  const [title, setTitle] = useState("");
+
+  useEffect(() => {
+    setTitle(open ? String(scenario?.title || "") : "");
+  }, [open, scenario]);
+
+  if (!open || !scenario) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="w-full h-full px-3 pb-4 flex justify-center items-center">
+        <div
+          className="w-full max-w-md z-card shadow-2xl overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-5 pb-3 border-b border-white/10">
+            <h3 className="z-title">Rename Scenario</h3>
+            <p className="text-sm text-zinc-400 mt-1">
+              Update the title for this scenario.
+            </p>
+          </div>
+
+          <div className="p-5 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm text-zinc-300">Scenario title</label>
+              <input
+                autoFocus
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-1">
+              <button
+                type="button"
+                data-press
+                className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                data-press
+                className="
+                  z-btn px-5 py-2.5 rounded-2xl text-sm font-semibold
+                  bg-emerald-600/90 hover:bg-emerald-500
+                  border border-emerald-300/20
+                  text-black
+                "
+                onClick={() => onSave?.(title)}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScenarioMenu({ scenario, anchorRef, open, onClose, onRename, onDelete }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onDoc = (e) => {
+      const anchor = anchorRef?.current;
+      const menu = menuRef.current;
+
+      if (anchor && anchor.contains(e.target)) return;
+      if (menu && menu.contains(e.target)) return;
+
+      onClose?.();
+    };
+
+    document.addEventListener("click", onDoc, true);
+    document.addEventListener("touchstart", onDoc, true);
+
+    return () => {
+      document.removeEventListener("click", onDoc, true);
+      document.removeEventListener("touchstart", onDoc, true);
+    };
+  }, [open, anchorRef, onClose]);
+
+  if (!open || !scenario) return null;
+
+  return (
+    <div
+      ref={menuRef}
+      className="
+        fixed z-[60]
+        right-4 top-[220px]
+        w-52 overflow-hidden rounded-2xl
+        border border-white/10
+        bg-zinc-950/90 backdrop-blur
+        shadow-[0_16px_50px_rgba(0,0,0,0.65)]
+      "
+    >
+      <button
+        type="button"
+        className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
+        onClick={() => {
+          onClose?.();
+          onRename?.(scenario);
+        }}
+      >
+        Rename scenario
+      </button>
+
+      <button
+        type="button"
+        className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
+        onClick={() => {
+          onClose?.();
+          onDelete?.(scenario);
+        }}
+      >
+        Delete scenario
+      </button>
+    </div>
+  );
+}
+
 export default function ScenariosView({ T, onCreateScenario }) {
   const scenarios = useScenarioStore((s) => s.scenarios);
   const createScenario = useScenarioStore((s) => s.createScenario);
+  const renameScenario = useScenarioStore((s) => s.renameScenario);
+  const deleteScenario = useScenarioStore((s) => s.deleteScenario);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameScenarioRow, setRenameScenarioRow] = useState(null);
+  const [menuScenario, setMenuScenario] = useState(null);
+
+  const menuAnchorRef = useRef(null);
 
   const hasScenarios = (scenarios?.length || 0) > 0;
 
@@ -152,7 +293,33 @@ export default function ScenariosView({ T, onCreateScenario }) {
   }
 
   function handleScenarioMenu(scenario) {
-    alert(`Scenario actions coming next:\n\n${scenario?.title || "Scenario"}`);
+    setMenuScenario(scenario);
+  }
+
+  function handleRenameOpen(scenario) {
+    setRenameScenarioRow(scenario);
+    setRenameOpen(true);
+  }
+
+  function handleRenameSave(title) {
+    const result = renameScenario(renameScenarioRow?.id, title);
+
+    if (!result?.ok) {
+      alert(result?.error || "Could not rename scenario.");
+      return;
+    }
+
+    setRenameOpen(false);
+    setRenameScenarioRow(null);
+  }
+
+  function handleDeleteScenario(scenario) {
+    const ok = window.confirm(
+      `Delete scenario "${scenario?.title || "Untitled scenario"}"?`
+    );
+    if (!ok) return;
+
+    deleteScenario(scenario?.id);
   }
 
   return (
@@ -177,7 +344,7 @@ export default function ScenariosView({ T, onCreateScenario }) {
             "
             onClick={() => {
               if (typeof onCreateScenario === "function") {
-                // old prop is now ignored by design, but kept harmlessly compatible
+                // kept harmlessly compatible
               }
               setCreateOpen(true);
             }}
@@ -225,12 +392,16 @@ export default function ScenariosView({ T, onCreateScenario }) {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {cards.map((scenario) => (
-              <ScenarioCard
+              <div
                 key={scenario.id}
-                scenario={scenario}
-                onOpen={handleOpenScenario}
-                onMenu={handleScenarioMenu}
-              />
+                ref={menuScenario?.id === scenario.id ? menuAnchorRef : null}
+              >
+                <ScenarioCard
+                  scenario={scenario}
+                  onOpen={handleOpenScenario}
+                  onMenu={handleScenarioMenu}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -240,6 +411,25 @@ export default function ScenariosView({ T, onCreateScenario }) {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreate={handleCreate}
+      />
+
+      <RenameScenarioModal
+        open={renameOpen}
+        scenario={renameScenarioRow}
+        onClose={() => {
+          setRenameOpen(false);
+          setRenameScenarioRow(null);
+        }}
+        onSave={handleRenameSave}
+      />
+
+      <ScenarioMenu
+        scenario={menuScenario}
+        anchorRef={menuAnchorRef}
+        open={!!menuScenario}
+        onClose={() => setMenuScenario(null)}
+        onRename={handleRenameOpen}
+        onDelete={handleDeleteScenario}
       />
     </>
   );
