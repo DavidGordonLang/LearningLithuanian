@@ -4,6 +4,7 @@ import { useRecallFlipSession } from "../../hooks/training/useRecallFlipSession"
 import { useRecallFlipAudio } from "../../hooks/training/useRecallFlipAudio";
 import { AudioButtons, SummaryModal } from "./recallFlip/RecallFlipParts";
 import { recallFlipCss } from "./recallFlip/recallFlipStyles";
+import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -97,6 +98,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
     });
   }
 
+  const showInteractivePrompt = isLithuanianPrompt(direction);
+  const showInteractiveAnswer = isLithuanianAnswer(direction);
+
   return (
     <div className="max-w-xl mx-auto px-4 py-6 rf-root">
       {/* Header row: centered title with equal side weights */}
@@ -113,14 +117,13 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
             "text-zinc-200 hover:bg-white/[0.09] active:scale-[0.99] transition"
           )}
         >
-          {/* Premium arrow: SVG (optically centered) */}
           <svg
             width="20"
             height="20"
             viewBox="0 0 24 24"
             fill="none"
             aria-hidden="true"
-            className="translate-x-[-0.5px]" // optical centering (glyphs often look right-shifted)
+            className="translate-x-[-0.5px]"
           >
             <path
               d="M15 18l-6-6 6-6"
@@ -138,13 +141,9 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           </div>
         </div>
 
-        {/* right spacer to keep title perfectly centered */}
         <div className="h-12 w-12" aria-hidden="true" />
       </div>
 
-      {/* (Direction UI removed for now — kept in code for later settings wiring) */}
-
-      {/* Empty state */}
       {!s.current && !s.showSummary && (
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Nothing to train</div>
@@ -154,7 +153,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
         </div>
       )}
 
-      {/* Card */}
       {!!s.current && !s.showSummary && (
         <div className="mt-5">
           <div className="flex items-center justify-between mb-2">
@@ -166,7 +164,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           </div>
 
           <div className="relative">
-            {/* FX overlay */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 rounded-3xl",
@@ -219,7 +216,17 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                   </div>
 
                   <div className="rf-center-zone">
-                    <div className="rf-hero-text">{prompt || "—"}</div>
+                    <div className="rf-hero-text">
+                      {showInteractivePrompt ? (
+                        <InteractivePhraseText
+                          text={prompt || "—"}
+                          playText={playText}
+                          wordClassName="touch-manipulation"
+                        />
+                      ) : (
+                        prompt || "—"
+                      )}
+                    </div>
                     {!s.revealed && (
                       <div className="rf-hint">Tap the card to reveal</div>
                     )}
@@ -248,8 +255,29 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
                   </div>
 
                   <div className="rf-center-zone">
-                    <div className="rf-hero-text">{answer || "—"}</div>
-                    <div className="rf-sub-text">{prompt || ""}</div>
+                    <div className="rf-hero-text">
+                      {showInteractiveAnswer ? (
+                        <InteractivePhraseText
+                          text={answer || "—"}
+                          playText={playText}
+                          wordClassName="touch-manipulation"
+                        />
+                      ) : (
+                        answer || "—"
+                      )}
+                    </div>
+
+                    <div className="rf-sub-text">
+                      {showInteractivePrompt ? (
+                        <InteractivePhraseText
+                          text={prompt || ""}
+                          playText={playText}
+                          wordClassName="touch-manipulation"
+                        />
+                      ) : (
+                        prompt || ""
+                      )}
+                    </div>
                   </div>
 
                   <div
@@ -303,7 +331,6 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
         </div>
       )}
 
-      {/* Summary modal */}
       {s.showSummary && (
         <SummaryModal
           title="Session complete"
@@ -355,6 +382,14 @@ function getAnswerText(row, direction) {
   if (direction === "en_to_lt")
     return safeStr(row?.LT ?? row?.Lithuanian ?? row?.lt ?? row?.lithuanian ?? "");
   return safeStr(row?.EN ?? row?.English ?? row?.en ?? row?.english ?? "");
+}
+
+function isLithuanianPrompt(direction) {
+  return direction === "lt_to_en";
+}
+
+function isLithuanianAnswer(direction) {
+  return direction === "en_to_lt";
 }
 
 function safeStr(v) {
