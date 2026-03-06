@@ -132,20 +132,15 @@ function RowMenuButton() {
   );
 }
 
-function DragHandle({ onPointerDown, dragging }) {
+function DragHandleVisual() {
   return (
-    <button
-      type="button"
-      aria-label="Reorder phrase"
-      data-swipe-block="true"
-      className={cn(
-        "shrink-0 select-none touch-none",
-        "w-8 h-11 rounded-xl",
-        "flex items-center justify-center",
-        "text-zinc-500 hover:text-zinc-200",
-        dragging ? "text-emerald-300" : null
-      )}
-      onPointerDown={onPointerDown}
+    <div
+      className="
+        w-8 h-11 rounded-xl shrink-0
+        flex items-center justify-center
+        text-zinc-500
+      "
+      aria-hidden="true"
     >
       <span className="inline-flex flex-col gap-[3px]">
         <span className="block w-1 h-1 rounded-full bg-current" />
@@ -153,7 +148,7 @@ function DragHandle({ onPointerDown, dragging }) {
         <span className="block w-1 h-1 rounded-full bg-current" />
         <span className="block w-1 h-1 rounded-full bg-current" />
       </span>
-    </button>
+    </div>
   );
 }
 
@@ -161,16 +156,14 @@ function ScenarioPhraseRow({
   scenarioId,
   row,
   rowIndex,
+  totalRows,
   playText,
   phoneticsMode,
   showToast,
   onOpenPhraseInLibrary,
-  registerRowRef,
-  isDragging,
-  dragOver,
-  onDragStart,
 }) {
   const removePhraseFromScenario = useScenarioStore((s) => s.removePhraseFromScenario);
+  const reorderPhraseInScenario = useScenarioStore((s) => s.reorderPhraseInScenario);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuBtnRef = useRef(null);
@@ -205,101 +198,132 @@ function ScenarioPhraseRow({
       ? String(row?.PhoneticIPA || row?.Phonetic || "").trim()
       : String(row?.Phonetic || "").trim();
 
+  function handleMoveUp() {
+    const result = reorderPhraseInScenario(scenarioId, rowIndex, rowIndex - 1);
+    if (!result?.ok) {
+      alert(result?.error || "Could not move phrase.");
+      return;
+    }
+    setMenuOpen(false);
+    showToast?.("Moved up");
+  }
+
+  function handleMoveDown() {
+    const result = reorderPhraseInScenario(scenarioId, rowIndex, rowIndex + 1);
+    if (!result?.ok) {
+      alert(result?.error || "Could not move phrase.");
+      return;
+    }
+    setMenuOpen(false);
+    showToast?.("Moved down");
+  }
+
   return (
-    <div className="space-y-2">
-      {dragOver ? (
-        <div className="h-[2px] rounded-full bg-emerald-400/70 shadow-[0_0_12px_rgba(52,211,153,0.45)]" />
-      ) : null}
+    <div className="z-inset p-4 flex items-start gap-3">
+      <DragHandleVisual />
 
-      <div
-        ref={(el) => registerRowRef(rowIndex, el)}
-        className={cn(
-          "z-inset p-4 flex items-start gap-3 transition-all",
-          isDragging
-            ? "opacity-70 scale-[0.985] ring-1 ring-emerald-400/30"
-            : null
-        )}
-      >
-        <DragHandle
-          dragging={isDragging}
-          onPointerDown={(e) => onDragStart?.(e, rowIndex)}
-        />
+      <PlayButton text={row?.Lithuanian || ""} playText={playText} />
 
-        <PlayButton text={row?.Lithuanian || ""} playText={playText} />
-
-        <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words">
-            {row?.Lithuanian || "—"}
-          </div>
-
-          <div className="text-sm text-zinc-300 mt-1 leading-snug break-words">
-            {row?.English || "—"}
-          </div>
-
-          {displayedPhonetic ? (
-            <div className="text-xs text-zinc-500 mt-1 italic leading-snug break-words">
-              {displayedPhonetic}
-            </div>
-          ) : null}
+      <div className="min-w-0 flex-1">
+        <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words">
+          {row?.Lithuanian || "—"}
         </div>
 
-        <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-          <button
-            ref={menuBtnRef}
-            type="button"
-            data-press
-            className="select-none"
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen((prev) => !prev);
-            }}
-            aria-label="Phrase actions"
+        <div className="text-sm text-zinc-300 mt-1 leading-snug break-words">
+          {row?.English || "—"}
+        </div>
+
+        {displayedPhonetic ? (
+          <div className="text-xs text-zinc-500 mt-1 italic leading-snug break-words">
+            {displayedPhonetic}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          ref={menuBtnRef}
+          type="button"
+          data-press
+          className="select-none"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((prev) => !prev);
+          }}
+          aria-label="Phrase actions"
+        >
+          <RowMenuButton />
+        </button>
+
+        {menuOpen ? (
+          <div
+            ref={menuRef}
+            className="
+              absolute right-0 mt-2 w-52
+              z-[40]
+              rounded-2xl border border-white/10
+              bg-zinc-950/85 backdrop-blur
+              shadow-[0_16px_50px_rgba(0,0,0,0.65)]
+              overflow-hidden
+            "
+            onClick={(e) => e.stopPropagation()}
           >
-            <RowMenuButton />
-          </button>
-
-          {menuOpen ? (
-            <div
-              ref={menuRef}
-              className="
-                absolute right-0 mt-2 w-52
-                z-[40]
-                rounded-2xl border border-white/10
-                bg-zinc-950/85 backdrop-blur
-                shadow-[0_16px_50px_rgba(0,0,0,0.65)]
-                overflow-hidden
-              "
-              onClick={(e) => e.stopPropagation()}
+            <button
+              type="button"
+              className={cn(
+                "w-full text-left px-4 py-3 text-sm",
+                rowIndex === 0
+                  ? "text-zinc-600"
+                  : "text-zinc-100 hover:bg-white/5"
+              )}
+              onClick={handleMoveUp}
+              disabled={rowIndex === 0}
             >
-              <button
-                type="button"
-                className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onOpenPhraseInLibrary?.(rowId);
-                }}
-              >
-                Open in library
-              </button>
+              Move up
+            </button>
 
-              <button
-                type="button"
-                className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
-                onClick={() => {
-                  setMenuOpen(false);
-                  const result = removePhraseFromScenario(scenarioId, rowId);
-                  if (!result?.ok) {
-                    alert(result?.error || "Could not remove phrase from scenario.");
-                    return;
-                  }
-                  showToast?.("Removed from scenario");
-                }}
-              >
-                Remove from scenario
-              </button>
-            </div>
-          ) : null}
-        </div>
+            <button
+              type="button"
+              className={cn(
+                "w-full text-left px-4 py-3 text-sm",
+                rowIndex === totalRows - 1
+                  ? "text-zinc-600"
+                  : "text-zinc-100 hover:bg-white/5"
+              )}
+              onClick={handleMoveDown}
+              disabled={rowIndex === totalRows - 1}
+            >
+              Move down
+            </button>
+
+            <button
+              type="button"
+              className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenPhraseInLibrary?.(rowId);
+              }}
+            >
+              Open in library
+            </button>
+
+            <button
+              type="button"
+              className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
+              onClick={() => {
+                setMenuOpen(false);
+                const result = removePhraseFromScenario(scenarioId, rowId);
+                if (!result?.ok) {
+                  alert(result?.error || "Could not remove phrase from scenario.");
+                  return;
+                }
+                showToast?.("Removed from scenario");
+              }}
+            >
+              Remove from scenario
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -314,21 +338,6 @@ export default function ScenarioDetailView({
   showToast,
 }) {
   const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
-  const reorderPhraseInScenario = useScenarioStore((s) => s.reorderPhraseInScenario);
-
-  const rowRefs = useRef([]);
-  const dragRef = useRef({
-    active: false,
-    fromIndex: -1,
-    toIndex: -1,
-    pointerId: null,
-  });
-
-  const [dragState, setDragState] = useState({
-    active: false,
-    fromIndex: -1,
-    toIndex: -1,
-  });
 
   const linkedRows = useMemo(() => {
     if (!scenario) return [];
@@ -340,130 +349,6 @@ export default function ScenarioDetailView({
       .map((id) => allRows.find((r) => (r?.id || r?._id) === id))
       .filter(Boolean);
   }, [scenario, rows]);
-
-  useEffect(() => {
-    return () => {
-      dragRef.current = {
-        active: false,
-        fromIndex: -1,
-        toIndex: -1,
-        pointerId: null,
-      };
-    };
-  }, []);
-
-  const registerRowRef = useCallback((index, el) => {
-    rowRefs.current[index] = el;
-  }, []);
-
-  const getTargetIndexFromPointer = useCallback(
-    (clientY) => {
-      const items = rowRefs.current;
-      if (!Array.isArray(items) || !items.length) return -1;
-
-      for (let i = 0; i < items.length; i += 1) {
-        const el = items[i];
-        if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        const midpoint = rect.top + rect.height / 2;
-        if (clientY < midpoint) return i;
-      }
-
-      return items.length - 1;
-    },
-    []
-  );
-
-  useEffect(() => {
-    const onPointerMove = (e) => {
-      if (!dragRef.current.active) return;
-      if (
-        dragRef.current.pointerId != null &&
-        e.pointerId != null &&
-        dragRef.current.pointerId !== e.pointerId
-      ) {
-        return;
-      }
-
-      e.preventDefault();
-
-      const nextIndex = getTargetIndexFromPointer(e.clientY);
-      if (nextIndex < 0) return;
-
-      dragRef.current.toIndex = nextIndex;
-      setDragState((prev) => ({
-        ...prev,
-        toIndex: nextIndex,
-      }));
-    };
-
-    const endDrag = () => {
-      if (!dragRef.current.active) return;
-
-      const fromIndex = dragRef.current.fromIndex;
-      const toIndex = dragRef.current.toIndex;
-
-      dragRef.current = {
-        active: false,
-        fromIndex: -1,
-        toIndex: -1,
-        pointerId: null,
-      };
-
-      setDragState({
-        active: false,
-        fromIndex: -1,
-        toIndex: -1,
-      });
-
-      if (!scenario?.id) return;
-      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
-
-      const result = reorderPhraseInScenario(scenario.id, fromIndex, toIndex);
-      if (!result?.ok) {
-        alert(result?.error || "Could not reorder phrases.");
-      }
-    };
-
-    window.addEventListener("pointermove", onPointerMove, { passive: false });
-    window.addEventListener("pointerup", endDrag);
-    window.addEventListener("pointercancel", endDrag);
-
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", endDrag);
-      window.removeEventListener("pointercancel", endDrag);
-    };
-  }, [getTargetIndexFromPointer, reorderPhraseInScenario, scenario?.id]);
-
-  const handleDragStart = useCallback(
-    (e, rowIndex) => {
-      if (!scenario?.id) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      try {
-        if (e.currentTarget?.setPointerCapture && e.pointerId != null) {
-          e.currentTarget.setPointerCapture(e.pointerId);
-        }
-      } catch {}
-
-      dragRef.current = {
-        active: true,
-        fromIndex: rowIndex,
-        toIndex: rowIndex,
-        pointerId: e.pointerId ?? null,
-      };
-
-      setDragState({
-        active: true,
-        fromIndex: rowIndex,
-        toIndex: rowIndex,
-      });
-    },
-    [scenario?.id]
-  );
 
   if (!scenario) {
     return <EmptyState onBack={onBack} />;
@@ -498,7 +383,7 @@ export default function ScenarioDetailView({
         <div>
           <div className="text-sm font-semibold text-zinc-100">Scenario phrases</div>
           <div className="text-xs text-zinc-500 mt-1">
-            Drag the handle to reorder phrases.
+            Reordering is available from the row menu.
           </div>
         </div>
 
@@ -515,12 +400,6 @@ export default function ScenarioDetailView({
           <div className="space-y-3">
             {linkedRows.map((row, index) => {
               const rowId = row?.id || row?._id;
-              const isDragging =
-                dragState.active && dragState.fromIndex === index;
-              const dragOver =
-                dragState.active &&
-                dragState.toIndex === index &&
-                dragState.fromIndex !== index;
 
               return (
                 <ScenarioPhraseRow
@@ -528,14 +407,11 @@ export default function ScenarioDetailView({
                   scenarioId={scenario.id}
                   row={row}
                   rowIndex={index}
+                  totalRows={linkedRows.length}
                   playText={playText}
                   phoneticsMode={phoneticsMode}
                   showToast={showToast}
                   onOpenPhraseInLibrary={onOpenPhraseInLibrary}
-                  registerRowRef={registerRowRef}
-                  isDragging={isDragging}
-                  dragOver={dragOver}
-                  onDragStart={handleDragStart}
                 />
               );
             })}
