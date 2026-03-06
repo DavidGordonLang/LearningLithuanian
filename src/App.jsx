@@ -225,6 +225,106 @@ function AppBackground() {
   );
 }
 
+function ScenarioPickerModal({
+  open,
+  scenarios,
+  onClose,
+  onPick,
+  onCreateNew,
+}) {
+  const [newTitle, setNewTitle] = useState("");
+
+  useEffect(() => {
+    if (!open) setNewTitle("");
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="w-full h-full px-3 pb-4 flex justify-center items-center">
+        <div
+          className="w-full max-w-md z-card shadow-2xl overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-5 pb-3 border-b border-white/10">
+            <h3 className="z-title">Add to Scenario</h3>
+            <p className="text-sm text-zinc-400 mt-1">
+              Choose an existing scenario or create a new one.
+            </p>
+          </div>
+
+          <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+            {Array.isArray(scenarios) && scenarios.length > 0 ? (
+              <div className="space-y-2">
+                {scenarios.map((scenario) => (
+                  <button
+                    key={scenario.id}
+                    type="button"
+                    data-press
+                    className="w-full text-left z-inset p-4 hover:bg-white/[0.05]"
+                    onClick={() => onPick?.(scenario.id)}
+                  >
+                    <div className="text-sm font-semibold text-zinc-100">
+                      {scenario.title}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="z-inset p-4 text-sm text-zinc-400">
+                No scenarios yet. Create one below.
+              </div>
+            )}
+
+            <div className="border-t border-white/10 pt-4 space-y-3">
+              <div className="text-sm font-semibold text-zinc-200">
+                Create new scenario
+              </div>
+
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="e.g. At a café"
+                className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm"
+              />
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  data-press
+                  className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
+                  onClick={onClose}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  data-press
+                  className="
+                    z-btn px-5 py-2.5 rounded-2xl text-sm font-semibold
+                    bg-emerald-600/90 hover:bg-emerald-500
+                    border border-emerald-300/20
+                    text-black
+                  "
+                  onClick={() => onCreateNew?.(newTitle)}
+                >
+                  Create and add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   useEffect(() => {
     initAuthListener();
@@ -240,6 +340,12 @@ export default function App() {
 
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
   const [selectedScenarioId, setSelectedScenarioId] = useState(null);
+
+  const [scenarioPickerOpen, setScenarioPickerOpen] = useState(false);
+  const [scenarioPickerSource, setScenarioPickerSource] = useState(null);
+  const [pendingScenarioPhraseId, setPendingScenarioPhraseId] = useState(null);
+  const [pendingScenarioTranslationPayload, setPendingScenarioTranslationPayload] =
+    useState(null);
 
   const swipeTabs = ["home", "library", "scenarios", "training", "settings"];
 
@@ -280,6 +386,8 @@ export default function App() {
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
   const scenarios = useScenarioStore((s) => s.scenarios);
+  const createScenario = useScenarioStore((s) => s.createScenario);
+  const addPhraseToScenario = useScenarioStore((s) => s.addPhraseToScenario);
 
   const selectedScenario = useMemo(() => {
     return (
@@ -419,6 +527,127 @@ export default function App() {
     setPage("scenarios");
   }
 
+  function closeScenarioPicker() {
+    setScenarioPickerOpen(false);
+    setScenarioPickerSource(null);
+    setPendingScenarioPhraseId(null);
+    setPendingScenarioTranslationPayload(null);
+  }
+
+  function openScenarioPickerForTranslation(payload) {
+    setScenarioPickerSource("translation");
+    setPendingScenarioTranslationPayload(payload || null);
+    setPendingScenarioPhraseId(null);
+    setScenarioPickerOpen(true);
+  }
+
+  function openScenarioPickerForPhrase(phraseId) {
+    setScenarioPickerSource("phrase");
+    setPendingScenarioPhraseId(phraseId || null);
+    setPendingScenarioTranslationPayload(null);
+    setScenarioPickerOpen(true);
+  }
+
+  function buildSavedRowFromTranslation(payload) {
+    const lt = String(payload?.result?.ltOut || "").trim();
+    const enLit = String(payload?.result?.enLiteral || "").trim();
+    const enNat = String(payload?.result?.enNatural || "").trim();
+    const phoEn = String(payload?.result?.phonetics || "").trim();
+    const phoIpa = String(payload?.result?.phoneticsIpa || "").trim();
+
+    if (!lt) {
+      return { ok: false, error: "Could not save phrase." };
+    }
+
+    const now = typeof nowTs === "function" ? nowTs() : Date.now();
+    const id = typeof genId === "function" ? genId() : Math.random().toString(36).slice(2);
+    const sourceLang = payload?.result?.sourceLang === "lt" ? "lt" : "en";
+
+    const newRow = {
+      _id: id,
+      _ts: now,
+      Sheet: "Phrases",
+      Category: payload?.result?.categoryOut || "General",
+      Lithuanian: lt,
+      English: enNat || enLit || String(payload?.input || "").trim(),
+      SourceLang: sourceLang,
+      EnglishLiteral: enLit || enNat || "",
+      EnglishNatural: enNat || enLit || "",
+      EnglishOriginal: String(payload?.input || "").trim(),
+      LithuanianOriginal: lt,
+      Phonetic: phoEn,
+      PhoneticIPA: phoIpa,
+      Usage: String(payload?.result?.usageOut || "").trim(),
+      Notes: String(payload?.result?.notesOut || "").trim(),
+      "RAG Icon": "🟠",
+      _qstat: {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      },
+      Source: "user",
+      Touched: true,
+      _deleted: false,
+      _deleted_ts: null,
+      contentKey: makeLtKey(lt),
+    };
+
+    setRows((prev) => {
+      const arr = Array.isArray(prev) ? prev : [];
+      return [newRow, ...arr];
+    });
+
+    return { ok: true, row: newRow };
+  }
+
+  function handleScenarioPick(scenarioId) {
+    if (!scenarioId) return;
+
+    if (scenarioPickerSource === "phrase") {
+      const linked = addPhraseToScenario(scenarioId, pendingScenarioPhraseId);
+
+      if (!linked?.ok) {
+        alert(linked?.error || "Could not add phrase to scenario.");
+        return;
+      }
+
+      closeScenarioPicker();
+      showToast("Added to scenario");
+      return;
+    }
+
+    if (scenarioPickerSource === "translation") {
+      const saved = buildSavedRowFromTranslation(pendingScenarioTranslationPayload);
+
+      if (!saved?.ok || !saved?.row) {
+        alert(saved?.error || "Could not save phrase.");
+        return;
+      }
+
+      const phraseId = saved.row?._id || saved.row?.id;
+      const linked = addPhraseToScenario(scenarioId, phraseId);
+
+      if (!linked?.ok) {
+        alert(linked?.error || "Could not add phrase to scenario.");
+        return;
+      }
+
+      closeScenarioPicker();
+      showToast("Saved to library and added to scenario");
+    }
+  }
+
+  function handleScenarioCreateAndPick(title) {
+    const created = createScenario(title);
+
+    if (!created?.ok || !created?.scenario?.id) {
+      alert(created?.error || "Could not create scenario.");
+      return;
+    }
+
+    handleScenarioPick(created.scenario.id);
+  }
+
   const dailyRecall = useDailyRecall({
     rows: visibleRows,
     appVersion: APP_VERSION,
@@ -455,8 +684,12 @@ export default function App() {
     setSeenUserGuide(true);
   }, [user?.id, seenUserGuide, setSeenUserGuide]);
 
-  useModalScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
-  useAppBodyScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
+  useModalScrollLock(
+    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen
+  );
+  useAppBodyScrollLock(
+    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen
+  );
 
   const headerPage = swipeTabs.includes(page) ? page : "scenarios";
 
@@ -553,6 +786,7 @@ export default function App() {
                   setEditRowId(null);
                   setAddOpen(true);
                 }}
+                onOpenScenarioPickerForTranslation={openScenarioPickerForTranslation}
               />
             </div>
 
@@ -574,6 +808,7 @@ export default function App() {
                   setEditRowId(null);
                   setAddOpen(true);
                 }}
+                onOpenScenarioPickerForPhrase={openScenarioPickerForPhrase}
               />
             </div>
 
@@ -626,6 +861,16 @@ export default function App() {
           onClose={dailyRecall.close}
         />
       )}
+
+      {scenarioPickerOpen ? (
+        <ScenarioPickerModal
+          open={scenarioPickerOpen}
+          scenarios={scenarios}
+          onClose={closeScenarioPicker}
+          onPick={handleScenarioPick}
+          onCreateNew={handleScenarioCreateAndPick}
+        />
+      ) : null}
 
       {addOpen && (
         <div
