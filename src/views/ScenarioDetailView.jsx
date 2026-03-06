@@ -1,4 +1,3 @@
-// src/views/ScenarioDetailView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useScenarioStore } from "../stores/scenarioStore";
@@ -133,26 +132,6 @@ function RowMenuButton() {
   );
 }
 
-function DragHandleVisual() {
-  return (
-    <div
-      className="
-        w-8 h-11 rounded-xl shrink-0
-        flex items-center justify-center
-        text-zinc-500
-      "
-      aria-hidden="true"
-    >
-      <span className="inline-flex flex-col gap-[3px]">
-        <span className="block w-1 h-1 rounded-full bg-current" />
-        <span className="block w-1 h-1 rounded-full bg-current" />
-        <span className="block w-1 h-1 rounded-full bg-current" />
-        <span className="block w-1 h-1 rounded-full bg-current" />
-      </span>
-    </div>
-  );
-}
-
 function ScenarioPhraseRow({
   scenarioId,
   row,
@@ -221,8 +200,6 @@ function ScenarioPhraseRow({
 
   return (
     <div className="z-inset p-4 flex items-start gap-3">
-      <DragHandleVisual />
-
       <PlayButton text={row?.Lithuanian || ""} playText={playText} />
 
       <div className="min-w-0 flex-1">
