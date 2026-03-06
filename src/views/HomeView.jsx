@@ -1,4 +1,3 @@
-// src/views/HomeView.jsx
 import React, {
   memo,
   useCallback,
@@ -12,6 +11,7 @@ import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
 import useTranslate from "../hooks/useTranslate";
 import useSaveToLibrary from "../hooks/useSaveToLibrary";
 import { useSettingsStore } from "../stores/settingsStore";
+import { useScenarioStore } from "../stores/scenarioStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -100,6 +100,109 @@ function MicIcon({ active }) {
   );
 }
 
+function ScenarioPickerModal({
+  open,
+  scenarios,
+  onClose,
+  onPick,
+  onCreateNew,
+}) {
+  const [newTitle, setNewTitle] = useState("");
+
+  useEffect(() => {
+    if (!open) setNewTitle("");
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="w-full h-full px-3 pb-4 flex justify-center items-center">
+        <div
+          className="w-full max-w-md z-card shadow-2xl overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-5 pb-3 border-b border-white/10">
+            <h3 className="z-title">Add to Scenario</h3>
+            <p className="text-sm text-zinc-400 mt-1">
+              Choose an existing scenario or create a new one.
+            </p>
+          </div>
+
+          <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+            {Array.isArray(scenarios) && scenarios.length > 0 ? (
+              <div className="space-y-2">
+                {scenarios.map((scenario) => (
+                  <button
+                    key={scenario.id}
+                    type="button"
+                    data-press
+                    className="
+                      w-full text-left z-inset p-4
+                      hover:bg-white/[0.05]
+                    "
+                    onClick={() => onPick?.(scenario.id)}
+                  >
+                    <div className="text-sm font-semibold text-zinc-100">
+                      {scenario.title}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="z-inset p-4 text-sm text-zinc-400">
+                No scenarios yet. Create one below.
+              </div>
+            )}
+
+            <div className="border-t border-white/10 pt-4 space-y-3">
+              <div className="text-sm font-semibold text-zinc-200">
+                Create new scenario
+              </div>
+
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="e.g. At a café"
+                className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm"
+              />
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  data-press
+                  className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
+                  onClick={onClose}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  data-press
+                  className="
+                    z-btn px-5 py-2.5 rounded-2xl text-sm font-semibold
+                    bg-emerald-600/90 hover:bg-emerald-500
+                    border border-emerald-300/20
+                    text-black
+                  "
+                  onClick={() => onCreateNew?.(newTitle)}
+                >
+                  Create and add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeView({
   playText,
   onOpenAddForm,
@@ -124,18 +227,17 @@ export default function HomeView({
   const [input, setInput] = useState("");
   const [gender, setGender] = useState("neutral");
   const [tone, setTone] = useState("friendly");
+  const [scenarioPickerOpen, setScenarioPickerOpen] = useState(false);
 
-  // Per-user settings
   const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
 
-  // Auto-Translate toggle (persisted) — KEEP LOGIC, UI REMOVED (per request)
-  const [autoTranslateLS, setAutoTranslateLS] = useLocalStorageState(
-    "zodis_auto_translate",
-    "1"
-  );
+  const scenarios = useScenarioStore((s) => s.scenarios);
+  const createScenario = useScenarioStore((s) => s.createScenario);
+  const addPhraseToScenario = useScenarioStore((s) => s.addPhraseToScenario);
+
+  const [autoTranslateLS] = useLocalStorageState("zodis_auto_translate", "1");
   const autoTranslate = autoTranslateLS === "1";
 
-  // Translation hook
   const {
     translating,
     result,
@@ -169,7 +271,7 @@ export default function HomeView({
     resetTranslation();
   }, [blurTextarea, resetTranslation]);
 
-  const { handleSaveToLibrary } = useSaveToLibrary({
+  const { handleSaveToLibrary, saveToLibrary } = useSaveToLibrary({
     blurTextarea,
     canSave,
     input,
@@ -228,7 +330,42 @@ export default function HomeView({
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
 
-  // STT hook
+  const handleSaveToScenario = useCallback(
+    (scenarioId) => {
+      const saved = saveToLibrary({ suppressToast: true });
+      if (!saved?.ok || !saved?.row) {
+        alert(saved?.error || "Could not save phrase.");
+        return;
+      }
+
+      const phraseId = saved.row?._id || saved.row?.id;
+      const linked = addPhraseToScenario(scenarioId, phraseId);
+
+      if (!linked?.ok) {
+        alert(linked?.error || "Could not add phrase to scenario.");
+        return;
+      }
+
+      setScenarioPickerOpen(false);
+      showToast?.("Saved to library and added to scenario");
+    },
+    [saveToLibrary, addPhraseToScenario, showToast]
+  );
+
+  const handleCreateScenarioAndSave = useCallback(
+    (title) => {
+      const created = createScenario(title);
+
+      if (!created?.ok || !created?.scenario?.id) {
+        alert(created?.error || "Could not create scenario.");
+        return;
+      }
+
+      handleSaveToScenario(created.scenario.id);
+    },
+    [createScenario, handleSaveToScenario]
+  );
+
   const { sttState, sttSupported, startRecording, stopRecording, cancelStt } =
     useSpeechToTextHold({
       showToast,
@@ -247,12 +384,8 @@ export default function HomeView({
 
   const micActive = sttState === "recording";
   const micBusy = sttState === "transcribing" || sttState === "translating";
-  const micIdle = sttState === "idle";
-
-  // Render: label is under the button, not inside.
   const micLabel = micBusy ? "Working…" : "Hold to speak";
 
-  // Glow behaviour
   const glowClass = (() => {
     if (!sttSupported()) return "z-mic-glow-off";
     if (micActive) return "z-mic-glow-strong";
@@ -267,18 +400,11 @@ export default function HomeView({
     return "z-mic-ring-soft";
   })();
 
-  /* ------------------------------------------------------------
-     Auto-scroll to focus on either:
-     - the duplicate warning card, or
-     - the translation output card
-     (smooth scroll, once per new "result")
-  ------------------------------------------------------------ */
   const dupCardRef = useRef(null);
   const outCardRef = useRef(null);
   const lastScrollKeyRef = useRef("");
 
   useEffect(() => {
-    // Prefer duplicate card if present, otherwise output card.
     const hasDup = !!duplicateEntry;
     const hasOut = !!result?.ltOut;
 
@@ -300,7 +426,6 @@ export default function HomeView({
     const target = hasDup ? dupCardRef.current : outCardRef.current;
     if (!target) return;
 
-    // Wait for layout to settle (especially on mobile)
     const raf1 = requestAnimationFrame(() => {
       const raf2 = requestAnimationFrame(() => {
         try {
@@ -310,7 +435,6 @@ export default function HomeView({
             inline: "nearest",
           });
         } catch {
-          // fallback
           try {
             target.scrollIntoView(true);
           } catch {}
@@ -323,341 +447,353 @@ export default function HomeView({
   }, [duplicateEntry, result?.ltOut]);
 
   return (
-    <div className="z-page pt-3 pb-24">
-      <section className="z-card p-4 sm:p-5">
-        {/* Top controls: labels left, pills right (2 rows total) */}
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-3">
-            <div className="w-24 text-[12px] uppercase tracking-wide text-zinc-400">
-              Speaking to
+    <>
+      <div className="z-page pt-3 pb-24">
+        <section className="z-card p-4 sm:p-5">
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-3">
+              <div className="w-24 text-[12px] uppercase tracking-wide text-zinc-400">
+                Speaking to
+              </div>
+              <div className="flex-1">
+                <Segmented
+                  compact
+                  value={gender}
+                  onChange={handleGenderChange}
+                  options={[
+                    { value: "neutral", label: "Neutral" },
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                  ]}
+                />
+              </div>
             </div>
-            <div className="flex-1">
-              <Segmented
-                compact
-                value={gender}
-                onChange={handleGenderChange}
-                options={[
-                  { value: "neutral", label: "Neutral" },
-                  { value: "male", label: "Male" },
-                  { value: "female", label: "Female" },
-                ]}
+
+            <div className="flex items-center gap-3">
+              <div className="w-24 text-[12px] uppercase tracking-wide text-zinc-400">
+                Tone
+              </div>
+              <div className="flex-1">
+                <Segmented
+                  compact
+                  value={tone}
+                  onChange={handleToneChange}
+                  options={[
+                    { value: "friendly", label: "Friendly" },
+                    { value: "neutral", label: "Neutral" },
+                    { value: "polite", label: "Polite" },
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-center text-[16px] sm:text-[17px] font-semibold text-zinc-100">
+              What would you like to say?
+            </div>
+
+            <div className="mt-3">
+              <textarea
+                ref={textareaRef}
+                rows={3}
+                className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-24 text-[12px] uppercase tracking-wide text-zinc-400">
-              Tone
-            </div>
-            <div className="flex-1">
-              <Segmented
-                compact
-                value={tone}
-                onChange={handleToneChange}
-                options={[
-                  { value: "friendly", label: "Friendly" },
-                  { value: "neutral", label: "Neutral" },
-                  { value: "polite", label: "Polite" },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Prompt + input */}
-        <div className="mt-4">
-          <div className="text-center text-[16px] sm:text-[17px] font-semibold text-zinc-100">
-            What would you like to say?
-          </div>
-
-          <div className="mt-3">
-            <textarea
-              ref={textareaRef}
-              rows={3}
-              className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* MIC centrepiece */}
-        <div className="mt-5 flex flex-col items-center">
-          <button
-            type="button"
-            className={cn(
-              "relative select-none",
-              "rounded-full",
-              "transition-transform active:scale-[0.99]",
-              micDisabled || !sttSupported() ? "opacity-80" : ""
-            )}
-            style={{ width: 140, height: 140 }}
-            disabled={micDisabled || !sttSupported()}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              if (micDisabled) return;
-              startRecording();
-            }}
-            onMouseUp={(e) => {
-              e.preventDefault();
-              stopRecording();
-            }}
-            onMouseLeave={(e) => {
-              e.preventDefault();
-              stopRecording();
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              if (micDisabled) return;
-              startRecording();
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              stopRecording();
-            }}
-            onTouchCancel={(e) => {
-              e.preventDefault();
-              cancelStt();
-            }}
-            aria-label="Hold to speak"
-          >
-            {/* outer glow */}
-            <div
+          <div className="mt-5 flex flex-col items-center">
+            <button
+              type="button"
               className={cn(
-                "absolute inset-[-18px] rounded-full z-mic-glow",
-                glowClass
+                "relative select-none",
+                "rounded-full",
+                "transition-transform active:scale-[0.99]",
+                micDisabled || !sttSupported() ? "opacity-80" : ""
               )}
-            />
-
-            {/* rings */}
-            <div
-              className={cn("absolute inset-0 rounded-full z-mic-ring", ringClass)}
-            />
-
-            {/* inner disc */}
-            <div className="absolute inset-[10px] rounded-full z-mic-disc" />
-
-            {/* icon bubble */}
-            <div
-              className={cn(
-                "absolute inset-0 flex items-center justify-center",
-                "rounded-full"
-              )}
+              style={{ width: 140, height: 140 }}
+              disabled={micDisabled || !sttSupported()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                if (micDisabled) return;
+                startRecording();
+              }}
+              onMouseUp={(e) => {
+                e.preventDefault();
+                stopRecording();
+              }}
+              onMouseLeave={(e) => {
+                e.preventDefault();
+                stopRecording();
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                if (micDisabled) return;
+                startRecording();
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                stopRecording();
+              }}
+              onTouchCancel={(e) => {
+                e.preventDefault();
+                cancelStt();
+              }}
+              aria-label="Hold to speak"
             >
               <div
                 className={cn(
-                  "z-mic-iconBubble",
-                  micActive || micBusy
-                    ? "z-mic-iconBubble-on"
-                    : "z-mic-iconBubble-off"
+                  "absolute inset-[-18px] rounded-full z-mic-glow",
+                  glowClass
+                )}
+              />
+
+              <div
+                className={cn("absolute inset-0 rounded-full z-mic-ring", ringClass)}
+              />
+
+              <div className="absolute inset-[10px] rounded-full z-mic-disc" />
+
+              <div
+                className={cn(
+                  "absolute inset-0 flex items-center justify-center",
+                  "rounded-full"
                 )}
               >
-                <MicIcon active={micActive || micBusy} />
+                <div
+                  className={cn(
+                    "z-mic-iconBubble",
+                    micActive || micBusy
+                      ? "z-mic-iconBubble-on"
+                      : "z-mic-iconBubble-off"
+                  )}
+                >
+                  <MicIcon active={micActive || micBusy} />
+                </div>
               </div>
-            </div>
-          </button>
-
-          <div className="mt-3 text-sm font-semibold text-zinc-200">
-            {micLabel}
-          </div>
-        </div>
-
-        {/* Translate / Clear buttons */}
-        <div className="mt-4 flex justify-center gap-3">
-          <button
-            type="button"
-            data-press
-            className={cn(
-              "z-btn z-home-pillBtn",
-              translating || !canTranslate ? "z-disabled" : "",
-              "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
-            )}
-            onClick={handleTranslateClick}
-            disabled={translating || !canTranslate}
-          >
-            {translating ? "Translating…" : "Translate"}
-          </button>
-
-          <button
-            type="button"
-            data-press
-            className={cn(
-              "z-btn z-home-pillBtn z-home-pillBtn-secondary",
-              sttState !== "idle" ? "z-disabled" : ""
-            )}
-            onClick={handleClear}
-            disabled={sttState !== "idle"}
-          >
-            Clear
-          </button>
-        </div>
-
-        {/* Add Entry manually (lighter weight) */}
-        {typeof onOpenAddForm === "function" && (
-          <div className="mt-4 flex justify-center">
-            <button
-              type="button"
-              data-press
-              className="z-btn z-btn-quiet px-4 py-2 rounded-2xl text-sm font-medium text-zinc-300"
-              onClick={handleOpenAdd}
-            >
-              + Add Entry Manually
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* Duplicate warning */}
-      {duplicateEntry && (
-        <section
-          ref={dupCardRef}
-          className="z-card mt-4 p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15"
-        >
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div>
-              <div className="text-sm font-semibold text-amber-300">
-                Similar entry already in your library
-              </div>
-              <div className="text-xs text-amber-200/80 mt-0.5">
-                Use this one, or translate anyway for a new version.
-              </div>
-            </div>
-            <button
-              type="button"
-              data-press
-              className="z-btn z-btn-quiet px-3 py-2 rounded-xl text-xs"
-              onClick={() => {
-                blurTextarea();
-                setDuplicateEntry(null);
-              }}
-            >
-              Dismiss
-            </button>
-          </div>
-
-          <div className="text-sm font-semibold text-zinc-100 truncate">
-            {duplicateEntry.English || "—"}
-          </div>
-          <div className="text-sm text-zinc-200 truncate">
-            {duplicateEntry.Lithuanian || "—"}
-          </div>
-
-          {duplicateEntry.Phonetic && (
-            <div className="text-[11px] text-zinc-400 italic mt-1 truncate">
-              {duplicateEntry.Phonetic}
-            </div>
-          )}
-
-          <div className="flex gap-3 flex-wrap pt-4">
-            <button
-              type="button"
-              data-press
-              className="z-btn px-4 py-2 rounded-2xl text-sm bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
-              onClick={() =>
-                duplicateEntry.Lithuanian &&
-                handlePlay(duplicateEntry.Lithuanian)
-              }
-            >
-              ▶ Play
             </button>
 
-            <button
-              type="button"
-              data-press
-              className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
-              onClick={handleTranslateAnywayClick}
-            >
-              Translate anyway
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* Output */}
-      {result.ltOut && (
-        <section ref={outCardRef} className="z-card mt-4 p-4 sm:p-5 space-y-3">
-          <div className="text-xs text-zinc-500">
-            Detected input:{" "}
-            <span className="text-zinc-300">
-              {result.sourceLang === "lt" ? "Lithuanian" : "English"}
-            </span>
-          </div>
-
-          <div>
-            <div className="text-[12px] uppercase tracking-wide text-zinc-400">
-              Lithuanian
+            <div className="mt-3 text-sm font-semibold text-zinc-200">
+              {micLabel}
             </div>
-            <div className="mt-1 text-lg font-semibold text-zinc-100 break-words">
-              {result.ltOut}
-            </div>
-
-            {displayedPhonetics && (
-              <div className="text-sm text-zinc-400 mt-1">
-                {displayedPhonetics}
-              </div>
-            )}
           </div>
 
-          <div className="border-t border-white/10 pt-3 space-y-1 text-sm text-zinc-200">
-            <div>
-              <span className="font-semibold">
-                English meaning (natural):{" "}
-              </span>
-              <span>{result.enNatural || result.enLiteral}</span>
-            </div>
-            {result.enLiteral && (
-              <div className="text-zinc-400">
-                <span className="font-semibold text-zinc-300">
-                  Literal meaning:{" "}
-                </span>
-                <span>{result.enLiteral}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap pt-2">
+          <div className="mt-4 flex justify-center gap-3">
             <button
               type="button"
               data-press
-              className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
-              onClick={() => handlePlay(result.ltOut)}
+              className={cn(
+                "z-btn z-home-pillBtn",
+                translating || !canTranslate ? "z-disabled" : "",
+                "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+              )}
+              onClick={handleTranslateClick}
+              disabled={translating || !canTranslate}
             >
-              ▶ Normal
-            </button>
-
-            <button
-              type="button"
-              data-press
-              className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-700/90 hover:bg-emerald-600 border-emerald-300/15 text-black font-semibold"
-              onClick={() => handlePlay(result.ltOut, { slow: true })}
-            >
-              🐢 Slow
-            </button>
-
-            <button
-              type="button"
-              data-press
-              className="z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm"
-              onClick={handleCopy}
-            >
-              Copy
+              {translating ? "Translating…" : "Translate"}
             </button>
 
             <button
               type="button"
               data-press
               className={cn(
-                "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm",
-                !canSave ? "z-disabled" : ""
+                "z-btn z-home-pillBtn z-home-pillBtn-secondary",
+                sttState !== "idle" ? "z-disabled" : ""
               )}
-              onClick={handleSaveToLibrary}
-              disabled={!canSave}
+              onClick={handleClear}
+              disabled={sttState !== "idle"}
             >
-              Save to library
+              Clear
             </button>
           </div>
+
+          {typeof onOpenAddForm === "function" && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                data-press
+                className="z-btn z-btn-quiet px-4 py-2 rounded-2xl text-sm font-medium text-zinc-300"
+                onClick={handleOpenAdd}
+              >
+                + Add Entry Manually
+              </button>
+            </div>
+          )}
         </section>
-      )}
-    </div>
+
+        {duplicateEntry && (
+          <section
+            ref={dupCardRef}
+            className="z-card mt-4 p-4 sm:p-5 border border-amber-500/25 bg-amber-950/15"
+          >
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div className="text-sm font-semibold text-amber-300">
+                  Similar entry already in your library
+                </div>
+                <div className="text-xs text-amber-200/80 mt-0.5">
+                  Use this one, or translate anyway for a new version.
+                </div>
+              </div>
+              <button
+                type="button"
+                data-press
+                className="z-btn z-btn-quiet px-3 py-2 rounded-xl text-xs"
+                onClick={() => {
+                  blurTextarea();
+                  setDuplicateEntry(null);
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+
+            <div className="text-sm font-semibold text-zinc-100 truncate">
+              {duplicateEntry.English || "—"}
+            </div>
+            <div className="text-sm text-zinc-200 truncate">
+              {duplicateEntry.Lithuanian || "—"}
+            </div>
+
+            {duplicateEntry.Phonetic && (
+              <div className="text-[11px] text-zinc-400 italic mt-1 truncate">
+                {duplicateEntry.Phonetic}
+              </div>
+            )}
+
+            <div className="flex gap-3 flex-wrap pt-4">
+              <button
+                type="button"
+                data-press
+                className="z-btn px-4 py-2 rounded-2xl text-sm bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
+                onClick={() =>
+                  duplicateEntry.Lithuanian &&
+                  handlePlay(duplicateEntry.Lithuanian)
+                }
+              >
+                ▶ Play
+              </button>
+
+              <button
+                type="button"
+                data-press
+                className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
+                onClick={handleTranslateAnywayClick}
+              >
+                Translate anyway
+              </button>
+            </div>
+          </section>
+        )}
+
+        {result.ltOut && (
+          <section ref={outCardRef} className="z-card mt-4 p-4 sm:p-5 space-y-3">
+            <div className="text-xs text-zinc-500">
+              Detected input:{" "}
+              <span className="text-zinc-300">
+                {result.sourceLang === "lt" ? "Lithuanian" : "English"}
+              </span>
+            </div>
+
+            <div>
+              <div className="text-[12px] uppercase tracking-wide text-zinc-400">
+                Lithuanian
+              </div>
+              <div className="mt-1 text-lg font-semibold text-zinc-100 break-words">
+                {result.ltOut}
+              </div>
+
+              {displayedPhonetics && (
+                <div className="text-sm text-zinc-400 mt-1">
+                  {displayedPhonetics}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-white/10 pt-3 space-y-1 text-sm text-zinc-200">
+              <div>
+                <span className="font-semibold">
+                  English meaning (natural):{" "}
+                </span>
+                <span>{result.enNatural || result.enLiteral}</span>
+              </div>
+              {result.enLiteral && (
+                <div className="text-zinc-400">
+                  <span className="font-semibold text-zinc-300">
+                    Literal meaning:{" "}
+                  </span>
+                  <span>{result.enLiteral}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap pt-2">
+              <button
+                type="button"
+                data-press
+                className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold"
+                onClick={() => handlePlay(result.ltOut)}
+              >
+                ▶ Normal
+              </button>
+
+              <button
+                type="button"
+                data-press
+                className="z-btn px-5 py-3 rounded-2xl text-base bg-emerald-700/90 hover:bg-emerald-600 border-emerald-300/15 text-black font-semibold"
+                onClick={() => handlePlay(result.ltOut, { slow: true })}
+              >
+                🐢 Slow
+              </button>
+
+              <button
+                type="button"
+                data-press
+                className="z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm"
+                onClick={handleCopy}
+              >
+                Copy
+              </button>
+
+              <button
+                type="button"
+                data-press
+                className={cn(
+                  "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm",
+                  !canSave ? "z-disabled" : ""
+                )}
+                onClick={handleSaveToLibrary}
+                disabled={!canSave}
+              >
+                Save to library
+              </button>
+
+              <button
+                type="button"
+                data-press
+                className={cn(
+                  "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm",
+                  !canSave ? "z-disabled" : ""
+                )}
+                onClick={() => setScenarioPickerOpen(true)}
+                disabled={!canSave}
+              >
+                Add to scenario
+              </button>
+            </div>
+          </section>
+        )}
+      </div>
+
+      <ScenarioPickerModal
+        open={scenarioPickerOpen}
+        scenarios={scenarios}
+        onClose={() => setScenarioPickerOpen(false)}
+        onPick={handleSaveToScenario}
+        onCreateNew={handleCreateScenarioAndSave}
+      />
+    </>
   );
 }
