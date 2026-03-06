@@ -9,6 +9,7 @@ import React, {
 import { searchStore } from "../searchStore";
 import { CATEGORIES } from "../constants/categories";
 import { useSettingsStore } from "../stores/settingsStore";
+import InteractivePhraseText from "../components/audio/InteractivePhraseText";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -191,6 +192,15 @@ export default function LibraryView({
   }, [menuOpenId]);
 
   const blurActiveInput = useBlurActiveInput();
+
+  const handleWordPlay = useCallback(
+    (text, opts) => {
+      blurActiveInput?.();
+      if (!text) return;
+      return playText?.(text, opts);
+    },
+    [blurActiveInput, playText]
+  );
 
   const toggleSort = () =>
     setSortMode((m) => (m === "Newest" ? "Oldest" : "Newest"));
@@ -428,7 +438,11 @@ export default function LibraryView({
 
                 <div className="flex-1 min-w-0">
                   <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words whitespace-normal">
-                    {r?.Lithuanian || "—"}
+                    <InteractivePhraseText
+                      text={r?.Lithuanian || "—"}
+                      playText={handleWordPlay}
+                      wordClassName="touch-manipulation"
+                    />
                   </div>
 
                   <div className="text-sm text-zinc-300 mt-1 leading-snug break-words whitespace-normal">
