@@ -138,6 +138,7 @@ function ScenarioPhraseRow({
   playText,
   phoneticsMode,
   showToast,
+  onOpenPhraseInLibrary,
 }) {
   const removePhraseFromScenario = useScenarioStore((s) => s.removePhraseFromScenario);
 
@@ -227,7 +228,7 @@ function ScenarioPhraseRow({
               className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
               onClick={() => {
                 setMenuOpen(false);
-                showToast?.("Open in library is next");
+                onOpenPhraseInLibrary?.(rowId);
               }}
             >
               Open in library
@@ -260,6 +261,7 @@ export default function ScenarioDetailView({
   rows,
   playText,
   onBack,
+  onOpenPhraseInLibrary,
   showToast,
 }) {
   const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
@@ -334,6 +336,7 @@ export default function ScenarioDetailView({
                   playText={playText}
                   phoneticsMode={phoneticsMode}
                   showToast={showToast}
+                  onOpenPhraseInLibrary={onOpenPhraseInLibrary}
                 />
               );
             })}
