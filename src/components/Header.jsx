@@ -13,8 +13,6 @@ function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
-const INDICATOR_INSET_X = 6;
-
 const Header = forwardRef(function Header(
   { T, page, setPage, onLogoClick, swipeProgress, isSwiping },
   ref
@@ -31,6 +29,7 @@ const Header = forwardRef(function Header(
 
   const containerRef = useRef(null);
   const btnRefs = useRef({});
+  const labelRefs = useRef({});
   const [metrics, setMetrics] = useState(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
@@ -45,13 +44,9 @@ const Header = forwardRef(function Header(
       const btn = btnRefs.current?.[t.id];
       if (!btn) continue;
       const bRect = btn.getBoundingClientRect();
-
-      const rawLeft = bRect.left - wRect.left;
-      const rawWidth = bRect.width;
-
       out[t.id] = {
-        left: rawLeft + INDICATOR_INSET_X,
-        width: Math.max(0, rawWidth - INDICATOR_INSET_X * 2),
+        left: bRect.left - wRect.left,
+        width: bRect.width,
       };
     }
 
@@ -67,12 +62,9 @@ const Header = forwardRef(function Header(
       const wRect = wrap.getBoundingClientRect();
       const bRect = btn.getBoundingClientRect();
 
-      const rawLeft = bRect.left - wRect.left;
-      const rawWidth = bRect.width;
-
       setIndicator({
-        left: rawLeft + INDICATOR_INSET_X,
-        width: Math.max(0, rawWidth - INDICATOR_INSET_X * 2),
+        left: bRect.left - wRect.left,
+        width: bRect.width,
       });
       return;
     }
@@ -209,7 +201,14 @@ const Header = forwardRef(function Header(
                   onMouseDown={(e) => e.preventDefault()}
                   onTouchStart={(e) => e.preventDefault()}
                 >
-                  {tab.label}
+                  <span
+                    ref={(el) => {
+                      if (el) labelRefs.current[tab.id] = el;
+                    }}
+                    className="inline-block"
+                  >
+                    {tab.label}
+                  </span>
                 </button>
               );
             })}
