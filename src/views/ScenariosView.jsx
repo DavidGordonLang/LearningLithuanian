@@ -6,20 +6,28 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 function ScenarioCard({ scenario, onOpen, onMenu }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       data-press
       onClick={() => onOpen?.(scenario)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen?.(scenario);
+        }
+      }}
       className={cn(
         "z-card",
-        "w-full text-left",
+        "w-full text-left cursor-pointer",
         "p-4 sm:p-5",
         "min-h-[148px]",
         "flex flex-col justify-center",
         "relative",
         "bg-[radial-gradient(120%_140%_at_50%_0%,rgba(16,185,129,0.10),rgba(255,255,255,0.02)_38%,rgba(255,255,255,0.01)_100%)]",
         "hover:bg-[radial-gradient(120%_140%_at_50%_0%,rgba(16,185,129,0.14),rgba(255,255,255,0.03)_38%,rgba(255,255,255,0.01)_100%)]",
-        "transition-colors"
+        "transition-colors",
+        "focus:outline-none focus:ring-1 focus:ring-emerald-400/30"
       )}
     >
       <button
@@ -27,7 +35,7 @@ function ScenarioCard({ scenario, onOpen, onMenu }) {
         data-press
         aria-label="Scenario actions"
         className="
-          absolute top-3 right-3
+          absolute top-3 right-3 z-10
           text-zinc-400 hover:text-zinc-100
           text-[22px] leading-none
           px-2 py-1
@@ -45,7 +53,7 @@ function ScenarioCard({ scenario, onOpen, onMenu }) {
           {scenario?.title || "Untitled scenario"}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
