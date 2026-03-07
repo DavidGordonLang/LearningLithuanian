@@ -6,7 +6,13 @@ import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 
-export default function TrainingView({ T, rows, playText, showToast }) {
+export default function TrainingView({
+  T,
+  rows,
+  playText,
+  preloadText,
+  showToast,
+}) {
   // Behaviour frozen: these screen IDs are internal routing only.
   const [screen, setScreen] = useState("home"); // "home" | "recallFlip" | "blindRecall" | "matchPairs"
   const [focus, setFocus] = useTrainingFocus();
@@ -69,6 +75,7 @@ export default function TrainingView({ T, rows, playText, showToast }) {
       <MatchPairsView
         rows={rows}
         playText={playText}
+        preloadText={preloadText}
         onBack={() => setScreen("home")}
       />
     );
