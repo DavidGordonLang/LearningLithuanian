@@ -46,7 +46,7 @@ export function useMatchPairsSession({
   pagePairs = 5,
 
   // timings
-  rightSelectAmberMs = 140, // used as "second-tap amber" duration (both sides)
+  rightSelectAmberMs = 140,
   correctPulseMs = 520,
   wrongPulseMs = 420,
   pageFadeOutMs = 280,
@@ -55,24 +55,23 @@ export function useMatchPairsSession({
   const [pages, setPages] = useState([]);
   const [pageIndex, setPageIndex] = useState(0);
 
-  // single selection that can be either column
   const [selected, setSelected] = useState(null); // { side:"en"|"lt", id:string } | null
 
-  const [matchedPairIds, setMatchedPairIds] = useState(() => new Set()); // current page
+  const [matchedPairIds, setMatchedPairIds] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
-  const [phase, setPhase] = useState("ready"); // "ready" | "pageFadeOut" | "pageFadeIn"
+  const [phase, setPhase] = useState("ready");
   const [mistakes, setMistakes] = useState(0);
   const [overallMatched, setOverallMatched] = useState(0);
   const [startedAt, setStartedAt] = useState(Date.now());
   const [showDone, setShowDone] = useState(false);
 
-  // pulse state
   const [pulse, setPulse] = useState(null); // { kind:"correct"|"wrong", ids:[idA,idB] }
 
-  // review tracking across full run
   const [pairBank, setPairBank] = useState(() => new Map()); // pairId -> { en, lt }
-  const [wrongPairIds, setWrongPairIds] = useState(() => new Set()); // across full run
-  const wrongOrderRef = useRef([]); // preserve first-seen order
+  const [wrongPairIds, setWrongPairIds] = useState(() => new Set());
+  const wrongOrderRef = useRef([]);
+
+  const [lastCorrectMatchAudio, setLastCorrectMatchAudio] = useState(null);
 
   const timersRef = useRef([]);
 
@@ -131,18 +130,18 @@ export function useMatchPairsSession({
       setPulse(null);
       setPairBank(new Map());
       setWrongPairIds(new Set());
+      setLastCorrectMatchAudio(null);
       wrongOrderRef.current = [];
       return;
     }
 
-    // pair bank for end review
     const bank = new Map();
     pairs.forEach((p) => bank.set(p.pairId, { en: p.en, lt: p.lt }));
     setPairBank(bank);
     setWrongPairIds(new Set());
+    setLastCorrectMatchAudio(null);
     wrongOrderRef.current = [];
 
-    // build pages
     const builtPages = [];
     let idx = 0;
     for (let p = 0; p < requiredPages; p++) {
@@ -260,14 +259,12 @@ export function useMatchPairsSession({
 
     if (isMatched(tile.pairId)) return;
 
-    // no selection yet -> select this tile (amber)
     if (!selected) {
       setSelected({ side: tile.side, id: tile.id });
       setPulse(null);
       return;
     }
 
-    // tap same tile -> deselect
     if (selected.id === tile.id) {
       setSelected(null);
       setPulse(null);
@@ -277,14 +274,12 @@ export function useMatchPairsSession({
     const first = tileById.get(selected.id);
     const second = tile;
 
-    // if same side, switch selection to this tile
     if (first && second && first.side === second.side) {
       setSelected({ side: second.side, id: second.id });
       setPulse(null);
       return;
     }
 
-    // opposite side: attempt match
     if (!first || !second) {
       setSelected(null);
       setPulse(null);
@@ -293,20 +288,15 @@ export function useMatchPairsSession({
 
     setBusy(true);
 
-    // keep amber on both briefly before pulse takeover
-    // (selected remains first; we simulate "second selection amber" by setting selected to second
-    // but we must still know both ids for the pulse)
     const firstId = first.id;
     const secondId = second.id;
 
-    // show amber on second as well for a moment
     setSelected({ side: second.side, id: secondId });
 
     const tAmber = setTimeout(() => {
       const correct = first.pairId === second.pairId;
 
       if (correct) {
-        // pulse on both tiles; keep amber present through pulse
         setPulse({ kind: "correct", ids: [firstId, secondId] });
 
         const tPulse = setTimeout(() => {
@@ -315,10 +305,22 @@ export function useMatchPairsSession({
           setMatchedPairIds(next);
           setOverallMatched((n) => n + 1);
 
+          const matchedLt =
+            first.side === "lt"
+              ? first.text
+              : second.side === "lt"
+              ? second.text
+              : pairBank.get(first.pairId)?.lt || "";
+
+          setLastCorrectMatchAudio({
+            key: `${first.pairId}_${Date.now()}`,
+            pairId: first.pairId,
+            text: matchedLt,
+          });
+
           setSelected(null);
           setPulse(null);
 
-          // page complete?
           if (next.size >= pagePairs) {
             const nextPage = pageIndex + 1;
 
@@ -342,11 +344,9 @@ export function useMatchPairsSession({
         return;
       }
 
-      // wrong
       setPulse({ kind: "wrong", ids: [firstId, secondId] });
       setMistakes((m) => m + 1);
 
-      // Mark both pairs involved as wrong (as agreed)
       markWrong(first.pairId);
       markWrong(second.pairId);
 
@@ -373,7 +373,7 @@ export function useMatchPairsSession({
       if (v?.en && v?.lt) out.push({ en: v.en, lt: v.lt });
     }
     return out;
-  }, [pairBank, wrongPairIds]); // wrongPairIds changes when new ones are added
+  }, [pairBank, wrongPairIds]);
 
   return {
     canStart,
@@ -384,7 +384,7 @@ export function useMatchPairsSession({
     leftTiles: currentPage?.left || [],
     rightTiles: currentPage?.right || [],
 
-    selected, // {side,id} or null
+    selected,
 
     matchedPairIds,
     pulse,
@@ -398,6 +398,7 @@ export function useMatchPairsSession({
     tap,
 
     wrongPairs,
+    lastCorrectMatchAudio,
 
     runAgain: buildRun,
     clearTimers,
