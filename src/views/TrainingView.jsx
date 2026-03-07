@@ -65,7 +65,13 @@ export default function TrainingView({ T, rows, playText, showToast }) {
   }
 
   if (screen === "matchPairs") {
-    return <MatchPairsView rows={rows} onBack={() => setScreen("home")} />;
+    return (
+      <MatchPairsView
+        rows={rows}
+        playText={playText}
+        onBack={() => setScreen("home")}
+      />
+    );
   }
 
   return (
