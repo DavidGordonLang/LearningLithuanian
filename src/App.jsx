@@ -425,6 +425,7 @@ export default function App() {
     voice: azureVoiceShortName,
     setVoice: setAzureVoiceShortName,
     playText,
+    preloadText,
   } = useTTSPlayer({
     initialVoice: "lt-LT-LeonasNeural",
     maxIdbEntries: 200,
@@ -448,6 +449,20 @@ export default function App() {
       );
     } catch {}
     return playText(text, opts);
+  };
+
+  const preloadTextTracked = (text, opts) => {
+    try {
+      trackEvent(
+        "tts_preload",
+        {
+          voice: azureVoiceShortName,
+          text_len: typeof text === "string" ? text.length : null,
+        },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+    return preloadText(text, opts);
   };
 
   useSyncExternalStore(
@@ -960,6 +975,7 @@ export default function App() {
                 T={T}
                 rows={visibleRows}
                 playText={playTextTracked}
+                preloadText={preloadTextTracked}
                 showToast={showToast}
               />
             </div>
