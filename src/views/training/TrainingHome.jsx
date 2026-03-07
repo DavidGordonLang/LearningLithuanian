@@ -36,7 +36,7 @@ function FocusPillRow({ focus, setFocus }) {
                 "flex-1 rounded-xl px-2.5 py-2",
                 "text-[12px] font-medium tracking-tight",
                 "transition-colors select-none",
-                "whitespace-nowrap", // labels must not wrap/truncate
+                "whitespace-nowrap",
                 active
                   ? "bg-emerald-500/20 border border-emerald-400/35 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.18)]"
                   : "bg-white/[0.03] border border-white/0 text-zinc-300 hover:bg-white/[0.05]"
@@ -117,12 +117,32 @@ export default function TrainingHome({
   const minNeeded = 5;
   const tooFew = (eligibleCount || 0) < minNeeded;
 
-  const wordsNumbersCount = (counts?.words || 0) + (counts?.numbers || 0);
-  const matchPairsDisabled = wordsNumbersCount < 10;
+  const reinforceEligibleCount =
+    focus === "numbers"
+      ? counts?.numbers || 0
+      : focus === "phrases"
+      ? 0
+      : counts?.words || 0;
+
+  const reinforceLabel =
+    focus === "numbers"
+      ? "numbers"
+      : focus === "phrases"
+      ? "supported items"
+      : "words";
+
+  const matchPairsDisabled =
+    focus === "phrases" ? true : reinforceEligibleCount < 10;
+
+  const matchPairsHint =
+    focus === "phrases"
+      ? "Reinforce is for words or numbers only. Switch focus to Words, Numbers, or All."
+      : matchPairsDisabled
+      ? `Add at least 10 ${reinforceLabel} to unlock (you have ${reinforceEligibleCount}).`
+      : null;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
-      {/* Title */}
       <div>
         <div className="text-xl font-semibold text-zinc-100">
           {T?.navTraining || "Training"}
@@ -132,12 +152,10 @@ export default function TrainingHome({
         </div>
       </div>
 
-      {/* Focus pills (single row, no counts, no truncation) */}
       <div className="mt-4">
         <FocusPillRow focus={focus} setFocus={setFocus} />
       </div>
 
-      {/* Modules */}
       <div className="mt-5">
         <div className="text-[11px] uppercase tracking-wide text-zinc-500">
           Modules
@@ -179,11 +197,7 @@ export default function TrainingHome({
             icon="🧩"
             disabled={matchPairsDisabled}
             onClick={onStartMatchPairs}
-            hint={
-              matchPairsDisabled
-                ? `Add at least 10 words/numbers to unlock (you have ${wordsNumbersCount}).`
-                : null
-            }
+            hint={matchPairsHint}
           />
         </div>
       </div>
