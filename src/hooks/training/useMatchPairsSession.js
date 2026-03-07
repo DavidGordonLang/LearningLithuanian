@@ -72,6 +72,7 @@ export function useMatchPairsSession({
   const wrongOrderRef = useRef([]);
 
   const [lastCorrectMatchAudio, setLastCorrectMatchAudio] = useState(null);
+  const [preloadLtTexts, setPreloadLtTexts] = useState([]);
 
   const timersRef = useRef([]);
 
@@ -131,6 +132,7 @@ export function useMatchPairsSession({
       setPairBank(new Map());
       setWrongPairIds(new Set());
       setLastCorrectMatchAudio(null);
+      setPreloadLtTexts([]);
       wrongOrderRef.current = [];
       return;
     }
@@ -140,6 +142,9 @@ export function useMatchPairsSession({
     setPairBank(bank);
     setWrongPairIds(new Set());
     setLastCorrectMatchAudio(null);
+    setPreloadLtTexts(
+      pairs.map((p) => p.lt).filter((t) => String(t || "").trim())
+    );
     wrongOrderRef.current = [];
 
     const builtPages = [];
@@ -399,6 +404,7 @@ export function useMatchPairsSession({
 
     wrongPairs,
     lastCorrectMatchAudio,
+    preloadLtTexts,
 
     runAgain: buildRun,
     clearTimers,
