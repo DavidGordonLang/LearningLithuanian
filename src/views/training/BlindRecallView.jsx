@@ -503,11 +503,11 @@ function filterByFocus(rows, focus) {
   const sheet = (r) => String(r?.Sheet || "Phrases");
   return rows.filter((r) => {
     const s = sheet(r);
-    if (focus === "all") return true;
+    if (focus === "all") return s === "Phrases" || s === "Questions" || s === "Words";
     if (focus === "phrases") return s === "Phrases" || s === "Questions";
     if (focus === "words") return s === "Words";
     if (focus === "numbers") return s === "Numbers";
-    return true;
+    return s === "Phrases" || s === "Questions";
   });
 }
 
