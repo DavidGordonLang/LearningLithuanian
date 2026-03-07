@@ -6,12 +6,16 @@ import { matchPairsCss } from "./matchPairs/matchPairsStyles";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-function filterWordsNumbers(rows) {
+function filterForReinforce(rows, focus) {
   const list = Array.isArray(rows) ? rows : [];
   const sheet = (r) => String(r?.Sheet || "");
+
   return list.filter((r) => {
     const s = sheet(r);
-    return s === "Words" || s === "Numbers";
+
+    if (focus === "numbers") return s === "Numbers";
+    if (focus === "phrases") return false;
+    return s === "Words"; // "all" and "words" both use words only
   });
 }
 
@@ -86,11 +90,12 @@ function DoneModal({ mistakes, elapsedSec, wrongPairs, onAgain, onFinish }) {
 
 export default function MatchPairsView({
   rows,
+  focus,
   playText,
   preloadText,
   onBack,
 }) {
-  const eligible = useMemo(() => filterWordsNumbers(rows), [rows]);
+  const eligible = useMemo(() => filterForReinforce(rows, focus), [rows, focus]);
 
   const s = useMatchPairsSession({
     eligibleRows: eligible,
@@ -221,7 +226,19 @@ export default function MatchPairsView({
         <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Not enough items</div>
           <div className="text-sm text-zinc-300 mt-2">
-            Reinforce uses <b>Words + Numbers</b> only and needs <b>20</b> entries to run a full session.
+            {focus === "numbers" ? (
+              <>
+                Reinforce is in <b>Numbers</b> mode and needs <b>20</b> entries to run a full session.
+              </>
+            ) : focus === "phrases" ? (
+              <>
+                Reinforce does not use phrases. Switch focus to <b>Words</b>, <b>Numbers</b>, or <b>All</b>.
+              </>
+            ) : (
+              <>
+                Reinforce uses <b>Words</b> only in this mode and needs <b>20</b> entries to run a full session.
+              </>
+            )}
           </div>
         </div>
       )}
