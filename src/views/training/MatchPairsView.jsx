@@ -1,5 +1,5 @@
 // src/views/training/MatchPairsView.jsx
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMatchPairsSession } from "../../hooks/training/useMatchPairsSession";
 import { matchPairsCss } from "./matchPairs/matchPairsStyles";
@@ -84,7 +84,7 @@ function DoneModal({ mistakes, elapsedSec, wrongPairs, onAgain, onFinish }) {
   return createPortal(modal, document.body);
 }
 
-export default function MatchPairsView({ rows, onBack }) {
+export default function MatchPairsView({ rows, playText, onBack }) {
   const eligible = useMemo(() => filterWordsNumbers(rows), [rows]);
 
   const s = useMatchPairsSession({
@@ -95,6 +95,26 @@ export default function MatchPairsView({ rows, onBack }) {
     correctPulseMs: 520,
     wrongPulseMs: 420,
   });
+
+  const lastPlayedMatchKeyRef = useRef("");
+
+  useEffect(() => {
+    const payload = s.lastCorrectMatchAudio;
+    if (!payload) return;
+
+    const key = String(payload.key || "").trim();
+    const text = String(payload.text || "").trim();
+
+    if (!key || !text) return;
+    if (key === lastPlayedMatchKeyRef.current) return;
+    if (typeof playText !== "function") return;
+
+    lastPlayedMatchKeyRef.current = key;
+
+    try {
+      playText(text);
+    } catch {}
+  }, [playText, s.lastCorrectMatchAudio]);
 
   const pct = s.progress.total
     ? Math.min(100, Math.round((s.progress.matched / s.progress.total) * 100))
@@ -111,7 +131,6 @@ export default function MatchPairsView({ rows, onBack }) {
   const pulseKind = s.pulse?.kind || null;
   const selectedId = s.selected?.id || null;
 
-  // Tuned: a bit taller than the "collapsed" version, but we CLOSE GAPS hard.
   const TILE_H = 60;
   const COL_GAP = 10;
 
@@ -119,7 +138,7 @@ export default function MatchPairsView({ rows, onBack }) {
     height: TILE_H,
     minHeight: TILE_H,
     padding: "10px 12px",
-    margin: 0, // kills any mp-tile margin spacing unless CSS uses !important
+    margin: 0,
   };
 
   const BackCircle = (
