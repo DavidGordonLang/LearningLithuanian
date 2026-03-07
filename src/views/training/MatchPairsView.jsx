@@ -84,7 +84,12 @@ function DoneModal({ mistakes, elapsedSec, wrongPairs, onAgain, onFinish }) {
   return createPortal(modal, document.body);
 }
 
-export default function MatchPairsView({ rows, playText, onBack }) {
+export default function MatchPairsView({
+  rows,
+  playText,
+  preloadText,
+  onBack,
+}) {
   const eligible = useMemo(() => filterWordsNumbers(rows), [rows]);
 
   const s = useMatchPairsSession({
@@ -97,6 +102,7 @@ export default function MatchPairsView({ rows, playText, onBack }) {
   });
 
   const lastPlayedMatchKeyRef = useRef("");
+  const lastPreloadBatchKeyRef = useRef("");
 
   useEffect(() => {
     const payload = s.lastCorrectMatchAudio;
@@ -115,6 +121,22 @@ export default function MatchPairsView({ rows, playText, onBack }) {
       playText(text);
     } catch {}
   }, [playText, s.lastCorrectMatchAudio]);
+
+  useEffect(() => {
+    const texts = Array.isArray(s.preloadLtTexts) ? s.preloadLtTexts : [];
+    if (!texts.length) return;
+    if (typeof preloadText !== "function") return;
+
+    const batchKey = texts.join("¦");
+    if (!batchKey) return;
+    if (batchKey === lastPreloadBatchKeyRef.current) return;
+
+    lastPreloadBatchKeyRef.current = batchKey;
+
+    texts.forEach((text) => {
+      preloadText(text).catch?.(() => {});
+    });
+  }, [preloadText, s.preloadLtTexts]);
 
   const pct = s.progress.total
     ? Math.min(100, Math.round((s.progress.matched / s.progress.total) * 100))
@@ -169,7 +191,6 @@ export default function MatchPairsView({ rows, playText, onBack }) {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 mp-root">
-      {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <div className="flex items-center justify-start">{BackCircle}</div>
         <div className="text-center">
@@ -178,7 +199,6 @@ export default function MatchPairsView({ rows, playText, onBack }) {
         <div aria-hidden="true" />
       </div>
 
-      {/* Title + progress */}
       <div className="mt-4">
         <div className="text-[15px] font-semibold mp-title">Match either way</div>
         <div className="mt-1 text-[12px] text-zinc-400">
@@ -216,7 +236,6 @@ export default function MatchPairsView({ rows, playText, onBack }) {
           }}
         >
           <div className="mp-cols" style={{ height: "100%", alignItems: "stretch" }}>
-            {/* LEFT: EN */}
             <div
               className="mp-col"
               style={{
@@ -258,7 +277,6 @@ export default function MatchPairsView({ rows, playText, onBack }) {
               })}
             </div>
 
-            {/* RIGHT: LT */}
             <div
               className="mp-col"
               style={{
