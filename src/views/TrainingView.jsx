@@ -29,7 +29,12 @@ export default function TrainingView({
     const words = list.filter((r) => sheet(r) === "Words").length;
     const numbers = list.filter((r) => sheet(r) === "Numbers").length;
 
-    return { phrases, words, numbers, all: list.length };
+    return {
+      phrases,
+      words,
+      numbers,
+      all: phrases + words, // numbers intentionally excluded from "all"
+    };
   }, [rows]);
 
   const eligibleCount = useMemo(() => {
@@ -37,11 +42,11 @@ export default function TrainingView({
     const s = (r) => String(r?.Sheet || "Phrases");
 
     const matchFocus = (r) => {
-      if (focus === "all") return true;
+      if (focus === "all") return s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words";
       if (focus === "phrases") return s(r) === "Phrases" || s(r) === "Questions";
       if (focus === "words") return s(r) === "Words";
       if (focus === "numbers") return s(r) === "Numbers";
-      return true;
+      return s(r) === "Phrases" || s(r) === "Questions";
     };
 
     return list.filter(matchFocus).length;
