@@ -30,6 +30,7 @@ function makeCacheKey({ text, voice, slow }) {
  * - Plays Lithuanian TTS via /api/azure-tts
  * - Memory cache (session) + IndexedDB cache (persistent)
  * - Stops any currently playing audio before starting a new one
+ * - Supports preloadText() to warm cache without playback
  */
 export default function useTTSPlayer({
   initialVoice = "lt-LT-LeonasNeural",
@@ -43,6 +44,9 @@ export default function useTTSPlayer({
 
   // Current audio instance
   const audioRef = useRef(null);
+
+  // Deduplicate concurrent fetches/preloads
+  const inflight = useRef(new Map());
 
   const stop = useCallback(() => {
     try {
@@ -78,76 +82,111 @@ export default function useTTSPlayer({
     }
   }, []);
 
-  const fetchTTS = useCallback(async ({ text, slow }) => {
-    const resp = await fetch("/api/azure-tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice, slow }),
-    });
+  const fetchTTS = useCallback(
+    async ({ text, slow }) => {
+      const resp = await fetch("/api/azure-tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice, slow }),
+      });
 
-    if (!resp.ok) {
-      const msg = `Azure TTS failed (${resp.status})`;
-      throw new Error(msg);
-    }
+      if (!resp.ok) {
+        const msg = `Azure TTS failed (${resp.status})`;
+        throw new Error(msg);
+      }
 
-    return await resp.blob();
-  }, [voice]);
+      return await resp.blob();
+    },
+    [voice]
+  );
+
+  const getOrFetchBlob = useCallback(
+    async (text, { slow = false } = {}) => {
+      const raw = String(text || "");
+      if (!raw.trim()) return null;
+
+      const key = makeCacheKey({ text: raw, voice, slow });
+
+      const memHit = mem.current.get(key);
+      if (memHit) return memHit;
+
+      const idbHit = await ttsIdbGet(key);
+      if (idbHit) {
+        mem.current.set(key, idbHit);
+        return idbHit;
+      }
+
+      const inflightHit = inflight.current.get(key);
+      if (inflightHit) {
+        return await inflightHit;
+      }
+
+      const job = (async () => {
+        const blob = await fetchTTS({ text: raw, slow });
+        mem.current.set(key, blob);
+        ttsIdbSet(key, blob, { maxEntries: maxIdbEntries }).catch(() => {});
+        return blob;
+      })();
+
+      inflight.current.set(key, job);
+
+      try {
+        return await job;
+      } finally {
+        inflight.current.delete(key);
+      }
+    },
+    [fetchTTS, maxIdbEntries, voice]
+  );
+
+  const preloadText = useCallback(
+    async (text, { slow = false } = {}) => {
+      const raw = String(text || "");
+      if (!raw.trim()) return;
+
+      try {
+        await getOrFetchBlob(raw, { slow });
+      } catch (e) {
+        if (typeof onError === "function") {
+          onError(e);
+        } else {
+          alert("Voice error: " + (e?.message || "Unknown error"));
+        }
+      }
+    },
+    [getOrFetchBlob, onError]
+  );
 
   const playText = useCallback(
     async (text, { slow = false } = {}) => {
       const raw = String(text || "");
       if (!raw.trim()) return;
 
-      // Stop any current audio immediately (matches current behaviour)
       stop();
 
-      const key = makeCacheKey({ text: raw, voice, slow });
-
       try {
-        // 1) Memory cache (instant)
-        const memHit = mem.current.get(key);
-        if (memHit) {
-          await playBlob(memHit);
-          return;
-        }
-
-        // 2) IndexedDB cache (persistent)
-        const idbHit = await ttsIdbGet(key);
-        if (idbHit) {
-          mem.current.set(key, idbHit);
-          await playBlob(idbHit);
-          return;
-        }
-
-        // 3) Network fetch
-        const blob = await fetchTTS({ text: raw, slow });
-
-        // Play immediately, then cache (no UX blocking beyond the fetch)
-        mem.current.set(key, blob);
+        const blob = await getOrFetchBlob(raw, { slow });
+        if (!blob) return;
         await playBlob(blob);
-
-        // Persist in background (don’t block playback)
-        ttsIdbSet(key, blob, { maxEntries: maxIdbEntries }).catch(() => {});
       } catch (e) {
         if (typeof onError === "function") {
           onError(e);
         } else {
-          // Fallback to current behaviour style
           alert("Voice error: " + (e?.message || "Unknown error"));
         }
       }
     },
-    [fetchTTS, maxIdbEntries, onError, playBlob, stop, voice]
+    [getOrFetchBlob, onError, playBlob, stop]
   );
 
-  // Optional: expose a stable object
   return useMemo(
     () => ({
       voice,
       setVoice,
       playText,
+      preloadText,
       stop,
     }),
-    [playText, stop, voice]
+    [playText, preloadText, stop, voice]
   );
 }
