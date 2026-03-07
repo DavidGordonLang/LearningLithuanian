@@ -42,7 +42,8 @@ export default function TrainingView({
     const s = (r) => String(r?.Sheet || "Phrases");
 
     const matchFocus = (r) => {
-      if (focus === "all") return s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words";
+      if (focus === "all")
+        return s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words";
       if (focus === "phrases") return s(r) === "Phrases" || s(r) === "Questions";
       if (focus === "words") return s(r) === "Words";
       if (focus === "numbers") return s(r) === "Numbers";
@@ -79,6 +80,7 @@ export default function TrainingView({
     return (
       <MatchPairsView
         rows={rows}
+        focus={focus}
         playText={playText}
         preloadText={preloadText}
         onBack={() => setScreen("home")}
