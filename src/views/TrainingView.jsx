@@ -15,6 +15,7 @@ export default function TrainingView({
   rows,
   playText,
   preloadText,
+  stopText,
   showToast,
 }) {
   // Behaviour frozen: these screen IDs are internal routing only.
@@ -116,6 +117,7 @@ export default function TrainingView({
       <ExamListeningTaskView
         playText={playText}
         preloadText={preloadText}
+        stopText={stopText}
         showToast={showToast}
         onBack={() => setScreen("examPrepHome")}
       />
