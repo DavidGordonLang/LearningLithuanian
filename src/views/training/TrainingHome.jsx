@@ -113,6 +113,7 @@ export default function TrainingHome({
   onStartRecallFlip,
   onStartBlindRecall,
   onStartMatchPairs,
+  onStartExamPrep,
 }) {
   const minNeeded = 5;
   const tooFew = (eligibleCount || 0) < minNeeded;
@@ -198,6 +199,14 @@ export default function TrainingHome({
             disabled={matchPairsDisabled}
             onClick={onStartMatchPairs}
             hint={matchPairsHint}
+          />
+
+          <ModuleCard
+            title="Exam Prep"
+            desc="Practise foreigner-exam task formats with reviewed content."
+            icon="📝"
+            onClick={onStartExamPrep}
+            hint="Reading, listening, and writing practice in one calm space."
           />
         </div>
       </div>
