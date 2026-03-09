@@ -204,6 +204,8 @@ export default function ExamListeningTaskView({
         </div>
       </div>
 
+      <KeywordBlock items={item?.support?.keywords} />
+
       <div className="mt-4 space-y-3">
         {questions.map((q, qIdx) => {
           const picked = answers[q.id];
@@ -291,8 +293,6 @@ export default function ExamListeningTaskView({
           </div>
         </div>
       ) : null}
-
-      <KeywordBlock items={item?.support?.keywords} />
 
       <div className="mt-4 flex flex-wrap gap-3">
         {!submitted ? (
