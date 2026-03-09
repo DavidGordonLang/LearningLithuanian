@@ -135,6 +135,8 @@ export default function ExamWritingTaskView({ onBack }) {
         </div>
       </div>
 
+      <UsefulPhrases items={item?.support?.usefulPhrases} />
+
       <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 backdrop-blur p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="text-[11px] uppercase tracking-wide text-zinc-500">
@@ -212,8 +214,6 @@ export default function ExamWritingTaskView({ onBack }) {
           </div>
         </div>
       ) : null}
-
-      <UsefulPhrases items={item?.support?.usefulPhrases} />
 
       {showSample ? (
         <div
