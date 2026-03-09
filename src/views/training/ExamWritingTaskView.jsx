@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { examContent } from "../../content/exam";
 
 function Header({ onBack, title, subtitle }) {
@@ -62,6 +62,8 @@ export default function ExamWritingTaskView({ onBack }) {
   const [showChecklist, setShowChecklist] = useState(false);
   const [showSample, setShowSample] = useState(false);
 
+  const sampleAnswerRef = useRef(null);
+
   const item = items[index] || null;
 
   const wordCount = useMemo(() => {
@@ -70,6 +72,28 @@ export default function ExamWritingTaskView({ onBack }) {
       .split(/\s+/)
       .filter(Boolean).length;
   }, [draft]);
+
+  useEffect(() => {
+    if (!showSample) return;
+    const el = sampleAnswerRef.current;
+    if (!el) return;
+
+    const raf = requestAnimationFrame(() => {
+      try {
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
+        });
+      } catch {
+        try {
+          el.scrollIntoView(true);
+        } catch {}
+      }
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [showSample]);
 
   if (!item) {
     return (
@@ -192,7 +216,10 @@ export default function ExamWritingTaskView({ onBack }) {
       <UsefulPhrases items={item?.support?.usefulPhrases} />
 
       {showSample ? (
-        <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 backdrop-blur p-4">
+        <div
+          ref={sampleAnswerRef}
+          className="mt-4 rounded-2xl border border-white/10 bg-black/20 backdrop-blur p-4"
+        >
           <div className="text-[11px] uppercase tracking-wide text-zinc-500">
             Sample answer
           </div>
