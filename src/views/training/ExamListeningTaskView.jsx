@@ -33,7 +33,7 @@ function Header({ onBack, title, subtitle }) {
   );
 }
 
-function KeywordBlock({ items }) {
+function KeywordBlock({ items, onPlayWord, activeWordKey }) {
   if (!Array.isArray(items) || !items.length) return null;
 
   return (
@@ -43,15 +43,29 @@ function KeywordBlock({ items }) {
       </div>
 
       <div className="mt-3 space-y-2">
-        {items.map((item, idx) => (
-          <div
-            key={`${item.lt}-${idx}`}
-            className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3"
-          >
-            <div className="text-sm text-zinc-100 select-text">{item.lt}</div>
-            <div className="text-[12px] text-zinc-400 mt-1">{item.en}</div>
-          </div>
-        ))}
+        {items.map((item, idx) => {
+          const key = `${item.lt}-${idx}`;
+          const isActive = activeWordKey === key;
+
+          return (
+            <button
+              key={key}
+              type="button"
+              data-press
+              onClick={() => onPlayWord?.(item.lt, key)}
+              className={cn(
+                "w-full text-left rounded-xl border px-3 py-3 transition",
+                "bg-white/[0.03] hover:bg-white/[0.05]",
+                isActive
+                  ? "border-emerald-400/35 bg-emerald-500/12 shadow-[0_0_22px_rgba(16,185,129,0.22)]"
+                  : "border-white/8"
+              )}
+            >
+              <div className="text-sm text-zinc-100 select-text">{item.lt}</div>
+              <div className="text-[12px] text-zinc-400 mt-1">{item.en}</div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -70,6 +84,7 @@ export default function ExamListeningTaskView({
   const [submitted, setSubmitted] = useState(false);
   const [playCount, setPlayCount] = useState(0);
   const [audioBusy, setAudioBusy] = useState(false);
+  const [activeWordKey, setActiveWordKey] = useState(null);
 
   const item = items[index] || null;
   const questions = item?.questions || [];
@@ -122,11 +137,26 @@ export default function ExamListeningTaskView({
     }
   }
 
+  async function handlePlayWord(text, wordKey) {
+    const safeText = String(text || "").trim();
+    if (!safeText || typeof playText !== "function") return;
+
+    try {
+      setActiveWordKey(wordKey);
+      await playText(safeText);
+    } catch {
+      showToast?.("Could not play audio");
+    } finally {
+      setActiveWordKey((current) => (current === wordKey ? null : current));
+    }
+  }
+
   function handleStop() {
     try {
       stopText?.();
     } finally {
       setAudioBusy(false);
+      setActiveWordKey(null);
     }
   }
 
@@ -138,6 +168,7 @@ export default function ExamListeningTaskView({
     setSubmitted(false);
     setPlayCount(0);
     setAudioBusy(false);
+    setActiveWordKey(null);
   }
 
   function retryTask() {
@@ -146,6 +177,7 @@ export default function ExamListeningTaskView({
     setSubmitted(false);
     setPlayCount(0);
     setAudioBusy(false);
+    setActiveWordKey(null);
   }
 
   return (
@@ -204,7 +236,11 @@ export default function ExamListeningTaskView({
         </div>
       </div>
 
-      <KeywordBlock items={item?.support?.keywords} />
+      <KeywordBlock
+        items={item?.support?.keywords}
+        onPlayWord={handlePlayWord}
+        activeWordKey={activeWordKey}
+      />
 
       <div className="mt-4 space-y-3">
         {questions.map((q, qIdx) => {
