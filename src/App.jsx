@@ -426,6 +426,7 @@ export default function App() {
     setVoice: setAzureVoiceShortName,
     playText,
     preloadText,
+    stop,
   } = useTTSPlayer({
     initialVoice: "lt-LT-LeonasNeural",
     maxIdbEntries: 200,
@@ -463,6 +464,19 @@ export default function App() {
       );
     } catch {}
     return preloadText(text, opts);
+  };
+
+  const stopTextTracked = () => {
+    try {
+      trackEvent(
+        "tts_stop",
+        {
+          voice: azureVoiceShortName,
+        },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+    return stop();
   };
 
   useSyncExternalStore(
@@ -976,6 +990,7 @@ export default function App() {
                 rows={visibleRows}
                 playText={playTextTracked}
                 preloadText={preloadTextTracked}
+                stopText={stopTextTracked}
                 showToast={showToast}
               />
             </div>
