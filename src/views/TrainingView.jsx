@@ -4,6 +4,10 @@ import TrainingHome from "./training/TrainingHome";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
+import ExamPrepHome from "./training/ExamPrepHome";
+import ExamReadingTaskView from "./training/ExamReadingTaskView";
+import ExamListeningTaskView from "./training/ExamListeningTaskView";
+import ExamWritingTaskView from "./training/ExamWritingTaskView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 
 export default function TrainingView({
@@ -14,7 +18,7 @@ export default function TrainingView({
   showToast,
 }) {
   // Behaviour frozen: these screen IDs are internal routing only.
-  const [screen, setScreen] = useState("home"); // "home" | "recallFlip" | "blindRecall" | "matchPairs"
+  const [screen, setScreen] = useState("home"); // "home" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
   const [focus, setFocus] = useTrainingFocus();
 
   const counts = useMemo(() => {
@@ -88,6 +92,44 @@ export default function TrainingView({
     );
   }
 
+  if (screen === "examPrepHome") {
+    return (
+      <ExamPrepHome
+        onBack={() => setScreen("home")}
+        onOpenReading={() => setScreen("examReading")}
+        onOpenListening={() => setScreen("examListening")}
+        onOpenWriting={() => setScreen("examWriting")}
+      />
+    );
+  }
+
+  if (screen === "examReading") {
+    return (
+      <ExamReadingTaskView
+        onBack={() => setScreen("examPrepHome")}
+      />
+    );
+  }
+
+  if (screen === "examListening") {
+    return (
+      <ExamListeningTaskView
+        playText={playText}
+        preloadText={preloadText}
+        showToast={showToast}
+        onBack={() => setScreen("examPrepHome")}
+      />
+    );
+  }
+
+  if (screen === "examWriting") {
+    return (
+      <ExamWritingTaskView
+        onBack={() => setScreen("examPrepHome")}
+      />
+    );
+  }
+
   return (
     <TrainingHome
       T={T}
@@ -98,6 +140,7 @@ export default function TrainingView({
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
       onStartMatchPairs={() => setScreen("matchPairs")}
+      onStartExamPrep={() => setScreen("examPrepHome")}
     />
   );
 }
