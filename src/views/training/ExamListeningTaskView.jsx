@@ -60,6 +60,7 @@ function KeywordBlock({ items }) {
 export default function ExamListeningTaskView({
   playText,
   preloadText,
+  stopText,
   showToast,
   onBack,
 }) {
@@ -121,18 +122,30 @@ export default function ExamListeningTaskView({
     }
   }
 
+  function handleStop() {
+    try {
+      stopText?.();
+    } finally {
+      setAudioBusy(false);
+    }
+  }
+
   function nextTask() {
+    stopText?.();
     const nextIndex = (index + 1) % items.length;
     setIndex(nextIndex);
     setAnswers({});
     setSubmitted(false);
     setPlayCount(0);
+    setAudioBusy(false);
   }
 
   function retryTask() {
+    stopText?.();
     setAnswers({});
     setSubmitted(false);
     setPlayCount(0);
+    setAudioBusy(false);
   }
 
   return (
@@ -168,6 +181,21 @@ export default function ExamListeningTaskView({
             )}
           >
             {audioBusy ? "Playing…" : playCount > 0 ? "Play again" : "Play audio"}
+          </button>
+
+          <button
+            type="button"
+            data-press
+            onClick={handleStop}
+            disabled={typeof stopText !== "function"}
+            className={cn(
+              "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm",
+              typeof stopText !== "function"
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            )}
+          >
+            Stop audio
           </button>
 
           <div className="text-[12px] text-zinc-500">
