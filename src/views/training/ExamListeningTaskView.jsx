@@ -54,11 +54,10 @@ function KeywordBlock({ items, onPlayWord, activeWordKey }) {
               data-press
               onClick={() => onPlayWord?.(item.lt, key)}
               className={cn(
-                "w-full text-left rounded-xl border px-3 py-3 transition",
-                "bg-white/[0.03] hover:bg-white/[0.05]",
+                "w-full text-left rounded-xl px-3 py-3 transition-all duration-200",
                 isActive
-                  ? "border-emerald-400/35 bg-emerald-500/12 shadow-[0_0_22px_rgba(16,185,129,0.22)]"
-                  : "border-white/8"
+                  ? "border border-emerald-400/60 bg-emerald-500/18 shadow-[0_0_0_1px_rgba(52,211,153,0.18),0_0_26px_rgba(16,185,129,0.35)]"
+                  : "border border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
               )}
             >
               <div className="text-sm text-zinc-100 select-text">{item.lt}</div>
@@ -141,13 +140,21 @@ export default function ExamListeningTaskView({
     const safeText = String(text || "").trim();
     if (!safeText || typeof playText !== "function") return;
 
+    const startedAt = Date.now();
+    const minVisibleMs = 650;
+
     try {
       setActiveWordKey(wordKey);
       await playText(safeText);
     } catch {
       showToast?.("Could not play audio");
     } finally {
-      setActiveWordKey((current) => (current === wordKey ? null : current));
+      const elapsed = Date.now() - startedAt;
+      const remaining = Math.max(0, minVisibleMs - elapsed);
+
+      window.setTimeout(() => {
+        setActiveWordKey((current) => (current === wordKey ? null : current));
+      }, remaining);
     }
   }
 
