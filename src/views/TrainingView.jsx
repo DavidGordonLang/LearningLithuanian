@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
 import LearningHome from "./training/LearningHome";
+import LearningSectionView from "./training/LearningSectionView";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
@@ -10,6 +11,7 @@ import ExamReadingTaskView from "./training/ExamReadingTaskView";
 import ExamListeningTaskView from "./training/ExamListeningTaskView";
 import ExamWritingTaskView from "./training/ExamWritingTaskView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
+import section1 from "../content/learning/section1";
 
 export default function TrainingView({
   T,
@@ -21,7 +23,7 @@ export default function TrainingView({
 }) {
   // Behaviour frozen: these screen IDs are internal routing only.
   const [screen, setScreen] = useState("home");
-  // "home" | "learningHome" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
+  // "home" | "learningHome" | "learningSection" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
 
   const [focus, setFocus] = useTrainingFocus();
 
@@ -65,7 +67,21 @@ export default function TrainingView({
   }, [rows, focus]);
 
   if (screen === "learningHome") {
-    return <LearningHome onBack={() => setScreen("home")} />;
+    return (
+      <LearningHome
+        onBack={() => setScreen("home")}
+        onOpenSection1={() => setScreen("learningSection")}
+      />
+    );
+  }
+
+  if (screen === "learningSection") {
+    return (
+      <LearningSectionView
+        section={section1}
+        onBack={() => setScreen("learningHome")}
+      />
+    );
   }
 
   if (screen === "recallFlip") {
