@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
 import LearningHome from "./training/LearningHome";
 import LearningSectionView from "./training/LearningSectionView";
+import LearningModuleView from "./training/LearningModuleView";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
@@ -23,7 +24,7 @@ export default function TrainingView({
 }) {
   // Behaviour frozen: these screen IDs are internal routing only.
   const [screen, setScreen] = useState("home");
-  // "home" | "learningHome" | "learningSection" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
+  // "home" | "learningHome" | "learningSection" | "learningModule" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
 
   const [focus, setFocus] = useTrainingFocus();
 
@@ -57,7 +58,9 @@ export default function TrainingView({
           s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words"
         );
       }
-      if (focus === "phrases") return s(r) === "Phrases" || s(r) === "Questions";
+      if (focus === "phrases") {
+        return s(r) === "Phrases" || s(r) === "Questions";
+      }
       if (focus === "words") return s(r) === "Words";
       if (focus === "numbers") return s(r) === "Numbers";
       return s(r) === "Phrases" || s(r) === "Questions";
@@ -65,6 +68,12 @@ export default function TrainingView({
 
     return list.filter(matchFocus).length;
   }, [rows, focus]);
+
+  const learningSection = section1;
+  const learningModule =
+    learningSection?.modules?.find((m) => m?.status === "active") ||
+    learningSection?.modules?.[0] ||
+    null;
 
   if (screen === "learningHome") {
     return (
@@ -78,8 +87,22 @@ export default function TrainingView({
   if (screen === "learningSection") {
     return (
       <LearningSectionView
-        section={section1}
+        section={learningSection}
         onBack={() => setScreen("learningHome")}
+        onOpenModule={(moduleId) => {
+          if (!moduleId) return;
+          setScreen("learningModule");
+        }}
+      />
+    );
+  }
+
+  if (screen === "learningModule") {
+    return (
+      <LearningModuleView
+        section={learningSection}
+        module={learningModule}
+        onBack={() => setScreen("learningSection")}
       />
     );
   }
