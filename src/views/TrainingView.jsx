@@ -4,6 +4,7 @@ import TrainingHome from "./training/TrainingHome";
 import LearningHome from "./training/LearningHome";
 import LearningSectionView from "./training/LearningSectionView";
 import LearningModuleView from "./training/LearningModuleView";
+import LearningLessonView from "./training/LearningLessonView";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
@@ -24,9 +25,11 @@ export default function TrainingView({
 }) {
   // Behaviour frozen: these screen IDs are internal routing only.
   const [screen, setScreen] = useState("home");
-  // "home" | "learningHome" | "learningSection" | "learningModule" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
+  // "home" | "learningHome" | "learningSection" | "learningModule" | "learningLesson" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
 
   const [focus, setFocus] = useTrainingFocus();
+  const [selectedModuleId, setSelectedModuleId] = useState(null);
+  const [selectedLessonId, setSelectedLessonId] = useState(null);
 
   const counts = useMemo(() => {
     const list = Array.isArray(rows) ? rows : [];
@@ -70,10 +73,30 @@ export default function TrainingView({
   }, [rows, focus]);
 
   const learningSection = section1;
-  const learningModule =
-    learningSection?.modules?.find((m) => m?.status === "active") ||
-    learningSection?.modules?.[0] ||
-    null;
+
+  const learningModule = useMemo(() => {
+    const modules = Array.isArray(learningSection?.modules)
+      ? learningSection.modules
+      : [];
+
+    if (selectedModuleId) {
+      return modules.find((m) => m?.id === selectedModuleId) || null;
+    }
+
+    return modules.find((m) => m?.status === "active") || modules[0] || null;
+  }, [learningSection, selectedModuleId]);
+
+  const learningLesson = useMemo(() => {
+    const lessons = Array.isArray(learningModule?.lessons)
+      ? learningModule.lessons
+      : [];
+
+    if (selectedLessonId) {
+      return lessons.find((l) => l?.id === selectedLessonId) || null;
+    }
+
+    return lessons[0] || null;
+  }, [learningModule, selectedLessonId]);
 
   if (screen === "learningHome") {
     return (
@@ -91,6 +114,8 @@ export default function TrainingView({
         onBack={() => setScreen("learningHome")}
         onOpenModule={(moduleId) => {
           if (!moduleId) return;
+          setSelectedModuleId(moduleId);
+          setSelectedLessonId(null);
           setScreen("learningModule");
         }}
       />
@@ -103,6 +128,24 @@ export default function TrainingView({
         section={learningSection}
         module={learningModule}
         onBack={() => setScreen("learningSection")}
+        onOpenLesson={(lessonId) => {
+          if (!lessonId) return;
+          setSelectedLessonId(lessonId);
+          setScreen("learningLesson");
+        }}
+      />
+    );
+  }
+
+  if (screen === "learningLesson") {
+    return (
+      <LearningLessonView
+        section={learningSection}
+        module={learningModule}
+        lesson={learningLesson}
+        playText={playText}
+        showToast={showToast}
+        onBack={() => setScreen("learningModule")}
       />
     );
   }
