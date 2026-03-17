@@ -153,6 +153,11 @@ export default function ExamWritingTaskView({ onBack }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Write in Lithuanian…"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          inputMode="text"
         />
       </div>
 
@@ -199,14 +204,14 @@ export default function ExamWritingTaskView({ onBack }) {
       item.support.structureHints.length ? (
         <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 backdrop-blur p-4">
           <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Structure hints
+            Structure hint
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 space-y-2">
             {item.support.structureHints.map((hint, idx) => (
               <div
                 key={`${hint}-${idx}`}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-[12px] text-zinc-300 select-text"
+                className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 text-[13px] text-zinc-200 leading-snug select-text"
               >
                 {hint}
               </div>
@@ -218,34 +223,23 @@ export default function ExamWritingTaskView({ onBack }) {
       {showSample ? (
         <div
           ref={sampleAnswerRef}
-          className="mt-4 rounded-2xl border border-white/10 bg-black/20 backdrop-blur p-4"
+          className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-500/[0.08] backdrop-blur p-4"
         >
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+          <div className="text-[11px] uppercase tracking-wide text-emerald-300/80">
             Sample answer
           </div>
-
           <div className="mt-3 text-[14px] leading-7 text-zinc-100 whitespace-pre-wrap select-text">
-            {item.sampleAnswerLt}
+            {item.sampleAnswer}
           </div>
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          type="button"
-          data-press
-          onClick={() => setDraft("")}
-          disabled={!draft.trim()}
-          className="z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm"
-        >
-          Clear draft
-        </button>
-
+      <div className="mt-5 flex flex-wrap gap-3">
         <button
           type="button"
           data-press
           onClick={nextTask}
-          className="z-btn px-5 py-3 rounded-2xl text-sm font-semibold bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-300/20 text-black"
+          className="z-btn px-4 py-3 rounded-2xl text-sm font-semibold"
         >
           Next task
         </button>
