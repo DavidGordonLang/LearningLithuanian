@@ -70,12 +70,13 @@ function LessonCard({
   supportLevel,
   newLanguageLoad,
   active = false,
+  onClick,
 }) {
   const shell = active
     ? "border-emerald-400/20 bg-emerald-500/[0.07]"
     : "border-white/10 bg-white/[0.03]";
 
-  return (
+  const content = (
     <div className={cn("rounded-2xl border px-4 py-4", shell)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -109,6 +110,19 @@ function LessonCard({
       </div>
     </div>
   );
+
+  if (typeof onClick !== "function") return content;
+
+  return (
+    <button
+      type="button"
+      data-press
+      onClick={onClick}
+      className="w-full text-left"
+    >
+      {content}
+    </button>
+  );
 }
 
 function CheckpointCard({ title, purpose }) {
@@ -126,7 +140,12 @@ function CheckpointCard({ title, purpose }) {
   );
 }
 
-export default function LearningModuleView({ section, module, onBack }) {
+export default function LearningModuleView({
+  section,
+  module,
+  onBack,
+  onOpenLesson,
+}) {
   const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
   const currentLesson = lessons[0] || null;
   const checkpoint = module?.checkpoint || null;
@@ -168,17 +187,24 @@ export default function LearningModuleView({ section, module, onBack }) {
 
       {currentLesson ? (
         <div className="mt-5">
-          <SurfaceCard className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              Current lesson
-            </div>
-            <div className="text-[15px] font-semibold text-zinc-100 mt-2">
-              Lesson {currentLesson.code} — {currentLesson.title}
-            </div>
-            <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-              {currentLesson.purpose}
-            </div>
-          </SurfaceCard>
+          <button
+            type="button"
+            data-press
+            onClick={() => onOpenLesson?.(currentLesson.id)}
+            className="w-full text-left"
+          >
+            <SurfaceCard className="p-4">
+              <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+                Current lesson
+              </div>
+              <div className="text-[15px] font-semibold text-zinc-100 mt-2">
+                Lesson {currentLesson.code} — {currentLesson.title}
+              </div>
+              <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
+                {currentLesson.purpose}
+              </div>
+            </SurfaceCard>
+          </button>
         </div>
       ) : null}
 
@@ -197,6 +223,7 @@ export default function LearningModuleView({ section, module, onBack }) {
                 supportLevel={lesson.supportLevel}
                 newLanguageLoad={lesson.newLanguageLoad}
                 active={index === 0}
+                onClick={index === 0 ? () => onOpenLesson?.(lesson.id) : undefined}
               />
             ))}
           </div>
@@ -241,8 +268,8 @@ export default function LearningModuleView({ section, module, onBack }) {
             Status
           </div>
           <div className="text-[13px] text-zinc-300 mt-2 leading-snug">
-            Module 1.1 is now being read from real lesson data. The next step is
-            opening Lesson 1 into the actual lesson block runner.
+            Lesson 1 is now the first playable slice. After that works, we can
+            make the rest of the lesson stack and progression feel real.
           </div>
         </SurfaceCard>
       </div>
