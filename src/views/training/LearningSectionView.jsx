@@ -64,13 +64,19 @@ function SmallMetaPill({ children, accent = "default" }) {
   );
 }
 
-function ModuleCard({ title, purpose, status = "planned", lessonCount = 0 }) {
+function ModuleCard({
+  title,
+  purpose,
+  status = "planned",
+  lessonCount = 0,
+  onClick,
+}) {
   const active = status === "active";
   const shell = active
     ? "border-emerald-400/20 bg-emerald-500/[0.07]"
     : "border-white/10 bg-white/[0.03]";
 
-  return (
+  const content = (
     <div className={cn("rounded-2xl border px-4 py-4", shell)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -99,6 +105,19 @@ function ModuleCard({ title, purpose, status = "planned", lessonCount = 0 }) {
       </div>
     </div>
   );
+
+  if (typeof onClick !== "function") return content;
+
+  return (
+    <button
+      type="button"
+      data-press
+      onClick={onClick}
+      className="w-full text-left"
+    >
+      {content}
+    </button>
+  );
 }
 
 function CheckpointCard({ title, purpose }) {
@@ -116,7 +135,11 @@ function CheckpointCard({ title, purpose }) {
   );
 }
 
-export default function LearningSectionView({ section, onBack }) {
+export default function LearningSectionView({
+  section,
+  onBack,
+  onOpenModule,
+}) {
   const modules = Array.isArray(section?.modules) ? section.modules : [];
   const activeModule =
     modules.find((m) => m?.status === "active") || modules[0] || null;
@@ -157,17 +180,24 @@ export default function LearningSectionView({ section, onBack }) {
 
       {activeModule ? (
         <div className="mt-5">
-          <SurfaceCard className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              Current module
-            </div>
-            <div className="text-[15px] font-semibold text-zinc-100 mt-2">
-              Module {activeModule.code} — {activeModule.title}
-            </div>
-            <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-              {activeModule.purpose}
-            </div>
-          </SurfaceCard>
+          <button
+            type="button"
+            data-press
+            onClick={() => onOpenModule?.(activeModule.id)}
+            className="w-full text-left"
+          >
+            <SurfaceCard className="p-4">
+              <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+                Current module
+              </div>
+              <div className="text-[15px] font-semibold text-zinc-100 mt-2">
+                Module {activeModule.code} — {activeModule.title}
+              </div>
+              <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
+                {activeModule.purpose}
+              </div>
+            </SurfaceCard>
+          </button>
         </div>
       ) : null}
 
@@ -185,6 +215,11 @@ export default function LearningSectionView({ section, onBack }) {
                 purpose={module.purpose}
                 status={module.status}
                 lessonCount={module.lessonCount}
+                onClick={
+                  module.status === "active"
+                    ? () => onOpenModule?.(module.id)
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -210,8 +245,8 @@ export default function LearningSectionView({ section, onBack }) {
             Status
           </div>
           <div className="text-[13px] text-zinc-300 mt-2 leading-snug">
-            Section 1 is now being read from real course data. The next step is
-            making Module 1.1 open into its lesson list.
+            Section 1 now opens its active module. Next, Module 1.1 will open
+            into its lesson flow.
           </div>
         </SurfaceCard>
       </div>
