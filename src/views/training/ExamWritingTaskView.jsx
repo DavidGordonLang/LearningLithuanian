@@ -147,18 +147,19 @@ export default function ExamWritingTaskView({ onBack }) {
           </div>
         </div>
 
-        <textarea
-          rows={10}
-          className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm mt-3"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Write in Lithuanian…"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          inputMode="text"
-        />
+       <textarea
+  rows={10}
+  className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm mt-3"
+  value={draft}
+  onChange={(e) => setDraft(e.target.value)}
+  placeholder="Write in Lithuanian…"
+  autoComplete="off"
+  autoCorrect="off"
+  autoCapitalize="off"
+  spellCheck={false}
+  inputMode="text"
+  writingSuggestions="false"
+/>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
