@@ -45,6 +45,88 @@ function SurfaceCard({ children, className }) {
   );
 }
 
+function SmallMetaPill({ children, accent = "default" }) {
+  const tone =
+    accent === "emerald"
+      ? "border-emerald-400/18 bg-emerald-500/[0.08] text-emerald-200"
+      : "border-white/10 bg-white/[0.03] text-zinc-300";
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center rounded-full border px-2.5 py-1",
+        "text-[11px] font-medium tracking-tight",
+        tone
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SectionListItem({
+  title,
+  subtitle,
+  active = false,
+  locked = false,
+  modules = 4,
+  checkpointLabel = "Checkpoint",
+}) {
+  const shell = active
+    ? "border-emerald-400/20 bg-emerald-500/[0.07]"
+    : "border-white/10 bg-white/[0.03]";
+
+  return (
+    <div className={cn("rounded-2xl border px-3 py-3", shell)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div
+            className={cn(
+              "text-[14px] font-semibold leading-snug",
+              active ? "text-emerald-100" : "text-zinc-100"
+            )}
+          >
+            {title}
+          </div>
+          <div className="text-[12px] text-zinc-400 mt-1 leading-snug">
+            {subtitle}
+          </div>
+        </div>
+
+        {active ? (
+          <SmallMetaPill accent="emerald">Current</SmallMetaPill>
+        ) : locked ? (
+          <SmallMetaPill>Upcoming</SmallMetaPill>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <SmallMetaPill>{modules} modules</SmallMetaPill>
+        <SmallMetaPill>{checkpointLabel}</SmallMetaPill>
+      </div>
+    </div>
+  );
+}
+
+function ModuleListItem({ title, active = false, checkpoint = false }) {
+  const shell = checkpoint
+    ? "border-emerald-400/18 bg-emerald-500/[0.06] text-emerald-200"
+    : active
+    ? "border-white/12 bg-white/[0.05] text-zinc-100"
+    : "border-white/10 bg-white/[0.03] text-zinc-300";
+
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border px-3 py-2.5 text-[13px] leading-snug",
+        shell
+      )}
+    >
+      {title}
+    </div>
+  );
+}
+
 export default function LearningHome({ onBack }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
@@ -67,14 +149,25 @@ export default function LearningHome({ onBack }) {
           Guided course
         </div>
         <div className="text-sm text-zinc-400 mt-1 leading-snug">
-          This is where the structured Lithuanian course will live. Lessons,
-          checkpoints, progression, and phrase unlocks will be built here next.
+          Learn through a structured course built around real conversational
+          Lithuanian. The course is organised by sections, modules, lessons, and
+          checkpoints.
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <SmallMetaPill accent="emerald">12 sections</SmallMetaPill>
+        <SmallMetaPill>4 modules per section</SmallMetaPill>
+        <SmallMetaPill>1 checkpoint per section</SmallMetaPill>
       </div>
 
       <div className="mt-5 space-y-4">
         <SurfaceCard className="p-4">
-          <div className="flex items-start gap-3">
+          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+            Continue
+          </div>
+
+          <div className="mt-2 flex items-start gap-3">
             <div
               className="
                 h-10 w-10 rounded-xl
@@ -89,11 +182,17 @@ export default function LearningHome({ onBack }) {
 
             <div className="min-w-0 flex-1">
               <div className="text-[15px] font-semibold text-zinc-100">
-                Section 1 — First Contact
+                Section 1 — First Contact and Survival Basics
               </div>
               <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-                The first guided section will focus on greetings, politeness,
-                first responses, and simple real-world interaction.
+                Start with greetings, politeness, first responses, and the
+                language needed to survive the opening moments of real
+                interaction.
+              </div>
+              <div className="mt-3">
+                <SmallMetaPill accent="emerald">
+                  Module 1.1 — Greeting and Politeness
+                </SmallMetaPill>
               </div>
             </div>
           </div>
@@ -101,32 +200,53 @@ export default function LearningHome({ onBack }) {
 
         <SurfaceCard className="p-4">
           <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Next build target
+            Current section
           </div>
+
           <div className="text-[15px] font-semibold text-zinc-100 mt-2">
-            Module 1.1 — Greeting and Politeness
+            Section 1 — First Contact and Survival Basics
           </div>
           <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-            This module will become the reference implementation for the wider
-            lesson system.
+            This section is about getting through the first minute of real
+            interaction without freezing.
           </div>
 
           <div className="mt-4 grid gap-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-300">
-              Lesson 1 — Hello and Goodbye
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-300">
-              Lesson 2 — Yes, No, Please, Thank You
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-300">
-              Lesson 3 — Sorry and Excuse Me
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-300">
-              Lesson 4 — Polite Mini Exchanges
-            </div>
-            <div className="rounded-2xl border border-emerald-400/18 bg-emerald-500/[0.06] px-3 py-2 text-[13px] text-emerald-200">
-              Checkpoint — First Interaction
-            </div>
+            <ModuleListItem
+              title="Module 1.1 — Greeting and Politeness"
+              active
+            />
+            <ModuleListItem title="Module 1.2 — Who I Am" />
+            <ModuleListItem title="Module 1.3 — I Don’t Understand" />
+            <ModuleListItem title="Module 1.4 — Help and Contact" />
+            <ModuleListItem
+              title="Checkpoint 1 — First Interaction"
+              checkpoint
+            />
+          </div>
+        </SurfaceCard>
+
+        <SurfaceCard className="p-4">
+          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+            Course structure
+          </div>
+
+          <div className="mt-3 grid gap-3">
+            <SectionListItem
+              title="Section 1 — First Contact and Survival Basics"
+              subtitle="Open interaction, be polite, introduce yourself, and ask for help."
+              active
+            />
+            <SectionListItem
+              title="Section 2 — Core Conversation Patterns"
+              subtitle="Need, want, have, simple questions, and basic action language."
+              locked
+            />
+            <SectionListItem
+              title="Sections 3–12"
+              subtitle="Numbers, food, directions, shopping, people, transport, accommodation, health, work/admin, and final reinforcement."
+              locked
+            />
           </div>
         </SurfaceCard>
 
@@ -135,8 +255,9 @@ export default function LearningHome({ onBack }) {
             Status
           </div>
           <div className="text-[13px] text-zinc-300 mt-2 leading-snug">
-            Entry point is now wired. The next step is building the actual
-            learning system behind this screen rather than decorating it further.
+            The course entry structure is now aligned to the real hierarchy.
+            Next, we build the actual section, module, and lesson flow using
+            Section 1 as the first working implementation.
           </div>
         </SurfaceCard>
       </div>
