@@ -213,8 +213,7 @@ function ChoiceBlock({ block, playText, onComplete, completed }) {
   const selected = options.find((o) => o.id === selectedId) || null;
 
   const promptText =
-    block?.prompt?.text ||
-    (block?.type === "listen_mcq" ? "Choose the best answer" : "Choose the best answer");
+    block?.prompt?.text || "Choose the best answer";
   const audioText = block?.prompt?.audioText || "";
 
   const handleSelect = (option) => {
@@ -306,7 +305,8 @@ function SpeakSelfCheckBlock({ block, playText, onComplete, completed }) {
 function BuildPhraseBlock({ block, onComplete, completed }) {
   const tokens = Array.isArray(block?.tokens) ? block.tokens : [];
   const sortedTokens = [...tokens].sort((a, b) => a.correctIndex - b.correctIndex);
-  const correctAnswer = block?.answerText || sortedTokens.map((t) => t.text).join(" ");
+  const correctAnswer =
+    block?.answerText || sortedTokens.map((t) => t.text).join(" ");
 
   const [built, setBuilt] = useState([]);
   const [revealed, setRevealed] = useState(false);
@@ -405,24 +405,22 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
   );
 }
 
-function ConversationBubble({ role, text, compact = false }) {
+function ConversationBubble({ role, text }) {
   const isAssistant = role === "other";
 
   return (
     <div className={cn("flex", isAssistant ? "justify-start" : "justify-end")}>
       <div
         className={cn(
-          "max-w-[88%] rounded-3xl border px-4 py-3",
-          compact ? "py-2.5" : "",
+          "max-w-[82%] rounded-[22px] border px-4 py-3",
           isAssistant
-            ? "border-white/10 bg-white/[0.03]"
-            : "border-emerald-400/18 bg-emerald-500/[0.08]"
+            ? "border-white/10 bg-white/[0.035]"
+            : "border-emerald-400/18 bg-emerald-500/[0.09]"
         )}
       >
-        <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-          {isAssistant ? "Žodis" : "You"}
+        <div className="text-[14px] font-medium leading-snug text-zinc-100">
+          {text}
         </div>
-        <div className="mt-2 text-[15px] font-semibold text-zinc-100">{text}</div>
       </div>
     </div>
   );
@@ -431,11 +429,8 @@ function ConversationBubble({ role, text, compact = false }) {
 function TypingBubble() {
   return (
     <div className="flex justify-start">
-      <div className="max-w-[88%] rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-3">
-        <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-          Žodis
-        </div>
-        <div className="mt-2 flex items-center gap-1.5">
+      <div className="max-w-[82%] rounded-[22px] border border-white/10 bg-white/[0.035] px-4 py-3">
+        <div className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-zinc-500/80 animate-pulse" />
           <span className="h-2 w-2 rounded-full bg-zinc-500/60 animate-pulse [animation-delay:120ms]" />
           <span className="h-2 w-2 rounded-full bg-zinc-500/40 animate-pulse [animation-delay:240ms]" />
@@ -445,15 +440,15 @@ function TypingBubble() {
   );
 }
 
-function ScenarioChoice({ option, selectedId, revealState, onClick }) {
+function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
   const stateClass =
     revealState === "idle"
-      ? "border-white/10 bg-white/[0.03] text-zinc-300"
+      ? "border-white/10 bg-white/[0.03] text-zinc-200"
       : option.isCorrect
       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
       : selectedId === option.id
       ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-100"
-      : "border-white/10 bg-white/[0.03] text-zinc-300";
+      : "border-white/10 bg-white/[0.03] text-zinc-400";
 
   return (
     <button
@@ -474,7 +469,8 @@ function ScenarioChoice({ option, selectedId, revealState, onClick }) {
 
 function ScenarioChainBlock({ block, playText, onComplete }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
-  const timeoutRef = useRef(null);
+  const timeoutsRef = useRef([]);
+  const feedRef = useRef(null);
 
   const [started, setStarted] = useState(false);
   const [history, setHistory] = useState([]);
@@ -491,11 +487,24 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
 
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutsRef.current.forEach((id) => clearTimeout(id));
+      timeoutsRef.current = [];
     };
   }, []);
 
-  const showAssistantStep = async (index) => {
+  useEffect(() => {
+    const el = feedRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [history, assistantTyping, assistantVisible, conversationComplete]);
+
+  const queueTimeout = (fn, delay) => {
+    const id = setTimeout(fn, delay);
+    timeoutsRef.current.push(id);
+    return id;
+  };
+
+  const showAssistantStep = (index) => {
     const nextStep = steps[index];
     if (!nextStep) return;
 
@@ -504,7 +513,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
     setSelectedId(null);
     setRevealState("idle");
 
-    timeoutRef.current = setTimeout(async () => {
+    queueTimeout(async () => {
       setAssistantTyping(false);
       setAssistantVisible(true);
 
@@ -519,13 +528,13 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
       try {
         await playText?.(nextStep.audioText || nextStep.text);
       } catch {}
-    }, 900);
+    }, 850);
   };
 
-  const startConversation = async () => {
+  const startConversation = () => {
     if (started) return;
     setStarted(true);
-    await showAssistantStep(0);
+    showAssistantStep(0);
   };
 
   const handleSelect = (option) => {
@@ -543,59 +552,75 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
     ]);
 
     if (isLastStep) {
-      setConversationComplete(true);
-      onComplete?.();
+      queueTimeout(() => {
+        setConversationComplete(true);
+        onComplete?.();
+      }, 250);
       return;
     }
 
-    timeoutRef.current = setTimeout(async () => {
+    queueTimeout(() => {
       setStepIndex((prev) => prev + 1);
-      await showAssistantStep(stepIndex + 1);
+      showAssistantStep(stepIndex + 1);
     }, 850);
   };
 
   return (
-    <div>
+    <div className="space-y-4">
       {block?.description ? (
         <div className="text-[13px] text-zinc-400 leading-snug">
           {block.description}
         </div>
       ) : null}
 
-      {!started ? (
-        <div className="mt-4">
-          <ActionButton onClick={startConversation}>Start conversation</ActionButton>
+      <div className="rounded-[28px] border border-white/10 bg-black/25 overflow-hidden">
+        <div
+          ref={feedRef}
+          className="max-h-[430px] min-h-[360px] overflow-y-auto px-4 py-4 space-y-3"
+        >
+          {!started ? (
+            <div className="h-full min-h-[328px] flex items-center justify-center">
+              <ActionButton onClick={startConversation}>
+                Start conversation
+              </ActionButton>
+            </div>
+          ) : (
+            <>
+              {history.map((item, index) => (
+                <ConversationBubble
+                  key={`${item.role}-${index}-${item.text}`}
+                  role={item.role}
+                  text={item.text}
+                />
+              ))}
+
+              {assistantTyping ? <TypingBubble /> : null}
+            </>
+          )}
         </div>
-      ) : null}
 
-      <div className="mt-4 space-y-3">
-        {history.map((item, index) => (
-          <ConversationBubble
-            key={`${item.role}-${index}-${item.text}`}
-            role={item.role}
-            text={item.text}
-          />
-        ))}
-
-        {assistantTyping ? <TypingBubble /> : null}
+        {started && assistantVisible && !conversationComplete ? (
+          <div className="border-t border-white/10 bg-black/25 px-4 py-4">
+            <div className="text-[11px] uppercase tracking-wide text-zinc-500 mb-3">
+              Choose your response
+            </div>
+            <div className="grid gap-3">
+              {options.map((option) => (
+                <ScenarioTrayOption
+                  key={option.id}
+                  option={option}
+                  selectedId={selectedId}
+                  revealState={revealState}
+                  onClick={() => handleSelect(option)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {started && assistantVisible && !conversationComplete ? (
-        <div className="mt-4 grid gap-3">
-          {options.map((option) => (
-            <ScenarioChoice
-              key={option.id}
-              option={option}
-              selectedId={selectedId}
-              revealState={revealState}
-              onClick={() => handleSelect(option)}
-            />
-          ))}
-        </div>
-      ) : null}
-
       {conversationComplete ? (
-        <div className="mt-4">
+        <div>
           <SmallMetaPill accent="emerald">Conversation reviewed</SmallMetaPill>
         </div>
       ) : null}
@@ -705,9 +730,11 @@ export default function LearningLessonView({
   const progressPct = totalBlocks
     ? Math.round(((blockIndex + 1) / totalBlocks) * 100)
     : 0;
-  const isCurrentCompleted = !!currentBlock?.id && !!completedBlockIds[currentBlock.id];
+  const isCurrentCompleted =
+    !!currentBlock?.id && !!completedBlockIds[currentBlock.id];
   const isLastBlock = blockIndex === totalBlocks - 1;
   const lessonComplete = isLastBlock && isCurrentCompleted;
+  const isScenarioBlock = currentBlock?.type === "scenario_chain";
 
   const markCurrentComplete = () => {
     if (!currentBlock?.id) return;
@@ -780,12 +807,14 @@ export default function LearningLessonView({
         {lessonComplete ? (
           <LessonCompleteCard lessonTitle={lesson.title} onBack={onBack} />
         ) : (
-          <SurfaceCard className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              {currentBlock?.title || "Lesson block"}
-            </div>
+          <SurfaceCard className={cn("p-4", isScenarioBlock ? "p-3" : "p-4")}>
+            {!isScenarioBlock ? (
+              <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+                {currentBlock?.title || "Lesson block"}
+              </div>
+            ) : null}
 
-            <div className="mt-4">
+            <div className={cn(isScenarioBlock ? "" : "mt-4")}>
               {currentBlock ? (
                 <BlockRenderer
                   key={currentBlock.id}
@@ -815,7 +844,8 @@ export default function LearningLessonView({
               </div>
             ) : null}
 
-            {Array.isArray(lesson?.notes?.usage) && lesson.notes.usage.length > 0 ? (
+            {Array.isArray(lesson?.notes?.usage) &&
+            lesson.notes.usage.length > 0 ? (
               <div className="mt-3 space-y-2">
                 {lesson.notes.usage.map((item, index) => (
                   <div
