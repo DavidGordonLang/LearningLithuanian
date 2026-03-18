@@ -66,7 +66,6 @@ function SmallMetaPill({ children, accent = "default" }) {
 
 function LessonCard({
   title,
-  purpose,
   supportLevel,
   newLanguageLoad,
   active = false,
@@ -87,9 +86,6 @@ function LessonCard({
             )}
           >
             {title}
-          </div>
-          <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-            {purpose}
           </div>
         </div>
 
@@ -125,16 +121,13 @@ function LessonCard({
   );
 }
 
-function CheckpointCard({ title, purpose }) {
+function CheckpointCard({ title }) {
   return (
     <div className="rounded-2xl border border-emerald-400/18 bg-emerald-500/[0.06] px-4 py-4">
       <div className="text-[15px] font-semibold text-emerald-200">{title}</div>
-      <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-        {purpose}
-      </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <SmallMetaPill accent="emerald">Module checkpoint path</SmallMetaPill>
+        <SmallMetaPill accent="emerald">Checkpoint</SmallMetaPill>
       </div>
     </div>
   );
@@ -147,7 +140,6 @@ export default function LearningModuleView({
   onOpenLesson,
 }) {
   const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
-  const currentLesson = lessons[0] || null;
   const checkpoint = module?.checkpoint || null;
 
   return (
@@ -168,7 +160,7 @@ export default function LearningModuleView({
 
       <div className="mt-5">
         <div className="text-sm text-zinc-500">
-          Section {section?.code} — {section?.title}
+          Section {section?.code}
         </div>
         <div className="text-xl font-semibold text-zinc-100 mt-1">
           {module?.title || "Learning module"}
@@ -185,41 +177,13 @@ export default function LearningModuleView({
         {checkpoint ? <SmallMetaPill>1 checkpoint</SmallMetaPill> : null}
       </div>
 
-      {currentLesson ? (
-        <div className="mt-5">
-          <button
-            type="button"
-            data-press
-            onClick={() => onOpenLesson?.(currentLesson.id)}
-            className="w-full text-left"
-          >
-            <SurfaceCard className="p-4">
-              <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                Current lesson
-              </div>
-              <div className="text-[15px] font-semibold text-zinc-100 mt-2">
-                Lesson {currentLesson.code} — {currentLesson.title}
-              </div>
-              <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-                {currentLesson.purpose}
-              </div>
-            </SurfaceCard>
-          </button>
-        </div>
-      ) : null}
-
       <div className="mt-5 space-y-4">
         <SurfaceCard className="p-4">
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Lessons
-          </div>
-
-          <div className="mt-3 grid gap-3">
+          <div className="grid gap-3">
             {lessons.map((lesson, index) => (
               <LessonCard
                 key={lesson.id}
                 title={`Lesson ${index + 1} — ${lesson.title}`}
-                purpose={lesson.purpose}
                 supportLevel={lesson.supportLevel}
                 newLanguageLoad={lesson.newLanguageLoad}
                 active={index === 0}
@@ -231,47 +195,11 @@ export default function LearningModuleView({
 
         {checkpoint ? (
           <SurfaceCard className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              Checkpoint
-            </div>
-
-            <div className="mt-3">
-              <CheckpointCard
-                title={`${checkpoint.code} — ${checkpoint.title}`}
-                purpose={checkpoint.purpose}
-              />
-            </div>
+            <CheckpointCard
+              title={`${checkpoint.code} — ${checkpoint.title}`}
+            />
           </SurfaceCard>
         ) : null}
-
-        {Array.isArray(module?.outcome) && module.outcome.length > 0 ? (
-          <SurfaceCard className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              Module outcome
-            </div>
-
-            <div className="mt-3 space-y-2">
-              {module.outcome.map((item, index) => (
-                <div
-                  key={`${item}-${index}`}
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-300 leading-snug"
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </SurfaceCard>
-        ) : null}
-
-        <SurfaceCard className="p-4">
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Status
-          </div>
-          <div className="text-[13px] text-zinc-300 mt-2 leading-snug">
-            Lesson 1 is now the first playable slice. After that works, we can
-            make the rest of the lesson stack and progression feel real.
-          </div>
-        </SurfaceCard>
       </div>
 
       <div className="h-6" />
