@@ -141,6 +141,43 @@ function AudioIconButton({ text, playText, label = "Play audio" }) {
   );
 }
 
+// ─── Pattern note — shown once, below the first (learn) block only ────────────
+
+function PatternNote({ notes }) {
+  if (!notes?.pattern && !Array.isArray(notes?.usage)) return null;
+
+  return (
+    <div className="mt-4">
+      <SurfaceCard className="p-4">
+        <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+          Pattern note
+        </div>
+
+        {notes.pattern ? (
+          <div className="mt-2 text-[13px] text-zinc-300 leading-snug">
+            {notes.pattern}
+          </div>
+        ) : null}
+
+        {Array.isArray(notes.usage) && notes.usage.length > 0 ? (
+          <div className="mt-3 space-y-2">
+            {notes.usage.map((item, index) => (
+              <div
+                key={`${item}-${index}`}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-300 leading-snug"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </SurfaceCard>
+    </div>
+  );
+}
+
+// ─── Block renderers ──────────────────────────────────────────────────────────
+
 function LearnBlock({ block, playText, onComplete, completed }) {
   const items = Array.isArray(block?.items) ? block.items : [];
 
@@ -291,11 +328,6 @@ function SpeakSelfCheckBlock({ block, playText, onComplete, completed }) {
         >
           {completed ? "Spoken" : "I said it out loud"}
         </ActionButton>
-      </div>
-
-      <div className="mt-3 text-[13px] text-zinc-400 leading-snug">
-        This speaking step is self-check only for now. Current speech capture
-        will be wired in next, before scoring exists.
       </div>
     </div>
   );
@@ -518,10 +550,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
 
       setHistory((prev) => [
         ...prev,
-        {
-          role: "other",
-          text: nextStep.text,
-        },
+        { role: "other", text: nextStep.text },
       ]);
 
       try {
@@ -544,10 +573,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
 
     setHistory((prev) => [
       ...prev,
-      {
-        role: "you",
-        text: option.text,
-      },
+      { role: "you", text: option.text },
     ]);
 
     if (isLastStep) {
@@ -620,7 +646,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
 
       {conversationComplete ? (
         <div>
-          <SmallMetaPill accent="emerald">Conversation reviewed</SmallMetaPill>
+          <SmallMetaPill accent="emerald">Conversation complete</SmallMetaPill>
         </div>
       ) : null}
     </div>
@@ -677,32 +703,49 @@ function BlockRenderer({ block, playText, onComplete, completed }) {
     default:
       return (
         <div className="text-sm text-zinc-500">
-          This block type is not supported yet.
+          Unknown block type.
         </div>
       );
   }
 }
 
-function LessonCompleteCard({ lessonTitle, onBack }) {
+// ─── Lesson complete card ─────────────────────────────────────────────────────
+
+function LessonCompleteCard({ lessonTitle, onBack, onBrowseCourse }) {
   return (
-    <SurfaceCard className="p-4">
+    <SurfaceCard className="p-5">
       <div className="text-[11px] uppercase tracking-wide text-zinc-500">
         Lesson complete
       </div>
-      <div className="mt-2 text-[20px] font-semibold text-zinc-100">
+
+      <div className="mt-2 text-[22px] font-semibold text-zinc-100 leading-snug">
         {lessonTitle}
       </div>
-      <div className="mt-2 text-[13px] text-zinc-300 leading-snug">
-        First pass complete. Next we’ll make completion persistence, rewards, and
-        phrase save feel real.
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <SmallMetaPill accent="emerald">✓ Done</SmallMetaPill>
       </div>
 
-      <div className="mt-4 flex gap-3">
-        <ActionButton onClick={onBack}>Back to module</ActionButton>
+      <div className="mt-5 flex flex-col gap-3">
+        <ActionButton onClick={onBack} className="w-full">
+          Back to training
+        </ActionButton>
+
+        {typeof onBrowseCourse === "function" ? (
+          <ActionButton
+            variant="ghost"
+            onClick={onBrowseCourse}
+            className="w-full"
+          >
+            Browse course
+          </ActionButton>
+        ) : null}
       </div>
     </SurfaceCard>
   );
 }
+
+// ─── Main view ────────────────────────────────────────────────────────────────
 
 export default function LearningLessonView({
   section,
@@ -710,6 +753,7 @@ export default function LearningLessonView({
   lesson,
   playText,
   onBack,
+  onBrowseCourse,
 }) {
   const blocks = useMemo(
     () => (Array.isArray(lesson?.blocks) ? lesson.blocks : []),
@@ -735,6 +779,9 @@ export default function LearningLessonView({
   const isLastBlock = blockIndex === totalBlocks - 1;
   const lessonComplete = isLastBlock && isCurrentCompleted;
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
+
+  // Only show the pattern note on the very first block (the learn block)
+  const showPatternNote = blockIndex === 0 && isCurrentCompleted;
 
   useEffect(() => {
     if (!isCurrentCompleted || lessonComplete) return;
@@ -767,6 +814,8 @@ export default function LearningLessonView({
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
+
+      {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <div className="flex items-center justify-start">
           <BackCircle onClick={onBack} />
@@ -778,9 +827,24 @@ export default function LearningLessonView({
           </div>
         </div>
 
-        <div className="h-10 w-10" aria-hidden="true" />
+        {/* Browse course link — keeps the browse path accessible */}
+        {typeof onBrowseCourse === "function" ? (
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={onBrowseCourse}
+              className="text-[11px] text-zinc-500 hover:text-zinc-300 transition leading-tight text-right"
+              aria-label="Browse course"
+            >
+              Browse<br />course
+            </button>
+          </div>
+        ) : (
+          <div className="h-10 w-10" aria-hidden="true" />
+        )}
       </div>
 
+      {/* Lesson meta */}
       <div className="mt-5">
         <div className="text-sm text-zinc-500">
           Section {section?.code} · Module {module?.code}
@@ -793,6 +857,7 @@ export default function LearningLessonView({
         </div>
       </div>
 
+      {/* Pills + progress bar */}
       <div className="mt-4 flex flex-wrap gap-2">
         {lesson?.supportLevel ? (
           <SmallMetaPill accent="emerald">
@@ -816,9 +881,14 @@ export default function LearningLessonView({
         </div>
       </div>
 
+      {/* Block or lesson complete */}
       <div className="mt-5">
         {lessonComplete ? (
-          <LessonCompleteCard lessonTitle={lesson.title} onBack={onBack} />
+          <LessonCompleteCard
+            lessonTitle={lesson.title}
+            onBack={onBack}
+            onBrowseCourse={onBrowseCourse}
+          />
         ) : (
           <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
             {!isScenarioBlock ? (
@@ -844,36 +914,12 @@ export default function LearningLessonView({
         )}
       </div>
 
-      {lesson?.notes?.pattern || lesson?.notes?.usage?.length ? (
-        <div className="mt-4">
-          <SurfaceCard className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              Pattern note
-            </div>
-
-            {lesson?.notes?.pattern ? (
-              <div className="mt-2 text-[13px] text-zinc-300 leading-snug">
-                {lesson.notes.pattern}
-              </div>
-            ) : null}
-
-            {Array.isArray(lesson?.notes?.usage) &&
-            lesson.notes.usage.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {lesson.notes.usage.map((item, index) => (
-                  <div
-                    key={`${item}-${index}`}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[13px] text-zinc-300 leading-snug"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </SurfaceCard>
-        </div>
+      {/* Pattern note — only after completing the first block */}
+      {showPatternNote ? (
+        <PatternNote notes={lesson?.notes} />
       ) : null}
 
+      {/* Navigation */}
       {!lessonComplete ? (
         <div
           ref={actionBarRef}
