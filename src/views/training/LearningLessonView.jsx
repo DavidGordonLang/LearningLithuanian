@@ -1,5 +1,5 @@
 // src/views/training/LearningLessonView.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -98,18 +98,46 @@ function ActionButton({
   );
 }
 
-function AudioButton({ text, playText }) {
+function AudioIconButton({ text, playText, label = "Play audio" }) {
   return (
-    <ActionButton
-      variant="secondary"
+    <button
+      type="button"
+      data-press
+      aria-label={label}
       onClick={async () => {
         try {
           await playText?.(text);
         } catch {}
       }}
+      className="
+        h-9 w-9 rounded-full border border-white/10
+        bg-white/[0.04] text-zinc-200
+        flex items-center justify-center
+        hover:bg-white/[0.07] transition
+      "
     >
-      Play audio
-    </ActionButton>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M11 5L6.8 9H4v6h2.8L11 19V5Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M15 9.5C15.667 10.167 16 11 16 12C16 13 15.667 13.833 15 14.5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M17.5 7C18.833 8.333 19.5 10 19.5 12C19.5 14 18.833 15.667 17.5 17"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
+    </button>
   );
 }
 
@@ -132,7 +160,7 @@ function LearnBlock({ block, playText, onComplete, completed }) {
             </div>
 
             {item.audioText ? (
-              <AudioButton text={item.audioText} playText={playText} />
+              <AudioIconButton text={item.audioText} playText={playText} />
             ) : null}
           </div>
         </div>
@@ -198,15 +226,15 @@ function ChoiceBlock({ block, playText, onComplete, completed }) {
 
   return (
     <div>
-      <div className="text-[15px] font-semibold text-zinc-100">
-        {promptText}
-      </div>
-
-      {audioText ? (
-        <div className="mt-3">
-          <AudioButton text={audioText} playText={playText} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-[15px] font-semibold text-zinc-100">
+          {promptText}
         </div>
-      ) : null}
+
+        {audioText ? (
+          <AudioIconButton text={audioText} playText={playText} />
+        ) : null}
+      </div>
 
       <div className="mt-4 grid gap-3">
         {options.map((option) => (
@@ -246,17 +274,19 @@ function SpeakSelfCheckBlock({ block, playText, onComplete, completed }) {
 
       {block?.targetText ? (
         <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-          <div className="text-[18px] font-semibold text-zinc-100">
-            {block.targetText}
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-[18px] font-semibold text-zinc-100">
+              {block.targetText}
+            </div>
+
+            {block?.audioText ? (
+              <AudioIconButton text={block.audioText} playText={playText} />
+            ) : null}
           </div>
         </div>
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-3">
-        {block?.audioText ? (
-          <AudioButton text={block.audioText} playText={playText} />
-        ) : null}
-
         <ActionButton
           variant={completed ? "secondary" : "primary"}
           onClick={onComplete}
@@ -375,7 +405,7 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
   );
 }
 
-function ConversationBubble({ role, text, audioText, playText }) {
+function ConversationBubble({ role, text, compact = false }) {
   const isAssistant = role === "other";
 
   return (
@@ -383,6 +413,7 @@ function ConversationBubble({ role, text, audioText, playText }) {
       <div
         className={cn(
           "max-w-[88%] rounded-3xl border px-4 py-3",
+          compact ? "py-2.5" : "",
           isAssistant
             ? "border-white/10 bg-white/[0.03]"
             : "border-emerald-400/18 bg-emerald-500/[0.08]"
@@ -392,55 +423,135 @@ function ConversationBubble({ role, text, audioText, playText }) {
           {isAssistant ? "Žodis" : "You"}
         </div>
         <div className="mt-2 text-[15px] font-semibold text-zinc-100">{text}</div>
-
-        {audioText ? (
-          <div className="mt-3">
-            <AudioButton text={audioText} playText={playText} />
-          </div>
-        ) : null}
       </div>
     </div>
   );
 }
 
+function TypingBubble() {
+  return (
+    <div className="flex justify-start">
+      <div className="max-w-[88%] rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+          Žodis
+        </div>
+        <div className="mt-2 flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-zinc-500/80 animate-pulse" />
+          <span className="h-2 w-2 rounded-full bg-zinc-500/60 animate-pulse [animation-delay:120ms]" />
+          <span className="h-2 w-2 rounded-full bg-zinc-500/40 animate-pulse [animation-delay:240ms]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScenarioChoice({ option, selectedId, revealState, onClick }) {
+  const stateClass =
+    revealState === "idle"
+      ? "border-white/10 bg-white/[0.03] text-zinc-300"
+      : option.isCorrect
+      ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
+      : selectedId === option.id
+      ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-100"
+      : "border-white/10 bg-white/[0.03] text-zinc-300";
+
+  return (
+    <button
+      type="button"
+      data-press
+      onClick={onClick}
+      disabled={revealState !== "idle"}
+      className={cn(
+        "w-full text-left rounded-2xl border px-4 py-3 transition",
+        stateClass,
+        revealState !== "idle" ? "cursor-default" : ""
+      )}
+    >
+      {option.text}
+    </button>
+  );
+}
+
 function ScenarioChainBlock({ block, playText, onComplete }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
-  const [stepIndex, setStepIndex] = useState(0);
-  const [selectedId, setSelectedId] = useState(null);
-  const [revealed, setRevealed] = useState(false);
+  const timeoutRef = useRef(null);
+
+  const [started, setStarted] = useState(false);
   const [history, setHistory] = useState([]);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [assistantVisible, setAssistantVisible] = useState(false);
+  const [assistantTyping, setAssistantTyping] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [revealState, setRevealState] = useState("idle");
+  const [conversationComplete, setConversationComplete] = useState(false);
 
   const step = steps[stepIndex] || null;
   const options = Array.isArray(step?.options) ? step.options : [];
-  const selected = options.find((o) => o.id === selectedId) || null;
   const isLastStep = stepIndex >= steps.length - 1;
 
-  const commitStep = (option) => {
-    if (!step) return;
-    if (revealed) return;
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
-    setSelectedId(option.id);
-    setRevealed(true);
+  const showAssistantStep = async (index) => {
+    const nextStep = steps[index];
+    if (!nextStep) return;
 
-    const nextHistory = [
-      ...history,
-      { role: "other", text: step.text, audioText: step.audioText || null },
-      { role: "you", text: option.text, correct: !!option.isCorrect },
-    ];
-    setHistory(nextHistory);
+    setAssistantTyping(true);
+    setAssistantVisible(false);
+    setSelectedId(null);
+    setRevealState("idle");
 
-    if (isLastStep) {
-      onComplete?.();
-    }
+    timeoutRef.current = setTimeout(async () => {
+      setAssistantTyping(false);
+      setAssistantVisible(true);
+
+      setHistory((prev) => [
+        ...prev,
+        {
+          role: "other",
+          text: nextStep.text,
+        },
+      ]);
+
+      try {
+        await playText?.(nextStep.audioText || nextStep.text);
+      } catch {}
+    }, 900);
   };
 
-  const goNext = () => {
-    if (!revealed) return;
-    if (isLastStep) return;
+  const startConversation = async () => {
+    if (started) return;
+    setStarted(true);
+    await showAssistantStep(0);
+  };
 
-    setStepIndex((prev) => prev + 1);
-    setSelectedId(null);
-    setRevealed(false);
+  const handleSelect = (option) => {
+    if (!assistantVisible || revealState !== "idle") return;
+
+    setSelectedId(option.id);
+    setRevealState("revealed");
+
+    setHistory((prev) => [
+      ...prev,
+      {
+        role: "you",
+        text: option.text,
+      },
+    ]);
+
+    if (isLastStep) {
+      setConversationComplete(true);
+      onComplete?.();
+      return;
+    }
+
+    timeoutRef.current = setTimeout(async () => {
+      setStepIndex((prev) => prev + 1);
+      await showAssistantStep(stepIndex + 1);
+    }, 850);
   };
 
   return (
@@ -451,66 +562,39 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
         </div>
       ) : null}
 
+      {!started ? (
+        <div className="mt-4">
+          <ActionButton onClick={startConversation}>Start conversation</ActionButton>
+        </div>
+      ) : null}
+
       <div className="mt-4 space-y-3">
         {history.map((item, index) => (
           <ConversationBubble
             key={`${item.role}-${index}-${item.text}`}
             role={item.role}
             text={item.text}
-            audioText={item.audioText}
-            playText={playText}
           />
         ))}
 
-        {step ? (
-          <ConversationBubble
-            role="other"
-            text={step.text}
-            audioText={step.audioText}
-            playText={playText}
-          />
-        ) : null}
+        {assistantTyping ? <TypingBubble /> : null}
       </div>
 
-      {step ? (
+      {started && assistantVisible && !conversationComplete ? (
         <div className="mt-4 grid gap-3">
-          {options.map((option) => {
-            const optionStateClass =
-              !revealed
-                ? "border-white/10 bg-white/[0.03] text-zinc-300"
-                : option.isCorrect
-                ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
-                : selectedId === option.id
-                ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-100"
-                : "border-white/10 bg-white/[0.03] text-zinc-300";
-
-            return (
-              <button
-                key={option.id}
-                type="button"
-                data-press
-                onClick={() => commitStep(option)}
-                disabled={revealed}
-                className={cn(
-                  "w-full text-left rounded-2xl border px-4 py-3 transition",
-                  optionStateClass,
-                  revealed ? "cursor-default" : ""
-                )}
-              >
-                {option.text}
-              </button>
-            );
-          })}
+          {options.map((option) => (
+            <ScenarioChoice
+              key={option.id}
+              option={option}
+              selectedId={selectedId}
+              revealState={revealState}
+              onClick={() => handleSelect(option)}
+            />
+          ))}
         </div>
       ) : null}
 
-      {revealed && !isLastStep ? (
-        <div className="mt-4">
-          <ActionButton onClick={goNext}>Continue conversation</ActionButton>
-        </div>
-      ) : null}
-
-      {revealed && isLastStep ? (
+      {conversationComplete ? (
         <div className="mt-4">
           <SmallMetaPill accent="emerald">Conversation reviewed</SmallMetaPill>
         </div>
