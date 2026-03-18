@@ -64,64 +64,6 @@ function SmallMetaPill({ children, accent = "default" }) {
   );
 }
 
-function SectionListItem({
-  title,
-  subtitle,
-  active = false,
-  locked = false,
-  modules = 4,
-  checkpointLabel = "Checkpoint",
-  onClick,
-}) {
-  const shell = active
-    ? "border-emerald-400/20 bg-emerald-500/[0.07]"
-    : "border-white/10 bg-white/[0.03]";
-
-  const content = (
-    <div className={cn("rounded-2xl border px-3 py-3", shell)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div
-            className={cn(
-              "text-[14px] font-semibold leading-snug",
-              active ? "text-emerald-100" : "text-zinc-100"
-            )}
-          >
-            {title}
-          </div>
-          <div className="text-[12px] text-zinc-400 mt-1 leading-snug">
-            {subtitle}
-          </div>
-        </div>
-
-        {active ? (
-          <SmallMetaPill accent="emerald">Current</SmallMetaPill>
-        ) : locked ? (
-          <SmallMetaPill>Upcoming</SmallMetaPill>
-        ) : null}
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <SmallMetaPill>{modules} modules</SmallMetaPill>
-        <SmallMetaPill>{checkpointLabel}</SmallMetaPill>
-      </div>
-    </div>
-  );
-
-  if (typeof onClick !== "function") return content;
-
-  return (
-    <button
-      type="button"
-      data-press
-      onClick={onClick}
-      className="w-full text-left"
-    >
-      {content}
-    </button>
-  );
-}
-
 export default function LearningHome({ onBack, onOpenSection1 }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
@@ -141,19 +83,11 @@ export default function LearningHome({ onBack, onOpenSection1 }) {
 
       <div className="mt-5">
         <div className="text-xl font-semibold text-zinc-100">
-          Guided course
+          Continue learning
         </div>
         <div className="text-sm text-zinc-400 mt-1 leading-snug">
-          Learn through a structured course built around real conversational
-          Lithuanian. The course is organised by sections, modules, lessons, and
-          checkpoints.
+          Pick up where you left off or browse the course.
         </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <SmallMetaPill accent="emerald">12 sections</SmallMetaPill>
-        <SmallMetaPill>4 modules per section</SmallMetaPill>
-        <SmallMetaPill>1 checkpoint per section</SmallMetaPill>
       </div>
 
       <div className="mt-5 space-y-4">
@@ -165,75 +99,42 @@ export default function LearningHome({ onBack, onOpenSection1 }) {
         >
           <SurfaceCard className="p-4">
             <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              Continue
+              Current lesson
             </div>
 
-            <div className="mt-2 flex items-start gap-3">
-              <div
-                className="
-                  h-10 w-10 rounded-xl
-                  bg-emerald-500/12 border border-emerald-400/20
-                  flex items-center justify-center
-                  shrink-0
-                "
-                aria-hidden="true"
-              >
-                <span className="text-[18px]">📚</span>
+            <div className="mt-2">
+              <div className="text-[16px] font-semibold text-zinc-100">
+                Lesson 1.1.1 — Hello and Goodbye
               </div>
+              <div className="text-[13px] text-zinc-400 mt-1">
+                Section 1 · Module 1.1
+              </div>
+            </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-semibold text-zinc-100">
-                  Section 1 — First Contact and Survival Basics
-                </div>
-                <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-                  Start with greetings, politeness, first responses, and the
-                  language needed to survive the opening moments of real
-                  interaction.
-                </div>
-                <div className="mt-3">
-                  <SmallMetaPill accent="emerald">
-                    Module 1.1 — Greeting and Politeness
-                  </SmallMetaPill>
-                </div>
-              </div>
+            <div className="mt-3">
+              <SmallMetaPill accent="emerald">Continue</SmallMetaPill>
             </div>
           </SurfaceCard>
         </button>
 
-        <SurfaceCard className="p-4">
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Course structure
-          </div>
-
-          <div className="mt-3 grid gap-3">
-            <SectionListItem
-              title="Section 1 — First Contact and Survival Basics"
-              subtitle="Open interaction, be polite, introduce yourself, and ask for help."
-              active
-              onClick={onOpenSection1}
-            />
-            <SectionListItem
-              title="Section 2 — Core Conversation Patterns"
-              subtitle="Need, want, have, simple questions, and basic action language."
-              locked
-            />
-            <SectionListItem
-              title="Sections 3–12"
-              subtitle="Numbers, food, directions, shopping, people, transport, accommodation, health, work/admin, and final reinforcement."
-              locked
-            />
-          </div>
-        </SurfaceCard>
-
-        <SurfaceCard className="p-4">
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Status
-          </div>
-          <div className="text-[13px] text-zinc-300 mt-2 leading-snug">
-            Section entry is now ready. Next, the section view will drive module
-            and lesson navigation from real course data.
-          </div>
-        </SurfaceCard>
+        <button
+          type="button"
+          data-press
+          onClick={onOpenSection1}
+          className="w-full text-left"
+        >
+          <SurfaceCard className="p-4">
+            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+              Browse course
+            </div>
+            <div className="mt-2 text-[15px] font-semibold text-zinc-100">
+              Section 1 — First Contact and Survival Basics
+            </div>
+            <div className="text-[13px] text-zinc-400 mt-1">
+              Start with greetings, politeness, and first-contact basics.
+            </div>
+          </SurfaceCard>
+        </button>
       </div>
 
       <div className="h-6" />
