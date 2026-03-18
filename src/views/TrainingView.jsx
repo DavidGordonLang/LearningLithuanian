@@ -24,15 +24,11 @@ export default function TrainingView({
   showToast,
 }) {
   const [screen, setScreen] = useState("home");
-  // "home" | "learningHome" | "learningSection" | "learningModule" | "learningLesson"
-  // | "recallFlip" | "blindRecall" | "matchPairs"
-  // | "examPrepHome" | "examReading" | "examListening" | "examWriting"
-
   const [focus, setFocus] = useTrainingFocus();
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
 
-  // Track where the browse path should return to after coming from the lesson
+  // Track where the lesson's back button should return to
   // "home" = came from TrainingHome card (default)
   // "learningModule" = came from browse path
   const [lessonReturnScreen, setLessonReturnScreen] = useState("home");
@@ -102,7 +98,19 @@ export default function TrainingView({
     return lessons[0] || null;
   }, [learningModule, selectedLessonId]);
 
-  // ─── Browse path (still reachable from lesson header) ──────────────────────
+  // Derive the 0-based index of the current lesson within its module
+  // so LearningLessonView can display "Lesson 1", "Lesson 2" etc.
+  const learningLessonIndex = useMemo(() => {
+    const lessons = Array.isArray(learningModule?.lessons)
+      ? learningModule.lessons
+      : [];
+
+    if (!learningLesson) return 0;
+    const idx = lessons.findIndex((l) => l?.id === learningLesson.id);
+    return idx >= 0 ? idx : 0;
+  }, [learningModule, learningLesson]);
+
+  // ─── Browse path ────────────────────────────────────────────────────────────
 
   if (screen === "learningHome") {
     return (
@@ -144,7 +152,7 @@ export default function TrainingView({
     );
   }
 
-  // ─── Lesson — default entry point from TrainingHome card ───────────────────
+  // ─── Lesson ─────────────────────────────────────────────────────────────────
 
   if (screen === "learningLesson") {
     return (
@@ -152,6 +160,7 @@ export default function TrainingView({
         section={learningSection}
         module={learningModule}
         lesson={learningLesson}
+        lessonIndex={learningLessonIndex}
         playText={playText}
         showToast={showToast}
         onBack={() => setScreen(lessonReturnScreen)}
@@ -160,7 +169,7 @@ export default function TrainingView({
     );
   }
 
-  // ─── Practice modes ────────────────────────────────────────────────────────
+  // ─── Practice modes ─────────────────────────────────────────────────────────
 
   if (screen === "recallFlip") {
     return (
@@ -197,7 +206,7 @@ export default function TrainingView({
     );
   }
 
-  // ─── Exam prep ─────────────────────────────────────────────────────────────
+  // ─── Exam prep ───────────────────────────────────────────────────────────────
 
   if (screen === "examPrepHome") {
     return (
@@ -230,7 +239,7 @@ export default function TrainingView({
     return <ExamWritingTaskView onBack={() => setScreen("examPrepHome")} />;
   }
 
-  // ─── Training home (default) ───────────────────────────────────────────────
+  // ─── Training home (default) ─────────────────────────────────────────────────
 
   return (
     <TrainingHome
@@ -240,7 +249,6 @@ export default function TrainingView({
       counts={counts}
       eligibleCount={eligibleCount}
       onStartLearning={() => {
-        // Direct entry — skip browse screens entirely
         setSelectedModuleId(null);
         setSelectedLessonId(null);
         setLessonReturnScreen("home");
