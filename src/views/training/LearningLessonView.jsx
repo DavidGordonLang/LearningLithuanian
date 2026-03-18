@@ -141,7 +141,70 @@ function AudioIconButton({ text, playText, label = "Play audio" }) {
   );
 }
 
-// ─── Pattern note — shown once, after completing the first (learn) block ──────
+// ─── Feedback panel — slides up after answering a choice block ────────────────
+
+function FeedbackPanel({ isCorrect, correctText, feedbackNote, onContinue }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "mt-4 rounded-2xl border px-4 py-4 transition-all duration-300",
+        isCorrect
+          ? "border-emerald-400/25 bg-emerald-500/[0.08]"
+          : "border-white/10 bg-white/[0.03]",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            "mt-[2px] h-5 w-5 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold",
+            isCorrect
+              ? "bg-emerald-500/20 text-emerald-300"
+              : "bg-white/[0.06] text-zinc-400"
+          )}
+        >
+          {isCorrect ? "✓" : "→"}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div
+            className={cn(
+              "text-[14px] font-semibold",
+              isCorrect ? "text-emerald-200" : "text-zinc-200"
+            )}
+          >
+            {isCorrect ? "Correct!" : `Correct answer: ${correctText}`}
+          </div>
+
+          {feedbackNote ? (
+            <div className="mt-1 text-[13px] text-zinc-400 leading-snug">
+              {feedbackNote}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <ActionButton
+          onClick={onContinue}
+          variant={isCorrect ? "primary" : "secondary"}
+          className="w-full"
+        >
+          Continue
+        </ActionButton>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pattern note ─────────────────────────────────────────────────────────────
 
 function PatternNote({ notes }) {
   if (!notes?.pattern && !Array.isArray(notes?.usage)) return null;
@@ -219,21 +282,23 @@ function ChoiceOption({ option, selected, revealState, onClick }) {
     revealState === "idle"
       ? selected
         ? "border-white/20 bg-white/[0.07] text-zinc-100"
-        : "border-white/10 bg-white/[0.03] text-zinc-300"
+        : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]"
       : option.isCorrect
       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
       : selected
-      ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-100"
-      : "border-white/10 bg-white/[0.03] text-zinc-300";
+      ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-70"
+      : "border-white/10 bg-white/[0.03] text-zinc-500";
 
   return (
     <button
       type="button"
       data-press
       onClick={onClick}
+      disabled={revealState !== "idle"}
       className={cn(
         "w-full text-left rounded-2xl border px-4 py-3 transition",
-        stateClass
+        stateClass,
+        revealState !== "idle" ? "cursor-default" : ""
       )}
     >
       {option.text}
@@ -241,12 +306,13 @@ function ChoiceOption({ option, selected, revealState, onClick }) {
   );
 }
 
-function ChoiceBlock({ block, playText, onComplete, completed }) {
+function ChoiceBlock({ block, playText, onComplete, completed, onAdvance }) {
   const [selectedId, setSelectedId] = useState(null);
   const [revealState, setRevealState] = useState("idle");
 
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
+  const correctOption = options.find((o) => o.isCorrect) || null;
 
   const promptText = block?.prompt?.text || "Choose the best answer";
   const audioText = block?.prompt?.audioText || "";
@@ -257,6 +323,8 @@ function ChoiceBlock({ block, playText, onComplete, completed }) {
     setRevealState("revealed");
     onComplete?.();
   };
+
+  const isCorrect = !!selected?.isCorrect;
 
   return (
     <div>
@@ -281,18 +349,13 @@ function ChoiceBlock({ block, playText, onComplete, completed }) {
         ))}
       </div>
 
-      {revealState === "revealed" && block?.feedback?.correct ? (
-        <div className="mt-3 text-[13px] text-zinc-400 leading-snug">
-          {block.feedback.correct}
-        </div>
-      ) : null}
-
-      {completed ? (
-        <div className="mt-4">
-          <SmallMetaPill accent={selected?.isCorrect ? "emerald" : "default"}>
-            {selected?.isCorrect ? "Answer reviewed" : "Correct answer shown"}
-          </SmallMetaPill>
-        </div>
+      {revealState === "revealed" ? (
+        <FeedbackPanel
+          isCorrect={isCorrect}
+          correctText={correctOption?.text || ""}
+          feedbackNote={isCorrect ? (block?.feedback?.correct || null) : null}
+          onContinue={onAdvance}
+        />
       ) : null}
     </div>
   );
@@ -375,7 +438,7 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
             })
           ) : (
             <div className="text-sm text-zinc-500">
-              Tap tokens below to build the phrase.
+              Tap words below to build the phrase.
             </div>
           )}
         </div>
@@ -403,7 +466,7 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
           onClick={checkPhrase}
           disabled={built.length !== tokens.length || revealed}
         >
-          {revealed ? "Phrase reviewed" : "Check phrase"}
+          {revealed ? "Phrase built" : "Check phrase"}
         </ActionButton>
 
         <ActionButton
@@ -418,9 +481,10 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
       </div>
 
       {revealed ? (
-        <div className="mt-3 text-[13px] leading-snug">
-          <span className="text-zinc-400">Correct phrase: </span>
-          <span className="text-zinc-100">{correctAnswer}</span>
+        <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
+          <div className="text-[13px] text-emerald-300 font-semibold">
+            {correctAnswer}
+          </div>
         </div>
       ) : null}
 
@@ -471,12 +535,12 @@ function TypingBubble() {
 function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
   const stateClass =
     revealState === "idle"
-      ? "border-white/10 bg-white/[0.03] text-zinc-200"
+      ? "border-white/10 bg-white/[0.03] text-zinc-200 hover:border-white/20 hover:bg-white/[0.05]"
       : option.isCorrect
       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
       : selectedId === option.id
-      ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-100"
-      : "border-white/10 bg-white/[0.03] text-zinc-400";
+      ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-70"
+      : "border-white/10 bg-white/[0.03] text-zinc-500";
 
   return (
     <button
@@ -640,7 +704,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
   );
 }
 
-function BlockRenderer({ block, playText, onComplete, completed }) {
+function BlockRenderer({ block, playText, onComplete, completed, onAdvance }) {
   switch (block?.type) {
     case "learn":
       return (
@@ -660,6 +724,7 @@ function BlockRenderer({ block, playText, onComplete, completed }) {
           playText={playText}
           onComplete={onComplete}
           completed={completed}
+          onAdvance={onAdvance}
         />
       );
     case "speak_self_check":
@@ -738,6 +803,7 @@ export default function LearningLessonView({
   section,
   module,
   lesson,
+  lessonIndex,
   playText,
   onBack,
   onBrowseCourse,
@@ -766,12 +832,25 @@ export default function LearningLessonView({
   const isLastBlock = blockIndex === totalBlocks - 1;
   const lessonComplete = isLastBlock && isCurrentCompleted;
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
+  const isChoiceBlock =
+    currentBlock?.type === "recognise_mcq" ||
+    currentBlock?.type === "listen_mcq" ||
+    currentBlock?.type === "best_response";
 
-  // Pattern note shows only after completing the first block (the learn block)
+  // Pattern note shows only after completing the first block
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
 
+  // For choice blocks, the feedback panel contains the Continue button.
+  // For all other blocks, we show the normal nav bar.
+  const showNavBar = !lessonComplete && !isChoiceBlock;
+
+  // Advance to next block — used by feedback panel Continue button
+  const advanceBlock = () => {
+    setBlockIndex((prev) => Math.min(totalBlocks - 1, prev + 1));
+  };
+
   useEffect(() => {
-    if (!isCurrentCompleted || lessonComplete) return;
+    if (!isCurrentCompleted || lessonComplete || isChoiceBlock) return;
     const id = window.setTimeout(() => {
       actionBarRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -779,7 +858,7 @@ export default function LearningLessonView({
       });
     }, 180);
     return () => window.clearTimeout(id);
-  }, [isCurrentCompleted, lessonComplete, currentBlock?.id]);
+  }, [isCurrentCompleted, lessonComplete, currentBlock?.id, isChoiceBlock]);
 
   const markCurrentComplete = () => {
     if (!currentBlock?.id) return;
@@ -788,6 +867,15 @@ export default function LearningLessonView({
       return { ...prev, [currentBlock.id]: true };
     });
   };
+
+  // Derive a clean display label for the lesson number
+  // lessonIndex is 0-based position passed from parent
+  const lessonDisplayLabel =
+    typeof lessonIndex === "number"
+      ? `Lesson ${lessonIndex + 1}`
+      : lesson?.code
+      ? `Lesson ${lesson.code}`
+      : "Lesson";
 
   if (!lesson) {
     return (
@@ -808,7 +896,7 @@ export default function LearningLessonView({
 
         <div className="text-center">
           <div className="text-[16px] font-semibold text-zinc-100">
-            Lesson {lesson?.code || ""}
+            {lessonDisplayLabel}
           </div>
         </div>
 
@@ -889,6 +977,10 @@ export default function LearningLessonView({
                   playText={playText}
                   onComplete={markCurrentComplete}
                   completed={isCurrentCompleted}
+                  onAdvance={() => {
+                    if (isLastBlock) return;
+                    advanceBlock();
+                  }}
                 />
               ) : (
                 <div className="text-sm text-zinc-500">No block available.</div>
@@ -903,8 +995,8 @@ export default function LearningLessonView({
         <PatternNote notes={lesson?.notes} />
       ) : null}
 
-      {/* Navigation */}
-      {!lessonComplete ? (
+      {/* Navigation bar — hidden for choice blocks (feedback panel handles it) */}
+      {showNavBar ? (
         <div
           ref={actionBarRef}
           className="mt-5 flex items-center justify-between gap-3"
