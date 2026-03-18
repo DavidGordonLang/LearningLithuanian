@@ -23,13 +23,19 @@ export default function TrainingView({
   stopText,
   showToast,
 }) {
-  // Behaviour frozen: these screen IDs are internal routing only.
   const [screen, setScreen] = useState("home");
-  // "home" | "learningHome" | "learningSection" | "learningModule" | "learningLesson" | "recallFlip" | "blindRecall" | "matchPairs" | "examPrepHome" | "examReading" | "examListening" | "examWriting"
+  // "home" | "learningHome" | "learningSection" | "learningModule" | "learningLesson"
+  // | "recallFlip" | "blindRecall" | "matchPairs"
+  // | "examPrepHome" | "examReading" | "examListening" | "examWriting"
 
   const [focus, setFocus] = useTrainingFocus();
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
+
+  // Track where the browse path should return to after coming from the lesson
+  // "home" = came from TrainingHome card (default)
+  // "learningModule" = came from browse path
+  const [lessonReturnScreen, setLessonReturnScreen] = useState("home");
 
   const counts = useMemo(() => {
     const list = Array.isArray(rows) ? rows : [];
@@ -47,7 +53,7 @@ export default function TrainingView({
       phrases,
       words,
       numbers,
-      all: phrases + words, // numbers intentionally excluded from "all"
+      all: phrases + words,
     };
   }, [rows]);
 
@@ -57,9 +63,7 @@ export default function TrainingView({
 
     const matchFocus = (r) => {
       if (focus === "all") {
-        return (
-          s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words"
-        );
+        return s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words";
       }
       if (focus === "phrases") {
         return s(r) === "Phrases" || s(r) === "Questions";
@@ -98,6 +102,8 @@ export default function TrainingView({
     return lessons[0] || null;
   }, [learningModule, selectedLessonId]);
 
+  // ─── Browse path (still reachable from lesson header) ──────────────────────
+
   if (screen === "learningHome") {
     return (
       <LearningHome
@@ -131,11 +137,14 @@ export default function TrainingView({
         onOpenLesson={(lessonId) => {
           if (!lessonId) return;
           setSelectedLessonId(lessonId);
+          setLessonReturnScreen("learningModule");
           setScreen("learningLesson");
         }}
       />
     );
   }
+
+  // ─── Lesson — default entry point from TrainingHome card ───────────────────
 
   if (screen === "learningLesson") {
     return (
@@ -145,10 +154,13 @@ export default function TrainingView({
         lesson={learningLesson}
         playText={playText}
         showToast={showToast}
-        onBack={() => setScreen("learningModule")}
+        onBack={() => setScreen(lessonReturnScreen)}
+        onBrowseCourse={() => setScreen("learningHome")}
       />
     );
   }
+
+  // ─── Practice modes ────────────────────────────────────────────────────────
 
   if (screen === "recallFlip") {
     return (
@@ -185,6 +197,8 @@ export default function TrainingView({
     );
   }
 
+  // ─── Exam prep ─────────────────────────────────────────────────────────────
+
   if (screen === "examPrepHome") {
     return (
       <ExamPrepHome
@@ -216,6 +230,8 @@ export default function TrainingView({
     return <ExamWritingTaskView onBack={() => setScreen("examPrepHome")} />;
   }
 
+  // ─── Training home (default) ───────────────────────────────────────────────
+
   return (
     <TrainingHome
       T={T}
@@ -223,7 +239,13 @@ export default function TrainingView({
       setFocus={setFocus}
       counts={counts}
       eligibleCount={eligibleCount}
-      onStartLearning={() => setScreen("learningHome")}
+      onStartLearning={() => {
+        // Direct entry — skip browse screens entirely
+        setSelectedModuleId(null);
+        setSelectedLessonId(null);
+        setLessonReturnScreen("home");
+        setScreen("learningLesson");
+      }}
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
       onStartMatchPairs={() => setScreen("matchPairs")}
