@@ -212,8 +212,7 @@ function ChoiceBlock({ block, playText, onComplete, completed }) {
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
 
-  const promptText =
-    block?.prompt?.text || "Choose the best answer";
+  const promptText = block?.prompt?.text || "Choose the best answer";
   const audioText = block?.prompt?.audioText || "";
 
   const handleSelect = (option) => {
@@ -719,6 +718,7 @@ export default function LearningLessonView({
 
   const [blockIndex, setBlockIndex] = useState(0);
   const [completedBlockIds, setCompletedBlockIds] = useState({});
+  const actionBarRef = useRef(null);
 
   useEffect(() => {
     setBlockIndex(0);
@@ -735,6 +735,19 @@ export default function LearningLessonView({
   const isLastBlock = blockIndex === totalBlocks - 1;
   const lessonComplete = isLastBlock && isCurrentCompleted;
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
+
+  useEffect(() => {
+    if (!isCurrentCompleted || lessonComplete) return;
+
+    const id = window.setTimeout(() => {
+      actionBarRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }, 180);
+
+    return () => window.clearTimeout(id);
+  }, [isCurrentCompleted, lessonComplete, currentBlock?.id]);
 
   const markCurrentComplete = () => {
     if (!currentBlock?.id) return;
@@ -807,7 +820,7 @@ export default function LearningLessonView({
         {lessonComplete ? (
           <LessonCompleteCard lessonTitle={lesson.title} onBack={onBack} />
         ) : (
-          <SurfaceCard className={cn("p-4", isScenarioBlock ? "p-3" : "p-4")}>
+          <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
             {!isScenarioBlock ? (
               <div className="text-[11px] uppercase tracking-wide text-zinc-500">
                 {currentBlock?.title || "Lesson block"}
@@ -862,7 +875,10 @@ export default function LearningLessonView({
       ) : null}
 
       {!lessonComplete ? (
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <div
+          ref={actionBarRef}
+          className="mt-5 flex items-center justify-between gap-3"
+        >
           <ActionButton
             variant="ghost"
             onClick={() => setBlockIndex((prev) => Math.max(0, prev - 1))}
