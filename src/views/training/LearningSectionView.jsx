@@ -66,7 +66,6 @@ function SmallMetaPill({ children, accent = "default" }) {
 
 function ModuleCard({
   title,
-  purpose,
   status = "planned",
   lessonCount = 0,
   onClick,
@@ -87,9 +86,6 @@ function ModuleCard({
             )}
           >
             {title}
-          </div>
-          <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-            {purpose}
           </div>
         </div>
 
@@ -120,16 +116,13 @@ function ModuleCard({
   );
 }
 
-function CheckpointCard({ title, purpose }) {
+function CheckpointCard({ title }) {
   return (
     <div className="rounded-2xl border border-emerald-400/18 bg-emerald-500/[0.06] px-4 py-4">
       <div className="text-[15px] font-semibold text-emerald-200">{title}</div>
-      <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-        {purpose}
-      </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <SmallMetaPill accent="emerald">Section checkpoint</SmallMetaPill>
+        <SmallMetaPill accent="emerald">Checkpoint</SmallMetaPill>
       </div>
     </div>
   );
@@ -141,8 +134,6 @@ export default function LearningSectionView({
   onOpenModule,
 }) {
   const modules = Array.isArray(section?.modules) ? section.modules : [];
-  const activeModule =
-    modules.find((m) => m?.status === "active") || modules[0] || null;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
@@ -173,46 +164,16 @@ export default function LearningSectionView({
         <SmallMetaPill accent="emerald">
           {section?.moduleCount || modules.length || 0} modules
         </SmallMetaPill>
-        <SmallMetaPill>
-          {section?.checkpointCount || 1} checkpoint
-        </SmallMetaPill>
+        <SmallMetaPill>{section?.checkpointCount || 1} checkpoint</SmallMetaPill>
       </div>
-
-      {activeModule ? (
-        <div className="mt-5">
-          <button
-            type="button"
-            data-press
-            onClick={() => onOpenModule?.(activeModule.id)}
-            className="w-full text-left"
-          >
-            <SurfaceCard className="p-4">
-              <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                Current module
-              </div>
-              <div className="text-[15px] font-semibold text-zinc-100 mt-2">
-                Module {activeModule.code} — {activeModule.title}
-              </div>
-              <div className="text-[13px] text-zinc-300 mt-1 leading-snug">
-                {activeModule.purpose}
-              </div>
-            </SurfaceCard>
-          </button>
-        </div>
-      ) : null}
 
       <div className="mt-5 space-y-4">
         <SurfaceCard className="p-4">
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Modules
-          </div>
-
-          <div className="mt-3 grid gap-3">
+          <div className="grid gap-3">
             {modules.map((module) => (
               <ModuleCard
                 key={module.id}
                 title={`Module ${module.code} — ${module.title}`}
-                purpose={module.purpose}
                 status={module.status}
                 lessonCount={module.lessonCount}
                 onClick={
@@ -227,28 +188,11 @@ export default function LearningSectionView({
 
         {modules[0]?.checkpoint ? (
           <SurfaceCard className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-              Checkpoint
-            </div>
-
-            <div className="mt-3">
-              <CheckpointCard
-                title={`${modules[0].checkpoint.code} — ${modules[0].checkpoint.title}`}
-                purpose={modules[0].checkpoint.purpose}
-              />
-            </div>
+            <CheckpointCard
+              title={`${modules[0].checkpoint.code} — ${modules[0].checkpoint.title}`}
+            />
           </SurfaceCard>
         ) : null}
-
-        <SurfaceCard className="p-4">
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            Status
-          </div>
-          <div className="text-[13px] text-zinc-300 mt-2 leading-snug">
-            Section 1 now opens its active module. Next, Module 1.1 will open
-            into its lesson flow.
-          </div>
-        </SurfaceCard>
       </div>
 
       <div className="h-6" />
