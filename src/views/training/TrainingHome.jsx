@@ -135,12 +135,7 @@ function ModuleCard({
             <div className="text-sm text-zinc-500">→</div>
           </div>
 
-          <div
-            className={cn(
-              "text-zinc-300 mt-1 leading-snug",
-              large ? "text-[13px]" : "text-[13px]"
-            )}
-          >
+          <div className="text-zinc-300 mt-1 leading-snug text-[13px]">
             {desc}
           </div>
 
@@ -206,7 +201,7 @@ export default function TrainingHome({
 
   const matchPairsHint =
     focus === "phrases"
-      ? "Reinforce is for words or numbers only. Switch focus to Words, Numbers, or All."
+      ? "Reinforce is for words or numbers only."
       : matchPairsDisabled
       ? `Add at least 10 ${reinforceLabel} to unlock (you have ${reinforceEligibleCount}).`
       : null;
@@ -220,31 +215,23 @@ export default function TrainingHome({
           {T?.navTraining || "Training"}
         </div>
         <div className="text-sm text-zinc-400 mt-1">
-          Learn in order, practise what you’ve saved, or prepare for the exam.
+          Continue learning, practise your library, or prepare for the exam.
         </div>
       </div>
 
       <div className="mt-6">
-        <SectionLabel
-          eyebrow="Learning"
-          title="Guided course"
-          desc="Follow the structured learning path lesson by lesson. This will become the main way to build practical Lithuanian inside the app."
-        />
+        <SectionLabel eyebrow="Learning" title="Continue learning" />
 
         <div className="mt-3">
           <ModuleCard
-            title="Learning"
-            desc="Structured lessons, checkpoints, and progressive support built around real conversational use."
+            title="Lesson 1.1.1 — Hello and Goodbye"
+            desc="Section 1 · Module 1.1"
             icon="📚"
             large
             accent="learning"
             disabled={learningDisabled}
             onClick={onStartLearning}
-            hint={
-              learningDisabled
-                ? "Learning will live here as the guided course path."
-                : "Continue your guided course."
-            }
+            hint={learningDisabled ? "Learning path unavailable." : null}
           />
         </div>
       </div>
@@ -252,28 +239,19 @@ export default function TrainingHome({
       <div className="mt-6">
         <SectionLabel
           eyebrow="Practice"
-          title="Drill your saved library"
-          desc="Use free practice modes to strengthen recall, production, and reinforcement from your own saved phrases."
+          title="Practice modes"
+          desc="Use your saved library in different ways."
         />
 
         <div className="mt-3">
           <GroupPanel>
             <div className="space-y-3">
-              <div>
-                <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                  Focus
-                </div>
-                <div className="text-xs text-zinc-400 mt-1">
-                  Choose what kind of saved content you want to practise.
-                </div>
-              </div>
-
               <FocusPillRow focus={focus} setFocus={setFocus} />
 
               <div className="space-y-3 pt-1">
                 <ModuleCard
                   title="Recognise"
-                  desc="Reveal-based recall. Self-grade and move on."
+                  desc="Reveal-based recall."
                   icon="🧠"
                   disabled={tooFew}
                   onClick={onStartRecallFlip}
@@ -286,7 +264,7 @@ export default function TrainingHome({
 
                 <ModuleCard
                   title="Produce"
-                  desc="Produce Lithuanian first, then reveal."
+                  desc="Recall Lithuanian first."
                   icon="⌨️"
                   disabled={tooFew}
                   onClick={onStartBlindRecall}
@@ -299,7 +277,7 @@ export default function TrainingHome({
 
                 <ModuleCard
                   title="Reinforce"
-                  desc="Match English and Lithuanian pairs."
+                  desc="Match English and Lithuanian."
                   icon="🧩"
                   disabled={matchPairsDisabled}
                   onClick={onStartMatchPairs}
@@ -314,17 +292,16 @@ export default function TrainingHome({
       <div className="mt-6">
         <SectionLabel
           eyebrow="Exam prep"
-          title="Foreigner exam task practice"
-          desc="Practise reviewed reading, listening, and writing task formats in a separate space."
+          title="Exam practice"
+          desc="Reading, listening, and writing tasks."
         />
 
         <div className="mt-3">
           <ModuleCard
             title="Exam Prep"
-            desc="Practise foreigner-exam task formats with reviewed content."
+            desc="Practise foreigner-exam task formats."
             icon="📝"
             onClick={onStartExamPrep}
-            hint="Reading, listening, and writing practice in one calm space."
           />
         </div>
       </div>
