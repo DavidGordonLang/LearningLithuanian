@@ -1,5 +1,6 @@
 // src/views/training/LearningLessonView.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSpeechToTextHold from "../../hooks/useSpeechToTextHold";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -9,24 +10,19 @@ function collectAudioTexts(blocks) {
   const texts = [];
   for (const block of blocks) {
     if (!block) continue;
-    // learn block items
     if (Array.isArray(block.items)) {
       for (const item of block.items) {
         if (item?.audioText) texts.push(item.audioText);
       }
     }
-    // choice/listen block prompt audio
     if (block.prompt?.audioText) texts.push(block.prompt.audioText);
-    // speak block
     if (block.audioText) texts.push(block.audioText);
-    // scenario steps
     if (Array.isArray(block.steps)) {
       for (const step of block.steps) {
         if (step?.audioText) texts.push(step.audioText);
       }
     }
   }
-  // deduplicate
   return [...new Set(texts.filter(Boolean))];
 }
 
@@ -142,34 +138,23 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Fade in
     const raf = requestAnimationFrame(() => setVisible(true));
-
-    // Animate the loading bar smoothly to ~85% over 1.2s
-    // then jump to 100% and call onReady
     let start = null;
     let animId = null;
 
     function step(ts) {
       if (!start) start = ts;
       const elapsed = ts - start;
-      // ease-out curve to 85% over 1200ms
       const pct = Math.min(85, Math.round(85 * (1 - Math.exp(-elapsed / 600))));
       setProgress(pct);
-      if (pct < 85) {
-        animId = requestAnimationFrame(step);
-      }
+      if (pct < 85) animId = requestAnimationFrame(step);
     }
 
     animId = requestAnimationFrame(step);
 
-    // Complete after 1.4s max — audio preloading is fire-and-forget
     const completeTimer = setTimeout(() => {
       setProgress(100);
-      // Brief pause at 100% before transitioning
-      setTimeout(() => {
-        onReady?.();
-      }, 320);
+      setTimeout(() => onReady?.(), 320);
     }, 1400);
 
     return () => {
@@ -187,29 +172,20 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
       )}
       style={{ paddingTop: "15vh" }}
     >
-      {/* Breadcrumb */}
       <div className="text-[12px] text-zinc-500 tracking-wide">
         Section {section?.code} · Module {module?.code}
       </div>
-
-      {/* Lesson label */}
       <div className="mt-2 text-[13px] font-medium text-zinc-400 uppercase tracking-widest">
         {lessonDisplayLabel}
       </div>
-
-      {/* Lesson title */}
       <div className="mt-3 text-[28px] font-semibold text-zinc-100 leading-snug">
         {lesson?.title || "Loading…"}
       </div>
-
-      {/* Purpose */}
       {lesson?.purpose ? (
         <div className="mt-3 text-[14px] text-zinc-400 leading-relaxed max-w-xs">
           {lesson.purpose}
         </div>
       ) : null}
-
-      {/* Loading bar */}
       <div className="mt-10 max-w-xs">
         <div className="h-[3px] rounded-full bg-white/[0.08] overflow-hidden">
           <div
@@ -229,7 +205,6 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
 
 function FeedbackPanel({ isCorrect, correctText, feedbackNote, onContinue }) {
   const [visible, setVisible] = useState(false);
-
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(raf);
@@ -238,9 +213,7 @@ function FeedbackPanel({ isCorrect, correctText, feedbackNote, onContinue }) {
   return (
     <div className={cn(
       "mt-3 rounded-2xl border px-4 py-4 transition-all duration-250",
-      isCorrect
-        ? "border-emerald-400/25 bg-emerald-500/[0.08]"
-        : "border-white/10 bg-white/[0.03]",
+      isCorrect ? "border-emerald-400/25 bg-emerald-500/[0.08]" : "border-white/10 bg-white/[0.03]",
       visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
     )}>
       <div className="flex items-start gap-3">
@@ -258,18 +231,12 @@ function FeedbackPanel({ isCorrect, correctText, feedbackNote, onContinue }) {
             {isCorrect ? "Correct!" : `Correct answer: ${correctText}`}
           </div>
           {feedbackNote ? (
-            <div className="mt-1 text-[12px] text-zinc-400 leading-snug">
-              {feedbackNote}
-            </div>
+            <div className="mt-1 text-[12px] text-zinc-400 leading-snug">{feedbackNote}</div>
           ) : null}
         </div>
       </div>
       <div className="mt-3">
-        <ActionButton
-          onClick={onContinue}
-          variant={isCorrect ? "primary" : "secondary"}
-          className="w-full"
-        >
+        <ActionButton onClick={onContinue} variant={isCorrect ? "primary" : "secondary"} className="w-full">
           Continue
         </ActionButton>
       </div>
@@ -284,13 +251,9 @@ function PatternNote({ notes }) {
   return (
     <div className="mt-4">
       <SurfaceCard className="p-4">
-        <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-          Pattern note
-        </div>
+        <div className="text-[11px] uppercase tracking-wide text-zinc-500">Pattern note</div>
         {notes.pattern ? (
-          <div className="mt-2 text-[13px] text-zinc-300 leading-snug">
-            {notes.pattern}
-          </div>
+          <div className="mt-2 text-[13px] text-zinc-300 leading-snug">{notes.pattern}</div>
         ) : null}
         {Array.isArray(notes.usage) && notes.usage.length > 0 ? (
           <div className="mt-3 space-y-2">
@@ -316,27 +279,18 @@ function LearnBlock({ block, playText, onComplete, completed }) {
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <div
-          key={item.id}
-          className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
-        >
+        <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[17px] font-semibold text-zinc-100">{item.lt}</div>
               <div className="text-[13px] text-zinc-400 mt-0.5">{item.en}</div>
             </div>
-            {item.audioText ? (
-              <AudioIconButton text={item.audioText} playText={playText} />
-            ) : null}
+            {item.audioText ? <AudioIconButton text={item.audioText} playText={playText} /> : null}
           </div>
         </div>
       ))}
       <div className="pt-2">
-        <ActionButton
-          onClick={onComplete}
-          variant={completed ? "secondary" : "primary"}
-          className="w-full"
-        >
+        <ActionButton onClick={onComplete} variant={completed ? "secondary" : "primary"} className="w-full">
           {completed ? "Reviewed ✓" : "I've reviewed these"}
         </ActionButton>
       </div>
@@ -380,7 +334,6 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
   const correctOption = options.find((o) => o.isCorrect) || null;
-
   const promptText = block?.prompt?.text || "Choose the best answer";
   const audioText = block?.prompt?.audioText || "";
 
@@ -394,14 +347,9 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
   return (
     <div>
       <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="text-[15px] font-semibold text-zinc-100 leading-snug">
-          {promptText}
-        </div>
-        {audioText ? (
-          <AudioIconButton text={audioText} playText={playText} />
-        ) : null}
+        <div className="text-[15px] font-semibold text-zinc-100 leading-snug">{promptText}</div>
+        {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
       </div>
-
       <div className="grid gap-2">
         {options.map((option) => (
           <ChoiceOption
@@ -413,7 +361,6 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
           />
         ))}
       </div>
-
       {revealState === "revealed" ? (
         <FeedbackPanel
           isCorrect={!!selected?.isCorrect}
@@ -426,12 +373,64 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
   );
 }
 
-function SpeakSelfCheckBlock({ block, playText, onComplete, completed }) {
+// ─── Speak self-check block — now with real STT ───────────────────────────────
+
+function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed }) {
+  const [capturedText, setCapturedText] = useState("");
+  const [hasAttempted, setHasAttempted] = useState(false);
+
+  const {
+    sttState,
+    sttSupported,
+    startRecording,
+    stopRecording,
+    cancelStt,
+  } = useSpeechToTextHold({
+    showToast,
+    blurTextarea: () => {},
+    translating: false,
+    setInput: (text) => {
+      setCapturedText(text);
+      setHasAttempted(true);
+    },
+    autoTranslate: false,
+    onTranslateText: async () => {},
+    onSpeechCaptured: () => {
+      setCapturedText("");
+    },
+    language: "lt", // Force Lithuanian detection
+  });
+
+  const isRecording = sttState === "recording";
+  const isProcessing = sttState === "transcribing" || sttState === "translating";
+  const isBusy = isRecording || isProcessing;
+  const supported = sttSupported();
+
+  const micLabel = isRecording
+    ? "Listening…"
+    : isProcessing
+    ? "Processing…"
+    : supported
+    ? "Hold to speak"
+    : "Microphone unavailable";
+
+  const handleConfirm = () => {
+    onComplete?.();
+  };
+
+  const handleTryAgain = () => {
+    setCapturedText("");
+    setHasAttempted(false);
+  };
+
   return (
     <div>
+      {/* Prompt */}
       <div className="text-[15px] font-semibold text-zinc-100 mb-3">
         {block?.prompt || "Say it out loud"}
       </div>
+
+      {/* Target phrase with audio */}
       {block?.targetText ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 mb-4">
           <div className="flex items-center justify-between gap-3">
@@ -439,18 +438,103 @@ function SpeakSelfCheckBlock({ block, playText, onComplete, completed }) {
               {block.targetText}
             </div>
             {block?.audioText ? (
-              <AudioIconButton text={block.audioText} playText={playText} />
+              <AudioIconButton text={block.audioText} playText={playText} label="Hear the phrase" />
             ) : null}
           </div>
         </div>
       ) : null}
-      <ActionButton
-        variant={completed ? "secondary" : "primary"}
-        onClick={onComplete}
-        className="w-full"
-      >
-        {completed ? "Spoken ✓" : "I said it out loud"}
-      </ActionButton>
+
+      {/* Mic button */}
+      {!hasAttempted ? (
+        <div className="flex flex-col items-center gap-3 py-2">
+          <button
+            type="button"
+            disabled={!supported || isProcessing}
+            onMouseDown={(e) => { e.preventDefault(); if (!isBusy) startRecording(); }}
+            onMouseUp={(e) => { e.preventDefault(); stopRecording(); }}
+            onMouseLeave={(e) => { e.preventDefault(); stopRecording(); }}
+            onTouchStart={(e) => { e.preventDefault(); if (!isBusy) startRecording(); }}
+            onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
+            onTouchCancel={(e) => { e.preventDefault(); cancelStt(); }}
+            className={cn(
+              "h-16 w-16 rounded-full border flex items-center justify-center transition select-none",
+              isRecording
+                ? "bg-emerald-500/20 border-emerald-400/40 scale-110"
+                : isProcessing
+                ? "bg-white/[0.06] border-white/10 opacity-70"
+                : supported
+                ? "bg-white/[0.06] border-white/10 hover:bg-white/[0.09] active:scale-95"
+                : "bg-white/[0.03] border-white/[0.06] opacity-40 cursor-not-allowed"
+            )}
+            aria-label={micLabel}
+          >
+            {isProcessing ? (
+              <div className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-pulse [animation-delay:120ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 animate-pulse [animation-delay:240ms]" />
+              </div>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                className={isRecording ? "text-emerald-300" : "text-zinc-300"}>
+                <path d="M12 14.25c1.656 0 3-1.344 3-3V6.75c0-1.656-1.344-3-3-3s-3 1.344-3 3v4.5c0 1.656 1.344 3 3 3Z"
+                  stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7.5 10.5v.75c0 2.485 2.015 4.5 4.5 4.5s4.5-2.015 4.5-4.5v-.75"
+                  stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 15.75V19.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                <path d="M9.75 19.5h4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            )}
+          </button>
+          <div className={cn(
+            "text-[12px] transition",
+            isRecording ? "text-emerald-300" : isProcessing ? "text-zinc-400" : "text-zinc-500"
+          )}>
+            {micLabel}
+          </div>
+
+          {/* Fallback for unsupported browsers */}
+          {!supported ? (
+            <ActionButton variant="secondary" onClick={handleConfirm} className="w-full mt-2">
+              Mark as spoken
+            </ActionButton>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Captured text — self check */}
+      {hasAttempted && capturedText ? (
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <div className="text-[11px] uppercase tracking-widest text-zinc-600 mb-1">
+              We heard
+            </div>
+            <div className="text-[17px] font-semibold text-zinc-100">
+              {capturedText}
+            </div>
+          </div>
+
+          <div className="text-[12px] text-zinc-500 text-center">
+            Does that match what you said?
+          </div>
+
+          <div className="flex gap-2">
+            <ActionButton variant="ghost" onClick={handleTryAgain} className="flex-1">
+              Try again
+            </ActionButton>
+            <ActionButton onClick={handleConfirm} className="flex-1">
+              {completed ? "Done ✓" : "That's right"}
+            </ActionButton>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Already completed state */}
+      {completed && !hasAttempted ? (
+        <div className="mt-2">
+          <SmallMetaPill accent="emerald">Spoken ✓</SmallMetaPill>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -462,7 +546,6 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
 
   const [built, setBuilt] = useState([]);
   const [revealed, setRevealed] = useState(false);
-
   const remaining = tokens.filter((token) => !built.includes(token.id));
 
   const checkPhrase = () => {
@@ -476,17 +559,13 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
       <div className="text-[15px] font-semibold text-zinc-100 mb-3">
         {block?.prompt?.text || "Build the phrase"}
       </div>
-
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 min-h-[60px] mb-3">
         <div className="flex flex-wrap gap-2">
           {built.length ? (
             built.map((id) => {
               const token = tokens.find((t) => t.id === id);
               return (
-                <button
-                  key={id}
-                  type="button"
-                  data-press
+                <button key={id} type="button" data-press
                   onClick={() => { if (revealed) return; setBuilt((prev) => prev.filter((x) => x !== id)); }}
                   className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-zinc-100"
                 >
@@ -499,13 +578,9 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
           )}
         </div>
       </div>
-
       <div className="flex flex-wrap gap-2 mb-4">
         {remaining.map((token) => (
-          <button
-            key={token.id}
-            type="button"
-            data-press
+          <button key={token.id} type="button" data-press
             onClick={() => { if (revealed) return; setBuilt((prev) => [...prev, token.id]); }}
             className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300"
           >
@@ -513,24 +588,14 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
           </button>
         ))}
       </div>
-
       <div className="flex gap-2">
-        <ActionButton
-          onClick={checkPhrase}
-          disabled={built.length !== tokens.length || revealed}
-          className="flex-1"
-        >
+        <ActionButton onClick={checkPhrase} disabled={built.length !== tokens.length || revealed} className="flex-1">
           {revealed ? "Phrase built ✓" : "Check phrase"}
         </ActionButton>
-        <ActionButton
-          variant="ghost"
-          onClick={() => { if (revealed) return; setBuilt([]); }}
-          className="px-4"
-        >
+        <ActionButton variant="ghost" onClick={() => { if (revealed) return; setBuilt([]); }} className="px-4">
           Reset
         </ActionButton>
       </div>
-
       {revealed ? (
         <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
           <div className="text-[13px] text-emerald-300 font-semibold">{correctAnswer}</div>
@@ -546,9 +611,7 @@ function ConversationBubble({ role, text }) {
     <div className={cn("flex", isAssistant ? "justify-start" : "justify-end")}>
       <div className={cn(
         "max-w-[80%] rounded-[20px] border px-4 py-2.5",
-        isAssistant
-          ? "border-white/10 bg-white/[0.035]"
-          : "border-emerald-400/18 bg-emerald-500/[0.09]"
+        isAssistant ? "border-white/10 bg-white/[0.035]" : "border-emerald-400/18 bg-emerald-500/[0.09]"
       )}>
         <div className="text-[14px] font-medium leading-snug text-zinc-100">{text}</div>
       </div>
@@ -670,12 +733,9 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
   return (
     <div className="flex flex-col gap-3">
       {block?.description ? (
-        <div className="text-[13px] text-zinc-400 leading-snug">
-          {block.description}
-        </div>
+        <div className="text-[13px] text-zinc-400 leading-snug">{block.description}</div>
       ) : null}
 
-      {/* Chat feed */}
       <div className="rounded-[24px] border border-white/10 bg-black/25 overflow-hidden">
         <div
           ref={feedRef}
@@ -684,30 +744,21 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
         >
           {!started ? (
             <div className="flex items-center justify-center" style={{ minHeight: 160 }}>
-              <ActionButton onClick={startConversation}>
-                Start conversation
-              </ActionButton>
+              <ActionButton onClick={startConversation}>Start conversation</ActionButton>
             </div>
           ) : (
             <>
               {history.map((item, index) => (
-                <ConversationBubble
-                  key={`${item.role}-${index}-${item.text}`}
-                  role={item.role}
-                  text={item.text}
-                />
+                <ConversationBubble key={`${item.role}-${index}-${item.text}`} role={item.role} text={item.text} />
               ))}
               {assistantTyping ? <TypingBubble /> : null}
             </>
           )}
         </div>
 
-        {/* Response tray */}
         {started && assistantVisible && !conversationComplete ? (
           <div className="border-t border-white/10 bg-black/25 px-4 py-3">
-            <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">
-              Your response
-            </div>
+            <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Your response</div>
             <div className="grid gap-2">
               {options.map((option) => (
                 <ScenarioTrayOption
@@ -730,7 +781,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
   );
 }
 
-function BlockRenderer({ block, playText, onComplete, completed, onAdvance }) {
+function BlockRenderer({ block, playText, showToast, onComplete, completed, onAdvance }) {
   switch (block?.type) {
     case "learn":
       return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} />;
@@ -739,7 +790,15 @@ function BlockRenderer({ block, playText, onComplete, completed, onAdvance }) {
     case "best_response":
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} />;
     case "speak_self_check":
-      return <SpeakSelfCheckBlock block={block} playText={playText} onComplete={onComplete} completed={completed} />;
+      return (
+        <SpeakSelfCheckBlock
+          block={block}
+          playText={playText}
+          showToast={showToast}
+          onComplete={onComplete}
+          completed={completed}
+        />
+      );
     case "build_phrase":
       return <BuildPhraseBlock block={block} onComplete={onComplete} completed={completed} />;
     case "scenario_chain":
@@ -754,23 +813,15 @@ function BlockRenderer({ block, playText, onComplete, completed, onAdvance }) {
 function LessonCompleteCard({ lessonTitle, onBack, onBrowseCourse }) {
   return (
     <SurfaceCard className="p-5">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-        Lesson complete
-      </div>
-      <div className="mt-2 text-[22px] font-semibold text-zinc-100 leading-snug">
-        {lessonTitle}
-      </div>
+      <div className="text-[11px] uppercase tracking-wide text-zinc-500">Lesson complete</div>
+      <div className="mt-2 text-[22px] font-semibold text-zinc-100 leading-snug">{lessonTitle}</div>
       <div className="mt-3 flex flex-wrap gap-2">
         <SmallMetaPill accent="emerald">✓ Done</SmallMetaPill>
       </div>
       <div className="mt-5 flex flex-col gap-3">
-        <ActionButton onClick={onBack} className="w-full">
-          Back to training
-        </ActionButton>
+        <ActionButton onClick={onBack} className="w-full">Back to training</ActionButton>
         {typeof onBrowseCourse === "function" ? (
-          <ActionButton variant="ghost" onClick={onBrowseCourse} className="w-full">
-            Browse course
-          </ActionButton>
+          <ActionButton variant="ghost" onClick={onBrowseCourse} className="w-full">Browse course</ActionButton>
         ) : null}
       </div>
     </SurfaceCard>
@@ -785,6 +836,7 @@ export default function LearningLessonView({
   lesson,
   lessonIndex,
   playText,
+  showToast,
   onBack,
   onBrowseCourse,
 }) {
@@ -793,29 +845,15 @@ export default function LearningLessonView({
     [lesson]
   );
 
-  // "loading" | "running"
   const [phase, setPhase] = useState("loading");
   const [blockIndex, setBlockIndex] = useState(0);
   const [completedBlockIds, setCompletedBlockIds] = useState({});
 
-  // Reset when lesson changes
   useEffect(() => {
     setPhase("loading");
     setBlockIndex(0);
     setCompletedBlockIds({});
   }, [lesson?.id]);
-
-  // Preload audio fire-and-forget when loading screen mounts
-  useEffect(() => {
-    if (phase !== "loading") return;
-    if (typeof playText !== "function") return;
-    const texts = collectAudioTexts(blocks);
-    // We call preloadText if available — playText is the one we have
-    // so we silently attempt to warm the cache via playText with a
-    // zero-volume trick isn't possible here; just fire preload attempts
-    // via the existing hook's preload path if exposed.
-    // For now this is fire-and-forget — the loading screen timer handles UX.
-  }, [phase, blocks, playText]);
 
   const handleLoadingReady = useCallback(() => {
     setPhase("running");
@@ -836,10 +874,7 @@ export default function LearningLessonView({
     currentBlock?.type === "best_response";
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
 
-  // Pattern note shows only after completing block 1
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
-
-  // Nav bar hidden for choice blocks (feedback panel handles advance)
   const showNavBar = !lessonComplete && !isChoiceBlock;
 
   const advanceBlock = useCallback(() => {
@@ -855,9 +890,7 @@ export default function LearningLessonView({
   }, [currentBlock?.id]);
 
   const lessonDisplayLabel =
-    typeof lessonIndex === "number"
-      ? `Lesson ${lessonIndex + 1}`
-      : "Lesson";
+    typeof lessonIndex === "number" ? `Lesson ${lessonIndex + 1}` : "Lesson";
 
   if (!lesson) {
     return (
@@ -871,7 +904,6 @@ export default function LearningLessonView({
   if (phase === "loading") {
     return (
       <div className="max-w-xl mx-auto h-full flex flex-col">
-        {/* Back button stays visible during loading */}
         <div className="px-4 pt-5">
           <BackCircle onClick={onBack} />
         </div>
@@ -890,16 +922,12 @@ export default function LearningLessonView({
   return (
     <div className="max-w-xl mx-auto px-4 pt-4 pb-6 flex flex-col">
 
-      {/* Minimal header — no meta, just navigation */}
+      {/* Minimal header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center mb-3">
         <BackCircle onClick={onBack} />
-
         <div className="text-center">
-          <div className="text-[15px] font-semibold text-zinc-100">
-            {lessonDisplayLabel}
-          </div>
+          <div className="text-[15px] font-semibold text-zinc-100">{lessonDisplayLabel}</div>
         </div>
-
         {typeof onBrowseCourse === "function" ? (
           <div className="flex items-center justify-end">
             <button
@@ -916,15 +944,13 @@ export default function LearningLessonView({
         )}
       </div>
 
-      {/* Progress bar + block counter */}
+      {/* Progress bar */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <div className="text-[11px] text-zinc-600">
             Block {Math.min(blockIndex + 1, totalBlocks)} / {totalBlocks}
           </div>
-          <div className="text-[11px] text-zinc-600">
-            {progressPct}%
-          </div>
+          <div className="text-[11px] text-zinc-600">{progressPct}%</div>
         </div>
         <div className="h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
           <div
@@ -936,11 +962,7 @@ export default function LearningLessonView({
 
       {/* Block content */}
       {lessonComplete ? (
-        <LessonCompleteCard
-          lessonTitle={lesson.title}
-          onBack={onBack}
-          onBrowseCourse={onBrowseCourse}
-        />
+        <LessonCompleteCard lessonTitle={lesson.title} onBack={onBack} onBrowseCourse={onBrowseCourse} />
       ) : (
         <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
           {!isScenarioBlock ? (
@@ -948,12 +970,12 @@ export default function LearningLessonView({
               {currentBlock?.title || ""}
             </div>
           ) : null}
-
           {currentBlock ? (
             <BlockRenderer
               key={currentBlock.id}
               block={currentBlock}
               playText={playText}
+              showToast={showToast}
               onComplete={markCurrentComplete}
               completed={isCurrentCompleted}
               onAdvance={advanceBlock}
@@ -964,10 +986,8 @@ export default function LearningLessonView({
         </SurfaceCard>
       )}
 
-      {/* Pattern note — only after block 1 complete */}
       {showPatternNote ? <PatternNote notes={lesson?.notes} /> : null}
 
-      {/* Nav bar — hidden for choice blocks */}
       {showNavBar ? (
         <div className="mt-4 flex items-center gap-3">
           <ActionButton
