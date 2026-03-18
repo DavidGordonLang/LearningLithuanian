@@ -141,7 +141,7 @@ function AudioIconButton({ text, playText, label = "Play audio" }) {
   );
 }
 
-// ─── Pattern note — shown once, below the first (learn) block only ────────────
+// ─── Pattern note — shown once, after completing the first (learn) block ──────
 
 function PatternNote({ notes }) {
   if (!notes?.pattern && !Array.isArray(notes?.usage)) return null;
@@ -195,7 +195,6 @@ function LearnBlock({ block, playText, onComplete, completed }) {
               </div>
               <div className="text-[13px] text-zinc-400 mt-1">{item.en}</div>
             </div>
-
             {item.audioText ? (
               <AudioIconButton text={item.audioText} playText={playText} />
             ) : null}
@@ -265,7 +264,6 @@ function ChoiceBlock({ block, playText, onComplete, completed }) {
         <div className="text-[15px] font-semibold text-zinc-100">
           {promptText}
         </div>
-
         {audioText ? (
           <AudioIconButton text={audioText} playText={playText} />
         ) : null}
@@ -313,7 +311,6 @@ function SpeakSelfCheckBlock({ block, playText, onComplete, completed }) {
             <div className="text-[18px] font-semibold text-zinc-100">
               {block.targetText}
             </div>
-
             {block?.audioText ? (
               <AudioIconButton text={block.audioText} playText={playText} />
             ) : null}
@@ -547,12 +544,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
     queueTimeout(async () => {
       setAssistantTyping(false);
       setAssistantVisible(true);
-
-      setHistory((prev) => [
-        ...prev,
-        { role: "other", text: nextStep.text },
-      ]);
-
+      setHistory((prev) => [...prev, { role: "other", text: nextStep.text }]);
       try {
         await playText?.(nextStep.audioText || nextStep.text);
       } catch {}
@@ -570,11 +562,7 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
 
     setSelectedId(option.id);
     setRevealState("revealed");
-
-    setHistory((prev) => [
-      ...prev,
-      { role: "you", text: option.text },
-    ]);
+    setHistory((prev) => [...prev, { role: "you", text: option.text }]);
 
     if (isLastStep) {
       queueTimeout(() => {
@@ -618,7 +606,6 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
                   text={item.text}
                 />
               ))}
-
               {assistantTyping ? <TypingBubble /> : null}
             </>
           )}
@@ -780,19 +767,17 @@ export default function LearningLessonView({
   const lessonComplete = isLastBlock && isCurrentCompleted;
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
 
-  // Only show the pattern note on the very first block (the learn block)
+  // Pattern note shows only after completing the first block (the learn block)
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
 
   useEffect(() => {
     if (!isCurrentCompleted || lessonComplete) return;
-
     const id = window.setTimeout(() => {
       actionBarRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "end",
       });
     }, 180);
-
     return () => window.clearTimeout(id);
   }, [isCurrentCompleted, lessonComplete, currentBlock?.id]);
 
@@ -827,7 +812,6 @@ export default function LearningLessonView({
           </div>
         </div>
 
-        {/* Browse course link — keeps the browse path accessible */}
         {typeof onBrowseCourse === "function" ? (
           <div className="flex items-center justify-end">
             <button
@@ -914,7 +898,7 @@ export default function LearningLessonView({
         )}
       </div>
 
-      {/* Pattern note — only after completing the first block */}
+      {/* Pattern note — only after completing block 1 */}
       {showPatternNote ? (
         <PatternNote notes={lesson?.notes} />
       ) : null}
