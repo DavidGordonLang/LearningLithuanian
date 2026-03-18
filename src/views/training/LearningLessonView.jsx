@@ -57,10 +57,11 @@ function SmallMetaPill({ children, accent = "default" }) {
     <div
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-1",
-        "text-[11px] font-medium tracking-tight"
+        "text-[11px] font-medium tracking-tight",
+        tone
       )}
     >
-      <span className={tone}>{children}</span>
+      {children}
     </div>
   );
 }
@@ -112,7 +113,7 @@ function AudioButton({ text, playText }) {
   );
 }
 
-function LearnBlock({ block, playText }) {
+function LearnBlock({ block, playText, onComplete, completed }) {
   const items = Array.isArray(block?.items) ? block.items : [];
 
   return (
@@ -136,20 +137,30 @@ function LearnBlock({ block, playText }) {
           </div>
         </div>
       ))}
+
+      <div className="pt-2">
+        <ActionButton
+          onClick={onComplete}
+          variant={completed ? "secondary" : "primary"}
+        >
+          {completed ? "Reviewed" : "Continue"}
+        </ActionButton>
+      </div>
     </div>
   );
 }
 
-function ChoiceOption({ option, selected, onClick, showResult }) {
-  const stateClass = showResult
-    ? option.isCorrect
+function ChoiceOption({ option, selected, revealState, onClick }) {
+  const stateClass =
+    revealState === "idle"
+      ? selected
+        ? "border-white/20 bg-white/[0.07] text-zinc-100"
+        : "border-white/10 bg-white/[0.03] text-zinc-300"
+      : option.isCorrect
       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
       : selected
       ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-100"
-      : "border-white/10 bg-white/[0.03] text-zinc-300"
-    : selected
-    ? "border-white/20 bg-white/[0.07] text-zinc-100"
-    : "border-white/10 bg-white/[0.03] text-zinc-300";
+      : "border-white/10 bg-white/[0.03] text-zinc-300";
 
   return (
     <button
@@ -166,21 +177,29 @@ function ChoiceOption({ option, selected, onClick, showResult }) {
   );
 }
 
-function ChoiceBlock({ block, playText }) {
+function ChoiceBlock({ block, playText, onComplete, completed }) {
   const [selectedId, setSelectedId] = useState(null);
-  const [revealed, setRevealed] = useState(false);
+  const [revealState, setRevealState] = useState("idle");
 
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
-  const canCheck = !!selected && !revealed;
 
-  const promptText = block?.prompt?.text || "";
+  const promptText =
+    block?.prompt?.text ||
+    (block?.type === "listen_mcq" ? "Choose the best answer" : "Choose the best answer");
   const audioText = block?.prompt?.audioText || "";
+
+  const handleSelect = (option) => {
+    if (revealState !== "idle") return;
+    setSelectedId(option.id);
+    setRevealState("revealed");
+    onComplete?.();
+  };
 
   return (
     <div>
       <div className="text-[15px] font-semibold text-zinc-100">
-        {promptText || "Choose the best answer"}
+        {promptText}
       </div>
 
       {audioText ? (
@@ -195,42 +214,30 @@ function ChoiceBlock({ block, playText }) {
             key={option.id}
             option={option}
             selected={selectedId === option.id}
-            showResult={revealed}
-            onClick={() => {
-              if (revealed) return;
-              setSelectedId(option.id);
-            }}
+            revealState={revealState}
+            onClick={() => handleSelect(option)}
           />
         ))}
       </div>
 
-      <div className="mt-4 flex gap-3">
-        {!revealed ? (
-          <ActionButton
-            onClick={() => setRevealed(true)}
-            disabled={!canCheck}
-          >
-            Check answer
-          </ActionButton>
-        ) : (
-          <ActionButton variant="secondary" disabled>
-            {selected?.isCorrect ? "Correct" : "Review complete"}
-          </ActionButton>
-        )}
-      </div>
-
-      {revealed && block?.feedback?.correct ? (
+      {revealState === "revealed" && block?.feedback?.correct ? (
         <div className="mt-3 text-[13px] text-zinc-400 leading-snug">
           {block.feedback.correct}
+        </div>
+      ) : null}
+
+      {completed ? (
+        <div className="mt-4">
+          <SmallMetaPill accent={selected?.isCorrect ? "emerald" : "default"}>
+            {selected?.isCorrect ? "Answer reviewed" : "Correct answer shown"}
+          </SmallMetaPill>
         </div>
       ) : null}
     </div>
   );
 }
 
-function SpeakSelfCheckBlock({ block, playText }) {
-  const [done, setDone] = useState(false);
-
+function SpeakSelfCheckBlock({ block, playText, onComplete, completed }) {
   return (
     <div>
       <div className="text-[15px] font-semibold text-zinc-100">
@@ -251,22 +258,22 @@ function SpeakSelfCheckBlock({ block, playText }) {
         ) : null}
 
         <ActionButton
-          variant={done ? "secondary" : "primary"}
-          onClick={() => setDone(true)}
+          variant={completed ? "secondary" : "primary"}
+          onClick={onComplete}
         >
-          {done ? "Spoken" : "I said it out loud"}
+          {completed ? "Spoken" : "I said it out loud"}
         </ActionButton>
       </div>
 
       <div className="mt-3 text-[13px] text-zinc-400 leading-snug">
-        This speaking step is self-check only for now. We are not using strict
-        speech scoring yet.
+        This speaking step is self-check only for now. Current speech capture
+        will be wired in next, before scoring exists.
       </div>
     </div>
   );
 }
 
-function BuildPhraseBlock({ block }) {
+function BuildPhraseBlock({ block, onComplete, completed }) {
   const tokens = Array.isArray(block?.tokens) ? block.tokens : [];
   const sortedTokens = [...tokens].sort((a, b) => a.correctIndex - b.correctIndex);
   const correctAnswer = block?.answerText || sortedTokens.map((t) => t.text).join(" ");
@@ -275,6 +282,12 @@ function BuildPhraseBlock({ block }) {
   const [revealed, setRevealed] = useState(false);
 
   const remaining = tokens.filter((token) => !built.includes(token.id));
+
+  const checkPhrase = () => {
+    if (built.length !== tokens.length) return;
+    setRevealed(true);
+    onComplete?.();
+  };
 
   return (
     <div>
@@ -303,7 +316,9 @@ function BuildPhraseBlock({ block }) {
               );
             })
           ) : (
-            <div className="text-sm text-zinc-500">Tap tokens below to build the phrase.</div>
+            <div className="text-sm text-zinc-500">
+              Tap tokens below to build the phrase.
+            </div>
           )}
         </div>
       </div>
@@ -327,10 +342,10 @@ function BuildPhraseBlock({ block }) {
 
       <div className="mt-4 flex flex-wrap gap-3">
         <ActionButton
-          onClick={() => setRevealed(true)}
-          disabled={built.length !== tokens.length}
+          onClick={checkPhrase}
+          disabled={built.length !== tokens.length || revealed}
         >
-          Check phrase
+          {revealed ? "Phrase reviewed" : "Check phrase"}
         </ActionButton>
 
         <ActionButton
@@ -350,73 +365,83 @@ function BuildPhraseBlock({ block }) {
           <span className="text-zinc-100">{correctAnswer}</span>
         </div>
       ) : null}
-    </div>
-  );
-}
 
-function ScenarioStep({ step, playText, onResolved }) {
-  const [selectedId, setSelectedId] = useState(null);
-  const [revealed, setRevealed] = useState(false);
-
-  const options = Array.isArray(step?.options) ? step.options : [];
-  const selected = options.find((o) => o.id === selectedId) || null;
-
-  useEffect(() => {
-    if (revealed) {
-      onResolved?.();
-    }
-  }, [revealed, onResolved]);
-
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-        {step?.actor || "Step"}
-      </div>
-
-      <div className="mt-2 text-[15px] font-semibold text-zinc-100">
-        {step?.text || ""}
-      </div>
-
-      {step?.audioText ? (
+      {completed ? (
         <div className="mt-3">
-          <AudioButton text={step.audioText} playText={playText} />
+          <SmallMetaPill accent="emerald">Phrase reviewed</SmallMetaPill>
         </div>
       ) : null}
+    </div>
+  );
+}
 
-      <div className="mt-4 grid gap-3">
-        {options.map((option) => (
-          <ChoiceOption
-            key={option.id}
-            option={option}
-            selected={selectedId === option.id}
-            showResult={revealed}
-            onClick={() => {
-              if (revealed) return;
-              setSelectedId(option.id);
-            }}
-          />
-        ))}
-      </div>
+function ConversationBubble({ role, text, audioText, playText }) {
+  const isAssistant = role === "other";
 
-      <div className="mt-4">
-        <ActionButton
-          onClick={() => setRevealed(true)}
-          disabled={!selected || revealed}
-        >
-          {revealed
-            ? selected?.isCorrect
-              ? "Correct"
-              : "Reviewed"
-            : "Check response"}
-        </ActionButton>
+  return (
+    <div className={cn("flex", isAssistant ? "justify-start" : "justify-end")}>
+      <div
+        className={cn(
+          "max-w-[88%] rounded-3xl border px-4 py-3",
+          isAssistant
+            ? "border-white/10 bg-white/[0.03]"
+            : "border-emerald-400/18 bg-emerald-500/[0.08]"
+        )}
+      >
+        <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+          {isAssistant ? "Žodis" : "You"}
+        </div>
+        <div className="mt-2 text-[15px] font-semibold text-zinc-100">{text}</div>
+
+        {audioText ? (
+          <div className="mt-3">
+            <AudioButton text={audioText} playText={playText} />
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
-function ScenarioChainBlock({ block, playText }) {
+function ScenarioChainBlock({ block, playText, onComplete }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
-  const [resolvedMap, setResolvedMap] = useState({});
+  const [stepIndex, setStepIndex] = useState(0);
+  const [selectedId, setSelectedId] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  const step = steps[stepIndex] || null;
+  const options = Array.isArray(step?.options) ? step.options : [];
+  const selected = options.find((o) => o.id === selectedId) || null;
+  const isLastStep = stepIndex >= steps.length - 1;
+
+  const commitStep = (option) => {
+    if (!step) return;
+    if (revealed) return;
+
+    setSelectedId(option.id);
+    setRevealed(true);
+
+    const nextHistory = [
+      ...history,
+      { role: "other", text: step.text, audioText: step.audioText || null },
+      { role: "you", text: option.text, correct: !!option.isCorrect },
+    ];
+    setHistory(nextHistory);
+
+    if (isLastStep) {
+      onComplete?.();
+    }
+  };
+
+  const goNext = () => {
+    if (!revealed) return;
+    if (isLastStep) return;
+
+    setStepIndex((prev) => prev + 1);
+    setSelectedId(null);
+    setRevealed(false);
+  };
 
   return (
     <div>
@@ -426,42 +451,121 @@ function ScenarioChainBlock({ block, playText }) {
         </div>
       ) : null}
 
-      <div className="mt-4 grid gap-3">
-        {steps.map((step) => (
-          <ScenarioStep
-            key={step.id}
-            step={step}
+      <div className="mt-4 space-y-3">
+        {history.map((item, index) => (
+          <ConversationBubble
+            key={`${item.role}-${index}-${item.text}`}
+            role={item.role}
+            text={item.text}
+            audioText={item.audioText}
             playText={playText}
-            onResolved={() =>
-              setResolvedMap((prev) => ({ ...prev, [step.id]: true }))
-            }
           />
         ))}
+
+        {step ? (
+          <ConversationBubble
+            role="other"
+            text={step.text}
+            audioText={step.audioText}
+            playText={playText}
+          />
+        ) : null}
       </div>
 
-      <div className="mt-4">
-        <SmallMetaPill accent="emerald">
-          {Object.keys(resolvedMap).length}/{steps.length} steps reviewed
-        </SmallMetaPill>
-      </div>
+      {step ? (
+        <div className="mt-4 grid gap-3">
+          {options.map((option) => {
+            const optionStateClass =
+              !revealed
+                ? "border-white/10 bg-white/[0.03] text-zinc-300"
+                : option.isCorrect
+                ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
+                : selectedId === option.id
+                ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-100"
+                : "border-white/10 bg-white/[0.03] text-zinc-300";
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                data-press
+                onClick={() => commitStep(option)}
+                disabled={revealed}
+                className={cn(
+                  "w-full text-left rounded-2xl border px-4 py-3 transition",
+                  optionStateClass,
+                  revealed ? "cursor-default" : ""
+                )}
+              >
+                {option.text}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {revealed && !isLastStep ? (
+        <div className="mt-4">
+          <ActionButton onClick={goNext}>Continue conversation</ActionButton>
+        </div>
+      ) : null}
+
+      {revealed && isLastStep ? (
+        <div className="mt-4">
+          <SmallMetaPill accent="emerald">Conversation reviewed</SmallMetaPill>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function BlockRenderer({ block, playText }) {
+function BlockRenderer({ block, playText, onComplete, completed }) {
   switch (block?.type) {
     case "learn":
-      return <LearnBlock block={block} playText={playText} />;
+      return (
+        <LearnBlock
+          block={block}
+          playText={playText}
+          onComplete={onComplete}
+          completed={completed}
+        />
+      );
     case "recognise_mcq":
     case "listen_mcq":
     case "best_response":
-      return <ChoiceBlock block={block} playText={playText} />;
+      return (
+        <ChoiceBlock
+          block={block}
+          playText={playText}
+          onComplete={onComplete}
+          completed={completed}
+        />
+      );
     case "speak_self_check":
-      return <SpeakSelfCheckBlock block={block} playText={playText} />;
+      return (
+        <SpeakSelfCheckBlock
+          block={block}
+          playText={playText}
+          onComplete={onComplete}
+          completed={completed}
+        />
+      );
     case "build_phrase":
-      return <BuildPhraseBlock block={block} />;
+      return (
+        <BuildPhraseBlock
+          block={block}
+          onComplete={onComplete}
+          completed={completed}
+        />
+      );
     case "scenario_chain":
-      return <ScenarioChainBlock block={block} playText={playText} />;
+      return (
+        <ScenarioChainBlock
+          block={block}
+          playText={playText}
+          onComplete={onComplete}
+        />
+      );
     default:
       return (
         <div className="text-sm text-zinc-500">
@@ -469,6 +573,27 @@ function BlockRenderer({ block, playText }) {
         </div>
       );
   }
+}
+
+function LessonCompleteCard({ lessonTitle, onBack }) {
+  return (
+    <SurfaceCard className="p-4">
+      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+        Lesson complete
+      </div>
+      <div className="mt-2 text-[20px] font-semibold text-zinc-100">
+        {lessonTitle}
+      </div>
+      <div className="mt-2 text-[13px] text-zinc-300 leading-snug">
+        First pass complete. Next we’ll make completion persistence, rewards, and
+        phrase save feel real.
+      </div>
+
+      <div className="mt-4 flex gap-3">
+        <ActionButton onClick={onBack}>Back to module</ActionButton>
+      </div>
+    </SurfaceCard>
+  );
 }
 
 export default function LearningLessonView({
@@ -484,9 +609,11 @@ export default function LearningLessonView({
   );
 
   const [blockIndex, setBlockIndex] = useState(0);
+  const [completedBlockIds, setCompletedBlockIds] = useState({});
 
   useEffect(() => {
     setBlockIndex(0);
+    setCompletedBlockIds({});
   }, [lesson?.id]);
 
   const currentBlock = blocks[blockIndex] || null;
@@ -494,6 +621,17 @@ export default function LearningLessonView({
   const progressPct = totalBlocks
     ? Math.round(((blockIndex + 1) / totalBlocks) * 100)
     : 0;
+  const isCurrentCompleted = !!currentBlock?.id && !!completedBlockIds[currentBlock.id];
+  const isLastBlock = blockIndex === totalBlocks - 1;
+  const lessonComplete = isLastBlock && isCurrentCompleted;
+
+  const markCurrentComplete = () => {
+    if (!currentBlock?.id) return;
+    setCompletedBlockIds((prev) => {
+      if (prev[currentBlock.id]) return prev;
+      return { ...prev, [currentBlock.id]: true };
+    });
+  };
 
   if (!lesson) {
     return (
@@ -555,19 +693,29 @@ export default function LearningLessonView({
       </div>
 
       <div className="mt-5">
-        <SurfaceCard className="p-4">
-          <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-            {currentBlock?.title || "Lesson block"}
-          </div>
+        {lessonComplete ? (
+          <LessonCompleteCard lessonTitle={lesson.title} onBack={onBack} />
+        ) : (
+          <SurfaceCard className="p-4">
+            <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+              {currentBlock?.title || "Lesson block"}
+            </div>
 
-          <div className="mt-4">
-            {currentBlock ? (
-              <BlockRenderer block={currentBlock} playText={playText} />
-            ) : (
-              <div className="text-sm text-zinc-500">No block available.</div>
-            )}
-          </div>
-        </SurfaceCard>
+            <div className="mt-4">
+              {currentBlock ? (
+                <BlockRenderer
+                  key={currentBlock.id}
+                  block={currentBlock}
+                  playText={playText}
+                  onComplete={markCurrentComplete}
+                  completed={isCurrentCompleted}
+                />
+              ) : (
+                <div className="text-sm text-zinc-500">No block available.</div>
+              )}
+            </div>
+          </SurfaceCard>
+        )}
       </div>
 
       {lesson?.notes?.pattern || lesson?.notes?.usage?.length ? (
@@ -599,29 +747,28 @@ export default function LearningLessonView({
         </div>
       ) : null}
 
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <ActionButton
-          variant="ghost"
-          onClick={() => setBlockIndex((prev) => Math.max(0, prev - 1))}
-          disabled={blockIndex === 0}
-          className="flex-1"
-        >
-          Back
-        </ActionButton>
-
-        {blockIndex < totalBlocks - 1 ? (
+      {!lessonComplete ? (
+        <div className="mt-5 flex items-center justify-between gap-3">
           <ActionButton
-            onClick={() => setBlockIndex((prev) => Math.min(totalBlocks - 1, prev + 1))}
+            variant="ghost"
+            onClick={() => setBlockIndex((prev) => Math.max(0, prev - 1))}
+            disabled={blockIndex === 0}
+            className="flex-1"
+          >
+            Back
+          </ActionButton>
+
+          <ActionButton
+            onClick={() =>
+              setBlockIndex((prev) => Math.min(totalBlocks - 1, prev + 1))
+            }
+            disabled={!isCurrentCompleted || isLastBlock}
             className="flex-1"
           >
             Next
           </ActionButton>
-        ) : (
-          <ActionButton variant="secondary" disabled className="flex-1">
-            Lesson complete
-          </ActionButton>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <div className="h-6" />
     </div>
