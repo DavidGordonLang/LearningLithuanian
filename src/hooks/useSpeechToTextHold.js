@@ -1,29 +1,27 @@
 // src/hooks/useSpeechToTextHold.js
+//
+// Press-and-hold Speech-to-Text hook (MediaRecorder).
+//
+// CHANGE: Added optional `language` parameter.
+// When provided, the ISO 639-1 language code (e.g. "lt" for Lithuanian)
+// is sent to /api/stt which passes it to Whisper — forcing single-language
+// decoding and preventing misdetection on short phrases.
+// When omitted (default), Whisper auto-detects as before (HomeView behaviour).
+//
+// All other behaviour is unchanged from the original.
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
-/**
- * Press-and-hold Speech-to-Text hook (MediaRecorder).
- *
- * This is a SAFE extraction of the existing working inline STT logic from HomeView.
- * It preserves the same timers, watchdogs, cleanup, and /api/stt contract.
- *
- * Key contract:
- * - startRecording() is called on press (mouseDown / touchStart)
- * - stopRecording() is called on release (mouseUp / touchEnd / mouseLeave)
- * - cancelStt() is called on touchCancel
- *
- * Hook dependencies are injected so HomeView keeps ownership of UI + translation flow.
- */
 export default function useSpeechToTextHold({
   showToast,
   blurTextarea,
-  translating, // HomeView "translating" (translate API in-flight)
-  setInput, // HomeView setInput
-  autoTranslate, // boolean toggle controlled by HomeView (localStorage)
-  onTranslateText, // async (text) => Promise<void>  (HomeView translateText)
-  onSpeechCaptured, // optional: () => void  (e.g. clear duplicate + reset result)
+  translating,
+  setInput,
+  autoTranslate,
+  onTranslateText,
+  onSpeechCaptured,
+  language = null, // NEW: optional ISO 639-1 code e.g. "lt"
 } = {}) {
-  // STT state machine: idle | recording | transcribing | translating
   const [sttState, setSttState] = useState("idle");
   const sttStateRef = useRef("idle");
 
@@ -35,11 +33,10 @@ export default function useSpeechToTextHold({
   const stopGraceRef = useRef(null);
   const processWatchdogRef = useRef(null);
 
-  // Constants (must match previous behaviour)
   const STT_MAX_MS = 15000;
-  const STT_FETCH_TIMEOUT_MS = 20000; // stt should be quick for short clips
-  const STT_PROCESS_WATCHDOG_MS = 30000; // absolute UI recovery cap
-  const STOP_GRACE_MS = 2500; // if onstop never fires, recover
+  const STT_FETCH_TIMEOUT_MS = 20000;
+  const STT_PROCESS_WATCHDOG_MS = 30000;
+  const STOP_GRACE_MS = 2500;
 
   const setSttStateSafe = useCallback((next) => {
     sttStateRef.current = next;
@@ -108,7 +105,6 @@ export default function useSpeechToTextHold({
   );
 
   const cancelStt = useCallback(() => {
-    // immediate cancel / reset
     forceResetStt();
   }, [forceResetStt]);
 
@@ -120,10 +116,8 @@ export default function useSpeechToTextHold({
       if (mr && mr.state !== "inactive") {
         mr.stop();
 
-        // If onstop doesn’t fire, recover anyway (prevents “stuck transcribing”)
         if (!stopGraceRef.current) {
           stopGraceRef.current = setTimeout(() => {
-            // If we’re still not idle, force recover
             if (sttStateRef.current !== "idle") {
               forceResetStt("Speech processing failed");
             }
@@ -144,7 +138,6 @@ export default function useSpeechToTextHold({
       return;
     }
 
-    // No silent early exits: explain why we’re not starting.
     if (sttStateRef.current !== "idle") {
       if (sttStateRef.current === "recording") {
         showToast?.("Already listening");
@@ -169,7 +162,6 @@ export default function useSpeechToTextHold({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-
       chunksRef.current = [];
 
       const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
@@ -191,18 +183,15 @@ export default function useSpeechToTextHold({
       mr.onstop = async () => {
         clearStopTimers();
 
-        // Stop mic tracks immediately
         try {
           const s = streamRef.current;
           if (s) s.getTracks().forEach((t) => t.stop());
         } catch {}
 
-        // If user cancelled and we pre-set idle, ignore work
         if (sttStateRef.current === "idle") {
           return;
         }
 
-        // Start watchdog so we never get stuck
         clearProcessWatchdog();
         processWatchdogRef.current = setTimeout(() => {
           forceResetStt("Speech processing timed out");
@@ -212,7 +201,6 @@ export default function useSpeechToTextHold({
           type: mr.mimeType || "audio/webm",
         });
 
-        // “No audio” case
         if (!blob || blob.size < 1000) {
           forceResetStt("No audio detected");
           return;
@@ -220,7 +208,6 @@ export default function useSpeechToTextHold({
 
         setSttStateSafe("transcribing");
 
-        // Abortable STT fetch
         const controller = new AbortController();
         const t = setTimeout(() => controller.abort(), STT_FETCH_TIMEOUT_MS);
 
@@ -229,6 +216,11 @@ export default function useSpeechToTextHold({
           fd.append("file", blob, "speech.webm");
           fd.append("model", "gpt-4o-mini-transcribe");
           fd.append("max_seconds", "15");
+
+          // NEW: attach language hint if provided
+          if (language) {
+            fd.append("language", language);
+          }
 
           const resp = await fetch("/api/stt", {
             method: "POST",
@@ -251,11 +243,10 @@ export default function useSpeechToTextHold({
 
           const text = String(data?.text || "").trim();
           if (!text) {
-            forceResetStt("Didn’t catch that — try again");
+            forceResetStt("Didn't catch that — try again");
             return;
           }
 
-          // Populate input immediately (same as previous behaviour)
           setInput?.(text);
 
           if (autoTranslate) {
@@ -264,13 +255,11 @@ export default function useSpeechToTextHold({
               await onTranslateText?.(text);
             } catch (err) {
               console.error(err);
-              // translateText already handles its own UI error state; we just recover STT.
             }
             forceResetStt();
             return;
           }
 
-          // Auto-translate OFF
           showToast?.("Speech captured");
           forceResetStt();
         } catch (err) {
@@ -288,7 +277,6 @@ export default function useSpeechToTextHold({
       setSttStateSafe("recording");
       mr.start();
 
-      // Hard stop at 15 seconds
       clearStopTimers();
       stopTimerRef.current = setTimeout(() => {
         try {
@@ -301,7 +289,7 @@ export default function useSpeechToTextHold({
       if (String(err?.name || "").includes("NotAllowed")) {
         showToast?.("Microphone permission denied");
       } else {
-        showToast?.("Couldn’t access microphone");
+        showToast?.("Couldn't access microphone");
       }
     }
   }, [
@@ -310,6 +298,7 @@ export default function useSpeechToTextHold({
     clearProcessWatchdog,
     clearStopTimers,
     forceResetStt,
+    language,
     onSpeechCaptured,
     onTranslateText,
     setInput,
@@ -320,7 +309,6 @@ export default function useSpeechToTextHold({
     translating,
   ]);
 
-  // Safety: never leave mic or timers alive on unmount
   useEffect(() => {
     return () => {
       forceResetStt();
@@ -333,6 +321,6 @@ export default function useSpeechToTextHold({
     startRecording,
     stopRecording,
     cancelStt,
-    forceResetStt, // exposed for emergency/manual reset if HomeView ever needs it
+    forceResetStt,
   };
 }
