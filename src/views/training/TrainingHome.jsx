@@ -178,6 +178,9 @@ export default function TrainingHome({
   onStartMatchPairs,
   onStartExamPrep,
   onStartLearning,
+  learningEntryMode = "continue", // "start" | "continue"
+  learningCurrentTitle,
+  learningCurrentMeta,
 }) {
   const minNeeded = 5;
   const tooFew = (eligibleCount || 0) < minNeeded;
@@ -207,6 +210,21 @@ export default function TrainingHome({
       : null;
 
   const learningDisabled = typeof onStartLearning !== "function";
+  const isStartMode = learningEntryMode === "start";
+
+  const learningHeaderTitle = isStartMode
+    ? "Start learning"
+    : "Continue learning";
+
+  const learningCardTitle =
+    learningCurrentTitle ||
+    (isStartMode
+      ? "Start with Lesson 1.1.1 — Hello and Goodbye"
+      : "Lesson 1.1.1 — Hello and Goodbye");
+
+  const learningCardDesc =
+    learningCurrentMeta ||
+    (isStartMode ? "Begin Section 1 · Module 1.1" : "Section 1 · Module 1.1");
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
@@ -220,12 +238,12 @@ export default function TrainingHome({
       </div>
 
       <div className="mt-6">
-        <SectionLabel eyebrow="Learning" title="Continue learning" />
+        <SectionLabel eyebrow="Learning" title={learningHeaderTitle} />
 
         <div className="mt-3">
           <ModuleCard
-            title="Lesson 1.1.1 — Hello and Goodbye"
-            desc="Section 1 · Module 1.1"
+            title={learningCardTitle}
+            desc={learningCardDesc}
             icon="📚"
             large
             accent="learning"
