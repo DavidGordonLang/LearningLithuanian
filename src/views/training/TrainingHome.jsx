@@ -178,6 +178,7 @@ export default function TrainingHome({
   onStartMatchPairs,
   onStartExamPrep,
   onStartLearning,
+  onBrowseCourse,
   learningEntryMode = "continue", // "start" | "continue"
   learningCurrentTitle,
   learningCurrentMeta,
@@ -248,9 +249,18 @@ export default function TrainingHome({
             large
             accent="learning"
             disabled={learningDisabled}
-            onClick={onStartLearning}
-            hint={learningDisabled ? "Learning path unavailable." : null}
+            onClick={learningDisabled ? (typeof onBrowseCourse === "function" ? onBrowseCourse : undefined) : onStartLearning}
+            hint={null}
           />
+          {learningDisabled && typeof onBrowseCourse === "function" ? (
+            <button
+              type="button"
+              onClick={onBrowseCourse}
+              className="mt-2 w-full text-center text-[12px] text-zinc-500 hover:text-zinc-300 transition py-1"
+            >
+              Browse course to review any lesson →
+            </button>
+          ) : null}
         </div>
       </div>
 
