@@ -302,9 +302,9 @@ const section1 = {
               title: "Listen and choose",
               prompt: { text: "Atsiprašau", audioText: "Atsiprašau" },
               options: [
-                { id: "a", text: "Ačiū", isCorrect: false },
-                { id: "b", text: "Atsiprašau", isCorrect: true },
-                { id: "c", text: "Prašau", isCorrect: false },
+                { id: "a", text: "Thank you", isCorrect: false },
+                { id: "b", text: "Sorry / Excuse me", isCorrect: true },
+                { id: "c", text: "Please / Here you go", isCorrect: false },
               ],
             },
             // Replaced scenario_chain (narrator/English steps) with two
