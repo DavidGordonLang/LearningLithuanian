@@ -766,7 +766,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
 
 // ─── Lesson complete card ─────────────────────────────────────────────────────
 
-function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onNextLesson, nextLessonTitle }) {
+function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onNextLesson, nextLessonLabel }) {
   return (
     <SurfaceCard className="p-5">
       <div className="text-[11px] uppercase tracking-wide text-zinc-500">Lesson complete</div>
@@ -780,7 +780,7 @@ function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onN
         <div className="mt-5 space-y-3">
           <div className="text-[12px] text-zinc-500">What would you like to do next?</div>
           <ActionButton onClick={onNextLesson} className="w-full">
-            {nextLessonTitle ? `Start: ${nextLessonTitle} →` : "Start next lesson →"}
+            {nextLessonLabel ? `Start: ${nextLessonLabel} →` : "Start next lesson →"}
           </ActionButton>
           <ActionButton variant="ghost" onClick={onBack} className="w-full">
             Back to training
@@ -803,7 +803,7 @@ function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onN
 export default function LearningLessonView({
   section, module, lesson, lessonIndex, playText, showToast,
   userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
-  nextLessonTitle,
+  nextLessonLabel,
   loadingMode = "auto", // "auto" = first entry, "preview" = came from lesson complete
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
@@ -911,7 +911,7 @@ export default function LearningLessonView({
           onBack={onBack}
           onBrowseCourse={onBrowseCourse}
           onNextLesson={typeof onNextLesson === "function" ? onNextLesson : null}
-          nextLessonTitle={nextLessonTitle}
+          nextLessonLabel={nextLessonLabel}
         />
       ) : (
         <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
