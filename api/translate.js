@@ -2,7 +2,8 @@
 //
 // Translation endpoint (EN <-> LT) used by the Home view.
 // IMPORTANT: We keep the existing translation system prompt intact to avoid translation drift.
-// We generate IPA via a SECOND small call, so the core translator behaviour stays stable.
+// IPA is now generated in the SAME call as translation (merged into the JSON schema).
+// This halves latency vs. the previous two-call sequential approach.
 //
 // Returns (client contract):
 //  - lt
@@ -69,6 +70,8 @@ export default async function handler(req, res) {
   // ---------------------------------------------------------------------------
   // SYSTEM PROMPT — TRANSLATE ONLY (NO TEACHING / NO ENRICHMENT)
   // NOTE: This is intentionally preserved verbatim to prevent drift.
+  // IPA has been added as a fifth output key — this does not affect translation
+  // behaviour, only adds an additional output field.
   // ---------------------------------------------------------------------------
   const systemPrompt = `
 You are a translation engine for English speakers learning Lithuanian.
@@ -100,6 +103,7 @@ Exact shape required:
 {
   "lt": "Lithuanian phrase",
   "phonetics": "English-style pronunciation (hyphenated syllables)",
+  "phonetics_ipa": "IPA transcription of the Lithuanian phrase",
   "en_literal": "Literal English meaning",
   "en_natural": "Natural English meaning"
 }
@@ -112,7 +116,7 @@ Rules:
 
 For LITHUANIAN input:
 - "lt" MUST be the original Lithuanian input unchanged.
-- "phonetics" MUST still be provided for that Lithuanian.
+- "phonetics" and "phonetics_ipa" MUST still be provided for that Lithuanian.
 - "en_literal" and "en_natural" must both be correct English.
 
 ────────────────────────────────
@@ -122,11 +126,20 @@ phonetics:
 - English-reader friendly, hyphenated syllables.
 - No IPA.
 - No Lithuanian letters/diacritics in phonetics.
-- Must remain faithful to Lithuanian sounds and endings (don’t drop endings).
+- Must remain faithful to Lithuanian sounds and endings (don't drop endings).
 
 Examples:
 - Labas → lah-bahs
 - Laba diena → lah-bah dyeh-nah
+
+────────────────────────────────
+PHONETICS_IPA (STANDARD IPA)
+────────────────────────────────
+phonetics_ipa:
+- Standard IPA symbols only.
+- No slashes / /. No brackets [ ].
+- Include spaces between words as in the original phrase.
+- Must be a non-empty string.
 
 ────────────────────────────────
 ENGLISH OUTPUT RULES
@@ -155,24 +168,7 @@ ENGLISH OUTPUT RULES
   }
 
   // ---------------------------------------------------------------------------
-  // IPA PROMPT (SECOND CALL — DOES NOT TOUCH THE TRANSLATION PROMPT)
-  // ---------------------------------------------------------------------------
-  const ipaPrompt = `
-You are generating Lithuanian IPA for learners.
-
-Return ONE valid JSON object and NOTHING else:
-{ "ipa": "<IPA for the exact Lithuanian input>" }
-
-Rules:
-- The input will be Lithuanian. Do NOT translate. Do NOT rewrite.
-- Output ONLY IPA symbols (no slashes / /, no brackets [ ]).
-- Keep the whole phrase (include spaces between words).
-- No extra keys. No commentary.
-- The value must be a non-empty string.
-`.trim();
-
-  // ---------------------------------------------------------------------------
-  // CALL OPENAI (TRANSLATION)
+  // CALL OPENAI (TRANSLATION + IPA — SINGLE CALL)
   // ---------------------------------------------------------------------------
   try {
     const response = await callOpenAIChat({
@@ -184,7 +180,7 @@ Rules:
         { role: "user", content: String(text).trim() },
       ],
       temperature: 0.15,
-      max_tokens: 200,
+      max_tokens: 280,
     });
 
     if (!response.ok) {
@@ -206,6 +202,7 @@ Rules:
 
     const lt = String(payload?.lt || "").trim();
     const phonetics = String(payload?.phonetics || "").trim();
+    const phoneticsIpa = String(payload?.phonetics_ipa || "").trim();
     const enLiteral = String(payload?.en_literal || "").trim();
     const enNatural = String(payload?.en_natural || "").trim();
 
@@ -214,41 +211,8 @@ Rules:
       return res.status(500).json({ error: "Incomplete translation" });
     }
 
-    // -----------------------------------------------------------------------
-    // CALL OPENAI (IPA) — best-effort, with fallback
-    // -----------------------------------------------------------------------
-    let phoneticsIpa = "";
-    try {
-      const ipaResp = await callOpenAIChat({
-        apiKey,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: ipaPrompt },
-          { role: "user", content: lt },
-        ],
-        temperature: 0,
-        max_tokens: 120,
-      });
-
-      if (ipaResp.ok) {
-        const ipaJson = await ipaResp.json();
-        const ipaRaw = ipaJson?.choices?.[0]?.message?.content;
-
-        let ipaPayload;
-        try {
-          ipaPayload = typeof ipaRaw === "string" ? JSON.parse(ipaRaw) : ipaRaw;
-        } catch {
-          ipaPayload = null;
-        }
-
-        phoneticsIpa = String(ipaPayload?.ipa || "").trim();
-      } else {
-        const errText = await ipaResp.text();
-        console.warn("IPA OpenAI API error:", ipaResp.status, errText);
-      }
-    } catch (e) {
-      console.warn("IPA generation failed:", e);
-    }
+    // phoneticsIpa is best-effort — not included in the completeness check
+    // so a missing or empty IPA never causes the whole translation to fail.
 
     return res.status(200).json({
       lt,
