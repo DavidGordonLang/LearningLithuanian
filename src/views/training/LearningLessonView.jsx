@@ -419,23 +419,51 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
   );
 }
 
-// ─── Build phrase — fixed token positions, ghost placeholder ──────────────────
+// ─── Build phrase ─────────────────────────────────────────────────────────────
+//
+// All tokens are shown and tappable — including distractors (isDistractor:true).
+// "Check phrase" enables once the user has placed exactly as many tokens as
+// the correct answer requires (answerTokens.length).
+// On check: compare built text against correctAnswer.
+//   Correct → green, mark complete.
+//   Wrong   → red, show correct answer, allow retry.
+// Tapping a built token removes it back to the source row (ghost stays).
 
 function BuildPhraseBlock({ block, onComplete, completed }) {
   const tokens = Array.isArray(block?.tokens) ? block.tokens : [];
-  const sortedTokens = [...tokens].sort((a, b) => a.correctIndex - b.correctIndex);
-  const correctAnswer = block?.answerText || sortedTokens.map((t) => t.text).join(" ");
 
-  const [built, setBuilt] = useState([]); // ordered list of token ids in answer area
+  const answerTokens = tokens
+    .filter((t) => !t.isDistractor)
+    .sort((a, b) => a.correctIndex - b.correctIndex);
+
+  const correctAnswer = block?.answerText || answerTokens.map((t) => t.text).join(" ");
+  const requiredLength = answerTokens.length;
+
+  const [built, setBuilt] = useState([]);
+  const [checkState, setCheckState] = useState("idle"); // "idle" | "correct" | "wrong"
   const [revealed, setRevealed] = useState(false);
 
-  // Which token ids have been placed into the answer area
   const placedIds = new Set(built);
+  const isReady = built.length === requiredLength && requiredLength > 0;
 
   const checkPhrase = () => {
-    if (built.length !== tokens.length) return;
-    setRevealed(true);
-    onComplete?.();
+    if (!isReady || revealed) return;
+    const builtText = built
+      .map((id) => tokens.find((t) => t.id === id)?.text || "")
+      .join(" ")
+      .trim();
+    if (builtText === correctAnswer.trim()) {
+      setCheckState("correct");
+      setRevealed(true);
+      onComplete?.();
+    } else {
+      setCheckState("wrong");
+    }
+  };
+
+  const handleRetry = () => {
+    setBuilt([]);
+    setCheckState("idle");
   };
 
   return (
@@ -443,15 +471,27 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
       <div className="text-[15px] font-semibold text-zinc-100 mb-3">{block?.prompt?.text || "Build the phrase"}</div>
 
       {/* Answer area */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 min-h-[60px] mb-4">
+      <div className={cn(
+        "rounded-2xl border px-4 py-4 min-h-[60px] mb-4 transition",
+        checkState === "correct" ? "border-emerald-400/20 bg-emerald-500/[0.06]"
+        : checkState === "wrong" ? "border-rose-400/20 bg-rose-500/[0.05]"
+        : "border-white/10 bg-white/[0.03]"
+      )}>
         <div className="flex flex-wrap gap-2">
           {built.length ? (
             built.map((id) => {
               const token = tokens.find((t) => t.id === id);
               return (
                 <button key={id} type="button" data-press
-                  onClick={() => { if (revealed) return; setBuilt((prev) => prev.filter((x) => x !== id)); }}
-                  className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-zinc-100 transition hover:bg-white/[0.09]">
+                  onClick={() => { if (revealed) return; setBuilt((prev) => prev.filter((x) => x !== id)); handleRetry(); }}
+                  className={cn(
+                    "rounded-xl border px-3 py-2 text-sm transition",
+                    checkState === "correct"
+                      ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100 cursor-default"
+                      : checkState === "wrong"
+                      ? "border-rose-400/20 bg-rose-500/[0.10] text-rose-200"
+                      : "border-white/10 bg-white/[0.06] text-zinc-100 hover:bg-white/[0.09]"
+                  )}>
                   {token?.text}
                 </button>
               );
@@ -462,12 +502,11 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
         </div>
       </div>
 
-      {/* Source tokens — fixed layout, ghost placeholder when placed */}
+      {/* Source tokens — ghost placeholder keeps positions stable */}
       <div className="flex flex-wrap gap-2 mb-4">
         {tokens.map((token) => {
           const isPlaced = placedIds.has(token.id);
           return isPlaced ? (
-            // Ghost placeholder — same size, invisible, keeps layout stable
             <div key={token.id}
               className="rounded-xl border border-white/[0.04] px-3 py-2 text-sm text-transparent select-none pointer-events-none"
               aria-hidden="true">
@@ -475,7 +514,11 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
             </div>
           ) : (
             <button key={token.id} type="button" data-press
-              onClick={() => { if (revealed) return; setBuilt((prev) => [...prev, token.id]); }}
+              onClick={() => {
+                if (revealed) return;
+                setBuilt((prev) => [...prev, token.id]);
+                if (checkState !== "idle") setCheckState("idle");
+              }}
               className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:border-white/20">
               {token.text}
             </button>
@@ -483,18 +526,32 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
         })}
       </div>
 
-      <div className="flex gap-2">
-        <ActionButton onClick={checkPhrase} disabled={built.length !== tokens.length || revealed} className="flex-1">
-          {revealed ? "Phrase built ✓" : "Check phrase"}
-        </ActionButton>
-        <ActionButton variant="ghost" onClick={() => { if (revealed) return; setBuilt([]); }} className="px-4">Reset</ActionButton>
-      </div>
+      {/* Feedback */}
+      {checkState === "wrong" ? (
+        <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <div className="text-[11px] uppercase tracking-widest text-zinc-600 mb-1">Correct phrase</div>
+          <div className="text-[14px] font-semibold text-zinc-200">{correctAnswer}</div>
+        </div>
+      ) : null}
 
-      {revealed ? (
-        <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
+      {checkState === "correct" ? (
+        <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
           <div className="text-[13px] text-emerald-300 font-semibold">{correctAnswer}</div>
         </div>
       ) : null}
+
+      <div className="flex gap-2">
+        {checkState === "wrong" ? (
+          <ActionButton onClick={handleRetry} variant="secondary" className="flex-1">Try again</ActionButton>
+        ) : (
+          <ActionButton onClick={checkPhrase} disabled={!isReady || revealed} className="flex-1">
+            {revealed ? "Phrase built ✓" : "Check phrase"}
+          </ActionButton>
+        )}
+        {!revealed ? (
+          <ActionButton variant="ghost" onClick={() => { setBuilt([]); setCheckState("idle"); }} className="px-4">Reset</ActionButton>
+        ) : null}
+      </div>
     </div>
   );
 }
