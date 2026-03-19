@@ -1,5 +1,5 @@
 // src/views/TrainingView.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
 import LearningHome from "./training/LearningHome";
 import LearningSectionView from "./training/LearningSectionView";
