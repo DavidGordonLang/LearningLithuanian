@@ -13,7 +13,37 @@ import ExamReadingTaskView from "./training/ExamReadingTaskView";
 import ExamListeningTaskView from "./training/ExamListeningTaskView";
 import ExamWritingTaskView from "./training/ExamWritingTaskView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
+import { useGameStore } from "../stores/gameStore";
+import { useAuthStore } from "../stores/authStore";
 import section1 from "../content/learning/section1";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Walk all sections/modules/lessons to find the first lesson that is not
+// yet in completedLessonIds. Returns { section, module, lesson, lessonIndex }
+// or null if everything is complete.
+function findNextLesson(sections, completedLessonIds) {
+  const completed = new Set(Array.isArray(completedLessonIds) ? completedLessonIds : []);
+
+  for (const section of sections) {
+    const modules = Array.isArray(section?.modules) ? section.modules : [];
+    for (const module of modules) {
+      if (module?.status !== "active") continue;
+      const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
+      for (let i = 0; i < lessons.length; i++) {
+        const lesson = lessons[i];
+        if (!lesson?.id) continue;
+        if (!completed.has(lesson.id)) {
+          return { section, module, lesson, lessonIndex: i };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TrainingView({
   T,
@@ -27,90 +57,85 @@ export default function TrainingView({
   const [focus, setFocus] = useTrainingFocus();
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
-
-  // Track where the lesson's back button should return to
-  // "home" = came from TrainingHome card (default)
-  // "learningModule" = came from browse path
   const [lessonReturnScreen, setLessonReturnScreen] = useState("home");
+
+  const user = useAuthStore((s) => s.user);
+  const completedLessonIds = useGameStore((s) => s.completedLessonIds);
 
   const counts = useMemo(() => {
     const list = Array.isArray(rows) ? rows : [];
     const sheet = (r) => String(r?.Sheet || "Phrases");
-
     const phrases = list.filter((r) => {
       const s = sheet(r);
       return s === "Phrases" || s === "Questions";
     }).length;
-
     const words = list.filter((r) => sheet(r) === "Words").length;
     const numbers = list.filter((r) => sheet(r) === "Numbers").length;
-
-    return {
-      phrases,
-      words,
-      numbers,
-      all: phrases + words,
-    };
+    return { phrases, words, numbers, all: phrases + words };
   }, [rows]);
 
   const eligibleCount = useMemo(() => {
     const list = Array.isArray(rows) ? rows : [];
     const s = (r) => String(r?.Sheet || "Phrases");
-
     const matchFocus = (r) => {
-      if (focus === "all") {
-        return s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words";
-      }
-      if (focus === "phrases") {
-        return s(r) === "Phrases" || s(r) === "Questions";
-      }
+      if (focus === "all") return s(r) === "Phrases" || s(r) === "Questions" || s(r) === "Words";
+      if (focus === "phrases") return s(r) === "Phrases" || s(r) === "Questions";
       if (focus === "words") return s(r) === "Words";
       if (focus === "numbers") return s(r) === "Numbers";
       return s(r) === "Phrases" || s(r) === "Questions";
     };
-
     return list.filter(matchFocus).length;
   }, [rows, focus]);
 
-  const learningSection = section1;
+  // All content sections (only section1 right now, expand later)
+  const allSections = useMemo(() => [section1], []);
+
+  // Find the next uncompleted lesson — this drives the "Continue" card
+  const nextLesson = useMemo(
+    () => findNextLesson(allSections, completedLessonIds),
+    [allSections, completedLessonIds]
+  );
+
+  const learningSection = nextLesson?.section || section1;
 
   const learningModule = useMemo(() => {
-    const modules = Array.isArray(learningSection?.modules)
-      ? learningSection.modules
-      : [];
-
-    if (selectedModuleId) {
-      return modules.find((m) => m?.id === selectedModuleId) || null;
-    }
-
+    const modules = Array.isArray(learningSection?.modules) ? learningSection.modules : [];
+    if (selectedModuleId) return modules.find((m) => m?.id === selectedModuleId) || null;
+    // Use the next lesson's module, or fall back to first active
+    if (nextLesson?.module) return nextLesson.module;
     return modules.find((m) => m?.status === "active") || modules[0] || null;
-  }, [learningSection, selectedModuleId]);
+  }, [learningSection, selectedModuleId, nextLesson]);
 
   const learningLesson = useMemo(() => {
-    const lessons = Array.isArray(learningModule?.lessons)
-      ? learningModule.lessons
-      : [];
-
-    if (selectedLessonId) {
-      return lessons.find((l) => l?.id === selectedLessonId) || null;
-    }
-
+    const lessons = Array.isArray(learningModule?.lessons) ? learningModule.lessons : [];
+    if (selectedLessonId) return lessons.find((l) => l?.id === selectedLessonId) || null;
+    // Use the next uncompleted lesson
+    if (nextLesson?.lesson) return nextLesson.lesson;
     return lessons[0] || null;
-  }, [learningModule, selectedLessonId]);
+  }, [learningModule, selectedLessonId, nextLesson]);
 
-  // Derive the 0-based index of the current lesson within its module
-  // so LearningLessonView can display "Lesson 1", "Lesson 2" etc.
   const learningLessonIndex = useMemo(() => {
-    const lessons = Array.isArray(learningModule?.lessons)
-      ? learningModule.lessons
-      : [];
-
+    const lessons = Array.isArray(learningModule?.lessons) ? learningModule.lessons : [];
     if (!learningLesson) return 0;
+    // Use pre-computed index if available
+    if (nextLesson?.lesson?.id === learningLesson.id) return nextLesson.lessonIndex;
     const idx = lessons.findIndex((l) => l?.id === learningLesson.id);
     return idx >= 0 ? idx : 0;
-  }, [learningModule, learningLesson]);
+  }, [learningModule, learningLesson, nextLesson]);
 
-  // ─── Browse path ────────────────────────────────────────────────────────────
+  // Derive label and meta for the TrainingHome "Continue" card
+  const hasAnyCompleted = completedLessonIds && completedLessonIds.length > 0;
+  const learningEntryMode = hasAnyCompleted ? "continue" : "start";
+
+  const learningCardTitle = nextLesson
+    ? `Lesson ${learningLessonIndex + 1} — ${nextLesson.lesson.title}`
+    : "All lessons complete";
+
+  const learningCardMeta = nextLesson
+    ? `Section ${nextLesson.section.code} · Module ${nextLesson.module.code}`
+    : "Well done!";
+
+  // ─── Browse path ─────────────────────────────────────────────────────────────
 
   if (screen === "learningHome") {
     return (
@@ -152,7 +177,7 @@ export default function TrainingView({
     );
   }
 
-  // ─── Lesson ─────────────────────────────────────────────────────────────────
+  // ─── Lesson ───────────────────────────────────────────────────────────────────
 
   if (screen === "learningLesson") {
     return (
@@ -163,50 +188,44 @@ export default function TrainingView({
         lessonIndex={learningLessonIndex}
         playText={playText}
         showToast={showToast}
-        onBack={() => setScreen(lessonReturnScreen)}
+        userId={user?.id}
+        onBack={() => {
+          setSelectedLessonId(null);
+          setScreen(lessonReturnScreen);
+        }}
         onBrowseCourse={() => setScreen("learningHome")}
+        onLessonComplete={() => {
+          // After completion, clear selected so next entry uses the updated
+          // "next lesson" derived from gameStore
+          setSelectedLessonId(null);
+          setSelectedModuleId(null);
+        }}
+        onNextLesson={nextLesson && nextLesson.lesson?.id !== learningLesson?.id ? () => {
+          // Clear selection so the view re-derives the next uncompleted lesson
+          setSelectedLessonId(null);
+          setSelectedModuleId(null);
+          setLessonReturnScreen("home");
+          setScreen("learningLesson");
+        } : null}
       />
     );
   }
 
-  // ─── Practice modes ─────────────────────────────────────────────────────────
+  // ─── Practice modes ───────────────────────────────────────────────────────────
 
   if (screen === "recallFlip") {
-    return (
-      <RecallFlipView
-        rows={rows}
-        focus={focus}
-        playText={playText}
-        onBack={() => setScreen("home")}
-      />
-    );
+    return <RecallFlipView rows={rows} focus={focus} playText={playText} onBack={() => setScreen("home")} />;
   }
 
   if (screen === "blindRecall") {
-    return (
-      <BlindRecallView
-        rows={rows}
-        focus={focus}
-        playText={playText}
-        showToast={showToast}
-        onBack={() => setScreen("home")}
-      />
-    );
+    return <BlindRecallView rows={rows} focus={focus} playText={playText} showToast={showToast} onBack={() => setScreen("home")} />;
   }
 
   if (screen === "matchPairs") {
-    return (
-      <MatchPairsView
-        rows={rows}
-        focus={focus}
-        playText={playText}
-        preloadText={preloadText}
-        onBack={() => setScreen("home")}
-      />
-    );
+    return <MatchPairsView rows={rows} focus={focus} playText={playText} preloadText={preloadText} onBack={() => setScreen("home")} />;
   }
 
-  // ─── Exam prep ───────────────────────────────────────────────────────────────
+  // ─── Exam prep ────────────────────────────────────────────────────────────────
 
   if (screen === "examPrepHome") {
     return (
@@ -219,9 +238,7 @@ export default function TrainingView({
     );
   }
 
-  if (screen === "examReading") {
-    return <ExamReadingTaskView onBack={() => setScreen("examPrepHome")} />;
-  }
+  if (screen === "examReading") return <ExamReadingTaskView onBack={() => setScreen("examPrepHome")} />;
 
   if (screen === "examListening") {
     return (
@@ -235,11 +252,9 @@ export default function TrainingView({
     );
   }
 
-  if (screen === "examWriting") {
-    return <ExamWritingTaskView onBack={() => setScreen("examPrepHome")} />;
-  }
+  if (screen === "examWriting") return <ExamWritingTaskView onBack={() => setScreen("examPrepHome")} />;
 
-  // ─── Training home (default) ─────────────────────────────────────────────────
+  // ─── Training home ────────────────────────────────────────────────────────────
 
   return (
     <TrainingHome
@@ -248,12 +263,15 @@ export default function TrainingView({
       setFocus={setFocus}
       counts={counts}
       eligibleCount={eligibleCount}
-      onStartLearning={() => {
+      learningEntryMode={learningEntryMode}
+      learningCurrentTitle={learningCardTitle}
+      learningCurrentMeta={learningCardMeta}
+      onStartLearning={nextLesson ? () => {
         setSelectedModuleId(null);
         setSelectedLessonId(null);
         setLessonReturnScreen("home");
         setScreen("learningLesson");
-      }}
+      } : null}
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
       onStartMatchPairs={() => setScreen("matchPairs")}
