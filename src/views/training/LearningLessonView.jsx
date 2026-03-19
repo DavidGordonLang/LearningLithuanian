@@ -516,7 +516,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
 //   Wrong   → red, show correct answer, allow retry.
 // Tapping a built token removes it back to the source row (ghost stays).
 
-function BuildPhraseBlock({ block, onComplete, completed }) {
+function BuildPhraseBlock({ block, playText, onComplete, completed }) {
   const tokens = Array.isArray(block?.tokens) ? block.tokens : [];
 
   const answerTokens = tokens
@@ -542,6 +542,8 @@ function BuildPhraseBlock({ block, onComplete, completed }) {
     if (builtText === correctAnswer.trim()) {
       setCheckState("correct");
       setRevealed(true);
+      // Play the phrase audio on correct answer
+      if (playText) { try { playText(correctAnswer.trim()); } catch {} }
       onComplete?.();
     } else {
       setCheckState("wrong");
@@ -816,6 +818,190 @@ function ScenarioCompletePanel({ onContinue }) {
   );
 }
 
+
+// ─── Word match block ─────────────────────────────────────────────────────────
+//
+// Two columns: Lithuanian (left) and English (right), both shuffled.
+// Tap one from each side to attempt a pair.
+// Correct match: plays audio, both cards lock green.
+// Wrong match: brief red flash, both deselect.
+// Complete when all pairs matched.
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function WordMatchBlock({ block, playText, onComplete, completed }) {
+  const pairs = Array.isArray(block?.pairs) ? block.pairs : [];
+
+  // Shuffle both columns independently on mount
+  const [ltOrder] = React.useState(() => shuffle(pairs.map((p) => p.id)));
+  const [enOrder] = React.useState(() => shuffle(pairs.map((p) => p.id)));
+
+  const [selectedLt, setSelectedLt] = useState(null); // pair id
+  const [selectedEn, setSelectedEn] = useState(null); // pair id
+  const [matched, setMatched] = useState(new Set());   // matched pair ids
+  const [wrongFlash, setWrongFlash] = useState(null);  // "lt-{id}" | "en-{id}" | null
+  const [flashTimer, setFlashTimer] = useState(null);
+
+  const allMatched = matched.size === pairs.length;
+
+  // Fire onComplete when all pairs matched
+  React.useEffect(() => {
+    if (allMatched && pairs.length > 0) {
+      onComplete?.();
+    }
+  }, [allMatched, pairs.length, onComplete]);
+
+  const clearFlash = () => {
+    setWrongFlash(null);
+    if (flashTimer) { clearTimeout(flashTimer); setFlashTimer(null); }
+  };
+
+  const handleLtTap = (id) => {
+    if (matched.has(id)) return;
+    clearFlash();
+    if (selectedLt === id) { setSelectedLt(null); return; }
+    setSelectedLt(id);
+    if (selectedEn !== null) checkPair(id, selectedEn);
+  };
+
+  const handleEnTap = (id) => {
+    if (matched.has(id)) return;
+    clearFlash();
+    if (selectedEn === id) { setSelectedEn(null); return; }
+    setSelectedEn(id);
+    if (selectedLt !== null) checkPair(selectedLt, id);
+  };
+
+  const checkPair = (ltId, enId) => {
+    if (ltId === enId) {
+      // Correct match
+      const pair = pairs.find((p) => p.id === ltId);
+      if (pair?.audioText || pair?.lt) {
+        try { playText?.(pair.audioText || pair.lt); } catch {}
+      }
+      setMatched((prev) => new Set([...prev, ltId]));
+      setSelectedLt(null);
+      setSelectedEn(null);
+    } else {
+      // Wrong — flash red briefly then clear
+      setWrongFlash({ lt: ltId, en: enId });
+      const t = setTimeout(() => {
+        setSelectedLt(null);
+        setSelectedEn(null);
+        setWrongFlash(null);
+        setFlashTimer(null);
+      }, 500);
+      setFlashTimer(t);
+    }
+  };
+
+  const getLtState = (id) => {
+    if (matched.has(id)) return "matched";
+    if (wrongFlash?.lt === id) return "wrong";
+    if (selectedLt === id) return "selected";
+    return "idle";
+  };
+
+  const getEnState = (id) => {
+    if (matched.has(id)) return "matched";
+    if (wrongFlash?.en === id) return "wrong";
+    if (selectedEn === id) return "selected";
+    return "idle";
+  };
+
+  const cardClass = (state) => {
+    switch (state) {
+      case "matched":  return "border-emerald-400/25 bg-emerald-500/[0.10] text-emerald-200 cursor-default";
+      case "wrong":    return "border-rose-400/25 bg-rose-500/[0.10] text-rose-200";
+      case "selected": return "border-emerald-400/30 bg-emerald-500/[0.08] text-zinc-100 scale-[1.02]";
+      default:         return "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]";
+    }
+  };
+
+  if (completed && allMatched) {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
+        <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
+        <div className="text-[13px] text-emerald-200 font-medium">All pairs matched</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="text-[13px] text-zinc-400 mb-4 leading-snug">
+        Tap a word on each side to match the pair.
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {/* Lithuanian column */}
+        <div className="flex flex-col gap-2">
+          {ltOrder.map((id) => {
+            const pair = pairs.find((p) => p.id === id);
+            if (!pair) return null;
+            const state = getLtState(id);
+            return (
+              <button
+                key={`lt-${id}`}
+                type="button"
+                data-press
+                disabled={state === "matched"}
+                onClick={() => handleLtTap(id)}
+                className={cn(
+                  "rounded-2xl border px-3 py-3 text-[14px] font-semibold text-left transition-all",
+                  cardClass(state)
+                )}
+              >
+                {state === "matched" ? (
+                  <span className="opacity-60">{pair.lt}</span>
+                ) : pair.lt}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* English column */}
+        <div className="flex flex-col gap-2">
+          {enOrder.map((id) => {
+            const pair = pairs.find((p) => p.id === id);
+            if (!pair) return null;
+            const state = getEnState(id);
+            return (
+              <button
+                key={`en-${id}`}
+                type="button"
+                data-press
+                disabled={state === "matched"}
+                onClick={() => handleEnTap(id)}
+                className={cn(
+                  "rounded-2xl border px-3 py-3 text-[13px] text-left transition-all",
+                  cardClass(state)
+                )}
+              >
+                {state === "matched" ? (
+                  <span className="opacity-60">{pair.en}</span>
+                ) : pair.en}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="mt-4 text-[11px] text-zinc-600 text-center">
+        {matched.size} / {pairs.length} matched
+      </div>
+    </div>
+  );
+}
+
 function BlockRenderer({ block, playText, showToast, onComplete, completed, onAdvance, navBarRef }) {
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
@@ -823,7 +1009,8 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance}/>;
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} completed={completed}/>;
-    case "build_phrase": return <BuildPhraseBlock block={block} onComplete={onComplete} completed={completed}/>;
+    case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} completed={completed}/>;
+    case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance}/>;
     default: return <div className="text-sm text-zinc-500">Unknown block type.</div>;
   }
