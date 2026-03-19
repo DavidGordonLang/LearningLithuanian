@@ -8,8 +8,9 @@
 //  - Notes prompt restructured with a fixed plain-text template so output is consistent
 //  - Case form guidance added (nominative / accusative / genitive shown via examples)
 //  - Ordinal form added for number words
-//  - Few-shot example embedded to anchor output quality
-//  - Variants section rebalanced — model now actively looks for alternatives rather than suppressing them
+//  - Two few-shot examples embedded — one with variants, one without
+//  - Variants escape hatch removed; model must commit to a decision with explanation
+//  - Temperature raised to 0.4 for enrichment to reduce conservative suppression
 //  - Category prompt rewritten with ordered dominance rules and English-first classification
 
 export default async function handler(req, res) {
@@ -89,7 +90,7 @@ Return ONE valid JSON object, and NOTHING else:
 Rules:
 - No extra keys. No missing keys. No markdown. Every value must be a non-empty string.
 - The Notes value is plain text rendered with whitespace preserved.
-  Use blank lines to separate sections. Do NOT use asterisks, dashes, or any markdown.
+  Use blank lines to separate sections. Do NOT use asterisks, dashes as bullets, or any markdown.
 
 ────────────────────────────────
 USAGE
@@ -140,23 +141,26 @@ Format exactly like this:
 Ordinal: pirmas (masc.) / pirma (fem.) — first
 Example: pirmas namas — the first house
 
-SECTION 5 — VARIANTS
-This section is IMPORTANT. Lithuanian speakers often have several natural ways to say the same
-thing, and knowing the alternatives is genuinely useful for a learner.
+SECTION 5 — VARIANTS (always include this section)
+Lithuanian has many natural ways to express the same idea. Your job is to surface the ones
+a learner would realistically encounter or want to use.
 
-Think actively about whether any of these apply:
-- A more casual or more formal way to say the same thing
-- A more vivid or more neutral version
-- A word that is more common in everyday spoken Lithuanian
-- A shorter or longer version that changes the tone
+Ask yourself: is there another Lithuanian word or phrase a native speaker would naturally say
+in the same situation — something with a different tone, register, or vividness?
 
-Include 1-2 variants if any of the above apply. The bar is: would a real Lithuanian speaker
-naturally say this in the same situation? If yes, include it.
+Common sources of genuine variants:
+- A more casual spoken alternative to a formal phrase (or vice versa)
+- A more vivid or emotional version vs a neutral one
+- A shorter colloquial form vs a fuller phrase
+- A different word that covers the same meaning but feels different
 
-The ONE hard rule: never list the original phrase itself, or a rephrasing that uses
-identical words in a different order, as a variant. It must be genuinely different wording.
+Include 1-2 variants if any exist. The bar is simply: would a real Lithuanian speaker
+say this in the same situation? Different wording, same communicative goal.
 
-If variants ARE included, format them exactly like this — no deviations:
+The only hard rule: the variant must use different words from the original. Do not list
+a word-order shuffle or the same phrase with one word swapped for an exact synonym.
+
+Format variants exactly like this — no deviations:
 
 Variants:
 - Lithuanian phrase — natural English meaning
@@ -165,25 +169,54 @@ Variants:
 - Lithuanian phrase — natural English meaning
   phonetics
 
-After the variants block, add 1-2 sentences explaining the difference in tone or usage
-between the original and the variant(s).
+After the variants, write 1-2 sentences explaining how the variant(s) differ in tone,
+formality, or frequency from the original.
 
-If after genuinely considering the above you are confident there are no useful alternatives,
-write this exact sentence at the end of Notes:
+If you genuinely cannot identify any alternative phrasing a Lithuanian speaker would use,
+end this section with:
 No useful variants for this phrase.
+But this should be rare — most phrases have at least one natural alternative.
 
 ────────────────────────────────
 ABSOLUTE BANS
 ────────────────────────────────
 - No boilerplate ("used in everyday conversation", "just like in English", "similar to English")
 - No filler observations about Lithuanian having case endings or word order in general
-- No invented variants — if you are not confident a variant is in real common use, omit it
+- No fabricated variants — do not invent a phrase you are not sure exists in real use
 - No markdown (no **, no ##, no bullet dashes, no *)
 - No explanations outside the JSON
 
 ────────────────────────────────
-FEW-SHOT EXAMPLE
+FEW-SHOT EXAMPLES
 ────────────────────────────────
+
+EXAMPLE 1 — phrase with variants:
+
+Input:
+LITHUANIAN: Sudie
+ENGLISH (NATURAL): Goodbye
+ENGLISH (LITERAL): Goodbye
+
+Good output:
+
+{
+  "Usage": "Said when parting from someone — in person, on the phone, or at the end of a message. Works in both casual and formal settings.",
+  "Notes": "Sudie is the standard, all-purpose goodbye in Lithuanian. It sits in the middle of the register scale — not as warm and lingering as Viso gero, not as breezy as Ate or Iki.
+
+An English speaker might assume one goodbye word covers everything, but Lithuanian speakers choose between these depending on whether they expect to see the person again soon and how formal the setting is.
+
+Variants:
+- Viso gero — All the best / Goodbye
+  vee-soh geh-roh
+
+- Iki — See you / Bye
+  ee-kee
+
+Viso gero is warmer and slightly more formal — it carries a wish for the other person's wellbeing. Iki is short and casual, common among friends and in everyday spoken goodbyes."
+}
+
+EXAMPLE 2 — phrase without variants:
+
 Input:
 LITHUANIAN: As esu baisiai alkana
 ENGLISH (NATURAL): I am really hungry
@@ -314,7 +347,7 @@ ${en_literal || "(not provided)"}
             { role: "system", content: enrichSystemPrompt },
             { role: "user", content: enrichUser },
           ],
-          temperature: 0.2,
+          temperature: 0.4,
           max_tokens: 700,
         }),
       }),
