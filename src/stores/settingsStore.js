@@ -9,7 +9,8 @@ const TABLE_NAME = "user_settings";
  * Keep these stable; add new keys here with safe defaults.
  */
 const DEFAULTS = {
-  phoneticsMode: "en", // "en" | "ipa"
+  phoneticsMode: "en",    // "en" | "ipa"
+  speakerGender: "male",  // "male" | "female" — the user's own gender, used for self-referential Lithuanian forms
 };
 
 function mergeDefaults(data) {
@@ -19,14 +20,15 @@ function mergeDefaults(data) {
 function derive(data) {
   const merged = mergeDefaults(data);
   const pm = merged.phoneticsMode === "ipa" ? "ipa" : "en";
-  return { phoneticsMode: pm };
+  const sg = merged.speakerGender === "female" ? "female" : "male";
+  return { phoneticsMode: pm, speakerGender: sg };
 }
 
 /**
  * Settings store
  *
  * - `data` is the persisted JSON payload in Supabase.
- * - We also mirror commonly used values at the top level (e.g. `phoneticsMode`)
+ * - We also mirror commonly used values at the top level (e.g. `phoneticsMode`, `speakerGender`)
  *   so views can read primitives easily.
  * - `setSetting` remains the single write path.
  */
@@ -164,5 +166,10 @@ export const useSettingsStore = create((set, get) => ({
   setPhoneticsMode: async (userId, mode) => {
     const next = mode === "ipa" ? "ipa" : "en";
     return get().setSetting(userId, "phoneticsMode", next);
+  },
+
+  setSpeakerGender: async (userId, gender) => {
+    const next = gender === "female" ? "female" : "male";
+    return get().setSetting(userId, "speakerGender", next);
   },
 }));
