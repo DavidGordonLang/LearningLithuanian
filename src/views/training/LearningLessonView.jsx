@@ -296,20 +296,65 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
   const correctOption = options.find((o) => o.isCorrect) || null;
-  const promptText = block?.prompt?.text || "Choose the best answer";
+
+  const isListen = block?.type === "listen_mcq";
+  const isBestResponse = block?.type === "best_response";
+
+  const promptText = block?.prompt?.text || "";
   const audioText = block?.prompt?.audioText || "";
+
+  // Instruction label shown above the prompt
+  const instructionLabel = isListen
+    ? "Listen and choose"
+    : isBestResponse
+    ? "Choose the best response"
+    : "Choose the correct answer";
+
   const handleSelect = (option) => {
     if (revealState !== "idle") return;
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
   };
+
   return (
     <div>
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="text-[15px] font-semibold text-zinc-100 leading-snug">{promptText}</div>
-        {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
+      {/* Instruction */}
+      <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
+        {instructionLabel}
       </div>
+
+      {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
+      {isListen && promptText ? (
+        <div className="flex items-center justify-between gap-3 mb-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <div className="text-[22px] font-semibold text-zinc-100">{promptText}</div>
+          {audioText ? <AudioIconButton text={audioText} playText={playText} label="Hear the word" /> : null}
+        </div>
+      ) : isListen && audioText ? (
+        // Fallback: no text, just a prominent audio button
+        <div className="flex items-center justify-center mb-4">
+          <button
+            type="button"
+            data-press
+            aria-label="Play audio"
+            onClick={async () => { try { await playText?.(audioText); } catch {} }}
+            className="h-14 w-14 rounded-full border border-white/15 bg-white/[0.05] text-zinc-200 flex items-center justify-center hover:bg-white/[0.08] transition"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M11 5L6.8 9H4v6h2.8L11 19V5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M15 9.5C15.667 10.167 16 11 16 12C16 13 15.667 13.833 15 14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M17.5 7C18.833 8.333 19.5 10 19.5 12C19.5 14 18.833 15.667 17.5 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+      ) : promptText ? (
+        // recognise_mcq and best_response: text prompt with optional audio
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="text-[15px] font-semibold text-zinc-100 leading-snug">{promptText}</div>
+          {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
+        </div>
+      ) : null}
+
       <div className="grid gap-2">
         {options.map((option) => (
           <ChoiceOption key={option.id} option={option} selected={selectedId === option.id} revealState={revealState} onClick={() => handleSelect(option)}/>
