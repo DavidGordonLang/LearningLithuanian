@@ -13,6 +13,7 @@ const section1 = {
       title: "Greeting and Politeness",
       status: "active",
       lessons: [
+
         // ── Lesson 1 ──────────────────────────────────────────────────────────
         {
           id: "section_1_module_1_lesson_1",
@@ -26,6 +27,7 @@ const section1 = {
             usage: [
               "Labas — casual, any time of day",
               "Laba diena — formal or daytime",
+              "Labas rytas / Labas vakaras — morning and evening specifically",
               "Viso gero / Iki — both mean goodbye, Iki is more casual",
             ],
           },
@@ -38,7 +40,7 @@ const section1 = {
                 { id: "g1", lt: "Labas", en: "Hello (casual)", audioText: "Labas", saveable: true, core: true },
                 { id: "g2", lt: "Laba diena", en: "Good day / Hello (formal)", audioText: "Laba diena", saveable: true, core: true },
                 { id: "g3", lt: "Labas rytas", en: "Good morning", audioText: "Labas rytas", saveable: true, core: true },
-                { id: "g4", lt: "Labas vakaras", en: "Good evening", audioText: "Labas vakaras", saveable: true, core: false },
+                { id: "g4", lt: "Labas vakaras", en: "Good evening", audioText: "Labas vakaras", saveable: true, core: true },
                 { id: "g5", lt: "Viso gero", en: "Goodbye (take care)", audioText: "Viso gero", saveable: true, core: true },
                 { id: "g6", lt: "Iki", en: "Bye (casual)", audioText: "Iki", saveable: true, core: true },
               ],
@@ -66,6 +68,28 @@ const section1 = {
               ],
             },
             {
+              id: "s1m1l1_b3b",
+              type: "listen_mcq",
+              title: "Listen and choose",
+              prompt: { text: "Labas vakaras", audioText: "Labas vakaras" },
+              options: [
+                { id: "a", text: "Good morning", isCorrect: false },
+                { id: "b", text: "Good evening", isCorrect: true },
+                { id: "c", text: "Goodbye", isCorrect: false },
+              ],
+            },
+            {
+              id: "s1m1l1_b3c",
+              type: "recognise_mcq",
+              title: "Choose the correct meaning",
+              prompt: { text: "Iki", audioText: "Iki" },
+              options: [
+                { id: "a", text: "Hello", isCorrect: false },
+                { id: "b", text: "Good evening", isCorrect: false },
+                { id: "c", text: "Bye (casual)", isCorrect: true },
+              ],
+            },
+            {
               id: "s1m1l1_b4",
               type: "best_response",
               title: "Choose the best response",
@@ -75,7 +99,7 @@ const section1 = {
                 { id: "b", text: "Laba diena", isCorrect: true },
                 { id: "c", text: "Viso gero", isCorrect: false },
               ],
-              feedback: { correct: "Matching the register — laba diena for laba diena." },
+              feedback: { correct: "Match the register — laba diena for laba diena." },
             },
             {
               id: "s1m1l1_b5",
@@ -139,9 +163,11 @@ const section1 = {
           supportLevel: "high",
           newLanguageLoad: "very_low",
           notes: {
-            pattern: "Prašau does double duty — it means both 'please' and 'here you go / you're welcome'.",
+            pattern: "Prašau does double duty — it means both 'please' and 'here you go / you're welcome'. Words combine naturally: Ne, ačiū is the polite way to say no.",
             usage: [
               "Taip / Ne — yes and no",
+              "Taip, prašau — yes please (accepting something politely)",
+              "Ne, ačiū — no thank you (declining something politely)",
               "Prašau — please (when asking) or here you go / you're welcome (when giving)",
               "Ačiū — thank you",
               "Ačiū labai — thank you very much",
@@ -158,7 +184,44 @@ const section1 = {
                 { id: "p3", lt: "Prašau", en: "Please / Here you go / You're welcome", audioText: "Prašau", saveable: true, core: true },
                 { id: "p4", lt: "Ačiū", en: "Thank you", audioText: "Ačiū", saveable: true, core: true },
                 { id: "p5", lt: "Ačiū labai", en: "Thank you very much", audioText: "Ačiū labai", saveable: true, core: true },
+                { id: "p6", lt: "Taip, prašau", en: "Yes please", audioText: "Taip, prašau", saveable: true, core: true },
+                { id: "p7", lt: "Ne, ačiū", en: "No thank you", audioText: "Ne, ačiū", saveable: true, core: true },
               ],
+            },
+            {
+              id: "s1m1l2_b1b",
+              type: "listen_mcq",
+              title: "Listen and choose",
+              prompt: { text: "Taip", audioText: "Taip" },
+              options: [
+                { id: "a", text: "No", isCorrect: false },
+                { id: "b", text: "Please", isCorrect: false },
+                { id: "c", text: "Yes", isCorrect: true },
+              ],
+            },
+            {
+              id: "s1m1l2_b1c",
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "Someone offers you a second helping and you don't want it." },
+              options: [
+                { id: "a", text: "Taip, prašau", isCorrect: false },
+                { id: "b", text: "Ne, ačiū", isCorrect: true },
+                { id: "c", text: "Ačiū labai", isCorrect: false },
+              ],
+              feedback: { correct: "Ne, ačiū — no thank you. Bare 'Ne' can sound abrupt; adding ačiū keeps it polite." },
+            },
+            {
+              id: "s1m1l2_b1d",
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "Someone offers you a coffee and you'd like one." },
+              options: [
+                { id: "a", text: "Ne, ačiū", isCorrect: false },
+                { id: "b", text: "Taip, prašau", isCorrect: true },
+                { id: "c", text: "Viso gero", isCorrect: false },
+              ],
+              feedback: { correct: "Taip, prašau — yes please. Much more natural than Taip alone." },
             },
             {
               id: "s1m1l2_b2",
@@ -186,12 +249,23 @@ const section1 = {
             {
               id: "s1m1l2_b4",
               type: "recognise_mcq",
-              title: "What does this mean?",
+              title: "Choose the correct meaning",
               prompt: { text: "Ačiū labai", audioText: "Ačiū labai" },
               options: [
                 { id: "a", text: "Thank you very much", isCorrect: true },
                 { id: "b", text: "You're welcome", isCorrect: false },
                 { id: "c", text: "Please", isCorrect: false },
+              ],
+            },
+            {
+              id: "s1m1l2_b4b",
+              type: "listen_mcq",
+              title: "Listen and choose",
+              prompt: { text: "Ne, ačiū", audioText: "Ne, ačiū" },
+              options: [
+                { id: "a", text: "Yes please", isCorrect: false },
+                { id: "b", text: "No thank you", isCorrect: true },
+                { id: "c", text: "Thank you very much", isCorrect: false },
               ],
             },
             {
@@ -222,12 +296,23 @@ const section1 = {
                 {
                   id: "step_2",
                   actor: "other",
+                  text: "Dar kavos?",
+                  audioText: "Dar kavos",
+                  options: [
+                    { id: "a", text: "Taip", isCorrect: false },
+                    { id: "b", text: "Ne, ačiū", isCorrect: true },
+                    { id: "c", text: "Ačiū labai", isCorrect: false },
+                  ],
+                },
+                {
+                  id: "step_3",
+                  actor: "other",
                   text: "Viso gero!",
                   audioText: "Viso gero",
                   options: [
-                    { id: "a", text: "Taip", isCorrect: false },
+                    { id: "a", text: "Taip, prašau", isCorrect: false },
                     { id: "b", text: "Iki!", isCorrect: true },
-                    { id: "c", text: "Ačiū labai", isCorrect: false },
+                    { id: "c", text: "Atsiprašau", isCorrect: false },
                   ],
                 },
               ],
@@ -259,7 +344,7 @@ const section1 = {
               items: [
                 { id: "sorry_1", lt: "Atsiprašau", en: "Sorry / Excuse me", audioText: "Atsiprašau", saveable: true, core: true },
                 { id: "sorry_2", lt: "Prašau dar kartą", en: "One more time, please", audioText: "Prašau dar kartą", saveable: true, core: true },
-                { id: "sorry_3", lt: "Atleiskite", en: "Excuse me / Forgive me (formal)", audioText: "Atleiskite", saveable: true, core: false },
+                { id: "sorry_3", lt: "Atleiskite", en: "Excuse me / Forgive me (formal)", audioText: "Atleiskite", saveable: true, core: true },
               ],
             },
             {
@@ -288,7 +373,7 @@ const section1 = {
               id: "s1m1l3_b3b",
               type: "recognise_mcq",
               title: "Choose the right phrase",
-              prompt: { text: "You want to formally excuse yourself or ask forgiveness — more polite than usual." },
+              prompt: { text: "You want to formally excuse yourself — more polite than usual." },
               options: [
                 { id: "a", text: "Atsiprašau", isCorrect: false },
                 { id: "b", text: "Atleiskite", isCorrect: true },
@@ -319,8 +404,17 @@ const section1 = {
                 { id: "c", text: "Please / Here you go", isCorrect: false },
               ],
             },
-            // Replaced scenario_chain (narrator/English steps) with two
-            // best_response MCQ blocks — same learning goal, correct block type
+            {
+              id: "s1m1l3_b5b",
+              type: "listen_mcq",
+              title: "Listen and choose",
+              prompt: { text: "Atleiskite", audioText: "Atleiskite" },
+              options: [
+                { id: "a", text: "One more time please", isCorrect: false },
+                { id: "b", text: "Sorry / Excuse me (casual)", isCorrect: false },
+                { id: "c", text: "Excuse me / Forgive me (formal)", isCorrect: true },
+              ],
+            },
             {
               id: "s1m1l3_b6",
               type: "best_response",
@@ -404,7 +498,6 @@ const section1 = {
               id: "s1m1l4_b5",
               type: "scenario_chain",
               title: "Conversation",
-              // Context shown above chat window, not read by TTS
               description: "You're at a hotel reception. The receptionist checks you in.",
               steps: [
                 {
@@ -421,7 +514,6 @@ const section1 = {
                 {
                   id: "step_2",
                   actor: "other",
-                  // Hands over key card and says "here you go"
                   text: "Prašau.",
                   audioText: "Prašau",
                   options: [
@@ -468,9 +560,32 @@ const section1 = {
               ],
             },
             {
+              id: "s1m1c_b1b",
+              type: "listen_mcq",
+              title: "Listen and identify",
+              prompt: { text: "Taip", audioText: "Taip" },
+              options: [
+                { id: "a", text: "No", isCorrect: false },
+                { id: "b", text: "Yes", isCorrect: true },
+                { id: "c", text: "Please", isCorrect: false },
+              ],
+            },
+            {
+              id: "s1m1c_b1c",
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "Someone offers you something and you want to decline politely." },
+              options: [
+                { id: "a", text: "Ne, ačiū", isCorrect: true },
+                { id: "b", text: "Taip, prašau", isCorrect: false },
+                { id: "c", text: "Ačiū labai", isCorrect: false },
+              ],
+              feedback: { correct: "Ne, ačiū — no thank you. Polite and natural." },
+            },
+            {
               id: "s1m1c_b2",
               type: "recognise_mcq",
-              title: "Translate this",
+              title: "Choose the correct meaning",
               prompt: { text: "Ačiū labai", audioText: "Ačiū labai" },
               options: [
                 { id: "a", text: "Thank you very much", isCorrect: true },
@@ -521,6 +636,18 @@ const section1 = {
                 { id: "b", text: "Goodbye", isCorrect: false },
                 { id: "c", text: "Sorry / Excuse me", isCorrect: true },
               ],
+            },
+            {
+              id: "s1m1c_b7",
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "Someone says Viso gero as they leave." },
+              options: [
+                { id: "a", text: "Labas rytas", isCorrect: false },
+                { id: "b", text: "Iki!", isCorrect: true },
+                { id: "c", text: "Atsiprašau", isCorrect: false },
+              ],
+              feedback: { correct: "Iki is the natural casual reply to Viso gero." },
             },
           ],
         },
