@@ -710,7 +710,11 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
     if (!assistantVisible || revealState !== "idle") return;
     setSelectedId(option.id); setRevealState("revealed");
     setHistory((prev) => [...prev, { role: "you", text: option.text }]);
-    if (isLastStep) { queueTimeout(() => { setConversationComplete(true); onComplete?.(); }, 250); return; }
+    if (isLastStep) {
+      // Show celebration panel — user taps Continue to call onComplete
+      queueTimeout(() => setConversationComplete(true), 400);
+      return;
+    }
     queueTimeout(() => { setStepIndex((prev) => prev + 1); showAssistantStep(stepIndex + 1); }, 850);
   };
 
@@ -746,7 +750,39 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
           </div>
         ) : null}
       </div>
-      {conversationComplete ? <SmallMetaPill accent="emerald">Conversation complete</SmallMetaPill> : null}
+      {/* Celebration panel — user taps Continue to proceed */}
+      {conversationComplete ? (
+        <ScenarioCompletePanel onContinue={() => onComplete?.()} />
+      ) : null}
+    </div>
+  );
+}
+
+function ScenarioCompletePanel({ onContinue }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div className={cn(
+      "rounded-2xl border border-emerald-400/25 bg-emerald-500/[0.08] px-4 py-4",
+      "transition-all duration-300",
+      visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+    )}>
+      <div className="flex items-start gap-3 mb-4">
+        <div className="h-6 w-6 rounded-full bg-emerald-500/25 flex items-center justify-center shrink-0 text-[13px] font-bold text-emerald-300">
+          ✓
+        </div>
+        <div>
+          <div className="text-[15px] font-semibold text-emerald-200">Nailed it!</div>
+          <div className="text-[13px] text-zinc-400 mt-0.5 leading-snug">
+            You completed the conversation correctly.
+          </div>
+        </div>
+      </div>
+      <ActionButton onClick={onContinue} className="w-full">Continue</ActionButton>
     </div>
   );
 }
