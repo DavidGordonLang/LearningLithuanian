@@ -144,6 +144,8 @@ export default function SettingsView({
 
   const phoneticsMode = useSettingsStore((s) => s.phoneticsMode);
   const setPhoneticsMode = useSettingsStore((s) => s.setPhoneticsMode);
+  const speakerGender = useSettingsStore((s) => s.speakerGender);
+  const setSpeakerGender = useSettingsStore((s) => s.setSpeakerGender);
 
   const [openLearning, setOpenLearning] = useState(false);
   const [openVoice, setOpenVoice] = useState(false);
@@ -476,9 +478,9 @@ export default function SettingsView({
         <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">
           <div className="text-sm font-semibold text-amber-300">Not synced</div>
           <div className="text-sm text-zinc-300 mt-1">
-            Changes on this device haven’t been synced to cloud yet. Use{" "}
+            Changes on this device haven't been synced to cloud yet. Use{" "}
             <span className="text-amber-200 font-semibold">Sync (merge)</span>{" "}
-            when you’re ready.
+            when you're ready.
           </div>
         </div>
       );
@@ -626,6 +628,51 @@ export default function SettingsView({
         accentTitle
       >
         <div className="space-y-3">
+
+          {/* Speaker gender — persisted default used across all translations */}
+          <div className="z-inset p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-zinc-200">
+                  Your gender
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  Ensures Lithuanian phrases use the correct forms when you describe yourself
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  data-press
+                  className={
+                    "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
+                    (speakerGender === "male"
+                      ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+                      : "z-btn-secondary text-zinc-100")
+                  }
+                  onClick={() => setSpeakerGender?.(user?.id, "male")}
+                >
+                  Male
+                </button>
+
+                <button
+                  type="button"
+                  data-press
+                  className={
+                    "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
+                    (speakerGender === "female"
+                      ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
+                      : "z-btn-secondary text-zinc-100")
+                  }
+                  onClick={() => setSpeakerGender?.(user?.id, "female")}
+                >
+                  Female
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="z-inset p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -659,7 +706,7 @@ export default function SettingsView({
                 className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
                 onClick={showDailyRecallNow}
               >
-                Show today’s recall
+                Show today's recall
               </button>
             </div>
           </div>
