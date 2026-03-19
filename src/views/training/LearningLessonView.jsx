@@ -906,7 +906,7 @@ export default function LearningLessonView({
 
   if (phase === "loading") {
     return (
-      <div className="max-w-xl mx-auto h-full flex flex-col">
+      <div className="max-w-xl mx-auto h-full flex flex-col" data-swipe-block="true">
         <div className="px-4 pt-5"><BackCircle onClick={onBack} /></div>
         <LessonLoadingScreen
           lesson={lesson}
@@ -922,7 +922,7 @@ export default function LearningLessonView({
   }
 
   return (
-    <div className="max-w-xl mx-auto px-4 pt-4 pb-6 flex flex-col">
+    <div className="max-w-xl mx-auto px-4 pt-4 pb-6 flex flex-col" data-swipe-block="true">
       <div className="grid grid-cols-[44px_1fr_44px] items-center mb-3">
         <BackCircle onClick={onBack} />
         <div className="text-center"><div className="text-[15px] font-semibold text-zinc-100">{lessonDisplayLabel}</div></div>
