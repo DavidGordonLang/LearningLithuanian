@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   }
 
   const body = await readJsonBody(req);
-  const { text, tone, gender } = body;
+  const { text, tone, gender, speakerGender } = body;
 
   if (!text || !String(text).trim()) {
     return res.status(400).json({ error: "Missing text" });
@@ -151,20 +151,31 @@ ENGLISH OUTPUT RULES
 `.trim();
 
   // ---------------------------------------------------------------------------
-  // STYLE MODIFIERS (LIGHT INFLUENCE ONLY)
+  // STYLE MODIFIERS
   // ---------------------------------------------------------------------------
   let styleHints = "";
 
-  if (tone === "polite" || tone === "formal") {
-    styleHints += "Use a polite tone. Prefer formal address (jūs) if relevant.\n";
+  // Tone — controls formality and tu vs jūs
+  if (tone === "polite") {
+    styleHints += "Use a polite tone. Prefer formal address (jūs) when addressing the listener.\n";
   } else {
-    styleHints += "Use a natural, friendly tone. Prefer informal address (tu).\n";
+    styleHints += "Use a natural, friendly tone. Prefer informal address (tu) when addressing the listener.\n";
   }
 
-  if (gender === "male") {
-    styleHints += "Assume the listener is male only if required by wording.\n";
+  // Addressee — who is being spoken to
+  if (gender === "group") {
+    styleHints += "The speaker is addressing a group of people. Use plural jūs forms regardless of tone. Use masculine plural agreement as the default for mixed groups.\n";
   } else if (gender === "female") {
-    styleHints += "Assume the listener is female only if required by wording.\n";
+    styleHints += "The person being spoken to is female. Use feminine agreement forms where relevant.\n";
+  } else if (gender === "male") {
+    styleHints += "The person being spoken to is male. Use masculine agreement forms where relevant.\n";
+  }
+
+  // Speaker gender — affects self-referential forms
+  if (speakerGender === "female") {
+    styleHints += "The speaker is female. When the phrase describes the speaker's own state, feelings, or identity, use feminine Lithuanian endings (e.g. alkana, pavargusi, laiminga).\n";
+  } else {
+    styleHints += "The speaker is male. When the phrase describes the speaker's own state, feelings, or identity, use masculine Lithuanian endings (e.g. alkanas, pavargęs, laimingas).\n";
   }
 
   // ---------------------------------------------------------------------------
