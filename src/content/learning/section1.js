@@ -563,6 +563,9 @@ const section1 = {
         },
 
         // ── Checkpoint ────────────────────────────────────────────────────────
+        // No verbatim repeats from lessons. Every block uses a new framing,
+        // new situation, or reversed prompt so the user has to actually recall
+        // rather than recognise something they just saw.
         {
           id: "section_1_module_1_checkpoint",
           code: "1.1.C",
@@ -572,106 +575,147 @@ const section1 = {
           newLanguageLoad: "none",
           isCheckpoint: true,
           blocks: [
+            // Greetings — time-of-day reasoning (not just matching a sound)
             {
               id: "s1m1c_b1",
-              type: "listen_mcq",
-              title: "Listen and identify",
-              prompt: { text: "Laba diena", audioText: "Laba diena" },
-              options: [
-                { id: "a", text: "Good morning", isCorrect: false },
-                { id: "b", text: "Good day / Hello", isCorrect: true },
-                { id: "c", text: "Goodbye", isCorrect: false },
-              ],
-            },
-            {
-              id: "s1m1c_b1b",
-              type: "listen_mcq",
-              title: "Listen and identify",
-              prompt: { text: "Taip", audioText: "Taip" },
-              options: [
-                { id: "a", text: "No", isCorrect: false },
-                { id: "b", text: "Yes", isCorrect: true },
-                { id: "c", text: "Please", isCorrect: false },
-              ],
-            },
-            {
-              id: "s1m1c_b1c",
               type: "best_response",
               title: "Choose the best response",
-              prompt: { text: "Someone offers you something and you want to decline politely." },
+              prompt: { text: "It's 9am. You walk into a shop. What do you say?" },
               options: [
-                { id: "a", text: "Ne, ačiū", isCorrect: true },
-                { id: "b", text: "Taip, prašau", isCorrect: false },
-                { id: "c", text: "Ačiū labai", isCorrect: false },
+                { id: "a", text: "Labas vakaras", isCorrect: false },
+                { id: "b", text: "Labas rytas", isCorrect: true },
+                { id: "c", text: "Viso gero", isCorrect: false },
               ],
-              feedback: { correct: "Ne, ačiū — no thank you. Polite and natural." },
+              feedback: { correct: "Labas rytas — good morning. Time-appropriate and natural." },
             },
+            // Farewell — choose the right register
             {
               id: "s1m1c_b2",
-              type: "recognise_mcq",
-              title: "Choose the correct meaning",
-              prompt: { text: "Ačiū labai", audioText: "Ačiū labai" },
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "You're leaving a formal meeting. What's the right farewell?" },
               options: [
-                { id: "a", text: "Thank you very much", isCorrect: true },
-                { id: "b", text: "Please", isCorrect: false },
-                { id: "c", text: "Excuse me", isCorrect: false },
+                { id: "a", text: "Iki", isCorrect: false },
+                { id: "b", text: "Labas", isCorrect: false },
+                { id: "c", text: "Viso gero", isCorrect: true },
               ],
+              feedback: { correct: "Viso gero is more formal. Iki is casual — save it for friends." },
             },
+            // Polite decline — new framing
             {
               id: "s1m1c_b3",
               type: "best_response",
               title: "Choose the best response",
-              prompt: { text: "Someone says Atsiprašau after bumping into you." },
+              prompt: { text: "A waiter offers you dessert and you don't want any." },
               options: [
-                { id: "a", text: "Prašau", isCorrect: true },
-                { id: "b", text: "Ne", isCorrect: false },
-                { id: "c", text: "Viso gero", isCorrect: false },
+                { id: "a", text: "Taip, prašau", isCorrect: false },
+                { id: "b", text: "Atsiprašau", isCorrect: false },
+                { id: "c", text: "Ne, ačiū", isCorrect: true },
               ],
-              feedback: { correct: "Prašau here means 'it's fine / no worries'." },
+              feedback: { correct: "Ne, ačiū — polite, clear, and natural in any service situation." },
             },
+            // Listen — Prašau dar kartą (new context: heard in the wild)
             {
               id: "s1m1c_b4",
-              type: "build_phrase",
-              title: "Build the phrase",
-              prompt: { text: "One more time, please" },
-              tokens: [
-                { id: "t2", text: "dar", correctIndex: 1 },
-                { id: "t4", text: "labai", isDistractor: true },
-                { id: "t3", text: "kartą", correctIndex: 2 },
-                { id: "t1", text: "Prašau", correctIndex: 0 },
+              type: "listen_mcq",
+              title: "Listen and identify",
+              prompt: { text: "Prašau dar kartą", audioText: "Prašau dar kartą" },
+              options: [
+                { id: "a", text: "Here you go", isCorrect: false },
+                { id: "b", text: "One more time, please", isCorrect: true },
+                { id: "c", text: "You're welcome", isCorrect: false },
               ],
-              answerText: "Prašau dar kartą",
             },
+            // Formal vs informal — Atleiskite vs Atsiprašau
             {
               id: "s1m1c_b5",
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "You need to interrupt an older person politely to ask for directions." },
+              options: [
+                { id: "a", text: "Atsiprašau", isCorrect: false },
+                { id: "b", text: "Atleiskite", isCorrect: true },
+                { id: "c", text: "Prašau dar kartą", isCorrect: false },
+              ],
+              feedback: { correct: "Atleiskite signals more respect — the right choice with someone older or in a formal context." },
+            },
+            // Build phrase — Labas vakaras this time (not Labas rytas)
+            {
+              id: "s1m1c_b6",
+              type: "build_phrase",
+              title: "Build the phrase",
+              prompt: { text: "Good evening" },
+              tokens: [
+                { id: "t2", text: "vakaras", correctIndex: 1 },
+                { id: "t3", text: "rytas", isDistractor: true },
+                { id: "t1", text: "Labas", correctIndex: 0 },
+              ],
+              answerText: "Labas vakaras",
+            },
+            // Speak — Atsiprašau (different prompt from the lesson)
+            {
+              id: "s1m1c_b7",
               type: "speak_self_check",
               title: "Say it out loud",
-              prompt: "Say 'excuse me' to get someone's attention",
+              prompt: "You've just bumped into someone — say sorry",
               targetText: "Atsiprašau",
               audioText: "Atsiprašau",
             },
+            // Listen — Ačiū labai in a new option set
             {
-              id: "s1m1c_b6",
+              id: "s1m1c_b8",
               type: "listen_mcq",
               title: "Listen and identify",
-              prompt: { text: "Atsiprašau", audioText: "Atsiprašau" },
+              prompt: { text: "Ačiū labai", audioText: "Ačiū labai" },
               options: [
-                { id: "a", text: "Thank you", isCorrect: false },
-                { id: "b", text: "Goodbye", isCorrect: false },
-                { id: "c", text: "Sorry / Excuse me", isCorrect: true },
+                { id: "a", text: "No thank you", isCorrect: false },
+                { id: "b", text: "You're welcome", isCorrect: false },
+                { id: "c", text: "Thank you very much", isCorrect: true },
               ],
             },
+            // Scenario — café order but in reverse: user is the server
+            // Tests whether they can produce the right response even when
+            // the role is flipped
             {
-              id: "s1m1c_b7",
-              type: "best_response",
-              title: "Choose the best response",
-              prompt: { text: "Someone says Viso gero as they leave." },
-              options: [
-                { id: "a", text: "Labas rytas", isCorrect: false },
-                { id: "b", text: "Iki!", isCorrect: true },
-                { id: "c", text: "Atsiprašau", isCorrect: false },
+              id: "s1m1c_b9",
+              type: "scenario_chain",
+              title: "Conversation",
+              description: "You're meeting a Lithuanian colleague for the first time at a café.",
+              steps: [
+                {
+                  id: "step_1",
+                  actor: "other",
+                  text: "Laba diena! Kaip sekasi?",
+                  audioText: "Laba diena",
+                  options: [
+                    { id: "a", text: "Viso gero!", isCorrect: false },
+                    { id: "b", text: "Laba diena!", isCorrect: true },
+                    { id: "c", text: "Atsiprašau", isCorrect: false },
+                  ],
+                },
+                {
+                  id: "step_2",
+                  actor: "other",
+                  text: "Prašau.",
+                  audioText: "Prašau",
+                  options: [
+                    { id: "a", text: "Ne, ačiū", isCorrect: false },
+                    { id: "b", text: "Ačiū labai!", isCorrect: true },
+                    { id: "c", text: "Prašau dar kartą", isCorrect: false },
+                  ],
+                },
+                {
+                  id: "step_3",
+                  actor: "other",
+                  text: "Viso gero!",
+                  audioText: "Viso gero",
+                  options: [
+                    { id: "a", text: "Taip, prašau", isCorrect: false },
+                    { id: "b", text: "Labas rytas", isCorrect: false },
+                    { id: "c", text: "Iki!", isCorrect: true },
+                  ],
+                },
               ],
-              feedback: { correct: "Iki is the natural casual reply to Viso gero." },
             },
           ],
         },
