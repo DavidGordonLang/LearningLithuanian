@@ -717,8 +717,6 @@ const section1 = {
                 },
               ],
             },
-          ],
-        },
             // Final block — match pairs across the whole module
             {
               id: "s1m1c_b10",
