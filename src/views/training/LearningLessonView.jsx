@@ -251,7 +251,8 @@ function LearnBlock({ block, playText, onComplete, completed, navBarRef }) {
 
 function ChoiceOption({ option, selected, revealState, onClick }) {
   const stateClass = revealState === "idle"
-    ? selected ? "border-white/20 bg-white/[0.07] text-zinc-100" : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]"
+    ? selected ? "border-white/20 bg-white/[0.07] text-zinc-100"
+      : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]"
     : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
     : selected ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
@@ -325,10 +326,8 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
   const isProcessing = sttState === "transcribing" || sttState === "translating";
   const isBusy = isRecording || isProcessing;
   const supported = sttSupported();
-
   const handleStart = () => { if (isBusy || completed) return; playMicStart(); startRecording(); };
   const handleStop = () => { if (!isRecording) return; playMicStop(); stopRecording(); };
-
   const micLabel = isRecording ? "Listening…" : isProcessing ? "Checking…" : supported ? "Hold to speak" : "Microphone unavailable";
 
   if (completed) {
@@ -362,14 +361,12 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
           </div>
         </div>
       ) : null}
-
       {attemptState === "result_pass" ? (
         <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
           <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
           <div className="text-[13px] text-emerald-200 font-medium">{capturedText ? `"${capturedText}"` : "Spoken"}</div>
         </div>
       ) : null}
-
       {attemptState === "result_fail" ? (
         <div className="space-y-3">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
@@ -380,7 +377,6 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
           <ActionButton variant="secondary" onClick={() => { setCapturedText(""); setAttemptState("idle"); }} className="w-full">Try again</ActionButton>
         </div>
       ) : null}
-
       {attemptState !== "result_pass" ? (
         <div className={cn("flex flex-col items-center gap-3", attemptState === "result_fail" ? "mt-3" : "")}>
           {!supported ? (
@@ -423,37 +419,82 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
   );
 }
 
+// ─── Build phrase — fixed token positions, ghost placeholder ──────────────────
+
 function BuildPhraseBlock({ block, onComplete, completed }) {
   const tokens = Array.isArray(block?.tokens) ? block.tokens : [];
   const sortedTokens = [...tokens].sort((a, b) => a.correctIndex - b.correctIndex);
   const correctAnswer = block?.answerText || sortedTokens.map((t) => t.text).join(" ");
-  const [built, setBuilt] = useState([]);
+
+  const [built, setBuilt] = useState([]); // ordered list of token ids in answer area
   const [revealed, setRevealed] = useState(false);
-  const remaining = tokens.filter((token) => !built.includes(token.id));
-  const checkPhrase = () => { if (built.length !== tokens.length) return; setRevealed(true); onComplete?.(); };
+
+  // Which token ids have been placed into the answer area
+  const placedIds = new Set(built);
+
+  const checkPhrase = () => {
+    if (built.length !== tokens.length) return;
+    setRevealed(true);
+    onComplete?.();
+  };
+
   return (
     <div>
       <div className="text-[15px] font-semibold text-zinc-100 mb-3">{block?.prompt?.text || "Build the phrase"}</div>
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 min-h-[60px] mb-3">
+
+      {/* Answer area */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 min-h-[60px] mb-4">
         <div className="flex flex-wrap gap-2">
-          {built.length ? built.map((id) => {
-            const token = tokens.find((t) => t.id === id);
-            return <button key={id} type="button" data-press onClick={() => { if (revealed) return; setBuilt((prev) => prev.filter((x) => x !== id)); }}
-              className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-zinc-100">{token?.text}</button>;
-          }) : <div className="text-sm text-zinc-500">Tap words below to build the phrase.</div>}
+          {built.length ? (
+            built.map((id) => {
+              const token = tokens.find((t) => t.id === id);
+              return (
+                <button key={id} type="button" data-press
+                  onClick={() => { if (revealed) return; setBuilt((prev) => prev.filter((x) => x !== id)); }}
+                  className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-zinc-100 transition hover:bg-white/[0.09]">
+                  {token?.text}
+                </button>
+              );
+            })
+          ) : (
+            <div className="text-sm text-zinc-500">Tap words below to build the phrase.</div>
+          )}
         </div>
       </div>
+
+      {/* Source tokens — fixed layout, ghost placeholder when placed */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {remaining.map((token) => (
-          <button key={token.id} type="button" data-press onClick={() => { if (revealed) return; setBuilt((prev) => [...prev, token.id]); }}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300">{token.text}</button>
-        ))}
+        {tokens.map((token) => {
+          const isPlaced = placedIds.has(token.id);
+          return isPlaced ? (
+            // Ghost placeholder — same size, invisible, keeps layout stable
+            <div key={token.id}
+              className="rounded-xl border border-white/[0.04] px-3 py-2 text-sm text-transparent select-none pointer-events-none"
+              aria-hidden="true">
+              {token.text}
+            </div>
+          ) : (
+            <button key={token.id} type="button" data-press
+              onClick={() => { if (revealed) return; setBuilt((prev) => [...prev, token.id]); }}
+              className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:border-white/20">
+              {token.text}
+            </button>
+          );
+        })}
       </div>
+
       <div className="flex gap-2">
-        <ActionButton onClick={checkPhrase} disabled={built.length !== tokens.length || revealed} className="flex-1">{revealed ? "Phrase built ✓" : "Check phrase"}</ActionButton>
+        <ActionButton onClick={checkPhrase} disabled={built.length !== tokens.length || revealed} className="flex-1">
+          {revealed ? "Phrase built ✓" : "Check phrase"}
+        </ActionButton>
         <ActionButton variant="ghost" onClick={() => { if (revealed) return; setBuilt([]); }} className="px-4">Reset</ActionButton>
       </div>
-      {revealed ? <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3"><div className="text-[13px] text-emerald-300 font-semibold">{correctAnswer}</div></div> : null}
+
+      {revealed ? (
+        <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
+          <div className="text-[13px] text-emerald-300 font-semibold">{correctAnswer}</div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -462,7 +503,8 @@ function ConversationBubble({ role, text }) {
   const isAssistant = role === "other";
   return (
     <div className={cn("flex", isAssistant ? "justify-start" : "justify-end")}>
-      <div className={cn("max-w-[80%] rounded-[20px] border px-4 py-2.5", isAssistant ? "border-white/10 bg-white/[0.035]" : "border-emerald-400/18 bg-emerald-500/[0.09]")}>
+      <div className={cn("max-w-[80%] rounded-[20px] border px-4 py-2.5",
+        isAssistant ? "border-white/10 bg-white/[0.035]" : "border-emerald-400/18 bg-emerald-500/[0.09]")}>
         <div className="text-[14px] font-medium leading-snug text-zinc-100">{text}</div>
       </div>
     </div>
@@ -497,6 +539,8 @@ function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
   );
 }
 
+// ─── Scenario chain — description shown ABOVE chat window, never read by TTS ──
+
 function ScenarioChainBlock({ block, playText, onComplete }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
   const timeoutsRef = useRef([]);
@@ -509,12 +553,16 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
   const [selectedId, setSelectedId] = useState(null);
   const [revealState, setRevealState] = useState("idle");
   const [conversationComplete, setConversationComplete] = useState(false);
+
   const step = steps[stepIndex] || null;
   const options = Array.isArray(step?.options) ? step.options : [];
   const isLastStep = stepIndex >= steps.length - 1;
+
   useEffect(() => { return () => { timeoutsRef.current.forEach((id) => clearTimeout(id)); }; }, []);
   useEffect(() => { const el = feedRef.current; if (!el) return; el.scrollTop = el.scrollHeight; }, [history, assistantTyping, assistantVisible, conversationComplete]);
+
   const queueTimeout = (fn, delay) => { const id = setTimeout(fn, delay); timeoutsRef.current.push(id); return id; };
+
   const showAssistantStep = (index) => {
     const nextStep = steps[index];
     if (!nextStep) return;
@@ -522,10 +570,14 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
     queueTimeout(async () => {
       setAssistantTyping(false); setAssistantVisible(true);
       setHistory((prev) => [...prev, { role: "other", text: nextStep.text }]);
-      try { await playText?.(nextStep.audioText || nextStep.text); } catch {}
+      // Only play audioText — never the description or any English text
+      const audio = nextStep.audioText || null;
+      if (audio) { try { await playText?.(audio); } catch {} }
     }, 850);
   };
+
   const startConversation = () => { if (started) return; setStarted(true); showAssistantStep(0); };
+
   const handleSelect = (option) => {
     if (!assistantVisible || revealState !== "idle") return;
     setSelectedId(option.id); setRevealState("revealed");
@@ -533,9 +585,17 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
     if (isLastStep) { queueTimeout(() => { setConversationComplete(true); onComplete?.(); }, 250); return; }
     queueTimeout(() => { setStepIndex((prev) => prev + 1); showAssistantStep(stepIndex + 1); }, 850);
   };
+
   return (
     <div className="flex flex-col gap-3">
-      {block?.description ? <div className="text-[13px] text-zinc-400 leading-snug">{block.description}</div> : null}
+      {/* Description — outside chat window, never touched by TTS */}
+      {block?.description ? (
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+          <div className="text-[11px] uppercase tracking-widest text-zinc-600 mb-1">Scenario</div>
+          <div className="text-[13px] text-zinc-400 leading-snug">{block.description}</div>
+        </div>
+      ) : null}
+
       <div className="rounded-[24px] border border-white/10 bg-black/25 overflow-hidden">
         <div ref={feedRef} className="overflow-y-auto px-4 py-4 space-y-3" style={{ minHeight: 200, maxHeight: "38vh" }}>
           {!started ? (
@@ -589,7 +649,7 @@ function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onN
       </div>
       <div className="mt-5 flex flex-col gap-3">
         {typeof onNextLesson === "function" ? (
-          <ActionButton onClick={onNextLesson} className="w-full">Continue to next lesson</ActionButton>
+          <ActionButton onClick={onNextLesson} className="w-full">Continue to next lesson →</ActionButton>
         ) : null}
         <ActionButton variant={onNextLesson ? "secondary" : "primary"} onClick={onBack} className="w-full">
           Back to training
@@ -605,20 +665,10 @@ function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onN
 // ─── Main view ────────────────────────────────────────────────────────────────
 
 export default function LearningLessonView({
-  section,
-  module,
-  lesson,
-  lessonIndex,
-  playText,
-  showToast,
-  userId,
-  onBack,
-  onBrowseCourse,
-  onLessonComplete,
-  onNextLesson,
+  section, module, lesson, lessonIndex, playText, showToast,
+  userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
-
   const [phase, setPhase] = useState("loading");
   const [blockIndex, setBlockIndex] = useState(0);
   const [completedBlockIds, setCompletedBlockIds] = useState({});
@@ -650,12 +700,10 @@ export default function LearningLessonView({
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
   const showNavBar = !lessonComplete && !isChoiceBlock;
 
-  // Fire lesson completion once when lessonComplete first becomes true
+  // Fire completion once
   useEffect(() => {
-    if (!lessonComplete) return;
-    if (completionFiredRef.current) return;
+    if (!lessonComplete || completionFiredRef.current) return;
     completionFiredRef.current = true;
-
     if (lesson?.id) {
       const { wasAlreadyComplete } = completeLesson(lesson.id, userId);
       if (!wasAlreadyComplete) {
@@ -663,7 +711,6 @@ export default function LearningLessonView({
         if (result?.xpGained) setXpEarned(result.xpGained);
       }
     }
-
     onLessonComplete?.();
   }, [lessonComplete, lesson?.id, userId, completeLesson, earnXP, onLessonComplete]);
 
