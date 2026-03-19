@@ -157,6 +157,10 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
   // Use a ref so changes don't trigger re-renders that could lose the value.
   const entryIsPreviewRef = useRef(false);
 
+  const nextLessonTitle = nextLessonAfterCurrent
+    ? nextLessonAfterCurrent.lesson?.title || null
+    : null;
+
   const handleNextLesson = nextLessonAfterCurrent ? () => {
     const { module, lesson } = nextLessonAfterCurrent;
     // Set the new lesson explicitly so learningLesson re-derives correctly
@@ -253,6 +257,7 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
           // We clear it when the user actively navigates away instead.
         }}
         onNextLesson={handleNextLesson}
+        nextLessonTitle={nextLessonTitle}
       />
     );
   }
@@ -296,8 +301,12 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
       // If all complete, still allow entry via browse course
       // If lessons remain, start next uncompleted
       onStartLearning={allComplete ? null : () => {
-        setSelectedModuleId(null);
-        setSelectedLessonId(null);
+        // Pin the lesson explicitly so re-deriving from nextLesson
+        // doesn't fire when completedLessonIds updates mid-lesson
+        const lessonToPinId = nextLesson?.lesson?.id || null;
+        const moduleToPinId = nextLesson?.module?.id || null;
+        setSelectedLessonId(lessonToPinId);
+        setSelectedModuleId(moduleToPinId);
         setLessonReturnScreen("home");
         entryIsPreviewRef.current = false;
         setScreen("learningLesson");
