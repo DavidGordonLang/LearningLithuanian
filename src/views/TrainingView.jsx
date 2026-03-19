@@ -152,11 +152,17 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
     return findLessonAfter(allSections, learningLesson.id);
   }, [allSections, learningLesson]);
 
+  // Track whether we arrived via "Continue to next lesson" so the
+  // loading screen shows as a preview pause rather than auto-advancing
+  const [entryIsPreview, setEntryIsPreview] = useState(false);
+
   const handleNextLesson = nextLessonAfterCurrent ? () => {
-    const { section, module, lesson } = nextLessonAfterCurrent;
+    const { module, lesson } = nextLessonAfterCurrent;
+    // Set the new lesson explicitly so learningLesson re-derives correctly
     setSelectedLessonId(lesson.id);
     setSelectedModuleId(module.id);
     setLessonReturnScreen("home");
+    setEntryIsPreview(true);
     setScreen("learningLesson");
   } : null;
 
@@ -228,12 +234,22 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
         userId={user?.id}
         onBack={() => {
           setSelectedLessonId(null);
+          setSelectedModuleId(null);
+          setEntryIsPreview(false);
           setScreen(lessonReturnScreen);
         }}
-        onBrowseCourse={() => setScreen("learningHome")}
-        onLessonComplete={() => {
+        onBrowseCourse={() => {
           setSelectedLessonId(null);
           setSelectedModuleId(null);
+          setEntryIsPreview(false);
+          setScreen("learningHome");
+        }}
+        loadingMode={entryIsPreview ? "preview" : "auto"}
+        onLessonComplete={() => {
+          // Don't clear selectedLessonId here — lesson complete card is still
+          // showing and learningLesson must stay pinned to the current lesson
+          // so nextLessonAfterCurrent derives correctly.
+          // We clear it when the user actively navigates away instead.
         }}
         onNextLesson={handleNextLesson}
       />
@@ -282,6 +298,7 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
         setSelectedModuleId(null);
         setSelectedLessonId(null);
         setLessonReturnScreen("home");
+        setEntryIsPreview(false);
         setScreen("learningLesson");
       }}
       onBrowseCourse={() => setScreen("learningHome")}
