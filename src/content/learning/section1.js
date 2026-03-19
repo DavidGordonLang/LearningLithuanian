@@ -285,6 +285,18 @@ const section1 = {
               ],
             },
             {
+              id: "s1m1l3_b3b",
+              type: "recognise_mcq",
+              title: "Choose the right phrase",
+              prompt: { text: "You want to formally excuse yourself or ask forgiveness — more polite than usual." },
+              options: [
+                { id: "a", text: "Atsiprašau", isCorrect: false },
+                { id: "b", text: "Atleiskite", isCorrect: true },
+                { id: "c", text: "Prašau", isCorrect: false },
+              ],
+              feedback: { correct: "Atleiskite is the more formal version — used when you want to be especially polite or respectful." },
+            },
+            {
               id: "s1m1l3_b4",
               type: "build_phrase",
               title: "Build the phrase",
