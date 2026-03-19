@@ -766,7 +766,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
 
 // ─── Lesson complete card ─────────────────────────────────────────────────────
 
-function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onNextLesson }) {
+function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onNextLesson, nextLessonTitle }) {
   return (
     <SurfaceCard className="p-5">
       <div className="text-[11px] uppercase tracking-wide text-zinc-500">Lesson complete</div>
@@ -775,17 +775,25 @@ function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onN
         <SmallMetaPill accent="emerald">✓ Done</SmallMetaPill>
         {xpEarned ? <SmallMetaPill accent="emerald">+{xpEarned} XP</SmallMetaPill> : null}
       </div>
-      <div className="mt-5 flex flex-col gap-3">
-        {typeof onNextLesson === "function" ? (
-          <ActionButton onClick={onNextLesson} className="w-full">Continue to next lesson →</ActionButton>
-        ) : null}
-        <ActionButton variant={onNextLesson ? "secondary" : "primary"} onClick={onBack} className="w-full">
-          Back to training
-        </ActionButton>
-        {typeof onBrowseCourse === "function" ? (
-          <ActionButton variant="ghost" onClick={onBrowseCourse} className="w-full">Browse course</ActionButton>
-        ) : null}
-      </div>
+
+      {typeof onNextLesson === "function" ? (
+        <div className="mt-5 space-y-3">
+          <div className="text-[12px] text-zinc-500">What would you like to do next?</div>
+          <ActionButton onClick={onNextLesson} className="w-full">
+            {nextLessonTitle ? `Start: ${nextLessonTitle} →` : "Start next lesson →"}
+          </ActionButton>
+          <ActionButton variant="ghost" onClick={onBack} className="w-full">
+            Back to training
+          </ActionButton>
+        </div>
+      ) : (
+        <div className="mt-5 flex flex-col gap-3">
+          <ActionButton onClick={onBack} className="w-full">Back to training</ActionButton>
+          {typeof onBrowseCourse === "function" ? (
+            <ActionButton variant="ghost" onClick={onBrowseCourse} className="w-full">Browse course</ActionButton>
+          ) : null}
+        </div>
+      )}
     </SurfaceCard>
   );
 }
@@ -795,6 +803,7 @@ function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onN
 export default function LearningLessonView({
   section, module, lesson, lessonIndex, playText, showToast,
   userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
+  nextLessonTitle,
   loadingMode = "auto", // "auto" = first entry, "preview" = came from lesson complete
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
@@ -902,10 +911,11 @@ export default function LearningLessonView({
           onBack={onBack}
           onBrowseCourse={onBrowseCourse}
           onNextLesson={typeof onNextLesson === "function" ? onNextLesson : null}
+          nextLessonTitle={nextLessonTitle}
         />
       ) : (
         <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
-          {!isScenarioBlock ? <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">{currentBlock?.title || ""}</div> : null}
+          {!isScenarioBlock && !isChoiceBlock ? <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">{currentBlock?.title || ""}</div> : null}
           {currentBlock ? (
             <BlockRenderer
               key={currentBlock.id}
