@@ -9,9 +9,9 @@
 //  - Case form guidance added (nominative / accusative / genitive shown via examples)
 //  - Ordinal form added for number words
 //  - Two few-shot examples embedded — one with variants, one without
-//  - Variants escape hatch removed; model must commit to a decision with explanation
-//  - Temperature raised to 0.4 for enrichment to reduce conservative suppression
+//  - Variants rebalanced — model actively looks for alternatives rather than suppressing them
 //  - Category prompt rewritten with ordered dominance rules and English-first classification
+//  - tone, gender (addressee), and speakerGender now passed in and used for contextual accuracy
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -31,6 +31,9 @@ export default async function handler(req, res) {
   const phonetics = typeof body.phonetics === "string" ? body.phonetics.trim() : "";
   const en_natural = typeof body.en_natural === "string" ? body.en_natural.trim() : "";
   const en_literal = typeof body.en_literal === "string" ? body.en_literal.trim() : "";
+  const tone = typeof body.tone === "string" ? body.tone.trim() : "friendly";
+  const gender = typeof body.gender === "string" ? body.gender.trim() : "male";
+  const speakerGender = typeof body.speakerGender === "string" ? body.speakerGender.trim() : "male";
 
   if (!lt) {
     return res.status(400).json({ error: "Missing lt" });
@@ -97,7 +100,8 @@ USAGE
 ────────────────────────────────
 1-2 sentences describing WHEN a Lithuanian speaker would actually say this.
 Be specific — name realistic situations. Avoid generic filler.
-Do NOT mention grammar. Do NOT assume gender unless the Lithuanian wording encodes it.
+Use the context provided (tone, addressee, speaker gender) to make the Usage accurate.
+For example, if the tone is polite or the addressee is a group, reflect that in the situation described.
 
 ────────────────────────────────
 NOTES — FIXED STRUCTURE
@@ -110,6 +114,8 @@ SECTION 1 — MEANING AND TONE (always include)
 2-3 sentences on what the phrase expresses and how it sounds.
 Cover register: is it neutral, warm, blunt, intimate, vulgar, formal, casual?
 If the phrase has a nuance an English speaker would miss, name it directly.
+If the speaker gender or addressee affects meaning or word choice, mention it naturally here
+(e.g. "The ending shows the speaker is female" or "This uses the plural jūs form").
 
 SECTION 2 — ENGLISH SPEAKER TRAPS (include when relevant)
 One thing an English speaker is likely to misunderstand or mistranslate.
@@ -221,6 +227,7 @@ Input:
 LITHUANIAN: As esu baisiai alkana
 ENGLISH (NATURAL): I am really hungry
 ENGLISH (LITERAL): I am terribly hungry
+SPEAKER GENDER: female
 
 Good output:
 
@@ -228,7 +235,7 @@ Good output:
   "Usage": "Said when hunger is strong enough to be worth mentioning — before a meal, after a long gap without eating, or when asking to stop somewhere to eat.",
   "Notes": "The word baisiai literally means terribly or dreadfully, and it makes the hunger sound dramatic rather than polite. It is a common spoken intensifier in Lithuanian, roughly equivalent to saying absolutely starving rather than just hungry in English.
 
-The ending of alkana shows the speaker is female. A male speaker would say alkanas. The word baisiai stays the same regardless.
+The ending alkana shows the speaker is female. A male speaker would say alkanas instead. The word baisiai stays the same regardless of gender.
 
 As subject: Alkana moteris — A hungry woman
 As object: Maciau alkana vaika — I saw a hungry child
@@ -304,6 +311,12 @@ Rules:
 - No explanation. No extra keys. No text outside JSON.
 `.trim();
 
+  // Build context line for enrichUser so the model knows the translation settings
+  const addresseeLabel =
+    gender === "group" ? "group (plural)" : gender === "female" ? "female" : "male";
+  const toneLabel = tone === "polite" ? "polite (jūs)" : "friendly (tu)";
+  const speakerLabel = speakerGender === "female" ? "female" : "male";
+
   const enrichUser = `
 LITHUANIAN:
 ${lt}
@@ -316,6 +329,11 @@ ${en_natural || "(not provided)"}
 
 ENGLISH (LITERAL):
 ${en_literal || "(not provided)"}
+
+CONTEXT:
+Speaker gender: ${speakerLabel}
+Addressee: ${addresseeLabel}
+Tone: ${toneLabel}
 `.trim();
 
   const categoryUser = `
