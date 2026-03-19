@@ -9,7 +9,7 @@
 //  - Case form guidance added (nominative / accusative / genitive shown via examples)
 //  - Ordinal form added for number words
 //  - Few-shot example embedded to anchor output quality
-//  - Variant fabrication rules tightened
+//  - Variants section rebalanced — model now actively looks for alternatives rather than suppressing them
 //  - Category prompt rewritten with ordered dominance rules and English-first classification
 
 export default async function handler(req, res) {
@@ -141,12 +141,20 @@ Ordinal: pirmas (masc.) / pirma (fem.) — first
 Example: pirmas namas — the first house
 
 SECTION 5 — VARIANTS
-Include variants ONLY when there are genuinely commonly used spoken alternatives.
-A variant must be meaningfully different in wording — not just a word-order shuffle of the same phrase.
-NEVER list the original phrase itself, or a near-identical rephrasing, as a variant.
+This section is IMPORTANT. Lithuanian speakers often have several natural ways to say the same
+thing, and knowing the alternatives is genuinely useful for a learner.
 
-Do NOT include variants to meet a quota. It is fine to have none.
-Include one strong variant, or two if both are genuinely natural in real speech.
+Think actively about whether any of these apply:
+- A more casual or more formal way to say the same thing
+- A more vivid or more neutral version
+- A word that is more common in everyday spoken Lithuanian
+- A shorter or longer version that changes the tone
+
+Include 1-2 variants if any of the above apply. The bar is: would a real Lithuanian speaker
+naturally say this in the same situation? If yes, include it.
+
+The ONE hard rule: never list the original phrase itself, or a rephrasing that uses
+identical words in a different order, as a variant. It must be genuinely different wording.
 
 If variants ARE included, format them exactly like this — no deviations:
 
@@ -157,9 +165,11 @@ Variants:
 - Lithuanian phrase — natural English meaning
   phonetics
 
-After the variants block, you may add 1-2 sentences on tone or frequency differences.
+After the variants block, add 1-2 sentences explaining the difference in tone or usage
+between the original and the variant(s).
 
-If there are NO useful variants, write this exact sentence at the end of Notes:
+If after genuinely considering the above you are confident there are no useful alternatives,
+write this exact sentence at the end of Notes:
 No useful variants for this phrase.
 
 ────────────────────────────────
