@@ -123,8 +123,14 @@ export default function HomeView({
   }, []);
 
   const [input, setInput] = useState("");
-  const [gender, setGender] = useState("neutral");
+
+  // addressee — who the user is speaking TO
+  const [gender, setGender] = useState("male");
+  // tone
   const [tone, setTone] = useState("friendly");
+
+  // speaker gender comes from persisted settings — the user's own gender
+  const speakerGender = useSettingsStore((s) => s.speakerGender);
 
   const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
 
@@ -142,6 +148,7 @@ export default function HomeView({
     rows,
     tone,
     gender,
+    speakerGender,
     showToast,
   });
 
@@ -336,9 +343,9 @@ export default function HomeView({
                 value={gender}
                 onChange={handleGenderChange}
                 options={[
-                  { value: "neutral", label: "Neutral" },
                   { value: "male", label: "Male" },
                   { value: "female", label: "Female" },
+                  { value: "group", label: "Group" },
                 ]}
               />
             </div>
@@ -355,7 +362,6 @@ export default function HomeView({
                 onChange={handleToneChange}
                 options={[
                   { value: "friendly", label: "Friendly" },
-                  { value: "neutral", label: "Neutral" },
                   { value: "polite", label: "Polite" },
                 ]}
               />
