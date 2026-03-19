@@ -131,10 +131,15 @@ function AudioIconButton({ text, playText, label = "Play audio" }) {
 }
 
 // ─── Loading screen ───────────────────────────────────────────────────────────
+//
+// mode="auto"    — bar fills and auto-advances into the lesson (first tap-in)
+// mode="preview" — bar fills then stops; shows Continue + Home buttons
+//                  Used when navigating here from a lesson complete screen.
 
-function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onReady }) {
+function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onReady, mode = "auto", onBack }) {
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [ready, setReady] = useState(false); // true once bar reaches 100%
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
@@ -149,10 +154,16 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
     animId = requestAnimationFrame(step);
     const completeTimer = setTimeout(() => {
       setProgress(100);
-      setTimeout(() => onReady?.(), 320);
+      if (mode === "auto") {
+        // Auto-advance after brief pause
+        setTimeout(() => onReady?.(), 320);
+      } else {
+        // Preview mode — stop here and show buttons
+        setTimeout(() => setReady(true), 320);
+      }
     }, 1400);
     return () => { cancelAnimationFrame(raf); cancelAnimationFrame(animId); clearTimeout(completeTimer); };
-  }, [onReady]);
+  }, [onReady, mode]);
 
   return (
     <div className={cn("flex flex-col h-full px-6 transition-opacity duration-300", visible ? "opacity-100" : "opacity-0")} style={{ paddingTop: "15vh" }}>
@@ -160,12 +171,27 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
       <div className="mt-2 text-[13px] font-medium text-zinc-400 uppercase tracking-widest">{lessonDisplayLabel}</div>
       <div className="mt-3 text-[28px] font-semibold text-zinc-100 leading-snug">{lesson?.title || "Loading…"}</div>
       {lesson?.purpose ? <div className="mt-3 text-[14px] text-zinc-400 leading-relaxed max-w-xs">{lesson.purpose}</div> : null}
+
       <div className="mt-10 max-w-xs">
         <div className="h-[3px] rounded-full bg-white/[0.08] overflow-hidden">
           <div className="h-full bg-emerald-500/70 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}/>
         </div>
-        <div className="mt-2 text-[11px] text-zinc-600">Preparing lesson…</div>
+        {!ready ? (
+          <div className="mt-2 text-[11px] text-zinc-600">Preparing lesson…</div>
+        ) : null}
       </div>
+
+      {/* Preview mode buttons — appear once bar is full */}
+      {mode === "preview" && ready ? (
+        <div className={cn("mt-8 flex flex-col gap-3 max-w-xs transition-opacity duration-300", ready ? "opacity-100" : "opacity-0")}>
+          <ActionButton onClick={onReady} className="w-full">
+            Start lesson →
+          </ActionButton>
+          <ActionButton variant="ghost" onClick={onBack} className="w-full">
+            Back to training
+          </ActionButton>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -724,6 +750,7 @@ function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onN
 export default function LearningLessonView({
   section, module, lesson, lessonIndex, playText, showToast,
   userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
+  loadingMode = "auto", // "auto" = first entry, "preview" = came from lesson complete
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
   const [phase, setPhase] = useState("loading");
@@ -786,7 +813,15 @@ export default function LearningLessonView({
     return (
       <div className="max-w-xl mx-auto h-full flex flex-col">
         <div className="px-4 pt-5"><BackCircle onClick={onBack} /></div>
-        <LessonLoadingScreen lesson={lesson} module={module} section={section} lessonDisplayLabel={lessonDisplayLabel} onReady={handleLoadingReady}/>
+        <LessonLoadingScreen
+          lesson={lesson}
+          module={module}
+          section={section}
+          lessonDisplayLabel={lessonDisplayLabel}
+          onReady={handleLoadingReady}
+          onBack={onBack}
+          mode={loadingMode}
+        />
       </div>
     );
   }
