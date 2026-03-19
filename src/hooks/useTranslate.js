@@ -26,7 +26,8 @@ function buildInputKey(text) {
 export default function useTranslate({
   rows = [],
   tone = "friendly",
-  gender = "neutral",
+  gender = "male",
+  speakerGender = "male",
   onTranslated,
   setIsTranslating,
   showToast,
@@ -48,6 +49,7 @@ export default function useTranslate({
       {
         tone: overrideTone,
         gender: overrideGender,
+        speakerGender: overrideSpeakerGender,
         force = false,
       } = {}
     ) => {
@@ -55,7 +57,8 @@ export default function useTranslate({
       if (!input) return;
 
       const resolvedTone = overrideTone || tone || "friendly";
-      const resolvedGender = overrideGender || gender || "neutral";
+      const resolvedGender = overrideGender || gender || "male";
+      const resolvedSpeakerGender = overrideSpeakerGender || speakerGender || "male";
 
       const inputKey = buildInputKey(input);
       const activeRows = Array.isArray(rows) ? rows.filter((r) => !r?._deleted) : [];
@@ -106,6 +109,7 @@ export default function useTranslate({
             text: input,
             tone: resolvedTone,
             gender: resolvedGender,
+            speakerGender: resolvedSpeakerGender,
           }),
         });
 
@@ -151,6 +155,9 @@ export default function useTranslate({
               phonetics: pho,
               en_natural: enNat,
               en_literal: enLit,
+              tone: resolvedTone,
+              gender: resolvedGender,
+              speakerGender: resolvedSpeakerGender,
             }),
           });
 
@@ -200,7 +207,7 @@ export default function useTranslate({
         }
       }
     },
-    [appVersion, gender, onTranslated, rows, setIsTranslating, showToast, tone]
+    [appVersion, gender, speakerGender, onTranslated, rows, setIsTranslating, showToast, tone]
   );
 
   const reset = useCallback(() => {
