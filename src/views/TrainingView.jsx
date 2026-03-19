@@ -157,8 +157,9 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
   // Use a ref so changes don't trigger re-renders that could lose the value.
   const entryIsPreviewRef = useRef(false);
 
-  const nextLessonTitle = nextLessonAfterCurrent
-    ? nextLessonAfterCurrent.lesson?.title || null
+  // "Lesson 2", "Lesson 3" etc — 1-based index of the next lesson
+  const nextLessonLabel = nextLessonAfterCurrent
+    ? `Lesson ${nextLessonAfterCurrent.lessonIndex + 1}`
     : null;
 
   const handleNextLesson = nextLessonAfterCurrent ? () => {
@@ -257,7 +258,7 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
           // We clear it when the user actively navigates away instead.
         }}
         onNextLesson={handleNextLesson}
-        nextLessonTitle={nextLessonTitle}
+        nextLessonLabel={nextLessonLabel}
       />
     );
   }
