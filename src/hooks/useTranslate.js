@@ -1,4 +1,12 @@
 // src/hooks/useTranslate.js
+//
+// Translation flow:
+//  1. Translate call fires — result shown to user immediately on completion
+//  2. Enrich call fires straight after (non-blocking) — fills in Usage, Notes, Category
+//     when it arrives without making the user wait for it
+//
+// This means the user sees the Lithuanian output as fast as possible.
+
 import { useCallback, useRef, useState } from "react";
 import { makeLtKey } from "../utils/contentKey";
 
@@ -34,11 +42,12 @@ export default function useTranslate({
   appVersion,
 } = {}) {
   const [result, setResult] = useState(EMPTY_RESULT);
-
-  // Compatibility: HomeView expects `translating` state from the hook.
   const [translating, setTranslating] = useState(false);
 
-  // Prevent stale finally() from flipping state if a newer translate started.
+  // Tracks whether enrichment is in flight so callers can show a subtle indicator
+  const [enriching, setEnriching] = useState(false);
+
+  // Prevent stale callbacks from updating state after a newer translate started
   const inFlightIdRef = useRef(0);
 
   const [duplicateEntry, setDuplicateEntry] = useState(null);
@@ -63,9 +72,7 @@ export default function useTranslate({
       const inputKey = buildInputKey(input);
       const activeRows = Array.isArray(rows) ? rows.filter((r) => !r?._deleted) : [];
 
-      // Duplicate detection before translate:
-      // - If user typed English, match against saved English variants
-      // - If user typed Lithuanian, match against Lithuanian/contentKey
+      // Duplicate detection before translate
       if (!force && inputKey) {
         const existing = activeRows.find((r) => {
           const ltKey = String(
@@ -102,6 +109,10 @@ export default function useTranslate({
         setIsTranslating?.(true);
         setTranslating(true);
 
+        // -----------------------------------------------------------------------
+        // STEP 1 — TRANSLATE
+        // Show result to user as soon as this completes, without waiting for enrich
+        // -----------------------------------------------------------------------
         const res = await fetch("/api/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -123,28 +134,47 @@ export default function useTranslate({
 
         const lt = String(data.lt || "").trim();
         const cat = String(data.category || "").trim();
-
-        // Backwards compatibility:
-        // - server returns `phonetics` (EN-style) + `phonetics_ipa` (IPA)
-        // - some older builds may have only `phonetics`
         const pho = String(data.phonetics || "").trim();
         const ipa = String(data.phonetics_ipa || "").trim();
-
-        // Server returns snake_case for English meanings
         const enLit = String(data.en_literal || "").trim();
         const enNat = String(data.en_natural || "").trim();
 
-        // If lt is empty, treat as failure (contract)
         if (!lt || !pho || !enLit || !enNat) {
           const msg = "Translate returned incomplete data";
           showToast?.(msg);
           throw new Error(msg);
         }
 
-        // Enrichment is optional for a usable translation result
-        let usageOut = "";
-        let notesOut = "";
-        let categoryOut = cat || "";
+        // Build partial result — everything we have from translation alone
+        const partialResult = {
+          ltOut: lt,
+          categoryOut: cat || "",
+          phonetics: pho,
+          phoneticsIpa: ipa,
+          enLiteral: enLit,
+          enNatural: enNat,
+          usageOut: "",
+          notesOut: "",
+          sourceLang:
+            String(data.source_lang || data.sourceLang || "en") === "lt"
+              ? "lt"
+              : "en",
+        };
+
+        // Show translation to user immediately — stop the translating spinner
+        if (inFlightIdRef.current === myId) {
+          setResult(partialResult);
+          setTranslating(false);
+          setIsTranslating?.(false);
+          onTranslated?.(partialResult);
+        }
+
+        // -----------------------------------------------------------------------
+        // STEP 2 — ENRICH (non-blocking — user already sees the translation)
+        // -----------------------------------------------------------------------
+        if (inFlightIdRef.current === myId) {
+          setEnriching(true);
+        }
 
         try {
           const enrichRes = await fetch("/api/enrich", {
@@ -163,48 +193,34 @@ export default function useTranslate({
 
           const enrichData = await enrichRes.json().catch(() => ({}));
 
-          if (enrichRes.ok) {
-            categoryOut = String(
-              enrichData?.Category || categoryOut || ""
-            ).trim();
-            usageOut = String(enrichData?.Usage || "").trim();
-            notesOut = String(enrichData?.Notes || "").trim();
+          if (enrichRes.ok && inFlightIdRef.current === myId) {
+            const fullResult = {
+              ...partialResult,
+              categoryOut: String(enrichData?.Category || cat || "").trim(),
+              usageOut: String(enrichData?.Usage || "").trim(),
+              notesOut: String(enrichData?.Notes || "").trim(),
+            };
+
+            setResult(fullResult);
+            onTranslated?.(fullResult);
           }
         } catch {
-          // swallow enrich errors; translation is still valid
+          // Swallow enrich errors — translation is already visible and valid
+        } finally {
+          if (inFlightIdRef.current === myId) {
+            setEnriching(false);
+          }
         }
 
-        const next = {
-          ltOut: lt,
-          categoryOut,
-          phonetics: pho,
-          phoneticsIpa: ipa,
-          enLiteral: enLit,
-          enNatural: enNat,
-          usageOut,
-          notesOut,
-          sourceLang:
-            String(data.source_lang || data.sourceLang || "en") === "lt"
-              ? "lt"
-              : "en",
-        };
-
-        if (inFlightIdRef.current === myId) {
-          setResult(next);
-          onTranslated?.(next);
-        }
-
-        try {
-          // kept to preserve signature usage
-          appVersion;
-        } catch {}
-
-        return next;
-      } finally {
+        return partialResult;
+      } catch (err) {
+        // Only reset translating state here if we haven't already done so above
         if (inFlightIdRef.current === myId) {
           setIsTranslating?.(false);
           setTranslating(false);
+          setEnriching(false);
         }
+        throw err;
       }
     },
     [appVersion, gender, speakerGender, onTranslated, rows, setIsTranslating, showToast, tone]
@@ -216,6 +232,7 @@ export default function useTranslate({
     setDuplicateEntry(null);
     setIsTranslating?.(false);
     setTranslating(false);
+    setEnriching(false);
   }, [setIsTranslating]);
 
   const translateText = useCallback(
@@ -245,5 +262,8 @@ export default function useTranslate({
     resetTranslation,
     duplicateEntry,
     setDuplicateEntry,
+
+    // enrichment in-flight indicator — optional, callers can use to show a subtle spinner
+    enriching,
   };
 }
