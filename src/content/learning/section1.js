@@ -93,7 +93,7 @@ const section1 = {
               tokens: [
                 { id: "t1", text: "Labas", correctIndex: 0 },
                 { id: "t2", text: "rytas", correctIndex: 1 },
-                { id: "t3", text: "vakaras", correctIndex: 2 },
+                { id: "t3", text: "vakaras", isDistractor: true },
               ],
               answerText: "Labas rytas",
             },
@@ -487,6 +487,7 @@ const section1 = {
                 { id: "t1", text: "Prašau", correctIndex: 0 },
                 { id: "t2", text: "dar", correctIndex: 1 },
                 { id: "t3", text: "kartą", correctIndex: 2 },
+                { id: "t4", text: "labai", isDistractor: true },
               ],
               answerText: "Prašau dar kartą",
             },
