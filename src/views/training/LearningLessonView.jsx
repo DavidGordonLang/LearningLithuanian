@@ -669,7 +669,7 @@ function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
 
 // ─── Scenario chain — description shown ABOVE chat window, never read by TTS ──
 
-function ScenarioChainBlock({ block, playText, onComplete }) {
+function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
   const timeoutsRef = useRef([]);
   const feedRef = useRef(null);
@@ -752,7 +752,12 @@ function ScenarioChainBlock({ block, playText, onComplete }) {
       </div>
       {/* Celebration panel — user taps Continue to proceed */}
       {conversationComplete ? (
-        <ScenarioCompletePanel onContinue={() => onComplete?.()} />
+        <ScenarioCompletePanel onContinue={() => {
+          onComplete?.();
+          // Always try to advance — advanceBlock clamps to last block,
+          // so for the final block this is safe and lessonComplete renders.
+          onAdvance?.();
+        }} />
       ) : null}
     </div>
   );
@@ -795,7 +800,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} completed={completed}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} onComplete={onComplete} completed={completed}/>;
-    case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete}/>;
+    case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance}/>;
     default: return <div className="text-sm text-zinc-500">Unknown block type.</div>;
   }
 }
@@ -872,7 +877,7 @@ export default function LearningLessonView({
   const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response"].includes(currentBlock?.type);
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
-  const showNavBar = !lessonComplete && !isChoiceBlock;
+  const showNavBar = !lessonComplete && !isChoiceBlock && !isScenarioBlock;
 
   // Fire completion once
   useEffect(() => {
