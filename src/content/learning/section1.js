@@ -47,7 +47,7 @@ const section1 = {
               id: "s1m1l1_b2",
               type: "listen_mcq",
               title: "Listen and choose",
-              prompt: { audioText: "Labas" },
+              prompt: { text: "Labas", audioText: "Labas" },
               options: [
                 { id: "a", text: "Goodbye", isCorrect: false },
                 { id: "b", text: "Hello", isCorrect: true },
@@ -164,7 +164,7 @@ const section1 = {
               id: "s1m1l2_b2",
               type: "listen_mcq",
               title: "Listen and choose",
-              prompt: { audioText: "Ačiū" },
+              prompt: { text: "Ačiū", audioText: "Ačiū" },
               options: [
                 { id: "a", text: "Please", isCorrect: false },
                 { id: "b", text: "Yes", isCorrect: false },
@@ -300,7 +300,7 @@ const section1 = {
               id: "s1m1l3_b5",
               type: "listen_mcq",
               title: "Listen and choose",
-              prompt: { audioText: "Atsiprašau" },
+              prompt: { text: "Atsiprašau", audioText: "Atsiprašau" },
               options: [
                 { id: "a", text: "Ačiū", isCorrect: false },
                 { id: "b", text: "Atsiprašau", isCorrect: true },
@@ -448,7 +448,7 @@ const section1 = {
               id: "s1m1c_b1",
               type: "listen_mcq",
               title: "Listen and identify",
-              prompt: { audioText: "Laba diena" },
+              prompt: { text: "Laba diena", audioText: "Laba diena" },
               options: [
                 { id: "a", text: "Good morning", isCorrect: false },
                 { id: "b", text: "Good day / Hello", isCorrect: true },
@@ -503,7 +503,7 @@ const section1 = {
               id: "s1m1c_b6",
               type: "listen_mcq",
               title: "Listen and identify",
-              prompt: { audioText: "Atsiprašau" },
+              prompt: { text: "Atsiprašau", audioText: "Atsiprašau" },
               options: [
                 { id: "a", text: "Thank you", isCorrect: false },
                 { id: "b", text: "Goodbye", isCorrect: false },
