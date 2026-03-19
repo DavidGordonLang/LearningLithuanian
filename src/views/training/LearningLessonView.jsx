@@ -275,15 +275,23 @@ function LearnBlock({ block, playText, onComplete, completed, navBarRef }) {
   );
 }
 
-function ChoiceOption({ option, selected, revealState, onClick }) {
+function ChoiceOption({ option, selected, revealState, onClick, playText, playAudio }) {
   const stateClass = revealState === "idle"
     ? selected ? "border-white/20 bg-white/[0.07] text-zinc-100"
       : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]"
     : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
     : selected ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
+
+  const handleClick = () => {
+    if (playAudio && playText && option.text) {
+      try { playText(option.text); } catch {}
+    }
+    onClick();
+  };
+
   return (
-    <button type="button" data-press onClick={onClick} disabled={revealState !== "idle"}
+    <button type="button" data-press onClick={handleClick} disabled={revealState !== "idle"}
       className={cn("w-full text-left rounded-2xl border px-4 py-3 text-[14px] transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
       {option.text}
     </button>
@@ -357,7 +365,15 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
 
       <div className="grid gap-2">
         {options.map((option) => (
-          <ChoiceOption key={option.id} option={option} selected={selectedId === option.id} revealState={revealState} onClick={() => handleSelect(option)}/>
+          <ChoiceOption
+            key={option.id}
+            option={option}
+            selected={selectedId === option.id}
+            revealState={revealState}
+            onClick={() => handleSelect(option)}
+            playText={playText}
+            playAudio={!isListen}
+          />
         ))}
       </div>
       {revealState === "revealed" ? (
@@ -653,14 +669,22 @@ function TypingBubble() {
   );
 }
 
-function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
+function ScenarioTrayOption({ option, selectedId, revealState, onClick, playText }) {
   const stateClass = revealState === "idle"
     ? "border-white/10 bg-white/[0.03] text-zinc-200 hover:border-white/20 hover:bg-white/[0.05]"
     : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
     : selectedId === option.id ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
+
+  const handleClick = () => {
+    if (playText && option.text) {
+      try { playText(option.text); } catch {}
+    }
+    onClick();
+  };
+
   return (
-    <button type="button" data-press onClick={onClick} disabled={revealState !== "idle"}
+    <button type="button" data-press onClick={handleClick} disabled={revealState !== "idle"}
       className={cn("w-full text-left rounded-2xl border px-4 py-3 text-[14px] transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
       {option.text}
     </button>
@@ -745,7 +769,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
           <div className="border-t border-white/10 bg-black/25 px-4 py-3">
             <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Your response</div>
             <div className="grid gap-2">
-              {options.map((option) => <ScenarioTrayOption key={option.id} option={option} selectedId={selectedId} revealState={revealState} onClick={() => handleSelect(option)}/>)}
+              {options.map((option) => <ScenarioTrayOption key={option.id} option={option} selectedId={selectedId} revealState={revealState} onClick={() => handleSelect(option)} playText={playText}/>)}
             </div>
           </div>
         ) : null}
