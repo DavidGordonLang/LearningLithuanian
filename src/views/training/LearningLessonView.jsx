@@ -303,12 +303,22 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
-    // If wrong on a best_response or recognise_mcq block, play the correct LT answer after a short delay
-    // listen_mcq has English options — never play audio for those
-    if (!option.isCorrect && (isBestResponse || block?.type === "recognise_mcq")) {
-      const correct = options.find((o) => o.isCorrect);
-      if (correct?.text && playText) {
-        setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
+    if (isBestResponse) {
+      // best_response: options are Lithuanian — play selected option if correct,
+      // or play correct option after delay if wrong
+      if (option.isCorrect) {
+        try { playText?.(option.text); } catch {}
+      } else {
+        const correct = options.find((o) => o.isCorrect);
+        if (correct?.text && playText) {
+          setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
+        }
+      }
+    } else if (isListen || block?.type === "recognise_mcq") {
+      // listen_mcq / recognise_mcq: options are English — never play option text.
+      // Instead play the LT prompt audio on correct answer to reinforce the word.
+      if (option.isCorrect && audioText && playText) {
+        try { playText(audioText); } catch {}
       }
     }
   };
@@ -360,7 +370,7 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
             revealState={revealState}
             onClick={() => handleSelect(option)}
             playText={playText}
-            playAudio={block?.type === "best_response" || block?.type === "recognise_mcq"}
+            playAudio={block?.type === "best_response"}
           />
         ))}
       </div>
