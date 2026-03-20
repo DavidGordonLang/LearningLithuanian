@@ -132,10 +132,7 @@ function AudioIconButton({ text, playText, label = "Play audio" }) {
 }
 
 // ─── Loading screen ───────────────────────────────────────────────────────────
-//
-// mode="auto"    — bar fills and auto-advances into the lesson (first tap-in)
-// mode="preview" — bar fills then stops; shows Continue + Home buttons
-//                  Used when navigating here from a lesson complete screen.
+// Bar fills then always auto-advances into the lesson.
 
 function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onReady }) {
   const [progress, setProgress] = useState(0);
@@ -158,7 +155,7 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
       setTimeout(() => onReady?.(), 320);
     }, 1400);
     return () => { cancelAnimationFrame(raf); cancelAnimationFrame(animId); clearTimeout(completeTimer); };
-  }, [onReady, mode]);
+  }, [onReady]);
 
   return (
     <div className={cn("flex flex-col h-full px-6 transition-opacity duration-300", visible ? "opacity-100" : "opacity-0")} style={{ paddingTop: "15vh" }}>
