@@ -136,10 +136,9 @@ function AudioIconButton({ text, playText, label = "Play audio" }) {
 // mode="preview" — bar fills then stops; shows Continue + Home buttons
 //                  Used when navigating here from a lesson complete screen.
 
-function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onReady, mode = "auto", onBack }) {
+function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onReady }) {
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false); // true once bar reaches 100%
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
@@ -154,13 +153,8 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
     animId = requestAnimationFrame(step);
     const completeTimer = setTimeout(() => {
       setProgress(100);
-      if (mode === "auto") {
-        // Auto-advance after brief pause
-        setTimeout(() => onReady?.(), 320);
-      } else {
-        // Preview mode — stop here and show buttons
-        setTimeout(() => setReady(true), 320);
-      }
+      // Always auto-advance — user has already chosen to continue
+      setTimeout(() => onReady?.(), 320);
     }, 1400);
     return () => { cancelAnimationFrame(raf); cancelAnimationFrame(animId); clearTimeout(completeTimer); };
   }, [onReady, mode]);
@@ -176,22 +170,8 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
         <div className="h-[3px] rounded-full bg-white/[0.08] overflow-hidden">
           <div className="h-full bg-emerald-500/70 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}/>
         </div>
-        {!ready ? (
-          <div className="mt-2 text-[11px] text-zinc-600">Preparing lesson…</div>
-        ) : null}
+        <div className="mt-2 text-[11px] text-zinc-600">Preparing lesson…</div>
       </div>
-
-      {/* Preview mode buttons — appear once bar is full */}
-      {mode === "preview" && ready ? (
-        <div className={cn("mt-8 flex flex-col gap-3 max-w-xs transition-opacity duration-300", ready ? "opacity-100" : "opacity-0")}>
-          <ActionButton onClick={onReady} className="w-full">
-            Start lesson →
-          </ActionButton>
-          <ActionButton variant="ghost" onClick={onBack} className="w-full">
-            Back to training
-          </ActionButton>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -381,7 +361,7 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
             revealState={revealState}
             onClick={() => handleSelect(option)}
             playText={playText}
-            playAudio={!isListen}
+            playAudio={block?.type === "best_response"}
           />
         ))}
       </div>
@@ -1083,35 +1063,55 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
 
 // ─── Lesson complete card ─────────────────────────────────────────────────────
 
-function LessonCompleteCard({ lessonTitle, xpEarned, onBack, onBrowseCourse, onNextLesson, nextLessonLabel }) {
+function NailedItCard({ lessonTitle, xpEarned, onNextLesson, nextLessonLabel, onBack }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   return (
-    <SurfaceCard className="p-5">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500">Lesson complete</div>
-      <div className="mt-2 text-[22px] font-semibold text-zinc-100 leading-snug">{lessonTitle}</div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <SmallMetaPill accent="emerald">✓ Done</SmallMetaPill>
-        {xpEarned ? <SmallMetaPill accent="emerald">+{xpEarned} XP</SmallMetaPill> : null}
+    <div className={cn(
+      "rounded-2xl border border-emerald-400/25 bg-emerald-500/[0.08] px-5 py-5",
+      "transition-all duration-300",
+      visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+    )}>
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-1">
+        <div className="h-7 w-7 rounded-full bg-emerald-500/25 flex items-center justify-center shrink-0 text-[15px] font-bold text-emerald-300">
+          ✓
+        </div>
+        <div>
+          <div className="text-[18px] font-semibold text-emerald-200 leading-snug">
+            Lesson complete!
+          </div>
+          <div className="text-[13px] text-zinc-400 mt-0.5">{lessonTitle}</div>
+        </div>
       </div>
 
-      {typeof onNextLesson === "function" ? (
-        <div className="mt-5 space-y-3">
-          <div className="text-[12px] text-zinc-500">What would you like to do next?</div>
+      {/* XP */}
+      {xpEarned ? (
+        <div className="mt-3 mb-4">
+          <SmallMetaPill accent="emerald">+{xpEarned} XP</SmallMetaPill>
+        </div>
+      ) : <div className="mt-4" />}
+
+      {/* Actions */}
+      <div className="flex flex-col gap-2">
+        {typeof onNextLesson === "function" ? (
           <ActionButton onClick={onNextLesson} className="w-full">
-            {nextLessonLabel ? `Start: ${nextLessonLabel} →` : "Start next lesson →"}
+            {nextLessonLabel ? `${nextLessonLabel} →` : "Next lesson →"}
           </ActionButton>
-          <ActionButton variant="ghost" onClick={onBack} className="w-full">
-            Back to training
-          </ActionButton>
-        </div>
-      ) : (
-        <div className="mt-5 flex flex-col gap-3">
-          <ActionButton onClick={onBack} className="w-full">Back to training</ActionButton>
-          {typeof onBrowseCourse === "function" ? (
-            <ActionButton variant="ghost" onClick={onBrowseCourse} className="w-full">Browse course</ActionButton>
-          ) : null}
-        </div>
-      )}
-    </SurfaceCard>
+        ) : null}
+        <ActionButton
+          variant={typeof onNextLesson === "function" ? "ghost" : "primary"}
+          onClick={onBack}
+          className="w-full"
+        >
+          Learning home
+        </ActionButton>
+      </div>
+    </div>
   );
 }
 
@@ -1121,7 +1121,6 @@ export default function LearningLessonView({
   section, module, lesson, lessonIndex, playText, showToast,
   userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
   nextLessonLabel,
-  loadingMode = "auto", // "auto" = first entry, "preview" = came from lesson complete
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
   const [phase, setPhase] = useState("loading");
@@ -1190,8 +1189,6 @@ export default function LearningLessonView({
           section={section}
           lessonDisplayLabel={lessonDisplayLabel}
           onReady={handleLoadingReady}
-          onBack={onBack}
-          mode={loadingMode}
         />
       </div>
     );
@@ -1222,13 +1219,12 @@ export default function LearningLessonView({
       </div>
 
       {lessonComplete ? (
-        <LessonCompleteCard
+        <NailedItCard
           lessonTitle={lesson.title}
           xpEarned={xpEarned}
-          onBack={onBack}
-          onBrowseCourse={onBrowseCourse}
           onNextLesson={typeof onNextLesson === "function" ? onNextLesson : null}
           nextLessonLabel={nextLessonLabel}
+          onBack={onBack}
         />
       ) : (
         <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
