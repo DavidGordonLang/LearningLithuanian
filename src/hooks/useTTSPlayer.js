@@ -51,8 +51,6 @@ export default function useTTSPlayer({
   // Track whether audio has been unlocked by a user gesture
   const audioUnlocked = useRef(false);
 
-  // Unlock audio context on first user interaction — required on Android Chrome.
-  // Creates and immediately pauses a silent audio element to prime the browser.
   const unlockAudio = useCallback(() => {
     if (audioUnlocked.current) return;
     audioUnlocked.current = true;
@@ -88,8 +86,11 @@ export default function useTTSPlayer({
     };
 
     try {
+      console.log('[TTS] calling audio.play()');
       await audio.play();
+      console.log('[TTS] audio.play() resolved');
     } catch (e) {
+      console.log('[TTS] audio.play() REJECTED:', e.name, e.message);
       try {
         URL.revokeObjectURL(url);
       } catch {}
@@ -124,13 +125,19 @@ export default function useTTSPlayer({
       const key = makeCacheKey({ text: raw, voice, slow });
 
       const memHit = mem.current.get(key);
-      if (memHit) return memHit;
+      if (memHit) {
+        console.log('[TTS] mem hit:', key.slice(-8));
+        return memHit;
+      }
 
       const idbHit = await ttsIdbGet(key);
       if (idbHit) {
+        console.log('[TTS] idb hit:', key.slice(-8));
         mem.current.set(key, idbHit);
         return idbHit;
       }
+
+      console.log('[TTS] cache miss, fetching:', key.slice(-8));
 
       const inflightHit = inflight.current.get(key);
       if (inflightHit) {
@@ -178,7 +185,7 @@ export default function useTTSPlayer({
       const raw = String(text || "");
       if (!raw.trim()) return;
 
-      // Unlock audio synchronously within the gesture before any async work
+      console.log('[TTS] playText called:', raw.slice(0, 20));
       unlockAudio();
       stop();
 
