@@ -478,7 +478,7 @@ const section1 = {
             pattern: "This lesson is about chaining phrases together — real conversations are just short chains.",
             usage: [
               "Kaip sekasi? — How are you? (casual, very common)",
-              "Gerai, ačiū — Fine, thank you (the standard reply)",
+              "Gerai, ačiū — Good, thank you (the standard reply)",
               "Puiku — Great (a more upbeat reply)",
             ],
           },
@@ -489,7 +489,7 @@ const section1 = {
               title: "How are you?",
               items: [
                 { id: "ks1", lt: "Kaip sekasi?", en: "How are you?", audioText: "Kaip sekasi", saveable: true, core: true },
-                { id: "ks2", lt: "Gerai, ačiū", en: "Fine, thank you", audioText: "Gerai, ačiū", saveable: true, core: true },
+                { id: "ks2", lt: "Gerai, ačiū", en: "Good, thank you", audioText: "Gerai, ačiū", saveable: true, core: true },
                 { id: "ks3", lt: "Puiku", en: "Great", audioText: "Puiku", saveable: true, core: true },
               ],
             },
@@ -531,7 +531,7 @@ const section1 = {
               title: "Listen and choose",
               prompt: { text: "Puiku", audioText: "Puiku" },
               options: [
-                { id: "a", text: "Fine, thank you", isCorrect: false },
+                { id: "a", text: "Good, thank you", isCorrect: false },
                 { id: "b", text: "How are you?", isCorrect: false },
                 { id: "c", text: "Great", isCorrect: true },
               ],
@@ -834,7 +834,7 @@ const section1 = {
                 { id: "m16", lt: "Prašau dar kartą",         en: "One more time, please",      audioText: "Prašau dar kartą" },
                 { id: "m17", lt: "Atleiskite",               en: "Excuse me (formal)",         audioText: "Atleiskite" },
                 { id: "m18", lt: "Kaip sekasi?",             en: "How are you?",               audioText: "Kaip sekasi" },
-                { id: "m19", lt: "Gerai, ačiū",              en: "Fine, thank you",            audioText: "Gerai, ačiū" },
+                { id: "m19", lt: "Gerai, ačiū",              en: "Good, thank you",            audioText: "Gerai, ačiū" },
                 { id: "m20", lt: "Puiku",                    en: "Great",                      audioText: "Puiku" },
               ],
             },
