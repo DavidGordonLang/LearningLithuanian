@@ -526,6 +526,29 @@ const section1 = {
               audioText: "Gerai, ačiū",
             },
             {
+              id: "s1m1l4_b0e",
+              type: "listen_mcq",
+              title: "Listen and choose",
+              prompt: { text: "Puiku", audioText: "Puiku" },
+              options: [
+                { id: "a", text: "Fine, thank you", isCorrect: false },
+                { id: "b", text: "How are you?", isCorrect: false },
+                { id: "c", text: "Great", isCorrect: true },
+              ],
+            },
+            {
+              id: "s1m1l4_b0f",
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "Someone asks Kaip sekasi? and things are going well." },
+              options: [
+                { id: "a", text: "Ne, ačiū", isCorrect: false },
+                { id: "b", text: "Atsiprašau", isCorrect: false },
+                { id: "c", text: "Puiku", isCorrect: true },
+              ],
+              feedback: { correct: "Puiku — great! A more upbeat reply than Gerai, ačiū when things are going well." },
+            },
+            {
               id: "s1m1l4_b1",
               type: "best_response",
               title: "Choose the correct response",
