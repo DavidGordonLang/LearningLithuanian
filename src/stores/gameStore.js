@@ -58,6 +58,7 @@ function defaultData() {
     lastActivityDate: null,   // "YYYY-MM-DD"
     graceUsedThisWeek: false,
     completedLessonIds: [],   // array of lesson id strings
+    seenModuleCompleteIds: [], // module ids where celebration has already shown
   };
 }
 
@@ -70,6 +71,7 @@ export const useGameStore = create((set, get) => ({
   lastActivityDate: null,
   graceUsedThisWeek: false,
   completedLessonIds: [],
+  seenModuleCompleteIds: [],
 
   // Meta
   loading: false,
@@ -108,6 +110,7 @@ export const useGameStore = create((set, get) => ({
         lastActivityDate: merged.lastActivityDate ?? null,
         graceUsedThisWeek: merged.graceUsedThisWeek ?? false,
         completedLessonIds: Array.isArray(merged.completedLessonIds) ? merged.completedLessonIds : [],
+        seenModuleCompleteIds: Array.isArray(merged.seenModuleCompleteIds) ? merged.seenModuleCompleteIds : [],
         loading: false,
         _loadedForUserId: userId,
       });
@@ -129,8 +132,8 @@ export const useGameStore = create((set, get) => ({
 
   _save: async (userId) => {
     if (!userId) return;
-    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds } = get();
-    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds };
+    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds } = get();
+    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds };
 
     try {
       await supabase
@@ -227,5 +230,19 @@ export const useGameStore = create((set, get) => ({
 
   isLessonComplete: (lessonId) => {
     return get().completedLessonIds.includes(lessonId);
+  },
+
+  // ── Module celebration ───────────────────────────────────────────────────────
+
+  markModuleCompleteSeen: (moduleId, userId) => {
+    if (!moduleId) return;
+    const current = get().seenModuleCompleteIds;
+    if (current.includes(moduleId)) return;
+    set({ seenModuleCompleteIds: [...current, moduleId] });
+    get()._save(userId);
+  },
+
+  hasSeenModuleComplete: (moduleId) => {
+    return get().seenModuleCompleteIds.includes(moduleId);
   },
 }));
