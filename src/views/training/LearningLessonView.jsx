@@ -159,7 +159,7 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
 
   return (
     <div className={cn("flex flex-col h-full px-6 transition-opacity duration-300", visible ? "opacity-100" : "opacity-0")} style={{ paddingTop: "15vh" }}>
-      <div className="text-[12px] text-zinc-500 tracking-wide">Section {section?.code} · Module {module?.code}</div>
+      <div className="text-[12px] text-zinc-500 tracking-wide">{section?.title || "First Contact"}</div>
       <div className="mt-2 text-[13px] font-medium text-zinc-400 uppercase tracking-widest">{lessonDisplayLabel}</div>
       <div className="mt-3 text-[28px] font-semibold text-zinc-100 leading-snug">{lesson?.title || "Loading…"}</div>
       {lesson?.purpose ? <div className="mt-3 text-[14px] text-zinc-400 leading-relaxed max-w-xs">{lesson.purpose}</div> : null}
@@ -1061,7 +1061,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
 
 // ─── Lesson complete card ─────────────────────────────────────────────────────
 
-function NailedItCard({ lessonTitle, xpEarned, onNextLesson, nextLessonLabel, onBack }) {
+function NailedItCard({ lessonTitle, xpEarned, onContinue, nextLessonLabel, onBack }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
@@ -1093,13 +1093,13 @@ function NailedItCard({ lessonTitle, xpEarned, onNextLesson, nextLessonLabel, on
 
       {/* Actions */}
       <div className="flex flex-col gap-3 px-2">
-        {typeof onNextLesson === "function" ? (
-          <ActionButton onClick={onNextLesson} className="w-full">
-            {nextLessonLabel ? `${nextLessonLabel} →` : "Next lesson →"}
+        {typeof onContinue === "function" ? (
+          <ActionButton onClick={onContinue} className="w-full">
+            {nextLessonLabel ? `${nextLessonLabel} →` : "Continue →"}
           </ActionButton>
         ) : null}
         <ActionButton
-          variant={typeof onNextLesson === "function" ? "ghost" : "primary"}
+          variant={typeof onContinue === "function" ? "ghost" : "primary"}
           onClick={onBack}
           className="w-full"
         >
@@ -1115,6 +1115,7 @@ function NailedItCard({ lessonTitle, xpEarned, onNextLesson, nextLessonLabel, on
 export default function LearningLessonView({
   section, module, lesson, lessonIndex, playText, showToast,
   userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
+  onNailedItContinue, // called when user taps Continue on NailedItCard
   nextLessonLabel,
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
@@ -1182,6 +1183,7 @@ export default function LearningLessonView({
     setCompletedBlockIds((prev) => prev[currentBlock.id] ? prev : { ...prev, [currentBlock.id]: true });
   }, [currentBlock?.id]);
 
+  // "Lesson 3" — clean label without nested numbering codes
   const lessonDisplayLabel = typeof lessonIndex === "number" ? `Lesson ${lessonIndex + 1}` : "Lesson";
 
   if (!lesson) return <div className="max-w-xl mx-auto px-4 py-5"><div className="text-zinc-100">No lesson found.</div></div>;
@@ -1209,7 +1211,7 @@ export default function LearningLessonView({
         <NailedItCard
           lessonTitle={lesson.title}
           xpEarned={xpEarned}
-          onNextLesson={typeof onNextLesson === "function" ? onNextLesson : null}
+          onContinue={typeof onNailedItContinue === "function" ? onNailedItContinue : onNextLesson}
           nextLessonLabel={nextLessonLabel}
           onBack={onBack}
         />
@@ -1218,7 +1220,10 @@ export default function LearningLessonView({
           {/* Header */}
           <div className="grid grid-cols-[44px_1fr_44px] items-center mb-3">
             <BackCircle onClick={onBack} />
-            <div className="text-center"><div className="text-[15px] font-semibold text-zinc-100">{lessonDisplayLabel}</div></div>
+            <div className="text-center">
+                <div className="text-[11px] text-zinc-500 tracking-wide">{section?.title || ""}</div>
+                <div className="text-[15px] font-semibold text-zinc-100 leading-tight">{lessonDisplayLabel}</div>
+              </div>
             {typeof onBrowseCourse === "function" ? (
               <div className="flex items-center justify-end">
                 <button type="button" onClick={onBrowseCourse} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition leading-tight text-right" aria-label="Browse course">
