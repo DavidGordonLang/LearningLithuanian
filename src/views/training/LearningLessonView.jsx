@@ -120,7 +120,7 @@ function ActionButton({ children, onClick, disabled = false, variant = "primary"
 function AudioIconButton({ text, playText, label = "Play audio" }) {
   return (
     <button type="button" data-press aria-label={label}
-      onClick={async () => { try { await playText?.(text); } catch {} }}
+      onClick={() => { try { playText?.(text); } catch {} }}
       className="h-9 w-9 rounded-full border border-white/10 bg-white/[0.04] text-zinc-200 flex items-center justify-center hover:bg-white/[0.07] transition shrink-0">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M11 5L6.8 9H4v6h2.8L11 19V5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -333,7 +333,7 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
             type="button"
             data-press
             aria-label="Play audio"
-            onClick={async () => { try { await playText?.(audioText); } catch {} }}
+            onClick={() => { try { playText?.(audioText); } catch {} }}
             className="h-14 w-14 rounded-full border border-white/15 bg-white/[0.05] text-zinc-200 flex items-center justify-center hover:bg-white/[0.08] transition"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
