@@ -396,6 +396,7 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
 function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed }) {
   const [attemptState, setAttemptState] = useState("idle");
   const [capturedText, setCapturedText] = useState("");
+  const [failedAttempts, setFailedAttempts] = useState(0);
   const targetText = block?.targetText || "";
 
   const { sttState, sttSupported, startRecording, stopRecording, cancelStt } = useSpeechToTextHold({
@@ -410,6 +411,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
         onComplete?.();
       } else {
         setAttemptState("result_fail");
+        setFailedAttempts((n) => n + 1);
       }
     },
     autoTranslate: false,
@@ -470,7 +472,12 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
             <div className="text-[16px] font-semibold text-zinc-300">{capturedText || "—"}</div>
           </div>
           <div className="text-[12px] text-zinc-500 text-center">Expected: <span className="text-zinc-300">{targetText}</span></div>
-          <ActionButton variant="secondary" onClick={() => { setCapturedText(""); setAttemptState("idle"); }} className="w-full">Try again</ActionButton>
+          <div className="flex gap-2">
+            <ActionButton variant="secondary" onClick={() => { setCapturedText(""); setAttemptState("idle"); }} className="flex-1">Try again</ActionButton>
+            {failedAttempts >= 2 ? (
+              <ActionButton variant="ghost" onClick={() => { onComplete?.(); }} className="flex-1">Skip</ActionButton>
+            ) : null}
+          </div>
         </div>
       ) : null}
       {attemptState !== "result_pass" ? (
