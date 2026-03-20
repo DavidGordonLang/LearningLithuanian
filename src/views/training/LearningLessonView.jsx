@@ -945,7 +945,7 @@ function useWordMatchSession({ rawPairs, pagePairs, rightSelectAmberMs, correctP
   return { progress, leftTiles: currentPage?.left || [], rightTiles: currentPage?.right || [], selected, matchedPairIds, pulse, busy, phase, mistakes, showDone, tap, lastCorrectMatchAudio };
 }
 
-function WordMatchBlock({ block, playText, onComplete, completed }) {
+function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
   const rawPairs = Array.isArray(block?.pairs) ? block.pairs : [];
 
   const s = useWordMatchSession({
@@ -972,8 +972,12 @@ function WordMatchBlock({ block, playText, onComplete, completed }) {
   }, [playText, s.lastCorrectMatchAudio]);
 
   React.useEffect(() => {
-    if (s.showDone) onComplete?.();
-  }, [s.showDone, onComplete]);
+    if (s.showDone) {
+      onComplete?.();
+      // Advance to next block (triggers lessonDone if this is the last block)
+      onAdvance?.();
+    }
+  }, [s.showDone, onComplete, onAdvance]);
 
   const pct = s.progress.total ? Math.min(100, Math.round((s.progress.matched / s.progress.total) * 100)) : 0;
   const gridPhaseClass = s.phase === "pageFadeOut" ? "mp-grid-fadeout" : "mp-grid-fadein";
@@ -1053,7 +1057,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} completed={completed}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} completed={completed}/>;
-    case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} completed={completed}/>;
+    case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance}/>;
     default: return <div className="text-sm text-zinc-500">Unknown block type.</div>;
   }
@@ -1117,6 +1121,7 @@ export default function LearningLessonView({
   userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
   onNailedItContinue, // called when user taps Continue on NailedItCard
   nextLessonLabel,
+  preloadText,
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
   const [phase, setPhase] = useState("loading");
@@ -1140,6 +1145,30 @@ export default function LearningLessonView({
   }, [lesson?.id]);
 
   const handleLoadingReady = useCallback(() => setPhase("running"), []);
+
+  // Preload all audio from this lesson while loading screen shows
+  useEffect(() => {
+    if (!lesson || typeof preloadText !== "function") return;
+    const texts = new Set();
+    (lesson.blocks || []).forEach((block) => {
+      if (block?.prompt?.audioText) texts.add(block.prompt.audioText);
+      if (block?.audioText) texts.add(block.audioText);
+      if (block?.targetText) texts.add(block.targetText);
+      if (Array.isArray(block?.items)) {
+        block.items.forEach((item) => { if (item?.audioText) texts.add(item.audioText); });
+      }
+      if (Array.isArray(block?.steps)) {
+        block.steps.forEach((step) => { if (step?.audioText) texts.add(step.audioText); });
+      }
+      if (Array.isArray(block?.pairs)) {
+        block.pairs.forEach((pair) => { if (pair?.audioText) texts.add(pair.audioText); });
+      }
+      if (Array.isArray(block?.options)) {
+        block.options.forEach((opt) => { if (opt?.audioText) texts.add(opt.audioText); });
+      }
+    });
+    texts.forEach((text) => { try { preloadText(text).catch?.(() => {}); } catch {} });
+  }, [lesson, preloadText]);
 
   const currentBlock = blocks[blockIndex] || null;
   const totalBlocks = blocks.length;
