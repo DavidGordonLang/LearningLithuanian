@@ -48,6 +48,22 @@ export default function useTTSPlayer({
   // Deduplicate concurrent fetches/preloads
   const inflight = useRef(new Map());
 
+  // Track whether audio has been unlocked by a user gesture
+  const audioUnlocked = useRef(false);
+
+  // Unlock audio context on first user interaction — required on Android Chrome.
+  // Creates and immediately pauses a silent audio element to prime the browser.
+  const unlockAudio = useCallback(() => {
+    if (audioUnlocked.current) return;
+    audioUnlocked.current = true;
+    try {
+      const silent = new Audio();
+      silent.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+      silent.volume = 0;
+      silent.play().catch(() => {});
+    } catch {}
+  }, []);
+
   const stop = useCallback(() => {
     try {
       if (audioRef.current) {
@@ -162,6 +178,8 @@ export default function useTTSPlayer({
       const raw = String(text || "");
       if (!raw.trim()) return;
 
+      // Unlock audio synchronously within the gesture before any async work
+      unlockAudio();
       stop();
 
       try {
@@ -176,7 +194,7 @@ export default function useTTSPlayer({
         }
       }
     },
-    [getOrFetchBlob, onError, playBlob, stop]
+    [getOrFetchBlob, onError, playBlob, stop, unlockAudio]
   );
 
   return useMemo(
@@ -186,7 +204,8 @@ export default function useTTSPlayer({
       playText,
       preloadText,
       stop,
+      unlockAudio,
     }),
-    [playText, preloadText, stop, voice]
+    [playText, preloadText, stop, unlockAudio, voice]
   );
 }
