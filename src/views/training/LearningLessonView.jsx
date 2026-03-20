@@ -120,7 +120,7 @@ function ActionButton({ children, onClick, disabled = false, variant = "primary"
 function AudioIconButton({ text, playText, label = "Play audio" }) {
   return (
     <button type="button" data-press aria-label={label}
-      onClick={async () => { try { await playText?.(text); } catch {} }}
+      onClick={() => { try { playText?.(text); } catch {} }}
       className="h-9 w-9 rounded-full border border-white/10 bg-white/[0.04] text-zinc-200 flex items-center justify-center hover:bg-white/[0.07] transition shrink-0">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M11 5L6.8 9H4v6h2.8L11 19V5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -303,9 +303,9 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
-    // If wrong on a best_response block, play the correct LT answer after a short delay
-    // recognise_mcq and listen_mcq have English options — never play audio for those
-    if (!option.isCorrect && isBestResponse) {
+    // If wrong on a best_response or recognise_mcq block, play the correct LT answer after a short delay
+    // listen_mcq has English options — never play audio for those
+    if (!option.isCorrect && (isBestResponse || block?.type === "recognise_mcq")) {
       const correct = options.find((o) => o.isCorrect);
       if (correct?.text && playText) {
         setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
@@ -333,7 +333,7 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
             type="button"
             data-press
             aria-label="Play audio"
-            onClick={async () => { try { await playText?.(audioText); } catch {} }}
+            onClick={() => { try { playText?.(audioText); } catch {} }}
             className="h-14 w-14 rounded-full border border-white/15 bg-white/[0.05] text-zinc-200 flex items-center justify-center hover:bg-white/[0.08] transition"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -360,7 +360,7 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
             revealState={revealState}
             onClick={() => handleSelect(option)}
             playText={playText}
-            playAudio={block?.type === "best_response"}
+            playAudio={block?.type === "best_response" || block?.type === "recognise_mcq"}
           />
         ))}
       </div>
@@ -1173,7 +1173,7 @@ export default function LearningLessonView({
         try { preloadText(text).catch?.(() => {}); } catch {}
       }, i * 120);
     });
-  }, [lesson?.id, preloadText]);
+  }, [lesson, preloadText]);
 
   const currentBlock = blocks[blockIndex] || null;
   const totalBlocks = blocks.length;
