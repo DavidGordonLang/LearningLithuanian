@@ -279,6 +279,7 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
           setScreen("learningHome");
         }}
         onLessonComplete={() => {}}
+        preloadText={preloadText}
         onNailedItContinue={() => {
           const mod = learningModule;
           const sec = learningSection;
