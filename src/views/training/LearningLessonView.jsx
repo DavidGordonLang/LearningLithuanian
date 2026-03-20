@@ -1167,7 +1167,12 @@ export default function LearningLessonView({
         block.options.forEach((opt) => { if (opt?.audioText) texts.add(opt.audioText); });
       }
     });
-    texts.forEach((text) => { try { preloadText(text).catch?.(() => {}); } catch {} });
+    // Stagger preload calls to avoid bursting the TTS endpoint
+    Array.from(texts).forEach((text, i) => {
+      setTimeout(() => {
+        try { preloadText(text).catch?.(() => {}); } catch {}
+      }, i * 120);
+    });
   }, [lesson, preloadText]);
 
   const currentBlock = blocks[blockIndex] || null;
