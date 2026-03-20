@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSpeechToTextHold from "../../hooks/useSpeechToTextHold";
 import { useGameStore } from "../../stores/gameStore";
+import { matchPairsCss } from "./matchPairs/matchPairsStyles";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -813,7 +814,6 @@ function ScenarioCompletePanel({ onContinue }) {
 // Session logic is inlined so no new import is needed.
 // Audio plays on correct match. Wrong match also plays the correct pair's audio.
 
-import { matchPairsCss } from "../training/matchPairs/matchPairsStyles";
 
 function tileTextClass(text) {
   const t = String(text || "").trim();
