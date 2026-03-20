@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -438,7 +439,7 @@ export default function App() {
     },
   });
 
-  const playTextTracked = (text, opts) => {
+  const playTextTracked = useCallback((text, opts) => {
     try {
       trackEvent(
         "tts_play",
@@ -450,9 +451,9 @@ export default function App() {
       );
     } catch {}
     return playText(text, opts);
-  };
+  }, [playText, azureVoiceShortName]);
 
-  const preloadTextTracked = (text, opts) => {
+  const preloadTextTracked = useCallback((text, opts) => {
     try {
       trackEvent(
         "tts_preload",
@@ -464,7 +465,7 @@ export default function App() {
       );
     } catch {}
     return preloadText(text, opts);
-  };
+  }, [preloadText, azureVoiceShortName]);
 
   const stopTextTracked = () => {
     try {
