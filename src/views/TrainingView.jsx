@@ -5,6 +5,7 @@ import LearningHome from "./training/LearningHome";
 import LearningSectionView from "./training/LearningSectionView";
 import LearningModuleView from "./training/LearningModuleView";
 import LearningLessonView from "./training/LearningLessonView";
+import ModuleCompleteView from "./training/ModuleCompleteView";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
@@ -60,6 +61,7 @@ function findLessonAfter(sections, lessonId) {
 
 export default function TrainingView({ T, rows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
+  const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned }
   const [focus, setFocus] = useTrainingFocus();
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
@@ -67,6 +69,8 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
 
   const user = useAuthStore((s) => s.user);
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
+  const hasSeenModuleComplete = useGameStore((s) => s.hasSeenModuleComplete);
+  const markModuleCompleteSeen = useGameStore((s) => s.markModuleCompleteSeen);
 
   const counts = useMemo(() => {
     const list = Array.isArray(rows) ? rows : [];
@@ -155,8 +159,14 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
 
 
   // "Lesson 2", "Lesson 3" etc — 1-based index of the next lesson
+  // Check if all lessons in a module are done — used to trigger celebration
+  const isModuleFullyComplete = (mod) => {
+    if (!mod?.lessons) return false;
+    return mod.lessons.every((l) => completedLessonIds.includes(l.id));
+  };
+
   const nextLessonLabel = nextLessonAfterCurrent
-    ? `Lesson ${nextLessonAfterCurrent.lessonIndex + 1}`
+    ? `Lesson ${nextLessonAfterCurrent.lessonIndex + 1} — ${nextLessonAfterCurrent.lesson.title}`
     : null;
 
   const handleNextLesson = nextLessonAfterCurrent ? () => {
@@ -171,13 +181,13 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
   const learningCardTitle = allComplete
     ? "All lessons complete"
     : nextLesson
-    ? `Lesson ${nextLesson.lessonIndex + 1} — ${nextLesson.lesson.title}`
+    ? `${nextLesson.lesson.title}`
     : "Start learning";
 
   const learningCardMeta = allComplete
     ? "Browse course to review any lesson"
     : nextLesson
-    ? `Section ${nextLesson.section.code} · Module ${nextLesson.module.code}`
+    ? `${nextLesson.section.title} · Lesson ${nextLesson.lessonIndex + 1}`
     : "";
 
   // ─── Browse path ─────────────────────────────────────────────────────────────
@@ -222,6 +232,30 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
     );
   }
 
+  // ─── Module complete ──────────────────────────────────────────────────────────
+
+  if (screen === "moduleComplete" && moduleCompletePayload) {
+    return (
+      <ModuleCompleteView
+        section={moduleCompletePayload.section}
+        module={moduleCompletePayload.module}
+        xpEarned={moduleCompletePayload.xpEarned}
+        onContinue={() => {
+          setModuleCompletePayload(null);
+          setSelectedLessonId(null);
+          setSelectedModuleId(null);
+          setScreen("home");
+        }}
+        onHome={() => {
+          setModuleCompletePayload(null);
+          setSelectedLessonId(null);
+          setSelectedModuleId(null);
+          setScreen("home");
+        }}
+      />
+    );
+  }
+
   // ─── Lesson ───────────────────────────────────────────────────────────────────
 
   if (screen === "learningLesson") {
@@ -244,13 +278,24 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
           setSelectedModuleId(null);
           setScreen("learningHome");
         }}
-        onLessonComplete={() => {
-          // Don't clear selectedLessonId here — lesson complete card is still
-          // showing and learningLesson must stay pinned to the current lesson
-          // so nextLessonAfterCurrent derives correctly.
-          // We clear it when the user actively navigates away instead.
+        onLessonComplete={() => {}}
+        onNailedItContinue={() => {
+          const mod = learningModule;
+          const sec = learningSection;
+          if (mod && isModuleFullyComplete(mod) && !hasSeenModuleComplete(mod.id)) {
+            markModuleCompleteSeen(mod.id, user?.id);
+            setModuleCompletePayload({ module: mod, section: sec });
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("moduleComplete");
+          } else if (typeof handleNextLesson === "function") {
+            handleNextLesson();
+          } else {
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("home");
+          }
         }}
-        onNextLesson={handleNextLesson}
         nextLessonLabel={nextLessonLabel}
       />
     );
