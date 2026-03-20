@@ -1068,33 +1068,30 @@ function NailedItCard({ lessonTitle, xpEarned, onNextLesson, nextLessonLabel, on
   }, []);
 
   return (
-    <div className={cn(
-      "rounded-2xl border border-emerald-400/25 bg-emerald-500/[0.08] px-5 py-5",
-      "transition-all duration-300",
-      visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-    )}>
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-1">
-        <div className="h-7 w-7 rounded-full bg-emerald-500/25 flex items-center justify-center shrink-0 text-[15px] font-bold text-emerald-300">
+    <div
+      className={cn("flex flex-col transition-all duration-400", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}
+      style={{ paddingTop: "12vh" }}
+    >
+      {/* Icon */}
+      <div className="flex justify-center mb-6">
+        <div className="h-16 w-16 rounded-full border border-emerald-400/30 bg-emerald-500/[0.12] flex items-center justify-center text-[28px]">
           ✓
-        </div>
-        <div>
-          <div className="text-[18px] font-semibold text-emerald-200 leading-snug">
-            Lesson complete!
-          </div>
-          <div className="text-[13px] text-zinc-400 mt-0.5">{lessonTitle}</div>
         </div>
       </div>
 
-      {/* XP */}
-      {xpEarned ? (
-        <div className="mt-3 mb-4">
-          <SmallMetaPill accent="emerald">+{xpEarned} XP</SmallMetaPill>
-        </div>
-      ) : <div className="mt-4" />}
+      {/* Title */}
+      <div className="text-center mb-6">
+        <div className="text-[26px] font-semibold text-emerald-200 leading-tight">Nailed it!</div>
+        <div className="mt-2 text-[14px] text-zinc-400">{lessonTitle}</div>
+        {xpEarned ? (
+          <div className="mt-3 flex justify-center">
+            <SmallMetaPill accent="emerald">+{xpEarned} XP earned</SmallMetaPill>
+          </div>
+        ) : null}
+      </div>
 
       {/* Actions */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3 px-2">
         {typeof onNextLesson === "function" ? (
           <ActionButton onClick={onNextLesson} className="w-full">
             {nextLessonLabel ? `${nextLessonLabel} →` : "Next lesson →"}
@@ -1193,28 +1190,8 @@ export default function LearningLessonView({
 
   return (
     <div className="max-w-xl mx-auto px-4 pt-4 pb-6 flex flex-col" data-swipe-block="true">
-      <div className="grid grid-cols-[44px_1fr_44px] items-center mb-3">
-        <BackCircle onClick={onBack} />
-        <div className="text-center"><div className="text-[15px] font-semibold text-zinc-100">{lessonDisplayLabel}</div></div>
-        {typeof onBrowseCourse === "function" ? (
-          <div className="flex items-center justify-end">
-            <button type="button" onClick={onBrowseCourse} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition leading-tight text-right" aria-label="Browse course">
-              Browse<br />course
-            </button>
-          </div>
-        ) : <div className="h-10 w-10" aria-hidden="true" />}
-      </div>
 
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="text-[11px] text-zinc-600">Block {Math.min(blockIndex + 1, totalBlocks)} / {totalBlocks}</div>
-          <div className="text-[11px] text-zinc-600">{progressPct}%</div>
-        </div>
-        <div className="h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
-          <div className="h-full bg-emerald-500/80 rounded-full transition-all duration-300" style={{ width: `${progressPct}%` }}/>
-        </div>
-      </div>
-
+      {/* ── Lesson complete — full screen NailedItCard, no header/progress ── */}
       {lessonComplete ? (
         <NailedItCard
           lessonTitle={lesson.title}
@@ -1224,21 +1201,48 @@ export default function LearningLessonView({
           onBack={onBack}
         />
       ) : (
-        <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
-          {!isScenarioBlock && !isChoiceBlock ? <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">{currentBlock?.title || ""}</div> : null}
-          {currentBlock ? (
-            <BlockRenderer
-              key={currentBlock.id}
-              block={currentBlock}
-              playText={playText}
-              showToast={showToast}
-              onComplete={markCurrentComplete}
-              completed={isCurrentCompleted}
-              onAdvance={advanceBlock}
-              navBarRef={navBarRef}
-            />
-          ) : <div className="text-sm text-zinc-500">No block available.</div>}
-        </SurfaceCard>
+        <>
+          {/* Header */}
+          <div className="grid grid-cols-[44px_1fr_44px] items-center mb-3">
+            <BackCircle onClick={onBack} />
+            <div className="text-center"><div className="text-[15px] font-semibold text-zinc-100">{lessonDisplayLabel}</div></div>
+            {typeof onBrowseCourse === "function" ? (
+              <div className="flex items-center justify-end">
+                <button type="button" onClick={onBrowseCourse} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition leading-tight text-right" aria-label="Browse course">
+                  Browse<br />course
+                </button>
+              </div>
+            ) : <div className="h-10 w-10" aria-hidden="true" />}
+          </div>
+
+          {/* Progress bar */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="text-[11px] text-zinc-600">Block {Math.min(blockIndex + 1, totalBlocks)} / {totalBlocks}</div>
+              <div className="text-[11px] text-zinc-600">{progressPct}%</div>
+            </div>
+            <div className="h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
+              <div className="h-full bg-emerald-500/80 rounded-full transition-all duration-300" style={{ width: `${progressPct}%` }}/>
+            </div>
+          </div>
+
+          {/* Block content */}
+          <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
+            {!isScenarioBlock && !isChoiceBlock ? <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">{currentBlock?.title || ""}</div> : null}
+            {currentBlock ? (
+              <BlockRenderer
+                key={currentBlock.id}
+                block={currentBlock}
+                playText={playText}
+                showToast={showToast}
+                onComplete={markCurrentComplete}
+                completed={isCurrentCompleted}
+                onAdvance={advanceBlock}
+                navBarRef={navBarRef}
+              />
+            ) : <div className="text-sm text-zinc-500">No block available.</div>}
+          </SurfaceCard>
+        </>
       )}
 
       {showPatternNote ? <PatternNote notes={lesson?.notes} /> : null}
