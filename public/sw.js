@@ -6,7 +6,7 @@ const CACHE_NAME = `zodis-static-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
   "/",
   "/index.html",
-  "/manifest.webmanifest",
+  "/manifest.json",
   "/icons/192.png",
   "/icons/512.png",
   "/icons/maskable-512.png",
