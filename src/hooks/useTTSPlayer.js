@@ -48,20 +48,6 @@ export default function useTTSPlayer({
   // Deduplicate concurrent fetches/preloads
   const inflight = useRef(new Map());
 
-  // Track whether audio has been unlocked by a user gesture
-  const audioUnlocked = useRef(false);
-
-  const unlockAudio = useCallback(() => {
-    if (audioUnlocked.current) return;
-    audioUnlocked.current = true;
-    try {
-      const silent = new Audio();
-      silent.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-      silent.volume = 0;
-      silent.play().catch(() => {});
-    } catch {}
-  }, []);
-
   const stop = useCallback(() => {
     try {
       if (audioRef.current) {
@@ -86,11 +72,8 @@ export default function useTTSPlayer({
     };
 
     try {
-      console.log('[TTS] calling audio.play()');
       await audio.play();
-      console.log('[TTS] audio.play() resolved');
     } catch (e) {
-      console.log('[TTS] audio.play() REJECTED:', e.name, e.message);
       try {
         URL.revokeObjectURL(url);
       } catch {}
@@ -125,19 +108,13 @@ export default function useTTSPlayer({
       const key = makeCacheKey({ text: raw, voice, slow });
 
       const memHit = mem.current.get(key);
-      if (memHit) {
-        console.log('[TTS] mem hit:', key.slice(-8));
-        return memHit;
-      }
+      if (memHit) return memHit;
 
       const idbHit = await ttsIdbGet(key);
       if (idbHit) {
-        console.log('[TTS] idb hit:', key.slice(-8));
         mem.current.set(key, idbHit);
         return idbHit;
       }
-
-      console.log('[TTS] cache miss, fetching:', key.slice(-8));
 
       const inflightHit = inflight.current.get(key);
       if (inflightHit) {
@@ -185,8 +162,6 @@ export default function useTTSPlayer({
       const raw = String(text || "");
       if (!raw.trim()) return;
 
-      console.log('[TTS] playText called:', raw.slice(0, 20));
-      unlockAudio();
       stop();
 
       try {
@@ -201,7 +176,7 @@ export default function useTTSPlayer({
         }
       }
     },
-    [getOrFetchBlob, onError, playBlob, stop, unlockAudio]
+    [getOrFetchBlob, onError, playBlob, stop]
   );
 
   return useMemo(
@@ -211,8 +186,7 @@ export default function useTTSPlayer({
       playText,
       preloadText,
       stop,
-      unlockAudio,
     }),
-    [playText, preloadText, stop, unlockAudio, voice]
+    [playText, preloadText, stop, voice]
   );
 }
