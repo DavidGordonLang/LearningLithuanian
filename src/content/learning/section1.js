@@ -515,7 +515,7 @@ const section1 = {
                 { id: "b", text: "Gerai, ačiū", isCorrect: true },
                 { id: "c", text: "Atsiprašau", isCorrect: false },
               ],
-              feedback: { correct: "Gerai, ačiū — fine, thank you. Simple, natural, and expected." },
+              feedback: { correct: "Gerai, ačiū — good, thank you. Simple, natural, and expected." },
             },
             {
               id: "s1m1l4_b0d",
