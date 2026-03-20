@@ -315,14 +315,26 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
         }
       }
     } else if (block?.type === "recognise_mcq") {
-      // recognise_mcq: options ARE Lithuanian — play the correct option text.
-      // Correct tap: play immediately. Wrong tap: play correct after 600ms.
-      if (option.isCorrect) {
-        try { playText?.(option.text); } catch {}
+      // recognise_mcq comes in two forms:
+      // A) Lithuanian prompt + English options → play prompt.audioText on correct
+      // B) English prompt + Lithuanian options → play correct option text
+      // Detect by whether prompt.audioText exists
+      if (audioText) {
+        // Form A: prompt is Lithuanian — play it on correct answer
+        if (option.isCorrect) {
+          try { playText?.(audioText); } catch {}
+        } else {
+          setTimeout(() => { try { playText?.(audioText); } catch {} }, 600);
+        }
       } else {
-        const correct = options.find((o) => o.isCorrect);
-        if (correct?.text && playText) {
-          setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
+        // Form B: options are Lithuanian — play correct option text
+        if (option.isCorrect) {
+          try { playText?.(option.text); } catch {}
+        } else {
+          const correct = options.find((o) => o.isCorrect);
+          if (correct?.text && playText) {
+            setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
+          }
         }
       }
     }
