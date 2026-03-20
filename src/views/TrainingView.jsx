@@ -1,5 +1,5 @@
 // src/views/TrainingView.jsx
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
 import LearningHome from "./training/LearningHome";
 import LearningSectionView from "./training/LearningSectionView";
@@ -152,10 +152,7 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
     return findLessonAfter(allSections, learningLesson.id);
   }, [allSections, learningLesson]);
 
-  // Track whether we arrived via "Continue to next lesson" so the
-  // loading screen shows as a preview pause rather than auto-advancing.
-  // Use a ref so changes don't trigger re-renders that could lose the value.
-  const entryIsPreviewRef = useRef(false);
+
 
   // "Lesson 2", "Lesson 3" etc — 1-based index of the next lesson
   const nextLessonLabel = nextLessonAfterCurrent
@@ -168,7 +165,6 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
     setSelectedLessonId(lesson.id);
     setSelectedModuleId(module.id);
     setLessonReturnScreen("home");
-    entryIsPreviewRef.current = true;
     setScreen("learningLesson");
   } : null;
 
@@ -241,16 +237,13 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
         onBack={() => {
           setSelectedLessonId(null);
           setSelectedModuleId(null);
-          entryIsPreviewRef.current = false;
           setScreen(lessonReturnScreen);
         }}
         onBrowseCourse={() => {
           setSelectedLessonId(null);
           setSelectedModuleId(null);
-          entryIsPreviewRef.current = false;
           setScreen("learningHome");
         }}
-        loadingMode={entryIsPreviewRef.current ? "preview" : "auto"}
         onLessonComplete={() => {
           // Don't clear selectedLessonId here — lesson complete card is still
           // showing and learningLesson must stay pinned to the current lesson
@@ -309,7 +302,6 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
         setSelectedLessonId(lessonToPinId);
         setSelectedModuleId(moduleToPinId);
         setLessonReturnScreen("home");
-        entryIsPreviewRef.current = false;
         setScreen("learningLesson");
       }}
       onBrowseCourse={() => setScreen("learningHome")}
