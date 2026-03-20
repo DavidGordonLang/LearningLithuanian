@@ -303,8 +303,9 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
-    // If wrong, play the correct answer audio after a short delay
-    if (!option.isCorrect) {
+    // If wrong on a best_response block, play the correct LT answer after a short delay
+    // recognise_mcq and listen_mcq have English options — never play audio for those
+    if (!option.isCorrect && isBestResponse) {
       const correct = options.find((o) => o.isCorrect);
       if (correct?.text && playText) {
         setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
@@ -794,7 +795,7 @@ function ScenarioCompletePanel({ onContinue }) {
           ✓
         </div>
         <div>
-          <div className="text-[15px] font-semibold text-emerald-200">Nailed it!</div>
+          <div className="text-[15px] font-semibold text-emerald-200">Well done!</div>
           <div className="text-[13px] text-zinc-400 mt-0.5 leading-snug">
             You completed the conversation correctly.
           </div>
@@ -1121,6 +1122,7 @@ export default function LearningLessonView({
   const [blockIndex, setBlockIndex] = useState(0);
   const [completedBlockIds, setCompletedBlockIds] = useState({});
   const [xpEarned, setXpEarned] = useState(null);
+  const [lessonDone, setLessonDone] = useState(false); // true only after user taps Continue/advance on last block
   const navBarRef = useRef(null);
   const completionFiredRef = useRef(false);
 
@@ -1132,6 +1134,7 @@ export default function LearningLessonView({
     setBlockIndex(0);
     setCompletedBlockIds({});
     setXpEarned(null);
+    setLessonDone(false);
     completionFiredRef.current = false;
   }, [lesson?.id]);
 
@@ -1142,15 +1145,16 @@ export default function LearningLessonView({
   const progressPct = totalBlocks ? Math.round(((blockIndex + 1) / totalBlocks) * 100) : 0;
   const isCurrentCompleted = !!currentBlock?.id && !!completedBlockIds[currentBlock.id];
   const isLastBlock = blockIndex === totalBlocks - 1;
-  const lessonComplete = isLastBlock && isCurrentCompleted;
+  const isLastBlockComplete = isLastBlock && isCurrentCompleted;
+  const lessonComplete = lessonDone;
   const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response"].includes(currentBlock?.type);
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
-  const showNavBar = !lessonComplete && !isChoiceBlock && !isScenarioBlock;
+  const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock;
 
-  // Fire completion once
+  // Fire completion once when lessonDone becomes true
   useEffect(() => {
-    if (!lessonComplete || completionFiredRef.current) return;
+    if (!lessonDone || completionFiredRef.current) return;
     completionFiredRef.current = true;
     if (lesson?.id) {
       const { wasAlreadyComplete } = completeLesson(lesson.id, userId);
@@ -1162,7 +1166,16 @@ export default function LearningLessonView({
     onLessonComplete?.();
   }, [lessonComplete, lesson?.id, userId, completeLesson, earnXP, onLessonComplete]);
 
-  const advanceBlock = useCallback(() => setBlockIndex((prev) => Math.min(totalBlocks - 1, prev + 1)), [totalBlocks]);
+  const advanceBlock = useCallback(() => {
+    setBlockIndex((prev) => {
+      if (prev >= totalBlocks - 1) {
+        // Last block — trigger lesson done instead of advancing
+        setLessonDone(true);
+        return prev;
+      }
+      return prev + 1;
+    });
+  }, [totalBlocks]);
 
   const markCurrentComplete = useCallback(() => {
     if (!currentBlock?.id) return;
