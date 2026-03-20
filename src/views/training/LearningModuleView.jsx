@@ -186,7 +186,7 @@ export default function LearningModuleView({ section, module, onBack, onOpenLess
         <BackCircle onClick={onBack} />
         <div className="text-center">
           <div className="text-[16px] font-semibold text-zinc-100">
-            Module {module?.code || ""}
+            {module?.title || ""}
           </div>
         </div>
         <div className="h-10 w-10" aria-hidden="true" />
@@ -194,7 +194,7 @@ export default function LearningModuleView({ section, module, onBack, onOpenLess
 
       {/* Module meta */}
       <div className="mt-5">
-        <div className="text-sm text-zinc-500">Section {section?.code}</div>
+        <div className="text-sm text-zinc-500">{section?.title || ""}</div>
         <div className="text-xl font-semibold text-zinc-100 mt-1">
           {module?.title || "Learning module"}
         </div>
