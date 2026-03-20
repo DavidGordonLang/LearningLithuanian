@@ -476,8 +476,55 @@ const section1 = {
           newLanguageLoad: "very_low",
           notes: {
             pattern: "This lesson is about chaining phrases together — real conversations are just short chains.",
+            usage: [
+              "Kaip sekasi? — How are you? (casual, very common)",
+              "Gerai, ačiū — Fine, thank you (the standard reply)",
+              "Puiku — Great (a more upbeat reply)",
+            ],
           },
           blocks: [
+            {
+              id: "s1m1l4_b0",
+              type: "learn",
+              title: "How are you?",
+              items: [
+                { id: "ks1", lt: "Kaip sekasi?", en: "How are you?", audioText: "Kaip sekasi", saveable: true, core: true },
+                { id: "ks2", lt: "Gerai, ačiū", en: "Fine, thank you", audioText: "Gerai, ačiū", saveable: true, core: true },
+                { id: "ks3", lt: "Puiku", en: "Great", audioText: "Puiku", saveable: true, core: true },
+              ],
+            },
+            {
+              id: "s1m1l4_b0b",
+              type: "recognise_mcq",
+              title: "Choose the correct meaning",
+              prompt: { text: "Kaip sekasi?", audioText: "Kaip sekasi" },
+              options: [
+                { id: "a", text: "What would you like?", isCorrect: false },
+                { id: "b", text: "How are you?", isCorrect: true },
+                { id: "c", text: "Where are you going?", isCorrect: false },
+              ],
+              feedback: { correct: "Kaip sekasi? — you'll hear this constantly. It's casual and warm." },
+            },
+            {
+              id: "s1m1l4_b0c",
+              type: "best_response",
+              title: "Choose the best response",
+              prompt: { text: "Someone asks: Kaip sekasi?", audioText: "Kaip sekasi" },
+              options: [
+                { id: "a", text: "Norėčiau kavos, prašau", isCorrect: false },
+                { id: "b", text: "Gerai, ačiū", isCorrect: true },
+                { id: "c", text: "Atsiprašau", isCorrect: false },
+              ],
+              feedback: { correct: "Gerai, ačiū — fine, thank you. Simple, natural, and expected." },
+            },
+            {
+              id: "s1m1l4_b0d",
+              type: "speak_self_check",
+              title: "Say it out loud",
+              prompt: "Someone asks Kaip sekasi? — reply out loud",
+              targetText: "Gerai, ačiū",
+              audioText: "Gerai, ačiū",
+            },
             {
               id: "s1m1l4_b1",
               type: "best_response",
@@ -538,6 +585,17 @@ const section1 = {
                 {
                   id: "step_2",
                   actor: "other",
+                  text: "Kaip sekasi?",
+                  audioText: "Kaip sekasi",
+                  options: [
+                    { id: "a", text: "Atsiprašau", isCorrect: false },
+                    { id: "b", text: "Viso gero", isCorrect: false },
+                    { id: "c", text: "Gerai, ačiū", isCorrect: true },
+                  ],
+                },
+                {
+                  id: "step_3",
+                  actor: "other",
                   text: "Prašau.",
                   audioText: "Prašau",
                   options: [
@@ -547,7 +605,7 @@ const section1 = {
                   ],
                 },
                 {
-                  id: "step_3",
+                  id: "step_4",
                   actor: "other",
                   text: "Viso gero!",
                   audioText: "Viso gero",
@@ -685,7 +743,7 @@ const section1 = {
                 {
                   id: "step_1",
                   actor: "other",
-                  text: "Laba diena! Kaip sekasi?",
+                  text: "Laba diena!",
                   audioText: "Laba diena",
                   options: [
                     { id: "a", text: "Viso gero!", isCorrect: false },
@@ -696,16 +754,27 @@ const section1 = {
                 {
                   id: "step_2",
                   actor: "other",
+                  text: "Kaip sekasi?",
+                  audioText: "Kaip sekasi",
+                  options: [
+                    { id: "a", text: "Ne, ačiū", isCorrect: false },
+                    { id: "b", text: "Prašau dar kartą", isCorrect: false },
+                    { id: "c", text: "Gerai, ačiū", isCorrect: true },
+                  ],
+                },
+                {
+                  id: "step_3",
+                  actor: "other",
                   text: "Prašau.",
                   audioText: "Prašau",
                   options: [
                     { id: "a", text: "Ne, ačiū", isCorrect: false },
                     { id: "b", text: "Ačiū labai!", isCorrect: true },
-                    { id: "c", text: "Prašau dar kartą", isCorrect: false },
+                    { id: "c", text: "Atsiprašau", isCorrect: false },
                   ],
                 },
                 {
-                  id: "step_3",
+                  id: "step_4",
                   actor: "other",
                   text: "Viso gero!",
                   audioText: "Viso gero",
@@ -741,6 +810,9 @@ const section1 = {
                 { id: "m15", lt: "Atsiprašau",               en: "Sorry / Excuse me",          audioText: "Atsiprašau" },
                 { id: "m16", lt: "Prašau dar kartą",         en: "One more time, please",      audioText: "Prašau dar kartą" },
                 { id: "m17", lt: "Atleiskite",               en: "Excuse me (formal)",         audioText: "Atleiskite" },
+                { id: "m18", lt: "Kaip sekasi?",             en: "How are you?",               audioText: "Kaip sekasi" },
+                { id: "m19", lt: "Gerai, ačiū",              en: "Fine, thank you",            audioText: "Gerai, ačiū" },
+                { id: "m20", lt: "Puiku",                    en: "Great",                      audioText: "Puiku" },
               ],
             },
           ],
