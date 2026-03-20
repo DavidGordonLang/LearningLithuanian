@@ -284,7 +284,9 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
 
   const handleClick = () => {
-    if (playAudio && playText && option.text) {
+    // Only play audio immediately if this is the correct answer
+    // Wrong answer audio (playing the correct option) is handled by ChoiceBlock
+    if (playAudio && playText && option.text && option.isCorrect) {
       try { playText(option.text); } catch {}
     }
     onClick();
@@ -323,6 +325,13 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
+    // If wrong, play the correct answer audio after a short delay
+    if (!option.isCorrect) {
+      const correct = options.find((o) => o.isCorrect);
+      if (correct?.text && playText) {
+        setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
+      }
+    }
   };
 
   return (
@@ -671,22 +680,15 @@ function TypingBubble() {
   );
 }
 
-function ScenarioTrayOption({ option, selectedId, revealState, onClick, playText }) {
+function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
   const stateClass = revealState === "idle"
     ? "border-white/10 bg-white/[0.03] text-zinc-200 hover:border-white/20 hover:bg-white/[0.05]"
     : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
     : selectedId === option.id ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
 
-  const handleClick = () => {
-    if (playText && option.text) {
-      try { playText(option.text); } catch {}
-    }
-    onClick();
-  };
-
   return (
-    <button type="button" data-press onClick={handleClick} disabled={revealState !== "idle"}
+    <button type="button" data-press onClick={onClick} disabled={revealState !== "idle"}
       className={cn("w-full text-left rounded-2xl border px-4 py-3 text-[14px] transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
       {option.text}
     </button>
@@ -771,7 +773,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
           <div className="border-t border-white/10 bg-black/25 px-4 py-3">
             <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Your response</div>
             <div className="grid gap-2">
-              {options.map((option) => <ScenarioTrayOption key={option.id} option={option} selectedId={selectedId} revealState={revealState} onClick={() => handleSelect(option)} playText={playText}/>)}
+              {options.map((option) => <ScenarioTrayOption key={option.id} option={option} selectedId={selectedId} revealState={revealState} onClick={() => handleSelect(option)}/>)}
             </div>
           </div>
         ) : null}
@@ -820,184 +822,240 @@ function ScenarioCompletePanel({ onContinue }) {
 
 
 // ─── Word match block ─────────────────────────────────────────────────────────
-//
-// Two columns: Lithuanian (left) and English (right), both shuffled.
-// Tap one from each side to attempt a pair.
-// Correct match: plays audio, both cards lock green.
-// Wrong match: brief red flash, both deselect.
-// Complete when all pairs matched.
+// Uses the same CSS as the practice mode MatchPairsView.
+// Session logic is inlined so no new import is needed.
+// Audio plays on correct match. Wrong match also plays the correct pair's audio.
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+import { matchPairsCss } from "../training/matchPairs/matchPairsStyles";
+
+function tileTextClass(text) {
+  const t = String(text || "").trim();
+  if (!t) return "text-base";
+  if (t.length >= 22) return "text-sm";
+  return "text-base";
+}
+
+function useWordMatchSession({ rawPairs, pagePairs, rightSelectAmberMs, correctPulseMs, wrongPulseMs, pageFadeOutMs, pageFadeInMs }) {
+  function shuffleArr(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
   }
-  return a;
+
+  const totalPairs = rawPairs.length;
+  const requiredPages = Math.ceil(totalPairs / pagePairs);
+
+  const [pages, setPages] = React.useState([]);
+  const [pageIndex, setPageIndex] = React.useState(0);
+  const [selected, setSelected] = React.useState(null);
+  const [matchedPairIds, setMatchedPairIds] = React.useState(() => new Set());
+  const [busy, setBusy] = React.useState(false);
+  const [phase, setPhase] = React.useState("ready");
+  const [mistakes, setMistakes] = React.useState(0);
+  const [overallMatched, setOverallMatched] = React.useState(0);
+  const [showDone, setShowDone] = React.useState(false);
+  const [pulse, setPulse] = React.useState(null);
+  const [lastCorrectMatchAudio, setLastCorrectMatchAudio] = React.useState(null);
+  const timersRef = React.useRef([]);
+
+  function clearTimers() {
+    timersRef.current.forEach((t) => clearTimeout(t));
+    timersRef.current = [];
+  }
+
+  React.useEffect(() => {
+    if (!rawPairs || rawPairs.length === 0) return;
+    const shuffled = shuffleArr(rawPairs);
+    const builtPages = [];
+    let idx = 0;
+    for (let p = 0; p < requiredPages; p++) {
+      const chunk = shuffled.slice(idx, idx + pagePairs);
+      idx += pagePairs;
+      if (!chunk.length) break;
+      const left = shuffleArr(chunk.map((x) => ({ id: `t_lt_${x.id}_${p}`, pairId: x.id, side: "lt", text: x.lt, audioText: x.audioText || x.lt })));
+      const right = shuffleArr(chunk.map((x) => ({ id: `t_en_${x.id}_${p}`, pairId: x.id, side: "en", text: x.en })));
+      builtPages.push({ pageIndex: p, left, right });
+    }
+    setPages(builtPages);
+    setPageIndex(0); setSelected(null); setMatchedPairIds(new Set());
+    setBusy(false); setPhase("ready"); setMistakes(0);
+    setOverallMatched(0); setShowDone(false); setPulse(null); setLastCorrectMatchAudio(null);
+    return () => clearTimers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const currentPage = React.useMemo(() => pages[pageIndex] || null, [pages, pageIndex]);
+  const tileById = React.useMemo(() => {
+    const map = new Map();
+    (currentPage?.left || []).forEach((t) => map.set(t.id, t));
+    (currentPage?.right || []).forEach((t) => map.set(t.id, t));
+    return map;
+  }, [currentPage]);
+
+  const progress = React.useMemo(() => ({
+    matched: overallMatched, total: totalPairs, page: pageIndex + 1, pages: requiredPages,
+  }), [overallMatched, totalPairs, pageIndex, requiredPages]);
+
+  function startPageFadeTo(nextIndex) {
+    setPhase("pageFadeOut"); setBusy(true); setPulse(null);
+    const t1 = setTimeout(() => {
+      setPageIndex(nextIndex); setMatchedPairIds(new Set()); setSelected(null); setPulse(null); setPhase("pageFadeIn");
+      const t2 = setTimeout(() => { setPhase("ready"); setBusy(false); }, pageFadeInMs);
+      timersRef.current.push(t2);
+    }, pageFadeOutMs);
+    timersRef.current.push(t1);
+  }
+
+  function tap(tileId) {
+    if (busy || showDone || !currentPage) return;
+    const tile = tileById.get(tileId);
+    if (!tile || matchedPairIds.has(tile.pairId)) return;
+    if (!selected) { setSelected({ side: tile.side, id: tile.id }); setPulse(null); return; }
+    if (selected.id === tile.id) { setSelected(null); setPulse(null); return; }
+    const first = tileById.get(selected.id);
+    const second = tile;
+    if (first?.side === second.side) { setSelected({ side: second.side, id: second.id }); setPulse(null); return; }
+    if (!first || !second) { setSelected(null); setPulse(null); return; }
+    setBusy(true);
+    const firstId = first.id; const secondId = second.id;
+    setSelected({ side: second.side, id: secondId });
+    const tAmber = setTimeout(() => {
+      const correct = first.pairId === second.pairId;
+      if (correct) {
+        setPulse({ kind: "correct", ids: [firstId, secondId] });
+        const tPulse = setTimeout(() => {
+          const next = new Set(matchedPairIds);
+          next.add(first.pairId);
+          setMatchedPairIds(next);
+          const newOverall = overallMatched + 1;
+          setOverallMatched(newOverall);
+          const audioText = first.side === "lt" ? (first.audioText || first.text) : (second.side === "lt" ? (second.audioText || second.text) : first.text);
+          setLastCorrectMatchAudio({ key: `${first.pairId}_${Date.now()}`, text: audioText });
+          setSelected(null); setPulse(null);
+          const pageSize = Math.min(pagePairs, (currentPage?.left || []).length);
+          if (next.size >= pageSize) {
+            const nextPage = pageIndex + 1;
+            if (nextPage >= pages.length) {
+              setTimeout(() => { setShowDone(true); setBusy(false); setPhase("ready"); setPulse(null); setSelected(null); }, pageFadeOutMs);
+            } else { startPageFadeTo(nextPage); }
+          } else { setBusy(false); }
+        }, correctPulseMs);
+        timersRef.current.push(tPulse);
+        return;
+      }
+      // Wrong — play correct pair's audio
+      setPulse({ kind: "wrong", ids: [firstId, secondId] });
+      setMistakes((m) => m + 1);
+      const correctAudio = first.side === "lt" ? (first.audioText || first.text) : (second.side === "lt" ? (second.audioText || second.text) : "");
+      if (correctAudio) setLastCorrectMatchAudio({ key: `wrong_${first.pairId}_${Date.now()}`, text: correctAudio });
+      const tPulse = setTimeout(() => { setPulse(null); setSelected(null); setBusy(false); }, wrongPulseMs);
+      timersRef.current.push(tPulse);
+    }, rightSelectAmberMs);
+    timersRef.current.push(tAmber);
+  }
+
+  return { progress, leftTiles: currentPage?.left || [], rightTiles: currentPage?.right || [], selected, matchedPairIds, pulse, busy, phase, mistakes, showDone, tap, lastCorrectMatchAudio };
 }
 
 function WordMatchBlock({ block, playText, onComplete, completed }) {
-  const pairs = Array.isArray(block?.pairs) ? block.pairs : [];
+  const rawPairs = Array.isArray(block?.pairs) ? block.pairs : [];
 
-  // Shuffle both columns independently on mount
-  const [ltOrder] = React.useState(() => shuffle(pairs.map((p) => p.id)));
-  const [enOrder] = React.useState(() => shuffle(pairs.map((p) => p.id)));
+  const s = useWordMatchSession({
+    rawPairs,
+    pagePairs: 5,
+    rightSelectAmberMs: 140,
+    correctPulseMs: 520,
+    wrongPulseMs: 420,
+    pageFadeOutMs: 280,
+    pageFadeInMs: 220,
+  });
 
-  const [selectedLt, setSelectedLt] = useState(null); // pair id
-  const [selectedEn, setSelectedEn] = useState(null); // pair id
-  const [matched, setMatched] = useState(new Set());   // matched pair ids
-  const [wrongFlash, setWrongFlash] = useState(null);  // "lt-{id}" | "en-{id}" | null
-  const [flashTimer, setFlashTimer] = useState(null);
+  const lastPlayedRef = React.useRef("");
 
-  const allMatched = matched.size === pairs.length;
-
-  // Fire onComplete when all pairs matched
   React.useEffect(() => {
-    if (allMatched && pairs.length > 0) {
-      onComplete?.();
-    }
-  }, [allMatched, pairs.length, onComplete]);
+    const payload = s.lastCorrectMatchAudio;
+    if (!payload) return;
+    const key = String(payload.key || "").trim();
+    const text = String(payload.text || "").trim();
+    if (!key || !text || key === lastPlayedRef.current) return;
+    if (typeof playText !== "function") return;
+    lastPlayedRef.current = key;
+    try { playText(text); } catch {}
+  }, [playText, s.lastCorrectMatchAudio]);
 
-  const clearFlash = () => {
-    setWrongFlash(null);
-    if (flashTimer) { clearTimeout(flashTimer); setFlashTimer(null); }
-  };
+  React.useEffect(() => {
+    if (s.showDone) onComplete?.();
+  }, [s.showDone, onComplete]);
 
-  const handleLtTap = (id) => {
-    if (matched.has(id)) return;
-    clearFlash();
-    if (selectedLt === id) { setSelectedLt(null); return; }
-    setSelectedLt(id);
-    if (selectedEn !== null) checkPair(id, selectedEn);
-  };
+  const pct = s.progress.total ? Math.min(100, Math.round((s.progress.matched / s.progress.total) * 100)) : 0;
+  const gridPhaseClass = s.phase === "pageFadeOut" ? "mp-grid-fadeout" : "mp-grid-fadein";
+  const pulseIds = s.pulse?.ids || [];
+  const pulseKind = s.pulse?.kind || null;
+  const selectedId = s.selected?.id || null;
+  const TILE_H = 56;
+  const COL_GAP = 8;
+  const tileStyle = { height: TILE_H, minHeight: TILE_H, padding: "10px 12px", margin: 0 };
 
-  const handleEnTap = (id) => {
-    if (matched.has(id)) return;
-    clearFlash();
-    if (selectedEn === id) { setSelectedEn(null); return; }
-    setSelectedEn(id);
-    if (selectedLt !== null) checkPair(selectedLt, id);
-  };
-
-  const checkPair = (ltId, enId) => {
-    if (ltId === enId) {
-      // Correct match
-      const pair = pairs.find((p) => p.id === ltId);
-      if (pair?.audioText || pair?.lt) {
-        try { playText?.(pair.audioText || pair.lt); } catch {}
-      }
-      setMatched((prev) => new Set([...prev, ltId]));
-      setSelectedLt(null);
-      setSelectedEn(null);
-    } else {
-      // Wrong — flash red briefly then clear
-      setWrongFlash({ lt: ltId, en: enId });
-      const t = setTimeout(() => {
-        setSelectedLt(null);
-        setSelectedEn(null);
-        setWrongFlash(null);
-        setFlashTimer(null);
-      }, 500);
-      setFlashTimer(t);
-    }
-  };
-
-  const getLtState = (id) => {
-    if (matched.has(id)) return "matched";
-    if (wrongFlash?.lt === id) return "wrong";
-    if (selectedLt === id) return "selected";
-    return "idle";
-  };
-
-  const getEnState = (id) => {
-    if (matched.has(id)) return "matched";
-    if (wrongFlash?.en === id) return "wrong";
-    if (selectedEn === id) return "selected";
-    return "idle";
-  };
-
-  const cardClass = (state) => {
-    switch (state) {
-      case "matched":  return "border-emerald-400/25 bg-emerald-500/[0.10] text-emerald-200 cursor-default";
-      case "wrong":    return "border-rose-400/25 bg-rose-500/[0.10] text-rose-200";
-      case "selected": return "border-emerald-400/30 bg-emerald-500/[0.08] text-zinc-100 scale-[1.02]";
-      default:         return "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]";
-    }
-  };
-
-  if (completed && allMatched) {
+  if (completed && s.showDone) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
-        <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
-        <div className="text-[13px] text-emerald-200 font-medium">All pairs matched</div>
-      </div>
+      <>
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
+          <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
+          <div className="text-[13px] text-emerald-200 font-medium">All pairs matched</div>
+        </div>
+        <style>{matchPairsCss}</style>
+      </>
     );
   }
 
   return (
-    <div>
-      <div className="text-[13px] text-zinc-400 mb-4 leading-snug">
-        Tap a word on each side to match the pair.
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        {/* Lithuanian column */}
-        <div className="flex flex-col gap-2">
-          {ltOrder.map((id) => {
-            const pair = pairs.find((p) => p.id === id);
-            if (!pair) return null;
-            const state = getLtState(id);
-            return (
-              <button
-                key={`lt-${id}`}
-                type="button"
-                data-press
-                disabled={state === "matched"}
-                onClick={() => handleLtTap(id)}
-                className={cn(
-                  "rounded-2xl border px-3 py-3 text-[14px] font-semibold text-left transition-all",
-                  cardClass(state)
-                )}
-              >
-                {state === "matched" ? (
-                  <span className="opacity-60">{pair.lt}</span>
-                ) : pair.lt}
-              </button>
-            );
-          })}
+    <div className="mp-root">
+      <div className="mb-3">
+        <div className="mp-progress-track">
+          <div className="mp-progress-fill" style={{ width: `${pct}%` }} />
         </div>
-
-        {/* English column */}
-        <div className="flex flex-col gap-2">
-          {enOrder.map((id) => {
-            const pair = pairs.find((p) => p.id === id);
-            if (!pair) return null;
-            const state = getEnState(id);
-            return (
-              <button
-                key={`en-${id}`}
-                type="button"
-                data-press
-                disabled={state === "matched"}
-                onClick={() => handleEnTap(id)}
-                className={cn(
-                  "rounded-2xl border px-3 py-3 text-[13px] text-left transition-all",
-                  cardClass(state)
-                )}
-              >
-                {state === "matched" ? (
-                  <span className="opacity-60">{pair.en}</span>
-                ) : pair.en}
-              </button>
-            );
-          })}
+        <div className="mt-1.5 flex items-center justify-between text-[11px] text-zinc-500">
+          <div>{s.progress.matched}/{s.progress.total} matched · Page {s.progress.page}/{s.progress.pages}</div>
+          <div>{s.mistakes} mistake{s.mistakes === 1 ? "" : "s"}</div>
         </div>
       </div>
 
-      {/* Progress indicator */}
-      <div className="mt-4 text-[11px] text-zinc-600 text-center">
-        {matched.size} / {pairs.length} matched
+      <div className={cn("mp-grid-wrap", gridPhaseClass)}>
+        <div className="mp-cols" style={{ gap: COL_GAP }}>
+          <div className="mp-col" style={{ gap: COL_GAP }}>
+            {s.leftTiles.map((t) => {
+              const matched = s.matchedPairIds.has(t.pairId);
+              const amber = selectedId === t.id;
+              const pulse = pulseIds.includes(t.id) && pulseKind ? (pulseKind === "correct" ? "mp-pulse-correct" : "mp-pulse-wrong") : "";
+              return (
+                <button key={t.id} type="button" style={tileStyle}
+                  className={cn("mp-tile", tileTextClass(t.text), amber ? "mp-tile-amber" : "", matched ? "mp-tile-cleared" : "", pulse)}
+                  onClick={() => s.tap(t.id)} disabled={matched || s.busy} aria-pressed={amber}>
+                  {t.text}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mp-col" style={{ gap: COL_GAP }}>
+            {s.rightTiles.map((t) => {
+              const matched = s.matchedPairIds.has(t.pairId);
+              const amber = selectedId === t.id;
+              const pulse = pulseIds.includes(t.id) && pulseKind ? (pulseKind === "correct" ? "mp-pulse-correct" : "mp-pulse-wrong") : "";
+              return (
+                <button key={t.id} type="button" style={tileStyle}
+                  className={cn("mp-tile", tileTextClass(t.text), amber ? "mp-tile-amber" : "", matched ? "mp-tile-cleared" : "", pulse)}
+                  onClick={() => s.tap(t.id)} disabled={matched || s.busy}>
+                  {t.text}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
+      <style>{matchPairsCss}</style>
     </div>
   );
 }
