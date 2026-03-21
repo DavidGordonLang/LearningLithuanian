@@ -6,7 +6,6 @@ import LearningSectionView from "./training/LearningSectionView";
 import LearningModuleView from "./training/LearningModuleView";
 import LearningLessonView from "./training/LearningLessonView";
 import ModuleCompleteView from "./training/ModuleCompleteView";
-import VocabSaveView from "./training/VocabSaveView";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
@@ -60,10 +59,9 @@ function findLessonAfter(sections, lessonId) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TrainingView({ T, rows, playText, preloadText, stopText, showToast }) {
+export default function TrainingView({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned, accuracyPct }
-  const [vocabSaveModule, setVocabSaveModule] = useState(null);
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
   const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
@@ -251,25 +249,6 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
 
   // ─── Module complete ──────────────────────────────────────────────────────────
 
-  if (screen === "vocabSave" && vocabSaveModule) {
-    return (
-      <div className="h-full overflow-y-auto overscroll-contain">
-        <VocabSaveView
-          module={vocabSaveModule}
-          rows={rows}
-          setRows={setRows}
-          showToast={showToast}
-          onDone={() => {
-            setVocabSaveModule(null);
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("home");
-          }}
-        />
-      </div>
-    );
-  }
-
   if (screen === "moduleComplete" && moduleCompletePayload) {
     return (
       <ModuleCompleteView
@@ -277,12 +256,6 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
         module={moduleCompletePayload.module}
         xpEarned={moduleCompletePayload.xpEarned}
         accuracyPct={moduleCompletePayload.accuracyPct}
-        onSaveVocab={() => {
-          const mod = moduleCompletePayload?.module;
-          setModuleCompletePayload(null);
-          setVocabSaveModule(mod);
-          setScreen("vocabSave");
-        }}
         onContinue={() => {
           setModuleCompletePayload(null);
           setSelectedLessonId(null);
@@ -416,14 +389,6 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
       }}
       devMode={devMode}
       onToggleDevMode={toggleDevMode}
-      onTestModuleComplete={devMode ? () => {
-        const mod = allSections[0]?.modules?.[0];
-        const sec = allSections[0];
-        if (mod && sec) {
-          setModuleCompletePayload({ module: mod, section: sec, xpEarned: 142, accuracyPct: 87 });
-          setScreen("moduleComplete");
-        }
-      } : null}
       onBrowseCourse={() => setScreen("learningHome")}
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
