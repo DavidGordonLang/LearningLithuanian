@@ -278,7 +278,7 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
   );
 }
 
-function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
+function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
   const [selectedId, setSelectedId] = useState(null);
   const [revealState, setRevealState] = useState("idle");
   const options = Array.isArray(block?.options) ? block.options : [];
@@ -303,6 +303,7 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
+    if (!option.isCorrect) onWrongAnswer?.();
     if (isBestResponse) {
       // best_response: options are Lithuanian — play selected option if correct,
       // or play correct option after delay if wrong
@@ -314,20 +315,31 @@ function ChoiceBlock({ block, playText, onComplete, onAdvance }) {
           setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
         }
       }
-    } else if (block?.type === "recognise_mcq" && !audioText) {
-      // recognise_mcq Form B only: English prompt, Lithuanian options
-      // → play correct option (LT) on tap. No audio if prompt has audioText
-      // (Form A = Lithuanian prompt, English options — stay silent on tap)
-      if (option.isCorrect) {
-        try { playText?.(option.text); } catch {}
+    } else if (block?.type === "recognise_mcq") {
+      // recognise_mcq comes in two forms:
+      // A) Lithuanian prompt + English options → play prompt.audioText on correct
+      // B) English prompt + Lithuanian options → play correct option text
+      // Detect by whether prompt.audioText exists
+      if (audioText) {
+        // Form A: prompt is Lithuanian — play it on correct answer
+        if (option.isCorrect) {
+          try { playText?.(audioText); } catch {}
+        } else {
+          setTimeout(() => { try { playText?.(audioText); } catch {} }, 600);
+        }
       } else {
-        const correct = options.find((o) => o.isCorrect);
-        if (correct?.text && playText) {
-          setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
+        // Form B: options are Lithuanian — play correct option text
+        if (option.isCorrect) {
+          try { playText?.(option.text); } catch {}
+        } else {
+          const correct = options.find((o) => o.isCorrect);
+          if (correct?.text && playText) {
+            setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
+          }
         }
       }
     }
-    // listen_mcq and recognise_mcq Form A: options are English — never play audio on tap
+    // listen_mcq: options are English — never play audio on option tap
   };
 
   return (
@@ -1066,11 +1078,11 @@ function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
   );
 }
 
-function BlockRenderer({ block, playText, showToast, onComplete, completed, onAdvance, navBarRef }) {
+function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef }) {
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
     case "recognise_mcq": case "listen_mcq": case "best_response":
-      return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance}/>;
+      return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} completed={completed}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} completed={completed}/>;
@@ -1082,7 +1094,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, completed, onAd
 
 // ─── Lesson complete card ─────────────────────────────────────────────────────
 
-function NailedItCard({ lessonTitle, xpEarned, onContinue, nextLessonLabel, onBack }) {
+function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLessonLabel, onBack }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
@@ -1105,11 +1117,14 @@ function NailedItCard({ lessonTitle, xpEarned, onContinue, nextLessonLabel, onBa
       <div className="text-center mb-6">
         <div className="text-[26px] font-semibold text-emerald-200 leading-tight">Nailed it!</div>
         <div className="mt-2 text-[14px] text-zinc-400">{lessonTitle}</div>
-        {xpEarned ? (
-          <div className="mt-3 flex justify-center">
-            <SmallMetaPill accent="emerald">+{xpEarned} XP earned</SmallMetaPill>
-          </div>
-        ) : null}
+        <div className="mt-3 flex justify-center gap-2 flex-wrap">
+          {xpEarned ? <SmallMetaPill accent="emerald">+{xpEarned} XP</SmallMetaPill> : null}
+          {accuracyPct !== null ? (
+            <SmallMetaPill accent={accuracyPct === 100 ? "emerald" : "default"}>
+              {accuracyPct}% correct
+            </SmallMetaPill>
+          ) : null}
+        </div>
       </div>
 
       {/* Actions */}
@@ -1145,7 +1160,9 @@ export default function LearningLessonView({
   const [blockIndex, setBlockIndex] = useState(0);
   const [completedBlockIds, setCompletedBlockIds] = useState({});
   const [xpEarned, setXpEarned] = useState(null);
+  const [accuracyPct, setAccuracyPct] = useState(null);
   const [lessonDone, setLessonDone] = useState(false); // true only after user taps Continue/advance on last block
+  const [wrongAnswerCount, setWrongAnswerCount] = useState(0);
   const navBarRef = useRef(null);
   const completionFiredRef = useRef(false);
 
@@ -1157,7 +1174,9 @@ export default function LearningLessonView({
     setBlockIndex(0);
     setCompletedBlockIds({});
     setXpEarned(null);
+    setAccuracyPct(null);
     setLessonDone(false);
+    setWrongAnswerCount(0);
     completionFiredRef.current = false;
   }, [lesson?.id]);
 
@@ -1211,8 +1230,20 @@ export default function LearningLessonView({
     if (lesson?.id) {
       const { wasAlreadyComplete } = completeLesson(lesson.id, userId);
       if (!wasAlreadyComplete) {
-        const result = earnXP("complete_lesson", userId);
+        // Calculate XP: base 30, -2 per wrong answer, floor 10
+        const base = 30;
+        const deduction = wrongAnswerCount * 2;
+        const earned = Math.max(10, base - deduction);
+        // Count scoreable blocks (choice blocks only)
+        const scoreableBlocks = (lesson.blocks || []).filter(b =>
+          ["recognise_mcq", "listen_mcq", "best_response"].includes(b.type)
+        ).length;
+        const accuracy = scoreableBlocks > 0
+          ? Math.round(((scoreableBlocks - wrongAnswerCount) / scoreableBlocks) * 100)
+          : 100;
+        const result = earnXP("complete_lesson", userId, earned);
         if (result?.xpGained) setXpEarned(result.xpGained);
+        setAccuracyPct(accuracy);
       }
     }
     onLessonComplete?.();
@@ -1262,6 +1293,7 @@ export default function LearningLessonView({
         <NailedItCard
           lessonTitle={lesson.title}
           xpEarned={xpEarned}
+          accuracyPct={accuracyPct}
           onContinue={typeof onNailedItContinue === "function" ? onNailedItContinue : onNextLesson}
           nextLessonLabel={nextLessonLabel}
           onBack={onBack}
@@ -1305,6 +1337,7 @@ export default function LearningLessonView({
                 playText={playText}
                 showToast={showToast}
                 onComplete={markCurrentComplete}
+                onWrongAnswer={() => setWrongAnswerCount((n) => n + 1)}
                 completed={isCurrentCompleted}
                 onAdvance={advanceBlock}
                 navBarRef={navBarRef}
