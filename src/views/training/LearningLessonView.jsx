@@ -1230,7 +1230,7 @@ export default function LearningLessonView({
       if (result?.xpGained) setXpEarned(result.xpGained);
     }
     onLessonComplete?.();
-  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete, wrongAnswerCount]);
+  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete]); // wrongAnswerCount intentionally omitted — read via closure at fire time
 
   const advanceBlock = useCallback(() => {
     setBlockIndex((prev) => {
