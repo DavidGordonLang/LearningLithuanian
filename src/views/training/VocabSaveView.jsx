@@ -56,15 +56,15 @@ async function enrichSavedRow(lt, en, rowId, setRows) {
     const transResp = await fetch("/api/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: en, sourceLang: "en" }),
+      body: JSON.stringify({ text: en, sourceLang: "en" }),
     });
 
     if (transResp.ok) {
       const transData = await transResp.json();
       const phonetic = String(transData?.phonetics || "").trim();
-      const phoneticIPA = String(transData?.phoneticsIpa || "").trim();
-      const enNatural = String(transData?.enNatural || en).trim();
-      const enLiteral = String(transData?.enLiteral || en).trim();
+      const phoneticIPA = String(transData?.phonetics_ipa || "").trim();
+      const enNatural = String(transData?.en_natural || en).trim();
+      const enLiteral = String(transData?.en_literal || en).trim();
 
       setRows((prev) => Array.isArray(prev) ? prev.map((r) => {
         if ((r._id || r.id) === rowId) {
