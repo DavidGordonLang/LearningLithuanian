@@ -744,6 +744,18 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
     queueTimeout(() => { setStepIndex((prev) => prev + 1); showAssistantStep(stepIndex + 1); }, 850);
   };
 
+  // Calculate tray height so feed can fill remaining space
+  const optionCount = options.length;
+  // Each option ~52px + gap 8px + label 28px + padding 24px
+  const trayHeight = started && assistantVisible && !conversationComplete
+    ? 28 + (optionCount * 52) + ((optionCount - 1) * 8) + 24
+    : 0;
+  // Total container: description (~60px if present) + chat window
+  // Chat window = feed (flexible) + tray (fixed)
+  // We fix the whole block to viewport-safe height
+  const descHeight = block?.description ? 68 : 0;
+  const chatHeight = `calc(55vh - ${descHeight}px)`;
+
   return (
     <div className="flex flex-col gap-3">
       {/* Description — outside chat window, never touched by TTS */}
@@ -754,10 +766,11 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
         </div>
       ) : null}
 
-      <div className="rounded-[24px] border border-white/10 bg-black/25 overflow-hidden">
-        <div ref={feedRef} className="overflow-y-auto px-4 py-4 space-y-3" style={{ minHeight: 200, maxHeight: "38vh" }}>
+      <div className="rounded-[24px] border border-white/10 bg-black/25 overflow-hidden flex flex-col" style={{ height: chatHeight }}>
+        {/* Feed — fills all space above the tray */}
+        <div ref={feedRef} className="overflow-y-auto px-4 py-4 space-y-3 flex-1 min-h-0">
           {!started ? (
-            <div className="flex items-center justify-center" style={{ minHeight: 160 }}>
+            <div className="flex items-center justify-center h-full">
               <ActionButton onClick={startConversation}>Start conversation</ActionButton>
             </div>
           ) : (
@@ -767,8 +780,9 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
             </>
           )}
         </div>
+        {/* Answer tray — pinned to bottom, never scrolls out of view */}
         {started && assistantVisible && !conversationComplete ? (
-          <div className="border-t border-white/10 bg-black/25 px-4 py-3">
+          <div className="shrink-0 border-t border-white/10 bg-black/25 px-4 py-3">
             <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Your response</div>
             <div className="grid gap-2">
               {options.map((option) => <ScenarioTrayOption key={option.id} option={option} selectedId={selectedId} revealState={revealState} onClick={() => handleSelect(option)}/>)}
@@ -780,8 +794,6 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
       {conversationComplete ? (
         <ScenarioCompletePanel onContinue={() => {
           onComplete?.();
-          // Always try to advance — advanceBlock clamps to last block,
-          // so for the final block this is safe and lessonComplete renders.
           onAdvance?.();
         }} />
       ) : null}
