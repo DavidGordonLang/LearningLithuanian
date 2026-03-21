@@ -161,7 +161,7 @@ function CheckpointCard({ lesson, status, onClick }) {
 
 // ─── Main view ────────────────────────────────────────────────────────────────
 
-export default function LearningModuleView({ section, module, onBack, onOpenLesson }) {
+export default function LearningModuleView({ section, module, onBack, onOpenLesson, devMode = false }) {
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
   const completed = new Set(Array.isArray(completedLessonIds) ? completedLessonIds : []);
 
@@ -172,6 +172,8 @@ export default function LearningModuleView({ section, module, onBack, onOpenLess
 
   const getLessonStatus = (lesson, index) => {
     if (completed.has(lesson.id)) return "completed";
+    // Dev mode: all lessons unlocked regardless of completion order
+    if (devMode) return index === firstUncompletedIndex ? "current" : "current";
     if (index === firstUncompletedIndex) return "current";
     return "locked";
   };
@@ -228,7 +230,7 @@ export default function LearningModuleView({ section, module, onBack, onOpenLess
                   .every((l) => completed.has(l.id));
                 const checkpointStatus = completed.has(lesson.id)
                   ? "completed"
-                  : allLessonsDone
+                  : (allLessonsDone || devMode)
                   ? "current"
                   : "locked";
 
