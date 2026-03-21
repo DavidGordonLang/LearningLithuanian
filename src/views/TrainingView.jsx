@@ -6,7 +6,6 @@ import LearningSectionView from "./training/LearningSectionView";
 import LearningModuleView from "./training/LearningModuleView";
 import LearningLessonView from "./training/LearningLessonView";
 import ModuleCompleteView from "./training/ModuleCompleteView";
-import VocabSaveView from "./training/VocabSaveView";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
 import MatchPairsView from "./training/MatchPairsView";
@@ -60,12 +59,12 @@ function findLessonAfter(sections, lessonId) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TrainingView({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
+export default function TrainingView({ T, rows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
-  const [vocabSaveModule, setVocabSaveModule] = useState(null);
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned, accuracyPct }
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
+  const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
   const [devMode, setDevMode] = React.useState(() => {
     try { return localStorage.getItem("zodis_dev_mode") === "true"; } catch { return false; }
   });
@@ -248,27 +247,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     );
   }
 
-  // ─── Vocab save ───────────────────────────────────────────────────────────────
-
-  if (screen === "vocabSave" && vocabSaveModule) {
-    return (
-      <div className="h-full overflow-y-auto overscroll-contain">
-        <VocabSaveView
-          module={vocabSaveModule}
-          rows={rows}
-          setRows={setRows}
-          showToast={showToast}
-          onDone={() => {
-            setVocabSaveModule(null);
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("home");
-          }}
-        />
-      </div>
-    );
-  }
-
   // ─── Module complete ──────────────────────────────────────────────────────────
 
   if (screen === "moduleComplete" && moduleCompletePayload) {
@@ -278,12 +256,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         module={moduleCompletePayload.module}
         xpEarned={moduleCompletePayload.xpEarned}
         accuracyPct={moduleCompletePayload.accuracyPct}
-        onSaveVocab={() => {
-          const mod = moduleCompletePayload?.module;
-          setModuleCompletePayload(null);
-          setVocabSaveModule(mod);
-          setScreen("vocabSave");
-        }}
         onContinue={() => {
           setModuleCompletePayload(null);
           setSelectedLessonId(null);
@@ -326,7 +298,13 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           setSelectedModuleId(null);
           setScreen("learningHome");
         }}
-        onLessonComplete={() => {}}
+        onLessonComplete={(metrics) => {
+          if (metrics?.scoreableBlocks > 0) {
+            setModuleWrongAnswers((n) => n + (metrics.wrongAnswers || 0));
+            setModuleScoreableBlocks((n) => n + (metrics.scoreableBlocks || 0));
+          }
+          setModuleXpEarned((n) => n + (metrics?.xpAwarded || 0));
+        }}
         preloadText={preloadText}
         onNailedItContinue={() => {
           const mod = learningModule;
@@ -336,7 +314,12 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
             const modAccuracy = moduleScoreableBlocks > 0
               ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
               : null;
-            setModuleCompletePayload({ module: mod, section: sec, accuracyPct: modAccuracy });
+            setModuleCompletePayload({
+              module: mod,
+              section: sec,
+              accuracyPct: modAccuracy,
+              xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+            });
             setSelectedLessonId(null);
             setSelectedModuleId(null);
             setScreen("moduleComplete");
@@ -401,6 +384,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         setLessonReturnScreen("home");
         setModuleWrongAnswers(0);
         setModuleScoreableBlocks(0);
+        setModuleXpEarned(0);
         setScreen("learningLesson");
       }}
       devMode={devMode}
