@@ -61,7 +61,20 @@ function findLessonAfter(sections, lessonId) {
 
 export default function TrainingView({ T, rows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
-  const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned }
+  const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned, accuracyPct }
+  const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
+  const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
+  const [devMode, setDevMode] = React.useState(() => {
+    try { return localStorage.getItem("zodis_dev_mode") === "true"; } catch { return false; }
+  });
+
+  const toggleDevMode = () => {
+    setDevMode((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("zodis_dev_mode", String(next)); } catch {}
+      return next;
+    });
+  }; // { module, section, xpEarned }
   const [focus, setFocus] = useTrainingFocus();
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
@@ -221,6 +234,7 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
       <LearningModuleView
         section={learningSection}
         module={learningModule}
+        devMode={devMode}
         onBack={() => setScreen("learningSection")}
         onOpenLesson={(lessonId) => {
           if (!lessonId) return;
@@ -240,6 +254,7 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
         section={moduleCompletePayload.section}
         module={moduleCompletePayload.module}
         xpEarned={moduleCompletePayload.xpEarned}
+        accuracyPct={moduleCompletePayload.accuracyPct}
         onContinue={() => {
           setModuleCompletePayload(null);
           setSelectedLessonId(null);
@@ -289,7 +304,10 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
           const sec = learningSection;
           if (mod && isModuleFullyComplete(mod) && !hasSeenModuleComplete(mod.id)) {
             markModuleCompleteSeen(mod.id, user?.id);
-            setModuleCompletePayload({ module: mod, section: sec });
+            const modAccuracy = moduleScoreableBlocks > 0
+              ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
+              : null;
+            setModuleCompletePayload({ module: mod, section: sec, accuracyPct: modAccuracy });
             setSelectedLessonId(null);
             setSelectedModuleId(null);
             setScreen("moduleComplete");
@@ -352,8 +370,12 @@ export default function TrainingView({ T, rows, playText, preloadText, stopText,
         setSelectedLessonId(lessonToPinId);
         setSelectedModuleId(moduleToPinId);
         setLessonReturnScreen("home");
+        setModuleWrongAnswers(0);
+        setModuleScoreableBlocks(0);
         setScreen("learningLesson");
       }}
+      devMode={devMode}
+      onToggleDevMode={toggleDevMode}
       onBrowseCourse={() => setScreen("learningHome")}
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
