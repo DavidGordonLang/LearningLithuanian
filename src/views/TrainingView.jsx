@@ -67,7 +67,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
   const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
-  const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
   const [devMode, setDevMode] = React.useState(() => {
     try { return localStorage.getItem("zodis_dev_mode") === "true"; } catch { return false; }
   });
