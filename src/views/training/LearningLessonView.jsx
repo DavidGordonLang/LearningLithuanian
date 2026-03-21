@@ -699,6 +699,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
   const timeoutsRef = useRef([]);
   const feedRef = useRef(null);
+  const completePanelRef = useRef(null);
   const [started, setStarted] = useState(false);
   const [history, setHistory] = useState([]);
   const [stepIndex, setStepIndex] = useState(0);
@@ -713,7 +714,13 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
   const isLastStep = stepIndex >= steps.length - 1;
 
   useEffect(() => { return () => { timeoutsRef.current.forEach((id) => clearTimeout(id)); }; }, []);
-  useEffect(() => { const el = feedRef.current; if (!el) return; el.scrollTop = el.scrollHeight; }, [history, assistantTyping, assistantVisible, conversationComplete]);
+  useEffect(() => { const el = feedRef.current; if (!el) return; el.scrollTop = el.scrollHeight; }, [history, assistantTyping, assistantVisible]);
+  useEffect(() => {
+    if (!conversationComplete) return;
+    setTimeout(() => {
+      completePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 100);
+  }, [conversationComplete]);
 
   const queueTimeout = (fn, delay) => { const id = setTimeout(fn, delay); timeoutsRef.current.push(id); return id; };
 
@@ -792,10 +799,12 @@ function ScenarioChainBlock({ block, playText, onComplete, onAdvance }) {
       </div>
       {/* Celebration panel — user taps Continue to proceed */}
       {conversationComplete ? (
+        <div ref={completePanelRef}>
         <ScenarioCompletePanel onContinue={() => {
           onComplete?.();
           onAdvance?.();
         }} />
+        </div>
       ) : null}
     </div>
   );
