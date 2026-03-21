@@ -262,11 +262,8 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
 
   const handleClick = () => {
-    // Only play audio immediately if this is the correct answer
-    // Wrong answer audio (playing the correct option) is handled by ChoiceBlock
-    if (playAudio && playText && option.text && option.isCorrect) {
-      try { playText(option.text); } catch {}
-    }
+    // Audio is handled entirely by ChoiceBlock.handleSelect — not here
+    // This prevents double-playback on best_response correct answers
     onClick();
   };
 
@@ -315,31 +312,18 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
           setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
         }
       }
-    } else if (block?.type === "recognise_mcq") {
-      // recognise_mcq comes in two forms:
-      // A) Lithuanian prompt + English options → play prompt.audioText on correct
-      // B) English prompt + Lithuanian options → play correct option text
-      // Detect by whether prompt.audioText exists
-      if (audioText) {
-        // Form A: prompt is Lithuanian — play it on correct answer
-        if (option.isCorrect) {
-          try { playText?.(audioText); } catch {}
-        } else {
-          setTimeout(() => { try { playText?.(audioText); } catch {} }, 600);
-        }
+    } else if (block?.type === "recognise_mcq" && !audioText) {
+      // Form B only: English prompt, Lithuanian options — play correct option text
+      if (option.isCorrect) {
+        try { playText?.(option.text); } catch {}
       } else {
-        // Form B: options are Lithuanian — play correct option text
-        if (option.isCorrect) {
-          try { playText?.(option.text); } catch {}
-        } else {
-          const correct = options.find((o) => o.isCorrect);
-          if (correct?.text && playText) {
-            setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
-          }
+        const correct = options.find((o) => o.isCorrect);
+        if (correct?.text && playText) {
+          setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
         }
       }
     }
-    // listen_mcq: options are English — never play audio on option tap
+    // listen_mcq and recognise_mcq Form A: options are English — never play audio on tap
   };
 
   return (
@@ -1115,15 +1099,15 @@ function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLess
 
       {/* Title */}
       <div className="text-center mb-6">
-        <div className="text-[26px] font-semibold text-emerald-200 leading-tight">Nailed it!</div>
+        <div className="text-[26px] font-semibold text-emerald-200 leading-tight">
+          {accuracyPct === null || accuracyPct === undefined || accuracyPct >= 90 ? "Nailed it!" : "Well done!"}
+        </div>
         <div className="mt-2 text-[14px] text-zinc-400">{lessonTitle}</div>
         <div className="mt-3 flex justify-center gap-2 flex-wrap">
           {xpEarned ? <SmallMetaPill accent="emerald">+{xpEarned} XP</SmallMetaPill> : null}
-          {accuracyPct !== null ? (
-            <SmallMetaPill accent={accuracyPct === 100 ? "emerald" : "default"}>
-              {accuracyPct}% correct
-            </SmallMetaPill>
-          ) : null}
+          {accuracyPct !== null && accuracyPct !== undefined
+            ? <SmallMetaPill accent={accuracyPct >= 90 ? "emerald" : "default"}>{accuracyPct}% correct</SmallMetaPill>
+            : null}
         </div>
       </div>
 
@@ -1160,9 +1144,9 @@ export default function LearningLessonView({
   const [blockIndex, setBlockIndex] = useState(0);
   const [completedBlockIds, setCompletedBlockIds] = useState({});
   const [xpEarned, setXpEarned] = useState(null);
-  const [accuracyPct, setAccuracyPct] = useState(null);
   const [lessonDone, setLessonDone] = useState(false); // true only after user taps Continue/advance on last block
   const [wrongAnswerCount, setWrongAnswerCount] = useState(0);
+  const [accuracyPct, setAccuracyPct] = useState(null);
   const navBarRef = useRef(null);
   const completionFiredRef = useRef(false);
 
@@ -1175,8 +1159,8 @@ export default function LearningLessonView({
     setCompletedBlockIds({});
     setXpEarned(null);
     setAccuracyPct(null);
-    setLessonDone(false);
     setWrongAnswerCount(0);
+    setLessonDone(false);
     completionFiredRef.current = false;
   }, [lesson?.id]);
 
@@ -1230,16 +1214,14 @@ export default function LearningLessonView({
     if (lesson?.id) {
       const { wasAlreadyComplete } = completeLesson(lesson.id, userId);
       if (!wasAlreadyComplete) {
-        // Calculate XP: base 30, -2 per wrong answer, floor 10
         const base = 30;
         const deduction = wrongAnswerCount * 2;
         const earned = Math.max(10, base - deduction);
-        // Count scoreable blocks (choice blocks only)
         const scoreableBlocks = (lesson.blocks || []).filter(b =>
           ["recognise_mcq", "listen_mcq", "best_response"].includes(b.type)
         ).length;
         const accuracy = scoreableBlocks > 0
-          ? Math.round(((scoreableBlocks - wrongAnswerCount) / scoreableBlocks) * 100)
+          ? Math.round(((scoreableBlocks - Math.min(wrongAnswerCount, scoreableBlocks)) / scoreableBlocks) * 100)
           : 100;
         const result = earnXP("complete_lesson", userId, earned);
         if (result?.xpGained) setXpEarned(result.xpGained);
