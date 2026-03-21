@@ -989,6 +989,7 @@ export default function App() {
               <TrainingView
                 T={T}
                 rows={visibleRows}
+                setRows={setRows}
                 playText={playTextTracked}
                 preloadText={preloadTextTracked}
                 stopText={stopTextTracked}
