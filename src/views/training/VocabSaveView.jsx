@@ -172,64 +172,66 @@ export default function VocabSaveView({
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (saving || saved) return;
     const toSave = pairsWithStatus.filter((p) => selected.has(p.id) && !p.isDuplicate);
     if (toSave.length === 0) { onDone?.(); return; }
 
     setSaving(true);
 
-    // Save all selected pairs immediately with basic fields
-    const newRows = [];
-    const now = nowTs();
+    try {
+      const newRows = [];
+      const now = nowTs();
 
-    toSave.forEach((pair) => {
-      const id = genId();
-      const newRow = {
-        _id: id,
-        _ts: now,
-        Sheet: "Phrases",
-        Category: "General",
-        Lithuanian: pair.lt,
-        English: pair.en,
-        SourceLang: "lt",
-        EnglishLiteral: pair.en,
-        EnglishNatural: pair.en,
-        EnglishOriginal: pair.en,
-        LithuanianOriginal: pair.lt,
-        Phonetic: "",
-        PhoneticIPA: "",
-        Usage: "",
-        Notes: "",
-        "RAG Icon": "🟠",
-        _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
-        Source: "user",
-        Touched: true,
-        _deleted: false,
-        _deleted_ts: null,
-        contentKey: pair.contentKey,
-      };
-      newRows.push({ row: newRow, pair });
-    });
+      toSave.forEach((pair) => {
+        const id = genId();
+        const newRow = {
+          _id: id,
+          _ts: now,
+          Sheet: "Phrases",
+          Category: "General",
+          Lithuanian: pair.lt,
+          English: pair.en,
+          SourceLang: "lt",
+          EnglishLiteral: pair.en,
+          EnglishNatural: pair.en,
+          EnglishOriginal: pair.en,
+          LithuanianOriginal: pair.lt,
+          Phonetic: "",
+          PhoneticIPA: "",
+          Usage: "",
+          Notes: "",
+          "RAG Icon": "🟠",
+          _qstat: { red: { ok: 0, bad: 0 }, amb: { ok: 0, bad: 0 }, grn: { ok: 0, bad: 0 } },
+          Source: "user",
+          Touched: true,
+          _deleted: false,
+          _deleted_ts: null,
+          contentKey: pair.contentKey,
+        };
+        newRows.push({ row: newRow, pair });
+      });
 
-    // Add all to store at once
-    setRows((prev) => {
-      const arr = Array.isArray(prev) ? prev : [];
-      return [...newRows.map((x) => x.row), ...arr];
-    });
+      // Add all to store at once — synchronous localStorage write
+      setRows((prev) => {
+        const arr = Array.isArray(prev) ? prev : [];
+        return [...newRows.map((x) => x.row), ...arr];
+      });
 
-    setSaved(true);
-    setSaving(false);
-    showToast?.(`${toSave.length} phrase${toSave.length === 1 ? "" : "s"} saved to library`);
+      showToast?.(`${toSave.length} phrase${toSave.length === 1 ? "" : "s"} saved to library`);
 
-    // Background enrichment — staggered to avoid API bursts
-    newRows.forEach(({ row, pair }, i) => {
-      setTimeout(() => {
-        enrichSavedRow(pair.lt, pair.en, row._id, setRows);
-      }, i * 800);
-    });
+      // Background enrichment — staggered to avoid API bursts
+      newRows.forEach(({ row, pair }, i) => {
+        setTimeout(() => {
+          enrichSavedRow(pair.lt, pair.en, row._id, setRows);
+        }, i * 800);
+      });
 
-    onDone?.();
+      onDone?.();
+    } catch (err) {
+      console.error("VocabSave error:", err);
+      setSaving(false);
+    }
   };
 
   const selectedCount = [...selected].filter(
