@@ -182,6 +182,8 @@ export default function TrainingHome({
   learningEntryMode = "continue", // "start" | "continue"
   learningCurrentTitle,
   learningCurrentMeta,
+  devMode = false,
+  onToggleDevMode,
 }) {
   const minNeeded = 5;
   const tooFew = (eligibleCount || 0) < minNeeded;
@@ -332,6 +334,29 @@ export default function TrainingHome({
             onClick={onStartExamPrep}
           />
         </div>
+      </div>
+
+      {/* Dev mode toggle — hidden in production */}
+      <div className="mt-4 border-t border-white/[0.06] pt-4">
+        <button
+          type="button"
+          onClick={onToggleDevMode}
+          className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition"
+        >
+          <div>
+            <div className="text-[13px] font-medium text-zinc-400">Dev mode</div>
+            <div className="text-[11px] text-zinc-600 mt-0.5">Unlock all lessons for testing</div>
+          </div>
+          <div className={cn(
+            "h-6 w-11 rounded-full border transition-colors relative",
+            devMode ? "bg-emerald-500/40 border-emerald-400/40" : "bg-white/[0.06] border-white/10"
+          )}>
+            <div className={cn(
+              "absolute top-0.5 h-5 w-5 rounded-full transition-all",
+              devMode ? "left-5 bg-emerald-300" : "left-0.5 bg-zinc-500"
+            )} />
+          </div>
+        </button>
       </div>
 
       <div className="h-6" />
