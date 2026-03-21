@@ -1228,9 +1228,16 @@ export default function LearningLessonView({
       const earned = Math.max(10, base - wrongAnswerCount * 2);
       const result = earnLessonXP(lesson.id, earned, userId);
       if (result?.xpGained) setXpEarned(result.xpGained);
+      // Pass metrics up to parent for module-level aggregation
+      onLessonComplete?.({
+        wrongAnswers: wrongAnswerCount,
+        scoreableBlocks,
+        xpAwarded: result?.xpGained || 0,
+      });
+    } else {
+      onLessonComplete?.({ wrongAnswers: 0, scoreableBlocks: 0, xpAwarded: 0 });
     }
-    onLessonComplete?.();
-  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete]); // wrongAnswerCount intentionally omitted — read via closure at fire time
+  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete, wrongAnswerCount]);
 
   const advanceBlock = useCallback(() => {
     setBlockIndex((prev) => {
