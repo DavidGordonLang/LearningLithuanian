@@ -59,6 +59,7 @@ function defaultData() {
     graceUsedThisWeek: false,
     completedLessonIds: [],   // array of lesson id strings
     seenModuleCompleteIds: [], // module ids where celebration has already shown
+    lessonXP: {},              // { lessonId: xpEarned } — tracks best XP per lesson
   };
 }
 
@@ -72,6 +73,7 @@ export const useGameStore = create((set, get) => ({
   graceUsedThisWeek: false,
   completedLessonIds: [],
   seenModuleCompleteIds: [],
+  lessonXP: {},
 
   // Meta
   loading: false,
@@ -111,6 +113,7 @@ export const useGameStore = create((set, get) => ({
         graceUsedThisWeek: merged.graceUsedThisWeek ?? false,
         completedLessonIds: Array.isArray(merged.completedLessonIds) ? merged.completedLessonIds : [],
         seenModuleCompleteIds: Array.isArray(merged.seenModuleCompleteIds) ? merged.seenModuleCompleteIds : [],
+        lessonXP: (merged.lessonXP && typeof merged.lessonXP === "object") ? merged.lessonXP : {},
         loading: false,
         _loadedForUserId: userId,
       });
@@ -132,8 +135,8 @@ export const useGameStore = create((set, get) => ({
 
   _save: async (userId) => {
     if (!userId) return;
-    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds } = get();
-    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds };
+    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, lessonXP } = get();
+    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, lessonXP };
 
     try {
       await supabase
@@ -147,8 +150,8 @@ export const useGameStore = create((set, get) => ({
 
   // ── XP ──────────────────────────────────────────────────────────────────────
 
-  earnXP: (action, userId, overrideAmount = null) => {
-    const reward = overrideAmount !== null ? overrideAmount : (XP_REWARDS[action] ?? 0);
+  earnXP: (action, userId) => {
+    const reward = XP_REWARDS[action] ?? 0;
     if (!reward) return { xpGained: 0 };
 
     const prevTotal = get().totalXP;
@@ -230,6 +233,44 @@ export const useGameStore = create((set, get) => ({
 
   isLessonComplete: (lessonId) => {
     return get().completedLessonIds.includes(lessonId);
+  },
+
+  // ── Lesson XP (best-score) ──────────────────────────────────────────────────
+  //
+  // Awards XP for a lesson attempt. On first completion, awards full amount.
+  // On replay, only awards the positive delta if new score beats previous best.
+  // Never deducts XP — worst case is no change.
+
+  earnLessonXP: (lessonId, xpThisAttempt, userId) => {
+    if (!lessonId || !xpThisAttempt) return { xpGained: 0 };
+
+    const { lessonXP, totalXP } = get();
+    const previousBest = lessonXP[lessonId] || 0;
+
+    if (xpThisAttempt <= previousBest) {
+      // No improvement — no XP change
+      return { xpGained: 0 };
+    }
+
+    const delta = xpThisAttempt - previousBest;
+    const newTotal = totalXP + delta;
+
+    const prevLevel = levelFromTotalXP(totalXP).level;
+    const newLevel = levelFromTotalXP(newTotal).level;
+    const leveledUp = newLevel > prevLevel;
+
+    set({
+      totalXP: newTotal,
+      lessonXP: { ...lessonXP, [lessonId]: xpThisAttempt },
+    });
+
+    get()._save(userId);
+
+    return { xpGained: delta, leveledUp, newLevel };
+  },
+
+  getLessonBestXP: (lessonId) => {
+    return get().lessonXP[lessonId] || 0;
   },
 
   // ── Module celebration ───────────────────────────────────────────────────────
