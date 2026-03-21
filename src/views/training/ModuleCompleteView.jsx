@@ -107,6 +107,7 @@ export default function ModuleCompleteView({
   xpEarned,     // total XP earned in this session (optional)
   accuracyPct,  // overall accuracy % across the module (optional)
   onContinue,   // called when user taps "Continue"
+  onSaveVocab,  // called when user taps "Save vocabulary"
   onHome,       // called when user taps "Learning home"
 }) {
   const [visible, setVisible] = useState(false);
@@ -203,16 +204,24 @@ export default function ModuleCompleteView({
         <button
           type="button"
           data-press
-          onClick={onContinue}
+          onClick={onSaveVocab}
           className="w-full rounded-2xl border border-emerald-300/20 bg-emerald-600/90 hover:bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition"
         >
-          Continue →
+          Save vocabulary →
+        </button>
+        <button
+          type="button"
+          data-press
+          onClick={onContinue}
+          className="w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.05] transition"
+        >
+          Continue without saving
         </button>
         <button
           type="button"
           data-press
           onClick={onHome}
-          className="w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.05] transition"
+          className="w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-semibold text-zinc-500 hover:bg-white/[0.05] transition"
         >
           Learning home
         </button>
