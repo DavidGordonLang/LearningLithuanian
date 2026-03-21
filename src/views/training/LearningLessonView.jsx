@@ -262,8 +262,7 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
 
   const handleClick = () => {
-    // Audio is handled entirely by ChoiceBlock.handleSelect — not here
-    // This prevents double-playback on best_response correct answers
+    // Audio handled entirely by ChoiceBlock.handleSelect — prevents double-playback
     onClick();
   };
 
@@ -313,7 +312,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         }
       }
     } else if (block?.type === "recognise_mcq" && !audioText) {
-      // Form B only: English prompt, Lithuanian options — play correct option text
+      // Form B: English prompt, Lithuanian options — play correct option text
       if (option.isCorrect) {
         try { playText?.(option.text); } catch {}
       } else {
@@ -1151,16 +1150,16 @@ export default function LearningLessonView({
   const completionFiredRef = useRef(false);
 
   const completeLesson = useGameStore((s) => s.completeLesson);
-  const earnXP = useGameStore((s) => s.earnXP);
+  const earnLessonXP = useGameStore((s) => s.earnLessonXP);
 
   useEffect(() => {
     setPhase("loading");
     setBlockIndex(0);
     setCompletedBlockIds({});
     setXpEarned(null);
-    setAccuracyPct(null);
-    setWrongAnswerCount(0);
     setLessonDone(false);
+    setWrongAnswerCount(0);
+    setAccuracyPct(null);
     completionFiredRef.current = false;
   }, [lesson?.id]);
 
@@ -1212,24 +1211,26 @@ export default function LearningLessonView({
     if (!lessonDone || completionFiredRef.current) return;
     completionFiredRef.current = true;
     if (lesson?.id) {
-      const { wasAlreadyComplete } = completeLesson(lesson.id, userId);
-      if (!wasAlreadyComplete) {
-        const base = 30;
-        const deduction = wrongAnswerCount * 2;
-        const earned = Math.max(10, base - deduction);
-        const scoreableBlocks = (lesson.blocks || []).filter(b =>
-          ["recognise_mcq", "listen_mcq", "best_response"].includes(b.type)
-        ).length;
-        const accuracy = scoreableBlocks > 0
-          ? Math.round(((scoreableBlocks - Math.min(wrongAnswerCount, scoreableBlocks)) / scoreableBlocks) * 100)
-          : 100;
-        const result = earnXP("complete_lesson", userId, earned);
-        if (result?.xpGained) setXpEarned(result.xpGained);
-        setAccuracyPct(accuracy);
-      }
+      // Mark lesson complete (idempotent)
+      completeLesson(lesson.id, userId);
+
+      // Always calculate accuracy for this attempt
+      const scoreableBlocks = (lesson.blocks || []).filter(b =>
+        ["recognise_mcq", "listen_mcq", "best_response"].includes(b.type)
+      ).length;
+      const accuracy = scoreableBlocks > 0
+        ? Math.round(((scoreableBlocks - Math.min(wrongAnswerCount, scoreableBlocks)) / scoreableBlocks) * 100)
+        : 100;
+      setAccuracyPct(accuracy);
+
+      // XP: base 30, -2 per wrong, floor 10. Only awards delta if this beats previous best.
+      const base = 30;
+      const earned = Math.max(10, base - wrongAnswerCount * 2);
+      const result = earnLessonXP(lesson.id, earned, userId);
+      if (result?.xpGained) setXpEarned(result.xpGained);
     }
     onLessonComplete?.();
-  }, [lessonComplete, lesson?.id, userId, completeLesson, earnXP, onLessonComplete]);
+  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete, wrongAnswerCount]);
 
   const advanceBlock = useCallback(() => {
     setBlockIndex((prev) => {
