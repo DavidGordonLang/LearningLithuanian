@@ -147,8 +147,8 @@ export const useGameStore = create((set, get) => ({
 
   // ── XP ──────────────────────────────────────────────────────────────────────
 
-  earnXP: (action, userId) => {
-    const reward = XP_REWARDS[action] ?? 0;
+  earnXP: (action, userId, overrideAmount = null) => {
+    const reward = overrideAmount !== null ? overrideAmount : (XP_REWARDS[action] ?? 0);
     if (!reward) return { xpGained: 0 };
 
     const prevTotal = get().totalXP;
