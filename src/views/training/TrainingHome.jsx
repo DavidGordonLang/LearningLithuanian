@@ -294,6 +294,7 @@ export default function TrainingHome({
   learningCurrentMeta,
   devMode = false,
   onToggleDevMode,
+  onTestModuleComplete,
 }) {
   const totalXP = useGameStore((s) => s.totalXP);
   const streakDays = useGameStore((s) => s.streakDays);
@@ -454,6 +455,15 @@ export default function TrainingHome({
 
       {/* Dev mode toggle — hidden in production */}
       <div className="mt-4 border-t border-white/[0.06] pt-4">
+        {devMode && typeof onTestModuleComplete === "function" ? (
+          <button
+            type="button"
+            onClick={onTestModuleComplete}
+            className="w-full mb-2 px-4 py-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] text-[13px] font-medium text-emerald-300 hover:bg-emerald-500/[0.10] transition text-left"
+          >
+            ⚡ Test module complete screen
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onToggleDevMode}
