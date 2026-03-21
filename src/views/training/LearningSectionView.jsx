@@ -144,7 +144,7 @@ export default function LearningSectionView({
 
         <div className="text-center">
           <div className="text-[16px] font-semibold text-zinc-100">
-            Section {section?.code || ""}
+            {section?.title || ""}
           </div>
         </div>
 
@@ -173,7 +173,7 @@ export default function LearningSectionView({
             {modules.map((module) => (
               <ModuleCard
                 key={module.id}
-                title={`Module ${module.code} — ${module.title}`}
+                title={`${module.title}`}
                 status={module.status}
                 lessonCount={module.lessonCount}
                 onClick={
