@@ -1,7 +1,117 @@
 // src/views/training/TrainingHome.jsx
 import React from "react";
+import { useGameStore } from "../../stores/gameStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+
+// ─── XP Strip ─────────────────────────────────────────────────────────────────
+
+const LEVEL_NAMES = [
+  "Newcomer",        // 1
+  "Visitor",         // 2
+  "Learner",         // 3
+  "Student",         // 4
+  "Explorer",        // 5
+  "Communicator",    // 6
+  "Conversationalist", // 7
+  "Confident",       // 8
+  "Advanced",        // 9
+  "Accomplished",    // 10
+  "Near Fluent",     // 11
+  "Fluent",          // 12
+  "Proficient",      // 13
+  "Distinguished",   // 14
+  "Expert",          // 15
+  "Master",          // 16
+  "Elite",           // 17
+  "Champion",        // 18
+  "Legend",          // 19
+  "Lithuanian",      // 20
+];
+
+function getLevelName(level) {
+  return LEVEL_NAMES[Math.min(level - 1, LEVEL_NAMES.length - 1)] || `Level ${level}`;
+}
+
+function XPStrip({ totalXP, streakDays, getLevelInfo }) {
+  const { level, xpIntoLevel, xpForThisLevel } = getLevelInfo();
+  const pct = xpForThisLevel > 0 ? Math.round((xpIntoLevel / xpForThisLevel) * 100) : 0;
+  const levelName = getLevelName(level);
+  const hasStreak = (streakDays || 0) > 0;
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg, rgba(6,6,8,0.95) 0%, rgba(10,26,18,0.95) 100%)",
+      borderRadius: 16,
+      border: "1px solid rgba(16,185,129,0.2)",
+      padding: "14px 16px",
+      marginBottom: 20,
+    }}>
+      {/* Top row: level + streak */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{
+          background: "rgba(16,185,129,0.12)",
+          border: "1px solid rgba(16,185,129,0.3)",
+          borderRadius: 20,
+          padding: "4px 12px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#6ee7b7" }}>Lvl {level}</span>
+          <span style={{ fontSize: 11, color: "rgba(110,231,183,0.6)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{levelName}</span>
+        </div>
+        {hasStreak ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ fontSize: 16 }}>🔥</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>{streakDays}</span>
+            <span style={{ fontSize: 11, color: "rgba(251,191,36,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>day streak</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+          Progress to {getLevelName(level + 1)}
+        </span>
+        <span style={{ fontSize: 11, color: "rgba(110,231,183,0.6)" }}>
+          {xpIntoLevel} / {xpForThisLevel} XP
+        </span>
+      </div>
+      <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 99, overflow: "visible", position: "relative" }}>
+        <div style={{
+          height: "100%",
+          width: `${pct}%`,
+          borderRadius: 99,
+          background: "linear-gradient(90deg, #059669, #34d399)",
+          position: "relative",
+          minWidth: pct > 0 ? 6 : 0,
+        }}>
+          {pct > 0 ? (
+            <div style={{
+              position: "absolute",
+              right: -3,
+              top: -3,
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: "#34d399",
+              boxShadow: "0 0 8px 3px rgba(52,211,153,0.45)",
+            }} />
+          ) : null}
+        </div>
+      </div>
+
+      {/* Total XP */}
+      <div style={{ textAlign: "right", marginTop: 7 }}>
+        <span style={{ fontSize: 19, fontWeight: 700, color: "#fff" }}>{totalXP.toLocaleString()}</span>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginLeft: 5 }}>total XP</span>
+      </div>
+    </div>
+  );
+}
 
 function SectionLabel({ eyebrow, title, desc }) {
   return (
@@ -185,6 +295,10 @@ export default function TrainingHome({
   devMode = false,
   onToggleDevMode,
 }) {
+  const totalXP = useGameStore((s) => s.totalXP);
+  const streakDays = useGameStore((s) => s.streakDays);
+  const getLevelInfo = useGameStore((s) => s.getLevelInfo);
+
   const minNeeded = 5;
   const tooFew = (eligibleCount || 0) < minNeeded;
 
@@ -240,6 +354,8 @@ export default function TrainingHome({
         </div>
       </div>
 
+      <XPStrip totalXP={totalXP} streakDays={streakDays} getLevelInfo={getLevelInfo} />
+
       <div className="mt-6">
         <SectionLabel eyebrow="Learning" title={learningHeaderTitle} />
 
@@ -254,13 +370,13 @@ export default function TrainingHome({
             onClick={learningDisabled ? (typeof onBrowseCourse === "function" ? onBrowseCourse : undefined) : onStartLearning}
             hint={null}
           />
-          {learningDisabled && typeof onBrowseCourse === "function" ? (
+          {typeof onBrowseCourse === "function" ? (
             <button
               type="button"
               onClick={onBrowseCourse}
               className="mt-2 w-full text-center text-[12px] text-zinc-500 hover:text-zinc-300 transition py-1"
             >
-              Browse course to review any lesson →
+              Browse course →
             </button>
           ) : null}
         </div>
