@@ -1201,7 +1201,7 @@ export default function LearningLessonView({
         try { preloadText(text).catch?.(() => {}); } catch {}
       }, i * 120);
     });
-  }, [lesson, preloadText]);
+  }, [lesson?.id, preloadText]);
 
   const currentBlock = blocks[blockIndex] || null;
   const totalBlocks = blocks.length;
