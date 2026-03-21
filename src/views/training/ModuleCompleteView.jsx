@@ -105,6 +105,7 @@ export default function ModuleCompleteView({
   section,      // section object { title, code }
   module,       // module object { title, code, lessons }
   xpEarned,     // total XP earned in this session (optional)
+  accuracyPct,  // overall accuracy % across the module (optional)
   onContinue,   // called when user taps "Continue"
   onHome,       // called when user taps "Learning home"
 }) {
@@ -181,6 +182,8 @@ export default function ModuleCompleteView({
           </>
         ) : null}
         {xpEarned ? <StatPill value={`+${xpEarned}`} label="XP earned" /> : null}
+        {xpEarned && accuracyPct !== null && accuracyPct !== undefined ? <div className="w-px h-6 bg-white/[0.08]" /> : null}
+        {accuracyPct !== null && accuracyPct !== undefined ? <StatPill value={`${accuracyPct}%`} label="Accuracy" /> : null}
       </div>
 
       {/* Next module teaser */}
