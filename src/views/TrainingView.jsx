@@ -67,6 +67,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
   const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
+  const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
   const [devMode, setDevMode] = React.useState(() => {
     try { return localStorage.getItem("zodis_dev_mode") === "true"; } catch { return false; }
   });
@@ -261,9 +262,20 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           showToast={showToast}
           onDone={() => {
             setVocabSaveModule(null);
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("home");
+            const next = findNextLesson(allSections, completedLessonIds);
+            if (next) {
+              setSelectedLessonId(next.lesson.id);
+              setSelectedModuleId(next.module.id);
+              setModuleWrongAnswers(0);
+              setModuleScoreableBlocks(0);
+              setModuleXpEarned(0);
+              setLessonReturnScreen("home");
+              setScreen("learningLesson");
+            } else {
+              setSelectedLessonId(null);
+              setSelectedModuleId(null);
+              setScreen("home");
+            }
           }}
         />
       </div>
@@ -285,9 +297,20 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         }}
         onContinue={() => {
           setModuleCompletePayload(null);
-          setSelectedLessonId(null);
-          setSelectedModuleId(null);
-          setScreen("home");
+          const next = findNextLesson(allSections, completedLessonIds);
+          if (next) {
+            setSelectedLessonId(next.lesson.id);
+            setSelectedModuleId(next.module.id);
+            setModuleWrongAnswers(0);
+            setModuleScoreableBlocks(0);
+            setModuleXpEarned(0);
+            setLessonReturnScreen("home");
+            setScreen("learningLesson");
+          } else {
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("home");
+          }
         }}
         onHome={() => {
           setModuleCompletePayload(null);
