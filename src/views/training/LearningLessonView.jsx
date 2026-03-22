@@ -494,13 +494,12 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
           ) : (
             <>
               <button type="button" disabled={isProcessing}
-                onPointerDown={(e) => { e.preventDefault(); handleStart(); }}
-                onPointerUp={(e) => { e.preventDefault(); handleStop(); }}
-                onPointerLeave={(e) => { e.preventDefault(); handleStop(); }}
-                onPointerCancel={(e) => { e.preventDefault(); cancelStt(); }}
-                onTouchStart={(e) => { e.preventDefault(); }}
-                onTouchEnd={(e) => { e.preventDefault(); }}
-                style={{ touchAction: "none", userSelect: "none" }}
+                onMouseDown={(e) => { e.preventDefault(); handleStart(); }}
+                onMouseUp={(e) => { e.preventDefault(); handleStop(); }}
+                onMouseLeave={(e) => { e.preventDefault(); handleStop(); }}
+                onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleStart(); }}
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); handleStop(); }}
+                onTouchCancel={(e) => { e.preventDefault(); cancelStt(); }}
                 className={cn("h-20 w-20 rounded-full border-2 flex items-center justify-center transition-all select-none",
                   isRecording ? "bg-emerald-500/25 border-emerald-400/60 scale-105 shadow-[0_0_32px_rgba(16,185,129,0.3)]"
                   : isProcessing ? "bg-white/[0.06] border-white/10 opacity-70"
