@@ -461,7 +461,7 @@ export default function TrainingHome({
             onClick={onTestModuleComplete}
             className="w-full mb-2 px-4 py-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] text-[13px] font-medium text-emerald-300 hover:bg-emerald-500/[0.10] transition text-left"
           >
-            ⚡ Test module complete screen
+            ⚡ Test module complete (cycles)
           </button>
         ) : null}
         <button
