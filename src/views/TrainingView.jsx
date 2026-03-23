@@ -64,6 +64,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const [screen, setScreen] = useState("home");
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned, accuracyPct }
   const [vocabSaveModule, setVocabSaveModule] = useState(null);
+  const devModuleIndexRef = React.useRef(0);
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
   const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
@@ -449,13 +450,14 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       devMode={devMode}
       onToggleDevMode={toggleDevMode}
       onTestModuleComplete={devMode ? () => {
-        const allMods = allSections.flatMap(s => (s.modules || []).filter(m => m.status === "active").map(m => ({ mod: m, sec: s })));
+        const allMods = allSections.flatMap(s =>
+          (s.modules || []).filter(m => m.status === "active").map(m => ({ mod: m, sec: s }))
+        );
         if (!allMods.length) return;
-        const currentIdx = moduleCompletePayload
-          ? allMods.findIndex(x => x.mod.id === moduleCompletePayload.module?.id)
-          : -1;
-        const next = allMods[(currentIdx + 1) % allMods.length];
-        setModuleCompletePayload({ module: next.mod, section: next.sec, xpEarned: 142, accuracyPct: 87 });
+        const idx = devModuleIndexRef.current % allMods.length;
+        devModuleIndexRef.current = (idx + 1) % allMods.length;
+        const { mod, sec } = allMods[idx];
+        setModuleCompletePayload({ module: mod, section: sec, xpEarned: 142, accuracyPct: 87 });
         setScreen("moduleComplete");
       } : null}
       onBrowseCourse={() => setScreen("learningHome")}
