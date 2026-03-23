@@ -4,7 +4,6 @@ import { useGameStore } from "../../stores/gameStore";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-
 // ─── XP Strip ─────────────────────────────────────────────────────────────────
 
 const LEVEL_NAMES = [
@@ -294,7 +293,7 @@ export default function TrainingHome({
   learningCurrentMeta,
   devMode = false,
   onToggleDevMode,
-  onTestModuleComplete,
+  devTestModules = [],
 }) {
   const totalXP = useGameStore((s) => s.totalXP);
   const streakDays = useGameStore((s) => s.streakDays);
@@ -455,14 +454,19 @@ export default function TrainingHome({
 
       {/* Dev mode toggle — hidden in production */}
       <div className="mt-4 border-t border-white/[0.06] pt-4">
-        {devMode && typeof onTestModuleComplete === "function" ? (
-          <button
-            type="button"
-            onClick={onTestModuleComplete}
-            className="w-full mb-2 px-4 py-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] text-[13px] font-medium text-emerald-300 hover:bg-emerald-500/[0.10] transition text-left"
-          >
-            ⚡ Test module complete (cycles)
-          </button>
+        {devMode && devTestModules.length > 0 ? (
+          <div className="mb-2 space-y-2">
+            {devTestModules.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={item.onClick}
+                className="w-full px-4 py-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] text-[13px] font-medium text-emerald-300 hover:bg-emerald-500/[0.10] transition text-left"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         ) : null}
         <button
           type="button"
