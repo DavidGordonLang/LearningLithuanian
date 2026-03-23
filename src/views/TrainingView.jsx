@@ -355,9 +355,19 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           setModuleXpEarned((n) => n + (metrics?.xpAwarded || 0));
         }}
         preloadText={preloadText}
-        onNailedItContinue={() => {
-          const mod = learningModule;
-          const sec = learningSection;
+        onNailedItContinue={(completedLessonId) => {
+          // Find the module that owns this lesson — more reliable than derived learningModule
+          let mod = learningModule;
+          let sec = learningSection;
+          if (completedLessonId) {
+            for (const s of allSections) {
+              for (const m of (s.modules || [])) {
+                if ((m.lessons || []).find(l => l.id === completedLessonId)) {
+                  mod = m; sec = s; break;
+                }
+              }
+            }
+          }
           if (mod && isModuleFullyComplete(mod) && !hasSeenModuleComplete(mod.id)) {
             markModuleCompleteSeen(mod.id, user?.id);
             const modAccuracy = moduleScoreableBlocks > 0
@@ -439,12 +449,14 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       devMode={devMode}
       onToggleDevMode={toggleDevMode}
       onTestModuleComplete={devMode ? () => {
-        const mod = allSections[0]?.modules?.[0];
-        const sec = allSections[0];
-        if (mod && sec) {
-          setModuleCompletePayload({ module: mod, section: sec, xpEarned: 142, accuracyPct: 87 });
-          setScreen("moduleComplete");
-        }
+        const allMods = allSections.flatMap(s => (s.modules || []).filter(m => m.status === "active").map(m => ({ mod: m, sec: s })));
+        if (!allMods.length) return;
+        const currentIdx = moduleCompletePayload
+          ? allMods.findIndex(x => x.mod.id === moduleCompletePayload.module?.id)
+          : -1;
+        const next = allMods[(currentIdx + 1) % allMods.length];
+        setModuleCompletePayload({ module: next.mod, section: next.sec, xpEarned: 142, accuracyPct: 87 });
+        setScreen("moduleComplete");
       } : null}
       onBrowseCourse={() => setScreen("learningHome")}
       onStartRecallFlip={() => setScreen("recallFlip")}
