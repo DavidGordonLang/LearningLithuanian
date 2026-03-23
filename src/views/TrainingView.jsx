@@ -64,7 +64,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const [screen, setScreen] = useState("home");
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned, accuracyPct }
   const [vocabSaveModule, setVocabSaveModule] = useState(null);
-  const devModuleIndexRef = React.useRef(0);
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
   const [moduleXpEarned, setModuleXpEarned] = React.useState(0);
@@ -172,8 +171,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     if (!learningLesson?.id) return null;
     return findLessonAfter(allSections, learningLesson.id);
   }, [allSections, learningLesson]);
-
-
 
   // "Lesson 2", "Lesson 3" etc — 1-based index of the next lesson
   // Check if all lessons in a module are done — used to trigger celebration
@@ -449,17 +446,25 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       }}
       devMode={devMode}
       onToggleDevMode={toggleDevMode}
-      onTestModuleComplete={devMode ? () => {
-        const allMods = allSections.flatMap(s =>
-          (s.modules || []).filter(m => m.status === "active").map(m => ({ mod: m, sec: s }))
-        );
-        if (!allMods.length) return;
-        const idx = devModuleIndexRef.current % allMods.length;
-        devModuleIndexRef.current = (idx + 1) % allMods.length;
-        const { mod, sec } = allMods[idx];
-        setModuleCompletePayload({ module: mod, section: sec, xpEarned: 142, accuracyPct: 87 });
-        setScreen("moduleComplete");
-      } : null}
+      devTestModules={devMode
+        ? allSections.flatMap((section) =>
+            (section.modules || [])
+              .filter((module) => module.status === "active")
+              .map((module) => ({
+                id: module.id,
+                label: `⚡ Test Module ${module.code} Complete`,
+                onClick: () => {
+                  setModuleCompletePayload({
+                    module,
+                    section,
+                    xpEarned: 142,
+                    accuracyPct: 87,
+                  });
+                  setScreen("moduleComplete");
+                },
+              }))
+          )
+        : []}
       onBrowseCourse={() => setScreen("learningHome")}
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
