@@ -113,8 +113,8 @@ const module_1_2 = {
             {
               id: "step_2",
               actor: "other",
-              text: "Aš esu Tomas. Kaip sekasi?",
-              audioText: "Aš esu Tomas. Kaip sekasi",
+              text: "Aš esu Rokas. Kaip sekasi?",
+              audioText: "Aš esu Rokas. Kaip sekasi",
               options: [
                 { id: "a", text: "Labas rytas", isCorrect: false },
                 { id: "b", text: "Atsiprašau", isCorrect: false },
@@ -293,7 +293,7 @@ const module_1_2 = {
           id: "s1m2l3_b3",
           type: "best_response",
           title: "Choose the best response",
-          prompt: { text: "Tomas says: Malonu susipažinti.", audioText: "Malonu susipažinti" },
+          prompt: { text: "Rokas says: Malonu susipažinti.", audioText: "Malonu susipažinti" },
           options: [
             { id: "a", text: "Viso gero", isCorrect: false },
             { id: "b", text: "Man irgi", isCorrect: true },
@@ -378,7 +378,7 @@ const module_1_2 = {
         pattern: "Čia yra introduces a person or thing. Jis yra means he is, ji yra means she is. Lithuanian marks gender — draugas is a male friend, draugė is a female friend.",
         usage: [
           "Čia Barbora — This is Barbora (shorter, natural in speech)",
-          "Čia yra Tomas — This is Tomas (slightly fuller form)",
+          "Čia yra Rokas — This is Rokas (slightly fuller form)",
           "Jis yra mano draugas — He is my friend",
           "Ji yra mano draugė — She is my friend",
           "Jis yra iš Lenkijos — He is from Poland",
@@ -391,8 +391,8 @@ const module_1_2 = {
           type: "learn",
           title: "Introducing others",
           items: [
-            { id: "ti1", lt: "Čia Barbora", en: "This is Barbora", audioText: "Čia Barbora", saveable: true, core: true },
-            { id: "ti2", lt: "Čia yra Tomas", en: "This is Tomas", audioText: "Čia yra Tomas", saveable: true, core: true },
+            { id: "ti1", lt: "Čia…", en: "This is…", audioText: "Čia", saveable: false, core: true },
+            { id: "ti2", lt: "Čia yra…", en: "This is… (fuller form)", audioText: "Čia yra", saveable: false, core: true },
             { id: "ti3", lt: "Jis yra mano draugas", en: "He is my friend", audioText: "Jis yra mano draugas", saveable: true, core: true },
             { id: "ti4", lt: "Ji yra mano draugė", en: "She is my friend", audioText: "Ji yra mano draugė", saveable: true, core: true },
             { id: "ti5", lt: "Jis yra iš Lenkijos", en: "He is from Poland", audioText: "Jis yra iš Lenkijos", saveable: true, core: true },
@@ -403,10 +403,10 @@ const module_1_2 = {
           id: "s1m2l4_b2",
           type: "listen_mcq",
           title: "Listen and choose",
-          prompt: { text: "Čia yra Tomas", audioText: "Čia yra Tomas" },
+          prompt: { text: "Čia yra Rokas", audioText: "Čia yra Rokas" },
           options: [
             { id: "a", text: "He is my friend", isCorrect: false },
-            { id: "b", text: "This is Tomas", isCorrect: true },
+            { id: "b", text: "This is Rokas", isCorrect: true },
             { id: "c", text: "She is my friend", isCorrect: false },
           ],
         },
@@ -426,13 +426,13 @@ const module_1_2 = {
           id: "s1m2l4_b4",
           type: "best_response",
           title: "Choose the best response",
-          prompt: { text: "You want to introduce your female friend Barbora to someone." },
+          prompt: { text: "You want to introduce your female friend to someone." },
           options: [
             { id: "a", text: "Jis yra mano draugas", isCorrect: false },
-            { id: "b", text: "Čia Barbora. Ji yra mano draugė.", isCorrect: true },
-            { id: "c", text: "Aš esu iš Škotijos", isCorrect: false },
+            { id: "b", text: "Ji yra mano draugė.", isCorrect: true },
+            { id: "c", text: "Jis yra mano kolega", isCorrect: false },
           ],
-          feedback: { correct: "Čia Barbora introduces her, and ji yra mano draugė tells them she's your friend." },
+          feedback: { correct: "Ji yra mano draugė — she is my friend. Ji for female, jis for male." },
         },
         {
           id: "s1m2l4_b5",
@@ -471,7 +471,7 @@ const module_1_2 = {
           id: "s1m2l4_b8",
           type: "scenario_chain",
           title: "Conversation",
-          description: "You run into an old colleague, Tomas, and introduce your friend Barbora.",
+          description: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
           steps: [
             {
               id: "step_1",
@@ -537,13 +537,13 @@ const module_1_2 = {
           id: "s1m2c_b3",
           type: "best_response",
           title: "Choose the best response",
-          prompt: { text: "You want to introduce your male colleague Tomas to someone." },
+          prompt: { text: "You want to say your colleague is from Poland. He is male." },
           options: [
-            { id: "a", text: "Ji yra mano draugė", isCorrect: false },
-            { id: "b", text: "Čia Tomas. Jis yra mano draugas.", isCorrect: true },
-            { id: "c", text: "Koks tavo vardas?", isCorrect: false },
+            { id: "a", text: "Ji yra iš Lenkijos", isCorrect: false },
+            { id: "b", text: "Jis yra iš Lenkijos", isCorrect: true },
+            { id: "c", text: "Aš esu iš Lenkijos", isCorrect: false },
           ],
-          feedback: { correct: "Čia Tomas introduces him, jis yra mano draugas confirms he is your friend — and draugas is the male form." },
+          feedback: { correct: "Jis for a male — ji would be used for a female colleague. Aš esu means I am, not he is." },
         },
         {
           id: "s1m2c_b4",
@@ -605,13 +605,13 @@ const module_1_2 = {
           id: "s1m2c_b9",
           type: "scenario_chain",
           title: "Conversation",
-          description: "You're at a welcome event in Vilnius. A local, Tomas, comes over to say hello.",
+          description: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
           steps: [
             {
               id: "step_1",
               actor: "other",
-              text: "Laba diena! Aš esu Tomas. Koks jūsų vardas?",
-              audioText: "Laba diena. Aš esu Tomas. Koks jūsų vardas",
+              text: "Laba diena! Aš esu Rokas. Koks jūsų vardas?",
+              audioText: "Laba diena. Aš esu Rokas. Koks jūsų vardas",
               options: [
                 { id: "a", text: "Ne, ačiū", isCorrect: false },
                 { id: "b", text: "Laba diena! Mano vardas Davidas.", isCorrect: true },
