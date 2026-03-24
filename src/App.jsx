@@ -998,24 +998,25 @@ export default function App() {
             </div>
 
             <div className="h-full">
-              <SettingsView
-                T={T}
-                appVersion={APP_VERSION}
-                azureVoiceShortName={azureVoiceShortName}
-                setAzureVoiceShortName={setAzureVoiceShortName}
-                playText={playTextTracked}
-                fetchStarter={fetchStarter}
-                clearLibrary={clearLibrary}
-                importJsonFile={importJsonFile}
-                rows={rows}
-                onOpenDuplicateScanner={() => goToPage("dupes")}
-                onOpenChangeLog={() => setShowChangeLog(true)}
-                onOpenUserGuide={() => setShowUserGuide(true)}
-                onOpenAnalytics={() => goToPage("analytics")}
-                dailyRecallEnabled={dailyRecall.enabled}
-                setDailyRecallEnabled={dailyRecall.setEnabled}
-                showDailyRecallNow={dailyRecall.showNow}
-              />
+             <SettingsView
+  T={T}
+  appVersion={APP_VERSION}
+  azureVoiceShortName={azureVoiceShortName}
+  setAzureVoiceShortName={setAzureVoiceShortName}
+  playText={playTextTracked}
+  fetchStarter={fetchStarter}
+  clearLibrary={clearLibrary}
+  importJsonFile={importJsonFile}
+  rows={rows}
+  onOpenDuplicateScanner={() => goToPage("dupes")}
+  onOpenChangeLog={() => setShowChangeLog(true)}
+  onOpenUserGuide={() => setShowUserGuide(true)}
+  onOpenAnalytics={() => goToPage("analytics")}
+  dailyRecallEnabled={dailyRecall.enabled}
+  setDailyRecallEnabled={dailyRecall.setEnabled}
+  showDailyRecallNow={dailyRecall.showNow}
+  showToast={showToast}
+/>
             </div>
           </SwipePager>
         )}
