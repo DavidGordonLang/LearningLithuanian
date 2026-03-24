@@ -12,7 +12,6 @@ export default function createModule_1_2(profile = {}) {
   const plainNameLine = `Mano vardas ${userNameSafe}.`;
   const selfFromLine = `${userFromPhrase}.`;
   const selfFromLineNoPeriod = userFromPhrase;
-  const excitedSelfFromLine = `Puiku! ${userFromPhrase}.`;
 
   return {
     id: "module_1_2",
@@ -163,7 +162,7 @@ export default function createModule_1_2(profile = {}) {
             type: "learn",
             title: "Where you're from",
             items: [
-              { id: "fr0", lt: selfFromLineNoPeriod, en: "I am from…", audioText: selfFromLineNoPeriod, saveable: false, core: true },
+              { id: "fr0", lt: selfFromLineNoPeriod, en: "I am from your country", audioText: selfFromLineNoPeriod, saveable: false, core: true },
               { id: "fr1", lt: "Jis yra iš Anglijos", en: "He is from England", audioText: "Jis yra iš Anglijos", saveable: true, core: true },
               { id: "fr2", lt: "Ji yra iš Lietuvos", en: "She is from Lithuania", audioText: "Ji yra iš Lietuvos", saveable: true, core: true },
               { id: "fr3", lt: "Ji yra iš Ukrainos", en: "She is from Ukraine", audioText: "Ji yra iš Ukrainos", saveable: true, core: true },
@@ -180,9 +179,9 @@ export default function createModule_1_2(profile = {}) {
             title: "Listen and choose",
             prompt: { text: selfFromLineNoPeriod, audioText: selfFromLineNoPeriod },
             options: [
-              { id: "a", text: "I am from Germany", isCorrect: false },
-              { id: "b", text: "I am from your country", isCorrect: true },
-              { id: "c", text: "I am from Lithuania", isCorrect: false },
+              { id: "a", text: `I am from ${userFromCountryLtGenitive === "Vokietijos" ? "Germany" : "your country"}`, isCorrect: true },
+              { id: "b", text: "I am from Lithuania", isCorrect: false },
+              { id: "c", text: "I am from Ukraine", isCorrect: false },
             ],
           },
           {
@@ -212,7 +211,7 @@ export default function createModule_1_2(profile = {}) {
             id: "s1m2l2_b5",
             type: "build_phrase",
             title: "Build the phrase",
-            prompt: { text: "I am from your country" },
+            prompt: { text: `I am from ${userFromCountryLtGenitive === "Vokietijos" ? "Germany" : "your country"}` },
             tokens: [
               { id: "t1", text: "Aš", correctIndex: 0 },
               { id: "t2", text: "esu", correctIndex: 1 },
@@ -250,12 +249,12 @@ export default function createModule_1_2(profile = {}) {
               {
                 id: "step_2",
                 actor: "other",
-                text: "Malonu susipažinti!",
-                audioText: "Malonu susipažinti",
+                text: "Viso gero!",
+                audioText: "Viso gero",
                 options: [
-                  { id: "a", text: "Viso gero!", isCorrect: false },
+                  { id: "a", text: "Iki!", isCorrect: true },
                   { id: "b", text: "Gerai, ačiū!", isCorrect: false },
-                  { id: "c", text: "Man irgi!", isCorrect: true },
+                  { id: "c", text: "Atsiprašau", isCorrect: false },
                 ],
               },
             ],
@@ -542,11 +541,11 @@ export default function createModule_1_2(profile = {}) {
             id: "s1m2c_b2",
             type: "listen_mcq",
             title: "Listen and identify",
-            prompt: { text: "Aš esu iš Ukrainos", audioText: "Aš esu iš Ukrainos" },
+            prompt: { text: "Ji yra iš Ukrainos", audioText: "Ji yra iš Ukrainos" },
             options: [
-              { id: "a", text: "I am from Lithuania", isCorrect: false },
-              { id: "b", text: "I am from America", isCorrect: false },
-              { id: "c", text: "I am from Ukraine", isCorrect: true },
+              { id: "a", text: "She is from Lithuania", isCorrect: false },
+              { id: "b", text: "She is from America", isCorrect: false },
+              { id: "c", text: "She is from Ukraine", isCorrect: true },
             ],
           },
           {
@@ -648,12 +647,12 @@ export default function createModule_1_2(profile = {}) {
               {
                 id: "step_3",
                 actor: "other",
-                text: "Malonu susipažinti!",
-                audioText: "Malonu susipažinti",
+                text: "Viso gero!",
+                audioText: "Viso gero",
                 options: [
-                  { id: "a", text: "Viso gero!", isCorrect: false },
-                  { id: "b", text: "Man irgi!", isCorrect: true },
-                  { id: "c", text: "Iki", isCorrect: false },
+                  { id: "a", text: "Man irgi!", isCorrect: false },
+                  { id: "b", text: "Iki!", isCorrect: true },
+                  { id: "c", text: "Atsiprašau", isCorrect: false },
                 ],
               },
             ],
