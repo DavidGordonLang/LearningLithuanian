@@ -9,19 +9,42 @@ const TABLE_NAME = "user_settings";
  * Keep these stable; add new keys here with safe defaults.
  */
 const DEFAULTS = {
-  phoneticsMode: "en",    // "en" | "ipa"
-  speakerGender: "male",  // "male" | "female" — the user's own gender, used for self-referential Lithuanian forms
+  phoneticsMode: "en",      // "en" | "ipa"
+  speakerGender: "male",    // "male" | "female" — the user's own gender, used for self-referential Lithuanian forms
+  userName: "",             // free text, trimmed
+  fromCountryCode: "",      // stable internal code, e.g. "scotland"
+  livesInCountryCode: "",   // stable internal code, e.g. "lithuania"
 };
 
 function mergeDefaults(data) {
   return { ...DEFAULTS, ...(data || {}) };
 }
 
+function sanitizeName(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sanitizeCountryCode(value) {
+  return String(value || "").trim();
+}
+
 function derive(data) {
   const merged = mergeDefaults(data);
   const pm = merged.phoneticsMode === "ipa" ? "ipa" : "en";
   const sg = merged.speakerGender === "female" ? "female" : "male";
-  return { phoneticsMode: pm, speakerGender: sg };
+  const userName = sanitizeName(merged.userName);
+  const fromCountryCode = sanitizeCountryCode(merged.fromCountryCode);
+  const livesInCountryCode = sanitizeCountryCode(merged.livesInCountryCode);
+
+  return {
+    phoneticsMode: pm,
+    speakerGender: sg,
+    userName,
+    fromCountryCode,
+    livesInCountryCode,
+  };
 }
 
 /**
@@ -171,5 +194,20 @@ export const useSettingsStore = create((set, get) => ({
   setSpeakerGender: async (userId, gender) => {
     const next = gender === "female" ? "female" : "male";
     return get().setSetting(userId, "speakerGender", next);
+  },
+
+  setUserName: async (userId, name) => {
+    const next = sanitizeName(name);
+    return get().setSetting(userId, "userName", next);
+  },
+
+  setFromCountryCode: async (userId, code) => {
+    const next = sanitizeCountryCode(code);
+    return get().setSetting(userId, "fromCountryCode", next);
+  },
+
+  setLivesInCountryCode: async (userId, code) => {
+    const next = sanitizeCountryCode(code);
+    return get().setSetting(userId, "livesInCountryCode", next);
   },
 }));
