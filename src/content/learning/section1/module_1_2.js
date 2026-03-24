@@ -6,12 +6,14 @@ export default function createModule_1_2(profile = {}) {
     userNameSafe = "Davidas",
     userFromPhrase = "Aš esu iš Škotijos",
     userFromCountryLtGenitive = "Škotijos",
+    userFromCountryLabelEn = "Scotland",
   } = profile;
 
   const introWithName = `Laba diena! Mano vardas ${userNameSafe}.`;
   const plainNameLine = `Mano vardas ${userNameSafe}.`;
   const selfFromLine = `${userFromPhrase}.`;
   const selfFromLineNoPeriod = userFromPhrase;
+  const selfFromEnglish = `I am from ${userFromCountryLabelEn}`;
 
   return {
     id: "module_1_2",
@@ -149,7 +151,7 @@ export default function createModule_1_2(profile = {}) {
         notes: {
           pattern: `Iš means 'from'. Place names change their ending when used with iš — notice your country becomes ${userFromCountryLtGenitive} here. You don't need to explain this yet, just notice the pattern.`,
           usage: [
-            `${selfFromLineNoPeriod} — I am from your country`,
+            `${selfFromLineNoPeriod} — ${selfFromEnglish}`,
             "Jis yra iš Anglijos — He is from England",
             "Ji yra iš Lietuvos — She is from Lithuania",
             "Iš kur jūs esate? — Where are you from? (formal)",
@@ -162,7 +164,7 @@ export default function createModule_1_2(profile = {}) {
             type: "learn",
             title: "Where you're from",
             items: [
-              { id: "fr0", lt: selfFromLineNoPeriod, en: "I am from your country", audioText: selfFromLineNoPeriod, saveable: false, core: true },
+              { id: "fr0", lt: selfFromLineNoPeriod, en: selfFromEnglish, audioText: selfFromLineNoPeriod, saveable: false, core: true },
               { id: "fr1", lt: "Jis yra iš Anglijos", en: "He is from England", audioText: "Jis yra iš Anglijos", saveable: true, core: true },
               { id: "fr2", lt: "Ji yra iš Lietuvos", en: "She is from Lithuania", audioText: "Ji yra iš Lietuvos", saveable: true, core: true },
               { id: "fr3", lt: "Ji yra iš Ukrainos", en: "She is from Ukraine", audioText: "Ji yra iš Ukrainos", saveable: true, core: true },
@@ -179,7 +181,7 @@ export default function createModule_1_2(profile = {}) {
             title: "Listen and choose",
             prompt: { text: selfFromLineNoPeriod, audioText: selfFromLineNoPeriod },
             options: [
-              { id: "a", text: `I am from ${userFromCountryLtGenitive === "Vokietijos" ? "Germany" : "your country"}`, isCorrect: true },
+              { id: "a", text: selfFromEnglish, isCorrect: true },
               { id: "b", text: "I am from Lithuania", isCorrect: false },
               { id: "c", text: "I am from Ukraine", isCorrect: false },
             ],
@@ -211,7 +213,7 @@ export default function createModule_1_2(profile = {}) {
             id: "s1m2l2_b5",
             type: "build_phrase",
             title: "Build the phrase",
-            prompt: { text: `I am from ${userFromCountryLtGenitive === "Vokietijos" ? "Germany" : "your country"}` },
+            prompt: { text: selfFromEnglish },
             tokens: [
               { id: "t1", text: "Aš", correctIndex: 0 },
               { id: "t2", text: "esu", correctIndex: 1 },
@@ -688,4 +690,5 @@ export default function createModule_1_2(profile = {}) {
       },
     ],
   };
-}
+} - Locked rules: I = profile, others = jis/ji, no untaught phrases, minimal blast radius.  
+Goal: cleanup pass only, then stop.
