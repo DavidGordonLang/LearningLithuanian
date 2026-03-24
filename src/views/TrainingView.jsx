@@ -92,10 +92,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
 
   const userName = useSettingsStore((s) => s.userName);
   const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
+  const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
 
   const section1Profile = useMemo(
-    () => buildSection1Profile({ userName, fromCountryCode }),
-    [userName, fromCountryCode]
+    () => buildSection1Profile({ userName, fromCountryCode, livesInCountryCode }),
+    [userName, fromCountryCode, livesInCountryCode]
   );
 
   const counts = useMemo(() => {
