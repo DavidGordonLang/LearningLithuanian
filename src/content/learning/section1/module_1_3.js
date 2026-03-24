@@ -374,9 +374,9 @@ export default function createModule_1_3(profile = {}) {
               {
                 id: "step_1",
                 actor: "other",
-                text: "Laba diena! Taip?",
-                audioText: "Laba diena. Taip",
-                helperText: "The server greets you and asks what you'd like.",
+                text: "Laba diena! Ar galiu jums padėti?",
+                audioText: "Laba diena. Ar galiu jums padėti",
+                helperText: "The server greets you and asks if they can help — but you don't understand yet.",
                 options: [
                   { id: "a", text: "Ne, ačiū", isCorrect: false },
                   { id: "b", text: "Laba diena! Prašau. Ką tai reiškia?", isCorrect: true },
@@ -525,6 +525,7 @@ export default function createModule_1_3(profile = {}) {
                 actor: "other",
                 text: "Taip. Kuo galiu padėti?",
                 audioText: "Taip. Kuo galiu padėti",
+                helperText: "They say yes and ask how they can help — but you don't understand.",
                 options: [
                   { id: "a", text: "Suprantu, ačiū", isCorrect: false },
                   { id: "b", text: "Nesuprantu. Ar jūs kalbate angliškai?", isCorrect: true },
@@ -547,6 +548,7 @@ export default function createModule_1_3(profile = {}) {
                 actor: "other",
                 text: "Gerai! Kur norite eiti?",
                 audioText: "Gerai. Kur norite eiti",
+                helperText: "They ask where you want to go — but you don't understand.",
                 options: [
                   { id: "a", text: "Viso gero!", isCorrect: false },
                   { id: "b", text: "Pakartokite, prašau. Nesuprantu.", isCorrect: true },
@@ -714,7 +716,7 @@ export default function createModule_1_3(profile = {}) {
                 actor: "other",
                 text: "Gerai! Autobusų stotelė yra ten.",
                 audioText: "Gerai. Autobusų stotelė yra ten",
-                helperText: "Rokas points and says: the bus stop is over there.",
+                helperText: "Rokas points and says the bus stop is over there — but you don't understand.",
                 options: [
                   { id: "a", text: "Ačiū labai!", isCorrect: false },
                   { id: "b", text: "Nesuprantu. Ką tai reiškia angliškai?", isCorrect: true },
