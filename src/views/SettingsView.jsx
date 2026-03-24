@@ -78,6 +78,7 @@ export default function SettingsView({
   dailyRecallEnabled,
   setDailyRecallEnabled,
   showDailyRecallNow,
+  showToast,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
@@ -158,6 +159,9 @@ export default function SettingsView({
     try {
       setNameSaving(true);
       await setUserName?.(user?.id, nameDraft);
+      showToast?.("Profile updated");
+    } catch (e) {
+      showToast?.(e?.message || "Could not save name");
     } finally {
       setNameSaving(false);
     }
