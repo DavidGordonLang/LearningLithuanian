@@ -19,6 +19,11 @@ import {
   trackError,
 } from "../services/analytics";
 
+import {
+  COUNTRY_OPTIONS_EN,
+  getCountryLabel,
+} from "../constants/countries";
+
 const ADMIN_EMAILS = ["davidgordonlang@gmail.com"];
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -94,6 +99,16 @@ export default function SettingsView({
   const speakerGender = useSettingsStore((s) => s.speakerGender);
   const setSpeakerGender = useSettingsStore((s) => s.setSpeakerGender);
 
+  const userName = useSettingsStore((s) => s.userName);
+  const setUserName = useSettingsStore((s) => s.setUserName);
+  const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
+  const setFromCountryCode = useSettingsStore((s) => s.setFromCountryCode);
+  const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
+  const setLivesInCountryCode = useSettingsStore((s) => s.setLivesInCountryCode);
+
+  const [nameDraft, setNameDraft] = useState(userName || "");
+  const [nameSaving, setNameSaving] = useState(false);
+
   // Game store for progress display + reset
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
   const totalXP = useGameStore((s) => s.totalXP);
@@ -117,6 +132,10 @@ export default function SettingsView({
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
   const lastHashRef = useRef("");
 
+  useEffect(() => {
+    setNameDraft(userName || "");
+  }, [userName]);
+
   const localHash = useMemo(() => {
     try {
       const all = getAllStoredPhrases();
@@ -133,6 +152,16 @@ export default function SettingsView({
 
   function markSynced(label) { setSyncDirty(false); setLastSyncLabel(label); setLastSyncAt(Date.now()); lastHashRef.current = localHash; }
   function formatWhen(ts) { if (!ts) return ""; try { return new Date(ts).toLocaleString(); } catch { return ""; } }
+
+  async function persistUserName() {
+    if (nameSaving) return;
+    try {
+      setNameSaving(true);
+      await setUserName?.(user?.id, nameDraft);
+    } finally {
+      setNameSaving(false);
+    }
+  }
 
   function exportJson() {
     const allPhrases = getAllStoredPhrases();
@@ -356,6 +385,9 @@ export default function SettingsView({
 
   const completedCount = Array.isArray(completedLessonIds) ? completedLessonIds.length : 0;
 
+  const fromCountryLabel = fromCountryCode ? getCountryLabel(fromCountryCode, "en") : "";
+  const livesInCountryLabel = livesInCountryCode ? getCountryLabel(livesInCountryCode, "en") : "";
+
   return (
     <div className="z-page z-page-y pb-28 space-y-8">
       <ConflictReviewModal open={showConflictModal} conflicts={pendingConflicts} onClose={() => setShowConflictModal(false)} onFinish={finishConflictSync} />
@@ -368,24 +400,115 @@ export default function SettingsView({
       <CollapsibleSection id="sec-learning" title="Learning" subtitle="Daily recall, learning aids, and progress." open={openLearning} setOpen={setOpenLearning} accentTitle>
         <div className="space-y-3">
 
-          {/* Speaker gender */}
-          <div className="z-inset p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-sm font-semibold text-zinc-200">Your gender</div>
-                <div className="text-xs text-zinc-500 mt-0.5">Ensures Lithuanian phrases use the correct forms when you describe yourself</div>
+          {/* Your profile */}
+          <div className="z-inset p-4 space-y-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-200">Your profile</div>
+              <div className="text-xs text-zinc-500 mt-0.5">
+                Used to personalise self-description lines in lessons. Countries are shown in English for now, but the course uses the correct Lithuanian forms internally.
+              </div>
+            </div>
+
+            {/* Name */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Your name</div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onBlur={persistUserName}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      persistUserName();
+                    }
+                  }}
+                  placeholder="Your first name"
+                  className="z-input !py-2.5 !px-3 !rounded-2xl flex-1"
+                />
+                <button
+                  type="button"
+                  data-press
+                  disabled={nameSaving}
+                  className={cn(
+                    "z-btn px-4 py-2.5 rounded-2xl text-sm font-semibold",
+                    "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black",
+                    nameSaving ? "z-disabled" : ""
+                  )}
+                  onClick={persistUserName}
+                >
+                  {nameSaving ? "Saving…" : "Save"}
+                </button>
+              </div>
+              <div className="text-[11px] text-zinc-600">
+                Leave blank if you don’t want lessons to use your name yet.
+              </div>
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Your gender</div>
+              <div className="text-xs text-zinc-500">
+                Ensures Lithuanian phrases use the correct forms when you describe yourself.
               </div>
               <div className="flex gap-2">
-                <button type="button" data-press
+                <button
+                  type="button"
+                  data-press
                   className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (speakerGender === "male" ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
-                  onClick={() => setSpeakerGender?.(user?.id, "male")}>
+                  onClick={() => setSpeakerGender?.(user?.id, "male")}
+                >
                   Male
                 </button>
-                <button type="button" data-press
+                <button
+                  type="button"
+                  data-press
                   className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (speakerGender === "female" ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
-                  onClick={() => setSpeakerGender?.(user?.id, "female")}>
+                  onClick={() => setSpeakerGender?.(user?.id, "female")}
+                >
                   Female
                 </button>
+              </div>
+            </div>
+
+            {/* From */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Where you’re from</div>
+              <select
+                className="z-input !py-2.5 !px-3 !rounded-2xl w-full"
+                value={fromCountryCode}
+                onChange={(e) => setFromCountryCode?.(user?.id, e.target.value)}
+              >
+                <option value="">Select country</option>
+                {COUNTRY_OPTIONS_EN.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+              <div className="text-[11px] text-zinc-600">
+                {fromCountryLabel ? `Selected: ${fromCountryLabel}` : "Used for lines like “I am from …”"}
+              </div>
+            </div>
+
+            {/* Living in */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Where you live now</div>
+              <select
+                className="z-input !py-2.5 !px-3 !rounded-2xl w-full"
+                value={livesInCountryCode}
+                onChange={(e) => setLivesInCountryCode?.(user?.id, e.target.value)}
+              >
+                <option value="">Select country</option>
+                {COUNTRY_OPTIONS_EN.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+              <div className="text-[11px] text-zinc-600">
+                {livesInCountryLabel ? `Selected: ${livesInCountryLabel}` : "Stored now for later lessons like “I live in …”"}
               </div>
             </div>
           </div>
