@@ -690,5 +690,4 @@ export default function createModule_1_2(profile = {}) {
       },
     ],
   };
-} - Locked rules: I = profile, others = jis/ji, no untaught phrases, minimal blast radius.  
-Goal: cleanup pass only, then stop.
+}
