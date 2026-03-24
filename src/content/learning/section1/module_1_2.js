@@ -5,11 +5,13 @@ export default function createModule_1_2(profile = {}) {
   const {
     userNameSafe = "Davidas",
     userFromPhrase = "Aš esu iš Škotijos",
+    userFromCountryLtGenitive = "Škotijos",
   } = profile;
 
   const introWithName = `Laba diena! Mano vardas ${userNameSafe}.`;
   const plainNameLine = `Mano vardas ${userNameSafe}.`;
   const selfFromLine = `${userFromPhrase}.`;
+  const selfFromLineNoPeriod = userFromPhrase;
   const excitedSelfFromLine = `Puiku! ${userFromPhrase}.`;
 
   return {
@@ -100,8 +102,8 @@ export default function createModule_1_2(profile = {}) {
             id: "s1m2l1_b6",
             type: "speak_self_check",
             title: "Say it out loud",
-            prompt: `Say your name in Lithuanian — start with Mano vardas${userNameSafe ? ` and use ${userNameSafe}` : ""}`,
-            targetText: plainNameLine.replace(/\.$/, ""),
+            prompt: "Say your name in Lithuanian — start with Mano vardas",
+            targetText: "Mano vardas",
             audioText: "Mano vardas",
           },
           {
@@ -146,11 +148,11 @@ export default function createModule_1_2(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Iš means 'from'. Place names change their ending when used with iš — notice Škotija becomes Škotijos. You don't need to explain this yet, just notice the pattern.",
+          pattern: `Iš means 'from'. Place names change their ending when used with iš — notice your country becomes ${userFromCountryLtGenitive} here. You don't need to explain this yet, just notice the pattern.`,
           usage: [
-            "Aš esu iš Škotijos — I am from Scotland",
-            "Aš esu iš Anglijos — I am from England",
-            "Aš esu iš Lietuvos — I am from Lithuania",
+            `${selfFromLineNoPeriod} — I am from your country`,
+            "Jis yra iš Anglijos — He is from England",
+            "Ji yra iš Lietuvos — She is from Lithuania",
             "Iš kur jūs esate? — Where are you from? (formal)",
             "Iš kur tu esi? — Where are you from? (informal)",
           ],
@@ -161,27 +163,26 @@ export default function createModule_1_2(profile = {}) {
             type: "learn",
             title: "Where you're from",
             items: [
-              { id: "fr0", lt: "Aš esu iš…", en: "I am from…", audioText: "Aš esu iš", saveable: false, core: true },
-              { id: "fr1", lt: "Škotija", en: "Scotland", audioText: "Škotija", saveable: true, core: true },
-              { id: "fr2", lt: "Anglija", en: "England", audioText: "Anglija", saveable: true, core: true },
-              { id: "fr3", lt: "Lietuva", en: "Lithuania", audioText: "Lietuva", saveable: true, core: true },
-              { id: "fr4", lt: "Ukraina", en: "Ukraine", audioText: "Ukraina", saveable: true, core: true },
-              { id: "fr5", lt: "Amerika", en: "America", audioText: "Amerika", saveable: true, core: true },
-              { id: "fr8", lt: "Vokietija", en: "Germany", audioText: "Vokietija", saveable: true, core: true },
-              { id: "fr9", lt: "Prancūzija", en: "France", audioText: "Prancūzija", saveable: true, core: true },
-              { id: "fr6", lt: "Iš kur jūs esate?", en: "Where are you from? (formal)", audioText: "Iš kur jūs esate", saveable: true, core: true },
-              { id: "fr7", lt: "Iš kur tu esi?", en: "Where are you from? (informal)", audioText: "Iš kur tu esi", saveable: true, core: true },
+              { id: "fr0", lt: selfFromLineNoPeriod, en: "I am from…", audioText: selfFromLineNoPeriod, saveable: false, core: true },
+              { id: "fr1", lt: "Jis yra iš Anglijos", en: "He is from England", audioText: "Jis yra iš Anglijos", saveable: true, core: true },
+              { id: "fr2", lt: "Ji yra iš Lietuvos", en: "She is from Lithuania", audioText: "Ji yra iš Lietuvos", saveable: true, core: true },
+              { id: "fr3", lt: "Ji yra iš Ukrainos", en: "She is from Ukraine", audioText: "Ji yra iš Ukrainos", saveable: true, core: true },
+              { id: "fr4", lt: "Jis yra iš Amerikos", en: "He is from America", audioText: "Jis yra iš Amerikos", saveable: true, core: true },
+              { id: "fr5", lt: "Jis yra iš Vokietijos", en: "He is from Germany", audioText: "Jis yra iš Vokietijos", saveable: true, core: true },
+              { id: "fr6", lt: "Ji yra iš Prancūzijos", en: "She is from France", audioText: "Ji yra iš Prancūzijos", saveable: true, core: true },
+              { id: "fr7", lt: "Iš kur jūs esate?", en: "Where are you from? (formal)", audioText: "Iš kur jūs esate", saveable: true, core: true },
+              { id: "fr8", lt: "Iš kur tu esi?", en: "Where are you from? (informal)", audioText: "Iš kur tu esi", saveable: true, core: true },
             ],
           },
           {
             id: "s1m2l2_b2",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Aš esu iš Lietuvos", audioText: "Aš esu iš Lietuvos" },
+            prompt: { text: selfFromLineNoPeriod, audioText: selfFromLineNoPeriod },
             options: [
-              { id: "a", text: "I am from Scotland", isCorrect: false },
-              { id: "b", text: "I am from Lithuania", isCorrect: true },
-              { id: "c", text: "I am from Ukraine", isCorrect: false },
+              { id: "a", text: "I am from Germany", isCorrect: false },
+              { id: "b", text: "I am from your country", isCorrect: true },
+              { id: "c", text: "I am from Lithuania", isCorrect: false },
             ],
           },
           {
@@ -211,23 +212,23 @@ export default function createModule_1_2(profile = {}) {
             id: "s1m2l2_b5",
             type: "build_phrase",
             title: "Build the phrase",
-            prompt: { text: "I am from Scotland" },
+            prompt: { text: "I am from your country" },
             tokens: [
-              { id: "t4", text: "Škotijos", correctIndex: 3 },
               { id: "t1", text: "Aš", correctIndex: 0 },
-              { id: "t5", text: "Vokietijos", isDistractor: true },
-              { id: "t3", text: "iš", correctIndex: 2 },
               { id: "t2", text: "esu", correctIndex: 1 },
+              { id: "t3", text: "iš", correctIndex: 2 },
+              { id: "t4", text: userFromCountryLtGenitive, correctIndex: 3 },
+              { id: "t5", text: "Lietuvos", isDistractor: true },
             ],
-            answerText: "Aš esu iš Škotijos",
+            answerText: selfFromLineNoPeriod,
           },
           {
             id: "s1m2l2_b6",
             type: "speak_self_check",
             title: "Say it out loud",
             prompt: "Say where you are from in Lithuanian — use your own country",
-            targetText: userFromPhrase,
-            audioText: "Aš esu iš Škotijos",
+            targetText: selfFromLineNoPeriod,
+            audioText: selfFromLineNoPeriod,
           },
           {
             id: "s1m2l2_b7",
@@ -249,12 +250,12 @@ export default function createModule_1_2(profile = {}) {
               {
                 id: "step_2",
                 actor: "other",
-                text: "Aš esu iš Lietuvos.",
-                audioText: "Aš esu iš Lietuvos",
+                text: "Malonu susipažinti!",
+                audioText: "Malonu susipažinti",
                 options: [
                   { id: "a", text: "Viso gero!", isCorrect: false },
                   { id: "b", text: "Gerai, ačiū!", isCorrect: false },
-                  { id: "c", text: excitedSelfFromLine, isCorrect: true },
+                  { id: "c", text: "Man irgi!", isCorrect: true },
                 ],
               },
             ],
@@ -601,8 +602,8 @@ export default function createModule_1_2(profile = {}) {
             type: "speak_self_check",
             title: "Say it out loud",
             prompt: "Say where you are from — use your own country",
-            targetText: userFromPhrase,
-            audioText: "Aš esu iš Škotijos",
+            targetText: selfFromLineNoPeriod,
+            audioText: selfFromLineNoPeriod,
           },
           {
             id: "s1m2c_b8",
