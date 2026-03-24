@@ -661,10 +661,16 @@ function BuildPhraseBlock({ block, playText, onComplete, completed }) {
   );
 }
 
-function ConversationBubble({ role, text }) {
+function ConversationBubble({ role, text, helperText }) {
   const isAssistant = role === "other";
   return (
-    <div className={cn("flex", isAssistant ? "justify-start" : "justify-end")}>
+    <div className={cn("flex flex-col", isAssistant ? "items-start" : "items-end")}>
+      {/* Helper text — only on system bubbles, shown above the bubble */}
+      {isAssistant && helperText ? (
+        <div className="text-[11px] italic text-zinc-500 mb-1 px-1 max-w-[80%] leading-snug">
+          {helperText}
+        </div>
+      ) : null}
       <div className={cn("max-w-[80%] rounded-[20px] border px-4 py-2.5",
         isAssistant ? "border-white/10 bg-white/[0.035]" : "border-emerald-400/18 bg-emerald-500/[0.09]")}>
         <div className="text-[14px] font-medium leading-snug text-zinc-100">{text}</div>
@@ -732,7 +738,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
     setAssistantTyping(true); setAssistantVisible(false); setSelectedId(null); setRevealState("idle");
     queueTimeout(async () => {
       setAssistantTyping(false); setAssistantVisible(true);
-      setHistory((prev) => [...prev, { role: "other", text: nextStep.text }]);
+      setHistory((prev) => [...prev, { role: "other", text: nextStep.text, helperText: nextStep.helperText || null }]);
       // Only play audioText — never the description or any English text
       const audio = nextStep.audioText || null;
       if (audio) { try { await playText?.(audio); } catch {} }
@@ -778,7 +784,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
             </div>
           ) : (
             <>
-              {history.map((item, index) => <ConversationBubble key={`${item.role}-${index}-${item.text}`} role={item.role} text={item.text} />)}
+              {history.map((item, index) => <ConversationBubble key={`${item.role}-${index}-${item.text}`} role={item.role} text={item.text} helperText={item.helperText} />)}
               {assistantTyping ? <TypingBubble /> : null}
             </>
           )}
