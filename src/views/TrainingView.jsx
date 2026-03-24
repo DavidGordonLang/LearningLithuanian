@@ -325,6 +325,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   if (screen === "learningLesson") {
     return (
       <LearningLessonView
+        key={learningLesson?.id}
         section={learningSection}
         module={learningModule}
         lesson={learningLesson}
