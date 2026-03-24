@@ -17,7 +17,9 @@ import ExamWritingTaskView from "./training/ExamWritingTaskView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 import { useGameStore } from "../stores/gameStore";
 import { useAuthStore } from "../stores/authStore";
-import section1 from "../content/learning/section1";
+import { useSettingsStore } from "../stores/settingsStore";
+import createSection1 from "../content/learning/section1";
+import { buildSection1Profile } from "../content/learning/section1/profile";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -37,10 +39,9 @@ function findNextLesson(sections, completedLessonIds) {
       }
     }
   }
-  return null; // all lessons complete
+  return null;
 }
 
-// Find the lesson AFTER a given lesson id — used for "Continue to next" CTA
 function findLessonAfter(sections, lessonId) {
   const allLessons = [];
   for (const section of sections) {
@@ -62,7 +63,7 @@ function findLessonAfter(sections, lessonId) {
 
 export default function TrainingView({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
-  const [moduleCompletePayload, setModuleCompletePayload] = useState(null); // { module, section, xpEarned, accuracyPct }
+  const [moduleCompletePayload, setModuleCompletePayload] = useState(null);
   const [vocabSaveModule, setVocabSaveModule] = useState(null);
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
@@ -77,7 +78,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       try { localStorage.setItem("zodis_dev_mode", String(next)); } catch {}
       return next;
     });
-  }; // { module, section, xpEarned }
+  };
+
   const [focus, setFocus] = useTrainingFocus();
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
@@ -87,6 +89,14 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
   const hasSeenModuleComplete = useGameStore((s) => s.hasSeenModuleComplete);
   const markModuleCompleteSeen = useGameStore((s) => s.markModuleCompleteSeen);
+
+  const userName = useSettingsStore((s) => s.userName);
+  const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
+
+  const section1Profile = useMemo(
+    () => buildSection1Profile({ userName, fromCountryCode }),
+    [userName, fromCountryCode]
+  );
 
   const counts = useMemo(() => {
     const list = Array.isArray(rows) ? rows : [];
@@ -110,9 +120,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     return list.filter(matchFocus).length;
   }, [rows, focus]);
 
-  const allSections = useMemo(() => [section1], []);
+  const allSections = useMemo(
+    () => [createSection1(section1Profile)],
+    [section1Profile]
+  );
 
-  // Next uncompleted lesson
   const nextLesson = useMemo(
     () => findNextLesson(allSections, completedLessonIds),
     [allSections, completedLessonIds]
@@ -120,7 +132,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
 
   const allComplete = !nextLesson;
 
-  // Resolve current lesson view targets
   const learningSection = useMemo(() => {
     if (selectedLessonId || selectedModuleId) {
       for (const sec of allSections) {
@@ -165,15 +176,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     return idx >= 0 ? idx : 0;
   }, [learningModule, learningLesson, nextLesson]);
 
-  // "Continue to next lesson" — find the lesson AFTER the current one
-  // Only provided if there is actually a next lesson (prevents looping)
   const nextLessonAfterCurrent = useMemo(() => {
     if (!learningLesson?.id) return null;
     return findLessonAfter(allSections, learningLesson.id);
   }, [allSections, learningLesson]);
 
-  // "Lesson 2", "Lesson 3" etc — 1-based index of the next lesson
-  // Check if all lessons in a module are done — used to trigger celebration
   const isModuleFullyComplete = (mod) => {
     if (!mod?.lessons) return false;
     return mod.lessons.every((l) => completedLessonIds.includes(l.id));
@@ -185,7 +192,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
 
   const handleNextLesson = nextLessonAfterCurrent ? () => {
     const { module, lesson } = nextLessonAfterCurrent;
-    // Set the new lesson explicitly so learningLesson re-derives correctly
     setSelectedLessonId(lesson.id);
     setSelectedModuleId(module.id);
     setLessonReturnScreen("home");
@@ -203,8 +209,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     : nextLesson
     ? `${nextLesson.section.title} · Lesson ${nextLesson.lessonIndex + 1}`
     : "";
-
-  // ─── Browse path ─────────────────────────────────────────────────────────────
 
   if (screen === "learningHome") {
     return (
@@ -246,8 +250,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       />
     );
   }
-
-  // ─── Module complete ──────────────────────────────────────────────────────────
 
   if (screen === "vocabSave" && vocabSaveModule) {
     return (
@@ -319,8 +321,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     );
   }
 
-  // ─── Lesson ───────────────────────────────────────────────────────────────────
-
   if (screen === "learningLesson") {
     return (
       <LearningLessonView
@@ -354,7 +354,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         }}
         preloadText={preloadText}
         onNailedItContinue={(completedLessonId) => {
-          // Find the module that owns this lesson — more reliable than derived learningModule
           let mod = learningModule;
           let sec = learningSection;
           if (completedLessonId) {
@@ -393,13 +392,9 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     );
   }
 
-  // ─── Practice modes ───────────────────────────────────────────────────────────
-
   if (screen === "recallFlip") return <RecallFlipView rows={rows} focus={focus} playText={playText} onBack={() => setScreen("home")} />;
   if (screen === "blindRecall") return <BlindRecallView rows={rows} focus={focus} playText={playText} showToast={showToast} onBack={() => setScreen("home")} />;
   if (screen === "matchPairs") return <MatchPairsView rows={rows} focus={focus} playText={playText} preloadText={preloadText} onBack={() => setScreen("home")} />;
-
-  // ─── Exam prep ────────────────────────────────────────────────────────────────
 
   if (screen === "examPrepHome") {
     return (
@@ -417,8 +412,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   }
   if (screen === "examWriting") return <ExamWritingTaskView onBack={() => setScreen("examPrepHome")} />;
 
-  // ─── Training home ────────────────────────────────────────────────────────────
-
   return (
     <TrainingHome
       T={T}
@@ -429,11 +422,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       learningEntryMode={completedLessonIds?.length > 0 ? "continue" : "start"}
       learningCurrentTitle={learningCardTitle}
       learningCurrentMeta={learningCardMeta}
-      // If all complete, still allow entry via browse course
-      // If lessons remain, start next uncompleted
       onStartLearning={allComplete ? null : () => {
-        // Pin the lesson explicitly so re-deriving from nextLesson
-        // doesn't fire when completedLessonIds updates mid-lesson
         const lessonToPinId = nextLesson?.lesson?.id || null;
         const moduleToPinId = nextLesson?.module?.id || null;
         setSelectedLessonId(lessonToPinId);
