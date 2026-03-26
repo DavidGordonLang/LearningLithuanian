@@ -195,7 +195,7 @@ function ToastItem({ toast, onDismiss }) {
 
 function AppBackground() {
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ backgroundColor: '#0a0a0b' }}>
       <div
         className="absolute inset-0"
         style={{
@@ -872,7 +872,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden">
+    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden" style={{ backgroundColor: '#0a0a0b' }}>
       <AppBackground />
 
       <Header
