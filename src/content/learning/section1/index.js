@@ -4,6 +4,8 @@
 import module_1_1 from "./module_1_1.js";
 import createModule_1_2 from "./module_1_2.js";
 import createModule_1_3 from "./module_1_3.js";
+import createModule_1_4 from "./module_1_4.js";
+import createCheckpoint1 from "./checkpoint_1.js";
 
 export default function createSection1(profile = {}) {
   return {
@@ -18,6 +20,8 @@ export default function createSection1(profile = {}) {
       module_1_1,
       createModule_1_2(profile),
       createModule_1_3(profile),
+      createModule_1_4(profile),
+      createCheckpoint1(profile),
     ],
   };
 }
