@@ -33,6 +33,14 @@ export default function EntryCard({
       ? (r.PhoneticIPA || r.Phonetic || "")
       : (r.Phonetic || "");
 
+  // Resolve phonetics in Notes — GPT writes variant phonetics as "en||ipa".
+  // Replace each pair with the half the user wants. Old notes without || are untouched.
+  const displayedNotes = typeof r.Notes === "string"
+    ? r.Notes.replace(/([^|\n]+)\|\|([^|\n]+)/g, (_, en, ipa) =>
+        phoneticsMode === "ipa" ? ipa.trim() : en.trim()
+      )
+    : "";
+
   // Compute stable row index using _id fallback
   const stableId = r?._id ?? r?.id ?? r?.key ?? null;
   const myIdx =
@@ -143,19 +151,11 @@ export default function EntryCard({
       )}
 
       {/* NOTES */}
-      {isExpanded && r.Notes && (() => {
-        // Replace en||ipa pairs with whichever half the user wants.
-        // Old notes with no || are left untouched — transform is a no-op.
-        const displayNotes = r.Notes.replace(
-          /([^\s|][^|]*)\|\|([^\s|][^|\n]*)/g,
-          (_, en, ipa) => phoneticsMode === "ipa" ? ipa.trim() : en.trim()
-        );
-        return (
-          <div className="text-xs text-zinc-200 whitespace-pre-wrap border-t border-white/8 pt-3">
-            {displayNotes}
-          </div>
-        );
-      })()}
+      {isExpanded && displayedNotes && (
+        <div className="text-xs text-zinc-200 whitespace-pre-wrap border-t border-white/8 pt-3">
+          {displayedNotes}
+        </div>
+      )}
 
       {/* CONTROLS */}
       <div className="flex flex-wrap items-center gap-2 pt-1">
