@@ -183,6 +183,7 @@ export default function useTranslate({
             body: JSON.stringify({
               lt,
               phonetics: pho,
+              phonetics_ipa: ipa,
               en_natural: enNat,
               en_literal: enLit,
               tone: resolvedTone,
