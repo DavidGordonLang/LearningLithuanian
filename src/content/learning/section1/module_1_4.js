@@ -1,0 +1,856 @@
+// src/content/learning/section1/module_1_4.js
+// Module 1.4 — Help and Contact
+// Factory function — receives profile for personalised scenario options
+
+export default function createModule_1_4(profile = {}) {
+  const {
+    userNameSafe = "Davidas",
+    userFromPhrase = "Aš esu iš Škotijos",
+    userFromCountryLabelEn = "Scotland",
+  } = profile;
+
+  return {
+    id: "module_1_4",
+    code: "1.4",
+    title: "Help and Contact",
+    status: "active",
+    lessonCount: 6,
+    lessons: [
+
+      // ── Lesson 1 ────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_4_lesson_1",
+        code: "1.4.1",
+        title: "Can You Help Me?",
+        purpose: "Teach direct help-seeking language. Properly introduces 'Ar galiu jums padėti?' which appeared with helper text in Module 1.3 scenarios.",
+        supportLevel: "high",
+        newLanguageLoad: "low",
+        notes: {
+          pattern: "Ar galite…? is the polite plural/formal frame for asking someone to do something. You'll use it constantly.",
+          usage: [
+            "Ar galite man padėti? — Can you help me? (polite, to a stranger or staff)",
+            "Padėkite man, prašau — Help me, please (more direct but still polite)",
+            "Man reikia pagalbos — I need help (stating the need)",
+            "Ar galiu jums padėti? — Can I help you? (what staff will say to you — now you know what it means)",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m4l1_b1",
+            type: "learn",
+            title: "Asking for help",
+            items: [
+              { id: "h1", lt: "Ar galite man padėti?", en: "Can you help me?", audioText: "Ar galite man padėti", saveable: true, core: true },
+              { id: "h2", lt: "Padėkite man, prašau", en: "Help me, please", audioText: "Padėkite man, prašau", saveable: true, core: true },
+              { id: "h3", lt: "Man reikia pagalbos", en: "I need help", audioText: "Man reikia pagalbos", saveable: true, core: true },
+              { id: "h4", lt: "Ar galiu jums padėti?", en: "Can I help you?", audioText: "Ar galiu jums padėti", saveable: true, core: true },
+              { id: "h5", lt: "Pagalba", en: "Help", audioText: "Pagalba", saveable: true, core: false },
+            ],
+          },
+          {
+            id: "s1m4l1_b2",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Ar galite man padėti?", audioText: "Ar galite man padėti" },
+            options: [
+              { id: "a", text: "Can I help you?", isCorrect: false },
+              { id: "b", text: "Can you help me?", isCorrect: true },
+              { id: "c", text: "I need help", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m4l1_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Man reikia pagalbos", audioText: "Man reikia pagalbos" },
+            options: [
+              { id: "a", text: "Can you help me?", isCorrect: false },
+              { id: "b", text: "Help me, please", isCorrect: false },
+              { id: "c", text: "I need help", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m4l1_b4",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Ar galiu jums padėti?", audioText: "Ar galiu jums padėti" },
+            options: [
+              { id: "a", text: "I need help", isCorrect: false },
+              { id: "b", text: "Can I help you?", isCorrect: true },
+              { id: "c", text: "Help me, please", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m4l1_b5",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You've lost your wallet and need to get someone's attention." },
+            options: [
+              { id: "a", text: "Ačiū labai!", isCorrect: false },
+              { id: "b", text: "Aš nesuprantu", isCorrect: false },
+              { id: "c", text: "Atsiprašau, man reikia pagalbos!", isCorrect: true },
+            ],
+            feedback: { correct: "Atsiprašau to get attention, then man reikia pagalbos — exactly right." },
+          },
+          {
+            id: "s1m4l1_b6",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Ask someone if they can help you",
+            targetText: "Ar galite man padėti?",
+            audioText: "Ar galite man padėti",
+          },
+          {
+            id: "s1m4l1_b7",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "I need help" },
+            tokens: [
+              { id: "t1", text: "Man", correctIndex: 0 },
+              { id: "t2", text: "reikia", correctIndex: 1 },
+              { id: "t3", text: "pagalbos", correctIndex: 2 },
+              { id: "t4", text: "padėti", isDistractor: true },
+            ],
+            answerText: "Man reikia pagalbos",
+          },
+          {
+            id: "s1m4l1_b8",
+            type: "scenario_chain",
+            title: "Conversation",
+            description: "You're lost in Vilnius and need help from a passer-by.",
+            steps: [
+              {
+                id: "step_1",
+                actor: "other",
+                text: "Ar galiu jums padėti?",
+                audioText: "Ar galiu jums padėti",
+                helperText: "They're asking if they can help you — this is your chance!",
+                options: [
+                  { id: "a", text: "Viso gero!", isCorrect: false },
+                  { id: "b", text: "Taip, man reikia pagalbos", isCorrect: true },
+                  { id: "c", text: "Aš nesuprantu", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_2",
+                actor: "other",
+                text: "Taip, žinoma.",
+                audioText: "Taip, žinoma",
+                helperText: "They said yes, of course.",
+                options: [
+                  { id: "a", text: "Ačiū labai!", isCorrect: true },
+                  { id: "b", text: "Ne, ačiū", isCorrect: false },
+                  { id: "c", text: "Prašau kalbėkite lėčiau", isCorrect: false },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+
+      // ── Lesson 2 ────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_4_lesson_2",
+        code: "1.4.2",
+        title: "What Is This? Is That…?",
+        purpose: "Extend pointing language from Module 1.3. Kas tai/kas ten already taught — this lesson adds the confirmation form Ar tai…? / Ar ten…?",
+        supportLevel: "medium",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Kas tai? asks what something is. Ar tai…? checks if your guess is right. Both are immediately useful.",
+          usage: [
+            "Kas tai? — What is this? (already known from 1.3)",
+            "Kas ten? — What is that? (already known from 1.3)",
+            "Ar tai tualetas? — Is this the toilet?",
+            "Ar tai restoranas? — Is this a restaurant?",
+            "Ar ten parduotuvė? — Is that a shop?",
+            "Taip, tai… — Yes, it's…",
+            "Ne, tai… — No, it's…",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m4l2_b1",
+            type: "learn",
+            title: "Confirming what something is",
+            items: [
+              { id: "c1", lt: "Ar tai…?", en: "Is this…?", audioText: "Ar tai", saveable: true, core: true },
+              { id: "c2", lt: "Ar ten…?", en: "Is that…?", audioText: "Ar ten", saveable: true, core: true },
+              { id: "c3", lt: "Ar tai tualetas?", en: "Is this the toilet?", audioText: "Ar tai tualetas", saveable: true, core: true },
+              { id: "c4", lt: "Ar ten restoranas?", en: "Is that a restaurant?", audioText: "Ar ten restoranas", saveable: true, core: true },
+              { id: "c5", lt: "Restoranas", en: "Restaurant", audioText: "Restoranas", saveable: true, core: false },
+              { id: "c6", lt: "Parduotuvė", en: "Shop / Store", audioText: "Parduotuvė", saveable: true, core: false },
+              { id: "c7", lt: "Taip, tai…", en: "Yes, it's…", audioText: "Taip, tai", saveable: false, core: false },
+              { id: "c8", lt: "Ne, tai…", en: "No, it's…", audioText: "Ne, tai", saveable: false, core: false },
+            ],
+          },
+          {
+            id: "s1m4l2_b2",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Ar tai restoranas?", audioText: "Ar tai restoranas" },
+            options: [
+              { id: "a", text: "What is that restaurant?", isCorrect: false },
+              { id: "b", text: "Is that a restaurant?", isCorrect: false },
+              { id: "c", text: "Is this a restaurant?", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m4l2_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Ar ten parduotuvė?", audioText: "Ar ten parduotuvė" },
+            options: [
+              { id: "a", text: "Is this a shop?", isCorrect: false },
+              { id: "b", text: "What is in that shop?", isCorrect: false },
+              { id: "c", text: "Is that a shop?", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m4l2_b4",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You see a sign on a door but you're not sure if it's the restaurant you're looking for." },
+            options: [
+              { id: "a", text: "Kas tai?", isCorrect: false },
+              { id: "b", text: "Ar tai restoranas?", isCorrect: true },
+              { id: "c", text: "Ką tai reiškia?", isCorrect: false },
+            ],
+            feedback: { correct: "Ar tai restoranas? — you're checking your guess, not just asking what it is." },
+          },
+          {
+            id: "s1m4l2_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Ask if this is a restaurant",
+            targetText: "Ar tai restoranas?",
+            audioText: "Ar tai restoranas",
+          },
+          {
+            id: "s1m4l2_b6",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "Is that a shop?" },
+            tokens: [
+              { id: "t1", text: "Ar", correctIndex: 0 },
+              { id: "t2", text: "ten", correctIndex: 1 },
+              { id: "t3", text: "parduotuvė?", correctIndex: 2 },
+              { id: "t4", text: "tai", isDistractor: true },
+            ],
+            answerText: "Ar ten parduotuvė?",
+          },
+          {
+            id: "s1m4l2_b7",
+            type: "scenario_chain",
+            title: "Conversation",
+            description: "You're on a street in Vilnius looking for a restaurant. A local is nearby.",
+            steps: [
+              {
+                id: "step_1",
+                actor: "user",
+                text: "Atsiprašau…",
+                audioText: "Atsiprašau",
+                options: [
+                  { id: "a", text: "Ar ten restoranas?", isCorrect: true },
+                  { id: "b", text: "Kas ten?", isCorrect: false },
+                  { id: "c", text: "Ar jūs kalbate angliškai?", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_2",
+                actor: "other",
+                text: "Ne, tai parduotuvė.",
+                audioText: "Ne, tai parduotuvė",
+                helperText: "They said: No, that's a shop.",
+                options: [
+                  { id: "a", text: "Ačiū!", isCorrect: true },
+                  { id: "b", text: "Taip, suprantu", isCorrect: false },
+                  { id: "c", text: "Prašau kalbėkite lėčiau", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_3",
+                actor: "other",
+                text: "Restoranas yra ten.",
+                audioText: "Restoranas yra ten",
+                helperText: "They're pointing and saying the restaurant is over there.",
+                options: [
+                  { id: "a", text: "Nesuprantu", isCorrect: false },
+                  { id: "b", text: "Ne, ačiū", isCorrect: false },
+                  { id: "c", text: "Ačiū labai!", isCorrect: true },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+
+      // ── Lesson 3 ────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_4_lesson_3",
+        code: "1.4.3",
+        title: "Where Is…?",
+        purpose: "Introduce Kur yra…? as a reusable location question frame. Places kept tight — tualetas, stotis, autobusų stotelė. New nouns added naturally.",
+        supportLevel: "medium",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Kur yra…? is one of the most reusable frames in Lithuanian. Learn the frame, then slot in any place.",
+          usage: [
+            "Kur yra tualetas? — Where is the toilet?",
+            "Kur yra stotis? — Where is the station?",
+            "Kur yra autobusų stotelė? — Where is the bus stop?",
+            "Kur yra viešbutis? — Where is the hotel?",
+            "Kur yra bankas? — Where is the bank?",
+            "Ten — Over there (short answer you'll hear back)",
+            "Čia — Here",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m4l3_b1",
+            type: "learn",
+            title: "Asking where things are",
+            items: [
+              { id: "w1", lt: "Kur yra tualetas?", en: "Where is the toilet?", audioText: "Kur yra tualetas", saveable: true, core: true },
+              { id: "w2", lt: "Kur yra stotis?", en: "Where is the station?", audioText: "Kur yra stotis", saveable: true, core: true },
+              { id: "w3", lt: "Kur yra autobusų stotelė?", en: "Where is the bus stop?", audioText: "Kur yra autobusų stotelė", saveable: true, core: true },
+              { id: "w4", lt: "Kur yra viešbutis?", en: "Where is the hotel?", audioText: "Kur yra viešbutis", saveable: true, core: true },
+              { id: "w5", lt: "Kur yra bankas?", en: "Where is the bank?", audioText: "Kur yra bankas", saveable: true, core: true },
+              { id: "w6", lt: "Viešbutis", en: "Hotel", audioText: "Viešbutis", saveable: true, core: false },
+              { id: "w7", lt: "Bankas", en: "Bank", audioText: "Bankas", saveable: true, core: false },
+              { id: "w8", lt: "Ten", en: "Over there", audioText: "Ten", saveable: false, core: false },
+              { id: "w9", lt: "Čia", en: "Here", audioText: "Čia", saveable: false, core: false },
+            ],
+          },
+          {
+            id: "s1m4l3_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Kur yra stotis?", audioText: "Kur yra stotis" },
+            options: [
+              { id: "a", text: "Where is the hotel?", isCorrect: false },
+              { id: "b", text: "Where is the bus stop?", isCorrect: false },
+              { id: "c", text: "Where is the station?", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m4l3_b3",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Kur yra autobusų stotelė?", audioText: "Kur yra autobusų stotelė" },
+            options: [
+              { id: "a", text: "Where is the station?", isCorrect: false },
+              { id: "b", text: "Where is the bus stop?", isCorrect: true },
+              { id: "c", text: "Where is the hotel?", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m4l3_b4",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Kur yra bankas?", audioText: "Kur yra bankas" },
+            options: [
+              { id: "a", text: "Where is the shop?", isCorrect: false },
+              { id: "b", text: "Where is the restaurant?", isCorrect: false },
+              { id: "c", text: "Where is the bank?", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m4l3_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Ask where the hotel is",
+            targetText: "Kur yra viešbutis?",
+            audioText: "Kur yra viešbutis",
+          },
+          {
+            id: "s1m4l3_b6",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "Where is the bank?" },
+            tokens: [
+              { id: "t1", text: "Kur", correctIndex: 0 },
+              { id: "t2", text: "yra", correctIndex: 1 },
+              { id: "t3", text: "bankas?", correctIndex: 2 },
+              { id: "t4", text: "viešbutis?", isDistractor: true },
+            ],
+            answerText: "Kur yra bankas?",
+          },
+          {
+            id: "s1m4l3_b7",
+            type: "scenario_chain",
+            title: "Conversation",
+            description: "You've just arrived in Vilnius by train and need to find your hotel.",
+            steps: [
+              {
+                id: "step_1",
+                actor: "other",
+                text: "Ar galiu jums padėti?",
+                audioText: "Ar galiu jums padėti",
+                helperText: "They're asking if they can help.",
+                options: [
+                  { id: "a", text: "Ne, ačiū", isCorrect: false },
+                  { id: "b", text: "Taip! Kur yra viešbutis?", isCorrect: true },
+                  { id: "c", text: "Aš nesuprantu", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_2",
+                actor: "other",
+                text: "Viešbutis yra ten, prie stoties.",
+                audioText: "Viešbutis yra ten, prie stoties",
+                helperText: "They said: The hotel is over there, near the station.",
+                options: [
+                  { id: "a", text: "Prašau kalbėkite lėčiau", isCorrect: false },
+                  { id: "b", text: "Ačiū labai!", isCorrect: true },
+                  { id: "c", text: "Ar tai viešbutis?", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_3",
+                actor: "other",
+                text: "Prašau.",
+                audioText: "Prašau",
+                helperText: "You're welcome.",
+                options: [
+                  { id: "a", text: "Taip, prašau", isCorrect: false },
+                  { id: "b", text: "Viso gero!", isCorrect: true },
+                  { id: "c", text: "Man reikia pagalbos", isCorrect: false },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+
+      // ── Lesson 4 ────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_4_lesson_4",
+        code: "1.4.4",
+        title: "Can I…? / Can We…?",
+        purpose: "Introduce Ar galiu? and Ar galime? as reusable permission and coordination frames.",
+        supportLevel: "medium",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Ar galiu…? (can I?) and Ar galime…? (can we?) are hugely reusable frames. Slot in different actions and you have dozens of useful questions.",
+          usage: [
+            "Ar galiu? — Can I?",
+            "Ar galime? — Can we?",
+            "Ar galiu čia atsisėsti? — Can I sit here?",
+            "Ar galime pradėti? — Can we start?",
+            "Ar galiu čia sustoti? — Can I stop here?",
+            "Taip, prašau — Yes, please (the reply you'll hear)",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m4l4_b1",
+            type: "learn",
+            title: "Can I…? Can we…?",
+            items: [
+              { id: "g1", lt: "Ar galiu?", en: "Can I?", audioText: "Ar galiu", saveable: true, core: true },
+              { id: "g2", lt: "Ar galime?", en: "Can we?", audioText: "Ar galime", saveable: true, core: true },
+              { id: "g3", lt: "Ar galiu čia atsisėsti?", en: "Can I sit here?", audioText: "Ar galiu čia atsisėsti", saveable: true, core: true },
+              { id: "g4", lt: "Ar galime pradėti?", en: "Can we start?", audioText: "Ar galime pradėti", saveable: true, core: true },
+              { id: "g5", lt: "Ar galiu čia sustoti?", en: "Can I stop here?", audioText: "Ar galiu čia sustoti", saveable: true, core: false },
+            ],
+          },
+          {
+            id: "s1m4l4_b2",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Ar galiu čia atsisėsti?", audioText: "Ar galiu čia atsisėsti" },
+            options: [
+              { id: "a", text: "Can we sit here?", isCorrect: false },
+              { id: "b", text: "Is there a seat here?", isCorrect: false },
+              { id: "c", text: "Can I sit here?", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m4l4_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Ar galime pradėti?", audioText: "Ar galime pradėti" },
+            options: [
+              { id: "a", text: "Can I start?", isCorrect: false },
+              { id: "b", text: "Can we start?", isCorrect: true },
+              { id: "c", text: "Can we stop?", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m4l4_b4",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You're at a café and spot an empty chair at a table where someone is sitting." },
+            options: [
+              { id: "a", text: "Ar galime pradėti?", isCorrect: false },
+              { id: "b", text: "Ar galiu čia atsisėsti?", isCorrect: true },
+              { id: "c", text: "Man reikia pagalbos", isCorrect: false },
+            ],
+            feedback: { correct: "Ar galiu čia atsisėsti? — polite and exactly right in this situation." },
+          },
+          {
+            id: "s1m4l4_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Ask if you can sit here",
+            targetText: "Ar galiu čia atsisėsti?",
+            audioText: "Ar galiu čia atsisėsti",
+          },
+          {
+            id: "s1m4l4_b6",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "Can we start?" },
+            tokens: [
+              { id: "t1", text: "Ar", correctIndex: 0 },
+              { id: "t2", text: "galime", correctIndex: 1 },
+              { id: "t3", text: "pradėti?", correctIndex: 2 },
+              { id: "t4", text: "galiu", isDistractor: true },
+            ],
+            answerText: "Ar galime pradėti?",
+          },
+          {
+            id: "s1m4l4_b7",
+            type: "scenario_chain",
+            title: "Conversation",
+            description: "You're at a busy café in Vilnius and need to find a seat.",
+            steps: [
+              {
+                id: "step_1",
+                actor: "other",
+                text: "Laba diena!",
+                audioText: "Laba diena",
+                options: [
+                  { id: "a", text: "Viso gero", isCorrect: false },
+                  { id: "b", text: "Laba diena!", isCorrect: true },
+                  { id: "c", text: "Ačiū", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_2",
+                actor: "other",
+                text: "Ar galiu jums padėti?",
+                audioText: "Ar galiu jums padėti",
+                helperText: "They're asking if they can help you.",
+                options: [
+                  { id: "a", text: "Taip! Ar galiu čia atsisėsti?", isCorrect: true },
+                  { id: "b", text: "Ar galime pradėti?", isCorrect: false },
+                  { id: "c", text: "Man reikia pagalbos", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_3",
+                actor: "other",
+                text: "Taip, prašau.",
+                audioText: "Taip, prašau",
+                options: [
+                  { id: "a", text: "Ne, ačiū", isCorrect: false },
+                  { id: "b", text: "Ačiū labai!", isCorrect: true },
+                  { id: "c", text: "Aš nesuprantu", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_4",
+                actor: "other",
+                text: "Norėčiau kavos?",
+                audioText: "Norėčiau kavos",
+                helperText: "They're asking if you'd like coffee.",
+                options: [
+                  { id: "a", text: "Kur yra tualetas?", isCorrect: false },
+                  { id: "b", text: "Aš nesuprantu", isCorrect: false },
+                  { id: "c", text: "Taip, prašau!", isCorrect: true },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+
+      // ── Lesson 5 ────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_4_lesson_5",
+        code: "1.4.5",
+        title: "Tu and Jūs — A Pattern to Notice",
+        purpose: "Recognition only. Stop learners being confused when they see two versions of 'you' — not mastery, just awareness.",
+        supportLevel: "high",
+        newLanguageLoad: "very_low",
+        notes: {
+          pattern: "Tu is informal — friends, family, peers. Jūs is polite or plural — strangers, staff, older people, more than one person. When in doubt, use jūs.",
+          usage: [
+            "tu — you (one person, informal)",
+            "jūs — you (polite, or more than one person)",
+            "Koks tavo vardas? — What's your name? (tu form — casual)",
+            "Koks jūsų vardas? — What's your name? (jūs form — polite)",
+            "Ar tu kalbi angliškai? — Do you speak English? (casual)",
+            "Ar jūs kalbate angliškai? — Do you speak English? (polite — what you've been learning)",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m4l5_b1",
+            type: "learn",
+            title: "Two ways to say 'you'",
+            items: [
+              { id: "y1", lt: "Tu", en: "You (informal — friend, peer)", audioText: "Tu", saveable: false, core: true },
+              { id: "y2", lt: "Jūs", en: "You (polite or plural)", audioText: "Jūs", saveable: false, core: true },
+              { id: "y3", lt: "Koks tavo vardas?", en: "What's your name? (informal)", audioText: "Koks tavo vardas", saveable: false, core: false },
+              { id: "y4", lt: "Koks jūsų vardas?", en: "What's your name? (polite)", audioText: "Koks jūsų vardas", saveable: false, core: false },
+              { id: "y5", lt: "Ar jūs kalbate angliškai?", en: "Do you speak English? (polite — what you've been learning)", audioText: "Ar jūs kalbate angliškai", saveable: false, core: false },
+            ],
+          },
+          {
+            id: "s1m4l5_b2",
+            type: "recognise_mcq",
+            title: "Tu or jūs?",
+            prompt: { text: "You're asking a shop assistant for help. Which form should you use?" },
+            options: [
+              { id: "a", text: "Tu — it sounds friendlier", isCorrect: false },
+              { id: "b", text: "Jūs — polite form with strangers", isCorrect: true },
+              { id: "c", text: "Either — it doesn't matter", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m4l5_b3",
+            type: "recognise_mcq",
+            title: "Tu or jūs?",
+            prompt: { text: "You're chatting with a Lithuanian friend your own age. Which form would they likely use with you?" },
+            options: [
+              { id: "a", text: "Jūs — always safer", isCorrect: false },
+              { id: "b", text: "Tu — informal between friends", isCorrect: true },
+              { id: "c", text: "Neither — they'd speak English", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m4l5_b4",
+            type: "best_response",
+            title: "Which is the polite version?",
+            prompt: { text: "You want to ask someone's name politely — which do you use?" },
+            options: [
+              { id: "a", text: "Koks tavo vardas?", isCorrect: false },
+              { id: "b", text: "Koks jūsų vardas?", isCorrect: true },
+              { id: "c", text: "Kas tavo vardas?", isCorrect: false },
+            ],
+            feedback: { correct: "Koks jūsų vardas? — jūs form, right for any formal or unfamiliar situation." },
+          },
+          {
+            id: "s1m4l5_b5",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You've been learning 'Ar jūs kalbate angliškai?' — why jūs and not tu here?" },
+            options: [
+              { id: "a", text: "Tu is harder to pronounce", isCorrect: false },
+              { id: "b", text: "You'd use jūs — you're usually asking a stranger", isCorrect: true },
+              { id: "c", text: "They mean the same thing", isCorrect: false },
+            ],
+            feedback: { correct: "Exactly — you'd normally ask a stranger if they speak English, so jūs is the right choice." },
+          },
+          {
+            id: "s1m4l5_b6",
+            type: "scenario_chain",
+            title: "Conversation",
+            description: "A Lithuanian colleague introduces you to two different people — notice how the language shifts.",
+            steps: [
+              {
+                id: "step_1",
+                actor: "other",
+                text: "Labas! Koks tavo vardas?",
+                audioText: "Labas! Koks tavo vardas",
+                helperText: "They're using tu — this is a casual, friendly greeting.",
+                options: [
+                  { id: "a", text: "Koks jūsų vardas?", isCorrect: false },
+                  { id: "b", text: `Labas! Mano vardas ${userNameSafe}.`, isCorrect: true },
+                  { id: "c", text: "Aš nesuprantu", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_2",
+                actor: "other",
+                text: "Laba diena. Koks jūsų vardas?",
+                audioText: "Laba diena. Koks jūsų vardas",
+                helperText: "Same question — but now they're using jūs. This person is more formal.",
+                options: [
+                  { id: "a", text: "Iki!", isCorrect: false },
+                  { id: "b", text: "Ne, ačiū", isCorrect: false },
+                  { id: "c", text: `Laba diena. Mano vardas ${userNameSafe}.`, isCorrect: true },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+
+      // ── Checkpoint ──────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_4_checkpoint",
+        code: "1.4.C",
+        title: "Checkpoint",
+        purpose: "Check you can use Module 1.4 language in real situations without support.",
+        supportLevel: "none",
+        newLanguageLoad: "none",
+        isCheckpoint: true,
+        blocks: [
+          // Situational choice — help-seeking
+          {
+            id: "s1m4c_b1",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You drop your bag in the street and things fall everywhere. A passer-by stops." },
+            options: [
+              { id: "a", text: "Ar galiu čia atsisėsti?", isCorrect: false },
+              { id: "b", text: "Man reikia pagalbos!", isCorrect: true },
+              { id: "c", text: "Kur yra stotis?", isCorrect: false },
+            ],
+            feedback: { correct: "Man reikia pagalbos — direct and clear for an urgent situation." },
+          },
+          // Listen — Ar galite man padėti?
+          {
+            id: "s1m4c_b2",
+            type: "listen_mcq",
+            title: "Listen and identify",
+            prompt: { text: "Ar galite man padėti?", audioText: "Ar galite man padėti" },
+            options: [
+              { id: "a", text: "Can I help you?", isCorrect: false },
+              { id: "b", text: "I need help", isCorrect: false },
+              { id: "c", text: "Can you help me?", isCorrect: true },
+            ],
+          },
+          // Ar tai / Ar ten distinction
+          {
+            id: "s1m4c_b3",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You can see a building in the distance and want to check if it's the station." },
+            options: [
+              { id: "a", text: "Ar tai stotis?", isCorrect: false },
+              { id: "b", text: "Kas tai?", isCorrect: false },
+              { id: "c", text: "Ar ten stotis?", isCorrect: true },
+            ],
+            feedback: { correct: "Ar ten…? for something in the distance. Ar tai…? for something right in front of you." },
+          },
+          // Build — Kur yra viešbutis
+          {
+            id: "s1m4c_b4",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "Where is the hotel?" },
+            tokens: [
+              { id: "t1", text: "Kur", correctIndex: 0 },
+              { id: "t2", text: "yra", correctIndex: 1 },
+              { id: "t3", text: "viešbutis?", correctIndex: 2 },
+              { id: "t4", text: "bankas?", isDistractor: true },
+            ],
+            answerText: "Kur yra viešbutis?",
+          },
+          // Tu vs Jūs — formal context
+          {
+            id: "s1m4c_b5",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You're asking an elderly woman on the street for directions. Which do you use?" },
+            options: [
+              { id: "a", text: "Tu — it's friendlier", isCorrect: false },
+              { id: "b", text: "Jūs — polite form, always right with strangers", isCorrect: true },
+              { id: "c", text: "It doesn't matter in Lithuanian", isCorrect: false },
+            ],
+            feedback: { correct: "Jūs every time with strangers. Tu with friends and peers." },
+          },
+          // Speak
+          {
+            id: "s1m4c_b6",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Ask where the bus stop is",
+            targetText: "Kur yra autobusų stotelė?",
+            audioText: "Kur yra autobusų stotelė",
+          },
+          // Scenario — full help interaction
+          {
+            id: "s1m4c_b7",
+            type: "scenario_chain",
+            title: "Conversation",
+            description: "You've just arrived in Vilnius and need to find the bank. A local approaches.",
+            steps: [
+              {
+                id: "step_1",
+                actor: "other",
+                text: "Laba diena! Ar galiu jums padėti?",
+                audioText: "Laba diena! Ar galiu jums padėti",
+                helperText: "They're greeting you and offering help.",
+                options: [
+                  { id: "a", text: "Ne, ačiū", isCorrect: false },
+                  { id: "b", text: "Taip! Kur yra bankas?", isCorrect: true },
+                  { id: "c", text: "Viso gero", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_2",
+                actor: "other",
+                text: "Atsiprašau, aš nesuprantu angliškai.",
+                audioText: "Atsiprašau, aš nesuprantu angliškai",
+                helperText: "They said: Sorry, I don't understand English.",
+                options: [
+                  { id: "a", text: "Ačiū labai", isCorrect: false },
+                  { id: "b", text: "Ar jūs kalbate angliškai?", isCorrect: false },
+                  { id: "c", text: "Prašau kalbėkite lėčiau", isCorrect: true },
+                ],
+              },
+              {
+                id: "step_3",
+                actor: "other",
+                text: "Bankas yra ten, prie stoties.",
+                audioText: "Bankas yra ten, prie stoties",
+                helperText: "The bank is over there, near the station.",
+                options: [
+                  { id: "a", text: "Nesuprantu", isCorrect: false },
+                  { id: "b", text: "Ačiū labai!", isCorrect: true },
+                  { id: "c", text: "Man reikia pagalbos", isCorrect: false },
+                ],
+              },
+              {
+                id: "step_4",
+                actor: "other",
+                text: "Prašau. Viso gero!",
+                audioText: "Prašau. Viso gero",
+                options: [
+                  { id: "a", text: "Taip, prašau", isCorrect: false },
+                  { id: "b", text: "Atsiprašau", isCorrect: false },
+                  { id: "c", text: "Viso gero!", isCorrect: true },
+                ],
+              },
+            ],
+          },
+          // Word match — 20 pairs covering all of module 1.4
+          {
+            id: "s1m4c_b8",
+            type: "word_match",
+            title: "Match the pairs",
+            pairs: [
+              { id: "m1",  lt: "Ar galite man padėti?",    en: "Can you help me?",         audioText: "Ar galite man padėti" },
+              { id: "m2",  lt: "Padėkite man, prašau",     en: "Help me, please",           audioText: "Padėkite man, prašau" },
+              { id: "m3",  lt: "Man reikia pagalbos",       en: "I need help",               audioText: "Man reikia pagalbos" },
+              { id: "m4",  lt: "Ar galiu jums padėti?",    en: "Can I help you?",           audioText: "Ar galiu jums padėti" },
+              { id: "m5",  lt: "Pagalba",                  en: "Help",                      audioText: "Pagalba" },
+              { id: "m6",  lt: "Ar tai…?",                 en: "Is this…?",                 audioText: "Ar tai" },
+              { id: "m7",  lt: "Ar ten…?",                 en: "Is that…?",                 audioText: "Ar ten" },
+              { id: "m8",  lt: "Restoranas",               en: "Restaurant",                audioText: "Restoranas" },
+              { id: "m9",  lt: "Parduotuvė",               en: "Shop / Store",              audioText: "Parduotuvė" },
+              { id: "m10", lt: "Kur yra tualetas?",        en: "Where is the toilet?",      audioText: "Kur yra tualetas" },
+              { id: "m11", lt: "Kur yra stotis?",          en: "Where is the station?",     audioText: "Kur yra stotis" },
+              { id: "m12", lt: "Kur yra autobusų stotelė?", en: "Where is the bus stop?",   audioText: "Kur yra autobusų stotelė" },
+              { id: "m13", lt: "Viešbutis",                en: "Hotel",                     audioText: "Viešbutis" },
+              { id: "m14", lt: "Bankas",                   en: "Bank",                      audioText: "Bankas" },
+              { id: "m15", lt: "Ar galiu?",                en: "Can I?",                    audioText: "Ar galiu" },
+              { id: "m16", lt: "Ar galime?",               en: "Can we?",                   audioText: "Ar galime" },
+              { id: "m17", lt: "Ar galiu čia atsisėsti?",  en: "Can I sit here?",           audioText: "Ar galiu čia atsisėsti" },
+              { id: "m18", lt: "Ar galime pradėti?",       en: "Can we start?",             audioText: "Ar galime pradėti" },
+              { id: "m19", lt: "Tu",                       en: "You (informal)",            audioText: "Tu" },
+              { id: "m20", lt: "Jūs",                      en: "You (polite / plural)",     audioText: "Jūs" },
+            ],
+          },
+        ],
+      },
+
+    ],
+  };
+}
