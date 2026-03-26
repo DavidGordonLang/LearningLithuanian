@@ -2,18 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Global backdrop-blur cross-browser fix ──────────────────────────────────
+   Tailwind's backdrop-blur only generates the un-prefixed property.
+   Samsung Internet and older WebKit need -webkit-backdrop-filter.
+   We also add a solid dark fallback background so elements don't disappear
+   if backdrop-filter is stripped entirely.
+   ─────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness)
+      var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale)
+      var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert)
+      var(--tw-backdrop-opacity) var(--tw-backdrop-saturate)
+      var(--tw-backdrop-sepia);
+    backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness)
+      var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale)
+      var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert)
+      var(--tw-backdrop-opacity) var(--tw-backdrop-saturate)
+      var(--tw-backdrop-sepia);
+  }
+}
+
+/* ─── Cross-browser dark mode lock ────────────────────────────────────────────
+   Prevents Samsung Internet, Firefox Android, and other browsers from
+   overriding the app's colours with their own light/night themes.
+   color-scheme: dark  →  tells the browser this is a dark-only UI
+   forced-color-adjust: none  →  opts out of Samsung Internet's contrast mode
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+}
+
 /* Mobile-friendly defaults */
 html,
 body,
 #root {
   height: 100%;
+  color-scheme: dark;
+  background-color: #0a0a0b;
 }
 
 body {
   background-color: #0a0a0b; /* matches bg-zinc-950 */
-  color: #e5e7eb; /* text-zinc-200-ish */
-  overscroll-behavior-y: none; /* avoid scroll chaining that can bump focus */
+  color: #e5e7eb;
+  overscroll-behavior-y: none;
   position: relative;
+  forced-color-adjust: none;
+  -ms-high-contrast-adjust: none;
 }
 
 /* Global “anchor” background (applies to every screen) */
@@ -232,6 +267,8 @@ button,
   .z-mic-ring {
     pointer-events: none;
     border-radius: 9999px;
+    /* Explicit border — visible even when box-shadow inset isn't rendered */
+    border: 1px solid rgba(255,255,255,0.10);
     background:
       radial-gradient(circle at 50% 45%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 55%),
       radial-gradient(circle at 50% 50%, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.00) 60%);
@@ -263,15 +300,19 @@ button,
 
   .z-mic-disc {
     pointer-events: none;
+    /* Solid fallback — visible even if backdrop-filter is stripped */
+    background-color: rgba(10, 12, 14, 0.95);
     background: radial-gradient(
         circle at 50% 35%,
         rgba(255,255,255,0.10) 0%,
         rgba(255,255,255,0.00) 42%
       ),
-      rgba(8, 10, 12, 0.55);
+      rgba(8, 10, 12, 0.90);
+    border: 1px solid rgba(255,255,255,0.08);
     box-shadow:
       inset 0 0 0 1px rgba(255,255,255,0.08),
       inset 0 -18px 35px rgba(0,0,0,0.55);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
   }
 
@@ -289,7 +330,9 @@ button,
   }
 
   .z-mic-iconBubble-off {
-    background: rgba(255,255,255,0.05);
+    /* Slightly more opaque so it reads on pure black in Samsung Internet */
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.10);
   }
 
   .z-mic-iconBubble-on {
