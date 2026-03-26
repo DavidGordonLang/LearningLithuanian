@@ -34,11 +34,19 @@ export default function EntryCard({
       : (r.Phonetic || "");
 
   // Resolve phonetics in Notes — GPT writes variant phonetics as "en||ipa".
-  // Replace each pair with the half the user wants. Old notes without || are untouched.
+  // Process line by line: any line containing || is a phonetics line, take the right half.
+  // Lines without || pass through untouched — old notes are safe.
   const displayedNotes = typeof r.Notes === "string"
-    ? r.Notes.replace(/([^|\n]+)\|\|([^|\n]+)/g, (_, en, ipa) =>
-        phoneticsMode === "ipa" ? ipa.trim() : en.trim()
-      )
+    ? r.Notes
+        .split("\n")
+        .map((line) => {
+          if (!line.includes("||")) return line;
+          const [en, ipa] = line.split("||");
+          return phoneticsMode === "ipa"
+            ? (ipa ?? en).trim()
+            : (en ?? line).trim();
+        })
+        .join("\n")
     : "";
 
   // Compute stable row index using _id fallback
