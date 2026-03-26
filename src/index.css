@@ -26,11 +26,11 @@
 /* ─── Cross-browser dark mode lock ────────────────────────────────────────────
    Prevents Samsung Internet, Firefox Android, and other browsers from
    overriding the app's colours with their own light/night themes.
-   color-scheme: dark  →  tells the browser this is a dark-only UI
+   color-scheme: only dark  →  tells the browser this is a dark-only UI
    forced-color-adjust: none  →  opts out of Samsung Internet's contrast mode
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: dark;
+  color-scheme: only dark;
 }
 
 /* Mobile-friendly defaults */
@@ -38,7 +38,7 @@ html,
 body,
 #root {
   height: 100%;
-  color-scheme: dark;
+  color-scheme: only dark;
   background-color: #0a0a0b;
   /* Block Samsung Internet's dark-mode colour filter from shifting the whole page */
   filter: none;
