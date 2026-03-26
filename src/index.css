@@ -40,6 +40,9 @@ body,
   height: 100%;
   color-scheme: dark;
   background-color: #0a0a0b;
+  /* Block Samsung Internet's dark-mode colour filter from shifting the whole page */
+  filter: none;
+  -webkit-filter: none;
 }
 
 body {
@@ -300,8 +303,8 @@ button,
 
   .z-mic-disc {
     pointer-events: none;
-    /* Solid fallback — visible even if backdrop-filter is stripped */
-    background-color: rgba(10, 12, 14, 0.95);
+    /* Fully opaque fallback — Samsung Internet drops rgba transparency */
+    background-color: #0a0c0e;
     background: radial-gradient(
         circle at 50% 35%,
         rgba(255,255,255,0.10) 0%,
