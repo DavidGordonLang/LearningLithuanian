@@ -29,6 +29,7 @@ export default async function handler(req, res) {
 
   const lt = typeof body.lt === "string" ? body.lt.trim() : "";
   const phonetics = typeof body.phonetics === "string" ? body.phonetics.trim() : "";
+  const phonetics_ipa = typeof body.phonetics_ipa === "string" ? body.phonetics_ipa.trim() : "";
   const en_natural = typeof body.en_natural === "string" ? body.en_natural.trim() : "";
   const en_literal = typeof body.en_literal === "string" ? body.en_literal.trim() : "";
   const tone = typeof body.tone === "string" ? body.tone.trim() : "friendly";
@@ -170,10 +171,14 @@ Format variants exactly like this — no deviations:
 
 Variants:
 - Lithuanian phrase — natural English meaning
-  phonetics
+  en-phonetics||ipa-phonetics
 
 - Lithuanian phrase — natural English meaning
-  phonetics
+  en-phonetics||ipa-phonetics
+
+The phonetics line MUST always use the format: english-phonetics||ipa-phonetics
+The || is a required delimiter — never omit it, never use a space or slash instead.
+Example: vee-soh geh-roh||viːsoː ɡɛroː
 
 After the variants, write 1-2 sentences explaining how the variant(s) differ in tone,
 formality, or frequency from the original.
@@ -213,10 +218,10 @@ An English speaker might assume one goodbye word covers everything, but Lithuani
 
 Variants:
 - Viso gero — All the best / Goodbye
-  vee-soh geh-roh
+  vee-soh geh-roh||viːsoː ɡɛroː
 
 - Iki — See you / Bye
-  ee-kee
+  ee-kee||iːkiː
 
 Viso gero is warmer and slightly more formal — it carries a wish for the other person's wellbeing. Iki is short and casual, common among friends and in everyday spoken goodbyes."
 }
@@ -243,7 +248,7 @@ Of / without: Jausmas alkanos — The feeling of hunger
 
 Variants:
 - As esu labai alkana — I am very hungry
-  ahsh eh-soo lah-bai al-kah-nah
+  ahsh eh-soo lah-bai al-kah-nah||aʃ ɛsuː lɐˈbɐɪ alˈkɐnɐ
 
 Labai is the neutral, everyday word for very. Baisiai is more vivid and informal — it signals that the hunger is being played up slightly for effect, which is natural in spoken Lithuanian."
 }
@@ -321,8 +326,11 @@ Rules:
 LITHUANIAN:
 ${lt}
 
-PHONETICS:
+PHONETICS (English):
 ${phonetics || "(not provided)"}
+
+PHONETICS (IPA):
+${phonetics_ipa || "(not provided)"}
 
 ENGLISH (NATURAL):
 ${en_natural || "(not provided)"}
