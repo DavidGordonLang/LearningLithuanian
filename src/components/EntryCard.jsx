@@ -25,8 +25,9 @@ export default function EntryCard({
   // ---- Pull rows from zustand store ----
   const rows = usePhraseStore((s) => s.phrases);
 
-  // Settings (phonetics mode)
-  const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
+  // Settings (phonetics mode) — read from top-level mirror, not s.data
+  // s.data.phoneticsMode does not update reactively; s.phoneticsMode does
+  const phoneticsMode = useSettingsStore((s) => s.phoneticsMode || "en");
 
   const displayedPhonetic =
     phoneticsMode === "ipa"
