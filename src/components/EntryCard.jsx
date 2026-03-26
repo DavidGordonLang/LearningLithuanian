@@ -143,11 +143,19 @@ export default function EntryCard({
       )}
 
       {/* NOTES */}
-      {isExpanded && r.Notes && (
-        <div className="text-xs text-zinc-200 whitespace-pre-wrap border-t border-white/8 pt-3">
-          {r.Notes}
-        </div>
-      )}
+      {isExpanded && r.Notes && (() => {
+        // Replace en||ipa pairs with whichever half the user wants.
+        // Old notes with no || are left untouched — transform is a no-op.
+        const displayNotes = r.Notes.replace(
+          /([^\s|][^|]*)\|\|([^\s|][^|\n]*)/g,
+          (_, en, ipa) => phoneticsMode === "ipa" ? ipa.trim() : en.trim()
+        );
+        return (
+          <div className="text-xs text-zinc-200 whitespace-pre-wrap border-t border-white/8 pt-3">
+            {displayNotes}
+          </div>
+        );
+      })()}
 
       {/* CONTROLS */}
       <div className="flex flex-wrap items-center gap-2 pt-1">
