@@ -14,6 +14,8 @@
 
     <!-- MUST MATCH manifest.json theme_color -->
     <meta name="theme-color" content="#10b981" />
+    <!-- Tells browsers (including Samsung Internet) this is a dark-only UI -->
+    <meta name="color-scheme" content="dark" />
 
     <!-- iOS PWA / Homescreen -->
     <link rel="apple-touch-icon" href="/icons/192.png" />
@@ -27,6 +29,7 @@
 
     <style>
       :root {
+        color-scheme: dark;
         --sat: env(safe-area-inset-top);
         --sab: env(safe-area-inset-bottom);
       }
@@ -34,6 +37,8 @@
       body,
       #root {
         height: 100%;
+        color-scheme: dark;
+        background-color: #0a0a0b;
       }
     </style>
   </head>
