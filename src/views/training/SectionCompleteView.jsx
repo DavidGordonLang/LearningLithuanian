@@ -287,7 +287,6 @@ function CelebrationCard({
   modules,
   xpEarned,
   accuracyPct,
-  onSaveVocab,
   onContinue,
   onHome,
 }) {
@@ -442,14 +441,6 @@ function CelebrationCard({
           <button
             type="button"
             data-press
-            onClick={onSaveVocab}
-            className="w-full rounded-2xl border border-emerald-300/20 bg-emerald-600/90 hover:bg-emerald-500 px-4 py-3.5 text-sm font-semibold text-black transition"
-          >
-            Save vocabulary →
-          </button>
-          <button
-            type="button"
-            data-press
             onClick={onContinue}
             className="w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.05] transition"
           >
@@ -479,7 +470,6 @@ export default function SectionCompleteView({
   modules,       // all modules in the section (including checkpoint)
   xpEarned,
   accuracyPct,
-  onSaveVocab,
   onContinue,
   onHome,
 }) {
@@ -503,7 +493,6 @@ export default function SectionCompleteView({
       modules={modules}
       xpEarned={xpEarned}
       accuracyPct={accuracyPct}
-      onSaveVocab={onSaveVocab}
       onContinue={onContinue}
       onHome={onHome}
     />
