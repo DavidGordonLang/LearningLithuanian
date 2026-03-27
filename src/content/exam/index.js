@@ -1,17 +1,27 @@
-import { readingTrueFalse } from "./exam/ii_kategorija/reading_true_false";
-import { listeningTrueFalse } from "./exam/ii_kategorija/listening_true_false";
-import { writingGuidedLetter } from "./exam/ii_kategorija/writing_guided_letter";
+// src/content/learning/section1/index.js
+// Section 1 — First Contact
 
-export const examContent = {
-  ii_kategorija: {
-    reading: {
-      true_false: readingTrueFalse,
-    },
-    listening: {
-      true_false: listeningTrueFalse,
-    },
-    writing: {
-      guided_letter: writingGuidedLetter,
-    },
-  },
-};
+import module_1_1 from "./module_1_1.js";
+import createModule_1_2 from "./module_1_2.js";
+import createModule_1_3 from "./module_1_3.js";
+import createModule_1_4 from "./module_1_4.js";
+import createCheckpoint1 from "./checkpoint_1.js";
+
+export default function createSection1(profile = {}) {
+  return {
+    id: "section_1",
+    code: "1",
+    title: "First Contact",
+    description: "Essential greetings, polite responses, and survival phrases.",
+    status: "active",
+    moduleCount: 4,
+    checkpointCount: 1,
+    modules: [
+      module_1_1,
+      createModule_1_2(profile),
+      createModule_1_3(profile),
+      createModule_1_4(profile),
+      createCheckpoint1(profile),
+    ],
+  };
+}
