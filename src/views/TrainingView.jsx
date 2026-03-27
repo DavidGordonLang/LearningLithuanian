@@ -66,6 +66,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const [screen, setScreen] = useState("home");
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null);
   const [sectionCompletePayload, setSectionCompletePayload] = useState(null);
+  const [pendingSectionComplete, setPendingSectionComplete] = useState(false);
   const [vocabSaveModule, setVocabSaveModule] = useState(null);
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
@@ -271,6 +272,12 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           showToast={showToast}
           onDone={() => {
             setVocabSaveModule(null);
+            // If section just completed, fire celebration screen
+            if (pendingSectionComplete && sectionCompletePayload) {
+              setPendingSectionComplete(false);
+              setScreen("sectionComplete");
+              return;
+            }
             const next = findNextLesson(allSections, completedLessonIds);
             if (next) {
               setSelectedLessonId(next.lesson.id);
@@ -298,13 +305,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         modules={sectionCompletePayload.modules}
         xpEarned={sectionCompletePayload.xpEarned}
         accuracyPct={sectionCompletePayload.accuracyPct}
-        onSaveVocab={() => {
-          const sec = sectionCompletePayload?.section;
-          const checkpoint = (sec?.modules || []).find((m) => m.isSectionCheckpoint);
-          setSectionCompletePayload(null);
-          setVocabSaveModule(checkpoint || sec?.modules?.[sec.modules.length - 1]);
-          setScreen("vocabSave");
-        }}
         onContinue={() => {
           setSectionCompletePayload(null);
           const next = findNextLesson(allSections, completedLessonIds);
@@ -423,18 +423,23 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
               ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
               : null;
 
-            // Check if the whole section is now complete — fire section screen instead of module screen
+            // Check if the whole section is now complete
             if (sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id)) {
               markSectionCompleteSeen(sec.id, user?.id);
+              // Store payload for after vocab save
               setSectionCompletePayload({
                 section: sec,
                 modules: sec.modules || [],
                 accuracyPct: modAccuracy,
                 xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
               });
+              setPendingSectionComplete(true);
+              // Go to vocab save first — celebration fires after
+              const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
+              setVocabSaveModule(checkpoint);
               setSelectedLessonId(null);
               setSelectedModuleId(null);
-              setScreen("sectionComplete");
+              setScreen("vocabSave");
             } else {
               setModuleCompletePayload({
                 module: mod,
