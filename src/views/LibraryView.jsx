@@ -146,7 +146,7 @@ export default function LibraryView({
     searchStore.getServerSnapshot
   );
 
-  const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
+  const phoneticsMode = useSettingsStore((s) => s.phoneticsMode || "en");
 
   const search = searchStore.getSnapshot() || "";
   const [category, setCategory] = useState("All");
@@ -526,7 +526,11 @@ export default function LibraryView({
 
               {hasNotes && detailsOpen ? (
                 <div className="mt-3 text-sm text-zinc-400 whitespace-pre-wrap">
-                  {String(r.Notes)}
+                  {String(r.Notes).split("\n").map((line) => {
+                    if (!line.includes("||")) return line;
+                    const [en, ipa] = line.split("||");
+                    return phoneticsMode === "ipa" ? (ipa ?? en).trim() : (en ?? line).trim();
+                  }).join("\n")}
                 </div>
               ) : null}
             </div>
