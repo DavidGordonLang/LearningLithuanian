@@ -54,29 +54,29 @@ function playSectionCompleteSound() {
 
 // ─── Styles injected once ─────────────────────────────────────────────────────
 
-const STYLE_ID = "z-section-complete-styles";
+const STYLE_ID = "z-section-complete-styles-v2";
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const el = document.createElement("style");
   el.id = STYLE_ID;
   el.textContent = `
     @keyframes scBurstRing {
-      0%   { transform: scale(0.2); opacity: 0.9; }
-      100% { transform: scale(3.5); opacity: 0; }
+      0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; }
+      100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
     }
     @keyframes scBurstRing2 {
-      0%   { transform: scale(0.2); opacity: 0.7; }
-      100% { transform: scale(4.5); opacity: 0; }
+      0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0.7; }
+      100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; }
     }
     @keyframes scBurstRing3 {
-      0%   { transform: scale(0.1); opacity: 0.5; }
-      100% { transform: scale(6); opacity: 0; }
+      0%   { transform: translate(-50%, -50%) scale(0.1); opacity: 0.5; }
+      100% { transform: translate(-50%, -50%) scale(6); opacity: 0; }
     }
     @keyframes scGlowPulse {
-      0%   { opacity: 0; transform: scale(0.5); }
-      30%  { opacity: 1; transform: scale(1); }
-      70%  { opacity: 0.8; transform: scale(1.05); }
-      100% { opacity: 0; transform: scale(1.1); }
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      30%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      70%  { opacity: 0.8; transform: translate(-50%, -50%) scale(1.05); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
     }
     @keyframes scLogoIn {
       0%   { opacity: 0; transform: scale(0.4); filter: blur(8px); }
@@ -84,8 +84,8 @@ function ensureStyles() {
       100% { opacity: 1; transform: scale(1); filter: blur(0px); }
     }
     @keyframes scParticle {
-      0%   { opacity: 1; transform: translate(0,0) scale(1); }
-      100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
+      0%   { opacity: 1; transform: translate(-50%, -50%); }
+      100% { opacity: 0; transform: translate(calc(-50% + var(--px)), calc(-50% + var(--py))) scale(0); }
     }
     @keyframes scSlideUp {
       0%   { opacity: 0; transform: translateY(32px); }
@@ -102,7 +102,7 @@ function ensureStyles() {
       border: 2px solid rgba(52,211,153,0.6);
       width: 120px; height: 120px;
       top: 50%; left: 50%;
-      margin-top: -60px; margin-left: -60px;
+      transform: translate(-50%, -50%);
       animation: scBurstRing 1.4s cubic-bezier(0.2,0.8,0.4,1) forwards;
     }
     .sc-ring-2 {
@@ -118,7 +118,7 @@ function ensureStyles() {
       border-radius: 9999px;
       width: 300px; height: 300px;
       top: 50%; left: 50%;
-      margin-top: -150px; margin-left: -150px;
+      transform: translate(-50%, -50%);
       background: radial-gradient(circle, rgba(52,211,153,0.35) 0%, rgba(16,185,129,0.15) 40%, transparent 70%);
       animation: scGlowPulse 1.8s ease-out forwards;
     }
@@ -131,6 +131,7 @@ function ensureStyles() {
       border-radius: 9999px;
       background: rgba(110,231,183,0.9);
       top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
       animation: scParticle 1.2s ease-out forwards;
     }
     .sc-card {
