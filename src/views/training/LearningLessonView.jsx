@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import useSpeechToTextHold from "../../hooks/useSpeechToTextHold";
 import { useGameStore } from "../../stores/gameStore";
 import { matchPairsCss } from "./matchPairs/matchPairsStyles";
+import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -237,7 +238,13 @@ function LearnBlock({ block, playText, onComplete, completed, navBarRef }) {
         <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[17px] font-semibold text-zinc-100">{item.lt}</div>
+              <div className="text-[17px] font-semibold text-zinc-100">
+                <InteractivePhraseText
+                  text={item.lt}
+                  playText={playText}
+                  wordClassName="hover:text-emerald-300"
+                />
+              </div>
               <div className="text-[13px] text-zinc-400 mt-0.5">{item.en}</div>
             </div>
             {item.audioText ? <AudioIconButton text={item.audioText} playText={playText} /> : null}
@@ -427,7 +434,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
         {block?.targetText ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 mb-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-[20px] font-semibold text-zinc-100">{block.targetText}</div>
+              <div className="text-[20px] font-semibold text-zinc-100">
+                <InteractivePhraseText text={block.targetText} playText={playText} wordClassName="hover:text-emerald-300" />
+              </div>
               {block?.audioText ? <AudioIconButton text={block.audioText} playText={playText} label="Hear the phrase" /> : null}
             </div>
           </div>
@@ -446,7 +455,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
       {block?.targetText ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 mb-5">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-[20px] font-semibold text-zinc-100">{block.targetText}</div>
+            <div className="text-[20px] font-semibold text-zinc-100">
+              <InteractivePhraseText text={block.targetText} playText={playText} wordClassName="hover:text-emerald-300" />
+            </div>
             {block?.audioText ? <AudioIconButton text={block.audioText} playText={playText} label="Hear the phrase" /> : null}
           </div>
         </div>
@@ -661,7 +672,7 @@ function BuildPhraseBlock({ block, playText, onComplete, completed }) {
   );
 }
 
-function ConversationBubble({ role, text, helperText }) {
+function ConversationBubble({ role, text, helperText, playText }) {
   const isAssistant = role === "other";
   return (
     <div className={cn("flex flex-col", isAssistant ? "items-start" : "items-end")}>
@@ -673,7 +684,13 @@ function ConversationBubble({ role, text, helperText }) {
       ) : null}
       <div className={cn("max-w-[80%] rounded-[20px] border px-4 py-2.5",
         isAssistant ? "border-white/10 bg-white/[0.035]" : "border-emerald-400/18 bg-emerald-500/[0.09]")}>
-        <div className="text-[14px] font-medium leading-snug text-zinc-100">{text}</div>
+        <div className="text-[14px] font-medium leading-snug text-zinc-100">
+          <InteractivePhraseText
+            text={text}
+            playText={playText}
+            wordClassName="hover:text-emerald-300"
+          />
+        </div>
       </div>
     </div>
   );
@@ -784,7 +801,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
             </div>
           ) : (
             <>
-              {history.map((item, index) => <ConversationBubble key={`${item.role}-${index}-${item.text}`} role={item.role} text={item.text} helperText={item.helperText} />)}
+              {history.map((item, index) => <ConversationBubble key={`${item.role}-${index}-${item.text}`} role={item.role} text={item.text} helperText={item.helperText} playText={playText} />)}
               {assistantTyping ? <TypingBubble /> : null}
             </>
           )}
