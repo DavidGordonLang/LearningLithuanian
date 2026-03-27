@@ -82,6 +82,31 @@ body::after {
   background-size: 220px 220px;
 }
 
+/* ─── Samsung Internet dark-mode classifier signal ────────────────────────────
+   Samsung Internet v29 checks for prefers-color-scheme: dark media blocks to
+   determine whether a site handles dark mode natively. Without this block it
+   classifies the app as a "light site" and applies forced darkening on top.
+   These rules are functionally identical to the base styles above — the block
+   exists purely to signal native dark mode support to Samsung's classifier.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  #root {
+    background-color: #0a0a0b;
+    color: #e5e7eb;
+    color-scheme: only dark;
+  }
+
+  body::before {
+    background:
+      radial-gradient(900px 520px at 50% -140px, rgba(16, 185, 129, 0.10), rgba(0, 0, 0, 0) 60%),
+      radial-gradient(820px 560px at 50% 46%, rgba(16, 185, 129, 0.06), rgba(0, 0, 0, 0) 62%),
+      radial-gradient(1200px 900px at 50% 110%, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0) 70%),
+      linear-gradient(180deg, #070708 0%, #0a0a0b 35%, #070708 100%);
+  }
+}
+
 /* Safe areas for notches */
 :root {
   --safe-bottom: env(safe-area-inset-bottom);
