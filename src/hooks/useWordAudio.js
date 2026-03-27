@@ -9,6 +9,8 @@ export default function useWordAudio({
   moveThresholdPx = 10,
 }) {
   const [pressing, setPressing] = useState(false);
+  // "normal" | "slow" | null — drives glow animation in WordToken
+  const [playing, setPlaying] = useState(null);
 
   const stateRef = useRef({
     pointerId: null,
@@ -50,10 +52,13 @@ export default function useWordAudio({
       const text = String(word || "").trim();
       if (!text || disabled || typeof playText !== "function") return;
 
+      setPlaying(slow ? "slow" : "normal");
       try {
         await playText(text, slow ? { slow: true } : undefined);
       } catch {
         // playback errors are already handled by the shared TTS layer
+      } finally {
+        setPlaying(null);
       }
     },
     [disabled, playText, word]
@@ -162,6 +167,7 @@ export default function useWordAudio({
 
   return {
     pressing,
+    playing,
     handlers: {
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,
