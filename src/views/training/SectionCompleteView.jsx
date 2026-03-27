@@ -54,7 +54,7 @@ function playSectionCompleteSound() {
 
 // ─── Styles injected once ─────────────────────────────────────────────────────
 
-const STYLE_ID = "z-section-complete-styles-v2";
+const STYLE_ID = "z-section-complete-styles-v3";
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const el = document.createElement("style");
@@ -170,8 +170,20 @@ function BurstScreen({ onDone }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden"
-      style={{ background: "#060608" }}
+      style={{
+        position: "fixed",
+        top: 0, left: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 9999,
+        background: "#060608",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        transform: "translateZ(0)",
+        willChange: "transform",
+      }}
     >
       {/* Radial glow */}
       <div className="sc-glow" />
@@ -291,9 +303,17 @@ function CelebrationCard({
 
   return (
     <div
-      className="min-h-[100dvh] overflow-y-auto overscroll-contain"
       style={{
+        position: "fixed",
+        top: 0, left: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 9999,
+        overflowY: "auto",
+        overscrollBehavior: "contain",
         background: "linear-gradient(180deg, #070708 0%, #0a0a0b 50%, #070708 100%)",
+        transform: "translateZ(0)",
+        willChange: "transform",
       }}
     >
       {/* Background glow */}
