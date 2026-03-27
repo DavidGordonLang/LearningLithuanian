@@ -6,6 +6,7 @@ import LearningSectionView from "./training/LearningSectionView";
 import LearningModuleView from "./training/LearningModuleView";
 import LearningLessonView from "./training/LearningLessonView";
 import ModuleCompleteView from "./training/ModuleCompleteView";
+import SectionCompleteView from "./training/SectionCompleteView";
 import VocabSaveView from "./training/VocabSaveView";
 import RecallFlipView from "./training/RecallFlipView";
 import BlindRecallView from "./training/BlindRecallView";
@@ -64,6 +65,7 @@ function findLessonAfter(sections, lessonId) {
 export default function TrainingView({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null);
+  const [sectionCompletePayload, setSectionCompletePayload] = useState(null);
   const [vocabSaveModule, setVocabSaveModule] = useState(null);
   const [moduleWrongAnswers, setModuleWrongAnswers] = React.useState(0);
   const [moduleScoreableBlocks, setModuleScoreableBlocks] = React.useState(0);
@@ -89,6 +91,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
   const hasSeenModuleComplete = useGameStore((s) => s.hasSeenModuleComplete);
   const markModuleCompleteSeen = useGameStore((s) => s.markModuleCompleteSeen);
+  const hasSeenSectionComplete = useGameStore((s) => s.hasSeenSectionComplete);
+  const markSectionCompleteSeen = useGameStore((s) => s.markSectionCompleteSeen);
 
   const userName = useSettingsStore((s) => s.userName);
   const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
@@ -187,6 +191,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     return mod.lessons.every((l) => completedLessonIds.includes(l.id));
   };
 
+  const isSectionFullyComplete = (sec) => {
+    if (!sec?.modules) return false;
+    return sec.modules.every((m) => isModuleFullyComplete(m));
+  };
+
   const nextLessonLabel = nextLessonAfterCurrent
     ? `Lesson ${nextLessonAfterCurrent.lessonIndex + 1} — ${nextLessonAfterCurrent.lesson.title}`
     : null;
@@ -282,6 +291,47 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     );
   }
 
+  if (screen === "sectionComplete" && sectionCompletePayload) {
+    return (
+      <SectionCompleteView
+        section={sectionCompletePayload.section}
+        modules={sectionCompletePayload.modules}
+        xpEarned={sectionCompletePayload.xpEarned}
+        accuracyPct={sectionCompletePayload.accuracyPct}
+        onSaveVocab={() => {
+          const sec = sectionCompletePayload?.section;
+          const checkpoint = (sec?.modules || []).find((m) => m.isSectionCheckpoint);
+          setSectionCompletePayload(null);
+          setVocabSaveModule(checkpoint || sec?.modules?.[sec.modules.length - 1]);
+          setScreen("vocabSave");
+        }}
+        onContinue={() => {
+          setSectionCompletePayload(null);
+          const next = findNextLesson(allSections, completedLessonIds);
+          if (next) {
+            setSelectedLessonId(next.lesson.id);
+            setSelectedModuleId(next.module.id);
+            setModuleWrongAnswers(0);
+            setModuleScoreableBlocks(0);
+            setModuleXpEarned(0);
+            setLessonReturnScreen("home");
+            setScreen("learningLesson");
+          } else {
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("home");
+          }
+        }}
+        onHome={() => {
+          setSectionCompletePayload(null);
+          setSelectedLessonId(null);
+          setSelectedModuleId(null);
+          setScreen("home");
+        }}
+      />
+    );
+  }
+
   if (screen === "moduleComplete" && moduleCompletePayload) {
     return (
       <ModuleCompleteView
@@ -372,15 +422,30 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
             const modAccuracy = moduleScoreableBlocks > 0
               ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
               : null;
-            setModuleCompletePayload({
-              module: mod,
-              section: sec,
-              accuracyPct: modAccuracy,
-              xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
-            });
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("moduleComplete");
+
+            // Check if the whole section is now complete — fire section screen instead of module screen
+            if (sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id)) {
+              markSectionCompleteSeen(sec.id, user?.id);
+              setSectionCompletePayload({
+                section: sec,
+                modules: sec.modules || [],
+                accuracyPct: modAccuracy,
+                xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+              });
+              setSelectedLessonId(null);
+              setSelectedModuleId(null);
+              setScreen("sectionComplete");
+            } else {
+              setModuleCompletePayload({
+                module: mod,
+                section: sec,
+                accuracyPct: modAccuracy,
+                xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+              });
+              setSelectedLessonId(null);
+              setSelectedModuleId(null);
+              setScreen("moduleComplete");
+            }
           } else if (typeof handleNextLesson === "function") {
             handleNextLesson();
           } else {
@@ -438,23 +503,38 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       devMode={devMode}
       onToggleDevMode={toggleDevMode}
       devTestModules={devMode
-        ? allSections.flatMap((section) =>
-            (section.modules || [])
-              .filter((module) => module.status === "active")
-              .map((module) => ({
-                id: module.id,
-                label: `⚡ Test Module ${module.code} Complete`,
-                onClick: () => {
-                  setModuleCompletePayload({
-                    module,
-                    section,
-                    xpEarned: 142,
-                    accuracyPct: 87,
-                  });
-                  setScreen("moduleComplete");
-                },
-              }))
-          )
+        ? [
+            ...allSections.flatMap((section) =>
+              (section.modules || [])
+                .filter((module) => module.status === "active")
+                .map((module) => ({
+                  id: module.id,
+                  label: `⚡ Test Module ${module.code} Complete`,
+                  onClick: () => {
+                    setModuleCompletePayload({
+                      module,
+                      section,
+                      xpEarned: 142,
+                      accuracyPct: 87,
+                    });
+                    setScreen("moduleComplete");
+                  },
+                }))
+            ),
+            ...allSections.map((section) => ({
+              id: `section_complete_${section.id}`,
+              label: `⚡ Test Section ${section.code} Complete`,
+              onClick: () => {
+                setSectionCompletePayload({
+                  section,
+                  modules: section.modules || [],
+                  xpEarned: 580,
+                  accuracyPct: 89,
+                });
+                setScreen("sectionComplete");
+              },
+            })),
+          ]
         : []}
       onBrowseCourse={() => setScreen("learningHome")}
       onStartRecallFlip={() => setScreen("recallFlip")}
