@@ -59,6 +59,7 @@ function defaultData() {
     graceUsedThisWeek: false,
     completedLessonIds: [],   // array of lesson id strings
     seenModuleCompleteIds: [], // module ids where celebration has already shown
+    seenSectionCompleteIds: [], // section ids where section celebration has shown
     lessonXP: {},              // { lessonId: xpEarned } — tracks best XP per lesson
   };
 }
@@ -73,6 +74,7 @@ export const useGameStore = create((set, get) => ({
   graceUsedThisWeek: false,
   completedLessonIds: [],
   seenModuleCompleteIds: [],
+  seenSectionCompleteIds: [],
   lessonXP: {},
 
   // Meta
@@ -113,6 +115,7 @@ export const useGameStore = create((set, get) => ({
         graceUsedThisWeek: merged.graceUsedThisWeek ?? false,
         completedLessonIds: Array.isArray(merged.completedLessonIds) ? merged.completedLessonIds : [],
         seenModuleCompleteIds: Array.isArray(merged.seenModuleCompleteIds) ? merged.seenModuleCompleteIds : [],
+        seenSectionCompleteIds: Array.isArray(merged.seenSectionCompleteIds) ? merged.seenSectionCompleteIds : [],
         lessonXP: (merged.lessonXP && typeof merged.lessonXP === "object") ? merged.lessonXP : {},
         loading: false,
         _loadedForUserId: userId,
@@ -135,8 +138,8 @@ export const useGameStore = create((set, get) => ({
 
   _save: async (userId) => {
     if (!userId) return;
-    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, lessonXP } = get();
-    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, lessonXP };
+    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP } = get();
+    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP };
 
     try {
       await supabase
@@ -285,5 +288,17 @@ export const useGameStore = create((set, get) => ({
 
   hasSeenModuleComplete: (moduleId) => {
     return get().seenModuleCompleteIds.includes(moduleId);
+  },
+
+  markSectionCompleteSeen: (sectionId, userId) => {
+    if (!sectionId) return;
+    const current = get().seenSectionCompleteIds;
+    if (current.includes(sectionId)) return;
+    set({ seenSectionCompleteIds: [...current, sectionId] });
+    get()._save(userId);
+  },
+
+  hasSeenSectionComplete: (sectionId) => {
+    return get().seenSectionCompleteIds.includes(sectionId);
   },
 }));
