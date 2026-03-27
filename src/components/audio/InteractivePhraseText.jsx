@@ -1,9 +1,37 @@
 // src/components/audio/InteractivePhraseText.jsx
-import React, { memo, useMemo, useCallback } from "react";
+import React, { memo, useMemo, useCallback, useEffect } from "react";
 import tokenizePhrase from "../../utils/tokenizePhrase";
 import useWordAudio from "../../hooks/useWordAudio";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+// Inject word-audio glow styles once
+const STYLE_ID = "z-word-audio-styles";
+function ensureStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID;
+  el.textContent = `
+    @keyframes zWordGlow {
+      0%   { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
+      30%  { text-shadow: 0 0 8px rgba(52,211,153,0.9); color: rgb(110,231,183); }
+      60%  { text-shadow: 0 0 4px rgba(52,211,153,0.4); color: rgb(167,243,208); }
+      100% { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
+    }
+    @keyframes zWordGlowSlow {
+      0%   { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
+      40%  { text-shadow: 0 0 10px rgba(52,211,153,0.7); color: rgb(110,231,183); }
+      100% { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
+    }
+    .z-word-glow {
+      animation: zWordGlow 0.6s ease-out forwards;
+    }
+    .z-word-glow-slow {
+      animation: zWordGlowSlow 2s ease-in-out infinite;
+    }
+  `;
+  document.head.appendChild(el);
+}
 
 function WordToken({
   token,
@@ -14,7 +42,7 @@ function WordToken({
   wordClassName,
   activeWordClassName,
 }) {
-  const { pressing, handlers } = useWordAudio({
+  const { pressing, playing, handlers } = useWordAudio({
     word: token.text,
     playText,
     disabled,
@@ -26,16 +54,24 @@ function WordToken({
     e.stopPropagation();
   }, []);
 
+  // Glow animation: wave pulse on normal play, slow pulse on slow play
+  const glowClass = playing === "slow"
+    ? "z-word-glow-slow"
+    : playing === "normal"
+    ? "z-word-glow"
+    : null;
+
   return (
     <span
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-label={`Play word: ${token.text}`}
       className={cn(
-        "inline rounded-[0.2em] select-none transition-opacity duration-150",
+        "inline rounded-[0.2em] select-none transition-colors duration-150",
         !disabled ? "cursor-pointer" : "",
         wordClassName,
-        pressing ? activeWordClassName : null
+        pressing ? activeWordClassName : null,
+        glowClass
       )}
       onClick={stopPropagation}
       onPointerDown={(e) => {
@@ -92,6 +128,7 @@ function InteractivePhraseText({
   nonWordClassName,
   activeWordClassName = "opacity-70",
 }) {
+  useEffect(() => { ensureStyles(); }, []);
   const tokens = useMemo(() => tokenizePhrase(text), [text]);
 
   return (
