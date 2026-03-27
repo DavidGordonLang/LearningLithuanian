@@ -14,6 +14,50 @@ function buildContentKeyFromLt(lt) {
   return normalizeForKey(lt || "");
 }
 
+// Background enrich-and-patch — called after save when notes are missing.
+// Fires and forgets: patches the saved row in-place when enrich returns.
+async function enrichAndPatch({ rowId, lt, phoEn, phoIpa, enNat, enLit, setRows }) {
+  try {
+    const res = await fetch("/api/enrich", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        lt,
+        phonetics: phoEn,
+        phonetics_ipa: phoIpa,
+        en_natural: enNat,
+        en_literal: enLit,
+      }),
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json().catch(() => ({}));
+    const notes = String(data?.Notes || "").trim();
+    const usage = String(data?.Usage || "").trim();
+    const category = String(data?.Category || "").trim();
+
+    if (!notes && !usage) return;
+
+    setRows((prev) =>
+      Array.isArray(prev)
+        ? prev.map((r) =>
+            (r._id || r.id) === rowId
+              ? {
+                  ...r,
+                  Notes: notes || r.Notes,
+                  Usage: usage || r.Usage,
+                  Category: category || r.Category,
+                }
+              : r
+          )
+        : prev
+    );
+  } catch {
+    // Silent — enrichment is best-effort, save already succeeded
+  }
+}
+
 export default function useSaveToLibrary({
   blurTextarea,
   canSave,
@@ -99,6 +143,20 @@ export default function useSaveToLibrary({
         const arr = Array.isArray(prev) ? prev : [];
         return [newRow, ...arr];
       });
+
+      // If notes are missing (user saved before enrichment finished),
+      // run enrich in the background and patch the row when it returns.
+      if (!newRow.Notes && !newRow.Usage) {
+        enrichAndPatch({
+          rowId: id,
+          lt,
+          phoEn,
+          phoIpa,
+          enNat: enNat || enLit,
+          enLit: enLit || enNat,
+          setRows,
+        });
+      }
 
       if (!suppressToast) showToast?.("Saved to library");
 
