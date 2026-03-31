@@ -417,40 +417,40 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
               }
             }
           }
-          if (mod && isModuleFullyComplete(mod) && !hasSeenModuleComplete(mod.id)) {
-            markModuleCompleteSeen(mod.id, user?.id);
-            const modAccuracy = moduleScoreableBlocks > 0
-              ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
-              : null;
+          const modComplete = mod && isModuleFullyComplete(mod);
+          const secComplete = sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id);
+          const modAccuracy = moduleScoreableBlocks > 0
+            ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
+            : null;
 
-            // Check if the whole section is now complete
-            if (sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id)) {
-              markSectionCompleteSeen(sec.id, user?.id);
-              // Store payload for after vocab save
-              setSectionCompletePayload({
-                section: sec,
-                modules: sec.modules || [],
-                accuracyPct: modAccuracy,
-                xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
-              });
-              setPendingSectionComplete(true);
-              // Go to vocab save first — celebration fires after
-              const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
-              setVocabSaveModule(checkpoint);
-              setSelectedLessonId(null);
-              setSelectedModuleId(null);
-              setScreen("vocabSave");
-            } else {
-              setModuleCompletePayload({
-                module: mod,
-                section: sec,
-                accuracyPct: modAccuracy,
-                xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
-              });
-              setSelectedLessonId(null);
-              setSelectedModuleId(null);
-              setScreen("moduleComplete");
-            }
+          // Section complete check runs independently — fires even if module
+          // complete screen was previously seen (e.g. via dev mode)
+          if (modComplete && secComplete) {
+            if (!hasSeenModuleComplete(mod.id)) markModuleCompleteSeen(mod.id, user?.id);
+            markSectionCompleteSeen(sec.id, user?.id);
+            setSectionCompletePayload({
+              section: sec,
+              modules: sec.modules || [],
+              accuracyPct: modAccuracy,
+              xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+            });
+            setPendingSectionComplete(true);
+            const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
+            setVocabSaveModule(checkpoint);
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("vocabSave");
+          } else if (modComplete && !hasSeenModuleComplete(mod.id)) {
+            markModuleCompleteSeen(mod.id, user?.id);
+            setModuleCompletePayload({
+              module: mod,
+              section: sec,
+              accuracyPct: modAccuracy,
+              xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+            });
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("moduleComplete");
           } else if (typeof handleNextLesson === "function") {
             handleNextLesson();
           } else {
