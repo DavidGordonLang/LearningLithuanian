@@ -66,6 +66,8 @@ function isUsableRow(r) {
   const en = getEnglishForRecall(r);
   if (!lt || !en) return false;
   if (/translation error/i.test(lt)) return false;
+  // Exclude numbers — they dominate daily recall but have low conversational value
+  if (String(r.Category || "").trim() === "Numbers") return false;
   return true;
 }
 
