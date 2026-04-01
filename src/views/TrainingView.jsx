@@ -405,7 +405,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         onBrowseCourse={() => {
           setSelectedLessonId(null);
           setSelectedModuleId(null);
-          setScreen("learningSection");
+          setScreen("learningHome");
         }}
         onLessonComplete={(metrics) => {
           if (metrics?.scoreableBlocks > 0) {
@@ -593,7 +593,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
             })),
           ]
         : []}
-      onBrowseCourse={() => setScreen("learningSection")}
+      onBrowseCourse={() => setScreen("learningHome")}
       onStartRecallFlip={() => setScreen("recallFlip")}
       onStartBlindRecall={() => setScreen("blindRecall")}
       onStartMatchPairs={() => setScreen("matchPairs")}
