@@ -374,7 +374,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         // recognise_mcq and best_response: text prompt with optional audio
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="text-[15px] font-semibold text-zinc-100 leading-snug">
-            <InteractivePhraseText text={promptText} playText={audioText ? null : playText} wordClassName="hover:text-emerald-300" />
+            <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
           </div>
           {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
         </div>
