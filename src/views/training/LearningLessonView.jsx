@@ -260,7 +260,7 @@ function LearnBlock({ block, playText, onComplete, completed, navBarRef }) {
   );
 }
 
-function ChoiceOption({ option, selected, revealState, onClick, playText, playAudio }) {
+function ChoiceOption({ option, selected, revealState, onClick, playText, playAudio, isLithuanian }) {
   const stateClass = revealState === "idle"
     ? selected ? "border-white/20 bg-white/[0.07] text-zinc-100"
       : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]"
@@ -273,10 +273,15 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
     onClick();
   };
 
+  // Word-tap only available on LT options after the answer is revealed
+  const showWordTap = isLithuanian && revealState !== "idle";
+
   return (
     <button type="button" data-press onClick={handleClick} disabled={revealState !== "idle"}
       className={cn("w-full text-left rounded-2xl border px-4 py-3 text-[14px] transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
-      {option.text}
+      {showWordTap
+        ? <InteractivePhraseText text={option.text} playText={playText} wordClassName="hover:text-emerald-300" />
+        : option.text}
     </button>
   );
 }
@@ -343,7 +348,9 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
       {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
       {isListen && promptText ? (
         <div className="flex items-center justify-between gap-3 mb-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-          <div className="text-[22px] font-semibold text-zinc-100">{promptText}</div>
+          <div className="text-[22px] font-semibold text-zinc-100">
+            <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
+          </div>
           {audioText ? <AudioIconButton text={audioText} playText={playText} label="Hear the word" /> : null}
         </div>
       ) : isListen && audioText ? (
@@ -366,7 +373,9 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
       ) : promptText ? (
         // recognise_mcq and best_response: text prompt with optional audio
         <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="text-[15px] font-semibold text-zinc-100 leading-snug">{promptText}</div>
+          <div className="text-[15px] font-semibold text-zinc-100 leading-snug">
+            <InteractivePhraseText text={promptText} playText={audioText ? null : playText} wordClassName="hover:text-emerald-300" />
+          </div>
           {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
         </div>
       ) : null}
@@ -381,6 +390,10 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
             onClick={() => handleSelect(option)}
             playText={playText}
             playAudio={block?.type === "best_response"}
+            isLithuanian={
+              block?.type === "best_response" ||
+              (block?.type === "recognise_mcq" && !audioText)
+            }
           />
         ))}
       </div>
