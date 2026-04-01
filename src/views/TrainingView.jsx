@@ -227,7 +227,15 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     return (
       <LearningHome
         onBack={() => setScreen("home")}
-        onOpenSection1={() => setScreen("learningSection")}
+        allSections={allSections}
+        onOpenSection={(sectionId) => {
+          const sec = allSections.find((s) => s.id === sectionId);
+          if (!sec) return;
+          const firstMod = sec.modules?.[0];
+          if (firstMod) setSelectedModuleId(firstMod.id);
+          setSelectedLessonId(null);
+          setScreen("learningSection");
+        }}
       />
     );
   }
@@ -236,7 +244,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     return (
       <LearningSectionView
         section={learningSection}
-        onBack={() => setScreen("learningHome")}
+        onBack={() => { setSelectedModuleId(null); setScreen("learningHome"); }}
         onOpenModule={(moduleId) => {
           if (!moduleId) return;
           setSelectedModuleId(moduleId);
