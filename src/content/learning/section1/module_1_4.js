@@ -749,11 +749,11 @@ export default function createModule_1_4(profile = {}) {
             title: "Choose the best response",
             prompt: { text: "You're asking an elderly woman on the street for directions. Which do you use?" },
             options: [
-              { id: "a", text: "Tu — it's friendlier", isCorrect: false },
-              { id: "b", text: "Jūs — polite form, always right with strangers", isCorrect: true },
-              { id: "c", text: "It doesn't matter in Lithuanian", isCorrect: false },
+              { id: "a", text: "Tu", isCorrect: false },
+              { id: "b", text: "Jūs", isCorrect: true },
+              { id: "c", text: "Either — it doesn't matter", isCorrect: false },
             ],
-            feedback: { correct: "Jūs every time with strangers. Tu with friends and peers." },
+            feedback: { correct: "Jūs — always the right choice with strangers. Tu is for friends and peers." },
           },
           // Speak
           {
@@ -786,13 +786,13 @@ export default function createModule_1_4(profile = {}) {
               {
                 id: "step_2",
                 actor: "other",
-                text: "Atsiprašau, aš nesuprantu angliškai.",
-                audioText: "Atsiprašau, aš nesuprantu angliškai",
-                helperText: "They said: Sorry, I don't understand English.",
+                text: "Bankas? Taip, žinau. Eikite tiesiai.",
+                audioText: "Bankas? Taip, žinau. Eikite tiesiai.",
+                helperText: "The bank? Yes, I know it. Go straight ahead.",
                 options: [
-                  { id: "a", text: "Ačiū labai", isCorrect: false },
-                  { id: "b", text: "Ar jūs kalbate angliškai?", isCorrect: false },
-                  { id: "c", text: "Prašau kalbėkite lėčiau", isCorrect: true },
+                  { id: "a", text: "Nesuprantu", isCorrect: false },
+                  { id: "b", text: "Prašau kalbėkite lėčiau", isCorrect: false },
+                  { id: "c", text: "Ačiū labai!", isCorrect: true },
                 ],
               },
               {
@@ -802,20 +802,21 @@ export default function createModule_1_4(profile = {}) {
                 audioText: "Bankas yra ten, prie stoties",
                 helperText: "The bank is over there, near the station.",
                 options: [
-                  { id: "a", text: "Nesuprantu", isCorrect: false },
-                  { id: "b", text: "Ačiū labai!", isCorrect: true },
-                  { id: "c", text: "Man reikia pagalbos", isCorrect: false },
+                  { id: "a", text: "Man reikia pagalbos", isCorrect: false },
+                  { id: "b", text: "Viso gero!", isCorrect: false },
+                  { id: "c", text: "Ačiū! Kur yra stotis?", isCorrect: true },
                 ],
               },
               {
                 id: "step_4",
                 actor: "other",
-                text: "Prašau. Viso gero!",
-                audioText: "Prašau. Viso gero",
+                text: "Stotis yra čia pat. Viso gero!",
+                audioText: "Stotis yra čia pat. Viso gero",
+                helperText: "The station is right here. Goodbye!",
                 options: [
                   { id: "a", text: "Taip, prašau", isCorrect: false },
                   { id: "b", text: "Atsiprašau", isCorrect: false },
-                  { id: "c", text: "Viso gero!", isCorrect: true },
+                  { id: "c", text: "Ačiū labai! Viso gero!", isCorrect: true },
                 ],
               },
             ],
