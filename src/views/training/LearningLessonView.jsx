@@ -647,10 +647,6 @@ function BuildPhraseBlock({ block, playText, onComplete, completed }) {
                 if (revealed) return;
                 setBuilt((prev) => [...prev, token.id]);
                 if (checkState !== "idle") setCheckState("idle");
-                // Play word audio on placement (not on removal)
-                if (!token.isDistractor) {
-                  try { playText?.(token.text); } catch {}
-                }
               }}
               className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:border-white/20">
               {token.text}
