@@ -798,8 +798,8 @@ export default function createModule_1_4(profile = {}) {
               {
                 id: "step_3",
                 actor: "other",
-                text: "Prašau. Viso gero!",
-                audioText: "Prašau. Viso gero",
+                text: "Prašom. Viso gero!",
+                audioText: "Prašom. Viso gero",
                 helperText: "You're welcome. Goodbye!",
                 options: [
                   { id: "a", text: "Taip, prašau", isCorrect: false },
