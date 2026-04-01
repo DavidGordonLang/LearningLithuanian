@@ -94,6 +94,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const markModuleCompleteSeen = useGameStore((s) => s.markModuleCompleteSeen);
   const hasSeenSectionComplete = useGameStore((s) => s.hasSeenSectionComplete);
   const markSectionCompleteSeen = useGameStore((s) => s.markSectionCompleteSeen);
+  const completeLesson = useGameStore((s) => s.completeLesson);
 
   const userName = useSettingsStore((s) => s.userName);
   const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
@@ -188,17 +189,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   }, [allSections, learningLesson]);
 
   const isModuleFullyComplete = (mod) => {
-    if (!mod) return false;
-    // Standard module: has a lessons array
-    if (Array.isArray(mod.lessons)) {
-      return mod.lessons.every((l) => completedLessonIds.includes(l.id));
-    }
-    // Section checkpoint: structured as a single lesson with blocks at top level
-    // Treat it as complete if its own id is in completedLessonIds
-    if (mod.blocks && mod.id) {
-      return completedLessonIds.includes(mod.id);
-    }
-    return false;
+    if (!mod?.lessons) return false;
+    return mod.lessons.every((l) => completedLessonIds.includes(l.id));
   };
 
   const isSectionFullyComplete = (sec) => {
@@ -418,53 +410,48 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           let mod = learningModule;
           let sec = learningSection;
           if (completedLessonId) {
-            outer: for (const s of allSections) {
+            for (const s of allSections) {
               for (const m of (s.modules || [])) {
-                // Standard module: find by lesson id
                 if ((m.lessons || []).find(l => l.id === completedLessonId)) {
-                  mod = m; sec = s; break outer;
-                }
-                // Section checkpoint: its own id IS the lesson id
-                if (m.blocks && m.id === completedLessonId) {
-                  mod = m; sec = s; break outer;
+                  mod = m; sec = s; break;
                 }
               }
             }
           }
-          const modComplete = mod && isModuleFullyComplete(mod);
-          const secComplete = sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id);
-          const modAccuracy = moduleScoreableBlocks > 0
-            ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
-            : null;
-
-          // Section complete check runs independently — fires even if module
-          // complete screen was previously seen (e.g. via dev mode)
-          if (modComplete && secComplete) {
-            if (!hasSeenModuleComplete(mod.id)) markModuleCompleteSeen(mod.id, user?.id);
-            markSectionCompleteSeen(sec.id, user?.id);
-            setSectionCompletePayload({
-              section: sec,
-              modules: sec.modules || [],
-              accuracyPct: modAccuracy,
-              xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
-            });
-            setPendingSectionComplete(true);
-            const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
-            setVocabSaveModule(checkpoint);
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("vocabSave");
-          } else if (modComplete && !hasSeenModuleComplete(mod.id)) {
+          if (mod && isModuleFullyComplete(mod) && !hasSeenModuleComplete(mod.id)) {
             markModuleCompleteSeen(mod.id, user?.id);
-            setModuleCompletePayload({
-              module: mod,
-              section: sec,
-              accuracyPct: modAccuracy,
-              xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
-            });
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("moduleComplete");
+            const modAccuracy = moduleScoreableBlocks > 0
+              ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
+              : null;
+
+            // Check if the whole section is now complete
+            if (sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id)) {
+              markSectionCompleteSeen(sec.id, user?.id);
+              // Store payload for after vocab save
+              setSectionCompletePayload({
+                section: sec,
+                modules: sec.modules || [],
+                accuracyPct: modAccuracy,
+                xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+              });
+              setPendingSectionComplete(true);
+              // Go to vocab save first — celebration fires after
+              const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
+              setVocabSaveModule(checkpoint);
+              setSelectedLessonId(null);
+              setSelectedModuleId(null);
+              setScreen("vocabSave");
+            } else {
+              setModuleCompletePayload({
+                module: mod,
+                section: sec,
+                accuracyPct: modAccuracy,
+                xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+              });
+              setSelectedLessonId(null);
+              setSelectedModuleId(null);
+              setScreen("moduleComplete");
+            }
           } else if (typeof handleNextLesson === "function") {
             handleNextLesson();
           } else {
@@ -542,7 +529,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
             ),
             ...allSections.map((section) => ({
               id: `section_complete_${section.id}`,
-              label: `⚡ Test Section ${section.code} Complete`,
+              label: `⚡ Test Section ${section.code} Complete (screen only)`,
               onClick: () => {
                 setSectionCompletePayload({
                   section,
@@ -551,6 +538,48 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
                   accuracyPct: 89,
                 });
                 setScreen("sectionComplete");
+              },
+            })),
+            ...allSections.map((section) => ({
+              id: `section_full_flow_${section.id}`,
+              label: `⚡ Complete Section ${section.code} Full Flow`,
+              onClick: () => {
+                // Mark every lesson in every module of this section as complete
+                // then trigger the real NailedItContinue flow so vocab save fires
+                const allLessonIds = (section.modules || []).flatMap((m) => {
+                  if (Array.isArray(m.lessons)) return m.lessons.map((l) => l.id);
+                  if (m.blocks && m.id) return [m.id]; // checkpoint
+                  return [];
+                });
+                allLessonIds.forEach((id) => completeLesson(id, user?.id));
+                // Also mark all module completes as seen so only section fires
+                (section.modules || []).forEach((m) => {
+                  if (!hasSeenModuleComplete(m.id)) markModuleCompleteSeen(m.id, user?.id);
+                });
+                // Reset section seen so it fires again
+                // Then trigger via the last lesson id
+                const lastLessonId = allLessonIds[allLessonIds.length - 1];
+                if (lastLessonId) {
+                  setModuleWrongAnswers(0);
+                  setModuleScoreableBlocks(0);
+                  setModuleXpEarned(120);
+                  // Simulate NailedItContinue with the checkpoint id
+                  const mod = section.modules?.[section.modules.length - 1];
+                  const sec = section;
+                  const modAccuracy = 88;
+                  setSectionCompletePayload({
+                    section: sec,
+                    modules: sec.modules || [],
+                    accuracyPct: modAccuracy,
+                    xpEarned: 120,
+                  });
+                  setPendingSectionComplete(true);
+                  const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
+                  setVocabSaveModule(checkpoint);
+                  setSelectedLessonId(null);
+                  setSelectedModuleId(null);
+                  setScreen("vocabSave");
+                }
               },
             })),
           ]
