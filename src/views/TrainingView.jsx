@@ -188,8 +188,17 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   }, [allSections, learningLesson]);
 
   const isModuleFullyComplete = (mod) => {
-    if (!mod?.lessons) return false;
-    return mod.lessons.every((l) => completedLessonIds.includes(l.id));
+    if (!mod) return false;
+    // Standard module: has a lessons array
+    if (Array.isArray(mod.lessons)) {
+      return mod.lessons.every((l) => completedLessonIds.includes(l.id));
+    }
+    // Section checkpoint: structured as a single lesson with blocks at top level
+    // Treat it as complete if its own id is in completedLessonIds
+    if (mod.blocks && mod.id) {
+      return completedLessonIds.includes(mod.id);
+    }
+    return false;
   };
 
   const isSectionFullyComplete = (sec) => {
@@ -409,10 +418,15 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           let mod = learningModule;
           let sec = learningSection;
           if (completedLessonId) {
-            for (const s of allSections) {
+            outer: for (const s of allSections) {
               for (const m of (s.modules || [])) {
+                // Standard module: find by lesson id
                 if ((m.lessons || []).find(l => l.id === completedLessonId)) {
-                  mod = m; sec = s; break;
+                  mod = m; sec = s; break outer;
+                }
+                // Section checkpoint: its own id IS the lesson id
+                if (m.blocks && m.id === completedLessonId) {
+                  mod = m; sec = s; break outer;
                 }
               }
             }
