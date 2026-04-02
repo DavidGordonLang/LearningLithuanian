@@ -195,8 +195,8 @@ export default function createCheckpoint1(profile = {}) {
         title: "Choose the best response",
         prompt: { text: "You're meeting your colleague's boss for the first time. How do you address them?" },
         options: [
-          { id: "a", text: "Tu — everyone is equal", isCorrect: false },
-          { id: "b", text: "Jūs — polite form with someone you don't know", isCorrect: true },
+          { id: "a", text: "Tu", isCorrect: false },
+          { id: "b", text: "Jūs", isCorrect: true },
           { id: "c", text: "It doesn't matter in Lithuanian", isCorrect: false },
         ],
         feedback: { correct: "Jūs every time with strangers and people you've just met formally." },
