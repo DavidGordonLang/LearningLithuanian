@@ -69,6 +69,14 @@ export default function createModule_3_1(profile = {}) {
           },
           {
             id: "s3m1l1_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: six",
+            targetText: "šeši",
+            audioText: "šeši",
+          },
+          {
+            id: "s3m1l1_b6",
             type: "recognise_mcq",
             title: "Choose the correct meaning",
             prompt: { text: "septyni", audioText: "septyni" },
@@ -79,7 +87,7 @@ export default function createModule_3_1(profile = {}) {
             ],
           },
           {
-            id: "s3m1l1_b6",
+            id: "s3m1l1_b7",
             type: "recognise_mcq",
             title: "Choose the correct meaning",
             prompt: { text: "dešimt", audioText: "dešimt" },
@@ -88,14 +96,6 @@ export default function createModule_3_1(profile = {}) {
               { id: "b", text: "nine", isCorrect: false },
               { id: "c", text: "ten", isCorrect: true },
             ],
-          },
-          {
-            id: "s3m1l1_b7",
-            type: "speak_self_check",
-            title: "Say it out loud",
-            prompt: "Say: six",
-            targetText: "šeši",
-            audioText: "šeši",
           },
         ],
       },
