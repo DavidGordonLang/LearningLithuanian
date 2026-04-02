@@ -179,6 +179,7 @@ export default function createCheckpoint1(profile = {}) {
       {
         id: "s1c_b13",
         type: "best_response",
+        noOptionAudio: true,
         title: "Choose the best response",
         prompt: { text: "A shop assistant asks: 'Ar galiu jums padėti?' What are they saying?" },
         options: [
