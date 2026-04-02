@@ -1,381 +1,273 @@
-# Žodis — Full Development Handoff V2
-## For: New Claude chat session
-## Date: March 2026
-## Prepared by: Claude Sonnet (previous session)
-
----
-
-## HOW WE WORK
-
-- The developer (David) tests on his Android phone and reports issues with screenshots and detailed block-by-block testing sheets
-- Changes are made in targeted patches — never refactor working code, never touch files that aren't directly relevant to the change
-- Before writing any code, discuss the plan first and get confirmation
-- David sometimes uses voice transcription which can garble messages — read charitably and confirm understanding before acting
-- David is learning Lithuanian himself as he builds this — language feedback is welcome but flag it clearly as a suggestion, not a correction
-- When giving David files, always present them with `present_files` so he can download them directly
-- Always validate content changes with node before presenting files
-- A native speaker review pass is planned when all 12 sections are complete — don't get too hung up on linguistic perfection right now
+# ZODIS_HANDOFF_V2.md
+# Žodis PWA — Developer Handoff Document
+# Last updated: Session ending ~April 2026
 
 ---
 
 ## PROJECT OVERVIEW
 
-**Žodis** — Lithuanian language learning PWA for English speakers. Real beta product with users.
-
-**Stack:** React 18 + Vite + Zustand + Tailwind CSS + Supabase (auth + DB) + Azure TTS (lt-LT-LeonasNeural) + OpenAI GPT-4.1-mini
-
-**Repo:** DavidGordonLang/LearningLithuanian — branch: `dev`
-
-**Deployment:** Vercel (auto-deploys from dev branch)
+**Žodis** (zodis.app) — Lithuanian language learning PWA.  
+**Stack:** React 18 + Vite + Zustand + Tailwind + Supabase + Azure TTS  
+**Repo:** DavidGordonLang/LearningLithuanian, branch: `dev`  
+**Auto-deploys:** Vercel on push to `dev`  
+**Owner:** David (Edinburgh) + Barbora. David is the solo developer.
 
 ---
 
-## CRITICAL RULES — NEVER VIOLATE
+## BETA 3.0.0 RELEASE GOALS (DO NOT SCOPE CREEP)
 
-### Audio Rules (ABSOLUTE)
+1. All 12 sections complete and peer reviewed
+2. Exam section — 10 examples each of reading, listening, writing — peer reviewed
+3. Light/dark theme (Samsung Internet fix included)
+4. UI polish pass
 
-**NEVER play TTS on English text. Only Lithuanian audio ever.**
-
-| Block type | Audio behaviour |
-|---|---|
-| `learn` | Audio icon button plays `audioText` on tap only |
-| `listen_mcq` | Audio icon plays `prompt.audioText`. Options are English — NEVER play on tap |
-| `recognise_mcq` Form A | Lithuanian prompt + English options → **completely silent on tap** |
-| `recognise_mcq` Form B | English prompt + Lithuanian options → play correct LT option on tap |
-| `best_response` | Lithuanian options → play selected if correct; play correct after 600ms if wrong |
-| `speak_self_check` | Audio icon plays `audioText`. No auto-play |
-| `build_phrase` | Play `answerText` on correct completion only |
-| `scenario_chain` | System plays each step's `audioText` automatically. NEVER play option text |
-| `word_match` | Play correct pair's LT `audioText` on correct match |
-
-**Form A vs Form B detection:**
-- Form A: `block.prompt.audioText` exists → English options → SILENT
-- Form B: `block.prompt.audioText` is absent → Lithuanian options → play audio
-
-### Never Break These
-
-1. **`key={learningLesson?.id}`** on `LearningLessonView` in `TrainingView.jsx` — prevents state bleed between lessons. GPT has removed this twice. It must stay.
-
-2. **`earnLessonXP` not `earnXP`** — best-score logic in gameStore. Never replace.
-
-3. **`[lesson?.id, preloadText]`** in preload useEffect deps — not `[lesson, preloadText]`
-
-4. **`onLessonComplete({ wrongAnswers, scoreableBlocks, xpAwarded })`** — always passes metrics. Never simplify to `onLessonComplete?.()`.
-
-5. **Scenario wrong answers** — brief red flash (600ms), retry until correct, wrong tap counts against XP via `onWrongAnswer?.()`. Never reveal the correct answer.
-
-6. **`helperText` on scenario steps** — shown as small italic grey line above system bubbles only, never on user response options. Currently only used in Module 1.3 lessons 3 and 5 (checkpoint). The I Don't Understand module (lessons 1, 2, 4) intentionally has NO helper text — the point is the user should feel mild confusion and use repair phrases.
+**Then:** Push to ~50 beta testers → gather analytics → investor pitch.
 
 ---
 
-## FILE STRUCTURE
+## WORKING STYLE
 
-```
-src/
-  content/learning/
-    section1.js              ← re-export: export { default } from "./section1/index.js"
-    section1/
-      index.js               ← factory: createSection1(profile) — must import all modules
-      module_1_1.js          ← static export (COMPLETE)
-      module_1_2.js          ← factory: createModule_1_2(profile) (COMPLETE)
-      module_1_3.js          ← factory: createModule_1_3(profile) (COMPLETE)
-      module_1_4.js          ← TO BUILD (see below)
-      profile.js             ← buildSection1Profile({userName, fromCountryCode, livesInCountryCode})
-  constants/
-    countries.js             ← COUNTRIES array with codes + Lithuanian forms
-  stores/
-    gameStore.js             ← XP, streaks, lessonXP (best-score), completedLessonIds
-    settingsStore.js         ← userName, fromCountryCode, livesInCountryCode, speakerGender
-  views/
-    TrainingView.jsx         ← Main router — has key prop, profile wiring, dev buttons
-    SettingsView.jsx         ← Has "Your profile" section with name + country fields
-    training/
-      LearningLessonView.jsx ← All block renderers — ConversationBubble has helperText prop
-      ModuleCompleteView.jsx ← Module celebration screen
-      VocabSaveView.jsx      ← Post-module phrase save
-      TrainingHome.jsx       ← XP strip + dev mode buttons
-  index.css                  ← Custom mic CSS classes + cross-browser fixes
-index.html                   ← PWA meta tags
-```
+- Plan before code. David reviews plans before any code is written.
+- Targeted patches only. Never refactor working code.
+- Always validate content files with Node before packaging.
+- Always use `present_files` tool.
+- David commits via GitHub web UI, Vercel auto-deploys.
+- David tests on Android (Samsung phone, Chrome + Samsung Internet).
+- Voice transcription sometimes garbles David's messages — interpret charitably.
+- David provides latest repo zip at the start of each session.
 
 ---
 
-## PROFILE PERSONALISATION
+## CURRENT STATUS
 
-Settings store: `userName`, `fromCountryCode`, `livesInCountryCode`
+### Sections built:
+- **Section 1 — First Contact:** Complete. 4 modules + section checkpoint. Peer review pass pending (native speaker, after all 12 sections built).
+- **Section 2 — Core Conversation Patterns:** Built. Needs David's full review pass (same sheet format as Section 1).
+- **Sections 3–12:** Not yet built.
 
-`buildSection1Profile()` returns:
-- `userNameSafe` — cleaned name, fallback "Davidas"
-- `userFromPhrase` — e.g. "Aš esu iš Škotijos"
-- `userFromCountryLtGenitive` — e.g. "Škotijos"
-- `userFromCountryLabelEn` — e.g. "Scotland"
-- `userLivesInCountryLtLocative` — e.g. "Lietuvoje"
+### Exam section: Not yet built.
+### Light/dark theme: Not yet built. Palette agreed — see UI section below.
 
-**Where to use in module content:**
-- `speak_self_check.targetText` containing "I am from" phrases
-- Scenario option `.text` (not `.audioText`) for first-person "I am" / "I am from" responses
-- Never substitute in `audioText` fields — those stay as fixed Lithuanian for TTS
+---
 
-Module factory pattern:
+## CURRENT OPEN ISSUE (START HERE)
+
+**Section complete screen is not firing after completing Section 1.**
+
+### What should happen:
+NailedIt (last lesson) → VocabSave → **Section Complete screen** → Continue to Section 2 / Learning Home
+
+### What is actually happening:
+After VocabSave, jumps straight to Section 2 Lesson 1. Section complete screen never appears.
+
+### Root cause history:
+This bug has been fixed and re-introduced multiple times due to merges. The core problem is that the section complete check gets nested inside a `!hasSeenModuleComplete(mod.id)` guard. When a module complete screen fires earlier in the section, `markModuleCompleteSeen` is called. Later, when the section checkpoint's NailedIt fires, the guard returns `true` and skips the entire block including the section complete check.
+
+### The correct logic in `TrainingView.jsx` `onNailedItContinue`:
+
 ```js
-export default function createModule_1_X(profile = {}) {
-  const { userNameSafe = "Davidas", userFromPhrase = "Aš esu iš Škotijos" } = profile;
-  return { ...module definition... };
+const modComplete = mod && isModuleFullyComplete(mod);
+const secComplete = sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id);
+const modAccuracy = ...;
+
+// Section complete MUST run independently of hasSeenModuleComplete
+if (modComplete && secComplete) {
+  if (!hasSeenModuleComplete(mod.id)) markModuleCompleteSeen(mod.id, user?.id);
+  markSectionCompleteSeen(sec.id, user?.id);
+  setSectionCompletePayload({ ... });
+  setPendingSectionComplete(true);
+  setVocabSaveModule(checkpoint);
+  setScreen("vocabSave");
+} else if (modComplete && !hasSeenModuleComplete(mod.id)) {
+  markModuleCompleteSeen(mod.id, user?.id);
+  setScreen("moduleComplete");
+} else if (handleNextLesson) {
+  handleNextLesson();
+} else {
+  setScreen("home");
 }
 ```
 
----
-
-## XP AND SCORING
-
-- Base 30 XP per lesson, -2 per wrong answer, floor 10 XP
-- Scoreable: `recognise_mcq`, `listen_mcq`, `best_response`, `scenario_chain`
-- Exempt: `speak_self_check`, `build_phrase`, `learn`, `word_match`
-- `earnLessonXP` — best-score only, awards positive delta
-- Accuracy % shown on NailedItCard: "Nailed it!" ≥90%, "Well done!" <90%
-- Module accuracy accumulated across all lessons, shown on ModuleCompleteView
-
----
-
-## NAVIGATION FLOW
-
-```
-Training home
-  → Continue → LearningLessonView (key={lesson.id})
-  → NailedItCard → onNailedItContinue(lesson.id)
-    → [module complete + not seen] → ModuleCompleteView
-      → [Save vocab] → VocabSaveView → findNextLesson → LearningLessonView
-      → [Continue] → findNextLesson → LearningLessonView
-    → [else] → findNextLesson → LearningLessonView
+Also check: `isModuleFullyComplete` must handle checkpoint modules (which have `blocks` not `lessons`):
+```js
+const isModuleFullyComplete = (mod) => {
+  if (!mod) return false;
+  if (Array.isArray(mod.lessons)) return mod.lessons.every(l => completedLessonIds.includes(l.id));
+  if (mod.blocks && mod.id) return completedLessonIds.includes(mod.id); // checkpoint
+  return false;
+};
 ```
 
-`onNailedItContinue` receives `lesson.id` and walks `allSections` to find the correct module — this is important, do not simplify.
+Also check: `onNailedItContinue` lookup must find checkpoint modules (which have no `lessons` array):
+```js
+outer: for (const s of allSections) {
+  for (const m of (s.modules || [])) {
+    if ((m.lessons || []).find(l => l.id === completedLessonId)) { mod = m; sec = s; break outer; }
+    if (m.blocks && m.id === completedLessonId) { mod = m; sec = s; break outer; } // checkpoint
+  }
+}
+```
+
+### Testing: 
+Dev mode button `⚡ Complete Section 1 Full Flow` exists in TrainingHome. It marks all lessons complete, marks all modules seen, then drops into vocabSave → sectionComplete flow. **Verify this button actually fires the section complete screen before testing manually.**
 
 ---
 
-## DEV MODE
+## ARCHITECTURE
 
-Toggle in TrainingHome. Persisted in localStorage as `zodis_dev_mode`.
+### File structure:
+```
+src/
+  content/learning/
+    section1/
+      index.js, module_1_1.js, module_1_2.js, module_1_3.js, module_1_4.js
+      checkpoint_1.js, profile.js
+    section2/
+      index.js, module_2_1.js, module_2_2.js, module_2_3.js, module_2_4.js
+      checkpoint_2.js
+  stores/
+    gameStore.js        — XP, streaks, completedLessonIds, seenModuleCompleteIds,
+                          seenSectionCompleteIds, lessonXP
+    settingsStore.js    — userName, fromCountryCode, livesInCountryCode, phoneticsMode
+  views/
+    TrainingView.jsx    — allSections = [section1, section2], all screen routing
+    training/
+      LearningHome.jsx        — section list (allSections prop, onOpenSection handler)
+      LearningLessonView.jsx  — all block renderers
+      ModuleCompleteView.jsx
+      SectionCompleteView.jsx — portal-based, phases: burst → card
+      VocabSaveView.jsx
+  hooks/
+    useWordAudio.js     — playing state ("normal"|"slow"|null)
+    useDailyRecall.js   — excludes Numbers category and LT number words
+  components/
+    audio/InteractivePhraseText.jsx  — word-tap glow animations
+```
 
-When on:
-- All lessons unlocked
-- Separate "⚡ Test Module X.X Complete" button per active module
-- Buttons built dynamically from `allSections.flatMap(...)` in TrainingView
+### Section factory pattern:
+Every section is a factory function `createSectionN(profile)`. Modules within are also factory functions. The profile carries `userNameSafe`, `userFromPhrase`, `userFromCountryLtGenitive`, `userLivesInCountryLtLocative` etc. Section 2 currently reuses section1Profile.
+
+### Block types:
+`learn`, `listen_mcq`, `recognise_mcq`, `best_response`, `speak_self_check`, `build_phrase`, `scenario_chain`, `word_match`
+
+---
+
+## AUDIO RULES BY BLOCK TYPE
+
+| Block | Audio behaviour |
+|---|---|
+| `learn` | Audio icon plays full phrase. Word-tap on LT text. |
+| `listen_mcq` | Audio icon plays prompt. Word-tap on LT prompt text. EN options — never play. |
+| `recognise_mcq` Form A | LT prompt + EN options → silent on options |
+| `recognise_mcq` Form B | EN prompt + LT options → play correct LT after reveal. Word-tap after reveal. |
+| `best_response` | LT options → play correct on select, play correct after 600ms if wrong. Word-tap after reveal. `noOptionAudio: true` on block disables all option audio. |
+| `speak_self_check` | Audio icon plays targetText. Word-tap on target phrase. |
+| `build_phrase` | Play answerText on correct completion only. No token audio. |
+| `scenario_chain` | System plays each step's audioText automatically. Word-tap in bubbles. |
+| `word_match` | Play correct pair's LT audio on correct match only. No audio on wrong match. |
+
+**NEVER play TTS on English text.**
 
 ---
 
 ## CONTENT RULES
 
-### Names policy
-- Lithuanian names only: Davidas (→ profile), Barbora, Rokas, Ona
-- Names in learn blocks: NOT used (removed) — generic phrases only
-- Names in scenarios: fine for context
-- No Russian names or references anywhere
-
-### Nouns policy
-Always include useful nouns naturally in lessons. Already taught:
-- kava, tualetas, stotis, autobusų stotelė, kolega/kolegė, draugas/draugė
-- žodis (word — the app's own name!), ženklas (sign), vaistinė (pharmacy)
-- cepelinai (introduced in 1.3 café scenario)
-
-### Scenario rules
-1. Only use phrases that have been taught in this lesson or earlier
-2. Always include a `description` field — shown above chat
-3. Use `helperText` on steps where the user needs context but the system speech is in Lithuanian they haven't learned yet — keeps it educational without blindsiding
-4. Wrong taps: red flash, retry, count against XP
-5. No correct answer reveal ever
-6. Scenario length increases through a module: 2→3→3→4→5 steps (L1→L2→L3→L4→Checkpoint)
-
-### helperText rules (IMPORTANT)
-- Only on `other` (system) bubble steps
-- Never on user response options
-- Never in the "I Don't Understand" module scenarios (1.3 L1, L2, L4) — the point is the user should NOT understand. Only L3 (café) and L5 (checkpoint) have helpers in module 1.3
-- Use format: "They say/ask [meaning] — but you don't understand." for IDU-adjacent scenarios
-- Good for priming phrases that will be taught later — "Oh I recognise that" effect
-
-### Word match
-- Always last block in checkpoint
-- Always exactly 20 pairs (module 1.3 has 22 — this was intentional to cover the extra vocabulary)
-- No name-based pairs in word_match
-
-### Block type token shuffling
-`build_phrase` tokens shuffle on mount via `useMemo` — already implemented in `LearningLessonView.jsx`
+- Lithuanian names only in content: Davidas, Barbora, Rokas, Ona
+- Scenario step counts by lesson: 2→3→3→4→5 (L1→L2→L3→L4→Checkpoint)
+- Word match: always last block in checkpoint, always exactly 20 pairs
+- `helperText`: only on `other` (system) bubble steps, never on user response options
+- Don't repeat vocabulary between section checkpoints (each module checkpoint tests that module only)
+- Nouns: weave in 3–5 practical nouns per module in learn blocks (`core: false, saveable: true`)
+- Option text: never mix LT words with English explanations using a dash (e.g. `"Jūs — polite form"`) — this causes TTS to read the English. Keep options clean.
+- `Prašom` = you're welcome (response to ačiū). `Prašau` = please / here you go. Don't mix them.
 
 ---
 
-## CURRENT OPEN BUG — SAMSUNG INTERNET UI DIFFERENCE
+## VOCABULARY TAUGHT — SECTION 1
 
-**Status:** Attempted fix deployed, issue persists. Needs fresh approach.
+Key phrases (not exhaustive): Laba diena, Labas, Labas rytas, Labas vakaras, Viso gero, Iki, Ačiū, Atsiprašau, Atleiskite, Prašau, Prašom, Taip, Ne, Kaip sekasi, Gerai, Puiku, Malonu susipažinti, Man irgi, Mano vardas, Koks jūsų/tavo vardas, Iš kur jūs esate/tu esi, Aš esu iš [country], Aš kalbu šiek tiek/truputį lietuviškai, Nesuprantu, Suprantu, Pakartokite prašau, Prašau kalbėkite lėčiau, Dar kartą prašau, Ką tai reiškia, Ar jūs kalbate angliškai, Ar galiu/galime/galite, Man reikia pagalbos, Kur yra [place], Ar tai/ten [place], Tu/Jūs distinction, Ar galiu čia atsisėsti, Norėčiau kavos.
 
-**What's happening:**
-Samsung Internet renders the app differently from Chrome:
-- Background appears pure black instead of the dark zinc + subtle teal gradient glow
-- Card surfaces (which use `bg-black/20 backdrop-blur`) become invisible against pure black
-- Mic button loses its ring/glow/disc appearance — looks flat and barely visible
-- Overall the UI looks washed out and flat compared to Chrome
-
-**What we've tried:**
-1. Added `color-scheme: dark` to `:root`, `html`, `body`, `#root` in index.css
-2. Added `<meta name="color-scheme" content="dark">` to index.html
-3. Added `forced-color-adjust: none` on body
-4. Added global `-webkit-backdrop-filter` patch via `[class*="backdrop-blur"]` selector
-5. Added explicit `border` fallbacks to mic ring and iconBubble
-6. Made mic disc background more opaque with solid `background-color` fallback
-7. Added inline `style="background-color:#0a0a0b"` on body in index.html
-
-**None of these fixed it fully.**
-
-**Root cause hypothesis:**
-Samsung Internet is likely stripping `rgba` alpha transparency on backgrounds — treating `bg-black/20` (rgba(0,0,0,0.20)) as fully transparent rather than 20% black. The body gradient in `body::before` uses large `radial-gradient` with rgba values which may also be getting dropped.
-
-**Suggested next approaches to try:**
-1. Replace `body::before` pseudo-element gradient with a real `<div>` element in `index.html` — pseudo-elements sometimes get stripped by aggressive browser themes
-2. Change all `bg-black/20` card backgrounds to `bg-zinc-900` (fully opaque) — loses the glass effect but guarantees visibility everywhere
-3. Try adding `@supports` blocks: `@supports not (backdrop-filter: blur(1px)) { .backdrop-blur { background-color: #18181b; } }`
-4. Check Samsung Internet version on David's device — older versions may not support `forced-color-adjust`
-5. Use Samsung Internet's built-in DevTools to inspect which specific properties are being overridden (Settings → About → tap version 5 times)
-
-**Important note:** Chrome must remain pixel-perfect — David has spent significant time on the UI. Any fix must be tested in Chrome first to confirm no visual change before checking Samsung Internet.
+Known nouns: restoranas, parduotuvė, viešbutis, bankas, vaistinė, autobusų stotelė, stotis, tualetas.
 
 ---
 
-## WHAT'S BUILT — SECTION 1 STATUS
+## VOCABULARY TAUGHT — SECTION 2
 
-| Module | Title | Status |
-|---|---|---|
-| 1.1 | Greeting and Politeness | ✅ Complete |
-| 1.2 | Who I Am | ✅ Complete |
-| 1.3 | I Don't Understand | ✅ Complete |
-| 1.4 | Help and Contact | 🔲 TO BUILD |
-| Section 1 Checkpoint | First Interaction | 🔲 TO BUILD |
+**2.1:** Noriu/Man reikia/Turiu/Neturiu/Ar turite. Nouns: kava, vanduo, bilietas, kortelė, meniu, arbata, sultys, sumuštinis, vaistai, pasas, raktas, laikraštis, kambario raktas.
 
----
+**2.2:** Ar galiu/galime/galite (full), Aš galiu/negaliu, Ar galima. Nouns: kėdė, vieta, kelias, taksi, kavinė, grynaisiais, mokėti kortele.
 
-## MODULE 1.4 — HELP AND CONTACT (TO BUILD)
+**2.3:** Šitas/tas, šitie/tie, noriu šito/to/šitų/tų, kuris/kurie, geresnis, tinka, šito ne to. Nouns: duona, obuolys, sūris, gėlės, vaisiai, daržovės, batas, striukė, dydis.
 
-### Lessons
-1. **Can You Help Me?** — Ar galite man padėti?, Padėkite man prašau, Man reikia pagalbos
-2. **What Is This? Is That…?** — Kas tai?, Kas ten?, Ar tai…?, Ar ten…?
-3. **Where Is…?** — Kur yra tualetas?, Kur yra stotis?, Kur yra autobusų stotelė?
-4. **Can I / Can We?** — Ar galiu?, Ar galime?, Ar galiu čia atsisėsti?, Ar galime pradėti?
-5. **Tu / Jūs as a Pattern** — recognition only, not production mastery
-
-### Key rules for 1.4
-- Scenario steps: 2→3→3→4→5 (same pattern as 1.3)
-- Lesson 5 (tu/jūs) is recognition-only — no speaking required, no scenarios that require production of tu/jūs forms
-- "Ar galiu jums padėti?" appears in module 1.3 scenarios as a helper-text-explained phrase — in module 1.4 lesson 1 it gets properly taught
-- Add useful nouns naturally: restoranas, viešbutis, parduotuvė, bankas
-- Profile: use `userFromPhrase` where natural in scenarios
-- Follow factory pattern: `export default function createModule_1_4(profile = {}) {...}`
-- Add import to `section1/index.js`
-
-### Content for 1.4 L3 (Where Is…?)
-Per curriculum: keep places tight — tualetas, stotis, autobusų stotelė. Don't bloat into full places vocabulary yet.
+**2.4:** Kas/Ko, Kur (expanded), Kas jis/ji/čia, Kada + dabar/vėliau/rytoj, Kiek…kainuoja, brangu, nebrangiai. Nouns: žuvis, mėsa, sriuba, kaimynas, šeima, kaina, turgus, eurai, centai.
 
 ---
 
-## SECTION 1 CHECKPOINT — AFTER MODULE 1.4
+## KEY BUGS FIXED (DO NOT RE-INTRODUCE)
 
-Cross-module word_match pulling ~5 pairs from each of the 4 modules (best/most useful vocabulary). No verbatim repeats from module checkpoints.
-
-Per curriculum, format:
-1. Quick recognise warm-up (key phrases from all 4 modules)
-2. Audio response selection
-3. Guided produce (build phrase)
-4. Speak prompt
-5. Best response (situational)
-6. Conversation chain (5-step scenario pulling from all modules)
-
----
-
-## SECTION COMPLETE SCREEN — NEW FEATURE TO BUILD
-
-**After** the Section 1 Checkpoint (which is the final lesson in section 1), instead of the standard `ModuleCompleteView`, a **Section Complete screen** should fire.
-
-### What it needs to show
-- Section title: "First Contact — Section 1 Complete"
-- Total XP earned across the whole section
-- Overall accuracy % across all modules
-- A summary of what was learned (modules covered)
-- Celebration feeling — bigger deal than a module complete
-- Two actions: "Save vocabulary" (opens VocabSaveView for checkpoint word_match), "Continue" (goes to Section 2 when built, or home for now)
-
-### How to detect it
-In `TrainingView.jsx`, after `isModuleFullyComplete` fires for the Section 1 Checkpoint module:
-- Check if ALL modules in the section are complete
-- If yes → `isSectionFullyComplete` → fire SectionCompleteView instead of ModuleCompleteView
-- Track with `hasSeenSectionComplete(section.id)` in gameStore (same pattern as `hasSeenModuleComplete`)
-
-### Files to create/modify
-- New: `src/views/training/SectionCompleteView.jsx`
-- Modify: `TrainingView.jsx` — add `isSectionFullyComplete` check, `sectionCompletePayload` state, screen routing
-- Modify: `gameStore.js` — add `seenSectionCompleteIds`, `hasSeenSectionComplete`, `markSectionCompleteSeen`
-
-### Design direction
-Similar to ModuleCompleteView but bigger — more prominent celebration, shows the 4 modules as a visual summary (each with a small checkmark), total section XP, total accuracy. Should feel like a genuine milestone.
+1. **Section complete nested in module complete guard** — see CURRENT OPEN ISSUE above
+2. **Checkpoint lookup** — `onNailedItContinue` must check `m.blocks && m.id === completedLessonId` for checkpoints (no `lessons` array)
+3. **isModuleFullyComplete** — must handle checkpoint modules via `completedLessonIds.includes(mod.id)`
+4. **Browse course** — `onBrowseCourse` goes to `"learningHome"` (section list), NOT `"learningSection"` directly
+5. **IPT (InteractivePhraseText)** — `playText` always passed through regardless of whether audio icon is present. `noOptionAudio: true` on block disables option audio.
+6. **Daily recall numbers** — excluded by both `Category === "Numbers"` AND `LT_NUMBER_WORDS` regex (starter pack has no Numbers category)
+7. **Word match wrong match** — no audio on wrong, only on correct
+8. **Samsung Internet dark mode** — deferred until light/dark theme build
+9. **Phrase match** — Levenshtein character similarity fallback (≥0.82) for targets ≤3 words (handles diacritic mis-transcription by speech API)
+10. **LearningHome** — fully rewritten to accept `allSections` prop, renders progress per section
 
 ---
 
-## VOCAB SAVE
+## SECTION COMPLETE SCREEN
 
-`VocabSaveView.jsx` — shown after module/section complete.
+**File:** `src/views/training/SectionCompleteView.jsx`  
+Portal-based (renders into `document.body` to escape swipe pager transforms).  
+Phase 1: Full-screen emerald burst ~2s. Phase 2: Celebration card.  
+Card shows: section badge, title, stats (XP/accuracy/modules), module pills with checkmarks, "Now you can…" highlights, two buttons only: **Continue to Section 2** and **Learning home** (no Save Vocabulary — that already happened).
 
-- Reads word_match pairs from checkpoint block
-- Opt-in, nothing pre-selected
-- Duplicate detection via `makeLtKey`
-- API: `{ text: en, sourceLang: "en" }` (NOT `input`)
-- Response fields: `phonetics`, `phonetics_ipa`, `en_natural`, `en_literal` (snake_case)
-- After save: goes to next lesson via `findNextLesson`
+**Flow:** NailedIt → VocabSave → (pendingSectionComplete flag) → SectionComplete
 
 ---
 
-## SETTINGS PERSONALISATION — ALREADY BUILT
+## UI / THEME (NOT YET BUILT)
 
-SettingsView has "Your profile" section with:
-- Name field → `userName` → `userNameSafe`
-- "From" country dropdown → `fromCountryCode` → `userFromCountryLtGenitive`
-- "Lives in" country dropdown → `livesInCountryCode` → `userLivesInCountryLtLocative`
+Build after all 12 sections complete.
 
-All stored in Supabase `user_settings`. Module factories receive profile and substitute in self-referential phrases.
+**Palette agreed:**
+- Sage accent: `#6B8F6E`
+- Background: `#EDE0C8` (warm parchment)
+- Card: `#F5EDDA`
+- Inset: `#E8E0CE`
+- Header: `#E4D6BC`
 
----
-
-## THINGS PARKED FOR LATER
-
-- Mic button clunky on some Android devices — timing issue with Web Speech API, low priority
-- Light mode — parked until all lessons complete
-- "Can't talk right now" skip on speak blocks
-- Human audio recording to replace TTS — after all lessons complete
-- Kas čia? vs Kas tai? — linguistic question flagged, leave for native speaker review
+Architecture: CSS custom properties + `prefers-color-scheme` media queries + `data-theme` attribute override. This will permanently fix Samsung Internet dark mode by providing genuine light/dark signals.
 
 ---
 
-## PROMPT FOR NEW CHAT SESSION
+## SECTION 3 — NEXT TO BUILD
 
-Use this to start the new chat:
+Once section complete is verified working, build Section 3. Before writing any code:
+1. David provides Section 3 curriculum docs (content blueprint + delivery blueprint + Lithuanian draft)
+2. Read all existing section content to audit what's already been taught
+3. Plan before building — David reviews and approves before any files are created
+4. Validate with Node before packaging
+5. Package all new files + updated TrainingView.jsx (add section 3 to allSections)
+
+Content rules for new sections: same factory pattern, same block types, same word match 20-pair requirement, weave in practical nouns, scenarios must make real-world sense.
 
 ---
 
-You are continuing development of Žodis, a Lithuanian language learning PWA. A full handoff document is in `ZODIS_HANDOFF_V2.md` in the repo root — read it entirely before writing any code.
+## DEV MODE BUTTONS (in TrainingHome when dev toggle on)
 
-I'm giving you the current repo zip. The handoff covers everything including critical audio rules, never-break rules, content structure, and what's next.
+- `⚡ Test Module X Complete (screen only)` — fires module complete screen with dummy stats
+- `⚡ Test Section X Complete (screen only)` — fires section complete screen with dummy stats
+- `⚡ Complete Section X Full Flow` — marks all lessons complete, marks all modules seen, drops into vocabSave → sectionComplete real flow
 
-**Immediate priorities in order:**
+---
 
-1. **Fix Samsung Internet rendering** — the app looks different on Samsung Internet vs Chrome. Full details of what's been tried and what to try next are in the handoff Section "CURRENT OPEN BUG". Chrome must stay pixel-perfect — fix Samsung without breaking Chrome.
+## KNOWN PARKED ISSUES
 
-2. **Build module_1_4.js** — Help and Contact. Follow the exact same factory function pattern as module_1_3.js. Import it in section1/index.js. I'll give you the Section 1 curriculum documents for reference.
-
-3. **Build Section 1 Checkpoint** — cross-module word_match + 5-step scenario. Details in handoff.
-
-4. **Build SectionCompleteView** — fires after Section 1 Checkpoint completion. Bigger celebration than ModuleCompleteView. Shows total section XP and accuracy. Details in handoff.
-
-**Rules:**
-- Never touch audio logic
-- Never remove key={learningLesson?.id} from TrainingView
-- Always use factory pattern for new modules
-- Test content with node before presenting files
-- Discuss plan before writing code
-- Make targeted changes only — do not refactor working code
-
-The developer tests on Android (Samsung phone, Chrome and Samsung Internet). Screenshots and detailed testing sheets are provided after each build.
+- Mic button clunky on some Android — Web Speech API timing, low priority
+- Samsung Internet visual difference — deferred until light/dark theme
+- Old saved Notes with `||` format showing both sides — pre-fix library data, unfixable without re-enriching
+- Section 2 needs full review pass by David (same sheet format as Section 1)
