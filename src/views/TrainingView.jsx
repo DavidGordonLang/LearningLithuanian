@@ -22,6 +22,7 @@ import { useSettingsStore } from "../stores/settingsStore";
 import createSection1 from "../content/learning/section1";
 import { buildSection1Profile } from "../content/learning/section1/profile";
 import createSection2 from "../content/learning/section2";
+import createSection3 from "../content/learning/section3";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -129,7 +130,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   }, [rows, focus]);
 
   const allSections = useMemo(
-    () => [createSection1(section1Profile), createSection2(section1Profile)],
+    () => [createSection1(section1Profile), createSection2(section1Profile), createSection3(section1Profile)],
     [section1Profile]
   );
 
