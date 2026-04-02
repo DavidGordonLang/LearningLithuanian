@@ -338,9 +338,10 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
     setRevealState("revealed");
     onComplete?.();
     if (!option.isCorrect) onWrongAnswer?.();
-    if (isBestResponse) {
+    if (isBestResponse && !block?.noOptionAudio) {
       // best_response: options are Lithuanian — play selected option if correct,
-      // or play correct option after delay if wrong
+      // or play correct option after delay if wrong.
+      // Skipped when noOptionAudio is set (English-only option blocks).
       if (option.isCorrect) {
         try { playText?.(option.text); } catch {}
       } else {
@@ -417,8 +418,10 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
             playText={playText}
             playAudio={block?.type === "best_response"}
             isLithuanian={
-              block?.type === "best_response" ||
-              (block?.type === "recognise_mcq" && !audioText)
+              !block?.noOptionAudio && (
+                block?.type === "best_response" ||
+                (block?.type === "recognise_mcq" && !audioText)
+              )
             }
           />
         ))}
