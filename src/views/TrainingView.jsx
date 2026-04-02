@@ -171,7 +171,13 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
 
   const learningLesson = useMemo(() => {
     const lessons = Array.isArray(learningModule?.lessons) ? learningModule.lessons : [];
-    if (selectedLessonId) return lessons.find((l) => l?.id === selectedLessonId) || null;
+    if (selectedLessonId) {
+      const found = lessons.find((l) => l?.id === selectedLessonId);
+      if (found) return found;
+      // Section checkpoint: module has blocks but no lessons — the module IS the lesson
+      if (learningModule?.blocks && learningModule.id === selectedLessonId) return learningModule;
+      return null;
+    }
     if (nextLesson?.lesson) return nextLesson.lesson;
     return lessons[0] || null;
   }, [learningModule, selectedLessonId, nextLesson]);
