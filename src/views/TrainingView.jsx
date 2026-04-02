@@ -551,6 +551,36 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
               },
             })),
             ...allSections.map((section) => ({
+              id: `section_prime_flow_${section.id}`,
+              label: `⚡ Prime Section ${section.code} for Flow Test`,
+              onClick: () => {
+                // Marks all non-checkpoint lessons complete + clears section-seen flag.
+                // Then navigate to the checkpoint so you can play it live and verify
+                // NailedIt → VocabSave → SectionComplete fires for real.
+                const nonCheckpointIds = (section.modules || []).flatMap((m) =>
+                  Array.isArray(m.lessons) ? m.lessons.map((l) => l.id) : []
+                );
+                nonCheckpointIds.forEach((id) => completeLesson(id, user?.id));
+                // Clear section-seen so hasSeenSectionComplete returns false
+                useGameStore.setState((state) => ({
+                  seenSectionCompleteIds: state.seenSectionCompleteIds.filter(
+                    (id) => id !== section.id
+                  ),
+                }));
+                // Navigate to the checkpoint lesson directly
+                const checkpoint = (section.modules || []).find((m) => m.isSectionCheckpoint);
+                if (checkpoint) {
+                  setSelectedModuleId(checkpoint.id);
+                  setSelectedLessonId(checkpoint.id);
+                  setModuleWrongAnswers(0);
+                  setModuleScoreableBlocks(0);
+                  setModuleXpEarned(0);
+                  setLessonReturnScreen("home");
+                  setScreen("learningLesson");
+                }
+              },
+            })),
+            ...allSections.map((section) => ({
               id: `section_full_flow_${section.id}`,
               label: `⚡ Complete Section ${section.code} Full Flow`,
               onClick: () => {
