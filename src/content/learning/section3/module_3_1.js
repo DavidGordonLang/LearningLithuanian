@@ -40,7 +40,7 @@ export default function createModule_3_1(profile = {}) {
           {
             id: "s3m1l1_b1",
             type: "learn",
-            title: "Zero to five",
+            title: "Zero to ten",
             items: [
               { id: "n0",  lt: "nulis",   en: "zero",  audioText: "nulis",   saveable: false },
               { id: "n1",  lt: "vienas",  en: "one",   audioText: "vienas",  saveable: false },
@@ -48,24 +48,6 @@ export default function createModule_3_1(profile = {}) {
               { id: "n3",  lt: "trys",    en: "three", audioText: "trys",    saveable: false },
               { id: "n4",  lt: "keturi",  en: "four",  audioText: "keturi",  saveable: false },
               { id: "n5",  lt: "penki",   en: "five",  audioText: "penki",   saveable: false },
-            ],
-          },
-          {
-            id: "s3m1l1_b2",
-            type: "listen_mcq",
-            title: "Listen and choose",
-            prompt: { text: "trys", audioText: "trys" },
-            options: [
-              { id: "a", text: "two", isCorrect: false },
-              { id: "b", text: "five", isCorrect: false },
-              { id: "c", text: "three", isCorrect: true },
-            ],
-          },
-          {
-            id: "s3m1l1_b3",
-            type: "learn",
-            title: "Six to ten",
-            items: [
               { id: "n6",  lt: "šeši",    en: "six",   audioText: "šeši",    saveable: false },
               { id: "n7",  lt: "septyni", en: "seven", audioText: "septyni", saveable: false },
               { id: "n8",  lt: "aštuoni", en: "eight", audioText: "aštuoni", saveable: false },
@@ -145,32 +127,14 @@ export default function createModule_3_1(profile = {}) {
           {
             id: "s3m1l2_b1",
             type: "learn",
-            title: "Eleven to fifteen",
+            title: "Eleven to twenty",
             items: [
               { id: "n11", lt: "vienuolika",   en: "eleven",    audioText: "vienuolika",   saveable: false },
               { id: "n12", lt: "dvylika",       en: "twelve",    audioText: "dvylika",       saveable: false },
               { id: "n13", lt: "trylika",       en: "thirteen",  audioText: "trylika",       saveable: false },
               { id: "n14", lt: "keturiolika",   en: "fourteen",  audioText: "keturiolika",   saveable: false },
               { id: "n15", lt: "penkiolika",    en: "fifteen",   audioText: "penkiolika",    saveable: false },
-            ],
-          },
-          {
-            id: "s3m1l2_b2",
-            type: "listen_mcq",
-            title: "Listen and choose",
-            prompt: { text: "penkiolika", audioText: "penkiolika" },
-            options: [
-              { id: "a", text: "fourteen", isCorrect: false },
-              { id: "b", text: "fifteen", isCorrect: true },
-              { id: "c", text: "sixteen", isCorrect: false },
-            ],
-          },
-          {
-            id: "s3m1l2_b3",
-            type: "learn",
-            title: "Sixteen to twenty",
-            items: [
-              { id: "n16", lt: "šešiolika",    en: "sixteen",   audioText: "šešiolika",    saveable: false },
+              { id: "n16", lt: "šešiolika",     en: "sixteen",   audioText: "šešiolika",     saveable: false },
               { id: "n17", lt: "septyniolika",  en: "seventeen", audioText: "septyniolika",  saveable: false },
               { id: "n18", lt: "aštuoniolika",  en: "eighteen",  audioText: "aštuoniolika",  saveable: false },
               { id: "n19", lt: "devyniolika",   en: "nineteen",  audioText: "devyniolika",   saveable: false },
