@@ -618,10 +618,11 @@ export default function createModule_1_4(profile = {}) {
             title: "Tu or jūs?",
             prompt: { text: "You're chatting with a Lithuanian friend your own age. Which form would they likely use with you?" },
             options: [
-              { id: "a", text: "Jūs — always safer", isCorrect: false },
-              { id: "b", text: "Tu — informal between friends", isCorrect: true },
-              { id: "c", text: "Neither — they'd speak English", isCorrect: false },
+              { id: "a", text: "Jūs", isCorrect: false },
+              { id: "b", text: "Tu", isCorrect: true },
+              { id: "c", text: "Either — it doesn't matter", isCorrect: false },
             ],
+            feedback: { correct: "Tu — the informal form between friends and peers your own age." },
           },
           {
             id: "s1m4l5_b4",
@@ -642,7 +643,7 @@ export default function createModule_1_4(profile = {}) {
             prompt: { text: "You've been learning 'Ar jūs kalbate angliškai?' — why jūs and not tu here?" },
             options: [
               { id: "a", text: "Tu is harder to pronounce", isCorrect: false },
-              { id: "b", text: "You'd use jūs — you're usually asking a stranger", isCorrect: true },
+              { id: "b", text: "You're usually asking a stranger, so jūs is right", isCorrect: true },
               { id: "c", text: "They mean the same thing", isCorrect: false },
             ],
             feedback: { correct: "Exactly — you'd normally ask a stranger if they speak English, so jūs is the right choice." },
