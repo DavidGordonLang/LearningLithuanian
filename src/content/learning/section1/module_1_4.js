@@ -606,10 +606,11 @@ export default function createModule_1_4(profile = {}) {
             title: "Tu or jūs?",
             prompt: { text: "You're asking a shop assistant for help. Which form should you use?" },
             options: [
-              { id: "a", text: "Tu — it sounds friendlier", isCorrect: false },
-              { id: "b", text: "Jūs — polite form with strangers", isCorrect: true },
+              { id: "a", text: "Tu", isCorrect: false },
+              { id: "b", text: "Jūs", isCorrect: true },
               { id: "c", text: "Either — it doesn't matter", isCorrect: false },
             ],
+            feedback: { correct: "Jūs — the safe polite form with anyone you don't know well." },
           },
           {
             id: "s1m4l5_b3",
