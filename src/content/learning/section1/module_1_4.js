@@ -641,6 +641,7 @@ export default function createModule_1_4(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             prompt: { text: "You've been learning 'Ar jūs kalbate angliškai?' — why jūs and not tu here?" },
+            noOptionAudio: true,
             options: [
               { id: "a", text: "Tu is harder to pronounce", isCorrect: false },
               { id: "b", text: "You're usually asking a stranger, so jūs is right", isCorrect: true },
