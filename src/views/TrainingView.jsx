@@ -190,8 +190,10 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   }, [allSections, learningLesson]);
 
   const isModuleFullyComplete = (mod) => {
-    if (!mod?.lessons) return false;
-    return mod.lessons.every((l) => completedLessonIds.includes(l.id));
+    if (!mod) return false;
+    if (Array.isArray(mod.lessons)) return mod.lessons.every((l) => completedLessonIds.includes(l.id));
+    if (mod.blocks && mod.id) return completedLessonIds.includes(mod.id); // checkpoint module
+    return false;
   };
 
   const isSectionFullyComplete = (sec) => {
@@ -419,11 +421,10 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           let mod = learningModule;
           let sec = learningSection;
           if (completedLessonId) {
-            for (const s of allSections) {
+            outer: for (const s of allSections) {
               for (const m of (s.modules || [])) {
-                if ((m.lessons || []).find(l => l.id === completedLessonId)) {
-                  mod = m; sec = s; break;
-                }
+                if ((m.lessons || []).find(l => l.id === completedLessonId)) { mod = m; sec = s; break outer; }
+                if (m.blocks && m.id === completedLessonId) { mod = m; sec = s; break outer; } // checkpoint
               }
             }
           }
