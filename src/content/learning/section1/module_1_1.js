@@ -304,8 +304,9 @@ const module_1_1 =     {
                 {
                   id: "step_2",
                   actor: "other",
-                  text: "Taip?",
-                  audioText: "Taip",
+                  text: "Ko norite?",
+                  audioText: "Ko norite",
+                  helperText: "The barista is asking what you'd like.",
                   options: [
                     { id: "a", text: "Ačiū labai", isCorrect: false },
                     { id: "b", text: "Ne, ačiū", isCorrect: false },
