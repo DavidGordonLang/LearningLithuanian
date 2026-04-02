@@ -56,6 +56,26 @@ function normaliseForMatch(str) {
     .trim();
 }
 
+// Character-level similarity (Levenshtein ratio) for fuzzy single-word matching.
+// Handles speech recognition transcribing š as š/s/sh, ž as ž/z, č as č/c etc.
+function charSimilarity(a, b) {
+  if (a === b) return 1;
+  const la = a.length, lb = b.length;
+  if (!la || !lb) return 0;
+  // Build DP matrix
+  const dp = Array.from({ length: la + 1 }, (_, i) => [i]);
+  for (let j = 0; j <= lb; j++) dp[0][j] = j;
+  for (let i = 1; i <= la; i++) {
+    for (let j = 1; j <= lb; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  const dist = dp[la][lb];
+  return 1 - dist / Math.max(la, lb);
+}
+
 function phraseMatches(captured, target) {
   if (!captured || !target) return false;
   const c = normaliseForMatch(captured);
@@ -68,7 +88,13 @@ function phraseMatches(captured, target) {
   const capturedWords = c.split(" ").filter(Boolean);
   if (targetWords.length === 0) return false;
   const matched = targetWords.filter((w) => capturedWords.includes(w));
-  return matched.length / targetWords.length >= 0.8;
+  if (matched.length / targetWords.length >= 0.8) return true;
+  // Fallback: character-level similarity for short targets or single words
+  // Catches speech API mis-transcribing Lithuanian diacritics (š→s, ž→z, č→c etc.)
+  if (targetWords.length <= 3) {
+    return charSimilarity(c, t) >= 0.82;
+  }
+  return false;
 }
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
