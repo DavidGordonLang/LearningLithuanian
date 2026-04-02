@@ -59,6 +59,10 @@ export function getEnglishForRecall(r) {
   );
 }
 
+// Lithuanian number words — used to exclude number entries from daily recall
+// regardless of how their Category field is set (starter pack uses General/Education)
+const LT_NUMBER_WORDS = /^(nulis|vienas|du|trys|keturi|penki|šeši|septyni|aštuoni|devyni|dešimt|vienuolika|dvylika|trylika|keturiolika|penkiolika|šešiolika|septyniolika|aštuoniolika|devyniolika|dvidešimt|trisdešimt|keturiasdešimt|penkiasdešimt|šešiasdešimt|septyniasdešimt|aštuoniasdešimt|devyniasdešimt|šimtas|tūkstantis)\b/i;
+
 function isUsableRow(r) {
   if (!r) return false;
   if (r._deleted) return false;
@@ -66,8 +70,10 @@ function isUsableRow(r) {
   const en = getEnglishForRecall(r);
   if (!lt || !en) return false;
   if (/translation error/i.test(lt)) return false;
-  // Exclude numbers — they dominate daily recall but have low conversational value
+  // Exclude number entries — by category tag or by Lithuanian content
+  // (starter pack numbers have no Numbers category so we check both)
   if (String(r.Category || "").trim() === "Numbers") return false;
+  if (LT_NUMBER_WORDS.test(lt)) return false;
   return true;
 }
 
