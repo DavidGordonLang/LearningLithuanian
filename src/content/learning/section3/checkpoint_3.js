@@ -11,6 +11,7 @@ export default function createCheckpoint3(profile = {}) {
     purpose: "Bring numbers, prices, time, and quantities together in practical situations.",
     isCheckpoint: true,
     isSectionCheckpoint: true,
+    status: "active",
     supportLevel: "none",
     newLanguageLoad: "none",
     blocks: [
