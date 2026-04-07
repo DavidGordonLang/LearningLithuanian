@@ -24,7 +24,7 @@ import {
   getCountryLabel,
 } from "../constants/countries";
 
-const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me];
+const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me"];
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
