@@ -14,6 +14,7 @@ export default function createCheckpoint2(profile = {}) {
     purpose: "Bring the whole of Section 2 together. Real retrieval across all four modules.",
     isCheckpoint: true,
     isSectionCheckpoint: true,
+    status: "active",
     supportLevel: "none",
     newLanguageLoad: "none",
     blocks: [
