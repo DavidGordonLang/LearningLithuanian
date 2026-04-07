@@ -23,6 +23,7 @@ import createSection1 from "../content/learning/section1";
 import { buildSection1Profile } from "../content/learning/section1/profile";
 import createSection2 from "../content/learning/section2";
 import createSection3 from "../content/learning/section3";
+import SequenceDebugView from "./training/SequenceDebugView";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function findNextLesson(sections, completedLessonIds) {
   for (const section of sections) {
     const modules = Array.isArray(section?.modules) ? section.modules : [];
     for (const module of modules) {
-      if (module?.status !== "active") continue;
+      if (module?.status !== "active" && !module?.isSectionCheckpoint) continue;
       // Section checkpoint: module has blocks directly — treat module itself as the lesson
       if (module.isSectionCheckpoint) {
         if (module.id && !completed.has(module.id)) {
@@ -57,7 +58,7 @@ function findLessonAfter(sections, lessonId) {
   for (const section of sections) {
     const modules = Array.isArray(section?.modules) ? section.modules : [];
     for (const module of modules) {
-      if (module?.status !== "active") continue;
+      if (module?.status !== "active" && !module?.isSectionCheckpoint) continue;
       // Section checkpoint: module itself is the lesson
       if (module.isSectionCheckpoint) {
         allLessons.push({ section, module, lesson: module, lessonIndex: 0 });
@@ -78,6 +79,7 @@ function findLessonAfter(sections, lessonId) {
 
 export default function TrainingView({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
+  const [showSequenceDebug, setShowSequenceDebug] = useState(false);
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null);
   const [sectionCompletePayload, setSectionCompletePayload] = useState(null);
   const [pendingSectionComplete, setPendingSectionComplete] = useState(false);
@@ -518,6 +520,28 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   }
   if (screen === "examWriting") return <ExamWritingTaskView onBack={() => setScreen("examPrepHome")} />;
 
+  if (showSequenceDebug) {
+    return (
+      <SequenceDebugView
+        allSections={allSections}
+        completedLessonIds={completedLessonIds}
+        completeLesson={completeLesson}
+        userId={user?.id}
+        onBack={() => setShowSequenceDebug(false)}
+        onJumpTo={({ section, module, lesson }) => {
+          setShowSequenceDebug(false);
+          setSelectedLessonId(lesson.id);
+          setSelectedModuleId(module.id);
+          setModuleWrongAnswers(0);
+          setModuleScoreableBlocks(0);
+          setModuleXpEarned(0);
+          setLessonReturnScreen("home");
+          setScreen("learningLesson");
+        }}
+      />
+    );
+  }
+
   return (
     <TrainingHome
       T={T}
@@ -543,6 +567,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       onToggleDevMode={toggleDevMode}
       devTestModules={devMode
         ? [
+            {
+              id: "sequence_debug",
+              label: "⚡ Sequence Walker",
+              onClick: () => setShowSequenceDebug(true),
+            },
             ...allSections.flatMap((section) =>
               (section.modules || [])
                 .filter((module) => module.status === "active")
