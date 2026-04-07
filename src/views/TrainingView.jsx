@@ -32,6 +32,13 @@ function findNextLesson(sections, completedLessonIds) {
     const modules = Array.isArray(section?.modules) ? section.modules : [];
     for (const module of modules) {
       if (module?.status !== "active") continue;
+      // Section checkpoint: module has blocks directly — treat module itself as the lesson
+      if (module.isSectionCheckpoint) {
+        if (module.id && !completed.has(module.id)) {
+          return { section, module, lesson: module, lessonIndex: 0 };
+        }
+        continue;
+      }
       const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
       for (let i = 0; i < lessons.length; i++) {
         const lesson = lessons[i];
@@ -51,6 +58,11 @@ function findLessonAfter(sections, lessonId) {
     const modules = Array.isArray(section?.modules) ? section.modules : [];
     for (const module of modules) {
       if (module?.status !== "active") continue;
+      // Section checkpoint: module itself is the lesson
+      if (module.isSectionCheckpoint) {
+        allLessons.push({ section, module, lesson: module, lessonIndex: 0 });
+        continue;
+      }
       const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
       lessons.forEach((lesson, i) => {
         allLessons.push({ section, module, lesson, lessonIndex: i });
@@ -150,6 +162,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           if (selectedLessonId) {
             const found = (mod.lessons || []).find((l) => l.id === selectedLessonId);
             if (found) return sec;
+            // Section checkpoint: module id IS the lesson id
+            if (mod.isSectionCheckpoint && mod.id === selectedLessonId) return sec;
           }
         }
       }
@@ -164,6 +178,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       for (const mod of modules) {
         const found = (mod.lessons || []).find((l) => l.id === selectedLessonId);
         if (found) return mod;
+        // Section checkpoint: module id IS the lesson id
+        if (mod.isSectionCheckpoint && mod.id === selectedLessonId) return mod;
       }
     }
     if (nextLesson?.module) return nextLesson.module;
