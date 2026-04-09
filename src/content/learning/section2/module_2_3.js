@@ -535,6 +535,7 @@ export default function createModule_2_3(profile = {}) {
           {
             id: "s2m3l5_b2",
             type: "recognise_mcq",
+            noOptionAudio: true,
             title: "Notice the pattern",
             prompt: { text: "You see the word 'šie' in a sentence. What is this form of?" },
             options: [
@@ -546,6 +547,7 @@ export default function createModule_2_3(profile = {}) {
           {
             id: "s2m3l5_b3",
             type: "recognise_mcq",
+            noOptionAudio: true,
             title: "Notice the pattern",
             prompt: { text: "A shopkeeper says 'ši kava'. They're pointing at the coffee next to you. What do they mean?" },
             options: [
@@ -557,6 +559,7 @@ export default function createModule_2_3(profile = {}) {
           {
             id: "s2m3l5_b4",
             type: "best_response",
+            noOptionAudio: true,
             title: "Choose the best response",
             prompt: { text: "You see a new form 'tų' you haven't seen before. Based on what you know, what is it probably related to?" },
             options: [
