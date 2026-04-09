@@ -71,7 +71,7 @@ function buildSectionVocabModule(sec, fallbackCheckpoint) {
   };
 }
 
-
+function findNextLesson(sections, completedLessonIds) {
   const completed = new Set(Array.isArray(completedLessonIds) ? completedLessonIds : []);
   for (const section of sections) {
     const modules = Array.isArray(section?.modules) ? section.modules : [];
