@@ -27,7 +27,51 @@ import SequenceDebugView from "./training/SequenceDebugView";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function findNextLesson(sections, completedLessonIds) {
+// Builds a synthetic module for VocabSaveView that aggregates word_match pairs
+// from every checkpoint in the section (module checkpoints + section checkpoint).
+// This ensures phrases skipped at module-level vocab saves are caught here.
+function buildSectionVocabModule(sec, fallbackCheckpoint) {
+  const seenLt = new Set();
+  const allPairs = [];
+
+  (sec?.modules || []).forEach((m) => {
+    // Regular modules: checkpoint is a lesson inside m.lessons
+    if (Array.isArray(m.lessons)) {
+      const cpLesson = m.lessons.find((l) => l.isCheckpoint);
+      if (cpLesson) {
+        const wm = (cpLesson.blocks || []).find((b) => b.type === "word_match");
+        (wm?.pairs || []).forEach((p) => {
+          if (!seenLt.has(p.lt)) { seenLt.add(p.lt); allPairs.push(p); }
+        });
+      }
+    }
+    // Section checkpoint: blocks live directly on the module
+    if (m.isSectionCheckpoint && Array.isArray(m.blocks)) {
+      const wm = m.blocks.find((b) => b.type === "word_match");
+      (wm?.pairs || []).forEach((p) => {
+        if (!seenLt.has(p.lt)) { seenLt.add(p.lt); allPairs.push(p); }
+      });
+    }
+  });
+
+  if (allPairs.length === 0) return fallbackCheckpoint;
+
+  return {
+    id: (fallbackCheckpoint?.id || sec?.id || "section") + "_vocab_all",
+    title: sec?.title ? `${sec.title} — All Vocabulary` : "Section Vocabulary",
+    lessons: [
+      {
+        id: "section_vocab_aggregated",
+        isCheckpoint: true,
+        blocks: [
+          { type: "word_match", pairs: allPairs },
+        ],
+      },
+    ],
+  };
+}
+
+
   const completed = new Set(Array.isArray(completedLessonIds) ? completedLessonIds : []);
   for (const section of sections) {
     const modules = Array.isArray(section?.modules) ? section.modules : [];
@@ -472,7 +516,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
             });
             setPendingSectionComplete(true);
             const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
-            setVocabSaveModule(checkpoint);
+            setVocabSaveModule(buildSectionVocabModule(sec, checkpoint));
             setSelectedLessonId(null);
             setSelectedModuleId(null);
             setScreen("vocabSave");
@@ -667,7 +711,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
                   });
                   setPendingSectionComplete(true);
                   const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
-                  setVocabSaveModule(checkpoint);
+                  setVocabSaveModule(buildSectionVocabModule(sec, checkpoint));
                   setSelectedLessonId(null);
                   setSelectedModuleId(null);
                   setScreen("vocabSave");
