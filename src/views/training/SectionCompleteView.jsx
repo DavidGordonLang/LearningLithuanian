@@ -344,10 +344,10 @@ function CelebrationCard({
           style={{ transitionDelay: "120ms" }}
         >
           <div className="text-[32px] font-semibold text-emerald-200 leading-tight">
-            First Contact
+            {section?.title || "First Contact"}
           </div>
           <div className="text-[14px] text-zinc-500 mt-1">
-            {section?.title || "You've completed your first section"}
+            You've completed Section {section?.code || "1"}
           </div>
         </div>
 
@@ -444,7 +444,7 @@ function CelebrationCard({
             onClick={onContinue}
             className="w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.05] transition"
           >
-            Continue to Section 2
+            Continue to Section {parseInt(section?.code || "1") + 1}
           </button>
           <button
             type="button"
