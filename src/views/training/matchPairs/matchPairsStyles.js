@@ -11,13 +11,13 @@ export const matchPairsCss = `
   width:0%;transition:width 260ms ease;
 }
 
-.mp-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
-.mp-col{display:grid;grid-auto-rows:minmax(54px,auto);gap:12px;}
+.mp-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
+.mp-col{display:grid;grid-auto-rows:minmax(68px,auto);gap:14px;}
 
 .mp-tile{
   border-radius:18px;border:1px solid rgba(39,39,42,0.9);
   background:rgba(9,9,11,0.35);
-  padding:14px 14px;min-height:54px;
+  padding:16px 16px;min-height:68px;
   display:flex;align-items:center;justify-content:center;
   text-align:center;font-weight:650;
   white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.15;
