@@ -1283,7 +1283,7 @@ export default function LearningLessonView({
   const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response"].includes(currentBlock?.type);
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
-  const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock;
+  const showNavBar = !lessonComplete && !isChoiceBlock && !isScenarioBlock;
 
   // Fire completion once when lessonDone becomes true
   useEffect(() => {
@@ -1413,7 +1413,7 @@ export default function LearningLessonView({
       {showNavBar ? (
         <div ref={navBarRef} className="mt-4 flex items-center gap-3">
           <ActionButton variant="ghost" onClick={() => setBlockIndex((prev) => Math.max(0, prev - 1))} disabled={blockIndex === 0} className="flex-1">Back</ActionButton>
-          <ActionButton onClick={advanceBlock} disabled={!isCurrentCompleted || isLastBlock} className="flex-1">Next</ActionButton>
+          <ActionButton onClick={advanceBlock} disabled={!isCurrentCompleted} className="flex-1">Next</ActionButton>
         </div>
       ) : null}
     </div>
