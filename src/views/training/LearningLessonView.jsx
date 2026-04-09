@@ -1084,9 +1084,9 @@ function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
   const pulseIds = s.pulse?.ids || [];
   const pulseKind = s.pulse?.kind || null;
   const selectedId = s.selected?.id || null;
-  const TILE_H = 56;
-  const COL_GAP = 8;
-  const tileStyle = { height: TILE_H, minHeight: TILE_H, padding: "10px 12px", margin: 0 };
+  const TILE_H = 68;
+  const COL_GAP = 14;
+  const tileStyle = { minHeight: TILE_H, margin: 0 };
 
   if (completed && s.showDone) {
     return (
