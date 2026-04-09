@@ -773,6 +773,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
   const steps = Array.isArray(block?.steps) ? block.steps : [];
   const timeoutsRef = useRef([]);
   const feedRef = useRef(null);
+  const trayRef = useRef(null);
   const [started, setStarted] = useState(false);
   const [history, setHistory] = useState([]);
   const [stepIndex, setStepIndex] = useState(0);
@@ -788,6 +789,14 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
 
   useEffect(() => { return () => { timeoutsRef.current.forEach((id) => clearTimeout(id)); }; }, []);
   useEffect(() => { const el = feedRef.current; if (!el) return; el.scrollTop = el.scrollHeight; }, [history, assistantTyping, assistantVisible, conversationComplete]);
+
+  // Scroll the options tray into view when it becomes visible
+  useEffect(() => {
+    if (!assistantVisible || conversationComplete) return;
+    const el = trayRef.current;
+    if (!el) return;
+    setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
+  }, [assistantVisible, conversationComplete]);
 
   const queueTimeout = (fn, delay) => { const id = setTimeout(fn, delay); timeoutsRef.current.push(id); return id; };
 
@@ -849,7 +858,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
           )}
         </div>
         {started && assistantVisible && !conversationComplete ? (
-          <div className="border-t border-white/10 bg-black/25 px-4 py-3">
+          <div ref={trayRef} className="border-t border-white/10 bg-black/25 px-4 py-3">
             <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Your response</div>
             <div className="grid gap-2">
               {options.map((option) => <ScenarioTrayOption key={option.id} option={option} selectedId={selectedId} revealState={revealState} onClick={() => handleSelect(option)}/>)}
@@ -1283,7 +1292,7 @@ export default function LearningLessonView({
   const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response"].includes(currentBlock?.type);
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
-  const showNavBar = !lessonComplete && !isChoiceBlock && !isScenarioBlock;
+  const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock;
 
   // Fire completion once when lessonDone becomes true
   useEffect(() => {
@@ -1413,7 +1422,7 @@ export default function LearningLessonView({
       {showNavBar ? (
         <div ref={navBarRef} className="mt-4 flex items-center gap-3">
           <ActionButton variant="ghost" onClick={() => setBlockIndex((prev) => Math.max(0, prev - 1))} disabled={blockIndex === 0} className="flex-1">Back</ActionButton>
-          <ActionButton onClick={advanceBlock} disabled={!isCurrentCompleted} className="flex-1">Next</ActionButton>
+          <ActionButton onClick={advanceBlock} disabled={!isCurrentCompleted || isLastBlock} className="flex-1">Next</ActionButton>
         </div>
       ) : null}
     </div>
