@@ -594,10 +594,10 @@ export default function createModule_2_1(profile = {}) {
                 actor: "other",
                 text: "Laba diena! Ar galiu jums padėti?",
                 audioText: "Laba diena! Ar galiu jums padėti",
-                helperText: "Good day! Can I help you?",
+                helperText: "Good day! Can I help you? — kambario means room.",
                 options: [
                   { id: "a", text: "Viso gero!", isCorrect: false },
-                  { id: "b", text: "Taip! Noriu kambario.", isCorrect: true },
+                  { id: "b", text: "Taip! Noriu kambario.", en: "Yes! I want a room.", isCorrect: true },
                   { id: "c", text: "Nesuprantu.", isCorrect: false },
                 ],
               },
