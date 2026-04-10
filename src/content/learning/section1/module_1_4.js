@@ -266,7 +266,7 @@ export default function createModule_1_4(profile = {}) {
                 options: [
                   { id: "a", text: "Taip, suprantu.", isCorrect: false },
                   { id: "b", text: "Prašau kalbėkite lėčiau.", isCorrect: false },
-                  { id: "c", text: "Ačiū! O restoranas?", isCorrect: true },
+                  { id: "c", text: "Ačiū! Kur yra restoranas?", isCorrect: true },
                 ],
               },
               {
