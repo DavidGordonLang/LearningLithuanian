@@ -10,11 +10,12 @@ const TABLE_NAME = "user_settings";
  */
 const DEFAULTS = {
   phoneticsMode: "en",      // "en" | "ipa"
-  speakerGender: "male",    // "male" | "female" — the user's own gender, used for self-referential Lithuanian forms
-  userName: "",             // free text, trimmed
-  fromCountryCode: "",      // stable internal code, e.g. "scotland"
-  livesInCountryCode: "",   // stable internal code, e.g. "lithuania"
-  dateOfBirth: "",          // ISO date string, e.g. "1990-06-15" — used to personalise age lessons
+  speakerGender: "male",    // "male" | "female"
+  userName: "",
+  fromCountryCode: "",
+  livesInCountryCode: "",
+  dateOfBirth: "",          // ISO date string e.g. "1990-06-15"
+  themeMode: "auto",        // "auto" | "light" | "dark"
 };
 
 function mergeDefaults(data) {
@@ -45,6 +46,7 @@ function derive(data) {
   const fromCountryCode = sanitizeCountryCode(merged.fromCountryCode);
   const livesInCountryCode = sanitizeCountryCode(merged.livesInCountryCode);
   const dateOfBirth = sanitizeDob(merged.dateOfBirth);
+  const themeMode = ["auto", "light", "dark"].includes(merged.themeMode) ? merged.themeMode : "auto";
 
   return {
     phoneticsMode: pm,
@@ -53,6 +55,7 @@ function derive(data) {
     fromCountryCode,
     livesInCountryCode,
     dateOfBirth,
+    themeMode,
   };
 }
 
@@ -223,5 +226,10 @@ export const useSettingsStore = create((set, get) => ({
   setDateOfBirth: async (userId, dob) => {
     const next = sanitizeDob(dob);
     return get().setSetting(userId, "dateOfBirth", next);
+  },
+
+  setThemeMode: async (userId, mode) => {
+    const next = ["auto", "light", "dark"].includes(mode) ? mode : "auto";
+    return get().setSetting(userId, "themeMode", next);
   },
 }));
