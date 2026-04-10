@@ -2,7 +2,12 @@
 // Module 3.4 — Age and Quantities
 
 export default function createModule_3_4(profile = {}) {
-  const { userNameSafe = "Davidas" } = profile;
+  const {
+    userNameSafe = "Davidas",
+    userAgeYears = 30,
+    userAgePhraseLt = "Man trisdešimt metų",
+    userAgePhraseEn = "I am 30 years old",
+  } = profile;
 
   return {
     id: "module_3_4",
@@ -35,10 +40,10 @@ export default function createModule_3_4(profile = {}) {
             type: "learn",
             title: "Asking and saying age",
             items: [
-              { id: "age1", lt: "Kiek jums metų?",     en: "How old are you? (formal)",   audioText: "Kiek jums metų",     saveable: true, core: true },
-              { id: "age2", lt: "Kiek tau metų?",      en: "How old are you? (informal)", audioText: "Kiek tau metų",      saveable: true, core: true },
-              { id: "age3", lt: "Man dvidešimt metų",  en: "I am twenty years old",       audioText: "Man dvidešimt metų",  saveable: true, core: true },
-              { id: "age4", lt: "Man trisdešimt metų", en: "I am thirty years old",       audioText: "Man trisdešimt metų", saveable: true, core: true },
+              { id: "age1", lt: "Kiek jums metų?",    en: "How old are you? (formal)",   audioText: "Kiek jums metų",    saveable: true, core: true },
+              { id: "age2", lt: "Kiek tau metų?",     en: "How old are you? (informal)", audioText: "Kiek tau metų",     saveable: true, core: true },
+              { id: "age3", lt: "Man dvidešimt metų", en: "I am twenty years old",        audioText: "Man dvidešimt metų", saveable: false, core: false },
+              { id: "age4", lt: userAgePhraseLt,      en: userAgePhraseEn,                audioText: userAgePhraseLt,     saveable: true,  core: true },
               { id: "noun_zmones", lt: "žmonės", en: "people", audioText: "žmonės", core: false, saveable: true },
             ],
           },
@@ -73,6 +78,14 @@ export default function createModule_3_4(profile = {}) {
             audioText: "Kiek jums metų",
           },
           {
+            id: "s3m4l1_b4b",
+            type: "speak_self_check",
+            title: "Now say your own age",
+            prompt: `Say: ${userAgePhraseEn}`,
+            targetText: userAgePhraseLt,
+            audioText: userAgePhraseLt,
+          },
+          {
             id: "s3m4l1_b5",
             type: "build_phrase",
             title: "Build the phrase",
@@ -99,7 +112,7 @@ export default function createModule_3_4(profile = {}) {
                 helperText: "How old are you?",
                 options: [
                   { id: "a", text: "Man reikia pagalbos", isCorrect: false },
-                  { id: "b", text: "Man trisdešimt metų. O jums?", isCorrect: true },
+                  { id: "b", text: `${userAgePhraseLt}. O jums?`, isCorrect: true },
                   { id: "c", text: "Nesuprantu", isCorrect: false },
                 ],
               },
