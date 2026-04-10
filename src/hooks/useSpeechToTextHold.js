@@ -32,6 +32,11 @@ export default function useSpeechToTextHold({
   const stopTimerRef = useRef(null);
   const stopGraceRef = useRef(null);
   const processWatchdogRef = useRef(null);
+  // Tracks whether the user requested stop during the async getUserMedia init.
+  // Without this, a quick tap fires stopRecording() before state reaches
+  // "recording", the guard returns early, and getUserMedia resolves into a
+  // runaway recording with no way to stop it.
+  const stopRequestedDuringInitRef = useRef(false);
 
   const STT_MAX_MS = 15000;
   const STT_FETCH_TIMEOUT_MS = 20000;
@@ -109,6 +114,13 @@ export default function useSpeechToTextHold({
   }, [forceResetStt]);
 
   const stopRecording = useCallback(() => {
+    // If still initialising (getUserMedia not yet resolved), flag the intent.
+    // startRecording will abort cleanly once getUserMedia resolves.
+    if (sttStateRef.current === "pending") {
+      stopRequestedDuringInitRef.current = true;
+      return;
+    }
+
     if (sttStateRef.current !== "recording") return;
 
     try {
@@ -159,8 +171,22 @@ export default function useSpeechToTextHold({
     blurTextarea?.();
     onSpeechCaptured?.();
 
+    // Move to "pending" immediately so stopRecording knows we're initialising.
+    // Any stop requested before getUserMedia resolves sets stopRequestedDuringInitRef.
+    stopRequestedDuringInitRef.current = false;
+    setSttStateSafe("pending");
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // User released the button (or tapped again) before we even got the mic.
+      // Abort cleanly without starting a recording.
+      if (stopRequestedDuringInitRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        setSttStateSafe("idle");
+        return;
+      }
+
       streamRef.current = stream;
       chunksRef.current = [];
 
