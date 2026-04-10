@@ -14,6 +14,7 @@ const DEFAULTS = {
   userName: "",             // free text, trimmed
   fromCountryCode: "",      // stable internal code, e.g. "scotland"
   livesInCountryCode: "",   // stable internal code, e.g. "lithuania"
+  dateOfBirth: "",          // ISO date string, e.g. "1990-06-15" — used to personalise age lessons
 };
 
 function mergeDefaults(data) {
@@ -30,6 +31,12 @@ function sanitizeCountryCode(value) {
   return String(value || "").trim();
 }
 
+function sanitizeDob(value) {
+  const s = String(value || "").trim();
+  // Accept YYYY-MM-DD only
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : "";
+}
+
 function derive(data) {
   const merged = mergeDefaults(data);
   const pm = merged.phoneticsMode === "ipa" ? "ipa" : "en";
@@ -37,6 +44,7 @@ function derive(data) {
   const userName = sanitizeName(merged.userName);
   const fromCountryCode = sanitizeCountryCode(merged.fromCountryCode);
   const livesInCountryCode = sanitizeCountryCode(merged.livesInCountryCode);
+  const dateOfBirth = sanitizeDob(merged.dateOfBirth);
 
   return {
     phoneticsMode: pm,
@@ -44,6 +52,7 @@ function derive(data) {
     userName,
     fromCountryCode,
     livesInCountryCode,
+    dateOfBirth,
   };
 }
 
@@ -209,5 +218,10 @@ export const useSettingsStore = create((set, get) => ({
   setLivesInCountryCode: async (userId, code) => {
     const next = sanitizeCountryCode(code);
     return get().setSetting(userId, "livesInCountryCode", next);
+  },
+
+  setDateOfBirth: async (userId, dob) => {
+    const next = sanitizeDob(dob);
+    return get().setSetting(userId, "dateOfBirth", next);
   },
 }));
