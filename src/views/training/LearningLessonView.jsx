@@ -737,15 +737,12 @@ function ConversationBubble({ role, text, helperText, translation, playText }) {
   const isAssistant = role === "other";
   return (
     <div className={cn("flex flex-col", isAssistant ? "items-start" : "items-end")}>
-      {/* Helper text — system bubbles only, glowing emerald card for prominence */}
+      {/* Helper text — system bubbles only, glows green on load then fades to normal */}
       {isAssistant && helperText ? (
-        <div className="mb-1.5 max-w-[82%]">
-          <div
-            className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-3 py-1.5 text-[11px] text-emerald-300/80 leading-snug"
-            style={{ boxShadow: "0 0 18px rgba(16,185,129,0.10), 0 0 6px rgba(16,185,129,0.07)" }}
-          >
+        <div className="mb-1 px-1 max-w-[82%]">
+          <span className="helper-glow-fade text-[11px] leading-snug italic">
             {helperText}
-          </div>
+          </span>
         </div>
       ) : null}
       <div className={cn("max-w-[80%] rounded-[20px] border px-4 py-2.5",
