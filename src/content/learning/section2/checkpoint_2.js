@@ -221,7 +221,7 @@ export default function createCheckpoint2(profile = {}) {
             helperText: "Eight euros.",
             options: [
               { id: "a", text: "Brangu!", isCorrect: false },
-              { id: "b", text: "Gerai! Ar galima kortele?", isCorrect: true },
+              { id: "b", text: "Neturiu grynųjų. Ar galima kortele?", en: "I don't have cash. Is card OK?", isCorrect: true },
               { id: "c", text: "Man reikia pagalbos.", isCorrect: false },
             ],
           },
@@ -233,7 +233,7 @@ export default function createCheckpoint2(profile = {}) {
             helperText: "Yes, that's fine.",
             options: [
               { id: "a", text: "Ko norite?", isCorrect: false },
-              { id: "b", text: "Neturiu grynųjų. Turiu kortelę.", isCorrect: true },
+              { id: "b", text: "Ačiū! Štai kortelė.", en: "Thank you! Here's my card.", isCorrect: true },
               { id: "c", text: "Aš negaliu eiti.", isCorrect: false },
             ],
           },
