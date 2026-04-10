@@ -1102,13 +1102,9 @@ function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
 
   return (
     <div className="mp-root">
-      <div className="mb-3">
+      <div className="mb-4">
         <div className="mp-progress-track">
           <div className="mp-progress-fill" style={{ width: `${pct}%` }} />
-        </div>
-        <div className="mt-1.5 flex items-center justify-between text-[11px] text-zinc-500">
-          <div>{s.progress.matched}/{s.progress.total} matched · Page {s.progress.page}/{s.progress.pages}</div>
-          <div>{s.mistakes} mistake{s.mistakes === 1 ? "" : "s"}</div>
         </div>
       </div>
 
