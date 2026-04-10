@@ -30,7 +30,8 @@
    forced-color-adjust: none  →  opts out of Samsung Internet's contrast mode
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: only dark;
+  /* Default: dark. Not "only dark" — we now support both themes. */
+  color-scheme: dark;
 }
 
 /* Mobile-friendly defaults */
@@ -38,15 +39,15 @@ html,
 body,
 #root {
   height: 100%;
+  /* Keep "only dark" here for Samsung Internet — overridden per-theme below */
   color-scheme: only dark;
   background-color: #0a0a0b;
-  /* Block Samsung Internet's dark-mode colour filter from shifting the whole page */
   filter: none;
   -webkit-filter: none;
 }
 
 body {
-  background-color: #0a0a0b; /* matches bg-zinc-950 */
+  background-color: #0a0a0b;
   color: #e5e7eb;
   overscroll-behavior-y: none;
   position: relative;
@@ -111,26 +112,166 @@ body::after {
 :root {
   --safe-bottom: env(safe-area-inset-bottom);
 
-  /* UI tokens (presentation only) */
+  /* ── Dark theme tokens (default) ── */
   --z-bg: #0a0a0b;
   --z-text: #e5e7eb;
-
-  /* Surfaces */
   --z-surface: rgba(255, 255, 255, 0.06);
   --z-surface-strong: rgba(255, 255, 255, 0.08);
   --z-inset: rgba(0, 0, 0, 0.28);
-
-  /* Borders (“felt, not seen”) */
   --z-border: rgba(255, 255, 255, 0.10);
   --z-border-soft: rgba(255, 255, 255, 0.08);
-
-  /* Radii */
-  --z-radius: 16px; /* 2xl-ish */
+  --z-radius: 16px;
   --z-radius-lg: 20px;
-
-  /* Focus ring */
   --z-ring: rgba(255, 255, 255, 0.18);
+
+  /* Accent: emerald */
+  --z-accent: #10b981;
+  --z-accent-bright: #6ee7b7;
+  --z-accent-muted: rgba(110, 231, 183, 0.6);
+  --z-accent-bg: rgba(16, 185, 129, 0.12);
+  --z-accent-border: rgba(16, 185, 129, 0.3);
+
+  /* Semantic inline-style tokens */
+  --z-streak: #fbbf24;
+  --z-streak-muted: rgba(251, 191, 36, 0.6);
+  --z-text-dim: rgba(255, 255, 255, 0.3);
+  --z-progress-track: rgba(255, 255, 255, 0.08);
+  --z-progress-fill: linear-gradient(90deg, #059669, #34d399);
+  --z-progress-dot: #34d399;
+  --z-progress-dot-glow: rgba(52, 211, 153, 0.45);
+  --z-xp-color: #fff;
+  --z-xp-muted: rgba(255, 255, 255, 0.3);
+  --z-strip-bg: linear-gradient(135deg, rgba(6,6,8,0.95) 0%, rgba(10,26,18,0.95) 100%);
+  --z-strip-border: rgba(16, 185, 129, 0.2);
+  --z-modal-bg: linear-gradient(180deg, #070708 0%, #0a0a0b 50%, #070708 100%);
+  --z-dock-border: rgba(255, 255, 255, 0.06);
 }
+
+/* ─── Light theme ─────────────────────────────────────────────────────────────
+   App.jsx writes data-theme="light"/"dark" to <html>. "auto" is resolved to
+   light or dark in JS before the attribute is written.
+   Specificity: html[data-theme] + .class = 0,2,0 > Tailwind's 0,1,0.
+   ─────────────────────────────────────────────────────────────────────────── */
+html[data-theme="light"],
+html[data-theme="light"] body,
+html[data-theme="light"] #root {
+  color-scheme: light;
+  background-color: #EDE0C8;
+  color: #2c2417;
+  forced-color-adjust: none;
+  -ms-high-contrast-adjust: none;
+}
+
+html[data-theme="light"] {
+  --z-bg: #EDE0C8;
+  --z-text: #2c2417;
+  --z-surface: rgba(0, 0, 0, 0.04);
+  --z-surface-strong: rgba(0, 0, 0, 0.06);
+  --z-inset: rgba(0, 0, 0, 0.06);
+  --z-border: rgba(0, 0, 0, 0.10);
+  --z-border-soft: rgba(0, 0, 0, 0.07);
+  --z-ring: rgba(0, 0, 0, 0.15);
+  --z-accent: #6B8F6E;
+  --z-accent-bright: #4a7d50;
+  --z-accent-muted: rgba(74, 125, 80, 0.7);
+  --z-accent-bg: rgba(107, 143, 110, 0.12);
+  --z-accent-border: rgba(107, 143, 110, 0.30);
+  --z-streak: #d97706;
+  --z-streak-muted: rgba(217, 119, 6, 0.7);
+  --z-text-dim: rgba(44, 36, 23, 0.45);
+  --z-progress-track: rgba(0, 0, 0, 0.10);
+  --z-progress-fill: linear-gradient(90deg, #4a7d50, #6B8F6E);
+  --z-progress-dot: #6B8F6E;
+  --z-progress-dot-glow: rgba(107, 143, 110, 0.45);
+  --z-xp-color: #1c1917;
+  --z-xp-muted: rgba(44, 36, 23, 0.45);
+  --z-strip-bg: linear-gradient(135deg, rgba(237,224,200,0.97) 0%, rgba(228,214,188,0.97) 100%);
+  --z-strip-border: rgba(107, 143, 110, 0.25);
+  --z-modal-bg: linear-gradient(180deg, #E4D6BC 0%, #EDE0C8 50%, #E8E0CE 100%);
+  --z-dock-border: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] body::before {
+  background:
+    radial-gradient(900px 480px at 50% -100px, rgba(107,143,110,0.14), transparent 58%),
+    radial-gradient(700px 400px at 50% 45%, rgba(107,143,110,0.07), transparent 60%),
+    linear-gradient(180deg, #E4D6BC 0%, #EDE0C8 40%, #E8E0CE 100%);
+}
+
+/* Text */
+html[data-theme="light"] .text-zinc-100 { color: #1c1917; }
+html[data-theme="light"] .text-zinc-200 { color: #292524; }
+html[data-theme="light"] .text-zinc-300 { color: #44403c; }
+html[data-theme="light"] .text-zinc-400 { color: #57534e; }
+html[data-theme="light"] .text-zinc-500 { color: #78716c; }
+html[data-theme="light"] .text-zinc-600 { color: #a8a29e; }
+html[data-theme="light"] .text-zinc-700 { color: #c4bfbb; }
+html[data-theme="light"] .text-zinc-950 { color: #1c1917; }
+html[data-theme="light"] .text-emerald-100 { color: #2d5e33; }
+html[data-theme="light"] .text-emerald-200 { color: #3d6b42; }
+html[data-theme="light"] .text-emerald-300 { color: #4a7d50; }
+html[data-theme="light"] .text-emerald-400 { color: #6B8F6E; }
+html[data-theme="light"] .text-emerald-500 { color: #5d8060; }
+
+/* Zinc backgrounds */
+html[data-theme="light"] .bg-zinc-950  { background-color: #EDE0C8; }
+html[data-theme="light"] .bg-zinc-900  { background-color: #F0E8D6; }
+html[data-theme="light"] .bg-zinc-800  { background-color: #E8E0CE; }
+html[data-theme="light"] .bg-zinc-700  { background-color: #DDD5C3; }
+html[data-theme="light"] .bg-zinc-950\/92 { background-color: rgba(237,224,200,0.93); }
+html[data-theme="light"] .bg-zinc-950\/60 { background-color: rgba(237,224,200,0.80); }
+html[data-theme="light"] .bg-zinc-950\/40 { background-color: rgba(237,224,200,0.60); }
+html[data-theme="light"] .bg-zinc-900\/85 { background-color: rgba(240,232,214,0.90); }
+
+/* White alpha backgrounds */
+html[data-theme="light"] .bg-white\/\[0\.02\]  { background-color: rgba(0,0,0,0.03); }
+html[data-theme="light"] .bg-white\/\[0\.03\]  { background-color: rgba(0,0,0,0.04); }
+html[data-theme="light"] .bg-white\/\[0\.035\] { background-color: rgba(0,0,0,0.05); }
+html[data-theme="light"] .bg-white\/\[0\.05\]  { background-color: rgba(0,0,0,0.05); }
+html[data-theme="light"] .bg-white\/\[0\.06\]  { background-color: rgba(0,0,0,0.06); }
+html[data-theme="light"] .bg-white\/\[0\.07\]  { background-color: rgba(0,0,0,0.07); }
+html[data-theme="light"] .bg-white\/\[0\.08\]  { background-color: rgba(0,0,0,0.08); }
+html[data-theme="light"] .bg-white\/\[0\.09\]  { background-color: rgba(0,0,0,0.09); }
+html[data-theme="light"] .bg-white\/5   { background-color: rgba(0,0,0,0.05); }
+
+/* Black alpha backgrounds */
+html[data-theme="light"] .bg-black\/20  { background-color: rgba(100,80,40,0.06); }
+html[data-theme="light"] .bg-black\/25  { background-color: rgba(100,80,40,0.08); }
+html[data-theme="light"] .bg-black\/60  { background-color: rgba(0,0,0,0.50); }
+
+/* Emerald backgrounds */
+html[data-theme="light"] .bg-emerald-500\/\[0\.07\] { background-color: rgba(107,143,110,0.10); }
+html[data-theme="light"] .bg-emerald-500\/\[0\.08\] { background-color: rgba(107,143,110,0.12); }
+html[data-theme="light"] .bg-emerald-500\/\[0\.09\] { background-color: rgba(107,143,110,0.14); }
+html[data-theme="light"] .bg-emerald-500\/\[0\.10\] { background-color: rgba(107,143,110,0.15); }
+html[data-theme="light"] .bg-emerald-500\/20 { background-color: rgba(107,143,110,0.20); }
+html[data-theme="light"] .bg-emerald-500\/25 { background-color: rgba(107,143,110,0.25); }
+html[data-theme="light"] .bg-emerald-600\/90 { background-color: #6B8F6E; }
+html[data-theme="light"] .bg-emerald-600\/40 { background-color: rgba(107,143,110,0.35); }
+html[data-theme="light"] .bg-emerald-600    { background-color: #6B8F6E; }
+html[data-theme="light"] .bg-emerald-400    { background-color: #6B8F6E; }
+html[data-theme="light"] .hover\:bg-emerald-500:hover { background-color: #5d8060; }
+
+/* Borders */
+html[data-theme="light"] .border-white\/10        { border-color: rgba(0,0,0,0.10); }
+html[data-theme="light"] .border-white\/\[0\.06\] { border-color: rgba(0,0,0,0.07); }
+html[data-theme="light"] .border-white\/\[0\.08\] { border-color: rgba(0,0,0,0.08); }
+html[data-theme="light"] .border-white\/15        { border-color: rgba(0,0,0,0.12); }
+html[data-theme="light"] .border-emerald-400\/20  { border-color: rgba(107,143,110,0.25); }
+html[data-theme="light"] .border-emerald-400\/25  { border-color: rgba(107,143,110,0.30); }
+html[data-theme="light"] .border-emerald-400\/60  { border-color: rgba(107,143,110,0.55); }
+html[data-theme="light"] .border-emerald-500\/20  { border-color: rgba(107,143,110,0.25); }
+html[data-theme="light"] .border-emerald-500\/25  { border-color: rgba(107,143,110,0.30); }
+html[data-theme="light"] .border-emerald-300\/20  { border-color: rgba(107,143,110,0.25); }
+html[data-theme="light"] .border-emerald-600      { border-color: #6B8F6E; }
+html[data-theme="light"] .border-zinc-700         { border-color: rgba(0,0,0,0.12); }
+html[data-theme="light"] .border-zinc-800         { border-color: rgba(0,0,0,0.10); }
+
+/* Shadows: keep dark for depth on light backgrounds */
+html[data-theme="light"] .shadow-\[0_0_32px_rgba\(16\,185\,129\,0\.3\)\] {
+  box-shadow: 0 0 32px rgba(107,143,110,0.35);
+}
+
 
 /* Disable selection/callout/highlight on pressable elements */
 [data-press] {
