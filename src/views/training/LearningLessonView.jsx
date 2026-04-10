@@ -7,6 +7,28 @@ import InteractivePhraseText from "../../components/audio/InteractivePhraseText"
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
+// ─── Helper text glow animation ───────────────────────────────────────────────
+// Injected once into the DOM so it's available in scenario blocks (which don't
+// render WordMatchBlock and therefore don't get matchPairsCss injected).
+
+const HELPER_STYLE_ID = "z-helper-glow-style";
+function ensureHelperStyles() {
+  if (document.getElementById(HELPER_STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = HELPER_STYLE_ID;
+  el.textContent = `
+    @keyframes helperGlowFade {
+      0%   { color: rgba(110,231,183,0.95); text-shadow: 0 0 14px rgba(52,211,153,0.55), 0 0 5px rgba(52,211,153,0.35); }
+      45%  { color: rgba(110,231,183,0.60); text-shadow: 0 0 8px rgba(52,211,153,0.20); }
+      100% { color: rgba(161,161,170,0.75); text-shadow: none; }
+    }
+    .helper-glow-fade {
+      animation: helperGlowFade 2s ease-out both;
+    }
+  `;
+  document.head.appendChild(el);
+}
+
 // ─── Audio feedback tones ─────────────────────────────────────────────────────
 
 function playMicStart() {
@@ -735,6 +757,7 @@ function BuildPhraseBlock({ block, playText, onComplete, completed }) {
 
 function ConversationBubble({ role, text, helperText, translation, playText }) {
   const isAssistant = role === "other";
+  useEffect(() => { if (isAssistant && helperText) ensureHelperStyles(); }, [isAssistant, helperText]);
   return (
     <div className={cn("flex flex-col", isAssistant ? "items-start" : "items-end")}>
       {/* Helper text — system bubbles only, glows green on load then fades to normal */}
