@@ -502,13 +502,26 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
     language: "lt",
   });
 
-  const isRecording = sttState === "recording";
+  const isRecording  = sttState === "recording";
+  const isPending    = sttState === "pending";
   const isProcessing = sttState === "transcribing" || sttState === "translating";
-  const isBusy = isRecording || isProcessing;
-  const supported = sttSupported();
-  const handleStart = () => { if (isBusy || completed) return; playMicStart(); startRecording(); };
-  const handleStop = () => { if (!isRecording) return; playMicStop(); stopRecording(); };
-  const micLabel = isRecording ? "Listening…" : isProcessing ? "Checking…" : supported ? "Hold to speak" : "Microphone unavailable";
+  const isActive     = isRecording || isPending;
+  const isBusy       = isActive || isProcessing;
+  const supported    = sttSupported();
+
+  // Single tap-to-toggle. No touchStart/mouseDown dance — those fire multiple
+  // times on Android and race against the async getUserMedia init gap.
+  const lastTapRef = React.useRef(0);
+  const handleMicTap = () => {
+    if (completed || isProcessing) return;
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) return; // debounce rapid double-taps
+    lastTapRef.current = now;
+    if (isActive) { playMicStop(); stopRecording(); }
+    else          { playMicStart(); startRecording(); }
+  };
+
+  const micLabel = isActive ? "Tap to stop" : isProcessing ? "Checking…" : supported ? "Tap to speak" : "Microphone unavailable";
 
   if (completed) {
     return (
@@ -573,14 +586,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
           ) : (
             <>
               <button type="button" disabled={isProcessing}
-                onMouseDown={(e) => { e.preventDefault(); handleStart(); }}
-                onMouseUp={(e) => { e.preventDefault(); handleStop(); }}
-                onMouseLeave={(e) => { e.preventDefault(); handleStop(); }}
-                onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleStart(); }}
-                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); handleStop(); }}
-                onTouchCancel={(e) => { e.preventDefault(); cancelStt(); }}
+                onClick={handleMicTap}
                 className={cn("h-20 w-20 rounded-full border-2 flex items-center justify-center transition-all select-none",
-                  isRecording ? "bg-emerald-500/25 border-emerald-400/60 scale-105 shadow-[0_0_32px_rgba(16,185,129,0.3)]"
+                  isActive ? "bg-emerald-500/25 border-emerald-400/60 scale-105 shadow-[0_0_32px_rgba(16,185,129,0.3)]"
                   : isProcessing ? "bg-white/[0.06] border-white/10 opacity-70"
                   : "bg-white/[0.06] border-white/15 hover:bg-white/[0.09] active:scale-95")}
                 aria-label={micLabel}>
@@ -591,7 +599,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
                     <span className="h-2 w-2 rounded-full bg-zinc-400 animate-pulse [animation-delay:240ms]" />
                   </div>
                 ) : (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={isRecording ? "text-emerald-300" : "text-zinc-300"}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={isActive ? "text-emerald-300" : "text-zinc-300"}>
                     <path d="M12 14.25c1.656 0 3-1.344 3-3V6.75c0-1.656-1.344-3-3-3s-3 1.344-3 3v4.5c0 1.656 1.344 3 3 3Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M7.5 10.5v.75c0 2.485 2.015 4.5 4.5 4.5s4.5-2.015 4.5-4.5v-.75" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M12 15.75V19.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
