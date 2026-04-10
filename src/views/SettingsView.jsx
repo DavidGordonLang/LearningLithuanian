@@ -666,7 +666,7 @@ export default function SettingsView({
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="sec-voice" title="Voice" subtitle="Text-to-speech voice for Lithuanian audio." open={openVoice} setOpen={setOpenVoice} accentTitle>
+      <CollapsibleSection id="sec-voice" title="System" subtitle="Text-to-speech voice for Lithuanian audio." open={openVoice} setOpen={setOpenVoice} accentTitle>
         <div className="z-inset p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm text-zinc-300">Voice</div>
