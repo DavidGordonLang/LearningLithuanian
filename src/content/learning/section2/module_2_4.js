@@ -431,7 +431,7 @@ export default function createModule_2_4(profile = {}) {
                 options: [
                   { id: "a", text: "Viso gero.", isCorrect: false },
                   { id: "b", text: "Rytoj. Ar galime pradėti dabar?", isCorrect: false },
-                  { id: "c", text: "Rytoj — gal dešimtą?", isCorrect: true },
+                  { id: "c", text: "Rytoj — gal vėliau?", isCorrect: true },
                 ],
               },
               {
