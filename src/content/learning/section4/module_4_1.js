@@ -386,7 +386,7 @@ export default function createModule_4_1(profile = {}) {
             tokens: [
               { id: "t1", text: "Vieną", correctIndex: 0 },
               { id: "t2", text: "kavą,", correctIndex: 1 },
-              { id: "t3", text: "prašau.", correctIndex: 2 },
+              { id: "t3", text: "prašau", correctIndex: 2 },
               { id: "t4", text: "Dvi", isDistractor: true },
               { id: "t5", text: "arbatas,", isDistractor: true },
             ],
@@ -534,7 +534,7 @@ export default function createModule_4_1(profile = {}) {
             tokens: [
               { id: "t1", text: "Dvi", correctIndex: 0 },
               { id: "t2", text: "arbatas,", correctIndex: 1 },
-              { id: "t3", text: "prašau.", correctIndex: 2 },
+              { id: "t3", text: "prašau", correctIndex: 2 },
               { id: "t4", text: "Vieną", isDistractor: true },
               { id: "t5", text: "kavą,", isDistractor: true },
             ],
