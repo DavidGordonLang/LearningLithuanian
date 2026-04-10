@@ -203,7 +203,7 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
 
 // ─── Feedback panel ───────────────────────────────────────────────────────────
 
-function FeedbackPanel({ isCorrect, correctText, feedbackNote, onContinue }) {
+function FeedbackPanel({ isCorrect, correctText, correctTranslation, feedbackNote, onContinue }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setVisible(true)); return () => cancelAnimationFrame(raf); }, []);
   return (
@@ -219,6 +219,10 @@ function FeedbackPanel({ isCorrect, correctText, feedbackNote, onContinue }) {
           <div className={cn("text-[14px] font-semibold", isCorrect ? "text-emerald-200" : "text-zinc-200")}>
             {isCorrect ? "Correct!" : `Correct answer: ${correctText}`}
           </div>
+          {/* On wrong answer: show English meaning of the correct answer to aid retention */}
+          {!isCorrect && correctTranslation ? (
+            <div className="mt-0.5 text-[12px] text-zinc-400 leading-snug">{correctTranslation}</div>
+          ) : null}
           {feedbackNote ? <div className="mt-1 text-[12px] text-zinc-400 leading-snug">{feedbackNote}</div> : null}
         </div>
       </div>
@@ -427,8 +431,23 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         ))}
       </div>
       {revealState === "revealed" ? (
-        <FeedbackPanel isCorrect={!!selected?.isCorrect} correctText={correctOption?.text || ""}
-          feedbackNote={selected?.isCorrect ? (block?.feedback?.correct || null) : null} onContinue={onAdvance}/>
+        <FeedbackPanel
+          isCorrect={!!selected?.isCorrect}
+          correctText={correctOption?.text || ""}
+          correctTranslation={
+            // recognise_mcq Form B (EN prompt → LT options): prompt text IS the translation
+            (!selected?.isCorrect && block?.type === "recognise_mcq" && !audioText)
+              ? (block?.prompt?.text || null)
+              : null
+          }
+          feedbackNote={
+            selected?.isCorrect
+              ? (block?.feedback?.correct || null)
+              // best_response wrong: show the feedback note so the user learns why
+              : (isBestResponse ? (block?.feedback?.correct || null) : null)
+          }
+          onContinue={onAdvance}
+        />
       ) : null}
     </div>
   );
@@ -714,14 +733,16 @@ function BuildPhraseBlock({ block, playText, onComplete, completed }) {
   );
 }
 
-function ConversationBubble({ role, text, helperText, playText }) {
+function ConversationBubble({ role, text, helperText, translation, playText }) {
   const isAssistant = role === "other";
   return (
     <div className={cn("flex flex-col", isAssistant ? "items-start" : "items-end")}>
-      {/* Helper text — only on system bubbles, shown above the bubble */}
+      {/* Helper text — system bubbles only, green left-border accent for prominence */}
       {isAssistant && helperText ? (
-        <div className="text-[11px] italic text-zinc-500 mb-1 px-1 max-w-[80%] leading-snug">
-          {helperText}
+        <div className="mb-1 px-1 max-w-[80%]">
+          <div className="border-l-2 border-emerald-500/50 pl-2 text-[11px] text-zinc-400 leading-snug italic">
+            {helperText}
+          </div>
         </div>
       ) : null}
       <div className={cn("max-w-[80%] rounded-[20px] border px-4 py-2.5",
@@ -734,6 +755,14 @@ function ConversationBubble({ role, text, helperText, playText }) {
           />
         </div>
       </div>
+      {/* Translation hint — user bubbles only, shown after correct selection */}
+      {!isAssistant && translation ? (
+        <div className="mt-1 px-1 max-w-[80%]">
+          <div className="text-[11px] text-zinc-500 leading-snug italic text-right">
+            {translation}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -826,7 +855,8 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
       return;
     }
     setSelectedId(option.id); setRevealState("revealed");
-    setHistory((prev) => [...prev, { role: "you", text: option.text }]);
+    // Store selected text plus any helperText from this step as a translation hint
+    setHistory((prev) => [...prev, { role: "you", text: option.text, translation: step?.helperText || null }]);
     if (isLastStep) {
       queueTimeout(() => setConversationComplete(true), 400);
       return;
@@ -852,7 +882,7 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
             </div>
           ) : (
             <>
-              {history.map((item, index) => <ConversationBubble key={`${item.role}-${index}-${item.text}`} role={item.role} text={item.text} helperText={item.helperText} playText={playText} />)}
+              {history.map((item, index) => <ConversationBubble key={`${item.role}-${index}-${item.text}`} role={item.role} text={item.text} helperText={item.helperText} translation={item.translation || null} playText={playText} />)}
               {assistantTyping ? <TypingBubble /> : null}
             </>
           )}
@@ -1084,9 +1114,9 @@ function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
   const pulseIds = s.pulse?.ids || [];
   const pulseKind = s.pulse?.kind || null;
   const selectedId = s.selected?.id || null;
-  const TILE_H = 68;
-  const COL_GAP = 14;
-  const tileStyle = { minHeight: TILE_H, margin: 0 };
+  const TILE_H = 56;
+  const COL_GAP = 8;
+  const tileStyle = { height: TILE_H, minHeight: TILE_H, padding: "10px 12px", margin: 0 };
 
   if (completed && s.showDone) {
     return (
@@ -1102,9 +1132,13 @@ function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
 
   return (
     <div className="mp-root">
-      <div className="mb-4">
+      <div className="mb-3">
         <div className="mp-progress-track">
           <div className="mp-progress-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="mt-1.5 flex items-center justify-between text-[11px] text-zinc-500">
+          <div>{s.progress.matched}/{s.progress.total} matched · Page {s.progress.page}/{s.progress.pages}</div>
+          <div>{s.mistakes} mistake{s.mistakes === 1 ? "" : "s"}</div>
         </div>
       </div>
 
