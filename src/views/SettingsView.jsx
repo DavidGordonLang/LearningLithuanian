@@ -106,6 +106,8 @@ export default function SettingsView({
   const setFromCountryCode = useSettingsStore((s) => s.setFromCountryCode);
   const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
   const setLivesInCountryCode = useSettingsStore((s) => s.setLivesInCountryCode);
+  const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
+  const setDateOfBirth = useSettingsStore((s) => s.setDateOfBirth);
 
   const [nameDraft, setNameDraft] = useState(userName || "");
   const [nameSaving, setNameSaving] = useState(false);
@@ -448,6 +450,45 @@ export default function SettingsView({
               <div className="text-[11px] text-zinc-600">
                 Leave blank if you don’t want lessons to use your name yet.
               </div>
+            </div>
+
+            {/* Date of birth */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Date of birth</div>
+              <div className="text-xs text-zinc-500">
+                Used so lessons teach you to say your actual age in Lithuanian.
+              </div>
+              <input
+                type="date"
+                value={dateOfBirth || ""}
+                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setDateOfBirth?.(user?.id, e.target.value)}
+                className="z-input !py-2.5 !px-3 !rounded-2xl w-full"
+              />
+              {dateOfBirth && (() => {
+                const today = new Date();
+                const birth = new Date(dateOfBirth);
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+                const ones  = ["", "vienas", "du", "trys", "keturi", "penki", "šeši", "septyni", "aštuoni", "devyni"];
+                const teens = ["dešimt", "vienuolika", "dvylika", "trylika", "keturiolika", "penkiolika", "šešiolika", "septyniolika", "aštuoniolika", "devyniolika"];
+                const tens  = ["", "", "dvidešimt", "trisdešimt", "keturiasdešimt", "penkiasdešimt", "šešiasdešimt", "septyniasdešimt", "aštuoniasdešimt", "devyniasdešimt"];
+                let num = null;
+                if (age >= 1 && age <= 99) {
+                  if (age < 10) num = ones[age];
+                  else if (age < 20) num = teens[age - 10];
+                  else { const t = Math.floor(age / 10); const o = age % 10; num = o === 0 ? tens[t] : tens[t] + " " + ones[o]; }
+                }
+                const phrase = num ? "Man " + num + " metų" : null;
+                if (!phrase) return null;
+                return (
+                  <div className="text-[12px] text-emerald-400/80 mt-1">
+                    Your age phrase: <span className="font-semibold text-emerald-300">{phrase}</span>
+                    <span className="text-zinc-600 ml-1">— {age} years old</span>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Gender */}
