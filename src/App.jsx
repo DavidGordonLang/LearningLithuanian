@@ -34,6 +34,7 @@ import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
 import { useScenarioStore } from "./stores/scenarioStore";
 import { initAuthListener, useAuthStore } from "./stores/authStore";
+import { useSettingsStore } from "./stores/settingsStore";
 import { supabase } from "./supabaseClient";
 
 import useLocalStorageState from "./hooks/useLocalStorageState";
@@ -193,9 +194,24 @@ function ToastItem({ toast, onDismiss }) {
 
 /* ============================================================================ */
 
-function AppBackground() {
+function AppBackground({ isLight }) {
+  if (isLight) {
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ backgroundColor: "var(--z-bg)" }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(900px 480px at 50% -100px, rgba(107,143,110,0.14), transparent 58%)," +
+              "radial-gradient(700px 400px at 50% 45%, rgba(107,143,110,0.07), transparent 60%)," +
+              "linear-gradient(180deg, #E4D6BC 0%, #EDE0C8 40%, #E8E0CE 100%)",
+          }}
+        />
+      </div>
+    );
+  }
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ backgroundColor: '#0a0a0b' }}>
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ backgroundColor: "#0a0a0b" }}>
       <div
         className="absolute inset-0"
         style={{
@@ -205,7 +221,6 @@ function AppBackground() {
             "linear-gradient(180deg, rgba(10,10,11,1) 0%, rgba(8,8,10,1) 45%, rgba(6,6,8,1) 100%)",
         }}
       />
-
       <div
         className="absolute inset-0"
         style={{
@@ -213,12 +228,10 @@ function AppBackground() {
             "radial-gradient(120% 90% at 50% 30%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.78) 100%)",
         }}
       />
-
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
-          backgroundImage:
-            "radial-gradient(rgba(255,255,255,0.25) 1px, rgba(0,0,0,0) 1px)",
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.25) 1px, rgba(0,0,0,0) 1px)",
           backgroundSize: "3px 3px",
           mixBlendMode: "overlay",
         }}
@@ -331,6 +344,24 @@ export default function App() {
   useEffect(() => {
     initAuthListener();
   }, []);
+
+  // ── Theme: apply data-theme to <html> whenever themeMode changes ──────────
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (themeMode === "light") {
+      root.setAttribute("data-theme", "light");
+    } else if (themeMode === "dark") {
+      root.setAttribute("data-theme", "dark");
+    } else {
+      // auto: resolve against system preference
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.setAttribute("data-theme", prefersDark ? "dark" : "light");
+    }
+  }, [themeMode]);
+
+  const isLight = themeMode === "light" ||
+    (themeMode === "auto" && !window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const authLoading = useAuthStore((s) => s.loading);
   const user = useAuthStore((s) => s.user);
@@ -872,8 +903,8 @@ export default function App() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden" style={{ backgroundColor: '#0a0a0b' }}>
-      <AppBackground />
+    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden" style={{ backgroundColor: "var(--z-bg)" }}>
+      <AppBackground isLight={isLight} />
 
       <Header
         ref={headerRef}
