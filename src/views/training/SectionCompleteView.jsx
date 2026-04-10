@@ -311,7 +311,7 @@ function CelebrationCard({
         zIndex: 9999,
         overflowY: "auto",
         overscrollBehavior: "contain",
-        background: "linear-gradient(180deg, #070708 0%, #0a0a0b 50%, #070708 100%)",
+        background: "var(--z-modal-bg, linear-gradient(180deg, #070708 0%, #0a0a0b 50%, #070708 100%))",
       }}
     >
       {/* Background glow */}
@@ -344,10 +344,10 @@ function CelebrationCard({
           style={{ transitionDelay: "120ms" }}
         >
           <div className="text-[32px] font-semibold text-emerald-200 leading-tight">
-            {section?.title || "First Contact"}
+            First Contact
           </div>
           <div className="text-[14px] text-zinc-500 mt-1">
-            You've completed Section {section?.code || "1"}
+            {section?.title || "You've completed your first section"}
           </div>
         </div>
 
@@ -444,7 +444,7 @@ function CelebrationCard({
             onClick={onContinue}
             className="w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.05] transition"
           >
-            Continue to Section {parseInt(section?.code || "1") + 1}
+            Continue to Section 2
           </button>
           <button
             type="button"
