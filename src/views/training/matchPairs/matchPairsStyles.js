@@ -131,4 +131,13 @@ export const matchPairsCss = `
 .mp-btn-ghost{
   width:100%;border-radius:16px;padding:10px 14px;font-weight:650;color:rgba(212,212,216,0.85);
 }
+/* Helper text glow-fade — starts emerald, fades to normal text */
+@keyframes helperGlowFade {
+  0%   { color: rgba(110,231,183,0.90); text-shadow: 0 0 14px rgba(52,211,153,0.50), 0 0 6px rgba(52,211,153,0.30); }
+  50%  { color: rgba(110,231,183,0.55); text-shadow: 0 0 8px rgba(52,211,153,0.20); }
+  100% { color: rgba(161,161,170,0.75); text-shadow: none; }
+}
+.helper-glow-fade {
+  animation: helperGlowFade 2s ease-out both;
+}
 `;
