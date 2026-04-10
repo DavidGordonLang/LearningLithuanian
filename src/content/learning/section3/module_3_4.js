@@ -112,7 +112,7 @@ export default function createModule_3_4(profile = {}) {
                 helperText: "How old are you?",
                 options: [
                   { id: "a", text: "Man reikia pagalbos", isCorrect: false },
-                  { id: "b", text: `${userAgePhraseLt}. O jums?`, isCorrect: true },
+                  { id: "b", text: `${userAgePhraseLt}. O jums?`, en: `${userAgePhraseEn}. And you?`, isCorrect: true },
                   { id: "c", text: "Nesuprantu", isCorrect: false },
                 ],
               },
@@ -124,7 +124,7 @@ export default function createModule_3_4(profile = {}) {
                 helperText: "I am twenty-eight.",
                 options: [
                   { id: "a", text: "Brangu", isCorrect: false },
-                  { id: "b", text: "Malonu susipažinti!", isCorrect: true },
+                  { id: "b", text: "Malonu susipažinti!", en: "Nice to meet you!", isCorrect: true },
                   { id: "c", text: "Nesuprantu", isCorrect: false },
                 ],
               },
