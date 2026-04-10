@@ -50,7 +50,7 @@ export default function HomeDock({
 
   return createPortal(
     <div className="bg-zinc-950/95 backdrop-blur"
-         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+         style={{ borderBottom: "1px solid var(--z-dock-border)" }}>
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2">
         {/* Streak / Level */}
         <div className="flex items-center gap-3">
