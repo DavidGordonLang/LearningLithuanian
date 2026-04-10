@@ -65,7 +65,7 @@ export default function createCheckpoint4(profile = {}) {
         tokens: [
           { id: "t1", text: "Dvi", correctIndex: 0 },
           { id: "t2", text: "arbatas,", correctIndex: 1 },
-          { id: "t3", text: "prašau.", correctIndex: 2 },
+          { id: "t3", text: "prašau", correctIndex: 2 },
           { id: "t4", text: "Vieną", isDistractor: true },
           { id: "t5", text: "kavą,", isDistractor: true },
         ],
@@ -81,7 +81,7 @@ export default function createCheckpoint4(profile = {}) {
           { id: "t1", text: "Arbatos", correctIndex: 0 },
           { id: "t2", text: "be", correctIndex: 1 },
           { id: "t3", text: "cukraus,", correctIndex: 2 },
-          { id: "t4", text: "prašau.", correctIndex: 3 },
+          { id: "t4", text: "prašau", correctIndex: 3 },
           { id: "t5", text: "su", isDistractor: true },
           { id: "t6", text: "pienu,", isDistractor: true },
         ],
