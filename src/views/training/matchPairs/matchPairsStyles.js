@@ -131,4 +131,47 @@ export const matchPairsCss = `
 .mp-btn-ghost{
   width:100%;border-radius:16px;padding:10px 14px;font-weight:650;color:rgba(212,212,216,0.85);
 }
+
+/* ── Light theme overrides ── */
+html[data-theme="light"] .mp-progress-track{
+  border-color:rgba(0,0,0,0.12);
+  background:rgba(0,0,0,0.08);
+}
+html[data-theme="light"] .mp-progress-fill{
+  background:rgba(107,143,110,0.80);
+}
+html[data-theme="light"] .mp-tile{
+  border-color:rgba(0,0,0,0.12);
+  background:rgba(255,255,255,0.55);
+  color:#1c1917;
+}
+html[data-theme="light"] .mp-tile:active{transform:scale(0.985);}
+html[data-theme="light"] .mp-tile-amber{
+  border-color:rgba(217,119,6,0.45);
+  background:rgba(251,191,36,0.10);
+  box-shadow:
+    0 0 0 6px rgba(251,191,36,0.08),
+    0 0 22px rgba(251,191,36,0.08),
+    0 10px 26px rgba(0,0,0,0.08);
+}
+html[data-theme="light"] .mp-tile-cleared{
+  opacity:0.18;
+  border-color:rgba(0,0,0,0.06);
+  background:rgba(0,0,0,0.03);
+}
+html[data-theme="light"] .mp-modal{
+  border-color:rgba(0,0,0,0.12);
+  background:rgba(237,224,200,0.97);
+}
+html[data-theme="light"] .mp-btn-primary{
+  border-color:rgba(107,143,110,0.5);
+  background:rgba(107,143,110,0.15);
+  color:#1c1917;
+}
+html[data-theme="light"] .mp-btn-secondary{
+  border-color:rgba(0,0,0,0.12);
+  background:rgba(0,0,0,0.05);
+  color:#1c1917;
+}
+html[data-theme="light"] .mp-btn-ghost{ color:rgba(44,36,23,0.75); }
 `;
