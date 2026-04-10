@@ -22,7 +22,7 @@ export default function createCheckpoint3(profile = {}) {
         type: "best_response",
         title: "Choose the best response",
         noOptionAudio: true,
-        prompt: { text: "Someone holds up fingers and says 'penkiolika'. What number is that?" },
+        prompt: { text: "A market seller says 'penkiolika eurų'. How much is it?" },
         options: [
           { id: "a", text: "Fifty", isCorrect: false },
           { id: "b", text: "Fifteen", isCorrect: true },
