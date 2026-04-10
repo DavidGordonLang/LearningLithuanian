@@ -737,10 +737,13 @@ function ConversationBubble({ role, text, helperText, translation, playText }) {
   const isAssistant = role === "other";
   return (
     <div className={cn("flex flex-col", isAssistant ? "items-start" : "items-end")}>
-      {/* Helper text — system bubbles only, green left-border accent for prominence */}
+      {/* Helper text — system bubbles only, glowing emerald card for prominence */}
       {isAssistant && helperText ? (
-        <div className="mb-1 px-1 max-w-[80%]">
-          <div className="border-l-2 border-emerald-500/50 pl-2 text-[11px] text-zinc-400 leading-snug italic">
+        <div className="mb-1.5 max-w-[82%]">
+          <div
+            className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-3 py-1.5 text-[11px] text-emerald-300/80 leading-snug"
+            style={{ boxShadow: "0 0 18px rgba(16,185,129,0.10), 0 0 6px rgba(16,185,129,0.07)" }}
+          >
             {helperText}
           </div>
         </div>
@@ -855,8 +858,8 @@ function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdva
       return;
     }
     setSelectedId(option.id); setRevealState("revealed");
-    // Store selected text plus any helperText from this step as a translation hint
-    setHistory((prev) => [...prev, { role: "you", text: option.text, translation: step?.helperText || null }]);
+    // Show translation of what the user said — only if option has an en field
+    setHistory((prev) => [...prev, { role: "you", text: option.text, translation: option.en || null }]);
     if (isLastStep) {
       queueTimeout(() => setConversationComplete(true), 400);
       return;
