@@ -108,6 +108,8 @@ export default function SettingsView({
   const setLivesInCountryCode = useSettingsStore((s) => s.setLivesInCountryCode);
   const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
   const setDateOfBirth = useSettingsStore((s) => s.setDateOfBirth);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
 
   const [nameDraft, setNameDraft] = useState(userName || "");
   const [nameSaving, setNameSaving] = useState(false);
@@ -672,6 +674,21 @@ export default function SettingsView({
               <option value="lt-LT-LeonasNeural">Leonas (male)</option>
               <option value="lt-LT-OnaNeural">Ona (female)</option>
             </select>
+          </div>
+          <div className="z-inset p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-zinc-200">Theme</div>
+                <div className="text-xs text-zinc-500 mt-0.5">Auto follows your device setting</div>
+              </div>
+              <div className="flex gap-2">
+                {[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]].map(([mode, label]) => (
+                  <button key={mode} type="button" data-press
+                    className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + ((themeMode ?? "auto") === mode ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
+                    onClick={() => setThemeMode?.(user?.id, mode)}>{label}</button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="z-inset p-4">
             <div className="flex items-center justify-between gap-4">
