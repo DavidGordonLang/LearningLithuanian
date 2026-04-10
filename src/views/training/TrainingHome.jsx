@@ -41,50 +41,50 @@ function XPStrip({ totalXP, streakDays, getLevelInfo }) {
 
   return (
     <div style={{
-      background: "linear-gradient(135deg, rgba(6,6,8,0.95) 0%, rgba(10,26,18,0.95) 100%)",
+      background: "var(--z-strip-bg)",
       borderRadius: 16,
-      border: "1px solid rgba(16,185,129,0.2)",
+      border: "1px solid var(--z-strip-border)",
       padding: "14px 16px",
       marginBottom: 20,
     }}>
       {/* Top row: level + streak */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{
-          background: "rgba(16,185,129,0.12)",
-          border: "1px solid rgba(16,185,129,0.3)",
+          background: "var(--z-accent-bg)",
+          border: "1px solid var(--z-accent-border)",
           borderRadius: 20,
           padding: "4px 12px",
           display: "flex",
           alignItems: "center",
           gap: 6,
         }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#6ee7b7" }}>Lvl {level}</span>
-          <span style={{ fontSize: 11, color: "rgba(110,231,183,0.6)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{levelName}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--z-accent-bright)" }}>Lvl {level}</span>
+          <span style={{ fontSize: 11, color: "var(--z-accent-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{levelName}</span>
         </div>
         {hasStreak ? (
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ fontSize: 16 }}>🔥</span>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>{streakDays}</span>
-            <span style={{ fontSize: 11, color: "rgba(251,191,36,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>day streak</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "var(--z-streak)" }}>{streakDays}</span>
+            <span style={{ fontSize: 11, color: "var(--z-streak-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>day streak</span>
           </div>
         ) : null}
       </div>
 
       {/* Progress bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+        <span style={{ fontSize: 11, color: "var(--z-text-dim)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           Progress to {getLevelName(level + 1)}
         </span>
-        <span style={{ fontSize: 11, color: "rgba(110,231,183,0.6)" }}>
+        <span style={{ fontSize: 11, color: "var(--z-accent-muted)" }}>
           {xpIntoLevel} / {xpForThisLevel} XP
         </span>
       </div>
-      <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 99, overflow: "visible", position: "relative" }}>
+      <div style={{ height: 6, background: "var(--z-progress-track)", borderRadius: 99, overflow: "visible", position: "relative" }}>
         <div style={{
           height: "100%",
           width: `${pct}%`,
           borderRadius: 99,
-          background: "linear-gradient(90deg, #059669, #34d399)",
+          background: "var(--z-progress-fill)",
           position: "relative",
           minWidth: pct > 0 ? 6 : 0,
         }}>
@@ -96,8 +96,8 @@ function XPStrip({ totalXP, streakDays, getLevelInfo }) {
               width: 12,
               height: 12,
               borderRadius: "50%",
-              background: "#34d399",
-              boxShadow: "0 0 8px 3px rgba(52,211,153,0.45)",
+              background: "var(--z-progress-dot)",
+              boxShadow: "0 0 8px 3px var(--z-progress-dot-glow)",
             }} />
           ) : null}
         </div>
@@ -105,8 +105,8 @@ function XPStrip({ totalXP, streakDays, getLevelInfo }) {
 
       {/* Total XP */}
       <div style={{ textAlign: "right", marginTop: 7 }}>
-        <span style={{ fontSize: 19, fontWeight: 700, color: "#fff" }}>{totalXP.toLocaleString()}</span>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginLeft: 5 }}>total XP</span>
+        <span style={{ fontSize: 19, fontWeight: 700, color: "var(--z-xp-color)" }}>{totalXP.toLocaleString()}</span>
+        <span style={{ fontSize: 11, color: "var(--z-xp-muted)", marginLeft: 5 }}>total XP</span>
       </div>
     </div>
   );
