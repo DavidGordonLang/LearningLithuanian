@@ -159,10 +159,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const userName = useSettingsStore((s) => s.userName);
   const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
   const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
+  const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
 
   const section1Profile = useMemo(
-    () => buildSection1Profile({ userName, fromCountryCode, livesInCountryCode }),
-    [userName, fromCountryCode, livesInCountryCode]
+    () => buildSection1Profile({ userName, fromCountryCode, livesInCountryCode, dateOfBirth }),
+    [userName, fromCountryCode, livesInCountryCode, dateOfBirth]
   );
 
   const counts = useMemo(() => {
@@ -616,108 +617,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
               label: "⚡ Sequence Walker",
               onClick: () => setShowSequenceDebug(true),
             },
-            ...allSections.flatMap((section) =>
-              (section.modules || [])
-                .filter((module) => module.status === "active")
-                .map((module) => ({
-                  id: module.id,
-                  label: `⚡ Test Module ${module.code} Complete`,
-                  onClick: () => {
-                    setModuleCompletePayload({
-                      module,
-                      section,
-                      xpEarned: 142,
-                      accuracyPct: 87,
-                    });
-                    setScreen("moduleComplete");
-                  },
-                }))
-            ),
-            ...allSections.map((section) => ({
-              id: `section_complete_${section.id}`,
-              label: `⚡ Test Section ${section.code} Complete (screen only)`,
-              onClick: () => {
-                setSectionCompletePayload({
-                  section,
-                  modules: section.modules || [],
-                  xpEarned: 580,
-                  accuracyPct: 89,
-                });
-                setScreen("sectionComplete");
-              },
-            })),
-            ...allSections.map((section) => ({
-              id: `section_prime_flow_${section.id}`,
-              label: `⚡ Prime Section ${section.code} for Flow Test`,
-              onClick: () => {
-                // Marks all non-checkpoint lessons complete + clears section-seen flag.
-                // Then navigate to the checkpoint so you can play it live and verify
-                // NailedIt → VocabSave → SectionComplete fires for real.
-                const nonCheckpointIds = (section.modules || []).flatMap((m) =>
-                  Array.isArray(m.lessons) ? m.lessons.map((l) => l.id) : []
-                );
-                nonCheckpointIds.forEach((id) => completeLesson(id, user?.id));
-                // Clear section-seen so hasSeenSectionComplete returns false
-                useGameStore.setState((state) => ({
-                  seenSectionCompleteIds: state.seenSectionCompleteIds.filter(
-                    (id) => id !== section.id
-                  ),
-                }));
-                // Navigate to the checkpoint lesson directly
-                const checkpoint = (section.modules || []).find((m) => m.isSectionCheckpoint);
-                if (checkpoint) {
-                  setSelectedModuleId(checkpoint.id);
-                  setSelectedLessonId(checkpoint.id);
-                  setModuleWrongAnswers(0);
-                  setModuleScoreableBlocks(0);
-                  setModuleXpEarned(0);
-                  setLessonReturnScreen("home");
-                  setScreen("learningLesson");
-                }
-              },
-            })),
-            ...allSections.map((section) => ({
-              id: `section_full_flow_${section.id}`,
-              label: `⚡ Complete Section ${section.code} Full Flow`,
-              onClick: () => {
-                // Mark every lesson in every module of this section as complete
-                // then trigger the real NailedItContinue flow so vocab save fires
-                const allLessonIds = (section.modules || []).flatMap((m) => {
-                  if (Array.isArray(m.lessons)) return m.lessons.map((l) => l.id);
-                  if (m.blocks && m.id) return [m.id]; // checkpoint
-                  return [];
-                });
-                allLessonIds.forEach((id) => completeLesson(id, user?.id));
-                // Also mark all module completes as seen so only section fires
-                (section.modules || []).forEach((m) => {
-                  if (!hasSeenModuleComplete(m.id)) markModuleCompleteSeen(m.id, user?.id);
-                });
-                // Reset section seen so it fires again
-                // Then trigger via the last lesson id
-                const lastLessonId = allLessonIds[allLessonIds.length - 1];
-                if (lastLessonId) {
-                  setModuleWrongAnswers(0);
-                  setModuleScoreableBlocks(0);
-                  setModuleXpEarned(120);
-                  // Simulate NailedItContinue with the checkpoint id
-                  const mod = section.modules?.[section.modules.length - 1];
-                  const sec = section;
-                  const modAccuracy = 88;
-                  setSectionCompletePayload({
-                    section: sec,
-                    modules: sec.modules || [],
-                    accuracyPct: modAccuracy,
-                    xpEarned: 120,
-                  });
-                  setPendingSectionComplete(true);
-                  const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
-                  setVocabSaveModule(buildSectionVocabModule(sec, checkpoint));
-                  setSelectedLessonId(null);
-                  setSelectedModuleId(null);
-                  setScreen("vocabSave");
-                }
-              },
-            })),
           ]
         : []}
       onBrowseCourse={() => setScreen("learningHome")}
