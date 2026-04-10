@@ -215,10 +215,10 @@ export default function createModule_3_2(profile = {}) {
                 actor: "other",
                 text: "Tai kainuoja penkiolika eurų.",
                 audioText: "Tai kainuoja penkiolika eurų",
-                helperText: "It costs fifteen euros.",
+                helperText: "It costs fifteen euros. — imu means I'll take it.",
                 options: [
                   { id: "a", text: "Nesuprantu", isCorrect: false },
-                  { id: "b", text: "Gerai, imu!", isCorrect: true },
+                  { id: "b", text: "Gerai, imu!", en: "OK, I'll take it!", isCorrect: true },
                   { id: "c", text: "Iki", isCorrect: false },
                 ],
               },
