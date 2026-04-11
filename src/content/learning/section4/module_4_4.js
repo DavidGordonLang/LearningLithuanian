@@ -2,7 +2,15 @@
 // Module 4.4 — Social Food Interaction
 
 export default function createModule_4_4(profile = {}) {
-  const { userNameSafe = "Davidas", userAgePhraseLt = "Man trisdešimt metų" } = profile;
+  const {
+    userNameSafe = "Davidas",
+    userAgePhraseLt = "Man trisdešimt metų",
+    speakerGender = "male",
+  } = profile;
+  const isMale = speakerGender !== "female";
+  const alkanas = isMale ? "alkanas" : "alkana";
+  const vegetarX = isMale ? "vegetaras" : "vegetarė";
+  const vegetarXEn = isMale ? "I am vegetarian. (male)" : "I am vegetarian. (female)";
 
   return {
     id: "module_4_4",
@@ -35,11 +43,10 @@ export default function createModule_4_4(profile = {}) {
             type: "learn",
             title: "Hunger and thirst",
             items: [
-              { id: "ht1", lt: "Aš alkanas.", en: "I'm hungry. (male)", audioText: "Aš alkanas", saveable: true, core: true },
-              { id: "ht2", lt: "Aš alkana.", en: "I'm hungry. (female)", audioText: "Aš alkana", saveable: true, core: true },
-              { id: "ht3", lt: "Aš noriu gerti.", en: "I'm thirsty.", audioText: "Aš noriu gerti", saveable: true, core: true },
-              { id: "ht4", lt: "Ar tu alkanas?", en: "Are you hungry? (informal, to male)", audioText: "Ar tu alkanas", saveable: true, core: true },
-              { id: "ht5", lt: "Ar tu alkana?", en: "Are you hungry? (informal, to female)", audioText: "Ar tu alkana", saveable: true, core: true },
+              { id: "ht1", lt: `Aš ${alkanas}.`, en: `I'm hungry.`, audioText: `Aš ${alkanas}`, saveable: true, core: true },
+              { id: "ht2", lt: "Aš noriu gerti.", en: "I'm thirsty.", audioText: "Aš noriu gerti", saveable: true, core: true },
+              { id: "ht3", lt: "Ar tu alkanas?", en: "Are you hungry? (informal, to male)", audioText: "Ar tu alkanas", saveable: false, core: false },
+              { id: "ht4", lt: "Ar tu alkana?", en: "Are you hungry? (informal, to female)", audioText: "Ar tu alkana", saveable: false, core: false },
             ],
           },
           {
@@ -68,9 +75,9 @@ export default function createModule_4_4(profile = {}) {
             id: "s4m4l1_b4",
             type: "speak_self_check",
             title: "Say it out loud",
-            prompt: "Say: I'm hungry (use your own form)",
-            targetText: "Aš alkanas",
-            audioText: "Aš alkanas",
+            prompt: `Say: I'm hungry`,
+            targetText: `Aš ${alkanas}`,
+            audioText: `Aš ${alkanas}`,
           },
           {
             id: "s4m4l1_b5",
@@ -86,7 +93,7 @@ export default function createModule_4_4(profile = {}) {
                 helperText: "Are you hungry?",
                 options: [
                   { id: "a", text: "Ne, ačiū.", isCorrect: false },
-                  { id: "b", text: "Taip, aš alkanas. O tu?", en: "Yes, I'm hungry. And you?", isCorrect: true },
+                  { id: "b", text: `Taip, aš ${alkanas}. O tu?`, en: "Yes, I'm hungry. And you?", isCorrect: true },
                   { id: "c", text: "Nesuprantu.", isCorrect: false },
                 ],
               },
@@ -382,12 +389,13 @@ export default function createModule_4_4(profile = {}) {
             type: "learn",
             title: "Pattern to notice — man, tau, mums",
             items: [
-              { id: "pn1", lt: "Man reikia pagalbos.", en: "I need help. (man = to me)", audioText: "Man reikia pagalbos", saveable: false, core: false },
+              { id: "pn1", lt: "Man reikia pagalbos.", en: "I need help. (man = to/for me)", audioText: "Man reikia pagalbos", saveable: false, core: false },
               { id: "pn2", lt: "Man kavos, prašau.", en: "Coffee for me, please.", audioText: "Man kavos, prašau", saveable: false, core: false },
-              { id: "pn3", lt: "Man irgi.", en: "Me too. (man = to me)", audioText: "Man irgi", saveable: false, core: false },
+              { id: "pn3", lt: "Tau kavos?", en: "Coffee for you? (tau = to/for you, informal)", audioText: "Tau kavos", saveable: false, core: false },
+              { id: "pn4", lt: "Mums dvi arbatas.", en: "Two teas for us. (mums = to/for us)", audioText: "Mums dvi arbatas", saveable: false, core: false },
             ],
             notes: {
-              pattern: "You have already used man many times — in Man reikia… (I need…) and Man irgi (me too). In Lithuanian, man is the dative form meaning to me or for me. It is one of the most useful single words in the language. Mums works the same way for us. You do not need to memorise the grammar rule — just notice that the same small word does a lot of work across many situations.",
+              pattern: "Man means for me or to me. Tau means for you (informal). Mums means for us. You have already used man many times — in Man reikia… (I need…) and Man irgi (me too). These are the same small word doing the same job in a new situation. You do not need to memorise grammar rules — just notice that man, tau, and mums all follow the same pattern: they tell you who something is for.",
             },
           },
           {
@@ -418,18 +426,18 @@ export default function createModule_4_4(profile = {}) {
                 helperText: "What would you like?",
                 options: [
                   { id: "a", text: "Nesuprantu.", isCorrect: false },
-                  { id: "b", text: "Man kavos ir mums arbatos, prašau.", en: "Coffee for me and tea for us, please.", isCorrect: true },
+                  { id: "b", text: "Man kavos ir tau arbatos, prašau.", en: "Coffee for me and tea for you, please.", isCorrect: true },
                   { id: "c", text: "Viso gero.", isCorrect: false },
                 ],
               },
               {
                 id: "step_2",
                 actor: "other",
-                text: "Gerai. Kam kava — jums ar jam?",
-                audioText: "Gerai. Kam kava — jums ar jam",
-                helperText: "OK. Who is the coffee for — you or him?",
+                text: "Gerai. Kam kava?",
+                audioText: "Gerai. Kam kava",
+                helperText: "OK. Who is the coffee for?",
                 options: [
-                  { id: "a", text: "Mums, prašau.", isCorrect: false },
+                  { id: "a", text: "Tau, prašau.", isCorrect: false },
                   { id: "b", text: "Man, prašau.", en: "For me, please.", isCorrect: true },
                   { id: "c", text: "Nesuprantu.", isCorrect: false },
                 ],
@@ -620,7 +628,7 @@ export default function createModule_4_4(profile = {}) {
             id: "s4m4c_b6",
             type: "scenario_chain",
             title: "Conversation",
-            description: "A relaxed social food and drink exchange with a friend.",
+            description: "A relaxed social exchange — you and a friend decide to get food and drink together.",
             steps: [
               {
                 id: "step_1",
@@ -649,12 +657,12 @@ export default function createModule_4_4(profile = {}) {
               {
                 id: "step_3",
                 actor: "other",
-                text: "Aš noriu arbatos. Mums dvi, prašau.",
-                audioText: "Aš noriu arbatos. Mums dvi, prašau",
-                helperText: "I want tea. Two for us, please.",
+                text: "Aš noriu arbatos. Ir pavalgykime!",
+                audioText: "Aš noriu arbatos. Ir pavalgykime",
+                helperText: "I want tea. And let's eat!",
                 options: [
                   { id: "a", text: "Ko norite?", isCorrect: false },
-                  { id: "b", text: "Gerai! Pavalgykime irgi.", en: "Great! Let's eat too.", isCorrect: true },
+                  { id: "b", text: "Taip! Labai gera idėja.", en: "Yes! Great idea.", isCorrect: true },
                   { id: "c", text: "Atsiprašau.", isCorrect: false },
                 ],
               },
