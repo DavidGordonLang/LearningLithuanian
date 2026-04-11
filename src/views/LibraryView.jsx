@@ -431,8 +431,8 @@ export default function LibraryView({
                 }
               }}
             >
-              <div className="flex items-center gap-3">
-                <div onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start gap-3">
+                <div className="self-center" onClick={(e) => e.stopPropagation()}>
                   <PlayButton
                     text={r?.Lithuanian || ""}
                     playText={playText}
