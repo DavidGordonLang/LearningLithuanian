@@ -144,17 +144,14 @@ export default function useTTSPlayer({
       const raw = String(text || "");
       if (!raw.trim()) return;
 
+      // Preload failures are always silent — audio is fetched live on demand if cache misses.
       try {
         await getOrFetchBlob(raw, { slow });
-      } catch (e) {
-        if (typeof onError === "function") {
-          onError(e);
-        } else {
-          alert("Voice error: " + (e?.message || "Unknown error"));
-        }
+      } catch {
+        // Intentionally swallowed — a missed preload is not user-visible
       }
     },
-    [getOrFetchBlob, onError]
+    [getOrFetchBlob]
   );
 
   const playText = useCallback(
