@@ -329,6 +329,9 @@ html[data-theme="light"] .text-emerald-300 { color: #4a7d50; }
 /* Active mic button in light mode */
 html[data-theme="light"] .bg-emerald-500\/25 { background-color: rgba(107,143,110,0.25); }
 
+/* Kebab / three-dot menu icon — light mode */
+html[data-theme="light"] { --z-kebab-border: rgba(100,100,100,0.35); --z-kebab-bg: rgba(0,0,0,0.06); --z-kebab-dot: rgba(60,60,60,0.75); }
+
 /* Mic button: light mode — disc becomes warm white, not black */
 html[data-theme="light"] .z-mic-disc {
   background-color: #F5EDDA;
