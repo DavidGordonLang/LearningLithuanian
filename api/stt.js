@@ -67,12 +67,14 @@ export default async function handler(req, res) {
 
     const rawBody = Buffer.concat(chunks);
 
-    // Extract the optional language field from the multipart body
-    // so we can append it to the OpenAI request if present.
+    // Language can arrive as a query parameter (preferred — reliable) or
+    // as a multipart field (legacy fallback). Query param takes precedence.
+    const queryLang = req.query?.lang || null;
     const boundary = getBoundary(contentType);
-    const language = boundary
+    const bodyLang = boundary
       ? extractTextField(rawBody, boundary, "language")
       : null;
+    const language = queryLang || bodyLang || null;
 
     // If a language was provided, we need to rebuild the request to OpenAI
     // with the language field added. The cleanest approach is to pass the
