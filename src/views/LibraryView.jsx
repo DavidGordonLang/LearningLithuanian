@@ -15,10 +15,14 @@ const cn = (...xs) => xs.filter(Boolean).join(" ");
 
 function KebabIcon() {
   return (
-    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/[0.04]">
-      <span className="relative w-[3px] h-[3px] rounded-full bg-zinc-300">
-        <span className="absolute -top-[7px] left-0 w-[3px] h-[3px] rounded-full bg-zinc-300" />
-        <span className="absolute top-[7px] left-0 w-[3px] h-[3px] rounded-full bg-zinc-300" />
+    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full"
+      style={{ border: "1px solid var(--z-kebab-border, rgba(255,255,255,0.12))", background: "var(--z-kebab-bg, rgba(255,255,255,0.04))" }}>
+      <span className="relative w-[3px] h-[3px] rounded-full"
+        style={{ background: "var(--z-kebab-dot, rgba(161,161,170,0.9))" }}>
+        <span className="absolute -top-[7px] left-0 w-[3px] h-[3px] rounded-full"
+          style={{ background: "var(--z-kebab-dot, rgba(161,161,170,0.9))" }} />
+        <span className="absolute top-[7px] left-0 w-[3px] h-[3px] rounded-full"
+          style={{ background: "var(--z-kebab-dot, rgba(161,161,170,0.9))" }} />
       </span>
     </span>
   );
@@ -427,7 +431,7 @@ export default function LibraryView({
                 }
               }}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div onClick={(e) => e.stopPropagation()}>
                   <PlayButton
                     text={r?.Lithuanian || ""}
