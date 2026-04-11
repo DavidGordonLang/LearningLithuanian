@@ -71,12 +71,7 @@ function playMicStop() {
 // ─── Phrase matching ──────────────────────────────────────────────────────────
 
 function normaliseForMatch(str) {
-  // Strip Lithuanian diacritics before matching so STT transcriptions without
-  // diacritics (š→s, ž→z, č→c, ė→e, ų→u, ū→u, etc.) still match correctly.
-  const stripped = String(str || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-  return stripped
+  return String(str || "")
     .toLowerCase()
     .replace(/[.,!?;:"""''„"–—\-]/g, "")
     .replace(/\s+/g, " ")
@@ -114,26 +109,13 @@ function phraseMatches(captured, target) {
   const targetWords = t.split(" ").filter(Boolean);
   const capturedWords = c.split(" ").filter(Boolean);
   if (targetWords.length === 0) return false;
-
-  // Exact word match — ≥75% of target words found anywhere in capture
   const matched = targetWords.filter((w) => capturedWords.includes(w));
-  if (matched.length / targetWords.length >= 0.75) return true;
-
-  // Positional fuzzy match for phrases up to 5 words.
-  // Pairs each target word with the capture word at the same position.
-  // Requires: avg similarity ≥ 0.70 AND every word ≥ 0.60.
-  // The minimum check prevents "Per šalta" matching "Per karšta" (per/per=1.0
-  // inflates avg, but šalta/karšta=0.43 fails the minimum).
-  if (targetWords.length <= 5) {
-    const sims = targetWords.map((w, i) => charSimilarity(w, capturedWords[i] ?? ""));
-    const avgSim = sims.reduce((a, b) => a + b, 0) / sims.length;
-    const minSim = Math.min(...sims);
-    if (avgSim >= 0.70 && minSim >= 0.60) return true;
-
-    // Whole-phrase character similarity fallback for very short phrases (≤3 words)
-    if (targetWords.length <= 3 && charSimilarity(c, t) >= 0.78) return true;
+  if (matched.length / targetWords.length >= 0.8) return true;
+  // Fallback: character-level similarity for short targets or single words
+  // Catches speech API mis-transcribing Lithuanian diacritics (š→s, ž→z, č→c etc.)
+  if (targetWords.length <= 3) {
+    return charSimilarity(c, t) >= 0.82;
   }
-
   return false;
 }
 
@@ -1332,32 +1314,56 @@ export default function LearningLessonView({
 
   const handleLoadingReady = useCallback(() => setPhase("running"), []);
 
-  // Preload all audio from this lesson while loading screen shows
+  // Preload all audio for this lesson while the loading screen shows.
+  // Priority order: first 3 blocks (user reaches these immediately), then the rest.
+  // Stagger at 30ms so the first ~10 items are ready within 300ms — matching
+  // the typical loading screen duration.
   useEffect(() => {
     if (!lesson || typeof preloadText !== "function") return;
-    const texts = new Set();
-    (lesson.blocks || []).forEach((block) => {
-      if (block?.prompt?.audioText) texts.add(block.prompt.audioText);
-      if (block?.audioText) texts.add(block.audioText);
-      if (block?.targetText) texts.add(block.targetText);
+
+    // Collect texts per block so we can sort by block position
+    const blockTexts = (lesson.blocks || []).map((block) => {
+      const set = new Set();
+      if (block?.prompt?.audioText) set.add(block.prompt.audioText);
+      if (block?.audioText) set.add(block.audioText);
+      if (block?.targetText) set.add(block.targetText);
       if (Array.isArray(block?.items)) {
-        block.items.forEach((item) => { if (item?.audioText) texts.add(item.audioText); });
-      }
-      if (Array.isArray(block?.steps)) {
-        block.steps.forEach((step) => { if (step?.audioText) texts.add(step.audioText); });
+        block.items.forEach((item) => { if (item?.audioText) set.add(item.audioText); });
       }
       if (Array.isArray(block?.pairs)) {
-        block.pairs.forEach((pair) => { if (pair?.audioText) texts.add(pair.audioText); });
+        block.pairs.forEach((pair) => { if (pair?.audioText) set.add(pair.audioText); });
       }
       if (Array.isArray(block?.options)) {
-        block.options.forEach((opt) => { if (opt?.audioText) texts.add(opt.audioText); });
+        block.options.forEach((opt) => {
+          if (opt?.audioText) set.add(opt.audioText);
+          // Lithuanian choice options without a separate audioText field
+          if (opt?.text && !opt?.audioText && !opt?.en) set.add(opt.text);
+        });
       }
+      if (Array.isArray(block?.steps)) {
+        block.steps.forEach((step) => {
+          if (step?.audioText) set.add(step.audioText);
+          // Scenario option texts — user's selected response is played back
+          if (Array.isArray(step?.options)) {
+            step.options.forEach((opt) => {
+              if (opt?.text && !opt?.en) set.add(opt.text); // Lithuanian only
+            });
+          }
+        });
+      }
+      return Array.from(set);
     });
-    // Stagger preload calls to avoid bursting the TTS endpoint
-    Array.from(texts).forEach((text, i) => {
+
+    // First 3 blocks get priority — user reaches them before later blocks are preloaded
+    const priorityTexts = blockTexts.slice(0, 3).flat();
+    const restTexts = blockTexts.slice(3).flat();
+    const ordered = [...new Set([...priorityTexts, ...restTexts])];
+
+    // 30ms stagger: first 10 items ready in ~300ms, matching the loading screen
+    ordered.forEach((text, i) => {
       setTimeout(() => {
         try { preloadText(text).catch?.(() => {}); } catch {}
-      }, i * 120);
+      }, i * 30);
     });
   }, [lesson, preloadText]);
 
