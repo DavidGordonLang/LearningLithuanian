@@ -6,7 +6,7 @@ const MENU_WIDTH = 208;
 
 function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuSide, setMenuSide] = useState("right");
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -39,17 +39,10 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
     if (btn) {
       const rect = btn.getBoundingClientRect();
       const viewportWidth = window.innerWidth || 0;
-      const menuWidth = MENU_WIDTH;
-      const padding = 8;
-
-      // Anchor left edge of menu to button left, but clamp within viewport
-      let left = rect.left;
-      if (left + menuWidth + padding > viewportWidth) {
-        left = viewportWidth - menuWidth - padding;
-      }
-      if (left < padding) left = padding;
-
-      setMenuPos({ top: rect.bottom + 6, left });
+      // If button is in the right half of the screen, anchor menu to the right
+      // edge of the card (right-0) so it opens leftward into available space.
+      // If in the left half, anchor to left-0 so it opens rightward.
+      setMenuSide(rect.left > viewportWidth / 2 ? "right" : "left");
     }
 
     setMenuOpen((prev) => !prev);
@@ -98,45 +91,48 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
         >
           ⋯
         </button>
-
-        {menuOpen ? (
-          <div
-            ref={menuRef}
-            className={cn(
-              "fixed z-[9999]",
-              "w-52",
-              "overflow-hidden rounded-2xl",
-              "border border-white/10",
-              "bg-zinc-950/90 backdrop-blur",
-              "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
-            )}
-            style={{ top: menuPos.top, left: menuPos.left }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
-              onClick={() => {
-                setMenuOpen(false);
-                onRename?.(scenario);
-              }}
-            >
-              Rename scenario
-            </button>
-
-            <button
-              type="button"
-              className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
-              onClick={() => {
-                setMenuOpen(false);
-                onDelete?.(scenario);
-              }}
-            >
-              Delete scenario
-            </button>
-          </div>
-        ) : null}
       </div>
+
+      {/* Menu rendered as child of card (relative) not button wrapper, so
+          absolute positioning is relative to the full card width — this lets
+          right-0 / left-0 stay within the viewport on both columns. */}
+      {menuOpen ? (
+        <div
+          ref={menuRef}
+          className={cn(
+            "absolute top-10 z-30",
+            "w-52 max-w-[calc(100vw-16px)]",
+            "overflow-hidden rounded-2xl",
+            "border border-white/10",
+            "bg-zinc-950/90 backdrop-blur",
+            "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
+            menuSide === "right" ? "right-0" : "left-0"
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="w-full text-left px-4 py-3 text-sm text-zinc-100 hover:bg-white/5"
+            onClick={() => {
+              setMenuOpen(false);
+              onRename?.(scenario);
+            }}
+          >
+            Rename scenario
+          </button>
+
+          <button
+            type="button"
+            className="w-full text-left px-4 py-3 text-sm text-rose-300 hover:bg-rose-500/10"
+            onClick={() => {
+              setMenuOpen(false);
+              onDelete?.(scenario);
+            }}
+          >
+            Delete scenario
+          </button>
+        </div>
+      ) : null}
 
       <div className="min-w-0 w-full flex items-center justify-center text-center">
         <div className="text-[18px] sm:text-[19px] font-semibold tracking-tight text-zinc-100 break-words">
