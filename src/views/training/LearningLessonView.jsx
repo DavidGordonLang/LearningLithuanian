@@ -18,8 +18,8 @@ function ensureHelperStyles() {
   el.id = HELPER_STYLE_ID;
   el.textContent = `
     @keyframes helperGlowFade {
-      0%   { color: rgba(110,231,183,0.95); text-shadow: 0 0 14px rgba(52,211,153,0.55), 0 0 5px rgba(52,211,153,0.35); }
-      45%  { color: rgba(110,231,183,0.60); text-shadow: 0 0 8px rgba(52,211,153,0.20); }
+      0%   { color: var(--z-accent-bright, rgba(110,231,183,0.95)); text-shadow: 0 0 14px rgba(52,211,153,0.55), 0 0 5px rgba(52,211,153,0.35); }
+      45%  { color: var(--z-accent-muted, rgba(110,231,183,0.60)); text-shadow: 0 0 8px rgba(52,211,153,0.20); }
       100% { color: rgba(161,161,170,0.75); text-shadow: none; }
     }
     .helper-glow-fade {
