@@ -243,12 +243,15 @@ export default function useSpeechToTextHold({
           fd.append("model", "gpt-4o-mini-transcribe");
           fd.append("max_seconds", "15");
 
-          // NEW: attach language hint if provided
+          // Attach language hint if provided — both as FormData field AND
+          // as a query param so the server can reliably read it either way.
           if (language) {
             fd.append("language", language);
           }
 
-          const resp = await fetch("/api/stt", {
+          const sttUrl = language ? `/api/stt?lang=${encodeURIComponent(language)}` : "/api/stt";
+
+          const resp = await fetch(sttUrl, {
             method: "POST",
             body: fd,
             signal: controller.signal,
