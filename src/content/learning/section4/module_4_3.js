@@ -2,7 +2,10 @@
 // Module 4.3 — Preferences and Problems
 
 export default function createModule_4_3(profile = {}) {
-  const { userNameSafe = "Davidas" } = profile;
+  const { userNameSafe = "Davidas", speakerGender = "male" } = profile;
+  const isMale = speakerGender !== "female";
+  const vegetarX = isMale ? "vegetaras" : "vegetarė";
+  const vegetarXEn = isMale ? "I am vegetarian. (male)" : "I am vegetarian. (female)";
 
   return {
     id: "module_4_3",
@@ -133,8 +136,7 @@ export default function createModule_4_3(profile = {}) {
             title: "Dietary preferences",
             items: [
               { id: "dp1", lt: "Nevalgau mėsos.", en: "I don't eat meat.", audioText: "Nevalgau mėsos", saveable: true, core: true },
-              { id: "dp2", lt: "Aš vegetaras.", en: "I am vegetarian. (male)", audioText: "Aš vegetaras", saveable: true, core: true },
-              { id: "dp3", lt: "Aš vegetarė.", en: "I am vegetarian. (female)", audioText: "Aš vegetarė", saveable: true, core: true },
+              { id: "dp2", lt: `Aš ${vegetarX}.`, en: vegetarXEn, audioText: `Aš ${vegetarX}`, saveable: true, core: true },
               { id: "dp4", lt: "Be mėsos, prašau.", en: "Without meat, please.", audioText: "Be mėsos, prašau", saveable: true, core: true },
               { id: "dp5", lt: "Ar valgote mėsą?", en: "Do you eat meat?", audioText: "Ar valgote mėsą", saveable: false, core: false },
               { id: "noun_salotos", lt: "salotos", en: "salad", audioText: "salotos", saveable: true, core: false },
@@ -155,11 +157,12 @@ export default function createModule_4_3(profile = {}) {
             id: "s4m3l2_b3",
             type: "recognise_mcq",
             title: "Choose the correct meaning",
-            prompt: { text: "Aš vegetarė.", audioText: "Aš vegetarė" },
+            noOptionAudio: true,
+            prompt: { text: `Aš ${vegetarX}.`, audioText: `Aš ${vegetarX}` },
             options: [
-              { id: "a", text: "I am vegetarian. (male)", isCorrect: false },
-              { id: "b", text: "I don't eat fish.", isCorrect: false },
-              { id: "c", text: "I am vegetarian. (female)", isCorrect: true },
+              { id: "a", text: "I don't eat meat.", isCorrect: false },
+              { id: "b", text: vegetarXEn, isCorrect: true },
+              { id: "c", text: "Without meat, please.", isCorrect: false },
             ],
           },
           {
@@ -184,7 +187,7 @@ export default function createModule_4_3(profile = {}) {
                 helperText: "Do you eat meat?",
                 options: [
                   { id: "a", text: "Taip, prašau.", isCorrect: false },
-                  { id: "b", text: "Ne, nevalgau mėsos. Aš vegetaras.", en: "No, I don't eat meat. I'm vegetarian.", isCorrect: true },
+                  { id: "b", text: `Ne, nevalgau mėsos. Aš ${vegetarX}.`, en: "No, I don't eat meat. I'm vegetarian.", isCorrect: true },
                   { id: "c", text: "Nesuprantu.", isCorrect: false },
                 ],
               },
