@@ -335,12 +335,12 @@ export default function createModule_4_1(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "When you order, the drink word changes its ending. Kava becomes kavą (Vieną kavą), arbata becomes arbatas (Dvi arbatas), vanduo becomes vandenį (Vieną vandenį). Lithuanian shows the role a word plays in a sentence through these endings rather than word order — a system called cases. You don't need to learn the rules yet. Just notice it happening. The more you hear it, the more natural it will feel.",
+          pattern: "When you order, the drink word changes its ending — and so does the number. Du (two) becomes dvi before feminine nouns like arbata: dvi arbatas. Kava becomes kavą, arbata becomes arbatas, vanduo becomes vandenį. This is Lithuanian showing the role of words through their endings. Just notice it for now — the patterns will become familiar.",
           usage: [
             "vieną kavą — one coffee (kavą, not kava)",
-            "dvi arbatas — two teas (arbatas, not arbata)",
+            "dvi arbatas — two teas (dvi, not du; arbatas, not arbata)",
             "vieną vandenį — one water (vandenį, not vanduo)",
-            "Dar vieną, prašau — one more, please (no noun needed here)",
+            "Dar vieną, prašau — one more, please",
           ],
         },
         blocks: [
