@@ -6,7 +6,7 @@ const MENU_WIDTH = 208;
 
 function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuSide, setMenuSide] = useState("right");
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -39,17 +39,17 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
     if (btn) {
       const rect = btn.getBoundingClientRect();
       const viewportWidth = window.innerWidth || 0;
+      const menuWidth = MENU_WIDTH;
+      const padding = 8;
 
-      const spaceToRight = viewportWidth - rect.right - 16;
-      const spaceToLeft = rect.left - 16;
-
-      if (spaceToRight >= MENU_WIDTH) {
-        setMenuSide("right");
-      } else if (spaceToLeft >= MENU_WIDTH) {
-        setMenuSide("left");
-      } else {
-        setMenuSide(spaceToRight >= spaceToLeft ? "right" : "left");
+      // Anchor left edge of menu to button left, but clamp within viewport
+      let left = rect.left;
+      if (left + menuWidth + padding > viewportWidth) {
+        left = viewportWidth - menuWidth - padding;
       }
+      if (left < padding) left = padding;
+
+      setMenuPos({ top: rect.bottom + 6, left });
     }
 
     setMenuOpen((prev) => !prev);
@@ -103,14 +103,14 @@ function ScenarioCard({ scenario, onOpen, onRename, onDelete }) {
           <div
             ref={menuRef}
             className={cn(
-              "absolute top-full mt-2 z-30",
-              "w-52 max-w-[calc(100vw-32px)]",
+              "fixed z-[9999]",
+              "w-52",
               "overflow-hidden rounded-2xl",
               "border border-white/10",
               "bg-zinc-950/90 backdrop-blur",
               "shadow-[0_16px_50px_rgba(0,0,0,0.65)]",
-              menuSide === "right" ? "right-0" : "left-0"
             )}
+            style={{ top: menuPos.top, left: menuPos.left }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
