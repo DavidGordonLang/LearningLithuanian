@@ -462,12 +462,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
               ? (block?.prompt?.text || null)
               : null
           }
-          feedbackNote={
-            selected?.isCorrect
-              ? (block?.feedback?.correct || null)
-              // best_response wrong: show the feedback note so the user learns why
-              : (isBestResponse ? (block?.feedback?.correct || null) : null)
-          }
+          feedbackNote={block?.feedback?.correct || null}
           onContinue={onAdvance}
         />
       ) : null}
@@ -1314,56 +1309,32 @@ export default function LearningLessonView({
 
   const handleLoadingReady = useCallback(() => setPhase("running"), []);
 
-  // Preload all audio for this lesson while the loading screen shows.
-  // Priority order: first 3 blocks (user reaches these immediately), then the rest.
-  // Stagger at 30ms so the first ~10 items are ready within 300ms — matching
-  // the typical loading screen duration.
+  // Preload all audio from this lesson while loading screen shows
   useEffect(() => {
     if (!lesson || typeof preloadText !== "function") return;
-
-    // Collect texts per block so we can sort by block position
-    const blockTexts = (lesson.blocks || []).map((block) => {
-      const set = new Set();
-      if (block?.prompt?.audioText) set.add(block.prompt.audioText);
-      if (block?.audioText) set.add(block.audioText);
-      if (block?.targetText) set.add(block.targetText);
+    const texts = new Set();
+    (lesson.blocks || []).forEach((block) => {
+      if (block?.prompt?.audioText) texts.add(block.prompt.audioText);
+      if (block?.audioText) texts.add(block.audioText);
+      if (block?.targetText) texts.add(block.targetText);
       if (Array.isArray(block?.items)) {
-        block.items.forEach((item) => { if (item?.audioText) set.add(item.audioText); });
-      }
-      if (Array.isArray(block?.pairs)) {
-        block.pairs.forEach((pair) => { if (pair?.audioText) set.add(pair.audioText); });
-      }
-      if (Array.isArray(block?.options)) {
-        block.options.forEach((opt) => {
-          if (opt?.audioText) set.add(opt.audioText);
-          // Lithuanian choice options without a separate audioText field
-          if (opt?.text && !opt?.audioText && !opt?.en) set.add(opt.text);
-        });
+        block.items.forEach((item) => { if (item?.audioText) texts.add(item.audioText); });
       }
       if (Array.isArray(block?.steps)) {
-        block.steps.forEach((step) => {
-          if (step?.audioText) set.add(step.audioText);
-          // Scenario option texts — user's selected response is played back
-          if (Array.isArray(step?.options)) {
-            step.options.forEach((opt) => {
-              if (opt?.text && !opt?.en) set.add(opt.text); // Lithuanian only
-            });
-          }
-        });
+        block.steps.forEach((step) => { if (step?.audioText) texts.add(step.audioText); });
       }
-      return Array.from(set);
+      if (Array.isArray(block?.pairs)) {
+        block.pairs.forEach((pair) => { if (pair?.audioText) texts.add(pair.audioText); });
+      }
+      if (Array.isArray(block?.options)) {
+        block.options.forEach((opt) => { if (opt?.audioText) texts.add(opt.audioText); });
+      }
     });
-
-    // First 3 blocks get priority — user reaches them before later blocks are preloaded
-    const priorityTexts = blockTexts.slice(0, 3).flat();
-    const restTexts = blockTexts.slice(3).flat();
-    const ordered = [...new Set([...priorityTexts, ...restTexts])];
-
-    // 30ms stagger: first 10 items ready in ~300ms, matching the loading screen
-    ordered.forEach((text, i) => {
+    // Stagger preload calls to avoid bursting the TTS endpoint
+    Array.from(texts).forEach((text, i) => {
       setTimeout(() => {
         try { preloadText(text).catch?.(() => {}); } catch {}
-      }, i * 30);
+      }, i * 120);
     });
   }, [lesson, preloadText]);
 
