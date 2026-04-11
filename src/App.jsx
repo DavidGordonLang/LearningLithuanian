@@ -466,7 +466,9 @@ export default function App() {
       try {
         trackError(e, { source: "tts_player" }, { app_version: APP_VERSION });
       } catch {}
-      alert("Voice error: " + (e?.message || "Unknown error"));
+      // Show a brief non-blocking toast rather than a blocking alert.
+      // TTS failures are non-fatal — the user can tap the audio button again.
+      showToast("Audio unavailable — check your connection", 3000);
     },
   });
 
