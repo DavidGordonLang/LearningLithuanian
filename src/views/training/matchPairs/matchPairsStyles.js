@@ -142,7 +142,7 @@ html[data-theme="light"] .mp-progress-fill{
 }
 html[data-theme="light"] .mp-tile{
   border-color:rgba(0,0,0,0.12);
-  background:rgba(255,255,255,0.55);
+  background:rgba(240,232,214,0.90);
   color:#1c1917;
 }
 html[data-theme="light"] .mp-tile:active{transform:scale(0.985);}
