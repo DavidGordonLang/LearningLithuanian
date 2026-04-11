@@ -71,7 +71,12 @@ function playMicStop() {
 // ─── Phrase matching ──────────────────────────────────────────────────────────
 
 function normaliseForMatch(str) {
-  return String(str || "")
+  // Strip Lithuanian diacritics before matching so STT transcriptions without
+  // diacritics (š→s, ž→z, č→c, ė→e, ų→u, ū→u, etc.) still match correctly.
+  const stripped = String(str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return stripped
     .toLowerCase()
     .replace(/[.,!?;:"""''„"–—\-]/g, "")
     .replace(/\s+/g, " ")
@@ -109,13 +114,26 @@ function phraseMatches(captured, target) {
   const targetWords = t.split(" ").filter(Boolean);
   const capturedWords = c.split(" ").filter(Boolean);
   if (targetWords.length === 0) return false;
+
+  // Exact word match — ≥75% of target words found anywhere in capture
   const matched = targetWords.filter((w) => capturedWords.includes(w));
-  if (matched.length / targetWords.length >= 0.8) return true;
-  // Fallback: character-level similarity for short targets or single words
-  // Catches speech API mis-transcribing Lithuanian diacritics (š→s, ž→z, č→c etc.)
-  if (targetWords.length <= 3) {
-    return charSimilarity(c, t) >= 0.82;
+  if (matched.length / targetWords.length >= 0.75) return true;
+
+  // Positional fuzzy match for phrases up to 5 words.
+  // Pairs each target word with the capture word at the same position.
+  // Requires: avg similarity ≥ 0.70 AND every word ≥ 0.60.
+  // The minimum check prevents "Per šalta" matching "Per karšta" (per/per=1.0
+  // inflates avg, but šalta/karšta=0.43 fails the minimum).
+  if (targetWords.length <= 5) {
+    const sims = targetWords.map((w, i) => charSimilarity(w, capturedWords[i] ?? ""));
+    const avgSim = sims.reduce((a, b) => a + b, 0) / sims.length;
+    const minSim = Math.min(...sims);
+    if (avgSim >= 0.70 && minSim >= 0.60) return true;
+
+    // Whole-phrase character similarity fallback for very short phrases (≤3 words)
+    if (targetWords.length <= 3 && charSimilarity(c, t) >= 0.78) return true;
   }
+
   return false;
 }
 
