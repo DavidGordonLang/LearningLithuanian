@@ -1565,6 +1565,7 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
 }
 
 
+function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef }) {
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
     case "recognise_mcq": case "listen_mcq": case "best_response":
