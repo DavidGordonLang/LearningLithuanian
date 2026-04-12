@@ -19,7 +19,7 @@ export default function createSection5(profile = {}) {
       createModule_5_2(profile),
       createModule_5_3(profile),
       createModule_5_4(profile),
+      createCheckpoint5(profile),
     ],
-    checkpoint: createCheckpoint5(profile),
   };
 }
