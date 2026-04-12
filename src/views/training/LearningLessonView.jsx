@@ -71,7 +71,12 @@ function playMicStop() {
 // ─── Phrase matching ──────────────────────────────────────────────────────────
 
 function normaliseForMatch(str) {
-  return String(str || "")
+  // Strip Lithuanian diacritics before matching so STT transcriptions without
+  // diacritics (š→s, ž→z, č→c, ė→e, ų→u, ū→u, etc.) still match correctly.
+  const stripped = String(str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return stripped
     .toLowerCase()
     .replace(/[.,!?;:"""''„"–—\-]/g, "")
     .replace(/\s+/g, " ")
@@ -109,13 +114,26 @@ function phraseMatches(captured, target) {
   const targetWords = t.split(" ").filter(Boolean);
   const capturedWords = c.split(" ").filter(Boolean);
   if (targetWords.length === 0) return false;
+
+  // Exact word match — ≥75% of target words found anywhere in capture
   const matched = targetWords.filter((w) => capturedWords.includes(w));
-  if (matched.length / targetWords.length >= 0.8) return true;
-  // Fallback: character-level similarity for short targets or single words
-  // Catches speech API mis-transcribing Lithuanian diacritics (š→s, ž→z, č→c etc.)
-  if (targetWords.length <= 3) {
-    return charSimilarity(c, t) >= 0.82;
+  if (matched.length / targetWords.length >= 0.75) return true;
+
+  // Positional fuzzy match for phrases up to 5 words.
+  // Pairs each target word with the capture word at the same position.
+  // Requires: avg similarity ≥ 0.70 AND every word ≥ 0.60.
+  // The minimum check prevents "Per šalta" matching "Per karšta" (per/per=1.0
+  // inflates avg, but šalta/karšta=0.43 fails the minimum).
+  if (targetWords.length <= 5) {
+    const sims = targetWords.map((w, i) => charSimilarity(w, capturedWords[i] ?? ""));
+    const avgSim = sims.reduce((a, b) => a + b, 0) / sims.length;
+    const minSim = Math.min(...sims);
+    if (avgSim >= 0.70 && minSim >= 0.60) return true;
+
+    // Whole-phrase character similarity fallback for very short phrases (≤3 words)
+    if (targetWords.length <= 3 && charSimilarity(c, t) >= 0.78) return true;
   }
+
   return false;
 }
 
@@ -1205,7 +1223,348 @@ function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
   );
 }
 
-function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef }) {
+// ─── context_gap_select ───────────────────────────────────────────────────────
+// Sentence or short dialogue with one blank. Any words as options.
+
+function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+
+  const options = Array.isArray(block?.options) ? block.options : [];
+  const correctOption = options.find((o) => o.isCorrect) || null;
+  const selected = options.find((o) => o.id === selectedId) || null;
+  const isCorrect = !!selected?.isCorrect;
+
+  const GAP = "___";
+
+  function renderWithGap(text) {
+    if (!text) return null;
+    const parts = String(text).split(GAP);
+    if (parts.length < 2) return <span>{text}</span>;
+    return (
+      <>
+        {parts[0]}
+        <span className={cn(
+          "inline-block min-w-[80px] text-center border-b-2 mx-1 font-semibold",
+          !revealed ? "border-zinc-400 text-transparent select-none" :
+          isCorrect ? "border-emerald-400 text-emerald-200" : "border-rose-400 text-rose-300"
+        )}>
+          {revealed ? (correctOption?.text || GAP) : "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0"}
+        </span>
+        {parts[1]}
+      </>
+    );
+  }
+
+  function handleSelect(option) {
+    if (revealed) return;
+    setSelectedId(option.id);
+    setRevealed(true);
+    onComplete?.();
+    if (!option.isCorrect) {
+      onWrongAnswer?.();
+    } else {
+      if (playText && correctOption?.text) {
+        try { playText(correctOption.text); } catch {}
+      }
+    }
+  }
+
+  const lines = block?.context_mode === "dialogue" && Array.isArray(block?.lines)
+    ? block.lines
+    : null;
+
+  return (
+    <div className="space-y-4">
+      {/* Prompt */}
+      {block?.prompt ? (
+        <div className="text-[13px] text-zinc-500 uppercase tracking-wide">{block.prompt}</div>
+      ) : null}
+
+      {/* Sentence or dialogue */}
+      <SurfaceCard className="px-4 py-4">
+        {lines ? (
+          <div className="space-y-2">
+            {lines.map((line, i) => (
+              <div key={i} className="flex gap-2">
+                {line.speaker ? (
+                  <span className="text-[12px] text-zinc-500 shrink-0 mt-[2px] w-16 truncate">{line.speaker}:</span>
+                ) : null}
+                <div className="text-[16px] leading-snug text-zinc-100">
+                  {line.hasGap ? renderWithGap(line.text) : line.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-[18px] leading-snug text-zinc-100 font-medium">
+            {renderWithGap(block?.sentence || "")}
+          </div>
+        )}
+        {block?.translation_en ? (
+          <div className="mt-2 text-[12px] text-zinc-500 italic">{block.translation_en}</div>
+        ) : null}
+      </SurfaceCard>
+
+      {/* Options */}
+      {!revealed ? (
+        <div className="space-y-2">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              data-press
+              onClick={() => handleSelect(option)}
+              className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-zinc-200 hover:border-white/20 hover:bg-white/[0.06] transition"
+            >
+              {option.text}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Feedback */}
+      {revealed ? (
+        <FeedbackPanel
+          isCorrect={isCorrect}
+          correctText={correctOption?.text || ""}
+          feedbackNote={block?.explanation || null}
+          onContinue={onAdvance}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+// ─── choose_correct_form ──────────────────────────────────────────────────────
+// Base word shown above sentence with blank. All options are forms of that word.
+
+function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+
+  const options = Array.isArray(block?.options) ? block.options : [];
+  const correctOption = options.find((o) => o.isCorrect) || null;
+  const selected = options.find((o) => o.id === selectedId) || null;
+  const isCorrect = !!selected?.isCorrect;
+
+  const GAP = "___";
+
+  function renderSentenceWithGap(sentence) {
+    if (!sentence) return null;
+    const parts = String(sentence).split(GAP);
+    if (parts.length < 2) return <span>{sentence}</span>;
+    const filledForm = revealed ? (correctOption?.text || GAP) : null;
+    return (
+      <>
+        {parts[0]}
+        <span className={cn(
+          "inline-block min-w-[80px] text-center border-b-2 mx-1 font-semibold",
+          !revealed ? "border-zinc-400 text-transparent select-none" :
+          isCorrect ? "border-emerald-400 text-emerald-200" : "border-rose-400 text-rose-300"
+        )}>
+          {filledForm || "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0"}
+        </span>
+        {parts[1]}
+      </>
+    );
+  }
+
+  function handleSelect(option) {
+    if (revealed) return;
+    setSelectedId(option.id);
+    setRevealed(true);
+    onComplete?.();
+    if (!option.isCorrect) {
+      onWrongAnswer?.();
+    } else {
+      if (playText && correctOption?.text) {
+        try { playText(correctOption.text); } catch {}
+      }
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Base word */}
+      <SurfaceCard className="px-4 py-3">
+        <div className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1">Base word</div>
+        <div className="flex items-center gap-3">
+          <div>
+            <div className="text-[20px] font-semibold text-zinc-100">{block?.base_word || ""}</div>
+            {block?.word_gloss_en ? (
+              <div className="text-[13px] text-zinc-400">{block.word_gloss_en}</div>
+            ) : null}
+          </div>
+          {block?.base_word && playText ? (
+            <AudioIconButton text={block.base_word} playText={playText} />
+          ) : null}
+        </div>
+      </SurfaceCard>
+
+      {/* Sentence with gap */}
+      <SurfaceCard className="px-4 py-4">
+        {block?.prompt ? (
+          <div className="text-[12px] text-zinc-500 uppercase tracking-wide mb-2">{block.prompt}</div>
+        ) : null}
+        <div className="text-[18px] leading-snug text-zinc-100 font-medium">
+          {renderSentenceWithGap(block?.sentence || "")}
+        </div>
+        {block?.translation_en ? (
+          <div className="mt-2 text-[12px] text-zinc-500 italic">{block.translation_en}</div>
+        ) : null}
+      </SurfaceCard>
+
+      {/* Options */}
+      {!revealed ? (
+        <div className="space-y-2">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              data-press
+              onClick={() => handleSelect(option)}
+              className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-zinc-200 hover:border-white/20 hover:bg-white/[0.06] transition font-medium"
+            >
+              {option.text}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Feedback */}
+      {revealed ? (
+        <FeedbackPanel
+          isCorrect={isCorrect}
+          correctText={correctOption?.text || ""}
+          feedbackNote={block?.explanation || null}
+          onContinue={onAdvance}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+// ─── conversation_turn_fill ───────────────────────────────────────────────────
+// Short dialogue transcript with one gap in one line. Options below.
+
+function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+
+  const options = Array.isArray(block?.options) ? block.options : [];
+  const lines = Array.isArray(block?.lines) ? block.lines : [];
+  const correctOption = options.find((o) => o.isCorrect) || null;
+  const selected = options.find((o) => o.id === selectedId) || null;
+  const isCorrect = !!selected?.isCorrect;
+
+  function handleSelect(option) {
+    if (revealed) return;
+    setSelectedId(option.id);
+    setRevealed(true);
+    onComplete?.();
+    if (!option.isCorrect) {
+      onWrongAnswer?.();
+    } else {
+      if (playText && correctOption?.text) {
+        try { playText(correctOption.text); } catch {}
+      }
+    }
+  }
+
+  function renderLineText(line) {
+    if (!line.hasGap) return line.text;
+    if (!revealed) {
+      const parts = String(line.text).split("___");
+      return (
+        <>
+          {parts[0]}
+          <span className="inline-block min-w-[80px] border-b-2 border-zinc-400 mx-1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          {parts[1] || ""}
+        </>
+      );
+    }
+    // After reveal, show the filled version
+    const filled = String(line.text).replace("___", correctOption?.text || "___");
+    return (
+      <span className={isCorrect ? "text-emerald-200" : "text-rose-200"}>
+        {filled}
+      </span>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Scene label */}
+      {block?.scene_label ? (
+        <div className="text-[12px] uppercase tracking-widest text-zinc-500">{block.scene_label}</div>
+      ) : null}
+
+      {/* Prompt */}
+      {block?.prompt ? (
+        <div className="text-[13px] text-zinc-500">{block.prompt}</div>
+      ) : null}
+
+      {/* Dialogue transcript */}
+      <SurfaceCard className="px-4 py-4">
+        <div className="space-y-3">
+          {lines.map((line, i) => (
+            <div key={i} className="flex gap-3 items-start">
+              {line.speaker ? (
+                <div className="text-[11px] uppercase tracking-wide text-zinc-500 shrink-0 w-14 pt-[3px]">
+                  {line.speaker}
+                </div>
+              ) : null}
+              <div className={cn(
+                "text-[15px] leading-snug flex-1",
+                line.hasGap ? "text-zinc-100" : "text-zinc-300"
+              )}>
+                {renderLineText(line)}
+              </div>
+              {line.audioText && playText && !line.hasGap ? (
+                <AudioIconButton text={line.audioText} playText={playText} />
+              ) : null}
+            </div>
+          ))}
+        </div>
+        {revealed && block?.translation_en ? (
+          <div className="mt-3 pt-3 border-t border-white/8 text-[12px] text-zinc-500 italic">
+            {block.translation_en}
+          </div>
+        ) : null}
+      </SurfaceCard>
+
+      {/* Options */}
+      {!revealed ? (
+        <div className="space-y-2">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              data-press
+              onClick={() => handleSelect(option)}
+              className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-zinc-200 hover:border-white/20 hover:bg-white/[0.06] transition"
+            >
+              {option.text}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Feedback */}
+      {revealed ? (
+        <FeedbackPanel
+          isCorrect={isCorrect}
+          correctText={correctOption?.text || ""}
+          feedbackNote={block?.explanation || null}
+          onContinue={onAdvance}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
     case "recognise_mcq": case "listen_mcq": case "best_response":
@@ -1215,6 +1574,9 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
+    case "context_gap_select": return <ContextGapSelect block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
+    case "choose_correct_form": return <ChooseCorrectForm block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
+    case "conversation_turn_fill": return <ConversationTurnFill block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     default: return <div className="text-sm text-zinc-500">Unknown block type.</div>;
   }
 }
@@ -1312,29 +1674,47 @@ export default function LearningLessonView({
   // Preload all audio from this lesson while loading screen shows
   useEffect(() => {
     if (!lesson || typeof preloadText !== "function") return;
-    const texts = new Set();
-    (lesson.blocks || []).forEach((block) => {
-      if (block?.prompt?.audioText) texts.add(block.prompt.audioText);
-      if (block?.audioText) texts.add(block.audioText);
-      if (block?.targetText) texts.add(block.targetText);
+
+    const blockTexts = (lesson.blocks || []).map((block) => {
+      const set = new Set();
+      if (block?.prompt?.audioText) set.add(block.prompt.audioText);
+      if (block?.audioText) set.add(block.audioText);
+      if (block?.targetText) set.add(block.targetText);
+      if (block?.base_word) set.add(block.base_word);
       if (Array.isArray(block?.items)) {
-        block.items.forEach((item) => { if (item?.audioText) texts.add(item.audioText); });
-      }
-      if (Array.isArray(block?.steps)) {
-        block.steps.forEach((step) => { if (step?.audioText) texts.add(step.audioText); });
+        block.items.forEach((item) => { if (item?.audioText) set.add(item.audioText); });
       }
       if (Array.isArray(block?.pairs)) {
-        block.pairs.forEach((pair) => { if (pair?.audioText) texts.add(pair.audioText); });
+        block.pairs.forEach((pair) => { if (pair?.audioText) set.add(pair.audioText); });
       }
       if (Array.isArray(block?.options)) {
-        block.options.forEach((opt) => { if (opt?.audioText) texts.add(opt.audioText); });
+        block.options.forEach((opt) => {
+          if (opt?.audioText) set.add(opt.audioText);
+          if (opt?.text && !opt?.audioText && !opt?.en) set.add(opt.text);
+        });
       }
+      if (Array.isArray(block?.steps)) {
+        block.steps.forEach((step) => {
+          if (step?.audioText) set.add(step.audioText);
+          if (Array.isArray(step?.options)) {
+            step.options.forEach((opt) => { if (opt?.text && !opt?.en) set.add(opt.text); });
+          }
+        });
+      }
+      if (Array.isArray(block?.lines)) {
+        block.lines.forEach((line) => { if (line?.audioText) set.add(line.audioText); });
+      }
+      return Array.from(set);
     });
-    // Stagger preload calls to avoid bursting the TTS endpoint
-    Array.from(texts).forEach((text, i) => {
+
+    const priorityTexts = blockTexts.slice(0, 3).flat();
+    const restTexts = blockTexts.slice(3).flat();
+    const ordered = [...new Set([...priorityTexts, ...restTexts])];
+
+    ordered.forEach((text, i) => {
       setTimeout(() => {
         try { preloadText(text).catch?.(() => {}); } catch {}
-      }, i * 120);
+      }, i * 30);
     });
   }, [lesson, preloadText]);
 
@@ -1345,7 +1725,7 @@ export default function LearningLessonView({
   const isLastBlock = blockIndex === totalBlocks - 1;
   const isLastBlockComplete = isLastBlock && isCurrentCompleted;
   const lessonComplete = lessonDone;
-  const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response"].includes(currentBlock?.type);
+  const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response", "context_gap_select", "choose_correct_form", "conversation_turn_fill"].includes(currentBlock?.type);
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
   const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock;
