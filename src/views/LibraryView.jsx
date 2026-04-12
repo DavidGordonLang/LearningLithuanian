@@ -124,7 +124,9 @@ function PlayButton({ text, playText, blurActiveInput }) {
       onPointerLeave={finish}
       onClick={handleClick}
     >
-      <span className="text-emerald-200 text-lg">▶</span>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-emerald-200 ml-0.5">
+        <path d="M3 2L12 7L3 12V2Z" fill="currentColor"/>
+      </svg>
     </button>
   );
 }
