@@ -133,12 +133,11 @@ export function clearLibrary({ T, setRows }) {
 }
 
 export async function importJsonFile(file, { mergeRowsImpl }) {
-  try {
-    const data = JSON.parse(await file.text());
-    if (!Array.isArray(data)) throw new Error();
-    await mergeRowsImpl(data);
-    alert("Imported.");
-  } catch {
-    alert("Import failed.");
+  const data = JSON.parse(await file.text());
+  if (!Array.isArray(data)) {
+    throw new Error("Import file must contain a JSON array.");
   }
+
+  await mergeRowsImpl(data);
+  return { ok: true, count: data.length };
 }

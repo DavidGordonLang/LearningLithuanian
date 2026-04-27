@@ -185,12 +185,14 @@ export default function SettingsView({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      await importJsonFile(file);
-      alert("Imported ✅");
+      const result = await importJsonFile(file);
+      const count =
+        typeof result?.count === "number" ? ` (${result.count} rows)` : "";
+      showToast?.(`Imported${count}`);
       try { trackEvent("import_json", {}, { app_version: appVersion }); } catch {}
     } catch (err) {
       try { trackError(err, { source: "import_json" }, { app_version: appVersion }); } catch {}
-      alert("Import failed: " + (err?.message || "Unknown error"));
+      showToast?.("Import failed: " + (err?.message || "Unknown error"));
     } finally { e.target.value = ""; }
   }
 
