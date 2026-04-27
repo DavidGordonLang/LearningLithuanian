@@ -285,7 +285,7 @@ function RenameScenarioModal({ open, scenario, onClose, onSave }) {
   );
 }
 
-export default function ScenariosView({ T, onOpenScenario }) {
+export default function ScenariosView({ T, onOpenScenario, confirmAction }) {
   const scenarios = useScenarioStore((s) => s.scenarios);
   const createScenario = useScenarioStore((s) => s.createScenario);
   const renameScenario = useScenarioStore((s) => s.renameScenario);
@@ -334,10 +334,15 @@ export default function ScenariosView({ T, onOpenScenario }) {
     setRenameScenarioRow(null);
   }
 
-  function handleDeleteScenario(scenario) {
-    const ok = window.confirm(
-      `Delete scenario "${scenario?.title || "Untitled scenario"}"?`
-    );
+  async function handleDeleteScenario(scenario) {
+    const title = scenario?.title || "Untitled scenario";
+    const ok = await confirmAction({
+      title: "Delete scenario?",
+      body: `This will delete "${title}" and remove its phrase ordering. The phrases themselves will stay in your library.`,
+      confirmLabel: "Delete scenario",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
 
     deleteScenario(scenario?.id);

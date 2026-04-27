@@ -1040,6 +1040,7 @@ export default function App() {
               <ScenariosView
                 T={T}
                 onOpenScenario={handleOpenScenario}
+                confirmAction={confirmAction}
               />
             </div>
 
