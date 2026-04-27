@@ -290,9 +290,13 @@ export default function SettingsView({
   // ─── Progress reset handlers ─────────────────────────────────────────────────
 
   async function handleResetLessonProgress() {
-    const ok = window.confirm(
-      "Reset lesson progress?\n\nThis will mark all lessons as incomplete. Your XP and streak will not be affected.\n\nContinue?"
-    );
+    const ok = await confirmAction({
+      title: "Reset lesson progress?",
+      body: "This will mark all lessons as incomplete on this account. Your XP and streak will not be affected.",
+      confirmLabel: "Reset progress",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setProgressResetting(true);
@@ -310,9 +314,13 @@ export default function SettingsView({
 
   async function handleResetEverything() {
     if (!isAdmin) return;
-    const ok = window.confirm(
-      "ADMIN: Reset everything?\n\nThis will clear all lesson progress, XP, and streak data.\n\nContinue?"
-    );
+    const ok = await confirmAction({
+      title: "Admin reset everything?",
+      body: "This will permanently clear all lesson progress, XP, and streak data for this account.",
+      confirmLabel: "Reset everything",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setProgressResetting(true);
