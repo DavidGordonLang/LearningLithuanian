@@ -381,11 +381,11 @@ export default function SettingsView({
     if (!ok) return;
     try {
       await clearLibrary?.();
-      alert("Cleared ✅");
+      showToast?.("Cleared");
       try { trackEvent("library_clear", {}, { app_version: appVersion }); } catch {}
     } catch (e) {
       try { trackError(e, { source: "library_clear" }, { app_version: appVersion }); } catch {}
-      alert("Could not clear: " + (e?.message || "Unknown error"));
+      showToast?.("Could not clear: " + (e?.message || "Unknown error"));
     }
   }
 

@@ -128,8 +128,9 @@ export async function fetchStarter(kind, { STARTERS, mergeStarterRowsImpl }) {
   alert("Starter pack installed.");
 }
 
-export function clearLibrary({ T, setRows }) {
-  if (confirm(T.confirm)) setRows([]);
+export function clearLibrary({ setRows }) {
+  setRows([]);
+  return { ok: true };
 }
 
 export async function importJsonFile(file, { mergeRowsImpl }) {
