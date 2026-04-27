@@ -550,9 +550,16 @@ export default function App() {
     return rows.find((r) => r.id === editRowId || r._id === editRowId) || null;
   }, [isEditing, rows, editRowId]);
 
-  const removePhraseById = (id) => {
+  const removePhraseById = async (id) => {
     if (!id) return false;
-    if (!confirm(T.confirm)) return false;
+    const ok = await confirmAction({
+      title: "Delete phrase?",
+      body: "This will remove the phrase from your library.",
+      confirmLabel: "Delete phrase",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return false;
 
     setRows((prev) =>
       Array.isArray(prev)

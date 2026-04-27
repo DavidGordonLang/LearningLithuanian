@@ -201,9 +201,9 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
   /* ============================================================
      Delete + Skip handlers
      ============================================================ */
-  function handleDelete(item, groupKey, itemIndex) {
+  async function handleDelete(item, groupKey, itemIndex) {
     const groupIndex = groups.findIndex((g) => g.key === groupKey);
-    if (groupIndex === -1) return;
+    if (groupIndex === -1) return false;
 
     const groupSnapshot = groups[groupIndex];
 
@@ -217,10 +217,10 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       groupIndex,
     };
 
-    const didDelete = removePhrase(item._id);
+    const didDelete = await removePhrase(item._id);
     if (!didDelete) {
       undoRef.current = null;
-      return;
+      return false;
     }
 
     setGroups((prev) => {
@@ -243,6 +243,7 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
     showUndoToast(
       `Deleted “${item.English || "—"} / ${item.Lithuanian || "—"}”`
     );
+    return true;
   }
 
   function handleSkipGroup(groupKey) {
@@ -323,7 +324,13 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
         const dir = dx > 0 ? 1 : -1;
         setIsFading(true);
         setTranslateX(dir * width * 1.2);
-        setTimeout(() => onDelete(), 350);
+        setTimeout(async () => {
+          const didDelete = await onDelete();
+          if (!didDelete) {
+            setIsFading(false);
+            setTranslateX(0);
+          }
+        }, 350);
       } else {
         setTranslateX(0);
       }
