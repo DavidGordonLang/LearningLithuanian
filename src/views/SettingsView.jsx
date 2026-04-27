@@ -199,7 +199,13 @@ export default function SettingsView({
 
   async function uploadLibraryToCloud() {
     if (!user) return;
-    const ok = window.confirm("Upload (overwrite):\n\nThis will REPLACE your cloud library with your local library.\n\nContinue?");
+    const ok = await confirmAction({
+      title: "Overwrite cloud library?",
+      body: "This will replace your cloud library with the library on this device. Other devices may lose cloud entries that are not present locally.",
+      confirmLabel: "Overwrite cloud",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setSyncingUp(true);
@@ -217,7 +223,13 @@ export default function SettingsView({
 
   async function downloadLibraryFromCloud() {
     if (!user) return;
-    const ok = window.confirm("Download (overwrite):\n\nThis will REPLACE your entire local library with the cloud version.\n\nContinue?");
+    const ok = await confirmAction({
+      title: "Overwrite local library?",
+      body: "This will replace the library on this device with the cloud version. Local entries that are not in cloud may be lost.",
+      confirmLabel: "Overwrite local",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setSyncingDown(true);
