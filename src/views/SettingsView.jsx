@@ -79,6 +79,7 @@ export default function SettingsView({
   setDailyRecallEnabled,
   showDailyRecallNow,
   showToast,
+  confirmAction,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
@@ -377,7 +378,13 @@ export default function SettingsView({
   }
 
   async function handleClearLibrary() {
-    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
+    const ok = await confirmAction({
+      title: "Clear library?",
+      body: "This will remove your entire local library from this device. This cannot be undone.",
+      confirmLabel: "Clear library",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       await clearLibrary?.();

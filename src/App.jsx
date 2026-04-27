@@ -22,6 +22,7 @@ import AnalyticsView from "./views/AnalyticsView";
 import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
+import ConfirmDialog from "./components/ConfirmDialog";
 import SwipePager from "./components/SwipePager";
 
 import DailyRecallModal from "./components/DailyRecallModal";
@@ -852,6 +853,8 @@ export default function App() {
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [confirmRequest, setConfirmRequest] = useState(null);
+  const confirmResolveRef = useRef(null);
 
   const [seenUserGuide, setSeenUserGuide] = useLocalStorageState(
     LSK_USER_GUIDE,
@@ -880,11 +883,32 @@ export default function App() {
     setSeenUserGuide(true);
   }, [user?.id, seenUserGuide, setSeenUserGuide]);
 
+  const closeConfirm = useCallback((result) => {
+    const resolve = confirmResolveRef.current;
+    confirmResolveRef.current = null;
+    setConfirmRequest(null);
+    resolve?.(result);
+  }, []);
+
+  const confirmAction = useCallback((options = {}) => {
+    if (confirmResolveRef.current) {
+      confirmResolveRef.current(false);
+    }
+
+    setConfirmRequest(options || {});
+
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve;
+    });
+  }, []);
+
+  const hasConfirmOpen = !!confirmRequest;
+
   useModalScrollLock(
-    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen
+    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen || hasConfirmOpen
   );
   useAppBodyScrollLock(
-    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen
+    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen || hasConfirmOpen
   );
 
   const headerPage = swipeTabs.includes(page) ? page : "scenarios";
@@ -1050,6 +1074,7 @@ export default function App() {
   setDailyRecallEnabled={dailyRecall.setEnabled}
   showDailyRecallNow={dailyRecall.showNow}
   showToast={showToast}
+  confirmAction={confirmAction}
 />
             </div>
           </SwipePager>
@@ -1141,6 +1166,17 @@ export default function App() {
           onClose={() => setShowWhatsNew(false)}
         />
       )}
+
+      <ConfirmDialog
+        open={hasConfirmOpen}
+        title={confirmRequest?.title}
+        body={confirmRequest?.body}
+        confirmLabel={confirmRequest?.confirmLabel}
+        cancelLabel={confirmRequest?.cancelLabel}
+        destructive={!!confirmRequest?.destructive}
+        onConfirm={() => closeConfirm(true)}
+        onCancel={() => closeConfirm(false)}
+      />
     </div>
   );
 }
