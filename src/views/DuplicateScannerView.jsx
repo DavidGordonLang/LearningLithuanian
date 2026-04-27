@@ -217,7 +217,11 @@ export default function DuplicateScannerView({ T, rows, removePhrase, onBack }) 
       groupIndex,
     };
 
-    removePhrase(item._id);
+    const didDelete = removePhrase(item._id);
+    if (!didDelete) {
+      undoRef.current = null;
+      return;
+    }
 
     setGroups((prev) => {
       const next = [...prev];

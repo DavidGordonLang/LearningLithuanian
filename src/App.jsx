@@ -550,8 +550,8 @@ export default function App() {
   }, [isEditing, rows, editRowId]);
 
   const removePhraseById = (id) => {
-    if (!id) return;
-    if (!confirm(T.confirm)) return;
+    if (!id) return false;
+    if (!confirm(T.confirm)) return false;
 
     setRows((prev) =>
       Array.isArray(prev)
@@ -566,6 +566,7 @@ export default function App() {
           })
         : prev
     );
+    return true;
   };
 
   const goToPage = (next) => {
