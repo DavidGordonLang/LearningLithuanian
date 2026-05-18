@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { useSettingsStore } from "../stores/settingsStore";
 import { useScenarioStore } from "../stores/scenarioStore";
 import InteractivePhraseText from "../components/audio/InteractivePhraseText";
+import AudioPlayButton from "../components/audio/AudioPlayButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -42,83 +43,6 @@ function EmptyState({ onBack }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function PlayButton({ text, playText }) {
-  const timerRef = useRef(0);
-  const longFiredRef = useRef(false);
-  const [pressing, setPressing] = useState(false);
-
-  const clearTimer = () => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = 0;
-  };
-
-  const start = (e) => {
-    if (e?.button != null && e.button !== 0) return;
-
-    try {
-      if (e?.currentTarget?.setPointerCapture && e?.pointerId != null) {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      }
-    } catch {}
-
-    longFiredRef.current = false;
-    setPressing(true);
-    clearTimer();
-
-    timerRef.current = window.setTimeout(() => {
-      longFiredRef.current = true;
-      playText?.(text || "", { slow: true });
-    }, 420);
-  };
-
-  const finish = (e) => {
-    try {
-      if (e?.currentTarget?.releasePointerCapture && e?.pointerId != null) {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }
-    } catch {}
-
-    setPressing(false);
-    clearTimer();
-  };
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-
-    if (longFiredRef.current) {
-      longFiredRef.current = false;
-      return;
-    }
-
-    playText?.(text || "");
-  };
-
-  return (
-    <button
-      type="button"
-      aria-label="Play phrase"
-      data-swipe-block="true"
-      className={cn(
-        "select-none",
-        "w-11 h-11 rounded-full shrink-0",
-        "border border-emerald-300/20",
-        "bg-emerald-900/20 hover:bg-emerald-900/30",
-        "flex items-center justify-center",
-        "shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_22px_rgba(16,185,129,0.10),0_12px_30px_rgba(0,0,0,0.45)]",
-        "transition-transform duration-150",
-        pressing ? "scale-[0.98]" : null
-      )}
-      onPointerDown={start}
-      onPointerUp={finish}
-      onPointerCancel={finish}
-      onPointerLeave={finish}
-      onClick={handleClick}
-    >
-      <span className="text-emerald-200 text-base">▶</span>
-    </button>
   );
 }
 
@@ -209,7 +133,7 @@ function ScenarioPhraseRow({
 
   return (
     <div className="z-inset p-4 flex items-start gap-3">
-      <PlayButton text={row?.Lithuanian || ""} playText={playText} />
+      <AudioPlayButton text={row?.Lithuanian || ""} playText={playText} ariaLabel="Play phrase" />
 
       <div className="min-w-0 flex-1">
         <div className="text-[15px] font-semibold text-emerald-200 leading-snug break-words">
