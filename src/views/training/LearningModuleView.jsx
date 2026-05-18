@@ -1,23 +1,9 @@
 // src/views/training/LearningModuleView.jsx
 import React from "react";
 import { useGameStore } from "../../stores/gameStore";
+import TrainingBackButton from "./TrainingBackButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
-
-function BackCircle({ onClick }) {
-  return (
-    <button type="button" data-press onClick={onClick}
-      className={cn("h-10 w-10 rounded-full border flex items-center justify-center",
-        "bg-white/[0.06] border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.45)]",
-        "hover:bg-white/[0.08] active:scale-[0.99] transition")}
-      aria-label="Back">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.2"
-          strokeLinecap="round" strokeLinejoin="round" opacity="0.95"/>
-      </svg>
-    </button>
-  );
-}
 
 function SurfaceCard({ children, className }) {
   return (
@@ -185,7 +171,7 @@ export default function LearningModuleView({ section, module, onBack, onOpenLess
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
       {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
-        <BackCircle onClick={onBack} />
+        <TrainingBackButton onClick={onBack} />
         <div className="text-center">
           <div className="text-[16px] font-semibold text-zinc-100">
             {module?.title || ""}
