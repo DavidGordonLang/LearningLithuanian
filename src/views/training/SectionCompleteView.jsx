@@ -273,17 +273,9 @@ function HighlightItem({ text, delay }) {
 
 // ─── Phase 2: Celebration card ────────────────────────────────────────────────
 
-const HIGHLIGHTS = [
-  "Greet and say goodbye in the right register",
-  "Introduce yourself and say where you're from",
-  "Signal when you don't understand — and ask for help",
-  "Ask where things are using Kur yra…?",
-  "Use Ar galiu? and Ar galime? to get things done",
-  "Know the difference between tu and jūs",
-];
-
 function CelebrationCard({
   section,
+  nextSection,
   modules,
   xpEarned,
   accuracyPct,
@@ -299,6 +291,19 @@ function CelebrationCard({
   }, []);
 
   const nonCheckpointModules = (modules || []).filter((m) => !m.isSectionCheckpoint);
+  const sectionTitle = section?.title || "Section complete";
+  const sectionCode = section?.code || section?.id || "";
+  const checkpointComplete = (modules || []).some((m) => m.isSectionCheckpoint);
+  const highlights = [
+    nonCheckpointModules.length
+      ? `Completed ${nonCheckpointModules.length} module${nonCheckpointModules.length === 1 ? "" : "s"} in this section`
+      : "Completed this section",
+    checkpointComplete ? "Passed the section checkpoint" : null,
+    nextSection?.title ? `Ready for ${nextSection.title}` : "Course section complete",
+  ].filter(Boolean);
+  const continueLabel = nextSection?.title
+    ? `Continue to ${nextSection.title}`
+    : "Continue";
 
   return (
     createPortal(
@@ -332,7 +337,7 @@ function CelebrationCard({
           )}
           style={{ transitionDelay: "50ms" }}
         >
-          Section {section?.code || "1"} Complete
+          {sectionCode ? `Section ${sectionCode} Complete` : "Section Complete"}
         </div>
 
         {/* Hero text */}
@@ -344,10 +349,10 @@ function CelebrationCard({
           style={{ transitionDelay: "120ms" }}
         >
           <div className="text-[32px] font-semibold text-emerald-200 leading-tight">
-            First Contact
+            {sectionTitle}
           </div>
           <div className="text-[14px] text-zinc-500 mt-1">
-            {section?.title || "You've completed your first section"}
+            Section complete
           </div>
         </div>
 
@@ -411,7 +416,7 @@ function CelebrationCard({
             Now you can…
           </div>
           <div className="space-y-3">
-            {HIGHLIGHTS.map((text, i) => (
+            {highlights.map((text, i) => (
               <HighlightItem
                 key={i}
                 text={text}
@@ -444,7 +449,7 @@ function CelebrationCard({
             onClick={onContinue}
             className="w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.05] transition"
           >
-            Continue to Section 2
+            {continueLabel}
           </button>
           <button
             type="button"
@@ -467,6 +472,7 @@ function CelebrationCard({
 
 export default function SectionCompleteView({
   section,
+  nextSection,
   modules,       // all modules in the section (including checkpoint)
   xpEarned,
   accuracyPct,
@@ -490,6 +496,7 @@ export default function SectionCompleteView({
   return (
     <CelebrationCard
       section={section}
+      nextSection={nextSection}
       modules={modules}
       xpEarned={xpEarned}
       accuracyPct={accuracyPct}
