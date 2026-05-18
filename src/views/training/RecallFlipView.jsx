@@ -5,6 +5,7 @@ import { useRecallFlipAudio } from "../../hooks/training/useRecallFlipAudio";
 import { AudioButtons, SummaryModal } from "./recallFlip/RecallFlipParts";
 import { recallFlipCss } from "./recallFlip/recallFlipStyles";
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
+import TrainingBackButton from "./TrainingBackButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -104,36 +105,8 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-6 rf-root">
       {/* Header row: centered title with equal side weights */}
-      <div className="grid grid-cols-[48px_1fr_48px] items-center">
-        <button
-          type="button"
-          onClick={hardExit}
-          aria-label="Back"
-          className={cn(
-            "h-12 w-12 rounded-full",
-            "border border-white/10 bg-white/[0.06] backdrop-blur",
-            "shadow-[0_10px_30px_rgba(0,0,0,0.35)]",
-            "flex items-center justify-center",
-            "text-zinc-200 hover:bg-white/[0.09] active:scale-[0.99] transition"
-          )}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-            className="translate-x-[-0.5px]"
-          >
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+      <div className="grid grid-cols-[44px_1fr_44px] items-center">
+        <TrainingBackButton onClick={hardExit} />
 
         <div className="text-center">
           <div className="text-[16px] sm:text-[17px] font-semibold text-zinc-100 tracking-tight">
@@ -141,7 +114,7 @@ export default function RecallFlipView({ rows, focus, onBack, playText }) {
           </div>
         </div>
 
-        <div className="h-12 w-12" aria-hidden="true" />
+        <div className="h-10 w-10" aria-hidden="true" />
       </div>
 
       {!s.current && !s.showSummary && (

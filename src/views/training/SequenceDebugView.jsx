@@ -4,6 +4,7 @@
 // so you can test the flow from any point without a full manual run.
 
 import React, { useMemo } from "react";
+import TrainingBackButton from "./TrainingBackButton";
 
 function buildSequence(sections, completedSet) {
   const seq = [];
@@ -34,7 +35,7 @@ export default function SequenceDebugView({ allSections, completedLessonIds, onJ
     <div className="h-full overflow-y-auto overscroll-contain pb-24">
       <div className="max-w-xl mx-auto px-4 pt-4">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={onBack} className="text-zinc-400 hover:text-zinc-200 text-sm">← Back</button>
+          <TrainingBackButton onClick={onBack} />
           <div className="text-zinc-200 font-semibold">Lesson Sequence ({sequence.length} total)</div>
         </div>
 

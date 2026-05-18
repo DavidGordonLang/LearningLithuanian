@@ -6,6 +6,7 @@ import { useRecallFlipAudio } from "../../hooks/training/useRecallFlipAudio";
 import { AudioButtons, SummaryModal } from "./recallFlip/RecallFlipParts";
 import { recallFlipCss } from "./recallFlip/recallFlipStyles";
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
+import TrainingBackButton from "./TrainingBackButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -164,31 +165,7 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
     return playText?.(text, opts);
   };
 
-  const BackCircle = (
-    <button
-      type="button"
-      data-press
-      onClick={hardExit}
-      className={cn(
-        "h-10 w-10 rounded-full border flex items-center justify-center",
-        "bg-white/[0.06] border-white/10",
-        "shadow-[0_10px_30px_rgba(0,0,0,0.45)]",
-        "hover:bg-white/[0.08] active:scale-[0.99] transition"
-      )}
-      aria-label="Back"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M15 18l-6-6 6-6"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.95"
-        />
-      </svg>
-    </button>
-  );
+  const BackCircle = <TrainingBackButton onClick={hardExit} />;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 rf-root">

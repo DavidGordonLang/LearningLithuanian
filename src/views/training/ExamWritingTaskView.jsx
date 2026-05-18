@@ -1,26 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { examContent } from "../../content/exam";
+import TrainingBackButton from "./TrainingBackButton";
 
 function Header({ onBack, title, subtitle }) {
   return (
     <div>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          data-press
-          onClick={onBack}
-          className="
-            h-10 w-10 rounded-xl
-            border border-white/10
-            bg-black/20 backdrop-blur
-            text-zinc-200
-            flex items-center justify-center
-            hover:bg-black/25
-          "
-          aria-label="Back"
-        >
-          ←
-        </button>
+        <TrainingBackButton onClick={onBack} />
 
         <div>
           <div className="text-xl font-semibold text-zinc-100">{title}</div>

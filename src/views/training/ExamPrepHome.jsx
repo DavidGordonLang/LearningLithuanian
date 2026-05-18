@@ -1,4 +1,5 @@
 import React from "react";
+import TrainingBackButton from "./TrainingBackButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -59,22 +60,7 @@ export default function ExamPrepHome({
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          data-press
-          onClick={onBack}
-          className="
-            h-10 w-10 rounded-xl
-            border border-white/10
-            bg-black/20 backdrop-blur
-            text-zinc-200
-            flex items-center justify-center
-            hover:bg-black/25
-          "
-          aria-label="Back"
-        >
-          ←
-        </button>
+        <TrainingBackButton onClick={onBack} />
 
         <div>
           <div className="text-xl font-semibold text-zinc-100">
