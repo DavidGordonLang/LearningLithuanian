@@ -159,13 +159,14 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const completeLesson = useGameStore((s) => s.completeLesson);
 
   const userName = useSettingsStore((s) => s.userName);
+  const speakerGender = useSettingsStore((s) => s.speakerGender);
   const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
   const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
   const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
 
   const section1Profile = useMemo(
-    () => buildSection1Profile({ userName, fromCountryCode, livesInCountryCode, dateOfBirth }),
-    [userName, fromCountryCode, livesInCountryCode, dateOfBirth]
+    () => buildSection1Profile({ userName, speakerGender, fromCountryCode, livesInCountryCode, dateOfBirth }),
+    [userName, speakerGender, fromCountryCode, livesInCountryCode, dateOfBirth]
   );
 
   const counts = useMemo(() => {

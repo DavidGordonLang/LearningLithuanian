@@ -22,6 +22,7 @@ import AnalyticsView from "./views/AnalyticsView";
 import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
+import OnboardingProfileModal from "./components/OnboardingProfileModal";
 import ConfirmDialog from "./components/ConfirmDialog";
 import SwipePager from "./components/SwipePager";
 import ModalShell from "./components/ModalShell";
@@ -65,6 +66,7 @@ const APP_VERSION = "2.0.0-beta";
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
 const LSK_LAST_SEEN_VERSION = "lt_last_seen_version";
+const PROFILE_ONBOARDING_VERSION = 1;
 
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
@@ -338,6 +340,17 @@ export default function App() {
 
   // ── Theme: apply data-theme to <html> whenever themeMode changes ──────────
   const themeMode = useSettingsStore((s) => s.themeMode);
+  const settingsLoading = useSettingsStore((s) => s.loading);
+  const profileOnboardingVersion = useSettingsStore((s) => s.profileOnboardingVersion);
+  const speakerGender = useSettingsStore((s) => s.speakerGender);
+  const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
+  const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
+  const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
+  const setSpeakerGender = useSettingsStore((s) => s.setSpeakerGender);
+  const setDateOfBirth = useSettingsStore((s) => s.setDateOfBirth);
+  const setFromCountryCode = useSettingsStore((s) => s.setFromCountryCode);
+  const setLivesInCountryCode = useSettingsStore((s) => s.setLivesInCountryCode);
+  const setProfileOnboardingVersion = useSettingsStore((s) => s.setProfileOnboardingVersion);
   useEffect(() => {
     const root = document.documentElement;
     if (themeMode === "light") {
@@ -850,6 +863,7 @@ export default function App() {
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [showOnboardingProfile, setShowOnboardingProfile] = useState(false);
   const [confirmRequest, setConfirmRequest] = useState(null);
   const confirmResolveRef = useRef(null);
 
@@ -862,7 +876,15 @@ export default function App() {
     ""
   );
 
+  const hasSeenUserGuide = seenUserGuide === true || seenUserGuide === "true" || seenUserGuide === "1";
+  const needsProfileOnboarding =
+    !!user?.id &&
+    !settingsLoading &&
+    Number(profileOnboardingVersion || 0) < PROFILE_ONBOARDING_VERSION;
+
   useEffect(() => {
+    if (showOnboardingProfile || showUserGuide) return;
+    if (user?.id && !hasSeenUserGuide) return;
     if (!lastSeenVersion) {
       setLastSeenVersion(APP_VERSION);
       return;
@@ -871,14 +893,40 @@ export default function App() {
       setShowWhatsNew(true);
       setLastSeenVersion(APP_VERSION);
     }
-  }, [lastSeenVersion, setLastSeenVersion]);
+  }, [lastSeenVersion, setLastSeenVersion, showOnboardingProfile, showUserGuide, user?.id, hasSeenUserGuide]);
+
+  useEffect(() => {
+    if (!user?.id || settingsLoading) return;
+    if (!needsProfileOnboarding) return;
+    setShowWhatsNew(false);
+    setShowUserGuide(false);
+    setShowOnboardingProfile(true);
+  }, [needsProfileOnboarding, settingsLoading, user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
-    if (seenUserGuide) return;
+    if (settingsLoading || needsProfileOnboarding || showOnboardingProfile) return;
+    if (hasSeenUserGuide) return;
     setShowUserGuide(true);
     setSeenUserGuide(true);
-  }, [user?.id, seenUserGuide, setSeenUserGuide]);
+  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide, setSeenUserGuide]);
+
+  const saveOnboardingProfile = useCallback(async (values) => {
+    await setSpeakerGender?.(user?.id, values?.speakerGender);
+    await setDateOfBirth?.(user?.id, values?.dateOfBirth);
+    await setFromCountryCode?.(user?.id, values?.fromCountryCode);
+    await setLivesInCountryCode?.(user?.id, values?.livesInCountryCode);
+    await setProfileOnboardingVersion?.(user?.id, PROFILE_ONBOARDING_VERSION);
+    setShowOnboardingProfile(false);
+    showToast("Profile setup saved");
+  }, [
+    setDateOfBirth,
+    setFromCountryCode,
+    setLivesInCountryCode,
+    setProfileOnboardingVersion,
+    setSpeakerGender,
+    user?.id,
+  ]);
 
   const closeConfirm = useCallback((result) => {
     const resolve = confirmResolveRef.current;
@@ -902,10 +950,10 @@ export default function App() {
   const hasConfirmOpen = !!confirmRequest;
 
   useModalScrollLock(
-    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen || hasConfirmOpen
+    showChangeLog || showUserGuide || showWhatsNew || showOnboardingProfile || addOpen || scenarioPickerOpen || hasConfirmOpen
   );
   useAppBodyScrollLock(
-    showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen || hasConfirmOpen
+    showChangeLog || showUserGuide || showWhatsNew || showOnboardingProfile || addOpen || scenarioPickerOpen || hasConfirmOpen
   );
 
   const headerPage =
@@ -1074,6 +1122,7 @@ export default function App() {
   onOpenDuplicateScanner={() => goToPage("dupes")}
   onOpenChangeLog={() => setShowChangeLog(true)}
   onOpenUserGuide={() => setShowUserGuide(true)}
+  onOpenOnboardingProfile={() => setShowOnboardingProfile(true)}
   onOpenAnalytics={() => goToPage("analytics")}
   dailyRecallEnabled={dailyRecall.enabled}
   setDailyRecallEnabled={dailyRecall.setEnabled}
@@ -1162,6 +1211,19 @@ export default function App() {
           onClose={() => setShowChangeLog(false)}
         />
       )}
+
+      <OnboardingProfileModal
+        open={showOnboardingProfile}
+        required={needsProfileOnboarding}
+        initialValues={{
+          speakerGender,
+          dateOfBirth,
+          fromCountryCode,
+          livesInCountryCode,
+        }}
+        onSave={saveOnboardingProfile}
+        onClose={() => setShowOnboardingProfile(false)}
+      />
 
       {showUserGuide && <UserGuideModal onClose={() => setShowUserGuide(false)} />}
 
