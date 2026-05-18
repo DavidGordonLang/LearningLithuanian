@@ -24,6 +24,7 @@ import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
 import ConfirmDialog from "./components/ConfirmDialog";
 import SwipePager from "./components/SwipePager";
+import ModalShell from "./components/ModalShell";
 
 import DailyRecallModal from "./components/DailyRecallModal";
 import useDailyRecall from "./hooks/useDailyRecall";
@@ -257,22 +258,13 @@ function ScenarioPickerModal({
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <ModalShell
+      open={open}
+      title="Add to Scenario"
+      subtitle="Choose an existing scenario or create a new one."
+      onClose={onClose}
+      zIndex="z-[120]"
     >
-      <div className="w-full h-full px-3 pb-4 flex justify-center items-center">
-        <div
-          className="w-full max-w-md z-card shadow-2xl overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-5 pb-3 border-b border-white/10">
-            <h3 className="z-title">Add to Scenario</h3>
-            <p className="text-sm text-zinc-400 mt-1">
-              Choose an existing scenario or create a new one.
-            </p>
-          </div>
-
           <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
             {Array.isArray(scenarios) && scenarios.length > 0 ? (
               <div className="space-y-2">
@@ -335,9 +327,7 @@ function ScenarioPickerModal({
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 
