@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useScenarioStore } from "../stores/scenarioStore";
+import ModalShell from "../components/ModalShell";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 const MENU_WIDTH = 208;
@@ -153,22 +154,12 @@ function CreateScenarioModal({ open, onClose, onCreate }) {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <ModalShell
+      open={open}
+      title="Create Scenario"
+      subtitle="Give this scenario a short, clear title."
+      onClose={onClose}
     >
-      <div className="w-full h-full px-3 pb-4 flex justify-center items-center">
-        <div
-          className="w-full max-w-md z-card shadow-2xl overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-5 pb-3 border-b border-white/10">
-            <h3 className="z-title">Create Scenario</h3>
-            <p className="text-sm text-zinc-400 mt-1">
-              Give this scenario a short, clear title.
-            </p>
-          </div>
-
           <div className="p-5 space-y-4">
             <div className="space-y-2">
               <label className="text-sm text-zinc-300">Scenario title</label>
@@ -210,9 +201,7 @@ function CreateScenarioModal({ open, onClose, onCreate }) {
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -226,22 +215,12 @@ function RenameScenarioModal({ open, scenario, onClose, onSave }) {
   if (!open || !scenario) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <ModalShell
+      open={open}
+      title="Rename Scenario"
+      subtitle="Update the title for this scenario."
+      onClose={onClose}
     >
-      <div className="w-full h-full px-3 pb-4 flex justify-center items-center">
-        <div
-          className="w-full max-w-md z-card shadow-2xl overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-5 pb-3 border-b border-white/10">
-            <h3 className="z-title">Rename Scenario</h3>
-            <p className="text-sm text-zinc-400 mt-1">
-              Update the title for this scenario.
-            </p>
-          </div>
-
           <div className="p-5 space-y-4">
             <div className="space-y-2">
               <label className="text-sm text-zinc-300">Scenario title</label>
@@ -279,9 +258,7 @@ function RenameScenarioModal({ open, scenario, onClose, onSave }) {
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 
