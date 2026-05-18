@@ -639,7 +639,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
 //   Wrong   → red, show correct answer, allow retry.
 // Tapping a built token removes it back to the source row (ghost stays).
 
-function BuildPhraseBlock({ block, playText, onComplete, completed }) {
+function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed }) {
   const rawTokens = Array.isArray(block?.tokens) ? block.tokens : [];
   const tokens = React.useMemo(() => {
     const arr = [...rawTokens];
@@ -764,8 +764,8 @@ function BuildPhraseBlock({ block, playText, onComplete, completed }) {
         {checkState === "wrong" ? (
           <ActionButton onClick={handleRetry} variant="secondary" className="flex-1">Try again</ActionButton>
         ) : (
-          <ActionButton onClick={checkPhrase} disabled={!isReady || revealed} className="flex-1">
-            {revealed ? "Phrase built ✓" : "Check phrase"}
+          <ActionButton onClick={revealed ? onAdvance : checkPhrase} disabled={!isReady && !revealed} className="flex-1">
+            {revealed ? "Continue" : "Check phrase"}
           </ActionButton>
         )}
         {!revealed ? (
@@ -1572,7 +1572,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} completed={completed}/>;
-    case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} completed={completed}/>;
+    case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "context_gap_select": return <ContextGapSelect block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
