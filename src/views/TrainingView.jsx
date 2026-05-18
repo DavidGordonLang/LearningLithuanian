@@ -383,9 +383,16 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   }
 
   if (screen === "sectionComplete" && sectionCompletePayload) {
+    const completedSectionIndex = allSections.findIndex(
+      (section) => section?.id === sectionCompletePayload.section?.id
+    );
+    const nextSectionForComplete =
+      completedSectionIndex >= 0 ? allSections[completedSectionIndex + 1] || null : null;
+
     return (
       <SectionCompleteView
         section={sectionCompletePayload.section}
+        nextSection={nextSectionForComplete}
         modules={sectionCompletePayload.modules}
         xpEarned={sectionCompletePayload.xpEarned}
         accuracyPct={sectionCompletePayload.accuracyPct}
