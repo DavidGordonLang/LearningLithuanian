@@ -59,11 +59,13 @@ function cleanName(value) {
 
 export function buildSection1Profile({
   userName,
+  speakerGender,
   fromCountryCode,
   livesInCountryCode,
   dateOfBirth,
 } = {}) {
   const userNameSafe = cleanName(userName) || FALLBACK_NAME;
+  const safeSpeakerGender = speakerGender === "female" ? "female" : "male";
 
   const userFromCountryCode =
     String(fromCountryCode || "").trim() || FALLBACK_FROM_COUNTRY_CODE;
@@ -89,6 +91,7 @@ export function buildSection1Profile({
 
   return {
     userNameSafe,
+    speakerGender: safeSpeakerGender,
 
     userFromCountryCode,
     userFromCountryLabelEn,

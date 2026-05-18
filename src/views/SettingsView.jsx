@@ -74,6 +74,7 @@ export default function SettingsView({
   onOpenDuplicateScanner,
   onOpenChangeLog,
   onOpenUserGuide,
+  onOpenOnboardingProfile,
   onOpenAnalytics,
   dailyRecallEnabled,
   setDailyRecallEnabled,
@@ -442,7 +443,7 @@ export default function SettingsView({
             <div>
               <div className="text-sm font-semibold text-zinc-200">Your profile</div>
               <div className="text-xs text-zinc-500 mt-0.5">
-                Used to personalise self-description lines in lessons. Countries are shown in English for now, but the course uses the correct Lithuanian forms internally.
+                Used only inside Žodis to tailor Lithuanian translations, examples, forms of address, country phrases, and age-relevant lessons. You can edit this anytime.
               </div>
             </div>
 
@@ -586,6 +587,17 @@ export default function SettingsView({
               <div className="text-[11px] text-zinc-600">
                 {livesInCountryLabel ? `Selected: ${livesInCountryLabel}` : "Stored now for later lessons like “I live in …”"}
               </div>
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                data-press
+                className="z-btn z-btn-secondary px-4 py-2.5 rounded-2xl text-sm font-semibold"
+                onClick={onOpenOnboardingProfile}
+              >
+                Reopen profile setup
+              </button>
             </div>
           </div>
 

@@ -15,6 +15,7 @@ const DEFAULTS = {
   fromCountryCode: "",
   livesInCountryCode: "",
   dateOfBirth: "",          // ISO date string e.g. "1990-06-15"
+  profileOnboardingVersion: 0,
   themeMode: "auto",        // "auto" | "light" | "dark"
 };
 
@@ -46,6 +47,9 @@ function derive(data) {
   const fromCountryCode = sanitizeCountryCode(merged.fromCountryCode);
   const livesInCountryCode = sanitizeCountryCode(merged.livesInCountryCode);
   const dateOfBirth = sanitizeDob(merged.dateOfBirth);
+  const profileOnboardingVersion = Number.isFinite(Number(merged.profileOnboardingVersion))
+    ? Number(merged.profileOnboardingVersion)
+    : 0;
   const themeMode = ["auto", "light", "dark"].includes(merged.themeMode) ? merged.themeMode : "auto";
 
   return {
@@ -55,6 +59,7 @@ function derive(data) {
     fromCountryCode,
     livesInCountryCode,
     dateOfBirth,
+    profileOnboardingVersion,
     themeMode,
   };
 }
@@ -226,6 +231,12 @@ export const useSettingsStore = create((set, get) => ({
   setDateOfBirth: async (userId, dob) => {
     const next = sanitizeDob(dob);
     return get().setSetting(userId, "dateOfBirth", next);
+  },
+
+  setProfileOnboardingVersion: async (userId, version) => {
+    const n = Number(version);
+    const next = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+    return get().setSetting(userId, "profileOnboardingVersion", next);
   },
 
   setThemeMode: async (userId, mode) => {
