@@ -354,7 +354,7 @@ export default function ScenarioDetailView({
           className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
           onClick={onBack}
         >
-          ← Back
+          ← Back to scenarios
         </button>
       </div>
 
