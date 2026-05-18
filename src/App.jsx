@@ -918,7 +918,14 @@ export default function App() {
     showChangeLog || showUserGuide || showWhatsNew || addOpen || scenarioPickerOpen || hasConfirmOpen
   );
 
-  const headerPage = swipeTabs.includes(page) ? page : "scenarios";
+  const headerPage =
+    page === "dupes" || page === "analytics"
+      ? "settings"
+      : page === "scenario-detail"
+      ? "scenarios"
+      : swipeTabs.includes(page)
+      ? page
+      : "scenarios";
 
   if (authLoading || !allowlistChecked) {
     return (
