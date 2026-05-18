@@ -11,6 +11,13 @@ export default function ModalShell({
   closeOnEscape = true,
   maxWidth = "max-w-md",
   zIndex = "z-50",
+  headerAction = null,
+  titleClassName = "z-title",
+  subtitleClassName = "text-sm text-zinc-400 mt-1",
+  containerClassName = "",
+  containerStyle,
+  panelClassName = "",
+  panelStyle,
   children,
 }) {
   const titleId = useId();
@@ -41,18 +48,34 @@ export default function ModalShell({
         if (closeOnBackdrop && e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className="w-full h-full px-3 pb-4 flex justify-center items-center">
+      <div
+        className={cn(
+          "w-full h-full px-3 pb-4 flex justify-center items-center",
+          containerClassName
+        )}
+        style={containerStyle}
+      >
         <div
-          className={cn("w-full z-card shadow-2xl overflow-hidden", maxWidth)}
+          className={cn(
+            "w-full z-card shadow-2xl overflow-hidden",
+            maxWidth,
+            panelClassName
+          )}
+          style={panelStyle}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-5 pb-3 border-b border-white/10">
-            <h3 id={titleId} className="z-title">
-              {title}
-            </h3>
-            {subtitle ? (
-              <p className="text-sm text-zinc-400 mt-1">{subtitle}</p>
-            ) : null}
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h3 id={titleId} className={titleClassName}>
+                  {title}
+                </h3>
+                {subtitle ? (
+                  <div className={subtitleClassName}>{subtitle}</div>
+                ) : null}
+              </div>
+              {headerAction}
+            </div>
           </div>
 
           {children}
