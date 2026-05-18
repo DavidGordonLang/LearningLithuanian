@@ -10,6 +10,7 @@ import { searchStore } from "../searchStore";
 import { CATEGORIES } from "../constants/categories";
 import { useSettingsStore } from "../stores/settingsStore";
 import InteractivePhraseText from "../components/audio/InteractivePhraseText";
+import AudioPlayButton from "../components/audio/AudioPlayButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -36,8 +37,6 @@ function normalize(s) {
     .trim();
 }
 
-const LONG_PRESS_MS = 420;
-
 function useBlurActiveInput() {
   return () => {
     const ae = document.activeElement;
@@ -49,86 +48,6 @@ function useBlurActiveInput() {
       } catch {}
     }
   };
-}
-
-function PlayButton({ text, playText, blurActiveInput }) {
-  const timerRef = useRef(0);
-  const longFiredRef = useRef(false);
-  const [pressing, setPressing] = useState(false);
-
-  const clearTimer = () => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = 0;
-  };
-
-  const start = (e) => {
-    if (e?.button != null && e.button !== 0) return;
-
-    try {
-      if (e?.currentTarget?.setPointerCapture && e?.pointerId != null) {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      }
-    } catch {}
-
-    blurActiveInput?.();
-    longFiredRef.current = false;
-    setPressing(true);
-    clearTimer();
-
-    timerRef.current = window.setTimeout(() => {
-      longFiredRef.current = true;
-      playText?.(text || "", { slow: true });
-    }, LONG_PRESS_MS);
-  };
-
-  const finish = (e) => {
-    try {
-      if (e?.currentTarget?.releasePointerCapture && e?.pointerId != null) {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }
-    } catch {}
-
-    setPressing(false);
-    clearTimer();
-  };
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-
-    if (longFiredRef.current) {
-      longFiredRef.current = false;
-      return;
-    }
-
-    playText?.(text || "");
-  };
-
-  return (
-    <button
-      type="button"
-      aria-label="Play"
-      data-swipe-block="true"
-      className={cn(
-        "select-none",
-        "w-12 h-12 rounded-full",
-        "border border-emerald-300/20",
-        "bg-emerald-900/20 hover:bg-emerald-900/30",
-        "shadow-[0_0_0_1px_rgba(16,185,129,0.10),0_0_26px_rgba(16,185,129,0.12),0_14px_40px_rgba(0,0,0,0.60)]",
-        "flex items-center justify-center shrink-0",
-        "transition-transform duration-150",
-        pressing ? "scale-[0.98]" : null
-      )}
-      onPointerDown={start}
-      onPointerUp={finish}
-      onPointerCancel={finish}
-      onPointerLeave={finish}
-      onClick={handleClick}
-    >
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-emerald-200 ml-0.5">
-        <path d="M3 2L12 7L3 12V2Z" fill="currentColor"/>
-      </svg>
-    </button>
-  );
 }
 
 export default function LibraryView({
@@ -435,7 +354,7 @@ export default function LibraryView({
             >
               <div className="flex items-start gap-3">
                 <div className="self-center" onClick={(e) => e.stopPropagation()}>
-                  <PlayButton
+                  <AudioPlayButton
                     text={r?.Lithuanian || ""}
                     playText={playText}
                     blurActiveInput={blurActiveInput}
