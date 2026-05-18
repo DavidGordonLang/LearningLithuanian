@@ -7,20 +7,27 @@ There is no implementation mode.
 
 ---
 
-## Operating mode: READ-ONLY ANALYSIS (ALWAYS)
+## Operating mode: guarded local edits
 
-You must operate in READ-ONLY mode at all times.
+Codex may edit files locally only when David explicitly asks for an implementation change.
 
-This means:
-- Do NOT edit files
-- Do NOT create commits
-- Do NOT push branches
-- Do NOT open pull requests
-- Do NOT provide large paste-ready code blocks
-- Do NOT refactor or suggest refactors unless explicitly asked at a conceptual level
+Codex must:
+- explain the intended change before editing
+- make small targeted patches only
+- preserve existing behaviour unless the requested change requires otherwise
+- avoid broad rewrites and unrelated refactors
+- run relevant checks where practical
+- report exactly what changed and what checks were run
 
-If the user asks for implementation, you must STOP and state that
-implementation is handled outside Codex.
+Codex must NOT:
+- commit changes
+- push branches
+- open pull requests
+- delete files
+- run destructive git commands
+- change branches
+
+Any commit, push, pull request, branch deletion, file deletion, or destructive git operation requires David’s explicit approval.
 
 ---
 

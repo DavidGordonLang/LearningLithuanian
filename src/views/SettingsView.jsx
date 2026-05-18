@@ -79,6 +79,7 @@ export default function SettingsView({
   setDailyRecallEnabled,
   showDailyRecallNow,
   showToast,
+  confirmAction,
 }) {
   const { user, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
@@ -185,18 +186,26 @@ export default function SettingsView({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      await importJsonFile(file);
-      alert("Imported ✅");
+      const result = await importJsonFile(file);
+      const count =
+        typeof result?.count === "number" ? ` (${result.count} rows)` : "";
+      showToast?.(`Imported${count}`);
       try { trackEvent("import_json", {}, { app_version: appVersion }); } catch {}
     } catch (err) {
       try { trackError(err, { source: "import_json" }, { app_version: appVersion }); } catch {}
-      alert("Import failed: " + (err?.message || "Unknown error"));
+      showToast?.("Import failed: " + (err?.message || "Unknown error"));
     } finally { e.target.value = ""; }
   }
 
   async function uploadLibraryToCloud() {
     if (!user) return;
-    const ok = window.confirm("Upload (overwrite):\n\nThis will REPLACE your cloud library with your local library.\n\nContinue?");
+    const ok = await confirmAction({
+      title: "Overwrite cloud library?",
+      body: "This will replace your cloud library with the library on this device. Other devices may lose cloud entries that are not present locally.",
+      confirmLabel: "Overwrite cloud",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setSyncingUp(true);
@@ -214,7 +223,13 @@ export default function SettingsView({
 
   async function downloadLibraryFromCloud() {
     if (!user) return;
-    const ok = window.confirm("Download (overwrite):\n\nThis will REPLACE your entire local library with the cloud version.\n\nContinue?");
+    const ok = await confirmAction({
+      title: "Overwrite local library?",
+      body: "This will replace the library on this device with the cloud version. Local entries that are not in cloud may be lost.",
+      confirmLabel: "Overwrite local",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setSyncingDown(true);
@@ -275,9 +290,13 @@ export default function SettingsView({
   // ─── Progress reset handlers ─────────────────────────────────────────────────
 
   async function handleResetLessonProgress() {
-    const ok = window.confirm(
-      "Reset lesson progress?\n\nThis will mark all lessons as incomplete. Your XP and streak will not be affected.\n\nContinue?"
-    );
+    const ok = await confirmAction({
+      title: "Reset lesson progress?",
+      body: "This will mark all lessons as incomplete on this account. Your XP and streak will not be affected.",
+      confirmLabel: "Reset progress",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setProgressResetting(true);
@@ -295,9 +314,13 @@ export default function SettingsView({
 
   async function handleResetEverything() {
     if (!isAdmin) return;
-    const ok = window.confirm(
-      "ADMIN: Reset everything?\n\nThis will clear all lesson progress, XP, and streak data.\n\nContinue?"
-    );
+    const ok = await confirmAction({
+      title: "Admin reset everything?",
+      body: "This will permanently clear all lesson progress, XP, and streak data for this account.",
+      confirmLabel: "Reset everything",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       setProgressResetting(true);
@@ -375,15 +398,21 @@ export default function SettingsView({
   }
 
   async function handleClearLibrary() {
-    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
+    const ok = await confirmAction({
+      title: "Clear library?",
+      body: "This will remove your entire local library from this device. This cannot be undone.",
+      confirmLabel: "Clear library",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
     try {
       await clearLibrary?.();
-      alert("Cleared ✅");
+      showToast?.("Cleared");
       try { trackEvent("library_clear", {}, { app_version: appVersion }); } catch {}
     } catch (e) {
       try { trackError(e, { source: "library_clear" }, { app_version: appVersion }); } catch {}
-      alert("Could not clear: " + (e?.message || "Unknown error"));
+      showToast?.("Could not clear: " + (e?.message || "Unknown error"));
     }
   }
 
