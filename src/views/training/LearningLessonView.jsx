@@ -509,19 +509,36 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
   const isBusy       = isActive || isProcessing;
   const supported    = sttSupported();
 
-  // Single tap-to-toggle. No touchStart/mouseDown dance — those fire multiple
-  // times on Android and race against the async getUserMedia init gap.
-  const lastTapRef = React.useRef(0);
-  const handleMicTap = () => {
-    if (completed || isProcessing) return;
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) return; // debounce rapid double-taps
-    lastTapRef.current = now;
-    if (isActive) { playMicStop(); stopRecording(); }
-    else          { playMicStart(); startRecording(); }
+  const pointerIdRef = React.useRef(null);
+  const buttonRef = React.useRef(null);
+  const handleMicPointerDown = (event) => {
+    if (completed || isBusy || !supported) return;
+    event.preventDefault();
+    pointerIdRef.current = event.pointerId;
+    buttonRef.current?.setPointerCapture?.(event.pointerId);
+    playMicStart();
+    startRecording();
+  };
+  const finishMicHold = (event) => {
+    if (pointerIdRef.current !== event.pointerId) return;
+    event.preventDefault();
+    pointerIdRef.current = null;
+    buttonRef.current?.releasePointerCapture?.(event.pointerId);
+    playMicStop();
+    stopRecording();
+  };
+  const cancelMicHold = (event) => {
+    if (pointerIdRef.current !== event.pointerId) return;
+    event.preventDefault();
+    pointerIdRef.current = null;
+    buttonRef.current?.releasePointerCapture?.(event.pointerId);
+    playMicStop();
+    cancelStt();
   };
 
-  const micLabel = isActive ? "Tap to stop" : isProcessing ? "Checking…" : supported ? "Tap to speak" : "Microphone unavailable";
+  const micLabel = isActive ? "Listening... release when done" : isProcessing ? "Checking..." : supported ? "Hold to speak" : "Microphone unavailable";
+  const statusLabel = attemptState === "result_pass" ? "Nice, spoken" : attemptState === "result_fail" ? "Not quite yet" : micLabel;
+  const statusTone = attemptState === "result_pass" ? "success" : attemptState === "result_fail" ? "fail" : isActive ? "recording" : isProcessing ? "checking" : "idle";
 
   if (completed) {
     return (
@@ -561,16 +578,15 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
       {attemptState === "result_pass" ? (
         <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] px-4 py-3">
           <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
-          <div className="text-[13px] text-emerald-200 font-medium">{capturedText ? `"${capturedText}"` : "Spoken"}</div>
+          <div className="text-[13px] text-emerald-200 font-medium">Nice, spoken</div>
         </div>
       ) : null}
       {attemptState === "result_fail" ? (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-1">We heard</div>
-            <div className="text-[16px] font-semibold text-zinc-300">{capturedText || "—"}</div>
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.06] px-4 py-3 text-center">
+            <div className="text-[14px] font-semibold text-amber-200">Not quite yet</div>
+            <div className="mt-1 text-[12px] text-zinc-500">Try again</div>
           </div>
-          <div className="text-[12px] text-zinc-500 text-center">Expected: <span className="text-zinc-300">{targetText}</span></div>
           <div className="flex gap-2">
             <ActionButton variant="secondary" onClick={() => { setCapturedText(""); setAttemptState("idle"); }} className="flex-1">Try again</ActionButton>
             {failedAttempts >= 2 ? (
@@ -585,8 +601,19 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
             <ActionButton variant="secondary" onClick={() => onComplete?.()} className="w-full">Mark as spoken</ActionButton>
           ) : (
             <>
+              <div className={cn("rounded-full border px-3 py-1 text-[12px] font-medium transition-colors",
+                statusTone === "recording" ? "border-emerald-400/30 bg-emerald-500/[0.08] text-emerald-200"
+                : statusTone === "checking" ? "border-white/10 bg-white/[0.05] text-zinc-300"
+                : statusTone === "fail" ? "border-amber-400/25 bg-amber-500/[0.06] text-amber-200"
+                : "border-white/10 bg-white/[0.04] text-zinc-400")}>
+                {statusLabel}
+              </div>
               <button type="button" disabled={isProcessing}
-                onClick={handleMicTap}
+                ref={buttonRef}
+                onPointerDown={handleMicPointerDown}
+                onPointerUp={finishMicHold}
+                onPointerCancel={cancelMicHold}
+                onPointerLeave={finishMicHold}
                 className={cn("h-20 w-20 rounded-full border-2 flex items-center justify-center transition-all select-none",
                   isActive ? "bg-emerald-500/25 border-emerald-400/60 scale-105 shadow-[0_0_32px_rgba(16,185,129,0.3)]"
                   : isProcessing ? "bg-white/[0.06] border-white/10 opacity-70"
@@ -607,7 +634,6 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
                   </svg>
                 )}
               </button>
-              <div className={cn("text-[12px] transition-colors", isRecording ? "text-emerald-300" : isProcessing ? "text-zinc-400" : "text-zinc-500")}>{micLabel}</div>
             </>
           )}
         </div>
