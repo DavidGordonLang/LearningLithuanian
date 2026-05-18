@@ -214,10 +214,10 @@ export default function SettingsView({
       await replaceUserPhrases(allPhrases);
       markSynced("Uploaded");
       try { trackEvent("sync_upload_complete", { rows: allPhrases.length }, { app_version: appVersion }); } catch {}
-      alert("Uploaded to cloud ✅");
+      showToast?.("Uploaded to cloud ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_upload" }, { app_version: appVersion }); } catch {}
-      alert("Upload failed: " + (e?.message || "Unknown error"));
+      showToast?.("Upload failed: " + (e?.message || "Unknown error"));
     } finally { setSyncingUp(false); }
   }
 
@@ -238,10 +238,10 @@ export default function SettingsView({
       setRows(cloudRows);
       markSynced("Downloaded");
       try { trackEvent("sync_download_complete", { rows: cloudRows.length }, { app_version: appVersion }); } catch {}
-      alert(`Downloaded ${cloudRows.length} entries ✅`);
+      showToast?.(`Downloaded ${cloudRows.length} entries ✅`);
     } catch (e) {
       try { trackError(e, { source: "sync_download" }, { app_version: appVersion }); } catch {}
-      alert("Download failed: " + (e?.message || "Unknown error"));
+      showToast?.("Download failed: " + (e?.message || "Unknown error"));
     } finally { setSyncingDown(false); }
   }
 
@@ -262,10 +262,10 @@ export default function SettingsView({
       }
       setRows(result.mergedRows); markSynced("Synced");
       try { trackEvent("sync_merge_complete", { rows: result.mergedRows?.length || 0 }, { app_version: appVersion }); } catch {}
-      alert("Sync completed ✅");
+      showToast?.("Sync completed ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_merge" }, { app_version: appVersion }); } catch {}
-      alert("Sync failed: " + (e?.message || "Unknown error"));
+      showToast?.("Sync failed: " + (e?.message || "Unknown error"));
     } finally { setMerging(false); }
   }
 
@@ -280,10 +280,10 @@ export default function SettingsView({
       setRows(finalRows); markSynced("Synced");
       setPendingConflicts([]); setPendingMergedRows([]); setShowConflictModal(false);
       try { trackEvent("sync_conflicts_finish_complete", { rows: finalRows.length }, { app_version: appVersion }); } catch {}
-      alert("Sync completed ✅");
+      showToast?.("Sync completed ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_conflicts_finish" }, { app_version: appVersion }); } catch {}
-      alert("Finish sync failed: " + (e?.message || "Unknown error"));
+      showToast?.("Finish sync failed: " + (e?.message || "Unknown error"));
     } finally { setMerging(false); }
   }
 
@@ -304,9 +304,9 @@ export default function SettingsView({
       useGameStore.setState({ completedLessonIds: [] });
       // Persist the change
       await gameSave(user?.id);
-      alert("Lesson progress reset ✅");
+      showToast?.("Lesson progress reset ✅");
     } catch (e) {
-      alert("Reset failed: " + (e?.message || "Unknown error"));
+      showToast?.("Reset failed: " + (e?.message || "Unknown error"));
     } finally {
       setProgressResetting(false);
     }
@@ -326,9 +326,9 @@ export default function SettingsView({
       setProgressResetting(true);
       gameReset();
       await gameSave(user?.id);
-      alert("All progress reset ✅");
+      showToast?.("All progress reset ✅");
     } catch (e) {
-      alert("Reset failed: " + (e?.message || "Unknown error"));
+      showToast?.("Reset failed: " + (e?.message || "Unknown error"));
     } finally {
       setProgressResetting(false);
     }
@@ -375,13 +375,13 @@ export default function SettingsView({
   })();
 
   async function runBackfillIpaOnce() {
-    if (!user) return alert("Sign in first.");
-    if (!isAdmin) return alert("Admin only.");
+    if (!user) return showToast?.("Sign in first.");
+    if (!isAdmin) return showToast?.("Admin only.");
     try {
       setBackfillRunning(true);
       const res = await fetch("/api/backfill-ipa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert("Backfill failed: " + (String(data?.error || data?.message || "") || `HTTP ${res.status} ${res.statusText}`)); return; }
+      if (!res.ok) { showToast?.("Backfill failed: " + (String(data?.error || data?.message || "") || `HTTP ${res.status} ${res.statusText}`)); return; }
       const counts = data?.counts || {};
       setBackfillStats({
         total: typeof counts?.total === "number" ? counts.total : null,
@@ -394,7 +394,7 @@ export default function SettingsView({
         message: String(data?.message || "").trim(),
         updatedAt: Date.now(),
       });
-    } catch (e) { alert("Backfill failed: " + (e?.message || "Unknown error")); } finally { setBackfillRunning(false); }
+    } catch (e) { showToast?.("Backfill failed: " + (e?.message || "Unknown error")); } finally { setBackfillRunning(false); }
   }
 
   async function handleClearLibrary() {
