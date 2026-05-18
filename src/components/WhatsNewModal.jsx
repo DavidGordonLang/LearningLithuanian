@@ -1,5 +1,6 @@
 // src/components/WhatsNewModal.jsx
 import React, { useEffect, useState } from "react";
+import ModalShell from "./ModalShell";
 
 export default function WhatsNewModal({
   version,
@@ -42,51 +43,41 @@ export default function WhatsNewModal({
   const padTop = topOffset ? topOffset + 16 : 16;
 
   return (
-    <div
-      className="
-        fixed inset-0 z-[210]
-        bg-black/60 backdrop-blur-sm
-        flex items-start justify-center px-4
-        pb-[calc(env(safe-area-inset-bottom)+12px)]
-      "
-      style={{
+    <ModalShell
+      open
+      title="What's New"
+      subtitle={
+        <>
+          App Version: <span className="text-zinc-300">{version}</span>
+          {date ? <span className="text-zinc-500"> • {date}</span> : null}
+        </>
+      }
+      onClose={onClose}
+      zIndex="z-[210]"
+      titleClassName="z-title text-[18px] sm:text-[20px]"
+      subtitleClassName="z-helper mt-0.5"
+      containerClassName="items-start px-4 pb-[calc(env(safe-area-inset-bottom)+12px)]"
+      containerStyle={{
         paddingTop: `calc(env(safe-area-inset-top) + ${padTop}px)`,
       }}
-      onPointerDown={onClose}
+      panelClassName="flex flex-col"
+      panelStyle={{
+        maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${padTop}px - 24px)`,
+      }}
+      headerAction={
+        <button
+          type="button"
+          className="z-btn z-btn-secondary px-4 py-2 text-[13px]"
+          onClick={onClose}
+          data-press
+        >
+          Close
+        </button>
+      }
     >
-      <div
-        className="w-full max-w-md z-card overflow-hidden flex flex-col"
-        style={{
-          maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${padTop}px - 24px)`,
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        {/* HEADER */}
-        <div className="z-inset border-b border-white/10">
-          <div className="flex items-start justify-between gap-4 px-5 py-4">
-            <div className="min-w-0">
-              <h2 className="z-title text-[18px] sm:text-[20px]">What’s New</h2>
-              <div className="z-helper mt-0.5">
-                App Version: <span className="text-zinc-300">{version}</span>
-                {date ? <span className="text-zinc-500"> • {date}</span> : null}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="z-btn z-btn-secondary px-4 py-2 text-[13px]"
-              onClick={onClose}
-              data-press
-            >
-              Close
-            </button>
-          </div>
-        </div>
-
-        {/* BODY */}
         <div className="flex-1 overflow-y-auto p-5">
           <p className="z-subtitle mb-4">
-            Here’s what changed in the latest update:
+            Here's what changed in the latest update:
           </p>
 
           {loading ? (
@@ -131,7 +122,6 @@ export default function WhatsNewModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
