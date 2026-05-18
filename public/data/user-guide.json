@@ -2,75 +2,91 @@
   {
     "icon": "folder",
     "title": "Welcome to Žodis",
-    "subtitle": "A personal first Lithuanian library for real life.",
+    "subtitle": "Practical Lithuanian for real life.",
     "points": [
-      "Žodis is built around words and phrases that matter to you.",
-      "Add what you need, when you need it, or when you are curious.",
-      "This is not a fixed course, your library grows with you."
-    ],
-    "linkText": "Learn how Žodis works",
-    "linkUrl": "https://zodis.app"
+      "Use Žodis to translate, listen, save useful phrases, and practise them.",
+      "Build a personal Library around the Lithuanian you actually need.",
+      "Use Lessons and Scenarios to turn saved language into real practice."
+    ]
+  },
+  {
+    "icon": "folder",
+    "title": "Your Profile",
+    "subtitle": "A little context makes Lithuanian more accurate.",
+    "points": [
+      "Žodis asks for speaker gender, date of birth, where you are from, and where you live.",
+      "This is used only inside Žodis to tailor Lithuanian forms, examples, country phrases, and age-relevant lesson content.",
+      "You can edit your profile later from Settings."
+    ]
   },
   {
     "icon": "speaker",
-    "title": "Hear it, then hear it again",
-    "subtitle": "Audio is part of learning, not an extra.",
+    "title": "Translate and Listen",
+    "subtitle": "Home is your quick translation space.",
     "points": [
-      "Tap to play audio at normal speed.",
-      "Long press to play slowly.",
-      "Use playback to build confidence before you speak."
+      "Type what you want to say, or hold the mic to speak.",
+      "Play Lithuanian audio at normal speed, and use slow playback where available.",
+      "Copy, save, or add useful translations to a Scenario."
     ]
   },
   {
     "icon": "speech",
-    "title": "Notes are where meaning lives",
-    "subtitle": "Notes add context, alternatives, and nuance.",
+    "title": "Save Phrases That Matter",
+    "subtitle": "Saved phrases become learning material.",
     "points": [
-      "Use Notes for explanations, extra meaning, and examples.",
-      "If there are multiple valid forms, Notes can show when to use each one.",
-      "Over time, Notes become your personal learning context."
+      "When you save a phrase, Žodis can turn it into an enriched Library card.",
+      "Cards can include notes, usage context, alternative Lithuanian phrases, audio, and review value.",
+      "Over time, your Library becomes a practical record of what you are learning."
     ]
   },
   {
     "icon": "folder",
-    "title": "Organise with RAG",
-    "subtitle": "A simple way to mark what needs attention.",
+    "title": "Library",
+    "subtitle": "Your saved Lithuanian lives here.",
     "points": [
-      "RAG helps you organise your library at a glance.",
-      "You can change RAG in Edit mode.",
-      "You can also tap the RAG icon in the Library to cycle it quickly."
+      "Search, sort, play audio, and review saved entries.",
+      "Tap Lithuanian words to hear individual word audio where available.",
+      "Edit entries or add useful phrases to Scenarios."
     ]
   },
   {
     "icon": "folder",
-    "title": "Signing in",
-    "subtitle": "Sign in unlocks cloud sync and multi device use.",
+    "title": "Scenarios",
+    "subtitle": "Group phrases by real-life situation.",
     "points": [
-      "You can sign in with Google or email.",
-      "Signing in lets you upload, download, and merge your library across devices.",
-      "If you requested beta access, make sure you sign in with the same email."
+      "Create collections for cafés, travel, small talk, appointments, or anything else you need.",
+      "Add phrases from Home or the Library.",
+      "Open a Scenario to review, play, reorder, or manage its phrases."
+    ]
+  },
+  {
+    "icon": "speaker",
+    "title": "Lessons",
+    "subtitle": "Structured practice for steady progress.",
+    "points": [
+      "Lessons include listening, phrase building, matching, and short scenario-style practice.",
+      "They use your profile for personal examples like country phrases and age lines.",
+      "Browse the course anytime from Training."
+    ]
+  },
+  {
+    "icon": "speech",
+    "title": "Speaking Practice",
+    "subtitle": "Speak, check, and keep going.",
+    "points": [
+      "In speaking checks, hold to speak and release to check.",
+      "Žodis gives simple learner-friendly feedback instead of showing raw transcripts.",
+      "Use audio first, then try saying the phrase yourself."
     ]
   },
   {
     "icon": "folder",
-    "title": "Sync is manual on purpose",
-    "subtitle": "You decide exactly what happens to your data.",
+    "title": "Settings and Coming Soon",
+    "subtitle": "Control your learning setup.",
     "points": [
-      "Upload replaces the cloud copy with what is on this device.",
-      "Download replaces what is on this device with what is in the cloud.",
-      "Merge is the safest option, it carefully combines both."
+      "Settings lets you edit your profile, voice, phonetics, daily recall, sync, and guide access.",
+      "Sync is manual so you choose when to upload, download, or merge your Library.",
+      "Exam-style practice is planned for a later Beta 3.x update."
     ]
-  },
-  {
-    "icon": "folder",
-    "title": "You are in control",
-    "subtitle": "Clear actions, predictable outcomes.",
-    "points": [
-      "Nothing syncs unless you choose it.",
-      "You can keep everything local if you prefer.",
-      "If you are unsure, use Merge first."
-    ],
-    "linkText": "Open the full guide",
-    "linkUrl": "https://zodis.app/userguide"
   }
 ]
