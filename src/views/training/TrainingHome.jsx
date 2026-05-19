@@ -424,54 +424,16 @@ export default function TrainingHome({
 
       <div className="mt-6">
         <SectionLabel
-          eyebrow="Practice"
-          title="Practice modes"
-          desc="Use your saved library in different ways."
+          eyebrow="Coming soon"
+          title="Practice modes coming soon"
         />
 
         <div className="mt-3">
-          <GroupPanel>
-            <div className="space-y-3">
-              <FocusPillRow focus={focus} setFocus={setFocus} />
-
-              <div className="space-y-3 pt-1">
-                <ModuleCard
-                  title="Recognise"
-                  desc="Reveal-based recall."
-                  icon="🧠"
-                  disabled={tooFew}
-                  onClick={onStartRecallFlip}
-                  hint={
-                    tooFew
-                      ? `Add a few more entries to unlock (need ${minNeeded}).`
-                      : null
-                  }
-                />
-
-                <ModuleCard
-                  title="Produce"
-                  desc="Recall Lithuanian first."
-                  icon="⌨️"
-                  disabled={tooFew}
-                  onClick={onStartBlindRecall}
-                  hint={
-                    tooFew
-                      ? `Add a few more entries to unlock (need ${minNeeded}).`
-                      : null
-                  }
-                />
-
-                <ModuleCard
-                  title="Reinforce"
-                  desc="Match English and Lithuanian."
-                  icon="🧩"
-                  disabled={matchPairsDisabled}
-                  onClick={onStartMatchPairs}
-                  hint={matchPairsHint}
-                />
-              </div>
-            </div>
-          </GroupPanel>
+          <ComingSoonCard
+            title="Practice Modes"
+            desc="Recognise, Produce, and Reinforce are being refreshed."
+            icon="P"
+          />
         </div>
       </div>
 
