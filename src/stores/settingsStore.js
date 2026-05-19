@@ -200,6 +200,43 @@ export const useSettingsStore = create((set, get) => ({
     }
   },
 
+  saveProfileOnboarding: async (userId, values = {}, version) => {
+    const n = Number(version);
+    const nextVersion = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+    const nextData = mergeDefaults({
+      ...(get().data || {}),
+      speakerGender: values?.speakerGender === "female" ? "female" : "male",
+      dateOfBirth: sanitizeDob(values?.dateOfBirth),
+      fromCountryCode: sanitizeCountryCode(values?.fromCountryCode),
+      livesInCountryCode: sanitizeCountryCode(values?.livesInCountryCode),
+      profileOnboardingVersion: nextVersion,
+    });
+
+    if (!userId) {
+      const message = "Sign in required to save profile setup";
+      set({ error: message });
+      throw new Error(message);
+    }
+
+    try {
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .update({ data: nextData, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .select("user_id")
+        .single();
+
+      if (error) throw error;
+
+      set({ data: nextData, ...derive(nextData), error: null });
+      return { ok: true };
+    } catch (e) {
+      console.error("Failed to save profile onboarding:", e);
+      set({ error: e?.message || "Failed to save profile setup" });
+      throw e;
+    }
+  },
+
   /**
    * Convenience setters expected by UI.
    */
