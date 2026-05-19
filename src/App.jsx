@@ -775,7 +775,7 @@ export default function App() {
       const sourceRow = findActiveRowById(pendingScenarioPhraseId);
 
       if (!sourceRow) {
-        alert("Phrase not found.");
+        showToast("Phrase not found.");
         return;
       }
 
@@ -785,14 +785,14 @@ export default function App() {
       );
 
       if (duplicateInScenario) {
-        alert("This phrase is already in that scenario.");
+        showToast("This phrase is already in that scenario.");
         return;
       }
 
       const linked = addPhraseToScenario(scenarioId, pendingScenarioPhraseId);
 
       if (!linked?.ok) {
-        alert(linked?.error || "Could not add phrase to scenario.");
+        showToast(linked?.error || "Could not add phrase to scenario.");
         return;
       }
 
@@ -807,7 +807,7 @@ export default function App() {
       ).trim();
 
       if (!candidateLt) {
-        alert("Could not save phrase.");
+        showToast("Could not save phrase.");
         return;
       }
 
@@ -817,14 +817,14 @@ export default function App() {
       });
 
       if (duplicateInScenario) {
-        alert("This phrase is already in that scenario.");
+        showToast("This phrase is already in that scenario.");
         return;
       }
 
       const saved = buildSavedRowFromTranslation(pendingScenarioTranslationPayload);
 
       if (!saved?.ok || !saved?.row) {
-        alert(saved?.error || "Could not save phrase.");
+        showToast(saved?.error || "Could not save phrase.");
         return;
       }
 
@@ -832,7 +832,7 @@ export default function App() {
       const linked = addPhraseToScenario(scenarioId, phraseId);
 
       if (!linked?.ok) {
-        alert(linked?.error || "Could not add phrase to scenario.");
+        showToast(linked?.error || "Could not add phrase to scenario.");
         return;
       }
 
@@ -845,7 +845,7 @@ export default function App() {
     const created = createScenario(title);
 
     if (!created?.ok || !created?.scenario?.id) {
-      alert(created?.error || "Could not create scenario.");
+      showToast(created?.error || "Could not create scenario.");
       return;
     }
 
