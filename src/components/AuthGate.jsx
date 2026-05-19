@@ -5,8 +5,10 @@ import { supabase } from "../supabaseClient";
 export default function AuthGate() {
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
   async function signInWithGoogle() {
+    setFeedback(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin },
@@ -14,7 +16,10 @@ export default function AuthGate() {
 
     if (error) {
       console.error("Google sign-in failed:", error);
-      alert(error.message);
+      setFeedback({
+        type: "error",
+        message: error.message || "Google sign-in failed. Please try again.",
+      });
     }
   }
 
@@ -23,6 +28,7 @@ export default function AuthGate() {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
+    setFeedback(null);
     setSending(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
@@ -32,11 +38,17 @@ export default function AuthGate() {
 
       if (error) throw error;
 
-      alert("Check your email for the sign-in link.");
+      setFeedback({
+        type: "success",
+        message: "Check your email for the sign-in link.",
+      });
       setEmail("");
     } catch (err) {
       console.error("Email OTP sign-in failed:", err);
-      alert(err.message || "Email sign-in failed");
+      setFeedback({
+        type: "error",
+        message: err.message || "Email sign-in failed. Please try again.",
+      });
     } finally {
       setSending(false);
     }
@@ -69,7 +81,10 @@ export default function AuthGate() {
             <div className="text-xs text-zinc-400 mb-1">Email</div>
             <input
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFeedback(null);
+              }}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500"
               placeholder="you@example.com"
               autoComplete="email"
@@ -85,6 +100,20 @@ export default function AuthGate() {
             {sending ? "Sending link…" : "Send me a sign-in link"}
           </button>
         </form>
+
+        {feedback?.message ? (
+          <div
+            className={
+              "mt-4 rounded-xl border px-3 py-2 text-sm leading-snug " +
+              (feedback.type === "success"
+                ? "border-emerald-400/20 bg-emerald-500/[0.08] text-emerald-100"
+                : "border-amber-400/20 bg-amber-500/[0.08] text-amber-100")
+            }
+            role={feedback.type === "error" ? "alert" : "status"}
+          >
+            {feedback.message}
+          </div>
+        ) : null}
 
         <p className="text-xs text-zinc-500 mt-4">
           If you’re invited but can’t get in, double-check you’re using the same
