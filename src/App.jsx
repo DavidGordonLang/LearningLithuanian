@@ -346,11 +346,7 @@ export default function App() {
   const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
   const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
   const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
-  const setSpeakerGender = useSettingsStore((s) => s.setSpeakerGender);
-  const setDateOfBirth = useSettingsStore((s) => s.setDateOfBirth);
-  const setFromCountryCode = useSettingsStore((s) => s.setFromCountryCode);
-  const setLivesInCountryCode = useSettingsStore((s) => s.setLivesInCountryCode);
-  const setProfileOnboardingVersion = useSettingsStore((s) => s.setProfileOnboardingVersion);
+  const saveProfileOnboarding = useSettingsStore((s) => s.saveProfileOnboarding);
   useEffect(() => {
     const root = document.documentElement;
     if (themeMode === "light") {
@@ -912,19 +908,11 @@ export default function App() {
   }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide, setSeenUserGuide]);
 
   const saveOnboardingProfile = useCallback(async (values) => {
-    await setSpeakerGender?.(user?.id, values?.speakerGender);
-    await setDateOfBirth?.(user?.id, values?.dateOfBirth);
-    await setFromCountryCode?.(user?.id, values?.fromCountryCode);
-    await setLivesInCountryCode?.(user?.id, values?.livesInCountryCode);
-    await setProfileOnboardingVersion?.(user?.id, PROFILE_ONBOARDING_VERSION);
+    await saveProfileOnboarding?.(user?.id, values, PROFILE_ONBOARDING_VERSION);
     setShowOnboardingProfile(false);
     showToast("Profile setup saved");
   }, [
-    setDateOfBirth,
-    setFromCountryCode,
-    setLivesInCountryCode,
-    setProfileOnboardingVersion,
-    setSpeakerGender,
+    saveProfileOnboarding,
     user?.id,
   ]);
 
