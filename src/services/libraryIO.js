@@ -117,15 +117,15 @@ export async function mergeStarterRows(
 
 export async function fetchStarter(kind, { STARTERS, mergeStarterRowsImpl }) {
   const url = STARTERS?.[kind];
-  if (!url) return alert("Starter not found");
+  if (!url) throw new Error("Starter not found");
 
   const res = await fetch(url);
-  if (!res.ok) return alert("Failed to fetch starter");
+  if (!res.ok) throw new Error("Failed to fetch starter");
 
   const data = await res.json();
   await mergeStarterRowsImpl(data);
 
-  alert("Starter pack installed.");
+  return { ok: true, count: Array.isArray(data) ? data.length : 0 };
 }
 
 export function clearLibrary({ setRows }) {

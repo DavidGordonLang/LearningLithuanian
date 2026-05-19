@@ -532,8 +532,19 @@ export default function App() {
       nowTs,
     });
 
-  const fetchStarter = (kind) =>
-    fetchStarterIO(kind, { STARTERS, mergeStarterRowsImpl: mergeStarterRows });
+  const fetchStarter = async (kind) => {
+    try {
+      const result = await fetchStarterIO(kind, {
+        STARTERS,
+        mergeStarterRowsImpl: mergeStarterRows,
+      });
+      showToast("Starter pack installed.");
+      return result;
+    } catch (e) {
+      showToast(e?.message || "Failed to install starter pack.");
+      return { ok: false, error: e?.message || "Failed to install starter pack." };
+    }
+  };
 
   const importJsonFile = (file) =>
     importJsonFileIO(file, { mergeRowsImpl: mergeRows });
