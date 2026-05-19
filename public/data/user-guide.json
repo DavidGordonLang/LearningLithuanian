@@ -14,7 +14,7 @@
     "title": "Your Profile",
     "subtitle": "A little context makes Lithuanian more accurate.",
     "points": [
-      "Žodis asks for speaker gender, date of birth, where you are from, and where you live.",
+      "Žodis asks for your preferred first name, speaker gender, date of birth, where you are from, and where you live.",
       "This is used only inside Žodis to tailor Lithuanian forms, examples, country phrases, and age-relevant lesson content.",
       "You can edit your profile later from Settings."
     ]

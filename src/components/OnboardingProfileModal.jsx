@@ -11,6 +11,7 @@ export default function OnboardingProfileModal({
   onSave,
   onClose,
 }) {
+  const [userName, setUserName] = useState("");
   const [speakerGender, setSpeakerGender] = useState("male");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [fromCountryCode, setFromCountryCode] = useState("");
@@ -20,6 +21,7 @@ export default function OnboardingProfileModal({
 
   useEffect(() => {
     if (!open) return;
+    setUserName(initialValues?.userName || "");
     setSpeakerGender(initialValues?.speakerGender === "female" ? "female" : "male");
     setDateOfBirth(initialValues?.dateOfBirth || "");
     setFromCountryCode(initialValues?.fromCountryCode || "");
@@ -29,7 +31,9 @@ export default function OnboardingProfileModal({
   }, [open, initialValues]);
 
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const userNameSafe = String(userName || "").replace(/\s+/g, " ").trim();
   const isValid =
+    !!userNameSafe &&
     (speakerGender === "male" || speakerGender === "female") &&
     /^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) &&
     dateOfBirth <= today &&
@@ -47,6 +51,7 @@ export default function OnboardingProfileModal({
       setSaving(true);
       setError("");
       await onSave?.({
+        userName: userNameSafe,
         speakerGender,
         dateOfBirth,
         fromCountryCode,
@@ -96,6 +101,20 @@ export default function OnboardingProfileModal({
         </div>
 
         <div className="space-y-4">
+          <label className="block space-y-2">
+            <span className="block text-sm font-medium text-zinc-200">Preferred first name</span>
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Your first name"
+              className="z-input !py-2.5 !px-3 !rounded-2xl w-full"
+            />
+            <span className="block text-xs text-zinc-500">
+              Used in personalized lesson examples, like introducing yourself.
+            </span>
+          </label>
+
           <div className="space-y-2">
             <div className="text-sm font-medium text-zinc-200">Speaker gender</div>
             <div className="grid grid-cols-2 gap-2">
