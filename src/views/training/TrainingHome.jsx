@@ -276,6 +276,46 @@ function GroupPanel({ children }) {
   );
 }
 
+function ComingSoonCard({ title, desc, icon, badge = "Coming soon", hint }) {
+  return (
+    <div
+      className={cn(
+        "w-full rounded-2xl border px-4 py-4",
+        "border-white/10 bg-white/[0.03] backdrop-blur",
+        "shadow-[0_0_24px_rgba(0,0,0,0.12)]"
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="h-10 w-10 rounded-xl border border-white/10 bg-white/[0.04] flex items-center justify-center shrink-0"
+          aria-hidden="true"
+        >
+          <span className="text-[18px]">{icon}</span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-[15px] font-semibold text-zinc-100">{title}</div>
+            <div className="shrink-0 rounded-full border border-amber-400/20 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-200">
+              {badge}
+            </div>
+          </div>
+
+          <div className="text-zinc-300 mt-1 leading-snug text-[13px]">
+            {desc}
+          </div>
+
+          {hint ? (
+            <div className="text-[12px] text-zinc-500 mt-2 leading-snug">
+              {hint}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TrainingHome({
   T,
   focus,
@@ -350,7 +390,7 @@ export default function TrainingHome({
           {T?.navTraining || "Training"}
         </div>
         <div className="text-sm text-zinc-400 mt-1">
-          Continue learning, practise your library, or prepare for the exam.
+          Continue learning or practise your saved library.
         </div>
       </div>
 
@@ -437,17 +477,17 @@ export default function TrainingHome({
 
       <div className="mt-6">
         <SectionLabel
-          eyebrow="Exam prep"
+          eyebrow="Coming soon"
           title="Exam practice"
-          desc="Reading, listening, and writing tasks."
+          desc="Exam-style reading, listening, and writing practice is planned for a later Beta 3.x update."
         />
 
         <div className="mt-3">
-          <ModuleCard
+          <ComingSoonCard
             title="Exam Prep"
-            desc="Practise foreigner-exam task formats."
+            desc="A polished exam practice area is on the roadmap, but Lessons and practice modes are the focus for Beta 3.0."
             icon="📝"
-            onClick={onStartExamPrep}
+            hint="This section will open when the task formats are ready for normal beta use."
           />
         </div>
       </div>
