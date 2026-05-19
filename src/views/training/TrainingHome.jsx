@@ -478,16 +478,14 @@ export default function TrainingHome({
       <div className="mt-6">
         <SectionLabel
           eyebrow="Coming soon"
-          title="Exam practice"
-          desc="Exam-style reading, listening, and writing practice is planned for a later Beta 3.x update."
+          title="Exam prep coming soon"
         />
 
         <div className="mt-3">
           <ComingSoonCard
             title="Exam Prep"
-            desc="A polished exam practice area is on the roadmap, but Lessons and practice modes are the focus for Beta 3.0."
+            desc="Exam prep coming soon."
             icon="📝"
-            hint="This section will open when the task formats are ready for normal beta use."
           />
         </div>
       </div>
