@@ -169,7 +169,7 @@ export default function useTTSPlayer({
         if (typeof onError === "function") {
           onError(e);
         } else {
-          alert("Voice error: " + (e?.message || "Unknown error"));
+          console.warn("Voice error:", e);
         }
       }
     },
