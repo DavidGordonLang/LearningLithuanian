@@ -332,7 +332,7 @@ function LessonLauncher({
         p-4
       "
     >
-      <div className="text-[11px] uppercase tracking-wide text-emerald-300/80">
+      <div className="text-[11px] uppercase tracking-wide text-emerald-300">
         Guided lessons
       </div>
 
