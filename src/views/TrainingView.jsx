@@ -27,6 +27,8 @@ import createSection4 from "../content/learning/section4";
 import createSection5 from "../content/learning/section5";
 import SequenceDebugView from "./training/SequenceDebugView";
 
+const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me"];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // Builds a synthetic module for VocabSaveView that aggregates word_match pairs
@@ -151,6 +153,10 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const [lessonReturnScreen, setLessonReturnScreen] = useState("home");
 
   const user = useAuthStore((s) => s.user);
+  const userEmail = String(user?.email || "").toLowerCase();
+  const isAdmin = !!userEmail && ADMIN_EMAILS.includes(userEmail);
+  const showDevControls = import.meta.env.DEV || isAdmin;
+  const effectiveDevMode = showDevControls && devMode;
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
   const hasSeenModuleComplete = useGameStore((s) => s.hasSeenModuleComplete);
   const markModuleCompleteSeen = useGameStore((s) => s.markModuleCompleteSeen);
@@ -335,7 +341,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       <LearningModuleView
         section={learningSection}
         module={learningModule}
-        devMode={devMode}
+        devMode={effectiveDevMode}
         onBack={() => setScreen("learningSection")}
         onOpenLesson={(lessonId) => {
           if (!lessonId) return;
@@ -618,10 +624,10 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         setModuleXpEarned(0);
         setScreen("learningLesson");
       }}
-      devMode={devMode}
-      showDevControls={import.meta.env.DEV}
+      devMode={effectiveDevMode}
+      showDevControls={showDevControls}
       onToggleDevMode={toggleDevMode}
-      devTestModules={devMode
+      devTestModules={effectiveDevMode
         ? [
             {
               id: "sequence_debug",
