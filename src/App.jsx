@@ -859,6 +859,7 @@ export default function App() {
 
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
+  const [userGuideFirstLaunch, setUserGuideFirstLaunch] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showOnboardingProfile, setShowOnboardingProfile] = useState(false);
   const [confirmRequest, setConfirmRequest] = useState(null);
@@ -880,9 +881,10 @@ export default function App() {
     Number(profileOnboardingVersion || 0) < PROFILE_ONBOARDING_VERSION;
 
   useEffect(() => {
-    if (showOnboardingProfile || showUserGuide) return;
+    if (settingsLoading || needsProfileOnboarding || showOnboardingProfile || showUserGuide) return;
     if (user?.id && !hasSeenUserGuide) return;
     if (!lastSeenVersion) {
+      setShowWhatsNew(true);
       setLastSeenVersion(APP_VERSION);
       return;
     }
@@ -890,7 +892,7 @@ export default function App() {
       setShowWhatsNew(true);
       setLastSeenVersion(APP_VERSION);
     }
-  }, [lastSeenVersion, setLastSeenVersion, showOnboardingProfile, showUserGuide, user?.id, hasSeenUserGuide]);
+  }, [lastSeenVersion, setLastSeenVersion, settingsLoading, needsProfileOnboarding, showOnboardingProfile, showUserGuide, user?.id, hasSeenUserGuide]);
 
   useEffect(() => {
     if (!user?.id || settingsLoading) return;
@@ -904,9 +906,9 @@ export default function App() {
     if (!user?.id) return;
     if (settingsLoading || needsProfileOnboarding || showOnboardingProfile) return;
     if (hasSeenUserGuide) return;
+    setUserGuideFirstLaunch(true);
     setShowUserGuide(true);
-    setSeenUserGuide(true);
-  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide, setSeenUserGuide]);
+  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide]);
 
   const saveOnboardingProfile = useCallback(async (values) => {
     await saveProfileOnboarding?.(user?.id, values, PROFILE_ONBOARDING_VERSION);
@@ -916,6 +918,14 @@ export default function App() {
     saveProfileOnboarding,
     user?.id,
   ]);
+
+  const closeUserGuide = useCallback(() => {
+    if (userGuideFirstLaunch) {
+      setSeenUserGuide(true);
+      setUserGuideFirstLaunch(false);
+    }
+    setShowUserGuide(false);
+  }, [setSeenUserGuide, userGuideFirstLaunch]);
 
   const closeConfirm = useCallback((result) => {
     const resolve = confirmResolveRef.current;
@@ -1110,7 +1120,10 @@ export default function App() {
   rows={rows}
   onOpenDuplicateScanner={() => goToPage("dupes")}
   onOpenChangeLog={() => setShowChangeLog(true)}
-  onOpenUserGuide={() => setShowUserGuide(true)}
+  onOpenUserGuide={() => {
+    setUserGuideFirstLaunch(false);
+    setShowUserGuide(true);
+  }}
   onOpenOnboardingProfile={() => setShowOnboardingProfile(true)}
   onOpenAnalytics={() => goToPage("analytics")}
   dailyRecallEnabled={dailyRecall.enabled}
@@ -1215,12 +1228,21 @@ export default function App() {
         onClose={() => setShowOnboardingProfile(false)}
       />
 
-      {showUserGuide && <UserGuideModal onClose={() => setShowUserGuide(false)} />}
+      {showUserGuide && (
+        <UserGuideModal
+          firstLaunch={userGuideFirstLaunch}
+          onClose={closeUserGuide}
+        />
+      )}
 
       {showWhatsNew && (
         <WhatsNewModal
           version={APP_VERSION}
           onClose={() => setShowWhatsNew(false)}
+          onViewChangelog={() => {
+            setShowWhatsNew(false);
+            setShowChangeLog(true);
+          }}
         />
       )}
 
