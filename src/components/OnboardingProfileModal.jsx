@@ -91,6 +91,9 @@ export default function OnboardingProfileModal({
           content. You can edit it later in Settings. It is not used for ads or
           unrelated profiling.
         </div>
+        <div className="text-xs text-zinc-500 px-1">
+          All fields are required so Žodis can personalise lessons accurately.
+        </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
