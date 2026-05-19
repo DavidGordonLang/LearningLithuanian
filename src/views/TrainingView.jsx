@@ -619,6 +619,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
         setScreen("learningLesson");
       }}
       devMode={devMode}
+      showDevControls={import.meta.env.DEV}
       onToggleDevMode={toggleDevMode}
       devTestModules={devMode
         ? [
