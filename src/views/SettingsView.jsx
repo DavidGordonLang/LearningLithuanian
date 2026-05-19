@@ -589,16 +589,6 @@ export default function SettingsView({
               </div>
             </div>
 
-            <div className="pt-1">
-              <button
-                type="button"
-                data-press
-                className="z-btn z-btn-secondary px-4 py-2.5 rounded-2xl text-sm font-semibold"
-                onClick={onOpenOnboardingProfile}
-              >
-                Reopen profile setup
-              </button>
-            </div>
           </div>
 
           {/* Daily recall */}
@@ -856,6 +846,7 @@ export default function SettingsView({
 
       <CollapsibleSection id="sec-about" title="About" subtitle={`Version ${appVersion}`} open={openAbout} setOpen={setOpenAbout}>
         <div className="grid gap-3 sm:grid-cols-2">
+          <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center" onClick={onOpenOnboardingProfile}>Reopen profile setup</button>
           <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center" onClick={onOpenUserGuide}>User Guide</button>
           <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center" onClick={onOpenChangeLog}>Change log</button>
           {isAdmin ? (
