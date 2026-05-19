@@ -316,6 +316,91 @@ function ComingSoonCard({ title, desc, icon, badge = "Coming soon", hint }) {
   );
 }
 
+function LessonLauncher({
+  title,
+  meta,
+  ctaLabel,
+  onPrimary,
+  onBrowseCourse,
+}) {
+  return (
+    <div
+      className="
+        rounded-3xl border border-emerald-400/25
+        bg-emerald-500/[0.08]
+        shadow-[0_0_0_1px_rgba(16,185,129,0.08),0_20px_60px_rgba(0,0,0,0.26)]
+        p-4
+      "
+    >
+      <div className="text-[11px] uppercase tracking-wide text-emerald-300/80">
+        Guided lessons
+      </div>
+
+      <div className="mt-2 text-[20px] font-semibold text-zinc-100 leading-snug">
+        {title}
+      </div>
+
+      {meta ? (
+        <div className="mt-1 text-sm text-zinc-300 leading-snug">
+          {meta}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-col sm:flex-row gap-2">
+        <button
+          type="button"
+          data-press
+          className="
+            z-btn rounded-2xl px-5 py-3 text-sm font-semibold
+            bg-emerald-600/90 hover:bg-emerald-500
+            border border-emerald-300/20 text-black
+            justify-center
+          "
+          onClick={onPrimary}
+        >
+          {ctaLabel}
+        </button>
+
+        {typeof onBrowseCourse === "function" ? (
+          <button
+            type="button"
+            data-press
+            className="z-btn z-btn-secondary rounded-2xl px-5 py-3 text-sm justify-center"
+            onClick={onBrowseCourse}
+          >
+            Browse course
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ComingSoonFooter() {
+  return (
+    <div className="mt-5 border-t border-white/[0.06] pt-4">
+      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+        Coming soon
+      </div>
+
+      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {[
+          ["Practice modes", "Recognise, Produce, Reinforce"],
+          ["Exam prep", "Exam-style practice"],
+        ].map(([title, desc]) => (
+          <div
+            key={title}
+            className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3"
+          >
+            <div className="text-sm font-semibold text-zinc-200">{title}</div>
+            <div className="mt-0.5 text-xs text-zinc-500">{desc}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TrainingHome({
   T,
   focus,
@@ -390,67 +475,31 @@ export default function TrainingHome({
           {T?.navTraining || "Training"}
         </div>
         <div className="text-sm text-zinc-400 mt-1">
-          Continue learning or practise your saved library.
+          Continue your guided Lithuanian lessons.
         </div>
       </div>
 
-      <XPStrip totalXP={totalXP} streakDays={streakDays} getLevelInfo={getLevelInfo} />
-
-      <div className="mt-6">
-        <SectionLabel eyebrow="Learning" title={learningHeaderTitle} />
-
-        <div className="mt-3">
-          <ModuleCard
-            title={learningCardTitle}
-            desc={learningCardDesc}
-            icon="📚"
-            large
-            accent="learning"
-            disabled={learningDisabled}
-            onClick={learningDisabled ? (typeof onBrowseCourse === "function" ? onBrowseCourse : undefined) : onStartLearning}
-            hint={null}
-          />
-          {typeof onBrowseCourse === "function" ? (
-            <button
-              type="button"
-              onClick={onBrowseCourse}
-              className="mt-2 w-full text-center text-[12px] text-zinc-500 hover:text-zinc-300 transition py-1"
-            >
-              Browse course →
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <SectionLabel
-          eyebrow="Coming soon"
-          title="Practice modes coming soon"
+      <div className="mt-5">
+        <LessonLauncher
+          title={learningCardTitle}
+          meta={learningCardDesc}
+          ctaLabel={
+            learningDisabled
+              ? "Review lessons"
+              : isStartMode
+              ? "Start lesson"
+              : "Continue lesson"
+          }
+          onPrimary={learningDisabled ? onBrowseCourse : onStartLearning}
+          onBrowseCourse={onBrowseCourse}
         />
-
-        <div className="mt-3">
-          <ComingSoonCard
-            title="Practice Modes"
-            desc="Recognise, Produce, and Reinforce are being refreshed."
-            icon="P"
-          />
-        </div>
       </div>
 
-      <div className="mt-6">
-        <SectionLabel
-          eyebrow="Coming soon"
-          title="Exam prep coming soon"
-        />
-
-        <div className="mt-3">
-          <ComingSoonCard
-            title="Exam Prep"
-            desc="Exam prep coming soon."
-            icon="📝"
-          />
-        </div>
+      <div className="mt-4 opacity-90">
+        <XPStrip totalXP={totalXP} streakDays={streakDays} getLevelInfo={getLevelInfo} />
       </div>
+
+      <ComingSoonFooter />
 
       {/* Dev mode toggle — hidden in production */}
       <div className="mt-4 border-t border-white/[0.06] pt-4">
