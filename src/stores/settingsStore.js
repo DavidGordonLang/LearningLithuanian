@@ -205,6 +205,7 @@ export const useSettingsStore = create((set, get) => ({
     const nextVersion = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
     const nextData = mergeDefaults({
       ...(get().data || {}),
+      userName: sanitizeName(values?.userName),
       speakerGender: values?.speakerGender === "female" ? "female" : "male",
       dateOfBirth: sanitizeDob(values?.dateOfBirth),
       fromCountryCode: sanitizeCountryCode(values?.fromCountryCode),

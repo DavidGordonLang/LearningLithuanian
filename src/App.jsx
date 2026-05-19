@@ -61,12 +61,12 @@ import {
 import { trackEvent, trackError } from "./services/analytics";
 
 /* ============================================================================ */
-const APP_VERSION = "2.0.0-beta";
+const APP_VERSION = "3.0.0-beta";
 
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
 const LSK_LAST_SEEN_VERSION = "lt_last_seen_version";
-const PROFILE_ONBOARDING_VERSION = 1;
+const PROFILE_ONBOARDING_VERSION = 2;
 
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
@@ -342,6 +342,7 @@ export default function App() {
   const themeMode = useSettingsStore((s) => s.themeMode);
   const settingsLoading = useSettingsStore((s) => s.loading);
   const profileOnboardingVersion = useSettingsStore((s) => s.profileOnboardingVersion);
+  const userName = useSettingsStore((s) => s.userName);
   const speakerGender = useSettingsStore((s) => s.speakerGender);
   const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
   const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
@@ -1204,6 +1205,7 @@ export default function App() {
         open={showOnboardingProfile}
         required={needsProfileOnboarding}
         initialValues={{
+          userName,
           speakerGender,
           dateOfBirth,
           fromCountryCode,
@@ -1217,7 +1219,7 @@ export default function App() {
 
       {showWhatsNew && (
         <WhatsNewModal
-          appVersion={APP_VERSION}
+          version={APP_VERSION}
           onClose={() => setShowWhatsNew(false)}
         />
       )}
