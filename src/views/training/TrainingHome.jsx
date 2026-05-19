@@ -417,6 +417,7 @@ export default function TrainingHome({
   learningCurrentTitle,
   learningCurrentMeta,
   devMode = false,
+  showDevControls = false,
   onToggleDevMode,
   devTestModules = [],
 }) {
@@ -501,42 +502,43 @@ export default function TrainingHome({
 
       <ComingSoonFooter />
 
-      {/* Dev mode toggle — hidden in production */}
-      <div className="mt-4 border-t border-white/[0.06] pt-4">
-        {devMode && devTestModules.length > 0 ? (
-          <div className="mb-2 space-y-2">
-            {devTestModules.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={item.onClick}
-                className="w-full px-4 py-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] text-[13px] font-medium text-emerald-300 hover:bg-emerald-500/[0.10] transition text-left"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <button
-          type="button"
-          onClick={onToggleDevMode}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition"
-        >
-          <div>
-            <div className="text-[13px] font-medium text-zinc-400">Dev mode</div>
-            <div className="text-[11px] text-zinc-600 mt-0.5">Unlock all lessons for testing</div>
-          </div>
-          <div className={cn(
-            "h-6 w-11 rounded-full border transition-colors relative",
-            devMode ? "bg-emerald-500/40 border-emerald-400/40" : "bg-white/[0.06] border-white/10"
-          )}>
+      {showDevControls ? (
+        <div className="mt-4 border-t border-white/[0.06] pt-4">
+          {devMode && devTestModules.length > 0 ? (
+            <div className="mb-2 space-y-2">
+              {devTestModules.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={item.onClick}
+                  className="w-full px-4 py-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] text-[13px] font-medium text-emerald-300 hover:bg-emerald-500/[0.10] transition text-left"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={onToggleDevMode}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition"
+          >
+            <div>
+              <div className="text-[13px] font-medium text-zinc-400">Dev mode</div>
+              <div className="text-[11px] text-zinc-600 mt-0.5">Unlock all lessons for testing</div>
+            </div>
             <div className={cn(
-              "absolute top-0.5 h-5 w-5 rounded-full transition-all",
-              devMode ? "left-5 bg-emerald-300" : "left-0.5 bg-zinc-500"
-            )} />
-          </div>
-        </button>
-      </div>
+              "h-6 w-11 rounded-full border transition-colors relative",
+              devMode ? "bg-emerald-500/40 border-emerald-400/40" : "bg-white/[0.06] border-white/10"
+            )}>
+              <div className={cn(
+                "absolute top-0.5 h-5 w-5 rounded-full transition-all",
+                devMode ? "left-5 bg-emerald-300" : "left-0.5 bg-zinc-500"
+              )} />
+            </div>
+          </button>
+        </div>
+      ) : null}
 
       <div className="h-6" />
     </div>

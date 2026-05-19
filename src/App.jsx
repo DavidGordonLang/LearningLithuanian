@@ -863,11 +863,6 @@ export default function App() {
     handleScenarioPick(created.scenario.id);
   }
 
-  const dailyRecall = useDailyRecall({
-    rows: visibleRows,
-    appVersion: APP_VERSION,
-  });
-
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const [userGuideFirstLaunch, setUserGuideFirstLaunch] = useState(false);
@@ -958,6 +953,20 @@ export default function App() {
   }, []);
 
   const hasConfirmOpen = !!confirmRequest;
+  const dailyRecallBlocked =
+    showChangeLog ||
+    showUserGuide ||
+    showWhatsNew ||
+    showOnboardingProfile ||
+    addOpen ||
+    scenarioPickerOpen ||
+    hasConfirmOpen;
+
+  const dailyRecall = useDailyRecall({
+    rows: visibleRows,
+    appVersion: APP_VERSION,
+    blocked: dailyRecallBlocked,
+  });
 
   useModalScrollLock(
     showChangeLog || showUserGuide || showWhatsNew || showOnboardingProfile || addOpen || scenarioPickerOpen || hasConfirmOpen
