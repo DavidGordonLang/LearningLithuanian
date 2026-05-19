@@ -262,7 +262,7 @@ function RenameScenarioModal({ open, scenario, onClose, onSave }) {
   );
 }
 
-export default function ScenariosView({ T, onOpenScenario, confirmAction }) {
+export default function ScenariosView({ T, onOpenScenario, confirmAction, showToast }) {
   const scenarios = useScenarioStore((s) => s.scenarios);
   const createScenario = useScenarioStore((s) => s.createScenario);
   const renameScenario = useScenarioStore((s) => s.renameScenario);
@@ -282,7 +282,7 @@ export default function ScenariosView({ T, onOpenScenario, confirmAction }) {
     const result = createScenario(title);
 
     if (!result?.ok) {
-      alert(result?.error || "Could not create scenario.");
+      showToast?.(result?.error || "Could not create scenario.");
       return false;
     }
 
@@ -303,7 +303,7 @@ export default function ScenariosView({ T, onOpenScenario, confirmAction }) {
     const result = renameScenario(renameScenarioRow?.id, title);
 
     if (!result?.ok) {
-      alert(result?.error || "Could not rename scenario.");
+      showToast?.(result?.error || "Could not rename scenario.");
       return;
     }
 

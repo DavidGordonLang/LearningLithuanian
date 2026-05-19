@@ -1092,6 +1092,7 @@ export default function App() {
                 T={T}
                 onOpenScenario={handleOpenScenario}
                 confirmAction={confirmAction}
+                showToast={showToast}
               />
             </div>
 

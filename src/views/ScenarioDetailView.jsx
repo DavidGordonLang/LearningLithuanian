@@ -114,7 +114,7 @@ function ScenarioPhraseRow({
   function handleMoveUp() {
     const result = reorderPhraseInScenario(scenarioId, rowIndex, rowIndex - 1);
     if (!result?.ok) {
-      alert(result?.error || "Could not move phrase.");
+      showToast?.(result?.error || "Could not move phrase.");
       return;
     }
     setMenuOpen(false);
@@ -124,7 +124,7 @@ function ScenarioPhraseRow({
   function handleMoveDown() {
     const result = reorderPhraseInScenario(scenarioId, rowIndex, rowIndex + 1);
     if (!result?.ok) {
-      alert(result?.error || "Could not move phrase.");
+      showToast?.(result?.error || "Could not move phrase.");
       return;
     }
     setMenuOpen(false);
@@ -229,7 +229,7 @@ function ScenarioPhraseRow({
                 setMenuOpen(false);
                 const result = removePhraseFromScenario(scenarioId, rowId);
                 if (!result?.ok) {
-                  alert(result?.error || "Could not remove phrase from scenario.");
+                  showToast?.(result?.error || "Could not remove phrase from scenario.");
                   return;
                 }
                 showToast?.("Removed from scenario");
