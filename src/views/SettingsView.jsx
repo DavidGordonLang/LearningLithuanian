@@ -515,7 +515,7 @@ export default function SettingsView({
                 const phrase = num ? "Man " + num + " metų" : null;
                 if (!phrase) return null;
                 return (
-                  <div className="text-[12px] text-emerald-400/80 mt-1">
+                  <div className="text-[12px] text-emerald-400 mt-1">
                     Your age phrase: <span className="font-semibold text-emerald-300">{phrase}</span>
                     <span className="text-zinc-600 ml-1">— {age} years old</span>
                   </div>

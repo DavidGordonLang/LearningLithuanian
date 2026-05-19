@@ -514,7 +514,7 @@ export default function HomeView({
               <div className="text-sm font-semibold text-amber-300">
                 Similar entry already in your library
               </div>
-              <div className="text-xs text-amber-200/80 mt-0.5">
+              <div className="text-xs text-amber-300 mt-0.5">
                 Use this one, or translate anyway for a new version.
               </div>
             </div>

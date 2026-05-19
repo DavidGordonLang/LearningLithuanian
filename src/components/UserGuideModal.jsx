@@ -39,7 +39,7 @@ export default function UserGuideModal({
 
   function Icon({ type }) {
     // keep icons semantic + calm (no glow, no oversized colour)
-    const cls = "w-12 h-12 text-emerald-400/90 mx-auto mb-4";
+    const cls = "w-12 h-12 text-emerald-400 mx-auto mb-4";
 
     if (type === "speech") {
       return (
