@@ -39,7 +39,7 @@ export default function ConfirmDialog({
       }}
     >
       <div
-        className="w-full max-w-md z-card shadow-2xl overflow-hidden"
+        className="w-full max-w-md z-modal-card overflow-hidden"
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="p-5 border-b border-white/10">
