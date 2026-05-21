@@ -674,12 +674,17 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
   const [checkState, setCheckState] = useState("idle"); // "idle" | "correct" | "wrong"
   const [revealed, setRevealed] = useState(false);
   const [draggedId, setDraggedId] = useState(null);
+  const [floatingDrag, setFloatingDrag] = useState(null);
   const chipRefs = React.useRef(new Map());
   const dragRef = React.useRef({
     id: null,
     pointerId: null,
     startX: 0,
     startY: 0,
+    offsetX: 0,
+    offsetY: 0,
+    width: 0,
+    height: 0,
     active: false,
   });
 
@@ -699,8 +704,19 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
         node.releasePointerCapture?.(dragRef.current.pointerId);
       }
     } catch {}
-    dragRef.current = { id: null, pointerId: null, startX: 0, startY: 0, active: false };
+    dragRef.current = {
+      id: null,
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      offsetX: 0,
+      offsetY: 0,
+      width: 0,
+      height: 0,
+      active: false,
+    };
     setDraggedId(null);
+    setFloatingDrag(null);
   };
 
   const reorderDraggedChip = (id, clientX, clientY) => {
@@ -744,6 +760,10 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      offsetX: 0,
+      offsetY: 0,
+      width: 0,
+      height: 0,
       active: false,
     };
     try {
@@ -761,8 +781,29 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
 
     if (!drag.active) {
       if (distance < dragThreshold) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      drag.offsetX = event.clientX - rect.left;
+      drag.offsetY = event.clientY - rect.top;
+      drag.width = rect.width;
+      drag.height = rect.height;
       drag.active = true;
       setDraggedId(id);
+      setFloatingDrag({
+        id,
+        x: event.clientX,
+        y: event.clientY,
+        width: rect.width,
+        height: rect.height,
+        offsetX: event.clientX - rect.left,
+        offsetY: event.clientY - rect.top,
+        active: true,
+      });
+    } else {
+      setFloatingDrag((prev) =>
+        prev && prev.id === id
+          ? { ...prev, x: event.clientX, y: event.clientY }
+          : prev
+      );
     }
 
     event.preventDefault();
@@ -820,6 +861,14 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
             built.map((id) => {
               const token = tokens.find((t) => t.id === id);
               const isDragging = draggedId === id;
+              const isFloating = floatingDrag?.id === id;
+              const placeholderStyle = isFloating
+                ? {
+                    width: floatingDrag.width,
+                    height: floatingDrag.height,
+                    touchAction: revealed || completed ? "auto" : "none",
+                  }
+                : { touchAction: revealed || completed ? "auto" : "none" };
               return (
                 <button key={id} type="button" data-press
                   ref={setChipRef(id)}
@@ -829,9 +878,10 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                   onPointerCancel={(event) => resetDrag(event)}
                   aria-label="Drag to reorder or tap to remove"
                   title="Drag to reorder or tap to remove"
-                  style={{ touchAction: revealed || completed ? "auto" : "none" }}
+                  style={placeholderStyle}
                   className={cn(
                     "relative rounded-xl border px-3 py-2 text-sm transition select-none",
+                    isFloating ? "opacity-0 pointer-events-none" : "",
                     checkState === "correct"
                       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100 cursor-default"
                       : checkState === "wrong"
@@ -851,6 +901,32 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
             <div className="text-sm text-zinc-500">Tap words below to build the phrase.</div>
           )}
         </div>
+        {floatingDrag ? (() => {
+          const token = tokens.find((t) => t.id === floatingDrag.id);
+          return (
+            <div
+              className="
+                fixed pointer-events-none select-none rounded-xl border border-white/30
+                bg-zinc-900/95 px-3 py-2 text-sm text-zinc-100
+                shadow-[0_18px_42px_rgba(0,0,0,0.42)]
+                scale-[1.04]
+              "
+              style={{
+                zIndex: 14000,
+                width: floatingDrag.width,
+                height: floatingDrag.height,
+                left: 0,
+                top: 0,
+                transform: `translate3d(${floatingDrag.x - floatingDrag.offsetX}px, ${floatingDrag.y - floatingDrag.offsetY}px, 0) scale(1.04)`,
+                transition: "none",
+                willChange: "transform",
+              }}
+              aria-hidden="true"
+            >
+              {token?.text}
+            </div>
+          );
+        })() : null}
       </div>
 
       {/* Source tokens — ghost placeholder keeps positions stable */}
