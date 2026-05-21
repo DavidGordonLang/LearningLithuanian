@@ -972,9 +972,8 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
 
       {/* Feedback */}
       {checkState === "wrong" ? (
-        <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-          <div className="text-[11px] uppercase tracking-widest text-zinc-600 mb-1">Correct phrase</div>
-          <div className="text-[14px] font-semibold text-zinc-200">{correctAnswer}</div>
+        <div className="mb-3 text-[12px] text-zinc-500 px-1">
+          Drag words to reorder, or reset and try again.
         </div>
       ) : null}
 
@@ -985,13 +984,9 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
       ) : null}
 
       <div className="flex gap-2">
-        {checkState === "wrong" ? (
-          <ActionButton onClick={handleRetry} variant="secondary" className="flex-1">Try again</ActionButton>
-        ) : (
-          <ActionButton onClick={revealed ? onAdvance : checkPhrase} disabled={!isReady && !revealed} className="flex-1">
-            {revealed ? "Continue" : "Check phrase"}
-          </ActionButton>
-        )}
+        <ActionButton onClick={revealed ? onAdvance : checkPhrase} disabled={!isReady && !revealed} className="flex-1">
+          {revealed ? "Continue" : "Check phrase"}
+        </ActionButton>
         {!revealed ? (
           <ActionButton variant="ghost" onClick={() => { resetDrag(); setBuilt([]); setCheckState("idle"); }} className="px-4">Reset</ActionButton>
         ) : null}
