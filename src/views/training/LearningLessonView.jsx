@@ -673,9 +673,114 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
   const [built, setBuilt] = useState([]);
   const [checkState, setCheckState] = useState("idle"); // "idle" | "correct" | "wrong"
   const [revealed, setRevealed] = useState(false);
+  const [draggedId, setDraggedId] = useState(null);
+  const chipRefs = React.useRef(new Map());
+  const dragRef = React.useRef({
+    id: null,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    active: false,
+  });
 
   const placedIds = new Set(built);
   const isReady = built.length === requiredLength && requiredLength > 0;
+  const dragThreshold = 7;
+
+  const setChipRef = (id) => (node) => {
+    if (node) chipRefs.current.set(id, node);
+    else chipRefs.current.delete(id);
+  };
+
+  const resetDrag = (event) => {
+    const node = chipRefs.current.get(dragRef.current.id);
+    try {
+      if (node && dragRef.current.pointerId != null) {
+        node.releasePointerCapture?.(dragRef.current.pointerId);
+      }
+    } catch {}
+    dragRef.current = { id: null, pointerId: null, startX: 0, startY: 0, active: false };
+    setDraggedId(null);
+  };
+
+  const reorderDraggedChip = (id, clientX, clientY) => {
+    setBuilt((prev) => {
+      const currentIndex = prev.indexOf(id);
+      if (currentIndex === -1) return prev;
+
+      const orderedOthers = prev
+        .map((tokenId, index) => ({ tokenId, index, node: chipRefs.current.get(tokenId) }))
+        .filter((item) => item.tokenId !== id && item.node);
+
+      let targetIndex = 0;
+      for (const item of orderedOthers) {
+        const rect = item.node.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const sameRow = Math.abs(clientY - centerY) <= rect.height * 0.65;
+        const isAfter =
+          clientY > centerY + rect.height * 0.65 ||
+          (sameRow && clientX > centerX);
+        if (isAfter) targetIndex += 1;
+      }
+
+      const withoutDragged = prev.filter((tokenId) => tokenId !== id);
+      const next = [...withoutDragged];
+      next.splice(Math.max(0, Math.min(targetIndex, next.length)), 0, id);
+
+      if (next.length === prev.length && next.every((tokenId, index) => tokenId === prev[index])) {
+        return prev;
+      }
+
+      if (checkState === "wrong") setCheckState("idle");
+      return next;
+    });
+  };
+
+  const handleBuiltPointerDown = (event, id) => {
+    if (revealed || completed) return;
+    dragRef.current = {
+      id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+    };
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    } catch {}
+  };
+
+  const handleBuiltPointerMove = (event, id) => {
+    const drag = dragRef.current;
+    if (revealed || completed || drag.id !== id || drag.pointerId !== event.pointerId) return;
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    const distance = Math.hypot(dx, dy);
+
+    if (!drag.active) {
+      if (distance < dragThreshold) return;
+      drag.active = true;
+      setDraggedId(id);
+    }
+
+    event.preventDefault();
+    reorderDraggedChip(id, event.clientX, event.clientY);
+  };
+
+  const handleBuiltPointerUp = (event, id) => {
+    const drag = dragRef.current;
+    if (drag.id !== id || drag.pointerId !== event.pointerId) return;
+
+    const wasDragging = drag.active;
+    resetDrag(event);
+
+    if (!wasDragging && !revealed && !completed) {
+      setBuilt((prev) => prev.filter((x) => x !== id));
+      setCheckState("idle");
+    }
+  };
 
   const checkPhrase = () => {
     if (!isReady || revealed) return;
@@ -714,16 +819,29 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
           {built.length ? (
             built.map((id) => {
               const token = tokens.find((t) => t.id === id);
+              const isDragging = draggedId === id;
               return (
                 <button key={id} type="button" data-press
-                  onClick={() => { if (revealed) return; setBuilt((prev) => prev.filter((x) => x !== id)); setCheckState("idle"); }}
+                  ref={setChipRef(id)}
+                  onPointerDown={(event) => handleBuiltPointerDown(event, id)}
+                  onPointerMove={(event) => handleBuiltPointerMove(event, id)}
+                  onPointerUp={(event) => handleBuiltPointerUp(event, id)}
+                  onPointerCancel={(event) => resetDrag(event)}
+                  aria-label="Drag to reorder or tap to remove"
+                  title="Drag to reorder or tap to remove"
+                  style={{ touchAction: revealed || completed ? "auto" : "none" }}
                   className={cn(
-                    "rounded-xl border px-3 py-2 text-sm transition",
+                    "relative rounded-xl border px-3 py-2 text-sm transition select-none",
                     checkState === "correct"
                       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100 cursor-default"
                       : checkState === "wrong"
                       ? "border-rose-400/20 bg-rose-500/[0.10] text-rose-200"
-                      : "border-white/10 bg-white/[0.06] text-zinc-100 hover:bg-white/[0.09]"
+                      : completed
+                      ? "border-white/10 bg-white/[0.06] text-zinc-100 cursor-default"
+                      : "border-white/10 bg-white/[0.06] text-zinc-100 hover:bg-white/[0.09] cursor-grab active:cursor-grabbing",
+                    isDragging
+                      ? "z-10 scale-[1.04] border-white/30 shadow-[0_12px_28px_rgba(0,0,0,0.32)] cursor-grabbing"
+                      : "z-0"
                   )}>
                   {token?.text}
                 </button>
