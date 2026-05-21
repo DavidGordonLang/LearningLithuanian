@@ -1,5 +1,6 @@
 // src/views/training/LearningLessonView.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import useSpeechToTextHold from "../../hooks/useSpeechToTextHold";
 import { useGameStore } from "../../stores/gameStore";
 import { matchPairsCss } from "./matchPairs/matchPairsStyles";
@@ -719,6 +720,17 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
     setFloatingDrag(null);
   };
 
+  useEffect(() => {
+    return () => resetDrag();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!dragRef.current.id) return;
+    if (!built.includes(dragRef.current.id)) resetDrag();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [built]);
+
   const reorderDraggedChip = (id, clientX, clientY) => {
     setBuilt((prev) => {
       const currentIndex = prev.indexOf(id);
@@ -841,6 +853,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
   };
 
   const handleRetry = () => {
+    resetDrag();
     setBuilt([]);
     setCheckState("idle");
   };
@@ -876,6 +889,9 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                   onPointerMove={(event) => handleBuiltPointerMove(event, id)}
                   onPointerUp={(event) => handleBuiltPointerUp(event, id)}
                   onPointerCancel={(event) => resetDrag(event)}
+                  onLostPointerCapture={(event) => {
+                    if (dragRef.current.id === id && dragRef.current.pointerId === event.pointerId) resetDrag(event);
+                  }}
                   aria-label="Drag to reorder or tap to remove"
                   title="Drag to reorder or tap to remove"
                   style={placeholderStyle}
@@ -901,7 +917,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
             <div className="text-sm text-zinc-500">Tap words below to build the phrase.</div>
           )}
         </div>
-        {floatingDrag ? (() => {
+        {floatingDrag && typeof document !== "undefined" ? createPortal((() => {
           const token = tokens.find((t) => t.id === floatingDrag.id);
           return (
             <div
@@ -915,9 +931,10 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                 zIndex: 14000,
                 width: floatingDrag.width,
                 height: floatingDrag.height,
-                left: 0,
-                top: 0,
-                transform: `translate3d(${floatingDrag.x - floatingDrag.offsetX}px, ${floatingDrag.y - floatingDrag.offsetY}px, 0) scale(1.04)`,
+                left: floatingDrag.x - floatingDrag.offsetX,
+                top: floatingDrag.y - floatingDrag.offsetY,
+                transform: "translate3d(0, 0, 0) scale(1.04)",
+                transformOrigin: "center center",
                 transition: "none",
                 willChange: "transform",
               }}
@@ -926,7 +943,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
               {token?.text}
             </div>
           );
-        })() : null}
+        })(), document.body) : null}
       </div>
 
       {/* Source tokens — ghost placeholder keeps positions stable */}
@@ -976,7 +993,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
           </ActionButton>
         )}
         {!revealed ? (
-          <ActionButton variant="ghost" onClick={() => { setBuilt([]); setCheckState("idle"); }} className="px-4">Reset</ActionButton>
+          <ActionButton variant="ghost" onClick={() => { resetDrag(); setBuilt([]); setCheckState("idle"); }} className="px-4">Reset</ActionButton>
         ) : null}
       </div>
     </div>
