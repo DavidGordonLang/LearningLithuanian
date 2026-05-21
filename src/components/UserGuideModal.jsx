@@ -124,7 +124,7 @@ export default function UserGuideModal({
       <div
         className="
           w-full max-w-2xl
-          z-card overflow-hidden flex flex-col
+          z-modal-card overflow-hidden flex flex-col
         "
         style={{
           maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${topOffset}px - 24px)`,

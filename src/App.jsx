@@ -1191,7 +1191,7 @@ export default function App() {
             style={{ paddingTop: headerHeight + 16 }}
           >
             <div
-              className="w-full max-w-2xl z-card shadow-2xl overflow-y-auto flex flex-col"
+              className="w-full max-w-2xl z-modal-card overflow-y-auto flex flex-col"
               style={{ height: `calc(100dvh - ${headerHeight + 32}px)` }}
               onClick={(e) => e.stopPropagation()}
             >

@@ -441,6 +441,18 @@ button,
     @apply shadow-sm;
   }
 
+  .z-modal-card {
+    border-radius: var(--z-radius-lg);
+    border: 1px solid var(--z-border);
+    background: rgba(10, 10, 11, 0.97);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  }
+
+  html[data-theme="light"] .z-modal-card {
+    background: rgba(240, 232, 214, 0.98);
+    box-shadow: 0 24px 80px rgba(80, 64, 38, 0.22);
+  }
+
   .z-inset {
     border-radius: var(--z-radius);
     border: 1px solid rgba(255, 255, 255, 0.06);

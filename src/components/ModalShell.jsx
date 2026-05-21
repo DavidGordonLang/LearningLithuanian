@@ -57,7 +57,7 @@ export default function ModalShell({
       >
         <div
           className={cn(
-            "w-full z-card shadow-2xl overflow-hidden",
+            "w-full z-modal-card overflow-hidden",
             maxWidth,
             panelClassName
           )}

@@ -61,7 +61,7 @@ export default function ChangeLogModal({ onClose }) {
       </button>
 
       <div
-        className="w-full max-w-2xl z-card overflow-hidden flex flex-col"
+        className="w-full max-w-2xl z-modal-card overflow-hidden flex flex-col"
         style={{
           maxHeight:
             "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)",
