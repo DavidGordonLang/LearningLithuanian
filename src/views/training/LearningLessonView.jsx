@@ -398,7 +398,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
   };
 
   return (
-    <div>
+    <div className="flex min-h-[42dvh] flex-col">
       {/* Instruction */}
       <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
         {instructionLabel}
@@ -439,7 +439,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         </div>
       ) : null}
 
-      <div className="grid gap-2">
+      <div className="mt-auto grid gap-2 pt-5">
         {options.map((option) => (
           <ChoiceOption
             key={option.id}
