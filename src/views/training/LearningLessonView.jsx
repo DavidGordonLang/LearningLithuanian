@@ -399,6 +399,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
 
   return (
     <div className="flex min-h-[42dvh] flex-col">
+      <div className="shrink-0">
       {/* Instruction */}
       <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
         {instructionLabel}
@@ -406,7 +407,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
 
       {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
       {isListen && promptText ? (
-        <div className="flex items-center justify-between gap-3 mb-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
           <div className="text-[22px] font-semibold text-zinc-100">
             <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
           </div>
@@ -414,7 +415,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         </div>
       ) : isListen && audioText ? (
         // Fallback: no text, just a prominent audio button
-        <div className="flex items-center justify-center mb-4">
+        <div className="flex items-center justify-center">
           <button
             type="button"
             data-press
@@ -431,15 +432,17 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         </div>
       ) : promptText ? (
         // recognise_mcq and best_response: text prompt with optional audio
-        <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="text-[18px] font-semibold text-zinc-100 leading-snug">
             <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
           </div>
           {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
         </div>
       ) : null}
+      </div>
 
-      <div className="mt-auto grid gap-2 pt-5">
+      <div className="mt-auto rounded-3xl border border-white/10 bg-black/10 p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+        <div className="grid gap-2">
         {options.map((option) => (
           <ChoiceOption
             key={option.id}
@@ -457,7 +460,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
             }
           />
         ))}
-      </div>
+        </div>
       {revealState === "revealed" ? (
         <FeedbackPanel
           isCorrect={!!selected?.isCorrect}
@@ -472,6 +475,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
           onContinue={onAdvance}
         />
       ) : null}
+      </div>
     </div>
   );
 }
