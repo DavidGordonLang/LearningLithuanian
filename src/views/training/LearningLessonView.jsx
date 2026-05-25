@@ -143,7 +143,7 @@ function phraseMatches(captured, target) {
 
 function SurfaceCard({ children, className }) {
   return (
-    <div className={cn("rounded-3xl border border-white/10 bg-black/20 backdrop-blur", "shadow-[0_0_24px_rgba(0,0,0,0.18)]", className)}>
+    <div className={cn("rounded-3xl border border-white/[0.07] bg-white/[0.025] backdrop-blur-sm", "shadow-[0_12px_36px_rgba(0,0,0,0.14)]", className)}>
       {children}
     </div>
   );
@@ -320,8 +320,8 @@ function LearnBlock({ block, playText, onComplete, completed, navBarRef }) {
 
 function ChoiceOption({ option, selected, revealState, onClick, playText, playAudio, isLithuanian }) {
   const stateClass = revealState === "idle"
-    ? selected ? "border-white/20 bg-white/[0.07] text-zinc-100"
-      : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.05]"
+    ? selected ? "border-white/25 bg-white/[0.09] text-zinc-100"
+      : "border-white/15 bg-white/[0.06] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"
     : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
     : selected ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
@@ -336,7 +336,7 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
 
   return (
     <button type="button" data-press onClick={handleClick} disabled={revealState !== "idle"}
-      className={cn("w-full text-left rounded-2xl border px-4 py-3 text-[14px] transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
+      className={cn("w-full text-left rounded-2xl border px-4 py-3.5 text-[15px] leading-snug transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
       {showWordTap
         ? <InteractivePhraseText text={option.text} playText={playText} wordClassName="hover:text-emerald-300" />
         : option.text}
@@ -432,7 +432,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
       ) : promptText ? (
         // recognise_mcq and best_response: text prompt with optional audio
         <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="text-[15px] font-semibold text-zinc-100 leading-snug">
+          <div className="text-[18px] font-semibold text-zinc-100 leading-snug">
             <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
           </div>
           {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
@@ -544,7 +544,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
   if (completed) {
     return (
       <div>
-        <div className="text-[15px] font-semibold text-zinc-100 mb-3">{block?.prompt || "Say it out loud"}</div>
+        <div className="text-[18px] font-semibold text-zinc-100 leading-snug mb-3">{block?.prompt || "Say it out loud"}</div>
         {block?.targetText ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 mb-4">
             <div className="flex items-center justify-between gap-3">
@@ -565,7 +565,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
 
   return (
     <div>
-      <div className="text-[15px] font-semibold text-zinc-100 mb-3">{block?.prompt || "Say it out loud"}</div>
+      <div className="text-[18px] font-semibold text-zinc-100 leading-snug mb-3">{block?.prompt || "Say it out loud"}</div>
       {block?.targetText ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 mb-5">
           <div className="flex items-center justify-between gap-3">
@@ -860,7 +860,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
 
   return (
     <div>
-      <div className="text-[15px] font-semibold text-zinc-100 mb-3">{block?.prompt?.text || "Build the phrase"}</div>
+      <div className="text-[18px] font-semibold text-zinc-100 leading-snug mb-3">{block?.prompt?.text || "Build the phrase"}</div>
 
       {/* Answer area */}
       <div className={cn(
@@ -903,8 +903,8 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                       : checkState === "wrong"
                       ? "border-rose-400/20 bg-rose-500/[0.10] text-rose-200"
                       : completed
-                      ? "border-white/10 bg-white/[0.06] text-zinc-100 cursor-default"
-                      : "border-white/10 bg-white/[0.06] text-zinc-100 hover:bg-white/[0.09] cursor-grab active:cursor-grabbing",
+                      ? "border-white/15 bg-white/[0.08] text-zinc-100 cursor-default"
+                      : "border-white/15 bg-white/[0.08] text-zinc-100 hover:bg-white/[0.11] cursor-grab active:cursor-grabbing",
                     isDragging
                       ? "z-10 scale-[1.04] border-white/30 shadow-[0_12px_28px_rgba(0,0,0,0.32)] cursor-grabbing"
                       : "z-0"
@@ -963,7 +963,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                 setBuilt((prev) => [...prev, token.id]);
                 if (checkState !== "idle") setCheckState("idle");
               }}
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:border-white/20">
+              className="rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-sm text-zinc-100 transition hover:bg-white/[0.09] hover:border-white/25">
               {token.text}
             </button>
           );
@@ -1048,12 +1048,12 @@ function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
   const isWrongFlash = revealState === "wrong_flash" && selectedId === option.id;
   const stateClass = isWrongFlash
     ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200"
-    : "border-white/10 bg-white/[0.03] text-zinc-200 hover:border-white/20 hover:bg-white/[0.05]";
+    : "border-white/15 bg-white/[0.06] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]";
   const isDisabled = revealState !== "idle";
 
   return (
     <button type="button" data-press onClick={onClick} disabled={isDisabled}
-      className={cn("w-full text-left rounded-2xl border px-4 py-3 text-[14px] transition", stateClass, isDisabled ? "cursor-default" : "")}>
+      className={cn("w-full text-left rounded-2xl border px-4 py-3.5 text-[15px] leading-snug transition", stateClass, isDisabled ? "cursor-default" : "")}>
       {option.text}
     </button>
   );
@@ -1534,7 +1534,7 @@ function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvanc
               type="button"
               data-press
               onClick={() => handleSelect(option)}
-              className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-zinc-200 hover:border-white/20 hover:bg-white/[0.06] transition"
+              className="w-full text-left rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-[15px] leading-snug text-zinc-100 hover:border-white/25 hover:bg-white/[0.08] transition"
             >
               {option.text}
             </button>
@@ -1643,7 +1643,7 @@ function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvan
               type="button"
               data-press
               onClick={() => handleSelect(option)}
-              className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-zinc-200 hover:border-white/20 hover:bg-white/[0.06] transition font-medium"
+              className="w-full text-left rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-[15px] leading-snug text-zinc-100 hover:border-white/25 hover:bg-white/[0.08] transition font-medium"
             >
               {option.text}
             </button>
@@ -1762,7 +1762,7 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
               type="button"
               data-press
               onClick={() => handleSelect(option)}
-              className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-zinc-200 hover:border-white/20 hover:bg-white/[0.06] transition"
+              className="w-full text-left rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-[15px] leading-snug text-zinc-100 hover:border-white/25 hover:bg-white/[0.08] transition"
             >
               {option.text}
             </button>
