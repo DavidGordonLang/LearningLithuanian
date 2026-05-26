@@ -397,6 +397,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
     : isBestResponse
     ? "Choose the best response"
     : "Choose the correct answer";
+  const choicePanelClass = "rounded-3xl border border-white/10 bg-black/10 shadow-[0_10px_30px_rgba(0,0,0,0.12)]";
 
   const handleSelect = (option) => {
     if (revealState !== "idle") return;
@@ -442,7 +443,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
   return (
     <div className="space-y-3">
       <div className="flex min-h-[54dvh] flex-col">
-        <div className="shrink-0">
+        <div className={cn("shrink-0 p-3", choicePanelClass)}>
           {/* Instruction */}
           <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
             {instructionLabel}
@@ -450,7 +451,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
 
           {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
           {isListen && promptText ? (
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <div className="flex items-center justify-between gap-3 px-1 py-1">
               <div className="text-[22px] font-semibold text-zinc-100">
                 <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
               </div>
@@ -485,7 +486,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         </div>
 
         <div className="flex flex-1 flex-col justify-end pt-8">
-          <div className="rounded-3xl border border-white/10 bg-black/10 p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+          <div className={cn("p-2.5", choicePanelClass)}>
             <div className="grid gap-2">
               {options.map((option) => (
                 <ChoiceOption
