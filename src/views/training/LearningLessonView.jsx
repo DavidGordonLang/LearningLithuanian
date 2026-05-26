@@ -2000,8 +2000,9 @@ export default function LearningLessonView({
   const lessonComplete = lessonDone;
   const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response", "context_gap_select", "choose_correct_form", "conversation_turn_fill"].includes(currentBlock?.type);
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
+  const isBuildPhraseBlock = currentBlock?.type === "build_phrase";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
-  const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock;
+  const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock && !isBuildPhraseBlock;
 
   // Fire completion once when lessonDone becomes true
   useEffect(() => {
