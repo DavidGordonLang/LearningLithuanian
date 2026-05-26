@@ -529,7 +529,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
   );
 }
 
-function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed }) {
+function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance, completed }) {
   const [attemptState, setAttemptState] = useState("idle");
   const [capturedText, setCapturedText] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -591,7 +591,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
   };
 
   const micLabel = isActive ? "Listening... release when done" : isProcessing ? "Checking..." : supported ? "Hold to speak" : "Microphone unavailable";
-  const statusLabel = attemptState === "result_pass" ? "Nice, spoken" : attemptState === "result_fail" ? "Not quite yet" : micLabel;
+  const statusLabel = attemptState === "result_pass" ? "Nice, spoken" : attemptState === "result_fail" ? "Not quite yet. Hold the mic and try again." : micLabel;
   const statusTone = attemptState === "result_pass" ? "success" : attemptState === "result_fail" ? "fail" : isActive ? "recording" : isProcessing ? "checking" : "idle";
 
   if (completed) {
@@ -612,6 +612,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
           <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
           <div className="text-[13px] text-emerald-200 font-medium">Spoken</div>
         </div>
+        <ActionButton onClick={onAdvance} className="mt-3 w-full">Continue</ActionButton>
       </div>
     );
   }
@@ -635,22 +636,8 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
           <div className="text-[13px] text-emerald-200 font-medium">Nice, spoken</div>
         </div>
       ) : null}
-      {attemptState === "result_fail" ? (
-        <div className="space-y-3">
-          <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.06] px-4 py-3 text-center">
-            <div className="text-[14px] font-semibold text-amber-200">Not quite yet</div>
-            <div className="mt-1 text-[12px] text-zinc-500">Try again</div>
-          </div>
-          <div className="flex gap-2">
-            <ActionButton variant="secondary" onClick={() => { setCapturedText(""); setAttemptState("idle"); }} className="flex-1">Try again</ActionButton>
-            {failedAttempts >= 2 ? (
-              <ActionButton variant="ghost" onClick={() => { onComplete?.(); }} className="flex-1">Skip</ActionButton>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
       {attemptState !== "result_pass" ? (
-        <div className={cn("flex flex-col items-center gap-3", attemptState === "result_fail" ? "mt-3" : "")}>
+        <div className="flex flex-col items-center gap-3">
           {!supported ? (
             <ActionButton variant="secondary" onClick={() => onComplete?.()} className="w-full">Mark as spoken</ActionButton>
           ) : (
@@ -688,6 +675,16 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, completed
                   </svg>
                 )}
               </button>
+              {failedAttempts >= 2 ? (
+                <button
+                  type="button"
+                  data-press
+                  onClick={() => { onComplete?.(); }}
+                  className="rounded-full border border-white/10 bg-transparent px-3 py-1.5 text-[12px] font-medium text-zinc-500 transition hover:bg-white/[0.04] hover:text-zinc-300"
+                >
+                  Skip for now
+                </button>
+              ) : null}
             </>
           )}
         </div>
@@ -1843,7 +1840,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
     case "recognise_mcq": case "listen_mcq": case "best_response":
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "speak_self_check":
-      return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} completed={completed}/>;
+      return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
@@ -2001,8 +1998,9 @@ export default function LearningLessonView({
   const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response", "context_gap_select", "choose_correct_form", "conversation_turn_fill"].includes(currentBlock?.type);
   const isScenarioBlock = currentBlock?.type === "scenario_chain";
   const isBuildPhraseBlock = currentBlock?.type === "build_phrase";
+  const isSpeakSelfCheckBlock = currentBlock?.type === "speak_self_check";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
-  const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock && !isBuildPhraseBlock;
+  const showNavBar = !lessonComplete && !isLastBlockComplete && !isChoiceBlock && !isScenarioBlock && !isBuildPhraseBlock && !isSpeakSelfCheckBlock;
 
   // Fire completion once when lessonDone becomes true
   useEffect(() => {
