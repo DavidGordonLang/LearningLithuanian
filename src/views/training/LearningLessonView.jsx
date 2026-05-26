@@ -383,6 +383,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
   const correctOption = options.find((o) => o.isCorrect) || null;
+  const feedbackRef = useRef(null);
 
   const isListen = block?.type === "listen_mcq";
   const isBestResponse = block?.type === "best_response";
@@ -430,73 +431,86 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
     // listen_mcq and recognise_mcq Form A: never play audio
   };
 
+  useEffect(() => {
+    if (revealState !== "revealed") return;
+    const raf = requestAnimationFrame(() => {
+      feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [revealState, selectedId]);
+
   return (
-    <div className="flex min-h-[54dvh] flex-col">
-      <div className="shrink-0">
-        {/* Instruction */}
-        <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
-          {instructionLabel}
+    <div className="space-y-3">
+      <div className="flex min-h-[54dvh] flex-col">
+        <div className="shrink-0">
+          {/* Instruction */}
+          <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
+            {instructionLabel}
+          </div>
+
+          {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
+          {isListen && promptText ? (
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <div className="text-[22px] font-semibold text-zinc-100">
+                <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
+              </div>
+              {audioText ? <AudioIconButton text={audioText} playText={playText} label="Hear the word" /> : null}
+            </div>
+          ) : isListen && audioText ? (
+            // Fallback: no text, just a prominent audio button
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                data-press
+                aria-label="Play audio"
+                onClick={() => { try { playText?.(audioText); } catch {} }}
+                className="h-14 w-14 rounded-full border border-white/15 bg-white/[0.05] text-zinc-200 flex items-center justify-center hover:bg-white/[0.08] transition"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M11 5L6.8 9H4v6h2.8L11 19V5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M15 9.5C15.667 10.167 16 11 16 12C16 13 15.667 13.833 15 14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                  <path d="M17.5 7C18.833 8.333 19.5 10 19.5 12C19.5 14 18.833 15.667 17.5 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+          ) : promptText ? (
+            // recognise_mcq and best_response: text prompt with optional audio
+            <div className="flex items-start justify-between gap-3">
+              <div className="text-[18px] font-semibold text-zinc-100 leading-snug">
+                <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
+              </div>
+              {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
+            </div>
+          ) : null}
         </div>
 
-        {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
-        {isListen && promptText ? (
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <div className="text-[22px] font-semibold text-zinc-100">
-              <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
+        <div className="flex flex-1 flex-col justify-end pt-8">
+          <div className="rounded-3xl border border-white/10 bg-black/10 p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+            <div className="grid gap-2">
+              {options.map((option) => (
+                <ChoiceOption
+                  key={option.id}
+                  option={option}
+                  selected={selectedId === option.id}
+                  revealState={revealState}
+                  onClick={() => handleSelect(option)}
+                  playText={playText}
+                  playAudio={block?.type === "best_response"}
+                  isLithuanian={
+                    !block?.noOptionAudio && (
+                      block?.type === "best_response" ||
+                      (block?.type === "recognise_mcq" && !audioText)
+                    )
+                  }
+                />
+              ))}
             </div>
-            {audioText ? <AudioIconButton text={audioText} playText={playText} label="Hear the word" /> : null}
           </div>
-        ) : isListen && audioText ? (
-          // Fallback: no text, just a prominent audio button
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              data-press
-              aria-label="Play audio"
-              onClick={() => { try { playText?.(audioText); } catch {} }}
-              className="h-14 w-14 rounded-full border border-white/15 bg-white/[0.05] text-zinc-200 flex items-center justify-center hover:bg-white/[0.08] transition"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M11 5L6.8 9H4v6h2.8L11 19V5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M15 9.5C15.667 10.167 16 11 16 12C16 13 15.667 13.833 15 14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                <path d="M17.5 7C18.833 8.333 19.5 10 19.5 12C19.5 14 18.833 15.667 17.5 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </div>
-        ) : promptText ? (
-          // recognise_mcq and best_response: text prompt with optional audio
-          <div className="flex items-start justify-between gap-3">
-            <div className="text-[18px] font-semibold text-zinc-100 leading-snug">
-              <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
-            </div>
-            {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
-          </div>
-        ) : null}
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col justify-end pt-8">
-        <div className="rounded-3xl border border-white/10 bg-black/10 p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-          <div className="grid gap-2">
-            {options.map((option) => (
-              <ChoiceOption
-                key={option.id}
-                option={option}
-                selected={selectedId === option.id}
-                revealState={revealState}
-                onClick={() => handleSelect(option)}
-                playText={playText}
-                playAudio={block?.type === "best_response"}
-                isLithuanian={
-                  !block?.noOptionAudio && (
-                    block?.type === "best_response" ||
-                    (block?.type === "recognise_mcq" && !audioText)
-                  )
-                }
-              />
-            ))}
-          </div>
-        </div>
-        {revealState === "revealed" ? (
+      {revealState === "revealed" ? (
+        <div ref={feedbackRef}>
           <ChoiceFeedbackAction
             isCorrect={!!selected?.isCorrect}
             correctText={correctOption?.text || ""}
@@ -508,8 +522,8 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
             feedbackNote={block?.feedback?.correct || null}
             onContinue={onAdvance}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
