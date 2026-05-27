@@ -54,6 +54,79 @@ function AudioIconButton({ text, playText, label = "Play audio" }) {
   );
 }
 
+function ScenarioV2Styles() {
+  return (
+    <style>{`
+      @keyframes scenarioV2Fade {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes scenarioV2Pop {
+        from { opacity: 0; transform: translateY(8px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .scenario-v2-fade { animation: scenarioV2Fade 260ms ease-out both; }
+      .scenario-v2-pop { animation: scenarioV2Pop 180ms ease-out both; }
+      .scenario-v2-intro-card { background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.10); }
+      .scenario-v2-chat-window { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.10); }
+      .scenario-v2-speaker-bubble { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.10); }
+      .scenario-v2-final-bubble { background: rgba(16,185,129,0.08); border-color: rgba(52,211,153,0.18); }
+      .scenario-v2-user-bubble { background: rgba(16,185,129,0.09); border-color: rgba(52,211,153,0.18); }
+      .scenario-v2-support-panel { background: rgba(14,165,233,0.08); border-color: rgba(56,189,248,0.22); color: #e0f2fe; }
+      .scenario-v2-support-label { color: rgba(125,211,252,0.92); }
+      .scenario-v2-reply-tray { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.10); }
+      .scenario-v2-option { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+      .scenario-v2-option:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); }
+      .scenario-v2-option-selected { background: rgba(16,185,129,0.08); border-color: rgba(52,211,153,0.25); }
+      .scenario-v2-feedback-backdrop { background: rgba(0,0,0,0.35); }
+      .scenario-v2-feedback-card { background: rgba(24,24,27,0.94); border-color: rgba(255,255,255,0.14); color: #f4f4f5; }
+      .scenario-v2-feedback-inset { background: rgba(0,0,0,0.18); border-color: rgba(255,255,255,0.10); }
+      .scenario-v2-complete-action { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.10); }
+
+      html[data-theme="light"] .scenario-v2-intro-card,
+      html[data-theme="light"] .scenario-v2-chat-window,
+      html[data-theme="light"] .scenario-v2-reply-tray {
+        background: rgba(252,248,239,0.94);
+        border-color: rgba(94,75,45,0.16);
+      }
+      html[data-theme="light"] .scenario-v2-speaker-bubble,
+      html[data-theme="light"] .scenario-v2-feedback-inset,
+      html[data-theme="light"] .scenario-v2-option {
+        background: rgba(255,252,245,0.92);
+        border-color: rgba(94,75,45,0.16);
+      }
+      html[data-theme="light"] .scenario-v2-final-bubble,
+      html[data-theme="light"] .scenario-v2-user-bubble,
+      html[data-theme="light"] .scenario-v2-option-selected {
+        background: rgba(107,143,110,0.17);
+        border-color: rgba(107,143,110,0.28);
+      }
+      html[data-theme="light"] .scenario-v2-support-panel {
+        background: rgba(239,248,251,0.96);
+        border-color: rgba(49,100,125,0.28);
+        color: #264f64;
+      }
+      html[data-theme="light"] .scenario-v2-support-label { color: #31647d; }
+      html[data-theme="light"] .scenario-v2-feedback-backdrop {
+        background: rgba(55,44,27,0.26);
+      }
+      html[data-theme="light"] .scenario-v2-feedback-card {
+        background: rgba(252,248,239,0.98);
+        border-color: rgba(94,75,45,0.18);
+        color: #1c1917;
+      }
+      html[data-theme="light"] .scenario-v2-complete-action {
+        background: rgba(252,248,239,0.96);
+        border-color: rgba(94,75,45,0.16);
+      }
+      html[data-theme="light"] .scenario-v2-option:hover {
+        background: rgba(255,255,255,0.98);
+        border-color: rgba(94,75,45,0.24);
+      }
+    `}</style>
+  );
+}
+
 function formatParticipantName(participant, fallback = "Speaker") {
   const base = participant?.name || participant?.label || fallback;
   return participant?.gender ? `${base} (${participant.gender})` : base;
@@ -104,22 +177,23 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue }) {
   if (!option) return null;
   const meta = resultMeta(option);
   const progresses = optionCanProgress(option);
+  const canTryInstead = option?.result === "awkward";
 
   return (
     <div className="fixed inset-0 z-[12020] flex items-center justify-center px-4 py-6">
-      <div className="absolute inset-0 bg-black/35 backdrop-blur-[2px]" aria-hidden="true" />
+      <div className="scenario-v2-feedback-backdrop absolute inset-0 backdrop-blur-[2px]" aria-hidden="true" />
       <div className="scenario-v2-pop relative w-full max-w-sm">
-        <div className={cn("rounded-[28px] border px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.48)] backdrop-blur-xl", meta.tone)}>
+        <div className={cn("scenario-v2-feedback-card rounded-[28px] border px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.48)]", meta.tone)}>
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-semibold">{meta.label}</div>
-              <div className="mt-1 rounded-2xl border border-white/10 bg-black/15 px-3 py-2">
+              <div className="scenario-v2-feedback-inset mt-1 rounded-2xl border px-3 py-2">
                 <div className="text-[10px] uppercase tracking-widest text-zinc-500">Your answer</div>
                 <div className="mt-0.5 text-[14px] font-semibold text-zinc-100">{option.text}</div>
               </div>
               {option.feedback ? <div className="mt-2 text-[13px] leading-snug text-zinc-200">{option.feedback}</div> : null}
               {option.betterAnswer ? (
-                <div className="mt-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+                <div className="scenario-v2-feedback-inset mt-2 rounded-xl border px-3 py-2">
                   <div className="text-[10px] uppercase tracking-widest text-zinc-500">Better answer</div>
                   <div className="mt-0.5 text-[13px] font-semibold text-zinc-100">{option.betterAnswer}</div>
                 </div>
@@ -128,7 +202,12 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue }) {
           </div>
           <div className="mt-3">
             {progresses ? (
-              <ActionButton onClick={onContinue} className="w-full">Continue</ActionButton>
+              <div className="grid gap-2">
+                <ActionButton onClick={onContinue} className="w-full">Continue</ActionButton>
+                {canTryInstead ? (
+                  <ActionButton variant="secondary" onClick={onRetry} className="w-full">Try another answer</ActionButton>
+                ) : null}
+              </div>
             ) : (
               <ActionButton variant="secondary" onClick={onRetry} className="w-full">Try another answer</ActionButton>
             )}
@@ -155,7 +234,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
 
       {showSpeaker ? (
         <div className="scenario-v2-fade flex justify-start">
-          <div className={cn("max-w-[86%] rounded-[22px] border px-4 py-3", final ? "border-emerald-400/18 bg-emerald-500/[0.08]" : "border-white/10 bg-white/[0.045]")}>
+          <div className={cn("max-w-[86%] rounded-[22px] border px-4 py-3", final ? "scenario-v2-final-bubble" : "scenario-v2-speaker-bubble")}>
             <div className="mb-1 flex items-center justify-between gap-3">
               <div className="min-w-0 text-[11px] font-semibold text-zinc-400">{speakerLabel}</div>
               <AudioIconButton text={turn.speakerText} playText={playText} label="Replay speaker line" />
@@ -166,9 +245,9 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
       ) : null}
 
       {showSpeaker && (turn.supportText || turn.meaningText) ? (
-        <div className="scenario-v2-fade max-w-[86%] rounded-2xl border border-sky-400/15 bg-sky-500/[0.055] px-3 py-2">
-          <div className="text-[10px] uppercase tracking-widest text-sky-300/80">Meaning</div>
-          <div className="mt-0.5 text-[12px] leading-snug text-sky-100">{turn.supportText || turn.meaningText}</div>
+        <div className="scenario-v2-fade scenario-v2-support-panel max-w-[86%] rounded-2xl border px-3 py-2">
+          <div className="scenario-v2-support-label text-[10px] uppercase tracking-widest">Meaning</div>
+          <div className="mt-0.5 text-[12px] leading-snug">{turn.supportText || turn.meaningText}</div>
         </div>
       ) : null}
     </div>
@@ -178,7 +257,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
 function ScenarioV2UserBubble({ item }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[84%] rounded-[22px] border border-emerald-400/18 bg-emerald-500/[0.09] px-4 py-3">
+      <div className="scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
         <div className="text-[11px] font-semibold text-emerald-200">You</div>
         <div className="mt-1 text-[15px] font-semibold leading-snug text-zinc-100">{item.text}</div>
       </div>
@@ -200,7 +279,7 @@ function ScenarioV2HistoryItem({ block, item, playText }) {
 
 function ScenarioV2CompleteAction({ onComplete }) {
   return (
-    <div className="border-t border-white/10 bg-black/35 px-4 py-3">
+    <div className="scenario-v2-complete-action border-t px-4 py-3">
       <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2">
         <div className="text-[14px] font-semibold text-emerald-200">Scenario complete</div>
         <div className="mt-0.5 text-[12px] text-zinc-400">You completed the conversation naturally.</div>
@@ -381,18 +460,6 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
 
   const content = (
     <div className="fixed inset-0 z-[12000] bg-zinc-950 text-zinc-100">
-      <style>{`
-        @keyframes scenarioV2Fade {
-          from { opacity: 0; transform: translateY(6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scenarioV2Pop {
-          from { opacity: 0; transform: translateY(8px) scale(0.97); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .scenario-v2-fade { animation: scenarioV2Fade 260ms ease-out both; }
-        .scenario-v2-pop { animation: scenarioV2Pop 180ms ease-out both; }
-      `}</style>
       <div className="mx-auto flex h-[100dvh] max-w-xl flex-col px-4 py-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -405,7 +472,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 shadow-[0_18px_50px_rgba(0,0,0,0.32)]">
+        <div className="scenario-v2-chat-window min-h-0 flex-1 overflow-hidden rounded-[28px] border shadow-[0_18px_50px_rgba(0,0,0,0.32)]">
           <div ref={feedRef} className={cn("h-full overflow-y-auto px-4 py-4 space-y-4", selectedOption ? "pb-44" : "")}>
             {history.map((item) => (
               <ScenarioV2HistoryItem key={item.id} block={block} item={item} playText={playText} />
@@ -426,9 +493,9 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         </div>
 
         {!complete && !followUpTurn && !finalTurn && step ? (
-          <div className={cn("mt-3 rounded-[24px] border border-white/10 bg-black/35 px-4 py-3 transition", activeSpeakerReady ? "opacity-100" : "opacity-60")}>
+          <div className={cn("scenario-v2-reply-tray mt-3 rounded-[24px] border px-4 py-3 transition", activeSpeakerReady ? "opacity-100" : "opacity-60")}>
             {step.helperText && activeSpeakerReady ? (
-              <div className="mb-3 rounded-2xl border border-sky-400/15 bg-sky-500/[0.055] px-3 py-2 text-[12px] leading-snug text-sky-100">
+              <div className="scenario-v2-support-panel mb-3 rounded-2xl border px-3 py-2 text-[12px] leading-snug">
                 {step.helperText}
               </div>
             ) : null}
@@ -443,7 +510,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
                   disabled={!activeSpeakerReady || !!selectedOption}
                   className={cn(
                     "w-full rounded-2xl border px-4 py-3 text-left transition",
-                    selectedOption?.id === option.id ? "border-emerald-400/25 bg-emerald-500/[0.08]" : "border-white/15 bg-white/[0.06] hover:border-white/25 hover:bg-white/[0.08]",
+                    selectedOption?.id === option.id ? "scenario-v2-option-selected" : "scenario-v2-option",
                     selectedOption && selectedOption.id !== option.id ? "opacity-45" : "",
                     !activeSpeakerReady ? "cursor-wait" : ""
                   )}
@@ -486,7 +553,8 @@ export default function ScenarioV2Block({ block, playText, onComplete, onWrongAn
 
   return (
     <div className="space-y-3">
-      <div className="rounded-3xl border border-white/10 bg-black/15 px-4 py-4">
+      <ScenarioV2Styles />
+      <div className="scenario-v2-intro-card rounded-3xl border px-4 py-4">
         <div className="text-[11px] uppercase tracking-widest text-zinc-600">Scenario V2</div>
         <div className="mt-2 text-[20px] font-semibold leading-snug text-zinc-100">{block?.title || "Scenario"}</div>
         {block?.sceneIntro ? <div className="mt-2 text-[13px] leading-snug text-zinc-400">{block.sceneIntro}</div> : null}
