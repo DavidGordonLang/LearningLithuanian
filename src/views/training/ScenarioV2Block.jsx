@@ -106,16 +106,16 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue }) {
   const progresses = optionCanProgress(option);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[12020] px-4 pb-4">
-      <div className="mx-auto max-w-xl pointer-events-auto">
-        <div className={cn("rounded-t-[28px] border px-4 py-4 shadow-[0_-18px_44px_rgba(0,0,0,0.45)] backdrop-blur-xl", meta.tone)}>
+    <div className="fixed inset-0 z-[12020] flex items-center justify-center px-4 py-6">
+      <div className="absolute inset-0 bg-black/35 backdrop-blur-[2px]" aria-hidden="true" />
+      <div className="scenario-v2-pop relative w-full max-w-sm">
+        <div className={cn("rounded-[28px] border px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.48)] backdrop-blur-xl", meta.tone)}>
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-semibold">{meta.label}</div>
               <div className="mt-1 rounded-2xl border border-white/10 bg-black/15 px-3 py-2">
                 <div className="text-[10px] uppercase tracking-widest text-zinc-500">Your answer</div>
                 <div className="mt-0.5 text-[14px] font-semibold text-zinc-100">{option.text}</div>
-                {option.textEn ? <div className="mt-0.5 text-[11px] leading-snug text-zinc-500">{option.textEn}</div> : null}
               </div>
               {option.feedback ? <div className="mt-2 text-[13px] leading-snug text-zinc-200">{option.feedback}</div> : null}
               {option.betterAnswer ? (
@@ -164,6 +164,13 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
           </div>
         </div>
       ) : null}
+
+      {showSpeaker && (turn.supportText || turn.meaningText) ? (
+        <div className="scenario-v2-fade max-w-[86%] rounded-2xl border border-sky-400/15 bg-sky-500/[0.055] px-3 py-2">
+          <div className="text-[10px] uppercase tracking-widest text-sky-300/80">Meaning</div>
+          <div className="mt-0.5 text-[12px] leading-snug text-sky-100">{turn.supportText || turn.meaningText}</div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -174,7 +181,6 @@ function ScenarioV2UserBubble({ item }) {
       <div className="max-w-[84%] rounded-[22px] border border-emerald-400/18 bg-emerald-500/[0.09] px-4 py-3">
         <div className="text-[11px] font-semibold text-emerald-200">You</div>
         <div className="mt-1 text-[15px] font-semibold leading-snug text-zinc-100">{item.text}</div>
-        {item.textEn ? <div className="mt-0.5 text-[11px] leading-snug text-zinc-500">{item.textEn}</div> : null}
       </div>
     </div>
   );
@@ -212,6 +218,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   const [history, setHistory] = useState([]);
   const [selectedOption, setSelectedOption] = useState(null);
   const [turnPhase, setTurnPhase] = useState("scene");
+  const [followUpTurn, setFollowUpTurn] = useState(null);
+  const [followUpPhase, setFollowUpPhase] = useState("scene");
   const [finalTurn, setFinalTurn] = useState(null);
   const [finalPhase, setFinalPhase] = useState("scene");
   const [complete, setComplete] = useState(false);
@@ -250,16 +258,45 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
 
   useEffect(() => {
     clearTimers();
-    if (!step || finalTurn || complete) return;
+    if (!step || followUpTurn || finalTurn || complete) return;
     setTurnPhase(step.sceneDirection ? "scene" : "speaker");
     const delay = step.sceneDirection ? 650 : 120;
     queueTimeout(() => setTurnPhase("speaker"), delay);
-  }, [step?.id, finalTurn, complete]);
+  }, [step?.id, followUpTurn, finalTurn, complete]);
 
   useEffect(() => {
-    if (turnPhase !== "speaker" || finalTurn || complete || !step?.speakerText) return;
+    if (turnPhase !== "speaker" || followUpTurn || finalTurn || complete || !step?.speakerText) return;
     Promise.resolve(playText?.(step.speakerText)).catch(() => {});
-  }, [turnPhase, finalTurn, complete, step?.id, step?.speakerText, playText]);
+  }, [turnPhase, followUpTurn, finalTurn, complete, step?.id, step?.speakerText, playText]);
+
+  useEffect(() => {
+    if (!followUpTurn) return;
+    clearTimers();
+    setFollowUpPhase(followUpTurn.sceneDirection ? "scene" : "speaker");
+    const delay = followUpTurn.sceneDirection ? 650 : 120;
+    queueTimeout(() => setFollowUpPhase("speaker"), delay);
+    queueTimeout(() => {
+      setHistory((prev) => [
+        ...prev,
+        {
+          id: `${followUpTurn.speakerId || "speaker"}_${Date.now()}`,
+          role: "speaker",
+          speakerId: followUpTurn.speakerId,
+          speakerLabel: followUpTurn.speakerLabel,
+          speakerText: followUpTurn.speakerText || "",
+          sceneDirection: null,
+          supportText: followUpTurn.supportText || followUpTurn.meaningText || "",
+        },
+      ]);
+      setFollowUpTurn(null);
+      advanceAfterProgressingAnswer();
+    }, delay + 1250);
+  }, [followUpTurn?.speakerText]);
+
+  useEffect(() => {
+    if (followUpPhase !== "speaker" || !followUpTurn?.speakerText) return;
+    Promise.resolve(playText?.(followUpTurn.speakerText)).catch(() => {});
+  }, [followUpPhase, followUpTurn?.speakerText, playText]);
 
   useEffect(() => {
     if (!finalTurn) return;
@@ -286,13 +323,13 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         text: step?.speakerText || "",
         speakerText: step?.speakerText || "",
         sceneDirection: null,
+        supportText: step?.supportText || step?.meaningText || "",
       },
       {
         id: `${step?.id || "step"}_${option?.id || "option"}`,
         role: "learner",
         speakerLabel: "You",
         text: option?.text || "",
-        textEn: option?.textEn || "",
       },
     ]);
   }
@@ -305,31 +342,40 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
 
   function handleFeedbackContinue() {
     if (!selectedOption || !optionCanProgress(selectedOption)) return;
+    const option = selectedOption;
     addCurrentExchange(selectedOption);
+    setSelectedOption(null);
 
+    if (option?.followUp?.speakerText) {
+      setFollowUpTurn(option.followUp);
+      return;
+    }
+
+    advanceAfterProgressingAnswer();
+  }
+
+  function advanceAfterProgressingAnswer() {
     if (step?.finalSystemLine) {
       setFinalTurn(step.finalSystemLine);
-      setSelectedOption(null);
       return;
     }
 
     if (stepIndex >= steps.length - 1) {
       setComplete(true);
-      setSelectedOption(null);
       return;
     }
 
     setStepIndex((prev) => prev + 1);
-    setSelectedOption(null);
   }
 
-  const activeSpeakerReady = turnPhase === "speaker" && !finalTurn && !complete;
+  const activeSpeakerReady = turnPhase === "speaker" && !followUpTurn && !finalTurn && !complete;
   const activeTurn = step
     ? {
       speakerId: step.speakerId,
       speakerLabel: step.speakerLabel,
       speakerText: step.speakerText,
       sceneDirection: step.sceneDirection,
+      supportText: step.supportText || step.meaningText,
     }
     : null;
 
@@ -340,7 +386,12 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes scenarioV2Pop {
+          from { opacity: 0; transform: translateY(8px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
         .scenario-v2-fade { animation: scenarioV2Fade 260ms ease-out both; }
+        .scenario-v2-pop { animation: scenarioV2Pop 180ms ease-out both; }
       `}</style>
       <div className="mx-auto flex h-[100dvh] max-w-xl flex-col px-4 py-4">
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -360,8 +411,12 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
               <ScenarioV2HistoryItem key={item.id} block={block} item={item} playText={playText} />
             ))}
 
-            {!complete && !finalTurn && step ? (
+            {!complete && !followUpTurn && !finalTurn && step ? (
               <ScenarioV2SystemTurn block={block} turn={activeTurn} phase={turnPhase} playText={playText} />
+            ) : null}
+
+            {followUpTurn ? (
+              <ScenarioV2SystemTurn block={block} turn={followUpTurn} phase={followUpPhase} playText={playText} />
             ) : null}
 
             {finalTurn ? (
@@ -370,7 +425,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           </div>
         </div>
 
-        {!complete && !finalTurn && step ? (
+        {!complete && !followUpTurn && !finalTurn && step ? (
           <div className={cn("mt-3 rounded-[24px] border border-white/10 bg-black/35 px-4 py-3 transition", activeSpeakerReady ? "opacity-100" : "opacity-60")}>
             {step.helperText && activeSpeakerReady ? (
               <div className="mb-3 rounded-2xl border border-sky-400/15 bg-sky-500/[0.055] px-3 py-2 text-[12px] leading-snug text-sky-100">
@@ -394,7 +449,6 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
                   )}
                 >
                   <div className="text-[15px] font-semibold text-zinc-100">{option.text}</div>
-                  {option.textEn ? <div className="mt-0.5 text-[11px] leading-snug text-zinc-600">{option.textEn}</div> : null}
                 </button>
               ))}
             </div>
