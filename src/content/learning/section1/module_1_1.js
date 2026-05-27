@@ -381,10 +381,10 @@ const module_1_1 =     {
                   speakerLabel: "Barista",
                   speakerText: "Laba diena. Ko norėtumėte?",
                   speakerTextEn: "Good afternoon. What would you like?",
-                  supportText: "Good afternoon. What would you like?",
+                  supportText: "Ko norėtumėte? means “What would you like?” Norėtumėte is the polite “would you like” form.",
                   sceneDirection: "Ieva smiles and waits for your order.",
                   learnerPrompt: "You want one coffee. What do you say?",
-                  helperText: "You have not fully learned “norėtumėte” yet. It is a polite way to ask “would you like”.",
+                  helperText: "You have not fully learned “norėtumėte” yet. It signals polite service language.",
                   options: [
                     {
                       id: "step_1_best",
@@ -428,10 +428,10 @@ const module_1_1 =     {
                   speakerLabel: "Barista",
                   speakerText: "Mokėsite kortele ar grynais?",
                   speakerTextEn: "Will you pay by card or cash?",
-                  supportText: "Will you pay by card or cash?",
+                  supportText: "Kortele means “by card”; grynais means “in cash”.",
                   sceneDirection: "Ieva enters the coffee into the till.",
                   learnerPrompt: "You want to pay by card. What do you say?",
-                  helperText: "You have not fully learned this question yet. “Kortele” means “by card” here.",
+                  helperText: "You have not fully learned the full payment question yet. It is common at tills and cafés.",
                   options: [
                     {
                       id: "step_2_best",
@@ -482,7 +482,7 @@ const module_1_1 =     {
                   speakerLabel: "Barista",
                   speakerText: "Prašom, jūsų kava.",
                   speakerTextEn: "Here is your coffee.",
-                  supportText: "Here is your coffee.",
+                  supportText: "Prašom, jūsų kava means “Here is your coffee.”",
                   sceneDirection: "Ieva places the coffee on the counter.",
                   learnerPrompt: "The barista gives you the coffee. What do you say?",
                   options: [
