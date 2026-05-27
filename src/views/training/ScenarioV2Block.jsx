@@ -86,14 +86,14 @@ function ScenarioV2Styles() {
       html[data-theme="light"] .scenario-v2-intro-card,
       html[data-theme="light"] .scenario-v2-chat-window,
       html[data-theme="light"] .scenario-v2-reply-tray {
-        background: rgba(252,248,239,0.94);
-        border-color: rgba(94,75,45,0.16);
+        background: rgba(246,238,222,0.96);
+        border-color: rgba(94,75,45,0.18);
       }
       html[data-theme="light"] .scenario-v2-speaker-bubble,
       html[data-theme="light"] .scenario-v2-feedback-inset,
       html[data-theme="light"] .scenario-v2-option {
-        background: rgba(255,252,245,0.92);
-        border-color: rgba(94,75,45,0.16);
+        background: rgba(249,242,229,0.96);
+        border-color: rgba(94,75,45,0.18);
       }
       html[data-theme="light"] .scenario-v2-final-bubble,
       html[data-theme="light"] .scenario-v2-user-bubble,
@@ -102,29 +102,35 @@ function ScenarioV2Styles() {
         border-color: rgba(107,143,110,0.28);
       }
       html[data-theme="light"] .scenario-v2-support-panel {
-        background: rgba(239,248,251,0.96);
-        border-color: rgba(49,100,125,0.28);
-        color: #264f64;
+        background: rgba(233,243,235,0.97);
+        border-color: rgba(74,108,83,0.28);
+        color: #243f2f;
       }
-      html[data-theme="light"] .scenario-v2-support-label { color: #31647d; }
+      html[data-theme="light"] .scenario-v2-support-label { color: #3f6f4e; }
       html[data-theme="light"] .scenario-v2-feedback-backdrop {
         background: rgba(55,44,27,0.26);
       }
       html[data-theme="light"] .scenario-v2-feedback-card {
-        background: rgba(252,248,239,0.98);
-        border-color: rgba(94,75,45,0.18);
+        background: rgba(246,238,222,0.99);
+        border-color: rgba(94,75,45,0.22);
         color: #1c1917;
       }
       html[data-theme="light"] .scenario-v2-complete-action {
-        background: rgba(252,248,239,0.96);
-        border-color: rgba(94,75,45,0.16);
+        background: rgba(246,238,222,0.97);
+        border-color: rgba(94,75,45,0.18);
       }
       html[data-theme="light"] .scenario-v2-option:hover {
-        background: rgba(255,255,255,0.98);
-        border-color: rgba(94,75,45,0.24);
+        background: rgba(244,235,217,0.98);
+        border-color: rgba(94,75,45,0.25);
       }
     `}</style>
   );
+}
+
+function estimateSpeechDelayMs(text) {
+  const length = String(text || "").trim().length;
+  if (!length) return 1000;
+  return Math.min(5600, Math.max(2200, length * 95 + 900));
 }
 
 function formatParticipantName(participant, fallback = "Speaker") {
@@ -279,8 +285,8 @@ function ScenarioV2HistoryItem({ block, item, playText }) {
 
 function ScenarioV2CompleteAction({ onComplete }) {
   return (
-    <div className="scenario-v2-complete-action border-t px-4 py-3">
-      <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2">
+    <div className="scenario-v2-complete-action mt-3 rounded-[26px] border px-4 py-4 shadow-[0_18px_50px_rgba(0,0,0,0.26)]">
+      <div className="mb-3 rounded-[20px] border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2">
         <div className="text-[14px] font-semibold text-emerald-200">Scenario complete</div>
         <div className="mt-0.5 text-[12px] text-zinc-400">You completed the conversation naturally.</div>
       </div>
@@ -353,6 +359,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     clearTimers();
     setFollowUpPhase(followUpTurn.sceneDirection ? "scene" : "speaker");
     const delay = followUpTurn.sceneDirection ? 650 : 120;
+    const advanceDelay = delay + estimateSpeechDelayMs(followUpTurn.speakerText);
     queueTimeout(() => setFollowUpPhase("speaker"), delay);
     queueTimeout(() => {
       setHistory((prev) => [
@@ -369,7 +376,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
       ]);
       setFollowUpTurn(null);
       advanceAfterProgressingAnswer();
-    }, delay + 1250);
+    }, advanceDelay);
   }, [followUpTurn?.speakerText]);
 
   useEffect(() => {

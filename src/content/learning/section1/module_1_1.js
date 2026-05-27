@@ -428,10 +428,10 @@ const module_1_1 =     {
                   speakerLabel: "Barista",
                   speakerText: "Mokėsite kortele ar grynais?",
                   speakerTextEn: "Will you pay by card or cash?",
-                  supportText: "Kortele means “by card”; grynais means “in cash”.",
+                  supportText: "Mokėsite means “Will you pay”; kortele means “by card”; grynais means “in cash”.",
                   sceneDirection: "Ieva enters the coffee into the till.",
                   learnerPrompt: "You want to pay by card. What do you say?",
-                  helperText: "You have not fully learned the full payment question yet. It is common at tills and cafés.",
+                  helperText: "This payment question is common at tills and cafés.",
                   options: [
                     {
                       id: "step_2_best",
@@ -462,7 +462,7 @@ const module_1_1 =     {
                         speakerLabel: "Barista",
                         speakerText: "Žinoma. Mokėsite kortele ar grynais?",
                         speakerTextEn: "Of course. Will you pay by card or cash?",
-                        supportText: "Of course. Will you pay by card or cash?",
+                        supportText: "Žinoma means “Of course”. The payment question is repeated so you can answer.",
                         sceneDirection: "Ieva repeats the question and gestures to the card reader. You tap your card.",
                       },
                     },
