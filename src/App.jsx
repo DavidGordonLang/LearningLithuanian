@@ -474,11 +474,12 @@ export default function App() {
   });
 
   const playTextTracked = useCallback((text, opts) => {
+    const effectiveVoice = opts?.voice || azureVoiceShortName;
     try {
       trackEvent(
         "tts_play",
         {
-          voice: azureVoiceShortName,
+          voice: effectiveVoice,
           text_len: typeof text === "string" ? text.length : null,
         },
         { app_version: APP_VERSION }
@@ -488,11 +489,12 @@ export default function App() {
   }, [playText, azureVoiceShortName]);
 
   const preloadTextTracked = useCallback((text, opts) => {
+    const effectiveVoice = opts?.voice || azureVoiceShortName;
     try {
       trackEvent(
         "tts_preload",
         {
-          voice: azureVoiceShortName,
+          voice: effectiveVoice,
           text_len: typeof text === "string" ? text.length : null,
         },
         { app_version: APP_VERSION }

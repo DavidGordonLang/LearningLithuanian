@@ -83,11 +83,12 @@ export default function useTTSPlayer({
   }, []);
 
   const fetchTTS = useCallback(
-    async ({ text, slow }) => {
+    async ({ text, slow, voice: requestVoice }) => {
+      const effectiveVoice = requestVoice || voice;
       const resp = await fetch("/api/azure-tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice, slow }),
+        body: JSON.stringify({ text, voice: effectiveVoice, slow }),
       });
 
       if (!resp.ok) {
@@ -101,11 +102,12 @@ export default function useTTSPlayer({
   );
 
   const getOrFetchBlob = useCallback(
-    async (text, { slow = false } = {}) => {
+    async (text, { slow = false, voice: requestVoice } = {}) => {
       const raw = String(text || "");
       if (!raw.trim()) return null;
 
-      const key = makeCacheKey({ text: raw, voice, slow });
+      const effectiveVoice = requestVoice || voice;
+      const key = makeCacheKey({ text: raw, voice: effectiveVoice, slow });
 
       const memHit = mem.current.get(key);
       if (memHit) return memHit;
@@ -122,7 +124,7 @@ export default function useTTSPlayer({
       }
 
       const job = (async () => {
-        const blob = await fetchTTS({ text: raw, slow });
+        const blob = await fetchTTS({ text: raw, slow, voice: effectiveVoice });
         mem.current.set(key, blob);
         ttsIdbSet(key, blob, { maxEntries: maxIdbEntries }).catch(() => {});
         return blob;
@@ -140,13 +142,13 @@ export default function useTTSPlayer({
   );
 
   const preloadText = useCallback(
-    async (text, { slow = false } = {}) => {
+    async (text, { slow = false, voice: requestVoice } = {}) => {
       const raw = String(text || "");
       if (!raw.trim()) return;
 
       // Preload failures are always silent — audio is fetched live on demand if cache misses.
       try {
-        await getOrFetchBlob(raw, { slow });
+        await getOrFetchBlob(raw, { slow, voice: requestVoice });
       } catch {
         // Intentionally swallowed — a missed preload is not user-visible
       }
@@ -155,14 +157,14 @@ export default function useTTSPlayer({
   );
 
   const playText = useCallback(
-    async (text, { slow = false } = {}) => {
+    async (text, { slow = false, voice: requestVoice } = {}) => {
       const raw = String(text || "");
       if (!raw.trim()) return;
 
       stop();
 
       try {
-        const blob = await getOrFetchBlob(raw, { slow });
+        const blob = await getOrFetchBlob(raw, { slow, voice: requestVoice });
         if (!blob) return;
         await playBlob(blob);
       } catch (e) {
