@@ -1,10 +1,16 @@
 // /api/azure-tts.js
+const ALLOWED_VOICES = new Set([
+  "lt-LT-LeonasNeural",
+  "lt-LT-OnaNeural",
+]);
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   const { text, voice, slow } = req.body || {};
+  const safeVoice = ALLOWED_VOICES.has(voice) ? voice : "lt-LT-LeonasNeural";
 
   if (!text || !voice) {
     return res.status(400).json({ error: "Missing text or voice." });
@@ -23,7 +29,7 @@ export default async function handler(req, res) {
 
   const ssml = `
     <speak version="1.0" xml:lang="lt-LT">
-      <voice name="${voice}">
+      <voice name="${safeVoice}">
         <prosody rate="${rateDelta}">
           ${escapeXml(text)}
         </prosody>

@@ -3,6 +3,11 @@ import { createPortal } from "react-dom";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
+const SCENARIO_V2_GENDER_VOICES = {
+  female: "lt-LT-OnaNeural",
+  male: "lt-LT-LeonasNeural",
+};
+
 function ActionButton({ children, onClick, disabled = false, variant = "primary", className }) {
   const tone = variant === "primary"
     ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
@@ -35,14 +40,14 @@ function SmallMetaPill({ children, accent = "default" }) {
   );
 }
 
-function AudioIconButton({ text, playText, label = "Play audio" }) {
+function AudioIconButton({ text, playText, playOptions, label = "Play audio" }) {
   if (!text) return null;
   return (
     <button
       type="button"
       data-press
       aria-label={label}
-      onClick={() => { try { playText?.(text); } catch {} }}
+      onClick={() => { try { playText?.(text, playOptions); } catch {} }}
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-200 transition hover:bg-white/[0.07]"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -133,10 +138,10 @@ function estimateSpeechDelayMs(text) {
   return Math.min(5600, Math.max(2200, length * 95 + 900));
 }
 
-function autoplayOnce(startedKeysRef, key, text, playText) {
+function autoplayOnce(startedKeysRef, key, text, playText, playOptions) {
   if (!key || !text || startedKeysRef.current.has(key)) return;
   startedKeysRef.current.add(key);
-  Promise.resolve(playText?.(text)).catch(() => {});
+  Promise.resolve(playText?.(text, playOptions)).catch(() => {});
 }
 
 function formatParticipantName(participant, fallback = "Speaker") {
@@ -152,6 +157,17 @@ function getParticipant(block, speakerId) {
 function getSpeakerLabel(block, turn) {
   const participant = getParticipant(block, turn?.speakerId);
   return formatParticipantName(participant, turn?.speakerLabel || "Speaker");
+}
+
+function getScenarioVoiceForGender(gender) {
+  const key = String(gender || "").trim().toLowerCase();
+  return SCENARIO_V2_GENDER_VOICES[key] || null;
+}
+
+function getTurnVoiceOptions(block, turn) {
+  const participant = getParticipant(block, turn?.speakerId);
+  const voice = getScenarioVoiceForGender(participant?.gender || turn?.speakerGender || turn?.gender);
+  return voice ? { voice } : undefined;
 }
 
 function ParticipantPill({ participant }) {
@@ -235,6 +251,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
   const showScene = !!turn.sceneDirection && (phase === "scene" || phase === "speaker");
   const showSpeaker = phase === "speaker";
   const speakerLabel = getSpeakerLabel(block, turn);
+  const playOptions = getTurnVoiceOptions(block, turn);
 
   return (
     <div className="space-y-2">
@@ -249,7 +266,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
           <div className={cn("max-w-[86%] rounded-[22px] border px-4 py-3", final ? "scenario-v2-final-bubble" : "scenario-v2-speaker-bubble")}>
             <div className="mb-1 flex items-center justify-between gap-3">
               <div className="min-w-0 text-[11px] font-semibold text-zinc-400">{speakerLabel}</div>
-              <AudioIconButton text={turn.speakerText} playText={playText} label="Replay speaker line" />
+              <AudioIconButton text={turn.speakerText} playText={playText} playOptions={playOptions} label="Replay speaker line" />
             </div>
             <div className="text-[17px] font-semibold leading-snug text-zinc-100">{turn.speakerText}</div>
           </div>
@@ -367,7 +384,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => {
       setTurnPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
-      autoplayOnce(autoplayStartedKeysRef, turnKey, step.speakerText, playTextRef.current);
+      autoplayOnce(autoplayStartedKeysRef, turnKey, step.speakerText, playTextRef.current, getTurnVoiceOptions(block, step));
     }, delay);
   }, [activeStepTurnKey, step?.sceneDirection, step?.speakerText, followUpTurn, finalTurn, complete]);
 
@@ -382,7 +399,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => {
       setFollowUpPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
-      autoplayOnce(autoplayStartedKeysRef, turnKey, followUpTurn.speakerText, playTextRef.current);
+      autoplayOnce(autoplayStartedKeysRef, turnKey, followUpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, followUpTurn));
     }, delay);
     queueTimeout(() => {
       setHistory((prev) => [
@@ -412,7 +429,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => {
       setFinalPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
-      autoplayOnce(autoplayStartedKeysRef, turnKey, finalTurn.speakerText, playTextRef.current);
+      autoplayOnce(autoplayStartedKeysRef, turnKey, finalTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, finalTurn));
     }, delay);
     queueTimeout(() => setComplete(true), delay + 950);
   }, [finalTurnKey, finalTurn?.sceneDirection, finalTurn?.speakerText]);
