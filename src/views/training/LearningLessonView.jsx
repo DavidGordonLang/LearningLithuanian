@@ -6,6 +6,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { matchPairsCss } from "./matchPairs/matchPairsStyles";
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
 import TrainingBackButton from "./TrainingBackButton";
+import ScenarioV2Block from "./ScenarioV2Block";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -1844,6 +1845,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
+    case "scenario_v2": return <ScenarioV2Block block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "context_gap_select": return <ContextGapSelect block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "choose_correct_form": return <ChooseCorrectForm block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "conversation_turn_fill": return <ConversationTurnFill block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
@@ -1996,7 +1998,7 @@ export default function LearningLessonView({
   const isLastBlockComplete = isLastBlock && isCurrentCompleted;
   const lessonComplete = lessonDone;
   const isChoiceBlock = ["recognise_mcq", "listen_mcq", "best_response", "context_gap_select", "choose_correct_form", "conversation_turn_fill"].includes(currentBlock?.type);
-  const isScenarioBlock = currentBlock?.type === "scenario_chain";
+  const isScenarioBlock = currentBlock?.type === "scenario_chain" || currentBlock?.type === "scenario_v2";
   const isBuildPhraseBlock = currentBlock?.type === "build_phrase";
   const isSpeakSelfCheckBlock = currentBlock?.type === "speak_self_check";
   const showPatternNote = blockIndex === 0 && isCurrentCompleted;
@@ -2009,7 +2011,7 @@ export default function LearningLessonView({
     if (lesson?.id) {
       completeLesson(lesson.id, userId);
       const scoreableBlocks = (lesson.blocks || []).filter(b =>
-        ["recognise_mcq", "listen_mcq", "best_response", "scenario_chain"].includes(b.type)
+        ["recognise_mcq", "listen_mcq", "best_response", "scenario_chain", "scenario_v2"].includes(b.type)
       ).length;
       const accuracy = scoreableBlocks > 0
         ? Math.round(((scoreableBlocks - Math.min(wrongAnswerCount, scoreableBlocks)) / scoreableBlocks) * 100)
