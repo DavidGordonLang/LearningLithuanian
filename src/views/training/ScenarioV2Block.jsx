@@ -133,9 +133,9 @@ function estimateSpeechDelayMs(text) {
   return Math.min(5600, Math.max(2200, length * 95 + 900));
 }
 
-function autoplayOnce(playedKeysRef, key, text, playText) {
-  if (!key || !text || playedKeysRef.current.has(key)) return;
-  playedKeysRef.current.add(key);
+function autoplayOnce(startedKeysRef, key, text, playText) {
+  if (!key || !text || startedKeysRef.current.has(key)) return;
+  startedKeysRef.current.add(key);
   Promise.resolve(playText?.(text)).catch(() => {});
 }
 
@@ -304,7 +304,9 @@ function ScenarioV2CompleteAction({ onComplete }) {
 function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onComplete }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
   const timersRef = useRef([]);
-  const autoplayedTurnKeysRef = useRef(new Set());
+  const autoplayStartedKeysRef = useRef(new Set());
+  const revealedTurnKeyRef = useRef(null);
+  const playTextRef = useRef(playText);
   const feedRef = useRef(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [history, setHistory] = useState([]);
@@ -314,7 +316,6 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   const [followUpPhase, setFollowUpPhase] = useState("scene");
   const [finalTurn, setFinalTurn] = useState(null);
   const [finalPhase, setFinalPhase] = useState("scene");
-  const [revealedTurnKey, setRevealedTurnKey] = useState(null);
   const [complete, setComplete] = useState(false);
 
   const step = steps[stepIndex] || null;
@@ -338,6 +339,10 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     return id;
   }
 
+  useEffect(() => {
+    playTextRef.current = playText;
+  }, [playText]);
+
   useEffect(() => () => clearTimers(), []);
 
   useEffect(() => {
@@ -356,32 +361,28 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     clearTimers();
     if (!step || followUpTurn || finalTurn || complete) return;
     const turnKey = activeStepTurnKey;
-    setRevealedTurnKey(null);
+    revealedTurnKeyRef.current = null;
     setTurnPhase(step.sceneDirection ? "scene" : "speaker");
     const delay = step.sceneDirection ? 650 : 120;
     queueTimeout(() => {
       setTurnPhase("speaker");
-      setRevealedTurnKey(turnKey);
+      revealedTurnKeyRef.current = turnKey;
+      autoplayOnce(autoplayStartedKeysRef, turnKey, step.speakerText, playTextRef.current);
     }, delay);
-  }, [activeStepTurnKey, step?.sceneDirection, followUpTurn, finalTurn, complete]);
-
-  useEffect(() => {
-    if (turnPhase !== "speaker" || followUpTurn || finalTurn || complete || !step?.speakerText) return;
-    if (revealedTurnKey !== activeStepTurnKey) return;
-    autoplayOnce(autoplayedTurnKeysRef, activeStepTurnKey, step.speakerText, playText);
-  }, [turnPhase, revealedTurnKey, activeStepTurnKey, followUpTurn, finalTurn, complete, step?.speakerText, playText]);
+  }, [activeStepTurnKey, step?.sceneDirection, step?.speakerText, followUpTurn, finalTurn, complete]);
 
   useEffect(() => {
     if (!followUpTurn) return;
     clearTimers();
     const turnKey = followUpTurnKey;
-    setRevealedTurnKey(null);
+    revealedTurnKeyRef.current = null;
     setFollowUpPhase(followUpTurn.sceneDirection ? "scene" : "speaker");
     const delay = followUpTurn.sceneDirection ? 650 : 120;
     const advanceDelay = delay + estimateSpeechDelayMs(followUpTurn.speakerText);
     queueTimeout(() => {
       setFollowUpPhase("speaker");
-      setRevealedTurnKey(turnKey);
+      revealedTurnKeyRef.current = turnKey;
+      autoplayOnce(autoplayStartedKeysRef, turnKey, followUpTurn.speakerText, playTextRef.current);
     }, delay);
     queueTimeout(() => {
       setHistory((prev) => [
@@ -399,33 +400,22 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
       setFollowUpTurn(null);
       advanceAfterProgressingAnswer();
     }, advanceDelay);
-  }, [followUpTurnKey, followUpTurn?.sceneDirection]);
-
-  useEffect(() => {
-    if (followUpPhase !== "speaker" || !followUpTurn?.speakerText) return;
-    if (revealedTurnKey !== followUpTurnKey) return;
-    autoplayOnce(autoplayedTurnKeysRef, followUpTurnKey, followUpTurn.speakerText, playText);
-  }, [followUpPhase, revealedTurnKey, followUpTurnKey, followUpTurn?.speakerText, playText]);
+  }, [followUpTurnKey, followUpTurn?.sceneDirection, followUpTurn?.speakerText]);
 
   useEffect(() => {
     if (!finalTurn) return;
     clearTimers();
     const turnKey = finalTurnKey;
-    setRevealedTurnKey(null);
+    revealedTurnKeyRef.current = null;
     setFinalPhase(finalTurn.sceneDirection ? "scene" : "speaker");
     const delay = finalTurn.sceneDirection ? 650 : 120;
     queueTimeout(() => {
       setFinalPhase("speaker");
-      setRevealedTurnKey(turnKey);
+      revealedTurnKeyRef.current = turnKey;
+      autoplayOnce(autoplayStartedKeysRef, turnKey, finalTurn.speakerText, playTextRef.current);
     }, delay);
     queueTimeout(() => setComplete(true), delay + 950);
-  }, [finalTurnKey, finalTurn?.sceneDirection]);
-
-  useEffect(() => {
-    if (finalPhase !== "speaker" || !finalTurn?.speakerText) return;
-    if (revealedTurnKey !== finalTurnKey) return;
-    autoplayOnce(autoplayedTurnKeysRef, finalTurnKey, finalTurn.speakerText, playText);
-  }, [finalPhase, revealedTurnKey, finalTurnKey, finalTurn?.speakerText, playText]);
+  }, [finalTurnKey, finalTurn?.sceneDirection, finalTurn?.speakerText]);
 
   function addCurrentExchange(option) {
     setHistory((prev) => [
