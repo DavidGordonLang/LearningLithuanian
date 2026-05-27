@@ -15,6 +15,7 @@ import ExamPrepHome from "./training/ExamPrepHome";
 import ExamReadingTaskView from "./training/ExamReadingTaskView";
 import ExamListeningTaskView from "./training/ExamListeningTaskView";
 import ExamWritingTaskView from "./training/ExamWritingTaskView";
+import ScenarioReviewView from "./training/ScenarioReviewView";
 import { useTrainingFocus } from "../hooks/training/useTrainingFocus";
 import { useGameStore } from "../stores/gameStore";
 import { useAuthStore } from "../stores/authStore";
@@ -128,6 +129,7 @@ function findLessonAfter(sections, lessonId) {
 export default function TrainingView({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
   const [showSequenceDebug, setShowSequenceDebug] = useState(false);
+  const [showScenarioReview, setShowScenarioReview] = useState(false);
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null);
   const [sectionCompletePayload, setSectionCompletePayload] = useState(null);
   const [pendingSectionComplete, setPendingSectionComplete] = useState(false);
@@ -603,6 +605,16 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
     );
   }
 
+  if (showScenarioReview && effectiveDevMode) {
+    return (
+      <ScenarioReviewView
+        allSections={allSections}
+        playText={playText}
+        onBack={() => setShowScenarioReview(false)}
+      />
+    );
+  }
+
   return (
     <TrainingHome
       T={T}
@@ -633,6 +645,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
               id: "sequence_debug",
               label: "⚡ Sequence Walker",
               onClick: () => setShowSequenceDebug(true),
+            },
+            {
+              id: "scenario_review",
+              label: "Scenario Review",
+              onClick: () => setShowScenarioReview(true),
             },
           ]
         : []}

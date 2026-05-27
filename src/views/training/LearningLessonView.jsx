@@ -1112,7 +1112,7 @@ function ScenarioTrayOption({ option, selectedId, revealState, onClick }) {
 
 // ─── Scenario chain — description shown ABOVE chat window, never read by TTS ──
 
-function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
+export function ScenarioChainBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
   const steps = Array.isArray(block?.steps) ? block.steps : [];
   const timeoutsRef = useRef([]);
   const feedRef = useRef(null);
