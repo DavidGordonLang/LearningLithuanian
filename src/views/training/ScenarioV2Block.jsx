@@ -1,7 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+function shuffledCopy(items) {
+  const out = Array.isArray(items) ? [...items] : [];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 const SCENARIO_V2_GENDER_VOICES = {
   female: "lt-LT-OnaNeural",
@@ -74,9 +83,33 @@ function ScenarioV2Styles() {
       .scenario-v2-pop { animation: scenarioV2Pop 180ms ease-out both; }
       .scenario-v2-intro-card { background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.10); }
       .scenario-v2-chat-window { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.10); }
-      .scenario-v2-speaker-bubble { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.10); }
-      .scenario-v2-final-bubble { background: rgba(16,185,129,0.08); border-color: rgba(52,211,153,0.18); }
-      .scenario-v2-user-bubble { background: rgba(16,185,129,0.09); border-color: rgba(52,211,153,0.18); }
+      .scenario-v2-bubble { position: relative; }
+      .scenario-v2-bubble-left::after,
+      .scenario-v2-bubble-right::after {
+        content: "";
+        position: absolute;
+        bottom: 16px;
+        width: 12px;
+        height: 12px;
+        background: var(--scenario-v2-bubble-bg);
+        border-color: var(--scenario-v2-bubble-border);
+        transform: rotate(45deg);
+      }
+      .scenario-v2-bubble-left::after {
+        left: -6px;
+        border-bottom: 1px solid;
+        border-left: 1px solid;
+        border-bottom-left-radius: 3px;
+      }
+      .scenario-v2-bubble-right::after {
+        right: -6px;
+        border-top: 1px solid;
+        border-right: 1px solid;
+        border-top-right-radius: 3px;
+      }
+      .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.045); --scenario-v2-bubble-border: rgba(255,255,255,0.10); background: var(--scenario-v2-bubble-bg); border-color: var(--scenario-v2-bubble-border); }
+      .scenario-v2-final-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.08); --scenario-v2-bubble-border: rgba(52,211,153,0.18); background: var(--scenario-v2-bubble-bg); border-color: var(--scenario-v2-bubble-border); }
+      .scenario-v2-user-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.09); --scenario-v2-bubble-border: rgba(52,211,153,0.18); background: var(--scenario-v2-bubble-bg); border-color: var(--scenario-v2-bubble-border); }
       .scenario-v2-support-panel { background: rgba(14,165,233,0.08); border-color: rgba(56,189,248,0.22); color: #e0f2fe; }
       .scenario-v2-support-label { color: rgba(125,211,252,0.92); }
       .scenario-v2-reply-tray { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.10); }
@@ -97,14 +130,18 @@ function ScenarioV2Styles() {
       html[data-theme="light"] .scenario-v2-speaker-bubble,
       html[data-theme="light"] .scenario-v2-feedback-inset,
       html[data-theme="light"] .scenario-v2-option {
-        background: rgba(249,242,229,0.96);
-        border-color: rgba(94,75,45,0.18);
+        --scenario-v2-bubble-bg: rgba(249,242,229,0.96);
+        --scenario-v2-bubble-border: rgba(94,75,45,0.18);
+        background: var(--scenario-v2-bubble-bg);
+        border-color: var(--scenario-v2-bubble-border);
       }
       html[data-theme="light"] .scenario-v2-final-bubble,
       html[data-theme="light"] .scenario-v2-user-bubble,
       html[data-theme="light"] .scenario-v2-option-selected {
-        background: rgba(107,143,110,0.17);
-        border-color: rgba(107,143,110,0.28);
+        --scenario-v2-bubble-bg: rgba(107,143,110,0.17);
+        --scenario-v2-bubble-border: rgba(107,143,110,0.28);
+        background: var(--scenario-v2-bubble-bg);
+        border-color: var(--scenario-v2-bubble-border);
       }
       html[data-theme="light"] .scenario-v2-support-panel {
         background: rgba(233,243,235,0.97);
@@ -263,7 +300,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
 
       {showSpeaker ? (
         <div className="scenario-v2-fade flex justify-start">
-          <div className={cn("max-w-[86%] rounded-[22px] border px-4 py-3", final ? "scenario-v2-final-bubble" : "scenario-v2-speaker-bubble")}>
+          <div className={cn("scenario-v2-bubble scenario-v2-bubble-left max-w-[86%] rounded-[22px] border px-4 py-3", final ? "scenario-v2-final-bubble" : "scenario-v2-speaker-bubble")}>
             <div className="mb-1 flex items-center justify-between gap-3">
               <div className="min-w-0 text-[11px] font-semibold text-zinc-400">{speakerLabel}</div>
               <AudioIconButton text={turn.speakerText} playText={playText} playOptions={playOptions} label="Replay speaker line" />
@@ -286,7 +323,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
 function ScenarioV2UserBubble({ item }) {
   return (
     <div className="flex justify-end">
-      <div className="scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
+      <div className="scenario-v2-bubble scenario-v2-bubble-right scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
         <div className="text-[11px] font-semibold text-emerald-200">You</div>
         <div className="mt-1 text-[15px] font-semibold leading-snug text-zinc-100">{item.text}</div>
       </div>
@@ -336,7 +373,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   const [complete, setComplete] = useState(false);
 
   const step = steps[stepIndex] || null;
-  const options = Array.isArray(step?.options) ? step.options : [];
+  const authoredOptions = Array.isArray(step?.options) ? step.options : [];
+  const options = useMemo(() => shuffledCopy(authoredOptions), [step?.id]);
   const participant = Array.isArray(block?.participants)
     ? block.participants.find((p) => p.id === step?.speakerId)
     : null;
