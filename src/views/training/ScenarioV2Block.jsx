@@ -83,33 +83,35 @@ function ScenarioV2Styles() {
       .scenario-v2-pop { animation: scenarioV2Pop 180ms ease-out both; }
       .scenario-v2-intro-card { background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.10); }
       .scenario-v2-chat-window { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.10); }
-      .scenario-v2-bubble { position: relative; }
+      .scenario-v2-bubble {
+        position: relative;
+        border-color: var(--scenario-v2-bubble-border);
+        background: var(--scenario-v2-bubble-bg);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+      }
       .scenario-v2-bubble-left::after,
       .scenario-v2-bubble-right::after {
         content: "";
         position: absolute;
-        bottom: 16px;
-        width: 12px;
-        height: 12px;
+        bottom: 12px;
+        width: 14px;
+        height: 14px;
         background: var(--scenario-v2-bubble-bg);
-        border-color: var(--scenario-v2-bubble-border);
         transform: rotate(45deg);
       }
       .scenario-v2-bubble-left::after {
-        left: -6px;
-        border-bottom: 1px solid;
-        border-left: 1px solid;
-        border-bottom-left-radius: 3px;
+        left: -4px;
+        border-bottom-left-radius: 5px;
       }
       .scenario-v2-bubble-right::after {
-        right: -6px;
-        border-top: 1px solid;
-        border-right: 1px solid;
-        border-top-right-radius: 3px;
+        right: -4px;
+        border-top-right-radius: 5px;
       }
-      .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.045); --scenario-v2-bubble-border: rgba(255,255,255,0.10); background: var(--scenario-v2-bubble-bg); border-color: var(--scenario-v2-bubble-border); }
-      .scenario-v2-final-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.08); --scenario-v2-bubble-border: rgba(52,211,153,0.18); background: var(--scenario-v2-bubble-bg); border-color: var(--scenario-v2-bubble-border); }
-      .scenario-v2-user-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.09); --scenario-v2-bubble-border: rgba(52,211,153,0.18); background: var(--scenario-v2-bubble-bg); border-color: var(--scenario-v2-bubble-border); }
+      .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.075); --scenario-v2-bubble-border: rgba(255,255,255,0.075); }
+      .scenario-v2-final-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.12); --scenario-v2-bubble-border: rgba(52,211,153,0.12); }
+      .scenario-v2-user-bubble { --scenario-v2-bubble-bg: rgba(22,163,74,0.88); --scenario-v2-bubble-border: rgba(134,239,172,0.18); }
+      .scenario-v2-user-label { color: rgba(240,253,244,0.78); }
+      .scenario-v2-user-text { color: #ffffff; }
       .scenario-v2-support-panel { background: rgba(14,165,233,0.08); border-color: rgba(56,189,248,0.22); color: #e0f2fe; }
       .scenario-v2-support-label { color: rgba(125,211,252,0.92); }
       .scenario-v2-reply-tray { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.10); }
@@ -130,13 +132,23 @@ function ScenarioV2Styles() {
       html[data-theme="light"] .scenario-v2-speaker-bubble,
       html[data-theme="light"] .scenario-v2-feedback-inset,
       html[data-theme="light"] .scenario-v2-option {
-        --scenario-v2-bubble-bg: rgba(249,242,229,0.96);
-        --scenario-v2-bubble-border: rgba(94,75,45,0.18);
+        --scenario-v2-bubble-bg: rgba(247,239,224,0.98);
+        --scenario-v2-bubble-border: rgba(94,75,45,0.11);
         background: var(--scenario-v2-bubble-bg);
         border-color: var(--scenario-v2-bubble-border);
       }
-      html[data-theme="light"] .scenario-v2-final-bubble,
-      html[data-theme="light"] .scenario-v2-user-bubble,
+      html[data-theme="light"] .scenario-v2-final-bubble {
+        --scenario-v2-bubble-bg: rgba(225,239,224,0.98);
+        --scenario-v2-bubble-border: rgba(107,143,110,0.18);
+        background: var(--scenario-v2-bubble-bg);
+        border-color: var(--scenario-v2-bubble-border);
+      }
+      html[data-theme="light"] .scenario-v2-user-bubble {
+        --scenario-v2-bubble-bg: rgba(109,151,113,0.92);
+        --scenario-v2-bubble-border: rgba(67,110,76,0.16);
+        background: var(--scenario-v2-bubble-bg);
+        border-color: var(--scenario-v2-bubble-border);
+      }
       html[data-theme="light"] .scenario-v2-option-selected {
         --scenario-v2-bubble-bg: rgba(107,143,110,0.17);
         --scenario-v2-bubble-border: rgba(107,143,110,0.28);
@@ -225,6 +237,13 @@ function optionCanProgress(option) {
     result === "awkward" ||
     (result === "repair" && option?.progresses === true)
   );
+}
+
+function optionNeedsFeedback(option) {
+  const result = option?.result || "wrong";
+  if (result === "best") return false;
+  if (result === "acceptable") return !!(option?.feedback || option?.betterAnswer);
+  return true;
 }
 
 function resultMeta(option) {
@@ -324,8 +343,8 @@ function ScenarioV2UserBubble({ item }) {
   return (
     <div className="flex justify-end">
       <div className="scenario-v2-bubble scenario-v2-bubble-right scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
-        <div className="text-[11px] font-semibold text-emerald-200">You</div>
-        <div className="mt-1 text-[15px] font-semibold leading-snug text-zinc-100">{item.text}</div>
+        <div className="scenario-v2-user-label text-[11px] font-semibold">You</div>
+        <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug">{item.text}</div>
       </div>
     </div>
   );
@@ -496,16 +515,23 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
 
   function handleOption(option) {
     if (selectedOption || complete) return;
-    setSelectedOption(option);
     if (!optionCanProgress(option)) onWrongAnswer?.();
+    if (!optionNeedsFeedback(option)) {
+      processProgressingOption(option);
+      return;
+    }
+    setSelectedOption(option);
   }
 
   function handleFeedbackContinue() {
     if (!selectedOption || !optionCanProgress(selectedOption)) return;
     const option = selectedOption;
-    addCurrentExchange(selectedOption);
     setSelectedOption(null);
+    processProgressingOption(option);
+  }
 
+  function processProgressingOption(option) {
+    addCurrentExchange(option);
     if (option?.followUp?.speakerText) {
       setFollowUpTurn(option.followUp);
       return;
