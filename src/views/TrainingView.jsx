@@ -28,7 +28,7 @@ import createSection4 from "../content/learning/section4";
 import createSection5 from "../content/learning/section5";
 import SequenceDebugView from "./training/SequenceDebugView";
 
-const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me"];
+const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me", "barbora.gaulyte@gmail.com"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
