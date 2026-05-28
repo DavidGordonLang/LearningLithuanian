@@ -1064,7 +1064,7 @@ export default function createModule_3_3(profile = {}) {
       id: "step_3",
       speakerId: "assistant",
       speakerLabel: "Assistant",
-      speakerText: "Dabar antras valanda — turite laiko.",
+      speakerText: "Dabar antra valanda — turite laiko.",
       supportText: "It's two o'clock now — you have time.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
