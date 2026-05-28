@@ -122,9 +122,9 @@ export default function createModule_1_2(profile = {}) {
     {
       "id": "local",
       "label": "Local",
-      "name": "Rasa",
+      "name": "Rokas",
       "role": "local speaker",
-      "gender": "female",
+      "gender": "male",
       "relationshipToUser": "stranger",
       "register": "polite_neutral"
     },
@@ -471,9 +471,9 @@ export default function createModule_1_2(profile = {}) {
     {
       "id": "colleague",
       "label": "Colleague",
-      "name": "Rokas",
+      "name": "Ona",
       "role": "colleague",
-      "gender": "male",
+      "gender": "female",
       "relationshipToUser": "colleague",
       "register": "polite_friendly"
     },
@@ -663,11 +663,11 @@ export default function createModule_1_2(profile = {}) {
   participants: [
     {
       "id": "friend",
-      "label": "Friend",
-      "name": "Mantas",
-      "role": "friend",
+      "label": "Colleague",
+      "name": "Rokas",
+      "role": "colleague",
       "gender": "male",
-      "relationshipToUser": "friend",
+      "relationshipToUser": "colleague",
       "register": "casual"
     },
   ],
@@ -675,7 +675,7 @@ export default function createModule_1_2(profile = {}) {
     {
       id: "step_1",
       speakerId: "friend",
-      speakerLabel: "Friend",
+      speakerLabel: "Colleague",
       speakerText: "Labas! Kaip sekasi?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
@@ -705,7 +705,7 @@ export default function createModule_1_2(profile = {}) {
     {
       id: "step_2",
       speakerId: "friend",
-      speakerLabel: "Friend",
+      speakerLabel: "Colleague",
       speakerText: "Malonu susipažinti! Iš kur ji yra?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
@@ -853,9 +853,9 @@ export default function createModule_1_2(profile = {}) {
     {
       "id": "local",
       "label": "Local",
-      "name": "Rasa",
+      "name": "Rokas",
       "role": "local speaker",
-      "gender": "female",
+      "gender": "male",
       "relationshipToUser": "stranger",
       "register": "polite_neutral"
     },

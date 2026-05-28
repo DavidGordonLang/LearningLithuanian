@@ -1018,9 +1018,9 @@ export default function createModule_1_3(profile = {}) {
     {
       "id": "local",
       "label": "Local",
-      "name": "Rasa",
+      "name": "Rokas",
       "role": "local speaker",
-      "gender": "female",
+      "gender": "male",
       "relationshipToUser": "stranger",
       "register": "polite_neutral"
     },
