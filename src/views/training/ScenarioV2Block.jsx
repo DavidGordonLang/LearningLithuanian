@@ -117,6 +117,11 @@ function ScenarioV2Styles() {
       .scenario-v2-reply-tray { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.10); }
       .scenario-v2-option { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
       .scenario-v2-option:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); }
+      .scenario-v2-option:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255,255,255,0.16);
+        border-color: rgba(255,255,255,0.34);
+      }
       .scenario-v2-option-selected { background: rgba(16,185,129,0.08); border-color: rgba(52,211,153,0.25); }
       .scenario-v2-feedback-backdrop { background: rgba(0,0,0,0.35); }
       .scenario-v2-feedback-card { background: rgba(24,24,27,0.94); border-color: rgba(255,255,255,0.14); color: #f4f4f5; }
@@ -176,6 +181,10 @@ function ScenarioV2Styles() {
       html[data-theme="light"] .scenario-v2-option:hover {
         background: rgba(244,235,217,0.98);
         border-color: rgba(94,75,45,0.25);
+      }
+      html[data-theme="light"] .scenario-v2-option:focus-visible {
+        box-shadow: 0 0 0 3px rgba(94,75,45,0.16);
+        border-color: rgba(94,75,45,0.36);
       }
     `}</style>
   );
@@ -401,6 +410,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   const activeStepTurnKey = step?.id ? `step:${step.id}` : null;
   const followUpTurnKey = followUpTurn?.speakerText ? `followup:${step?.id || "step"}:${followUpTurn.speakerText}` : null;
   const finalTurnKey = finalTurn?.speakerText ? `final:${step?.id || "step"}:${finalTurn.speakerText}` : null;
+  const selectedOptionForStep = selectedOption?.stepId === step?.id ? selectedOption.option : null;
 
   function clearTimers() {
     timersRef.current.forEach((id) => clearTimeout(id));
@@ -418,6 +428,10 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   }, [playText]);
 
   useEffect(() => () => clearTimers(), []);
+
+  useEffect(() => {
+    setSelectedOption(null);
+  }, [activeStepTurnKey]);
 
   useEffect(() => {
     const el = feedRef.current;
@@ -514,18 +528,18 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   }
 
   function handleOption(option) {
-    if (selectedOption || complete) return;
+    if (selectedOptionForStep || complete) return;
     if (!optionCanProgress(option)) onWrongAnswer?.();
     if (!optionNeedsFeedback(option)) {
       processProgressingOption(option);
       return;
     }
-    setSelectedOption(option);
+    setSelectedOption({ stepId: step?.id || null, option });
   }
 
   function handleFeedbackContinue() {
-    if (!selectedOption || !optionCanProgress(selectedOption)) return;
-    const option = selectedOption;
+    if (!selectedOptionForStep || !optionCanProgress(selectedOptionForStep)) return;
+    const option = selectedOptionForStep;
     setSelectedOption(null);
     processProgressingOption(option);
   }
@@ -580,7 +594,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         </div>
 
         <div className="scenario-v2-chat-window min-h-0 flex-1 overflow-hidden rounded-[28px] border shadow-[0_18px_50px_rgba(0,0,0,0.32)]">
-          <div ref={feedRef} className={cn("h-full overflow-y-auto px-4 py-4 space-y-4", selectedOption ? "pb-44" : "")}>
+          <div ref={feedRef} className={cn("h-full overflow-y-auto px-4 py-4 space-y-4", selectedOptionForStep ? "pb-44" : "")}>
             {history.map((item) => (
               <ScenarioV2HistoryItem key={item.id} block={block} item={item} playText={playText} />
             ))}
@@ -610,15 +624,15 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
             <div className="grid gap-2">
               {options.map((option) => (
                 <button
-                  key={option.id}
+                  key={`${step.id}:${option.id}`}
                   type="button"
                   data-press
                   onClick={() => handleOption(option)}
-                  disabled={!activeSpeakerReady || !!selectedOption}
+                  disabled={!activeSpeakerReady || !!selectedOptionForStep}
                   className={cn(
                     "w-full rounded-2xl border px-4 py-3 text-left transition",
-                    selectedOption?.id === option.id ? "scenario-v2-option-selected" : "scenario-v2-option",
-                    selectedOption && selectedOption.id !== option.id ? "opacity-45" : "",
+                    selectedOptionForStep?.id === option.id ? "scenario-v2-option-selected" : "scenario-v2-option",
+                    selectedOptionForStep && selectedOptionForStep.id !== option.id ? "opacity-45" : "",
                     !activeSpeakerReady ? "cursor-wait" : ""
                   )}
                 >
@@ -634,9 +648,9 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         ) : null}
       </div>
 
-      {selectedOption ? (
+      {selectedOptionForStep ? (
         <ScenarioV2FeedbackSheet
-          option={selectedOption}
+          option={selectedOptionForStep}
           onRetry={() => setSelectedOption(null)}
           onContinue={handleFeedbackContinue}
         />
