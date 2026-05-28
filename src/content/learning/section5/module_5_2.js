@@ -76,49 +76,135 @@ export default function createModule_5_2(profile = {}) {
             audioText: "Kur yra autobusų stotis",
           },
           {
-            id: "s5m2l1_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You've just arrived and need to find the train station.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Ar galiu jums padėti?",
-                audioText: "Laba diena! Ar galiu jums padėti",
-                helperText: "Good day! Can I help you?",
-                options: [
-                  { id: "a", text: "Viso gero.", isCorrect: false },
-                  { id: "b", text: "Taip! Kur yra geležinkelio stotis?", en: "Yes! Where is the train station?", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Geležinkelio stotis yra ten. Eikite tiesiai.",
-                audioText: "Geležinkelio stotis yra ten. Eikite tiesiai",
-                helperText: "The train station is there. Go straight.",
-                options: [
-                  { id: "a", text: "Atsiprašau.", isCorrect: false },
-                  { id: "b", text: "Ar tai toli?", en: "Is it far?", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Ne, tai netoli. Dešimt minučių.",
-                audioText: "Ne, tai netoli. Dešimt minučių",
-                helperText: "No, it's near. Ten minutes.",
-                options: [
-                  { id: "a", text: "Per toli.", isCorrect: false },
-                  { id: "b", text: "Ačiū labai! Viso gero.", en: "Thank you very much! Goodbye.", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s5m2l1_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You've just arrived and need to find the train station.",
+  sceneIntro: "You've just arrived and need to find the train station.",
+  location: "service desk",
+  userRole: "traveller",
+  register: "polite_service",
+  goal: "You've just arrived and need to find the train station.",
+  focus: ["directions"],
+  participants: [
+    {
+      "id": "assistant",
+      "label": "Assistant",
+      "name": "Rasa",
+      "role": "assistant",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "station",
+      "lt": "stotis",
+      "en": "station",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Laba diena! Ar galiu jums padėti?",
+      supportText: "Good day! Can I help you?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Taip! Kur yra geležinkelio stotis?",
+          textEn: "Yes! Where is the train station?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Geležinkelio stotis yra ten. Eikite tiesiai.",
+      supportText: "The train station is there. Go straight.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ar tai toli?",
+          textEn: "Is it far?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Ne, tai netoli. Dešimt minučių.",
+      supportText: "No, it's near. Ten minutes.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Per toli.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū labai! Viso gero.",
+          textEn: "Thank you very much! Goodbye.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -186,49 +272,135 @@ export default function createModule_5_2(profile = {}) {
             audioText: "Kur yra vaistinė",
           },
           {
-            id: "s5m2l2_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You need to find the pharmacy quickly.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena!",
-                audioText: "Laba diena",
-                helperText: "Good day!",
-                options: [
-                  { id: "a", text: "Viso gero.", isCorrect: false },
-                  { id: "b", text: "Laba diena! Atsiprašau, kur yra vaistinė?", en: "Good day! Excuse me, where is the pharmacy?", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Vaistinė? Ten, dešinėn.",
-                audioText: "Vaistinė? Ten, dešinėn",
-                helperText: "Pharmacy? There, on the right.",
-                options: [
-                  { id: "a", text: "Prašau kalbėkite lėčiau.", isCorrect: false },
-                  { id: "b", text: "Ačiū! Ar tai toli?", en: "Thank you! Is it far?", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Ne, tai čia pat.",
-                audioText: "Ne, tai čia pat",
-                helperText: "No, it's right here.",
-                options: [
-                  { id: "a", text: "Atsiprašau.", isCorrect: false },
-                  { id: "b", text: "Puiku! Ačiū labai.", en: "Great! Thank you very much.", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s5m2l2_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You need to find the pharmacy quickly.",
+  sceneIntro: "You need to find the pharmacy quickly.",
+  location: "pharmacy",
+  userRole: "customer",
+  register: "polite_service",
+  goal: "You need to find the pharmacy quickly.",
+  focus: ["directions"],
+  participants: [
+    {
+      "id": "pharmacist",
+      "label": "Pharmacist",
+      "name": "Rasa",
+      "role": "pharmacist",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "pharmacy",
+      "lt": "vaistin?",
+      "en": "pharmacy",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "pharmacist",
+      speakerLabel: "Pharmacist",
+      speakerText: "Laba diena!",
+      supportText: "Good day!",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Laba diena! Atsiprašau, kur yra vaistinė?",
+          textEn: "Good day! Excuse me, where is the pharmacy?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "pharmacist",
+      speakerLabel: "Pharmacist",
+      speakerText: "Vaistinė? Ten, dešinėn.",
+      supportText: "Pharmacy? There, on the right.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Prašau kalbėkite lėčiau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū! Ar tai toli?",
+          textEn: "Thank you! Is it far?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "pharmacist",
+      speakerLabel: "Pharmacist",
+      speakerText: "Ne, tai čia pat.",
+      supportText: "No, it's right here.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Puiku! Ačiū labai.",
+          textEn: "Great! Thank you very much.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -296,49 +468,142 @@ export default function createModule_5_2(profile = {}) {
             audioText: "Kur yra kavinė",
           },
           {
-            id: "s5m2l3_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You want to find a café near your hotel.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Ko jums reikia?",
-                audioText: "Laba diena! Ko jums reikia",
-                helperText: "Good day! What do you need?",
-                options: [
-                  { id: "a", text: "Nesuprantu.", isCorrect: false },
-                  { id: "b", text: "Laba diena! Kur yra kavinė?", en: "Good day! Where is a café?", isCorrect: true },
-                  { id: "c", text: "Viso gero.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Kavinė yra ten, netoli viešbučio.",
-                audioText: "Kavinė yra ten, netoli viešbučio",
-                helperText: "The café is there, near the hotel.",
-                options: [
-                  { id: "a", text: "Atsiprašau.", isCorrect: false },
-                  { id: "b", text: "Ačiū! Ar tai toli?", en: "Thank you! Is it far?", isCorrect: true },
-                  { id: "c", text: "Kur yra parduotuvė?", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Ne, tai netoli. Tiesiai.",
-                audioText: "Ne, tai netoli. Tiesiai",
-                helperText: "No, it's near. Straight ahead.",
-                options: [
-                  { id: "a", text: "Nesuprantu.", isCorrect: false },
-                  { id: "b", text: "Puiku! Ačiū labai.", en: "Great! Thank you very much.", isCorrect: true },
-                  { id: "c", text: "Per brangu.", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s5m2l3_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You want to find a café near your hotel.",
+  sceneIntro: "You want to find a café near your hotel.",
+  location: "hotel reception",
+  userRole: "guest",
+  register: "polite_service",
+  goal: "You want to find a café near your hotel.",
+  focus: ["directions"],
+  participants: [
+    {
+      "id": "receptionist",
+      "label": "Receptionist",
+      "name": "Aust?ja",
+      "role": "receptionist",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "coffee",
+      "lt": "kava",
+      "en": "coffee",
+      "gender": "feminine",
+      "number": "singular"
+    },
+    {
+      "id": "hotel",
+      "lt": "vie?butis",
+      "en": "hotel",
+      "gender": "masculine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "receptionist",
+      speakerLabel: "Receptionist",
+      speakerText: "Laba diena! Ko jums reikia?",
+      supportText: "Good day! What do you need?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Laba diena! Kur yra kavinė?",
+          textEn: "Good day! Where is a café?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Viso gero.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "receptionist",
+      speakerLabel: "Receptionist",
+      speakerText: "Kavinė yra ten, netoli viešbučio.",
+      supportText: "The café is there, near the hotel.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū! Ar tai toli?",
+          textEn: "Thank you! Is it far?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Kur yra parduotuvė?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "receptionist",
+      speakerLabel: "Receptionist",
+      speakerText: "Ne, tai netoli. Tiesiai.",
+      supportText: "No, it's near. Straight ahead.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Puiku! Ačiū labai.",
+          textEn: "Great! Thank you very much.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Per brangu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -399,49 +664,149 @@ export default function createModule_5_2(profile = {}) {
             audioText: "Kur yra autobusų stotis",
           },
           {
-            id: "s5m2l4_b5",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You need cash from the bank before heading to the bus station.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Ar galiu jums padėti?",
-                audioText: "Laba diena! Ar galiu jums padėti",
-                helperText: "Good day! Can I help you?",
-                options: [
-                  { id: "a", text: "Nesuprantu.", isCorrect: false },
-                  { id: "b", text: "Taip! Kur yra bankas?", en: "Yes! Where is the bank?", isCorrect: true },
-                  { id: "c", text: "Viso gero.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Bankas yra ten, kairėn.",
-                audioText: "Bankas yra ten, kairėn",
-                helperText: "The bank is there, on the left.",
-                options: [
-                  { id: "a", text: "Ačiū!", isCorrect: false },
-                  { id: "b", text: "Ačiū! Ir kur yra autobusų stotis?", en: "Thank you! And where is the bus station?", isCorrect: true },
-                  { id: "c", text: "Prašau kalbėkite lėčiau.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Autobusų stotis yra tiesiai, paskui dešinėn. Netoli.",
-                audioText: "Autobusų stotis yra tiesiai, paskui dešinėn. Netoli",
-                helperText: "The bus station is straight ahead, then right. Not far.",
-                options: [
-                  { id: "a", text: "Atsiprašau.", isCorrect: false },
-                  { id: "b", text: "Ačiū labai! Viso gero.", en: "Thank you very much! Goodbye.", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s5m2l4_b5_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You need cash from the bank before heading to the bus station.",
+  sceneIntro: "You need cash from the bank before heading to the bus station.",
+  location: "service desk",
+  userRole: "traveller",
+  register: "polite_service",
+  goal: "You need cash from the bank before heading to the bus station.",
+  focus: ["payment","directions"],
+  participants: [
+    {
+      "id": "assistant",
+      "label": "Assistant",
+      "name": "Rasa",
+      "role": "assistant",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "cash",
+      "lt": "grynieji",
+      "en": "cash",
+      "gender": "masculine",
+      "number": "plural"
+    },
+    {
+      "id": "station",
+      "lt": "stotis",
+      "en": "station",
+      "gender": "feminine",
+      "number": "singular"
+    },
+    {
+      "id": "bus",
+      "lt": "autobusas",
+      "en": "bus",
+      "gender": "masculine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Laba diena! Ar galiu jums padėti?",
+      supportText: "Good day! Can I help you?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Taip! Kur yra bankas?",
+          textEn: "Yes! Where is the bank?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Viso gero.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Bankas yra ten, kairėn.",
+      supportText: "The bank is there, on the left.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Ačiū!",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū! Ir kur yra autobusų stotis?",
+          textEn: "Thank you! And where is the bus station?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Prašau kalbėkite lėčiau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Autobusų stotis yra tiesiai, paskui dešinėn. Netoli.",
+      supportText: "The bus station is straight ahead, then right. Not far.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū labai! Viso gero.",
+          textEn: "Thank you very much! Goodbye.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -508,49 +873,126 @@ export default function createModule_5_2(profile = {}) {
             explanation: "If you want coffee, you need a kavinė (café). A bankas is a bank, ligoninė is a hospital.",
           },
           {
-            id: "s5m2l5_b5",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You hear a place word in a short exchange. Listen and respond correctly.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Ar ieškote viešbučio?",
-                audioText: "Laba diena! Ar ieškote viešbučio",
-                helperText: "Good day! Are you looking for the hotel?",
-                options: [
-                  { id: "a", text: "Ne, kur yra kavinė?", isCorrect: false },
-                  { id: "b", text: "Taip! Kur yra viešbutis?", en: "Yes! Where is the hotel?", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Viešbutis yra ten. Eikite tiesiai.",
-                audioText: "Viešbutis yra ten. Eikite tiesiai",
-                helperText: "The hotel is there. Go straight.",
-                options: [
-                  { id: "a", text: "Atsiprašau.", isCorrect: false },
-                  { id: "b", text: "Suprantu. Ačiū!", en: "I understand. Thank you!", isCorrect: true },
-                  { id: "c", text: "Kur yra stotis?", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Prašom. Ar jums dar reikia pagalbos?",
-                audioText: "Prašom. Ar jums dar reikia pagalbos",
-                helperText: "You're welcome. Do you need any more help?",
-                options: [
-                  { id: "a", text: "Taip, labai.", isCorrect: false },
-                  { id: "b", text: "Ne, ačiū. Viso gero!", en: "No, thank you. Goodbye!", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s5m2l5_b5_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You hear a place word in a short exchange. Listen and respond correctly.",
+  sceneIntro: "You hear a place word in a short exchange. Listen and respond correctly.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You hear a place word in a short exchange. Listen and respond correctly.",
+  focus: ["conversation practice"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rasa",
+      "role": "local speaker",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Laba diena! Ar ieškote viešbučio?",
+      supportText: "Good day! Are you looking for the hotel?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Ne, kur yra kavinė?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Taip! Kur yra viešbutis?",
+          textEn: "Yes! Where is the hotel?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Viešbutis yra ten. Eikite tiesiai.",
+      supportText: "The hotel is there. Go straight.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Suprantu. Ačiū!",
+          textEn: "I understand. Thank you!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Kur yra stotis?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Prašom. Ar jums dar reikia pagalbos?",
+      supportText: "You're welcome. Do you need any more help?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Taip, labai.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ne, ačiū. Viso gero!",
+          textEn: "No, thank you. Goodbye!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -623,49 +1065,142 @@ export default function createModule_5_2(profile = {}) {
             translation_en: "Excuse me, where is the shop? — There, straight ahead.",
           },
           {
-            id: "s5m2c_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You need the pharmacy after arriving at the hotel. A full place-finding exchange.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Ar galiu jums padėti?",
-                audioText: "Laba diena! Ar galiu jums padėti",
-                helperText: "Good day! Can I help you?",
-                options: [
-                  { id: "a", text: "Viso gero.", isCorrect: false },
-                  { id: "b", text: "Taip! Kur yra vaistinė?", en: "Yes! Where is the pharmacy?", isCorrect: true },
-                  { id: "c", text: "Nesuprantu.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Vaistinė yra ten. Pasukite dešinėn.",
-                audioText: "Vaistinė yra ten. Pasukite dešinėn",
-                helperText: "The pharmacy is there. Turn right.",
-                options: [
-                  { id: "a", text: "Atsiprašau.", isCorrect: false },
-                  { id: "b", text: "Suprantu. Ar tai toli?", en: "I understand. Is it far?", isCorrect: true },
-                  { id: "c", text: "Kur yra ligoninė?", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Ne, tai netoli. Trys minutės.",
-                audioText: "Ne, tai netoli. Trys minutės",
-                helperText: "No, it's near. Three minutes.",
-                options: [
-                  { id: "a", text: "Nesuprantu.", isCorrect: false },
-                  { id: "b", text: "Puiku! Ačiū labai. Viso gero.", en: "Great! Thank you very much. Goodbye.", isCorrect: true },
-                  { id: "c", text: "Per brangu.", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s5m2c_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You need the pharmacy after arriving at the hotel. A full place-finding exchange.",
+  sceneIntro: "You need the pharmacy after arriving at the hotel. A full place-finding exchange.",
+  location: "hotel reception",
+  userRole: "guest",
+  register: "polite_service",
+  goal: "You need the pharmacy after arriving at the hotel. A full place-finding exchange.",
+  focus: ["directions"],
+  participants: [
+    {
+      "id": "receptionist",
+      "label": "Receptionist",
+      "name": "Aust?ja",
+      "role": "receptionist",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "hotel",
+      "lt": "vie?butis",
+      "en": "hotel",
+      "gender": "masculine",
+      "number": "singular"
+    },
+    {
+      "id": "pharmacy",
+      "lt": "vaistin?",
+      "en": "pharmacy",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "receptionist",
+      speakerLabel: "Receptionist",
+      speakerText: "Laba diena! Ar galiu jums padėti?",
+      supportText: "Good day! Can I help you?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Taip! Kur yra vaistinė?",
+          textEn: "Yes! Where is the pharmacy?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "receptionist",
+      speakerLabel: "Receptionist",
+      speakerText: "Vaistinė yra ten. Pasukite dešinėn.",
+      supportText: "The pharmacy is there. Turn right.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Suprantu. Ar tai toli?",
+          textEn: "I understand. Is it far?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Kur yra ligoninė?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "receptionist",
+      speakerLabel: "Receptionist",
+      speakerText: "Ne, tai netoli. Trys minutės.",
+      supportText: "No, it's near. Three minutes.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Nesuprantu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Puiku! Ačiū labai. Viso gero.",
+          textEn: "Great! Thank you very much. Goodbye.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Per brangu.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
           {
             id: "s5m2c_b7",
             type: "word_match",
