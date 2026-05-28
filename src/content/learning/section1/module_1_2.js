@@ -108,35 +108,90 @@ export default function createModule_1_2(profile = {}) {
             audioText: "Mano vardas",
           },
           {
-            id: "s1m2l1_b7",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Koks jūsų vardas?",
-                audioText: "Laba diena. Koks jūsų vardas",
-                options: [
-                  { id: "a", text: "Viso gero!", isCorrect: false },
-                  { id: "b", text: introWithName, isCorrect: true },
-                  { id: "c", text: "Ne, ačiū", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Aš esu Rokas. Kaip sekasi?",
-                audioText: "Aš esu Rokas. Kaip sekasi",
-                options: [
-                  { id: "a", text: "Labas rytas", isCorrect: false },
-                  { id: "b", text: "Atsiprašau", isCorrect: false },
-                  { id: "c", text: "Gerai, ačiū!", isCorrect: true },
-                ],
-              },
-            ],
-          },
+  id: "s1m2l1_b7_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
+  sceneIntro: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
+  focus: ["greetings","numbers"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rasa",
+      "role": "local speaker",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Laba diena! Koks jūsų vardas?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: introWithName,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Ne, ačiū",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Aš esu Rokas. Kaip sekasi?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Labas rytas",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Gerai, ačiū!",
+          result: "best",
+          progresses: true,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -232,35 +287,90 @@ export default function createModule_1_2(profile = {}) {
             audioText: selfFromLineNoPeriod,
           },
           {
-            id: "s1m2l2_b7",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You meet someone at a local community event in Vilnius.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Iš kur jūs esate?",
-                audioText: "Laba diena. Iš kur jūs esate",
-                options: [
-                  { id: "a", text: selfFromLine, isCorrect: true },
-                  { id: "b", text: plainNameLine, isCorrect: false },
-                  { id: "c", text: "Ne, ačiū.", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Viso gero!",
-                audioText: "Viso gero",
-                options: [
-                  { id: "a", text: "Iki!", isCorrect: true },
-                  { id: "b", text: "Gerai, ačiū!", isCorrect: false },
-                  { id: "c", text: "Atsiprašau", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s1m2l2_b7_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You meet someone at a local community event in Vilnius.",
+  sceneIntro: "You meet someone at a local community event in Vilnius.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You meet someone at a local community event in Vilnius.",
+  focus: ["conversation practice"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rasa",
+      "role": "local speaker",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Laba diena! Iš kur jūs esate?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: selfFromLine,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: plainNameLine,
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Ne, ačiū.",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Viso gero!",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Iki!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Gerai, ačiū!",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -347,35 +457,90 @@ export default function createModule_1_2(profile = {}) {
             audioText: "Malonu susipažinti",
           },
           {
-            id: "s1m2l3_b7",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "A colleague introduces you to Ona. Say hello, give your name, and respond to her greeting.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Aš esu Ona.",
-                audioText: "Laba diena. Aš esu Ona",
-                options: [
-                  { id: "a", text: "Iki!", isCorrect: false },
-                  { id: "b", text: introWithName, isCorrect: true },
-                  { id: "c", text: "Ne, ačiū", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: `Malonu susipažinti, ${userNameSafe}!`,
-                audioText: "Malonu susipažinti",
-                options: [
-                  { id: "a", text: "Viso gero!", isCorrect: false },
-                  { id: "b", text: "Man irgi!", isCorrect: true },
-                  { id: "c", text: "Atsiprašau", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s1m2l3_b7_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "A colleague introduces you to Ona. Say hello, give your name, and respond to her greeting.",
+  sceneIntro: "A colleague introduces you to Ona. Say hello, give your name, and respond to her greeting.",
+  location: "work conversation",
+  userRole: "colleague",
+  register: "polite_friendly",
+  goal: "A colleague introduces you to Ona. Say hello, give your name, and respond to her greeting.",
+  focus: ["greetings"],
+  participants: [
+    {
+      "id": "colleague",
+      "label": "Colleague",
+      "name": "Rokas",
+      "role": "colleague",
+      "gender": "male",
+      "relationshipToUser": "colleague",
+      "register": "polite_friendly"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "colleague",
+      speakerLabel: "Colleague",
+      speakerText: "Laba diena! Aš esu Ona.",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Iki!",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: introWithName,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Ne, ačiū",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "colleague",
+      speakerLabel: "Colleague",
+      speakerText: `Malonu susipažinti, ${userNameSafe}!`,
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Man irgi!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -485,35 +650,90 @@ export default function createModule_1_2(profile = {}) {
             audioText: "Ji yra mano draugė",
           },
           {
-            id: "s1m2l4_b8",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Labas! Kaip sekasi?",
-                audioText: "Labas. Kaip sekasi",
-                options: [
-                  { id: "a", text: "Gerai, ačiū! Čia Barbora. Ji yra mano draugė.", isCorrect: true },
-                  { id: "b", text: "Ne, ačiū", isCorrect: false },
-                  { id: "c", text: "Prašau dar kartą", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Malonu susipažinti! Iš kur ji yra?",
-                audioText: "Malonu susipažinti. Iš kur ji yra",
-                options: [
-                  { id: "a", text: "Atsiprašau", isCorrect: false },
-                  { id: "b", text: "Ji yra iš Škotijos.", isCorrect: true },
-                  { id: "c", text: "Viso gero", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s1m2l4_b8_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
+  sceneIntro: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
+  location: "casual conversation",
+  userRole: "friend",
+  register: "casual",
+  goal: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
+  focus: ["numbers"],
+  participants: [
+    {
+      "id": "friend",
+      "label": "Friend",
+      "name": "Mantas",
+      "role": "friend",
+      "gender": "male",
+      "relationshipToUser": "friend",
+      "register": "casual"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Labas! Kaip sekasi?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Gerai, ačiū! Čia Barbora. Ji yra mano draugė.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Ne, ačiū",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Prašau dar kartą",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Malonu susipažinti! Iš kur ji yra?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ji yra iš Škotijos.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Viso gero",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -619,46 +839,120 @@ export default function createModule_1_2(profile = {}) {
             feedback: { correct: "Man irgi — me too. The natural reply to Malonu susipažinti." },
           },
           {
-            id: "s1m2c_b9",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Aš esu Rokas. Koks jūsų vardas?",
-                audioText: "Laba diena. Aš esu Rokas. Koks jūsų vardas",
-                options: [
-                  { id: "a", text: "Ne, ačiū", isCorrect: false },
-                  { id: "b", text: introWithName, isCorrect: true },
-                  { id: "c", text: "Prašau dar kartą", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Iš kur jūs esate?",
-                audioText: "Iš kur jūs esate",
-                options: [
-                  { id: "a", text: selfFromLine, isCorrect: true },
-                  { id: "b", text: "Atsiprašau", isCorrect: false },
-                  { id: "c", text: "Gerai, ačiū", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Viso gero!",
-                audioText: "Viso gero",
-                options: [
-                  { id: "a", text: "Man irgi!", isCorrect: false },
-                  { id: "b", text: "Iki!", isCorrect: true },
-                  { id: "c", text: "Atsiprašau", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s1m2c_b9_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
+  sceneIntro: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
+  focus: ["greetings"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rasa",
+      "role": "local speaker",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Laba diena! Aš esu Rokas. Koks jūsų vardas?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Ne, ačiū",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: introWithName,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Prašau dar kartą",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Iš kur jūs esate?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: selfFromLine,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Gerai, ačiū",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Viso gero!",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Man irgi!",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Iki!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
           {
             id: "s1m2c_b10",
             type: "word_match",

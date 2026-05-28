@@ -357,49 +357,132 @@ export default function createModule_3_1(profile = {}) {
             feedback: { correct: "Two of you — dviejų bilietų. It's the same pattern as trijų bilietų." },
           },
           {
-            id: "s3m1l4_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're at a café counter. The server asks how many coffees.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Kiek kavų?",
-                audioText: "Laba diena! Kiek kavų?",
-                helperText: "How many coffees?",
-                options: [
-                  { id: "a", text: "Viso gero", isCorrect: false },
-                  { id: "b", text: "Dvi kavas, prašau", isCorrect: true },
-                  { id: "c", text: "Šimtas kavų", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Tai kainuoja šešis eurus.",
-                audioText: "Tai kainuoja šešis eurus",
-                helperText: "It costs six euros.",
-                options: [
-                  { id: "a", text: "Aš nesuprantu", isCorrect: false },
-                  { id: "b", text: "Labas rytas", isCorrect: false },
-                  { id: "c", text: "Gerai, ačiū", isCorrect: true },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Prašom!",
-                audioText: "Prašom",
-                helperText: "Here you go!",
-                options: [
-                  { id: "a", text: "Viso gero", isCorrect: false },
-                  { id: "b", text: "Ačiū labai!", isCorrect: true },
-                  { id: "c", text: "Atsiprašau", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m1l4_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a café counter. The server asks how many coffees.",
+  sceneIntro: "You're at a café counter. The server asks how many coffees.",
+  location: "caf?",
+  userRole: "customer",
+  register: "polite_service",
+  goal: "You're at a café counter. The server asks how many coffees.",
+  focus: ["ordering","numbers"],
+  participants: [
+    {
+      "id": "barista",
+      "label": "Barista",
+      "name": "Ieva",
+      "role": "barista",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "coffee",
+      "lt": "kava",
+      "en": "coffee",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Laba diena! Kiek kavų?",
+      supportText: "How many coffees?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Dvi kavas, prašau",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Šimtas kavų",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Tai kainuoja šešis eurus.",
+      supportText: "It costs six euros.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Aš nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Labas rytas",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Gerai, ačiū",
+          result: "best",
+          progresses: true,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Prašom!",
+      supportText: "Here you go!",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū labai!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -474,49 +557,139 @@ export default function createModule_3_1(profile = {}) {
             answerText: "Man reikia trijų bilietų",
           },
           {
-            id: "s3m1c_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're at a train station ticket window. A quick number exchange.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Kiek bilietų?",
-                audioText: "Laba diena! Kiek bilietų?",
-                helperText: "How many tickets?",
-                options: [
-                  { id: "a", text: "Viso gero", isCorrect: false },
-                  { id: "b", text: "Du bilietai, prašau", isCorrect: true },
-                  { id: "c", text: "Šimtas", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Dvidešimt eurų.",
-                audioText: "Dvidešimt eurų",
-                helperText: "Twenty euros.",
-                options: [
-                  { id: "a", text: "Atsiprašau, nesuprantu", isCorrect: false },
-                  { id: "b", text: "Dvidešimt? Gerai.", isCorrect: true },
-                  { id: "c", text: "Iki", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Prašom, du bilietai.",
-                audioText: "Prašom, du bilietai",
-                helperText: "Here you go, two tickets.",
-                options: [
-                  { id: "a", text: "Atsiprašau", isCorrect: false },
-                  { id: "b", text: "Ačiū labai!", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m1c_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a train station ticket window. A quick number exchange.",
+  sceneIntro: "You're at a train station ticket window. A quick number exchange.",
+  location: "service desk",
+  userRole: "traveller",
+  register: "polite_service",
+  goal: "You're at a train station ticket window. A quick number exchange.",
+  focus: ["directions","numbers"],
+  participants: [
+    {
+      "id": "assistant",
+      "label": "Assistant",
+      "name": "Rasa",
+      "role": "assistant",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "ticket",
+      "lt": "bilietas",
+      "en": "ticket",
+      "gender": "masculine",
+      "number": "singular"
+    },
+    {
+      "id": "station",
+      "lt": "stotis",
+      "en": "station",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Laba diena! Kiek bilietų?",
+      supportText: "How many tickets?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Du bilietai, prašau",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Šimtas",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Dvidešimt eurų.",
+      supportText: "Twenty euros.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau, nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Dvidešimt? Gerai.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Iki",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Prašom, du bilietai.",
+      supportText: "Here you go, two tickets.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū labai!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
           {
             id: "s3m1c_b7",
             type: "word_match",

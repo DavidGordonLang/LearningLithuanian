@@ -99,37 +99,94 @@ export default function createModule_3_4(profile = {}) {
             answerText: "Man dvidešimt metų",
           },
           {
-            id: "s3m4l1_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're chatting with someone at an event. They ask your age.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: `Labas, ${userNameSafe}! Kiek jums metų?`,
-                audioText: "Labas! Kiek jums metų?",
-                helperText: "How old are you?",
-                options: [
-                  { id: "a", text: "Man reikia pagalbos", isCorrect: false },
-                  { id: "b", text: `${userAgePhraseLt}. O jums?`, en: `${userAgePhraseEn}. And you?`, isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Man dvidešimt aštuoni metai.",
-                audioText: "Man dvidešimt aštuoni metai",
-                helperText: "I am twenty-eight.",
-                options: [
-                  { id: "a", text: "Brangu", isCorrect: false },
-                  { id: "b", text: "Malonu susipažinti!", en: "Nice to meet you!", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m4l1_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're chatting with someone at an event. They ask your age.",
+  sceneIntro: "You're chatting with someone at an event. They ask your age.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You're chatting with someone at an event. They ask your age.",
+  focus: ["numbers"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rasa",
+      "role": "local speaker",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: `Labas, ${userNameSafe}! Kiek jums metų?`,
+      supportText: "How old are you?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Man reikia pagalbos",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: `${userAgePhraseLt}. O jums?`,
+          textEn: `${userAgePhraseEn}. And you?`,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Man dvidešimt aštuoni metai.",
+      supportText: "I am twenty-eight.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Brangu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Malonu susipažinti!",
+          textEn: "Nice to meet you!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -212,49 +269,132 @@ export default function createModule_3_4(profile = {}) {
             answerText: "Du bilietai, prašau",
           },
           {
-            id: "s3m4l2_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're at a ticket counter. The assistant asks how many you need.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Kiek bilietų?",
-                audioText: "Laba diena! Kiek bilietų?",
-                helperText: "How many tickets?",
-                options: [
-                  { id: "a", text: "Kiek tai kainuoja?", isCorrect: false },
-                  { id: "b", text: "Du bilietai, prašau.", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Du bilietai — dvidešimt eurų.",
-                audioText: "Du bilietai — dvidešimt eurų",
-                helperText: "Two tickets — twenty euros.",
-                options: [
-                  { id: "a", text: "Per brangu", isCorrect: false },
-                  { id: "b", text: "Ar galima mokėti kortele?", isCorrect: true },
-                  { id: "c", text: "Ačiū, viso gero", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Taip, galima. Prašom.",
-                audioText: "Taip, galima. Prašom",
-                helperText: "Yes, you can. Here you go.",
-                options: [
-                  { id: "a", text: "Atsiprašau", isCorrect: false },
-                  { id: "b", text: "Ačiū labai!", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m4l2_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a ticket counter. The assistant asks how many you need.",
+  sceneIntro: "You're at a ticket counter. The assistant asks how many you need.",
+  location: "service desk",
+  userRole: "traveller",
+  register: "polite_service",
+  goal: "You're at a ticket counter. The assistant asks how many you need.",
+  focus: ["numbers"],
+  participants: [
+    {
+      "id": "assistant",
+      "label": "Assistant",
+      "name": "Rasa",
+      "role": "assistant",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "ticket",
+      "lt": "bilietas",
+      "en": "ticket",
+      "gender": "masculine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Laba diena! Kiek bilietų?",
+      supportText: "How many tickets?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Kiek tai kainuoja?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Du bilietai, prašau.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Du bilietai — dvidešimt eurų.",
+      supportText: "Two tickets — twenty euros.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Per brangu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ar galima mokėti kortele?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Ačiū, viso gero",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Taip, galima. Prašom.",
+      supportText: "Yes, you can. Here you go.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū labai!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -334,37 +474,101 @@ export default function createModule_3_4(profile = {}) {
             audioText: "Dar vieną, prašau",
           },
           {
-            id: "s3m4l3_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're having coffee with a friend. The server comes to check in.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Ar dar kavos?",
-                audioText: "Ar dar kavos",
-                helperText: "More coffee?",
-                options: [
-                  { id: "a", text: "Mažiau, prašau", isCorrect: false },
-                  { id: "b", text: "Taip, dar vieną, prašau!", isCorrect: true },
-                  { id: "c", text: "Kiek valandų?", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Žinoma! Ir vandens?",
-                audioText: "Žinoma! Ir vandens?",
-                helperText: "Of course! And water?",
-                options: [
-                  { id: "a", text: "Per brangu", isCorrect: false },
-                  { id: "b", text: "Taip, daugiau vandens, prašau.", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m4l3_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're having coffee with a friend. The server comes to check in.",
+  sceneIntro: "You're having coffee with a friend. The server comes to check in.",
+  location: "caf?",
+  userRole: "customer",
+  register: "polite_service",
+  goal: "You're having coffee with a friend. The server comes to check in.",
+  focus: ["ordering"],
+  participants: [
+    {
+      "id": "barista",
+      "label": "Barista",
+      "name": "Ieva",
+      "role": "barista",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "coffee",
+      "lt": "kava",
+      "en": "coffee",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Ar dar kavos?",
+      supportText: "More coffee?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Mažiau, prašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Taip, dar vieną, prašau!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Kiek valandų?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Žinoma! Ir vandens?",
+      supportText: "Of course! And water?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Per brangu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Taip, daugiau vandens, prašau.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -450,49 +654,139 @@ export default function createModule_3_4(profile = {}) {
             feedback: { correct: "Taip, užtenka. Ačiū! — yes, that's enough. Thank you! Clean and natural." },
           },
           {
-            id: "s3m4l4_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You're at a market and realise you may not have enough cash.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Tai kainuoja penkiasdešimt eurų.",
-                audioText: "Tai kainuoja penkiasdešimt eurų",
-                helperText: "It costs fifty euros.",
-                options: [
-                  { id: "a", text: "Imu!", isCorrect: false },
-                  { id: "b", text: "Atsiprašau — nepakanka pinigų. Ar galima mokėti kortele?", isCorrect: true },
-                  { id: "c", text: "Tinka", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Taip, galima kortele.",
-                audioText: "Taip, galima kortele",
-                helperText: "Yes, card is fine.",
-                options: [
-                  { id: "a", text: "Nesuprantu", isCorrect: false },
-                  { id: "b", text: "Gerai! Imu.", isCorrect: true },
-                  { id: "c", text: "Per brangu", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Ar užtenka?",
-                audioText: "Ar užtenka",
-                helperText: "Is that enough / is that all?",
-                options: [
-                  { id: "a", text: "Nepakanka laiko", isCorrect: false },
-                  { id: "b", text: "Taip, užtenka. Ačiū!", isCorrect: true },
-                  { id: "c", text: "Daugiau, prašau", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m4l4_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a market and realise you may not have enough cash.",
+  sceneIntro: "You're at a market and realise you may not have enough cash.",
+  location: "shop counter",
+  userRole: "customer",
+  register: "polite_service",
+  goal: "You're at a market and realise you may not have enough cash.",
+  focus: ["payment"],
+  participants: [
+    {
+      "id": "seller",
+      "label": "Seller",
+      "name": "Tomas",
+      "role": "seller",
+      "gender": "male",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "card",
+      "lt": "kortel?",
+      "en": "card",
+      "gender": "feminine",
+      "number": "singular"
+    },
+    {
+      "id": "cash",
+      "lt": "grynieji",
+      "en": "cash",
+      "gender": "masculine",
+      "number": "plural"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "seller",
+      speakerLabel: "Seller",
+      speakerText: "Tai kainuoja penkiasdešimt eurų.",
+      supportText: "It costs fifty euros.",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Imu!",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Atsiprašau — nepakanka pinigų. Ar galima mokėti kortele?",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Tinka",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "seller",
+      speakerLabel: "Seller",
+      speakerText: "Taip, galima kortele.",
+      supportText: "Yes, card is fine.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Gerai! Imu.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Per brangu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "seller",
+      speakerLabel: "Seller",
+      speakerText: "Ar užtenka?",
+      supportText: "Is that enough / is that all?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Nepakanka laiko",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Taip, užtenka. Ačiū!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Daugiau, prašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -575,61 +869,154 @@ export default function createModule_3_4(profile = {}) {
             feedback: { correct: "Mes esame du — we are two. That's the natural answer to 'how many of you?'" },
           },
           {
-            id: "s3m4l5_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You and a friend arrive at a café. The host seats you and takes your order.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Kiek jūsų?",
-                audioText: "Laba diena! Kiek jūsų?",
-                helperText: "How many of you are there?",
-                options: [
-                  { id: "a", text: "Du bilietai", isCorrect: false },
-                  { id: "b", text: "Mes esame du", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Prašom. Ką norėtumėte?",
-                audioText: "Prašom. Ką norėtumėte?",
-                helperText: "Please, come this way. What would you like?",
-                options: [
-                  { id: "a", text: "Kiek tai kainuoja?", isCorrect: false },
-                  { id: "b", text: "Viena kava ir dvi arbatos, prašau.", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Žinoma. Ar dar?",
-                audioText: "Žinoma. Ar dar?",
-                helperText: "Of course. Anything else?",
-                options: [
-                  { id: "a", text: "Daugiau kavų", isCorrect: false },
-                  { id: "b", text: "Ne, ačiū. Užtenka.", isCorrect: true },
-                  { id: "c", text: "Nepakanka laiko", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_4",
-                actor: "other",
-                text: "Prašom!",
-                audioText: "Prašom",
-                helperText: "Here you go!",
-                options: [
-                  { id: "a", text: "Atsiprašau", isCorrect: false },
-                  { id: "b", text: "Ačiū labai!", isCorrect: true },
-                  { id: "c", text: "Dar vieną", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m4l5_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You and a friend arrive at a café. The host seats you and takes your order.",
+  sceneIntro: "You and a friend arrive at a café. The host seats you and takes your order.",
+  location: "casual conversation",
+  userRole: "friend",
+  register: "casual",
+  goal: "You and a friend arrive at a café. The host seats you and takes your order.",
+  focus: ["ordering"],
+  participants: [
+    {
+      "id": "friend",
+      "label": "Friend",
+      "name": "Mantas",
+      "role": "friend",
+      "gender": "male",
+      "relationshipToUser": "friend",
+      "register": "casual"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Laba diena! Kiek jūsų?",
+      supportText: "How many of you are there?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Du bilietai",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Mes esame du",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Prašom. Ką norėtumėte?",
+      supportText: "Please, come this way. What would you like?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Kiek tai kainuoja?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Viena kava ir dvi arbatos, prašau.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Žinoma. Ar dar?",
+      supportText: "Of course. Anything else?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Daugiau kavų",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ne, ačiū. Užtenka.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nepakanka laiko",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_4",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Prašom!",
+      supportText: "Here you go!",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ačiū labai!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Dar vieną",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
         ],
       },
 
@@ -704,61 +1091,154 @@ export default function createModule_3_4(profile = {}) {
             answerText: "Nepakanka pinigų",
           },
           {
-            id: "s3m4c_b6",
-            type: "scenario_chain",
-            title: "Conversation",
-            description: "You and two friends arrive at a restaurant to book a table.",
-            steps: [
-              {
-                id: "step_1",
-                actor: "other",
-                text: "Laba diena! Kiek jūsų?",
-                audioText: "Laba diena! Kiek jūsų?",
-                helperText: "How many of you are there?",
-                options: [
-                  { id: "a", text: "Viena kava", isCorrect: false },
-                  { id: "b", text: "Mes esame trys", isCorrect: true },
-                  { id: "c", text: "Nepakanka laiko", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_2",
-                actor: "other",
-                text: "Gerai. Ką norėtumėte gerti?",
-                audioText: "Gerai. Ką norėtumėte gerti?",
-                helperText: "What would you like to drink?",
-                options: [
-                  { id: "a", text: "Kiek tai kainuoja?", isCorrect: false },
-                  { id: "b", text: "Dvi kavas ir vieną vandenį, prašau.", isCorrect: true },
-                  { id: "c", text: "Nesuprantu", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_3",
-                actor: "other",
-                text: "Prašom. Ar dar?",
-                audioText: "Prašom. Ar dar?",
-                helperText: "Here you go. Anything else?",
-                options: [
-                  { id: "a", text: "Daugiau vandens, prašau.", isCorrect: true },
-                  { id: "b", text: "Nepakanka laiko", isCorrect: false },
-                  { id: "c", text: "Brangu", isCorrect: false },
-                ],
-              },
-              {
-                id: "step_4",
-                actor: "other",
-                text: "Žinoma. Dar kas nors?",
-                audioText: "Žinoma. Dar kas nors?",
-                helperText: "Of course. Anything else?",
-                options: [
-                  { id: "a", text: "Dar vieną, prašau", isCorrect: false },
-                  { id: "b", text: "Ne, ačiū. Užtenka.", isCorrect: true },
-                  { id: "c", text: "Kiek bilietų?", isCorrect: false },
-                ],
-              },
-            ],
-          },
+  id: "s3m4c_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You and two friends arrive at a restaurant to book a table.",
+  sceneIntro: "You and two friends arrive at a restaurant to book a table.",
+  location: "casual conversation",
+  userRole: "friend",
+  register: "casual",
+  goal: "You and two friends arrive at a restaurant to book a table.",
+  focus: ["conversation practice"],
+  participants: [
+    {
+      "id": "friend",
+      "label": "Friend",
+      "name": "Mantas",
+      "role": "friend",
+      "gender": "male",
+      "relationshipToUser": "friend",
+      "register": "casual"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Laba diena! Kiek jūsų?",
+      supportText: "How many of you are there?",
+      sceneDirection: "The exchange begins.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Viena kava",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Mes esame trys",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nepakanka laiko",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Gerai. Ką norėtumėte gerti?",
+      supportText: "What would you like to drink?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Kiek tai kainuoja?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Dvi kavas ir vieną vandenį, prašau.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Nesuprantu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Prašom. Ar dar?",
+      supportText: "Here you go. Anything else?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      options: [
+        {
+          id: "a",
+          text: "Daugiau vandens, prašau.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Nepakanka laiko",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Brangu",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_4",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Žinoma. Dar kas nors?",
+      supportText: "Of course. Anything else?",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Dar vieną, prašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ne, ačiū. Užtenka.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Kiek bilietų?",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
           {
             id: "s3m4c_b7",
             type: "word_match",
