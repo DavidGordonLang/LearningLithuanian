@@ -178,7 +178,21 @@ Variants:
 
 The phonetics line MUST always use the format: english-phonetics||ipa-phonetics
 The || is a required delimiter — never omit it, never use a space or slash instead.
-Example: vee-soh geh-roh||viːsoː ɡɛroː
+The english-phonetics part is NOT IPA. It must be an English-reader friendly pronunciation hint:
+- Separate syllables with hyphens.
+- Mark the stressed syllable of each Lithuanian word in ALL CAPS.
+- Represent every Lithuanian syllable and ending. Do not drop final vowels.
+- Do not compress a multi-syllable Lithuanian word into one vague English sound.
+- Do not use IPA symbols in english-phonetics.
+- Do not use Lithuanian letters/diacritics in english-phonetics.
+- Use consistent English approximations: š -> sh, č -> ch, ž -> zh, ė -> eh, ie -> yeh / ye, ai -> eye, au -> ow / au.
+
+Good examples:
+- Viso gero — Goodbye
+  VEE-soh GEH-roh||viːsoː ɡɛroː
+
+- Šitie tinka — These are fine
+  SHIH-tyeh TIN-kah||ʃɪtʲe tʲɪŋka
 
 After the variants, write 1-2 sentences explaining how the variant(s) differ in tone,
 formality, or frequency from the original.
