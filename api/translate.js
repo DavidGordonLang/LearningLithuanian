@@ -123,14 +123,30 @@ For LITHUANIAN input:
 PHONETICS (ENGLISH-READER FRIENDLY)
 ────────────────────────────────
 phonetics:
-- English-reader friendly, hyphenated syllables.
-- No IPA.
+- English-reader friendly pronunciation hints only. This is NOT IPA.
+- Separate syllables with hyphens.
+- Mark the stressed syllable of each Lithuanian word in ALL CAPS.
+- Represent every Lithuanian syllable and ending. Do not drop final vowels.
+- Do not compress a multi-syllable Lithuanian word into one vague English sound.
+- No IPA symbols.
 - No Lithuanian letters/diacritics in phonetics.
-- Must remain faithful to Lithuanian sounds and endings (don't drop endings).
+- Use consistent English approximations for Lithuanian sounds:
+  - š -> sh
+  - č -> ch
+  - ž -> zh
+  - ė -> eh
+  - ie -> yeh / ye where appropriate
+  - ai -> eye
+  - au -> ow / au according to the nearest English-friendly sound
+- Keep multi-word phrases readable by spacing words normally and hyphenating syllables inside each word.
 
 Examples:
-- Labas → lah-bahs
-- Laba diena → lah-bah dyeh-nah
+- Labas -> LAH-bahs
+- Prašau -> prah-SHAU
+- Malonu -> mah-LOH-noo
+- Laba diena -> LAH-bah DYEH-nah
+- Šitie -> SHIH-tyeh
+- Šitie tinka -> SHIH-tyeh TIN-kah
 
 ────────────────────────────────
 PHONETICS_IPA (STANDARD IPA)
