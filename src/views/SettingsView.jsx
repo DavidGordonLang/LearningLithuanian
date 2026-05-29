@@ -8,6 +8,7 @@ import {
   mergeUserPhrases,
 } from "../stores/supabasePhrases";
 import ConflictReviewModal from "../components/ConflictReviewModal";
+import ModalShell from "../components/ModalShell";
 import applyMergeResolutions from "../utils/applyMergeResolutions";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useGameStore } from "../stores/gameStore";
@@ -58,6 +59,69 @@ function CollapsibleSection({ id, title, subtitle, open, setOpen, children, acce
       </button>
       {isOpen ? <div id={id} className={cn("z-card", "p-4 sm:p-5", "space-y-4")}>{children}</div> : null}
     </section>
+  );
+}
+
+function IpaGuideModal({ open, onClose }) {
+  return (
+    <ModalShell
+      open={open}
+      title="How to read IPA"
+      subtitle="A precise pronunciation guide for Lithuanian sounds."
+      onClose={onClose}
+      closeOnBackdrop
+      closeOnEscape
+      maxWidth="max-w-lg"
+      zIndex="z-[210]"
+      headerAction={
+        <button
+          type="button"
+          data-press
+          className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm font-semibold"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      }
+    >
+      <div className="p-5 space-y-4 max-h-[72vh] overflow-y-auto">
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          IPA is a precise pronunciation guide. Each symbol represents a sound, so it is more consistent than English spelling. If you prefer an easier approximation, use the English guide instead.
+        </p>
+
+        <div className="z-inset p-4 space-y-2">
+          <div className="text-sm font-semibold text-zinc-100">What the marks mean</div>
+          <div className="space-y-1 text-sm text-zinc-300">
+            <div><span className="font-semibold text-zinc-100">ˈ</span> appears before the stressed part of a word.</div>
+            <div><span className="font-semibold text-zinc-100">ː</span> means the sound is held longer.</div>
+            <div><span className="font-semibold text-zinc-100">ʲ</span> means the consonant is softened or palatalized.</div>
+          </div>
+        </div>
+
+        <div className="z-inset p-4 space-y-2">
+          <div className="text-sm font-semibold text-zinc-100">Common Lithuanian sounds</div>
+          <div className="grid gap-2 text-sm text-zinc-300">
+            <div><span className="font-semibold text-zinc-100">ʃ</span> sounds like "sh" in "ship".</div>
+            <div><span className="font-semibold text-zinc-100">ʒ</span> sounds like "zh" in "measure".</div>
+            <div><span className="font-semibold text-zinc-100">tʃ</span> sounds like "ch" in "church".</div>
+            <div><span className="font-semibold text-zinc-100">j</span> sounds like "y" in "yes".</div>
+            <div><span className="font-semibold text-zinc-100">r</span> is a tapped or rolled Lithuanian r.</div>
+          </div>
+        </div>
+
+        <div className="z-inset p-4 space-y-2">
+          <div className="text-sm font-semibold text-zinc-100">Which mode should I use?</div>
+          <div className="space-y-1 text-sm text-zinc-300">
+            <div><span className="font-semibold text-zinc-100">English guide:</span> easier at first, approximate.</div>
+            <div><span className="font-semibold text-zinc-100">IPA:</span> more precise and consistent, but takes a little learning.</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] p-4 text-sm text-zinc-200 leading-relaxed">
+          IPA is a guide, not a replacement for listening. Use the audio buttons whenever you can.
+        </div>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -130,6 +194,7 @@ export default function SettingsView({
   const [openData, setOpenData] = useState(false);
   const [openAbout, setOpenAbout] = useState(false);
   const [openDiagnostics, setOpenDiagnostics] = useState(false);
+  const [showIpaGuide, setShowIpaGuide] = useState(false);
 
   const [backfillRunning, setBackfillRunning] = useState(false);
   const [backfillStats, setBackfillStats] = useState(null);
@@ -793,6 +858,11 @@ export default function SettingsView({
                 <button type="button" data-press
                   className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (phoneticsMode === "ipa" ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
                   onClick={() => setPhoneticsMode?.(user?.id, "ipa")}>IPA</button>
+                <button type="button" data-press
+                  className="z-btn z-btn-secondary h-10 w-10 rounded-full p-0 text-sm font-semibold"
+                  onClick={() => setShowIpaGuide(true)}
+                  aria-label="Open IPA guide"
+                  title="Open IPA guide">?</button>
               </div>
             </div>
           </div>
@@ -997,6 +1067,11 @@ export default function SettingsView({
           </div>
         </div>
       </CollapsibleSection>
+
+      <IpaGuideModal
+        open={showIpaGuide}
+        onClose={() => setShowIpaGuide(false)}
+      />
     </div>
   );
 }
