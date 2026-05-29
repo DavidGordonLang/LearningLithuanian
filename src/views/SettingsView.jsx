@@ -82,7 +82,7 @@ export default function SettingsView({
   showToast,
   confirmAction,
 }) {
-  const { user, loading, signInWithGoogle, signOut } = useAuthStore();
+  const { user, session, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
 
   const [syncingUp, setSyncingUp] = useState(false);
@@ -133,6 +133,8 @@ export default function SettingsView({
 
   const [backfillRunning, setBackfillRunning] = useState(false);
   const [backfillStats, setBackfillStats] = useState(null);
+  const [phoneticBackfillRunning, setPhoneticBackfillRunning] = useState(false);
+  const [phoneticBackfillStats, setPhoneticBackfillStats] = useState(null);
 
   const isAdmin = !!user?.email && ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(String(user.email).toLowerCase());
 
@@ -396,6 +398,63 @@ export default function SettingsView({
         updatedAt: Date.now(),
       });
     } catch (e) { showToast?.("Backfill failed: " + (e?.message || "Unknown error")); } finally { setBackfillRunning(false); }
+  }
+
+  async function runBackfillPhonetics({ dryRun = false } = {}) {
+    if (!user) return showToast?.("Sign in first.");
+    if (!isAdmin) return showToast?.("Admin only.");
+    const token = session?.access_token;
+    if (!token) return showToast?.("Sign in again to run admin backfill.");
+
+    if (!dryRun && typeof confirmAction === "function") {
+      const ok = await confirmAction({
+        title: "Backfill English phonetics?",
+        body: "This refreshes only bad or missing English-style Phonetic values in cloud library rows. IPA and other fields stay unchanged.",
+        confirmLabel: "Backfill phonetics",
+        cancelLabel: "Cancel",
+        destructive: false,
+      });
+      if (!ok) return;
+    }
+
+    try {
+      setPhoneticBackfillRunning(true);
+      const res = await fetch("/api/backfill-phonetics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          dryRun,
+          limit: 25,
+          target: "bad_or_missing",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast?.("English phonetics backfill failed: " + (String(data?.error || data?.message || "") || `HTTP ${res.status} ${res.statusText}`));
+        return;
+      }
+      setPhoneticBackfillStats({
+        dryRun: !!data?.dryRun,
+        checked: typeof data?.checked === "number" ? data.checked : 0,
+        eligible: typeof data?.eligible === "number" ? data.eligible : 0,
+        processed: typeof data?.processed === "number" ? data.processed : 0,
+        updated: typeof data?.updated === "number" ? data.updated : 0,
+        wouldUpdate: typeof data?.wouldUpdate === "number" ? data.wouldUpdate : 0,
+        skipped: typeof data?.skipped === "number" ? data.skipped : 0,
+        errors: typeof data?.errors === "number" ? data.errors : 0,
+        message: String(data?.message || "").trim(),
+        sampleChangedRows: Array.isArray(data?.sampleChangedRows) ? data.sampleChangedRows : [],
+        updatedAt: Date.now(),
+      });
+      showToast?.(dryRun ? `Preview found ${data?.wouldUpdate ?? 0} phonetic update${data?.wouldUpdate === 1 ? "" : "s"}.` : `Updated ${data?.updated ?? 0} phonetic value${data?.updated === 1 ? "" : "s"}.`);
+    } catch (e) {
+      showToast?.("English phonetics backfill failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setPhoneticBackfillRunning(false);
+    }
   }
 
   async function handleClearLibrary() {
@@ -835,6 +894,61 @@ export default function SettingsView({
                   </div>
                 </div>
               ) : null}
+              <div className="border-t border-white/10 pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <div className="text-sm font-semibold text-zinc-200">English phonetics backfill</div>
+                    <div className="text-xs text-zinc-500 mt-0.5">Refreshes bad or missing Phonetic values only.</div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" data-press disabled={phoneticBackfillRunning}
+                      className={"z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm font-semibold " + (phoneticBackfillRunning ? "z-disabled" : "")}
+                      onClick={() => runBackfillPhonetics({ dryRun: true })}>
+                      Preview
+                    </button>
+                    <button type="button" data-press disabled={phoneticBackfillRunning}
+                      className={"z-btn px-4 py-2 rounded-2xl text-sm bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold " + (phoneticBackfillRunning ? "z-disabled" : "")}
+                      onClick={() => runBackfillPhonetics({ dryRun: false })}>
+                      {phoneticBackfillRunning ? "Running…" : "Backfill English phonetics"}
+                    </button>
+                  </div>
+                </div>
+                {phoneticBackfillStats ? (
+                  <div className="space-y-3">
+                    <div className="text-sm text-zinc-300">
+                      {phoneticBackfillStats.message || "English phonetics backfill complete."}
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-4 text-xs">
+                      {[
+                        [phoneticBackfillStats.dryRun ? "Would update" : "Updated", phoneticBackfillStats.dryRun ? phoneticBackfillStats.wouldUpdate : phoneticBackfillStats.updated],
+                        ["Eligible", phoneticBackfillStats.eligible],
+                        ["Checked", phoneticBackfillStats.checked],
+                        ["Errors", phoneticBackfillStats.errors],
+                      ].map(([label, val]) => (
+                        <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                          <div className="text-zinc-500">{label}</div>
+                          <div className="text-zinc-100 font-semibold">{val ?? "—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {phoneticBackfillStats.sampleChangedRows?.length ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-zinc-400 space-y-2">
+                        {phoneticBackfillStats.sampleChangedRows.slice(0, 3).map((row) => (
+                          <div key={row.phraseId || row.Lithuanian} className="space-y-0.5">
+                            <div className="font-semibold text-zinc-200">{row.Lithuanian}</div>
+                            <div>Before: {row.before || "—"}</div>
+                            <div>After: {row.after || "—"}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="text-xs text-zinc-400">
+                      Last batch: processed {phoneticBackfillStats.processed ?? 0}, skipped {phoneticBackfillStats.skipped ?? 0}
+                      {phoneticBackfillStats.updatedAt ? ` • ${formatWhen(phoneticBackfillStats.updatedAt)}` : ""}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
