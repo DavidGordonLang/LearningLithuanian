@@ -63,14 +63,32 @@ function CollapsibleSection({ id, title, subtitle, open, setOpen, children, acce
   );
 }
 
+function IpaGuideSection({ title, children }) {
+  return (
+    <section className="z-inset p-4 space-y-3">
+      <div className="text-sm font-semibold text-zinc-100">{title}</div>
+      {children}
+    </section>
+  );
+}
+
+function IpaGuideRow({ symbol, children }) {
+  return (
+    <div className="grid grid-cols-[72px_1fr] gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm">
+      <div className="font-semibold text-zinc-100 break-words">{symbol}</div>
+      <div className="text-zinc-300 leading-snug">{children}</div>
+    </div>
+  );
+}
+
 function IpaGuideModal({ open, onClose }) {
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
     <ModalShell
       open={open}
-      title="How to read IPA"
-      subtitle="A precise pronunciation guide for Lithuanian sounds."
+      title="How to read Lithuanian IPA"
+      subtitle="A beginner-friendly reference for the symbols Žodis may show."
       onClose={onClose}
       closeOnBackdrop
       closeOnEscape
@@ -89,36 +107,89 @@ function IpaGuideModal({ open, onClose }) {
     >
       <div className="p-5 space-y-4 max-h-[72vh] overflow-y-auto">
         <p className="text-sm text-zinc-300 leading-relaxed">
-          IPA is a precise pronunciation guide. Each symbol represents a sound, so it is more consistent than English spelling. If you prefer an easier approximation, use the English guide instead.
+          IPA shows pronunciation using one symbol per sound. It is more precise than English-style phonetics, but it takes a little practice. You can always switch back to EN if you prefer the simpler guide.
         </p>
 
-        <div className="z-inset p-4 space-y-2">
-          <div className="text-sm font-semibold text-zinc-100">What the marks mean</div>
-          <div className="space-y-1 text-sm text-zinc-300">
-            <div><span className="font-semibold text-zinc-100">ˈ</span> appears before the stressed part of a word.</div>
-            <div><span className="font-semibold text-zinc-100">ː</span> means the sound is held longer.</div>
-            <div><span className="font-semibold text-zinc-100">ʲ</span> means the consonant is softened or palatalized.</div>
+        <IpaGuideSection title="Quick rules">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="ˈ">Stress mark. The next syllable is stressed.</IpaGuideRow>
+            <IpaGuideRow symbol="ː">Long sound. Hold it a little longer.</IpaGuideRow>
+            <IpaGuideRow symbol="ʲ">Softened consonant. The tongue moves slightly toward a "y" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="sound">IPA is about sound, not spelling.</IpaGuideRow>
           </div>
-        </div>
+        </IpaGuideSection>
 
-        <div className="z-inset p-4 space-y-2">
-          <div className="text-sm font-semibold text-zinc-100">Common Lithuanian sounds</div>
-          <div className="grid gap-2 text-sm text-zinc-300">
-            <div><span className="font-semibold text-zinc-100">ʃ</span> sounds like "sh" in "ship".</div>
-            <div><span className="font-semibold text-zinc-100">ʒ</span> sounds like "zh" in "measure".</div>
-            <div><span className="font-semibold text-zinc-100">tʃ</span> sounds like "ch" in "church".</div>
-            <div><span className="font-semibold text-zinc-100">j</span> sounds like "y" in "yes".</div>
-            <div><span className="font-semibold text-zinc-100">r</span> is a tapped or rolled Lithuanian r.</div>
+        <IpaGuideSection title="Vowels">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="a / ɐ">Short open "ah" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="aː">Long "ah".</IpaGuideRow>
+            <IpaGuideRow symbol="ɛ">"e" as in "bed".</IpaGuideRow>
+            <IpaGuideRow symbol="eː">Longer, closer "ay/eh" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="æː">Broad long "a/e" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="ɪ">Short "i", like "i" in "bit".</IpaGuideRow>
+            <IpaGuideRow symbol="iː">Long "ee".</IpaGuideRow>
+            <IpaGuideRow symbol="ɔ">Short "o".</IpaGuideRow>
+            <IpaGuideRow symbol="oː">Long "o".</IpaGuideRow>
+            <IpaGuideRow symbol="ʊ">Short "u", like "u" in "put".</IpaGuideRow>
+            <IpaGuideRow symbol="uː">Long "oo".</IpaGuideRow>
           </div>
-        </div>
+        </IpaGuideSection>
 
-        <div className="z-inset p-4 space-y-2">
-          <div className="text-sm font-semibold text-zinc-100">Which mode should I use?</div>
-          <div className="space-y-1 text-sm text-zinc-300">
-            <div><span className="font-semibold text-zinc-100">English guide:</span> easier at first, approximate.</div>
-            <div><span className="font-semibold text-zinc-100">IPA:</span> more precise and consistent, but takes a little learning.</div>
+        <IpaGuideSection title="Common vowel combinations">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="ai">Like "eye".</IpaGuideRow>
+            <IpaGuideRow symbol="au">Like "ow".</IpaGuideRow>
+            <IpaGuideRow symbol="ei">Like "ay".</IpaGuideRow>
+            <IpaGuideRow symbol="ui">"oo-ee" blended together.</IpaGuideRow>
+            <IpaGuideRow symbol="ie / iɛ">Lithuanian "ie". Listen for the glide into an "eh" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="uo / uɔ">Lithuanian "uo". Listen for the glide into an "o" sound.</IpaGuideRow>
           </div>
-        </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Consonants that look familiar">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="p b t d k ɡ">Mostly like their English sound values.</IpaGuideRow>
+            <IpaGuideRow symbol="m n">Like English "m" and "n".</IpaGuideRow>
+            <IpaGuideRow symbol="f v">Like English "f" and "v".</IpaGuideRow>
+            <IpaGuideRow symbol="s z">Like English "s" and "z".</IpaGuideRow>
+            <IpaGuideRow symbol="l">Like "l", but may be softened when marked with ʲ.</IpaGuideRow>
+            <IpaGuideRow symbol="r">A tapped or rolled Lithuanian r.</IpaGuideRow>
+            <IpaGuideRow symbol="j">"y" as in "yes".</IpaGuideRow>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Consonants that may look new">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="ʃ">"sh" as in "ship".</IpaGuideRow>
+            <IpaGuideRow symbol="ʒ">"zh" as in "measure".</IpaGuideRow>
+            <IpaGuideRow symbol="tʃ / t͡ʃ">"ch" as in "church".</IpaGuideRow>
+            <IpaGuideRow symbol="dʒ / d͡ʒ">"j" as in "jam".</IpaGuideRow>
+            <IpaGuideRow symbol="ts / t͡s">"ts" as in "cats".</IpaGuideRow>
+            <IpaGuideRow symbol="dz / d͡z">A joined "d" + "z" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="x">A rough "h", like Scottish "loch" or German "Bach".</IpaGuideRow>
+            <IpaGuideRow symbol="ŋ">"ng" as in "sing", if it appears before k or g.</IpaGuideRow>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Softened consonants">
+          <div className="space-y-3 text-sm text-zinc-300 leading-relaxed">
+            <p>Lithuanian often softens consonants. IPA marks this with <span className="font-semibold text-zinc-100">ʲ</span>.</p>
+            <div className="space-y-2">
+              <IpaGuideRow symbol="n / nʲ">Plain n vs softened n.</IpaGuideRow>
+              <IpaGuideRow symbol="l / lʲ">Plain l vs softened l.</IpaGuideRow>
+              <IpaGuideRow symbol="t / tʲ">Plain t vs softened t.</IpaGuideRow>
+            </div>
+            <p>Think of it as a slight "y" quality after the consonant, but not a full extra syllable.</p>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="How to use this in Žodis">
+          <div className="space-y-2 text-sm text-zinc-300 leading-relaxed">
+            <p>Listen first, then read the IPA slowly.</p>
+            <p>Notice stress <span className="font-semibold text-zinc-100">ˈ</span> and long sounds <span className="font-semibold text-zinc-100">ː</span>.</p>
+            <p>Use IPA for precision, and EN for quick approximate reading.</p>
+          </div>
+        </IpaGuideSection>
 
         <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] p-4 text-sm text-zinc-200 leading-relaxed">
           IPA is a guide, not a replacement for listening. Use the audio buttons whenever you can.
