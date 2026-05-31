@@ -8,7 +8,8 @@
 // decoding and preventing misdetection on short phrases.
 // When omitted (default), Whisper auto-detects as before (HomeView behaviour).
 //
-// All other behaviour is unchanged from the original.
+// Also keeps "pending" separate from actual recording so hold-to-speak UIs do
+// not show a listening state before the recorder has really started.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -20,6 +21,8 @@ export default function useSpeechToTextHold({
   autoTranslate,
   onTranslateText,
   onSpeechCaptured,
+  onRecordingStart,
+  shortRecordingMessage = "Hold a little longer and speak after the mic turns green.",
   language = null, // NEW: optional ISO 639-1 code e.g. "lt"
 } = {}) {
   const [sttState, setSttState] = useState("idle");
@@ -28,6 +31,9 @@ export default function useSpeechToTextHold({
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
+  const sessionRef = useRef(0);
+  const activeSessionRef = useRef(null);
+  const recordingStartedAtRef = useRef(0);
 
   const stopTimerRef = useRef(null);
   const stopGraceRef = useRef(null);
@@ -42,6 +48,8 @@ export default function useSpeechToTextHold({
   const STT_FETCH_TIMEOUT_MS = 20000;
   const STT_PROCESS_WATCHDOG_MS = 30000;
   const STOP_GRACE_MS = 2500;
+  const MIN_RECORDING_MS = 650;
+  const MIN_AUDIO_BYTES = 1000;
 
   const setSttStateSafe = useCallback((next) => {
     sttStateRef.current = next;
@@ -78,6 +86,10 @@ export default function useSpeechToTextHold({
     (reasonToast) => {
       clearStopTimers();
       clearProcessWatchdog();
+      sessionRef.current += 1;
+      activeSessionRef.current = null;
+      stopRequestedDuringInitRef.current = false;
+      recordingStartedAtRef.current = 0;
 
       try {
         const mr = mediaRecorderRef.current;
@@ -118,6 +130,7 @@ export default function useSpeechToTextHold({
     // startRecording will abort cleanly once getUserMedia resolves.
     if (sttStateRef.current === "pending") {
       stopRequestedDuringInitRef.current = true;
+      forceResetStt(shortRecordingMessage);
       return;
     }
 
@@ -142,7 +155,7 @@ export default function useSpeechToTextHold({
       console.error(err);
       forceResetStt("Speech processing failed");
     }
-  }, [forceResetStt]);
+  }, [forceResetStt, shortRecordingMessage]);
 
   const startRecording = useCallback(async () => {
     if (!sttSupported()) {
@@ -171,9 +184,14 @@ export default function useSpeechToTextHold({
     blurTextarea?.();
     onSpeechCaptured?.();
 
+    const sessionId = sessionRef.current + 1;
+    sessionRef.current = sessionId;
+    activeSessionRef.current = sessionId;
+
     // Move to "pending" immediately so stopRecording knows we're initialising.
     // Any stop requested before getUserMedia resolves sets stopRequestedDuringInitRef.
     stopRequestedDuringInitRef.current = false;
+    recordingStartedAtRef.current = 0;
     setSttStateSafe("pending");
 
     try {
@@ -181,9 +199,13 @@ export default function useSpeechToTextHold({
 
       // User released the button (or tapped again) before we even got the mic.
       // Abort cleanly without starting a recording.
-      if (stopRequestedDuringInitRef.current) {
+      if (
+        activeSessionRef.current !== sessionId ||
+        sttStateRef.current !== "pending" ||
+        stopRequestedDuringInitRef.current
+      ) {
         stream.getTracks().forEach((t) => t.stop());
-        setSttStateSafe("idle");
+        if (activeSessionRef.current === sessionId) setSttStateSafe("idle");
         return;
       }
 
@@ -202,6 +224,28 @@ export default function useSpeechToTextHold({
       const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mr;
 
+      const markRecordingStarted = () => {
+        if (activeSessionRef.current !== sessionId) return;
+        if (sttStateRef.current !== "pending") return;
+        recordingStartedAtRef.current = Date.now();
+        setSttStateSafe("recording");
+        onRecordingStart?.();
+
+        clearStopTimers();
+        stopTimerRef.current = setTimeout(() => {
+          try {
+            stopRecording();
+          } catch {}
+        }, STT_MAX_MS);
+      };
+
+      mr.onstart = markRecordingStarted;
+
+      mr.onerror = () => {
+        if (activeSessionRef.current !== sessionId) return;
+        forceResetStt("Speech recording failed");
+      };
+
       mr.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
@@ -214,7 +258,7 @@ export default function useSpeechToTextHold({
           if (s) s.getTracks().forEach((t) => t.stop());
         } catch {}
 
-        if (sttStateRef.current === "idle") {
+        if (sttStateRef.current === "idle" || activeSessionRef.current !== sessionId) {
           return;
         }
 
@@ -227,8 +271,12 @@ export default function useSpeechToTextHold({
           type: mr.mimeType || "audio/webm",
         });
 
-        if (!blob || blob.size < 1000) {
-          forceResetStt("No audio detected");
+        const recordingMs = recordingStartedAtRef.current
+          ? Date.now() - recordingStartedAtRef.current
+          : 0;
+
+        if (recordingMs < MIN_RECORDING_MS || !blob || blob.size < MIN_AUDIO_BYTES) {
+          forceResetStt(shortRecordingMessage);
           return;
         }
 
@@ -270,6 +318,8 @@ export default function useSpeechToTextHold({
             return;
           }
 
+          if (activeSessionRef.current !== sessionId) return;
+
           const text = String(data?.text || "").trim();
           if (!text) {
             forceResetStt("Didn't catch that — try again");
@@ -303,15 +353,15 @@ export default function useSpeechToTextHold({
         }
       };
 
-      setSttStateSafe("recording");
-      mr.start();
-
-      clearStopTimers();
-      stopTimerRef.current = setTimeout(() => {
-        try {
-          stopRecording();
-        } catch {}
-      }, STT_MAX_MS);
+      try {
+        mr.start();
+        if (mr.state === "recording") {
+          setTimeout(markRecordingStarted, 0);
+        }
+      } catch (err) {
+        console.error(err);
+        forceResetStt("Couldn't start microphone recording");
+      }
     } catch (err) {
       console.error(err);
       forceResetStt();
@@ -328,11 +378,13 @@ export default function useSpeechToTextHold({
     clearStopTimers,
     forceResetStt,
     language,
+    onRecordingStart,
     onSpeechCaptured,
     onTranslateText,
     setInput,
     setSttStateSafe,
     showToast,
+    shortRecordingMessage,
     stopRecording,
     sttSupported,
     translating,
