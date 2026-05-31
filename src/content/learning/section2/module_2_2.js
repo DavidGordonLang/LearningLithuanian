@@ -206,6 +206,7 @@ export default function createModule_2_2(profile = {}) {
               { id: "w3", lt: "Ar galime čia atsisėsti?", en: "Can we sit here?", audioText: "Ar galime čia atsisėsti", saveable: true, core: true },
               { id: "w4", lt: "Ar galime palaukti?", en: "Can we wait?", audioText: "Ar galime palaukti", saveable: true, core: true },
               { id: "w5", lt: "Palaukti", en: "To wait", audioText: "Palaukti", saveable: false, core: false },
+              { id: "w6", lt: "Palaukite manęs!", en: "Wait for me! (polite / plural)", audioText: "Palaukite manęs", saveable: false, core: false },
             ],
           },
           {
@@ -327,9 +328,9 @@ export default function createModule_2_2(profile = {}) {
       id: "step_3",
       speakerId: "friend",
       speakerLabel: "Friend",
-      speakerText: "Ko norite?",
-      supportText: "What do you want?",
-      sceneDirection: "The conversation continues.",
+      speakerText: "Ko norėtumėte?",
+      supportText: "What would you like?",
+      sceneDirection: "The server comes over to the free table.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
@@ -508,7 +509,7 @@ export default function createModule_2_2(profile = {}) {
       speakerLabel: "Seller",
       speakerText: "Taip, žinoma.",
       supportText: "Yes, of course.",
-      sceneDirection: "The conversation continues.",
+      sceneDirection: "The seller takes the item from behind the counter so you can look at it.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
@@ -539,7 +540,7 @@ export default function createModule_2_2(profile = {}) {
       speakerLabel: "Seller",
       speakerText: "Prašau.",
       supportText: "Here you go.",
-      sceneDirection: "The conversation continues.",
+      sceneDirection: "After looking at it closely, you decide you want this item.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
@@ -837,7 +838,7 @@ export default function createModule_2_2(profile = {}) {
   objects: [
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -1003,7 +1004,7 @@ export default function createModule_2_2(profile = {}) {
   objects: [
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -1028,9 +1029,9 @@ export default function createModule_2_2(profile = {}) {
       id: "step_1",
       speakerId: "assistant",
       speakerLabel: "Assistant",
-      speakerText: "Laba diena! Ko norite?",
-      supportText: "Good day! What do you want?",
-      sceneDirection: "The exchange begins.",
+      speakerText: "Laba diena! Ko norėtumėte?",
+      supportText: "Good day! What would you like?",
+      sceneDirection: "The ticket clerk greets you at the counter.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {

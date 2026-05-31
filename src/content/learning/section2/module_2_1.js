@@ -26,11 +26,12 @@ export default function createModule_2_1(profile = {}) {
         notes: {
           pattern: "Aš noriu… / Noriu… — 'I want…'. The noun after noriu takes the genitive case — you'll see word endings shift slightly. Treat it as a pattern to get used to, not a rule to memorise.",
           usage: [
-            "Noriu kavos — I want coffee (in a café)",
-            "Noriu vandens — I want water",
+            "Noriu kavos — [I] want coffee (in a café; Aš is usually implied)",
+            "Noriu vandens — [I] want water",
             "Noriu šito — I want this (pointing at something)",
             "Noriu to — I want that",
-            "Ko norite? — What do you want? (what you'll hear from staff)",
+            "Ko norėtumėte? — What would you like? (polite service form)",
+            "Ko nori? — What do you want? (casual, one person)",
           ],
         },
         blocks: [
@@ -40,11 +41,12 @@ export default function createModule_2_1(profile = {}) {
             title: "I want…",
             items: [
               { id: "w1", lt: "Noriu…", en: "I want…", audioText: "Noriu", saveable: true, core: true },
-              { id: "w2", lt: "Noriu kavos.", en: "I want coffee.", audioText: "Noriu kavos", saveable: true, core: true },
-              { id: "w3", lt: "Noriu vandens.", en: "I want water.", audioText: "Noriu vandens", saveable: true, core: true },
+              { id: "w2", lt: "Noriu kavos.", en: "[I] want coffee.", audioText: "Noriu kavos", saveable: true, core: true },
+              { id: "w3", lt: "Noriu vandens.", en: "[I] want water.", audioText: "Noriu vandens", saveable: true, core: true },
               { id: "w4", lt: "Noriu šito.", en: "I want this.", audioText: "Noriu šito", saveable: true, core: true },
               { id: "w5", lt: "Noriu to.", en: "I want that.", audioText: "Noriu to", saveable: true, core: true },
-              { id: "w6", lt: "Ko norite?", en: "What do you want?", audioText: "Ko norite", saveable: true, core: false },
+              { id: "w6", lt: "Ko norėtumėte?", en: "What would you like?", audioText: "Ko norėtumėte", saveable: true, core: false },
+              { id: "w6b", lt: "Ko nori?", en: "What do you want? (casual)", audioText: "Ko nori", saveable: true, core: false },
               { id: "w7", lt: "Arbata", en: "Tea", audioText: "Arbata", saveable: true, core: false },
               { id: "w8", lt: "Sultys", en: "Juice", audioText: "Sultys", saveable: true, core: false },
               { id: "w9", lt: "Sumuštinis", en: "Sandwich", audioText: "Sumuštinis", saveable: true, core: false },
@@ -119,8 +121,8 @@ export default function createModule_2_1(profile = {}) {
       id: "step_1",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Laba diena! Ko norite?",
-      supportText: "Good day! What do you want?",
+      speakerText: "Laba diena! Ko norėtumėte?",
+      supportText: "Good day! What would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -133,7 +135,7 @@ export default function createModule_2_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Laba diena! Noriu kavos.",
+          text: "Laba diena! Noriu kavos, prašau.",
           result: "best",
           progresses: true,
         },
@@ -420,6 +422,7 @@ export default function createModule_2_1(profile = {}) {
           usage: [
             "Turiu bilietą — I have a ticket",
             "Neturiu grynųjų — I don't have cash",
+            "Pinigai — money",
             "Turiu kortelę — I have a card",
             "Neturiu laiko — I don't have time",
           ],
@@ -437,8 +440,9 @@ export default function createModule_2_1(profile = {}) {
               { id: "h5", lt: "Turiu kortelę.", en: "I have a card.", audioText: "Turiu kortelę", saveable: true, core: true },
               { id: "h6", lt: "Neturiu laiko.", en: "I don't have time.", audioText: "Neturiu laiko", saveable: true, core: true },
               { id: "h7", lt: "Kortelė", en: "Card (payment)", audioText: "Kortelė", saveable: true, core: false },
-              { id: "h8", lt: "Raktas", en: "Key", audioText: "Raktas", saveable: true, core: false },
-              { id: "h9", lt: "Kišenė", en: "Pocket / wallet area", audioText: "Kišenė", saveable: true, core: false },
+              { id: "h8", lt: "Pinigai", en: "Money", audioText: "Pinigai", saveable: true, core: false },
+              { id: "h9", lt: "Raktas", en: "Key", audioText: "Raktas", saveable: true, core: false },
+              { id: "h10", lt: "Kišenė", en: "Pocket / wallet area", audioText: "Kišenė", saveable: true, core: false },
             ],
           },
           {
@@ -471,9 +475,9 @@ export default function createModule_2_1(profile = {}) {
             options: [
               { id: "a", text: "Turiu grynųjų.", isCorrect: false },
               { id: "b", text: "Man reikia pagalbos.", isCorrect: false },
-              { id: "c", text: "Neturiu grynųjų. Turiu kortelę.", isCorrect: true },
+              { id: "c", text: "Neturiu grynųjų, tik kortelę.", isCorrect: true },
             ],
-            feedback: { correct: "Say what you don't have, then what you do have. Clear and useful." },
+            feedback: { correct: "Neturiu grynųjų, tik kortelę — I don't have cash, only a card. Clear and natural." },
           },
           {
             id: "s2m1l3_b5",
@@ -516,7 +520,7 @@ export default function createModule_2_1(profile = {}) {
   objects: [
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -548,7 +552,7 @@ export default function createModule_2_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Ne, neturiu grynųjų. Turiu kortelę.",
+          text: "Ne, neturiu grynųjų. Ar galima mokėti kortele?",
           result: "best",
           progresses: true,
         },
@@ -565,7 +569,7 @@ export default function createModule_2_1(profile = {}) {
       id: "step_2",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Gerai, galima kortele.",
+      speakerText: "Gerai, galima mokėti kortele.",
       supportText: "Fine, you can pay by card.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
@@ -833,10 +837,10 @@ export default function createModule_2_1(profile = {}) {
             prompt: { text: "You're thirsty and want to order something. What do you say?" },
             options: [
               { id: "a", text: "Turiu bilietą.", isCorrect: false },
-              { id: "b", text: "Noriu vandens.", isCorrect: true },
+              { id: "b", text: "Noriu vandens, prašau.", isCorrect: true },
               { id: "c", text: "Ar turite meniu?", isCorrect: false },
             ],
-            feedback: { correct: "Noriu vandens — direct, natural and clear." },
+            feedback: { correct: "Noriu vandens, prašau — direct, natural, and polite." },
           },
           {
             id: "s2m1c_b2",
@@ -857,9 +861,9 @@ export default function createModule_2_1(profile = {}) {
             options: [
               { id: "a", text: "Turiu grynųjų.", isCorrect: false },
               { id: "b", text: "Noriu to.", isCorrect: false },
-              { id: "c", text: "Neturiu grynųjų. Turiu kortelę.", isCorrect: true },
+              { id: "c", text: "Neturiu grynųjų, tik kortelę.", isCorrect: true },
             ],
-            feedback: { correct: "State what you don't have, then what you do. Clear and useful." },
+            feedback: { correct: "Neturiu grynųjų, tik kortelę — I don't have cash, only a card." },
           },
           {
             id: "s2m1c_b4",
@@ -907,7 +911,7 @@ export default function createModule_2_1(profile = {}) {
   objects: [
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -933,7 +937,7 @@ export default function createModule_2_1(profile = {}) {
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
       speakerText: "Laba diena! Ar galiu jums padėti?",
-      supportText: "Good day! Can I help you? — kambario means room.",
+      supportText: "Good day! Can I help you? Kambarys means room; kambario is the form used in Noriu kambario.",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1016,7 +1020,7 @@ export default function createModule_2_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Ne, neturiu grynųjų. Turiu kortelę.",
+          text: "Ne, neturiu grynųjų, tik kortelę.",
           result: "best",
           progresses: true,
         }
@@ -1026,8 +1030,8 @@ export default function createModule_2_1(profile = {}) {
       id: "step_4",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Gerai, galima kortele. Prašau.",
-      supportText: "Fine, you can pay by card. Here you go.",
+      speakerText: "Gerai, galima mokėti kortele. Prašau.",
+      supportText: "Fine, you can pay by card. The receptionist turns the card reader toward you.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -1040,7 +1044,7 @@ export default function createModule_2_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Ačiū labai! Viso gero!",
+          text: "Ačiū labai!",
           result: "best",
           progresses: true,
         },
@@ -1061,8 +1065,8 @@ export default function createModule_2_1(profile = {}) {
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Noriu…",             en: "I want…",                  audioText: "Noriu" },
-              { id: "m2",  lt: "Noriu kavos.",        en: "I want coffee.",            audioText: "Noriu kavos" },
-              { id: "m3",  lt: "Noriu vandens.",      en: "I want water.",             audioText: "Noriu vandens" },
+              { id: "m2",  lt: "Noriu kavos.",        en: "[I] want coffee.",          audioText: "Noriu kavos" },
+              { id: "m3",  lt: "Noriu vandens.",      en: "[I] want water.",           audioText: "Noriu vandens" },
               { id: "m4",  lt: "Noriu šito.",         en: "I want this.",              audioText: "Noriu šito" },
               { id: "m5",  lt: "Noriu to.",           en: "I want that.",              audioText: "Noriu to" },
               { id: "m6",  lt: "Man reikia…",         en: "I need…",                  audioText: "Man reikia" },
@@ -1079,7 +1083,7 @@ export default function createModule_2_1(profile = {}) {
               { id: "m17", lt: "Ne, neturime.",       en: "No, we don't.",             audioText: "Ne, neturime" },
               { id: "m18", lt: "Bilietas",            en: "Ticket",                    audioText: "Bilietas" },
               { id: "m19", lt: "Kortelė",             en: "Card (payment)",            audioText: "Kortelė" },
-              { id: "m20", lt: "Ko norite?",          en: "What do you want?",         audioText: "Ko norite" },
+              { id: "m20", lt: "Ko norėtumėte?",      en: "What would you like?",      audioText: "Ko norėtumėte" },
             ],
           },
         ],

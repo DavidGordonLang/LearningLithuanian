@@ -234,7 +234,7 @@ export default function createModule_3_3(profile = {}) {
       id: "step_2",
       speakerId: "colleague",
       speakerLabel: "Colleague",
-      speakerText: "Šiandien, trečia valanda.",
+      speakerText: "Šiandien, trečią valandą.",
       supportText: "Today, at three o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",

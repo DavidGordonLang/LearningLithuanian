@@ -84,28 +84,28 @@ export default function createModule_4_1(profile = {}) {
   sceneIntro: "You stop at a counter. The staff asks what you want.",
   location: "real-life exchange",
   userRole: "learner",
-  register: "polite_neutral",
+  register: "polite_service",
   goal: "You stop at a counter. The staff asks what you want.",
   focus: ["conversation practice"],
   participants: [
     {
       "id": "local",
-      "label": "Local",
-      "name": "Rasa",
-      "role": "local speaker",
+      "label": "Staff",
+      "name": "Ieva",
+      "role": "server",
       "gender": "female",
       "relationshipToUser": "stranger",
-      "register": "polite_neutral"
+      "register": "polite_service"
     },
   ],
   steps: [
     {
       id: "step_1",
       speakerId: "local",
-      speakerLabel: "Local",
-      speakerText: "Ko norite?",
-      supportText: "What do you want?",
-      sceneDirection: "The exchange begins.",
+      speakerLabel: "Staff",
+      speakerText: "Ko norėtumėte?",
+      supportText: "What would you like?",
+      sceneDirection: "The staff member greets you at the counter.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
@@ -296,7 +296,7 @@ export default function createModule_4_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -342,7 +342,7 @@ export default function createModule_4_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -380,7 +380,7 @@ export default function createModule_4_1(profile = {}) {
               { id: "pt2", lt: "To, prašau.", en: "That one, please.", audioText: "To, prašau", saveable: true, core: true },
               { id: "pt3", lt: "Šitą, prašau.", en: "This, please.", audioText: "Šitą, prašau", saveable: true, core: true },
               { id: "pt4", lt: "Tą, prašau.", en: "That, please.", audioText: "Tą, prašau", saveable: true, core: true },
-              { id: "pt5", lt: "Kurio norite?", en: "Which one do you want?", audioText: "Kurio norite", saveable: false, core: false },
+              { id: "pt5", lt: "Kurio norėtumėte?", en: "Which one would you like?", audioText: "Kurio norėtumėte", saveable: false, core: false },
             ],
           },
           {
@@ -440,7 +440,7 @@ export default function createModule_4_1(profile = {}) {
       id: "step_1",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Kurio norite?",
+      speakerText: "Kurio norėtumėte?",
       supportText: "Which one would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
@@ -472,8 +472,8 @@ export default function createModule_4_1(profile = {}) {
       id: "step_2",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Ar dar ko norite?",
-      supportText: "Do you want anything else?",
+      speakerText: "Ar dar ko nors norėtumėte?",
+      supportText: "Would you like anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -511,7 +511,7 @@ export default function createModule_4_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -550,7 +550,7 @@ export default function createModule_4_1(profile = {}) {
           usage: [
             "vieną kavą — one coffee (kavą, not kava)",
             "dvi arbatas — two teas (dvi, not du; arbatas, not arbata)",
-            "vieną vandenį — one water (vandenį, not vanduo)",
+            "vieną stiklinę vandens — one glass of water",
             "Dar vieną, prašau — one more, please",
           ],
         },
@@ -562,7 +562,7 @@ export default function createModule_4_1(profile = {}) {
             items: [
               { id: "oq1", lt: "Vieną kavą, prašau.", en: "One coffee, please.", audioText: "Vieną kavą, prašau", saveable: true, core: true },
               { id: "oq2", lt: "Dvi arbatas, prašau.", en: "Two teas, please.", audioText: "Dvi arbatas, prašau", saveable: true, core: true },
-              { id: "oq3", lt: "Vieną vandenį, prašau.", en: "One water, please.", audioText: "Vieną vandenį, prašau", saveable: true, core: true },
+              { id: "oq3", lt: "Vieną stiklinę vandens, prašau.", en: "One glass of water, please.", audioText: "Vieną stiklinę vandens, prašau", saveable: true, core: true },
               { id: "oq4", lt: "Dar vieną, prašau.", en: "One more, please.", audioText: "Dar vieną, prašau", saveable: true, core: true },
               { id: "oq5", lt: "Kiek?", en: "How many?", audioText: "Kiek", saveable: false, core: false },
             ],
@@ -618,26 +618,26 @@ export default function createModule_4_1(profile = {}) {
   description: "You're at a café with a colleague. You order for both of you.",
   sceneIntro: "You're at a café with a colleague. You order for both of you.",
   location: "work conversation",
-  userRole: "colleague",
+  userRole: "customer",
   register: "polite_friendly",
   goal: "You're at a café with a colleague. You order for both of you.",
   focus: ["ordering"],
   participants: [
     {
-      "id": "colleague",
-      "label": "Colleague",
-      "name": "Rokas",
-      "role": "colleague",
-      "gender": "male",
-      "relationshipToUser": "colleague",
-      "register": "polite_friendly"
+      "id": "server",
+      "label": "Server",
+      "name": "Ieva",
+      "role": "server",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
     },
   ],
   steps: [
     {
       id: "step_1",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
+      speakerId: "server",
+      speakerLabel: "Server",
       speakerText: "Ko norėtumėte?",
       supportText: "What would you like?",
       sceneDirection: "The exchange begins.",
@@ -668,9 +668,9 @@ export default function createModule_4_1(profile = {}) {
     },
     {
       id: "step_2",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
-      speakerText: "Ar dar ko norite?",
+      speakerId: "server",
+      speakerLabel: "Server",
+      speakerText: "Ar dar ko nors norėtumėte?",
       supportText: "Anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
@@ -700,8 +700,8 @@ export default function createModule_4_1(profile = {}) {
     },
     {
       id: "step_3",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
+      speakerId: "server",
+      speakerLabel: "Server",
       speakerText: "Gerai. Prašom.",
       supportText: "OK. Here you go.",
       sceneDirection: "The conversation continues.",
@@ -709,7 +709,7 @@ export default function createModule_4_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -732,10 +732,10 @@ export default function createModule_4_1(profile = {}) {
     },
     {
       id: "step_4",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
-      speakerText: "Prašom. Dar vieną?",
-      supportText: "Here you are. One more?",
+      speakerId: "server",
+      speakerLabel: "Server",
+      speakerText: "Ar dar ko nors norėtumėte?",
+      supportText: "Would you like anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -748,14 +748,14 @@ export default function createModule_4_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Ne, ačiū. Pakanka.",
+          text: "Ne, ačiū. Dabar užteks.",
           textEn: "No, thank you. That's enough.",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -877,20 +877,20 @@ export default function createModule_4_1(profile = {}) {
   focus: ["ordering"],
   participants: [
     {
-      "id": "colleague",
-      "label": "Colleague",
-      "name": "Rokas",
-      "role": "colleague",
-      "gender": "male",
-      "relationshipToUser": "colleague",
-      "register": "polite_friendly"
+      "id": "server",
+      "label": "Server",
+      "name": "Ieva",
+      "role": "server",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
     },
   ],
   steps: [
     {
       id: "step_1",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
+      speakerId: "server",
+      speakerLabel: "Server",
       speakerText: "Laba diena! Ko norėtumėte?",
       supportText: "Good day! What would you like?",
       sceneDirection: "The exchange begins.",
@@ -921,8 +921,8 @@ export default function createModule_4_1(profile = {}) {
     },
     {
       id: "step_2",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
+      speakerId: "server",
+      speakerLabel: "Server",
       speakerText: "Gerai. Šito ar to?",
       supportText: "OK. This one or that one? — pointing to two different coffees.",
       sceneDirection: "The conversation continues.",
@@ -944,7 +944,7 @@ export default function createModule_4_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -953,8 +953,8 @@ export default function createModule_4_1(profile = {}) {
     },
     {
       id: "step_3",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
+      speakerId: "server",
+      speakerLabel: "Server",
       speakerText: "Prašom.",
       supportText: "Here you go.",
       sceneDirection: "The conversation continues.",
@@ -985,9 +985,9 @@ export default function createModule_4_1(profile = {}) {
     },
     {
       id: "step_4",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
-      speakerText: "Ar dar ko norite?",
+      speakerId: "server",
+      speakerLabel: "Server",
+      speakerText: "Ar dar ko nors norėtumėte?",
       supportText: "Would you like anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
@@ -1001,7 +1001,7 @@ export default function createModule_4_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Ne, ačiū. Pakanka.",
+          text: "Ne, ačiū. Dabar užteks.",
           textEn: "No, thank you. That's enough.",
           result: "best",
           progresses: true,
@@ -1017,15 +1017,15 @@ export default function createModule_4_1(profile = {}) {
     },
     {
       id: "step_5",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
+      speakerId: "server",
+      speakerLabel: "Server",
       speakerText: "Gerai. Viso gero!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1067,9 +1067,9 @@ export default function createModule_4_1(profile = {}) {
               { id: "m12", lt: "Tą, prašau.",            en: "That, please.",            audioText: "Tą, prašau" },
               { id: "m13", lt: "Vieną kavą, prašau.",    en: "One coffee, please.",      audioText: "Vieną kavą, prašau" },
               { id: "m14", lt: "Dvi arbatas, prašau.",   en: "Two teas, please.",        audioText: "Dvi arbatas, prašau" },
-              { id: "m15", lt: "Vieną vandenį, prašau.", en: "One water, please.",       audioText: "Vieną vandenį, prašau" },
+              { id: "m15", lt: "Vieną stiklinę vandens, prašau.", en: "One glass of water, please.", audioText: "Vieną stiklinę vandens, prašau" },
               { id: "m16", lt: "Dar vieną, prašau.",     en: "One more, please.",        audioText: "Dar vieną, prašau" },
-              { id: "m17", lt: "Ko norite?",             en: "What do you want?",        audioText: "Ko norite" },
+              { id: "m17", lt: "Ko norėtumėte?",         en: "What would you like?",     audioText: "Ko norėtumėte" },
               { id: "m18", lt: "Ko norėtumėte?",         en: "What would you like?",     audioText: "Ko norėtumėte" },
               { id: "m19", lt: "tortas",                 en: "cake",                     audioText: "tortas" },
               { id: "m20", lt: "ledai",                  en: "ice cream",                audioText: "ledai" },

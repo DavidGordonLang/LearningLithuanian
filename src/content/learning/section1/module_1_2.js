@@ -35,7 +35,7 @@ export default function createModule_1_2(profile = {}) {
           pattern: "Both Aš esu and Mano vardas work for introducing yourself. Mano vardas is often the cleaner starter — it is direct and natural.",
           usage: [
             "Aš esu [vardas] — I am [name]",
-            "Mano vardas [vardas] — My name is [name]",
+            "Mano vardas [vardas] — My name [is] [name]. The verb is implied in Lithuanian.",
             "Koks tavo vardas? — What is your name? (informal)",
             "Koks jūsų vardas? — What is your name? (formal/polite)",
           ],
@@ -47,7 +47,7 @@ export default function createModule_1_2(profile = {}) {
             title: "Who you are",
             items: [
               { id: "wi1", lt: "Aš esu", en: "I am", audioText: "Aš esu", saveable: true, core: true },
-              { id: "wi2", lt: "Mano vardas", en: "My name is", audioText: "Mano vardas", saveable: true, core: true },
+              { id: "wi2", lt: "Mano vardas", en: "My name [is]", audioText: "Mano vardas", saveable: true, core: true },
               { id: "wi5", lt: "Koks tavo vardas?", en: "What is your name? (informal)", audioText: "Koks tavo vardas", saveable: true, core: true },
               { id: "wi6", lt: "Koks jūsų vardas?", en: "What is your name? (formal)", audioText: "Koks jūsų vardas", saveable: true, core: true },
             ],
@@ -60,7 +60,7 @@ export default function createModule_1_2(profile = {}) {
             options: [
               { id: "a", text: "What is your name?", isCorrect: false },
               { id: "b", text: "I am", isCorrect: false },
-              { id: "c", text: "My name is", isCorrect: true },
+              { id: "c", text: "My name [is]", isCorrect: true },
             ],
           },
           {
@@ -165,7 +165,7 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Aš esu Rokas. Kaip sekasi?",
-      sceneDirection: "The conversation continues.",
+      sceneDirection: "After a short friendly chat, the local starts to say goodbye.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
@@ -387,7 +387,7 @@ export default function createModule_1_2(profile = {}) {
           usage: [
             "Malonu susipažinti — Nice to meet you",
             "Man irgi — Me too / Likewise",
-            "Labai malonu — Very pleased to meet you (slightly warmer)",
+            "Labai malonu susipažinti — Very pleased to meet you (slightly warmer)",
           ],
         },
         blocks: [
@@ -398,7 +398,7 @@ export default function createModule_1_2(profile = {}) {
             items: [
               { id: "nm1", lt: "Malonu susipažinti", en: "Nice to meet you", audioText: "Malonu susipažinti", saveable: true, core: true },
               { id: "nm2", lt: "Man irgi", en: "Me too / Likewise", audioText: "Man irgi", saveable: true, core: true },
-              { id: "nm3", lt: "Labai malonu", en: "Very pleased to meet you", audioText: "Labai malonu", saveable: true, core: true },
+              { id: "nm3", lt: "Labai malonu susipažinti", en: "Very pleased to meet you", audioText: "Labai malonu susipažinti", saveable: true, core: true },
             ],
           },
           {
@@ -428,13 +428,13 @@ export default function createModule_1_2(profile = {}) {
             id: "s1m2l3_b4",
             type: "recognise_mcq",
             title: "Choose the correct meaning",
-            prompt: { text: "Labai malonu", audioText: "Labai malonu" },
+            prompt: { text: "Labai malonu susipažinti", audioText: "Labai malonu susipažinti" },
             options: [
               { id: "a", text: "Nice to meet you", isCorrect: false },
               { id: "b", text: "Me too", isCorrect: false },
               { id: "c", text: "Very pleased to meet you", isCorrect: true },
             ],
-            feedback: { correct: "Labai means 'very' — so labai malonu is a slightly warmer version of nice to meet you." },
+            feedback: { correct: "Labai means 'very' — so Labai malonu susipažinti is a warmer version of nice to meet you." },
           },
           {
             id: "s1m2l3_b5",
@@ -695,7 +695,7 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Prašau dar kartą",
+          text: "Pakartokite, prašau",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -884,7 +884,7 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Prašau dar kartą",
+          text: "Pakartokite, prašau",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,

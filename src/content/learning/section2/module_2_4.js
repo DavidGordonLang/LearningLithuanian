@@ -24,10 +24,10 @@ export default function createModule_2_4(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Kas? = What? / Who? Ko norite? = What do you want? Ko jums reikia? = What do you need? The question word changes form depending on the verb.",
+          pattern: "Kas? = What? / Who? Ko norėtumėte? = What would you like? Ko jums reikia? = What do you need? The question word changes form depending on the verb.",
           usage: [
             "Kas tai? — What is this? (already known)",
-            "Ko norite? — What do you want?",
+            "Ko norėtumėte? — What would you like?",
             "Ko jums reikia? — What do you need?",
             "Kas atsitiko? — What happened?",
           ],
@@ -40,7 +40,7 @@ export default function createModule_2_4(profile = {}) {
             items: [
               { id: "q1", lt: "Kas?", en: "What? / Who?", audioText: "Kas", saveable: true, core: true },
               { id: "q2", lt: "Kas tai?", en: "What is this?", audioText: "Kas tai", saveable: true, core: true },
-              { id: "q3", lt: "Ko norite?", en: "What do you want?", audioText: "Ko norite", saveable: true, core: true },
+              { id: "q3", lt: "Ko norėtumėte?", en: "What would you like?", audioText: "Ko norėtumėte", saveable: true, core: true },
               { id: "q4", lt: "Ko jums reikia?", en: "What do you need?", audioText: "Ko jums reikia", saveable: true, core: true },
               { id: "q5", lt: "Kas atsitiko?", en: "What happened?", audioText: "Kas atsitiko", saveable: true, core: false },
               { id: "q6", lt: "Žuvis", en: "Fish", audioText: "Žuvis", saveable: true, core: false },
@@ -63,10 +63,10 @@ export default function createModule_2_4(profile = {}) {
             id: "s2m4l1_b3",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Ko norite?", audioText: "Ko norite" },
+            prompt: { text: "Ko norėtumėte?", audioText: "Ko norėtumėte" },
             options: [
               { id: "a", text: "What do you need?", isCorrect: false },
-              { id: "b", text: "What do you want?", isCorrect: true },
+              { id: "b", text: "What would you like?", isCorrect: true },
               { id: "c", text: "What is this?", isCorrect: false },
             ],
           },
@@ -143,7 +143,7 @@ export default function createModule_2_4(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -283,7 +283,7 @@ export default function createModule_2_4(profile = {}) {
         },
         {
           id: "b",
-          text: `${userFromPhrase}. Gyvenate Lietuvoje.`,
+          text: "Gyvenu Lietuvoje.",
           result: "best",
           progresses: true,
         },
@@ -319,7 +319,7 @@ export default function createModule_2_4(profile = {}) {
         },
         {
           id: "c",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -394,7 +394,7 @@ export default function createModule_2_4(profile = {}) {
             options: [
               { id: "a", text: "Kas tai?", isCorrect: false },
               { id: "b", text: "Kas jis?", isCorrect: true },
-              { id: "c", text: "Kas šitas?", isCorrect: false },
+              { id: "c", text: "Kas tai?", isCorrect: false },
             ],
             feedback: { correct: "Kas jis? — who is he? Natural for asking about a specific person." },
           },
@@ -470,7 +470,7 @@ export default function createModule_2_4(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -556,10 +556,10 @@ export default function createModule_2_4(profile = {}) {
             prompt: { text: "Someone asks Kada einame? You can't go now — maybe tomorrow." },
             options: [
               { id: "a", text: "Dabar.", isCorrect: false },
-              { id: "b", text: "Aš negaliu eiti. Gal rytoj.", isCorrect: true },
+              { id: "b", text: "Dabar negaliu. Gal rytoj.", isCorrect: true },
               { id: "c", text: "Ar galime pradėti?", isCorrect: false },
             ],
-            feedback: { correct: "Aš negaliu eiti — I can't go. Gal rytoj — maybe tomorrow." },
+            feedback: { correct: "Dabar negaliu — I can't right now. Gal rytoj — maybe tomorrow." },
           },
           {
             id: "s2m4l4_b5",
@@ -665,7 +665,7 @@ export default function createModule_2_4(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -720,7 +720,8 @@ export default function createModule_2_4(profile = {}) {
               { id: "hm3", lt: "Kiek šitas kainuoja?", en: "How much is this one?", audioText: "Kiek šitas kainuoja", saveable: true, core: true },
               { id: "hm4", lt: "Kiek tas kainuoja?", en: "How much is that one?", audioText: "Kiek tas kainuoja", saveable: true, core: true },
               { id: "hm5", lt: "Brangu.", en: "Expensive.", audioText: "Brangu", saveable: true, core: true },
-              { id: "hm6", lt: "Nebrangiai.", en: "Inexpensive / not expensive.", audioText: "Nebrangiai", saveable: true, core: true },
+              { id: "hm6", lt: "Nebrangiai.", en: "Inexpensively / not expensive.", audioText: "Nebrangiai", saveable: true, core: true },
+              { id: "hm6b", lt: "Pigu.", en: "Cheap / inexpensive.", audioText: "Pigu", saveable: true, core: false },
               { id: "hm7", lt: "Kainuoti", en: "To cost", audioText: "Kainuoti", saveable: false, core: false },
               { id: "hm8", lt: "Kaina", en: "Price", audioText: "Kaina", saveable: true, core: false },
               { id: "hm9", lt: "Turgus", en: "Market", audioText: "Turgus", saveable: true, core: false },
@@ -808,7 +809,7 @@ export default function createModule_2_4(profile = {}) {
   objects: [
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -819,9 +820,10 @@ export default function createModule_2_4(profile = {}) {
       id: "step_1",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Atsiprašau…",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Kuo galėčiau padėti?",
+      supportText: "Kuo galėčiau padėti? means “How can I help?” — a polite service phrase.",
+      sceneDirection: "The seller notices you comparing two items.",
+      learnerPrompt: "Ask how much this one costs.",
       options: [
         {
           id: "a",
@@ -838,7 +840,7 @@ export default function createModule_2_4(profile = {}) {
         },
         {
           id: "c",
-          text: "Kas šitas?",
+          text: "Kas čia?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -901,7 +903,7 @@ export default function createModule_2_4(profile = {}) {
         },
         {
           id: "c",
-          text: "Tas geresnis. Noriu to. Turiu kortelę.",
+          text: "Tas geresnis. Noriu to. Ar galima mokėti kortele?",
           result: "best",
           progresses: true,
         }
@@ -911,14 +913,14 @@ export default function createModule_2_4(profile = {}) {
       id: "step_4",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Gerai, galima kortele. Prašau.",
-      supportText: "Fine, card is OK. Here you go.",
+      speakerText: "Gerai, galima mokėti kortele. Prašau.",
+      supportText: "Fine, you can pay by card. Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1042,7 +1044,7 @@ export default function createModule_2_4(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1111,7 +1113,7 @@ export default function createModule_2_4(profile = {}) {
         },
         {
           id: "b",
-          text: "Noriu šito. Ar galima kortele?",
+          text: "Noriu šito. Ar galima mokėti kortele?",
           result: "best",
           progresses: true,
         },
@@ -1135,7 +1137,7 @@ export default function createModule_2_4(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1163,7 +1165,7 @@ export default function createModule_2_4(profile = {}) {
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Kas?",                  en: "What? / Who?",                audioText: "Kas" },
-              { id: "m2",  lt: "Ko norite?",             en: "What do you want?",           audioText: "Ko norite" },
+              { id: "m2",  lt: "Ko norėtumėte?",         en: "What would you like?",        audioText: "Ko norėtumėte" },
               { id: "m3",  lt: "Ko jums reikia?",        en: "What do you need?",           audioText: "Ko jums reikia" },
               { id: "m4",  lt: "Kas atsitiko?",          en: "What happened?",              audioText: "Kas atsitiko" },
               { id: "m5",  lt: "Kur?",                   en: "Where?",                      audioText: "Kur" },
