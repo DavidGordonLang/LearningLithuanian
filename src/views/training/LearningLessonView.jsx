@@ -535,6 +535,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
   const [capturedText, setCapturedText] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
   const targetText = block?.targetText || "";
+  const pointerIdRef = React.useRef(null);
+  const buttonRef = React.useRef(null);
+  const recordingToneActiveRef = React.useRef(false);
 
   const { sttState, sttSupported, startRecording, stopRecording, cancelStt } = useSpeechToTextHold({
     showToast,
@@ -554,46 +557,65 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     autoTranslate: false,
     onTranslateText: async () => {},
     onSpeechCaptured: () => { setCapturedText(""); setAttemptState("idle"); },
+    onRecordingStart: () => {
+      recordingToneActiveRef.current = true;
+      playMicStart();
+    },
+    shortRecordingMessage: "Hold a little longer and speak after the mic turns green.",
     language: "lt",
   });
 
   const isRecording  = sttState === "recording";
   const isPending    = sttState === "pending";
   const isProcessing = sttState === "transcribing" || sttState === "translating";
-  const isActive     = isRecording || isPending;
-  const isBusy       = isActive || isProcessing;
+  const isBusy       = isPending || isRecording || isProcessing;
   const supported    = sttSupported();
 
-  const pointerIdRef = React.useRef(null);
-  const buttonRef = React.useRef(null);
+  const playMicStopIfNeeded = () => {
+    if (!recordingToneActiveRef.current) return;
+    recordingToneActiveRef.current = false;
+    playMicStop();
+  };
+
+  const releaseMicPointer = (pointerId) => {
+    try {
+      buttonRef.current?.releasePointerCapture?.(pointerId);
+    } catch {}
+  };
+
   const handleMicPointerDown = (event) => {
     if (completed || isBusy || !supported) return;
     event.preventDefault();
     pointerIdRef.current = event.pointerId;
     buttonRef.current?.setPointerCapture?.(event.pointerId);
-    playMicStart();
     startRecording();
   };
   const finishMicHold = (event) => {
     if (pointerIdRef.current !== event.pointerId) return;
     event.preventDefault();
     pointerIdRef.current = null;
-    buttonRef.current?.releasePointerCapture?.(event.pointerId);
-    playMicStop();
+    releaseMicPointer(event.pointerId);
+    playMicStopIfNeeded();
     stopRecording();
   };
   const cancelMicHold = (event) => {
     if (pointerIdRef.current !== event.pointerId) return;
     event.preventDefault();
     pointerIdRef.current = null;
-    buttonRef.current?.releasePointerCapture?.(event.pointerId);
-    playMicStop();
+    releaseMicPointer(event.pointerId);
+    playMicStopIfNeeded();
     cancelStt();
   };
+  const handleLostPointerCapture = (event) => {
+    if (pointerIdRef.current !== event.pointerId) return;
+    pointerIdRef.current = null;
+    playMicStopIfNeeded();
+    stopRecording();
+  };
 
-  const micLabel = isActive ? "Listening... release when done" : isProcessing ? "Checking..." : supported ? "Hold to speak" : "Microphone unavailable";
+  const micLabel = isPending ? "Getting microphone..." : isRecording ? "Listening... release when done" : isProcessing ? "Checking..." : supported ? "Hold to speak" : "Microphone unavailable";
   const statusLabel = attemptState === "result_pass" ? "Nice, spoken" : attemptState === "result_fail" ? "Not quite yet. Hold the mic and try again." : micLabel;
-  const statusTone = attemptState === "result_pass" ? "success" : attemptState === "result_fail" ? "fail" : isActive ? "recording" : isProcessing ? "checking" : "idle";
+  const statusTone = attemptState === "result_pass" ? "success" : attemptState === "result_fail" ? "fail" : isRecording ? "recording" : isPending ? "pending" : isProcessing ? "checking" : "idle";
 
   if (completed) {
     return (
@@ -645,6 +667,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
             <>
               <div className={cn("rounded-full border px-3 py-1 text-[12px] font-medium transition-colors",
                 statusTone === "recording" ? "border-emerald-400/30 bg-emerald-500/[0.08] text-emerald-200"
+                : statusTone === "pending" ? "border-white/10 bg-white/[0.05] text-zinc-300"
                 : statusTone === "checking" ? "border-white/10 bg-white/[0.05] text-zinc-300"
                 : statusTone === "fail" ? "border-amber-400/25 bg-amber-500/[0.06] text-amber-200"
                 : "border-white/10 bg-white/[0.04] text-zinc-400")}>
@@ -655,9 +678,10 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
                 onPointerDown={handleMicPointerDown}
                 onPointerUp={finishMicHold}
                 onPointerCancel={cancelMicHold}
-                onPointerLeave={finishMicHold}
+                onLostPointerCapture={handleLostPointerCapture}
                 className={cn("h-20 w-20 rounded-full border-2 flex items-center justify-center transition-all select-none",
-                  isActive ? "bg-emerald-500/25 border-emerald-400/60 scale-105 shadow-[0_0_32px_rgba(16,185,129,0.3)]"
+                  isRecording ? "bg-emerald-500/25 border-emerald-400/60 scale-105 shadow-[0_0_32px_rgba(16,185,129,0.3)]"
+                  : isPending ? "bg-white/[0.06] border-white/15 opacity-85"
                   : isProcessing ? "bg-white/[0.06] border-white/10 opacity-70"
                   : "bg-white/[0.06] border-white/15 hover:bg-white/[0.09] active:scale-95")}
                 aria-label={micLabel}>
@@ -668,7 +692,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
                     <span className="h-2 w-2 rounded-full bg-zinc-400 animate-pulse [animation-delay:240ms]" />
                   </div>
                 ) : (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={isActive ? "text-emerald-300" : "text-zinc-300"}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={isRecording ? "text-emerald-300" : "text-zinc-300"}>
                     <path d="M12 14.25c1.656 0 3-1.344 3-3V6.75c0-1.656-1.344-3-3-3s-3 1.344-3 3v4.5c0 1.656 1.344 3 3 3Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M7.5 10.5v.75c0 2.485 2.015 4.5 4.5 4.5s4.5-2.015 4.5-4.5v-.75" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M12 15.75V19.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
