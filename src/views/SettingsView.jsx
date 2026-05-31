@@ -1,5 +1,6 @@
 // src/views/SettingsView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuthStore } from "../stores/authStore";
 import { usePhraseStore } from "../stores/phraseStore";
 import {
@@ -63,7 +64,9 @@ function CollapsibleSection({ id, title, subtitle, open, setOpen, children, acce
 }
 
 function IpaGuideModal({ open, onClose }) {
-  return (
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
     <ModalShell
       open={open}
       title="How to read IPA"
@@ -121,7 +124,8 @@ function IpaGuideModal({ open, onClose }) {
           IPA is a guide, not a replacement for listening. Use the audio buttons whenever you can.
         </div>
       </div>
-    </ModalShell>
+    </ModalShell>,
+    document.body
   );
 }
 
