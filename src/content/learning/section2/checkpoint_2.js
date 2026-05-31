@@ -162,7 +162,7 @@ export default function createCheckpoint2(profile = {}) {
         prompt: { text: "A cashier asks if you have cash. You have a card but no cash." },
         options: [
           { id: "a", text: "Turiu grynųjų.", isCorrect: false },
-          { id: "b", text: "Neturiu grynųjų. Ar galima kortele?", isCorrect: true },
+          { id: "b", text: "Neturiu grynųjų. Ar galima mokėti kortele?", isCorrect: true },
           { id: "c", text: "Man reikia pagalbos.", isCorrect: false },
         ],
         feedback: { correct: "State what you don't have, then offer what you do. Perfect combination." },
@@ -220,7 +220,7 @@ export default function createCheckpoint2(profile = {}) {
   objects: [
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -231,9 +231,9 @@ export default function createCheckpoint2(profile = {}) {
       id: "step_1",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Laba diena! Ko norite?",
-      supportText: "Good day! What do you want?",
-      sceneDirection: "The exchange begins.",
+      speakerText: "Laba diena! Ko norėtumėte?",
+      supportText: "Good day! What would you like?",
+      sceneDirection: "The seller greets you at the market stall.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
@@ -276,7 +276,7 @@ export default function createCheckpoint2(profile = {}) {
         },
         {
           id: "b",
-          text: "Neturiu grynųjų. Ar galima kortele?",
+          text: "Neturiu grynųjų. Ar galima mokėti kortele?",
           textEn: "I don't have cash. Is card OK?",
           result: "best",
           progresses: true,
@@ -301,7 +301,7 @@ export default function createCheckpoint2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -363,7 +363,7 @@ export default function createCheckpoint2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Kiek tai kainuoja?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -402,7 +402,7 @@ export default function createCheckpoint2(profile = {}) {
           { id: "m6",  lt: "Ar galiu pažiūrėti?",   en: "Can I have a look?",            audioText: "Ar galiu pažiūrėti" },
           { id: "m7",  lt: "Ar galite parodyti?",    en: "Can you show me?",              audioText: "Ar galite parodyti" },
           { id: "m8",  lt: "Aš negaliu suprasti.",   en: "I can't understand.",           audioText: "Aš negaliu suprasti" },
-          { id: "m9",  lt: "Ar galima kortele?",     en: "Is it possible by card?",       audioText: "Ar galima kortele" },
+          { id: "m9",  lt: "Ar galima mokėti kortele?", en: "Can I pay by card?",          audioText: "Ar galima mokėti kortele" },
           { id: "m10", lt: "Aš galiu palaukti.",     en: "I can wait.",                   audioText: "Aš galiu palaukti" },
           // From 2.3 — This / That / These / Those
           { id: "m11", lt: "Noriu šito.",            en: "I want this one.",              audioText: "Noriu šito" },

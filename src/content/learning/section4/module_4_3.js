@@ -367,7 +367,7 @@ export default function createModule_4_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Ne, nevalgau mėsos. Aš vegetaras.",
+          text: `Ne, nevalgau mėsos. Aš ${vegetarX}.`,
           textEn: "No, I don't eat meat. I'm vegetarian.",
           result: "best",
           progresses: true,
@@ -459,11 +459,11 @@ export default function createModule_4_3(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Čia ne tai, ką užsakiau — This is not what I ordered. A longer phrase but very useful. Aš užsakiau… (I ordered…) lets you say what you actually asked for.",
+          pattern: "Čia ne tai, ką užsisakiau — This is not what I ordered. A longer phrase but very useful. Aš užsisakiau… (I ordered…) lets you say what you actually asked for.",
           usage: [
-            "Čia ne tai, ką užsakiau — This is not what I ordered",
-            "Aš užsakiau kavą — I ordered coffee",
-            "Aš užsakiau arbatą — I ordered tea",
+            "Čia ne tai, ką užsisakiau — This is not what I ordered",
+            "Aš užsisakiau kavą — I ordered coffee",
+            "Aš užsisakiau arbatą — I ordered tea",
             "Ne šitą — Not this one",
           ],
         },
@@ -473,9 +473,9 @@ export default function createModule_4_3(profile = {}) {
             type: "learn",
             title: "Correcting an order mistake",
             items: [
-              { id: "co1", lt: "Čia ne tai, ką užsakiau.", en: "This is not what I ordered.", audioText: "Čia ne tai, ką užsakiau", saveable: true, core: true },
-              { id: "co2", lt: "Aš užsakiau kavą.", en: "I ordered coffee.", audioText: "Aš užsakiau kavą", saveable: true, core: true },
-              { id: "co3", lt: "Aš užsakiau arbatą.", en: "I ordered tea.", audioText: "Aš užsakiau arbatą", saveable: true, core: true },
+              { id: "co1", lt: "Čia ne tai, ką užsisakiau.", en: "This is not what I ordered.", audioText: "Čia ne tai, ką užsisakiau", saveable: true, core: true },
+              { id: "co2", lt: "Aš užsisakiau kavą.", en: "I ordered coffee.", audioText: "Aš užsisakiau kavą", saveable: true, core: true },
+              { id: "co3", lt: "Aš užsisakiau arbatą.", en: "I ordered tea.", audioText: "Aš užsisakiau arbatą", saveable: true, core: true },
               { id: "co4", lt: "Ne šitą.", en: "Not this one.", audioText: "Ne šitą", saveable: true, core: true },
               { id: "co5", lt: "Ne tą.", en: "Not that one.", audioText: "Ne tą", saveable: true, core: true },
               { id: "co6", lt: "Atsiprašau.", en: "Sorry.", audioText: "Atsiprašau", saveable: false, core: false },
@@ -485,7 +485,7 @@ export default function createModule_4_3(profile = {}) {
             id: "s4m3l3_b2",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Čia ne tai, ką užsakiau.", audioText: "Čia ne tai, ką užsakiau" },
+            prompt: { text: "Čia ne tai, ką užsisakiau.", audioText: "Čia ne tai, ką užsisakiau" },
             options: [
               { id: "a", text: "Can you bring another one?", isCorrect: false },
               { id: "b", text: "This is not what I ordered.", isCorrect: true },
@@ -499,10 +499,10 @@ export default function createModule_4_3(profile = {}) {
             prompt: { text: "A waiter brings you tea but you ordered coffee. What do you say?" },
             options: [
               { id: "a", text: "Nenoriu šito.", isCorrect: false },
-              { id: "b", text: "Čia ne tai, ką užsakiau. Aš užsakiau kavą.", isCorrect: true },
+              { id: "b", text: "Čia ne tai, ką užsisakiau. Aš užsisakiau kavą.", isCorrect: true },
               { id: "c", text: "Sąskaitą, prašau.", isCorrect: false },
             ],
-            feedback: { correct: "Čia ne tai, ką užsakiau. Aš užsakiau kavą — This is not what I ordered. I ordered coffee. Calm and clear." },
+            feedback: { correct: "Čia ne tai, ką užsisakiau. Aš užsisakiau kavą — This is not what I ordered. I ordered coffee. Calm and clear." },
           },
           {
             id: "s4m3l3_b4",
@@ -514,11 +514,11 @@ export default function createModule_4_3(profile = {}) {
               { id: "t2", text: "ne", correctIndex: 1 },
               { id: "t3", text: "tai,", correctIndex: 2 },
               { id: "t4", text: "ką", correctIndex: 3 },
-              { id: "t5", text: "užsakiau", correctIndex: 4 },
+              { id: "t5", text: "užsisakiau", correctIndex: 4 },
               { id: "t6", text: "šito", isDistractor: true },
               { id: "t7", text: "noriu", isDistractor: true },
             ],
-            answerText: "Čia ne tai, ką užsakiau",
+            answerText: "Čia ne tai, ką užsisakiau",
           },
                     {
   id: "s4m3l3_b5_v2",
@@ -570,7 +570,7 @@ export default function createModule_4_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Atsiprašau — čia ne tai, ką užsakiau. Aš užsakiau kavą.",
+          text: "Atsiprašau — čia ne tai, ką užsisakiau. Aš užsisakiau kavą.",
           textEn: "Sorry — this is not what I ordered. I ordered coffee.",
           result: "best",
           progresses: true,
@@ -652,8 +652,8 @@ export default function createModule_4_3(profile = {}) {
       id: "step_4",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Ar gerai?",
-      supportText: "Is it OK?",
+      speakerText: "Ar viskas gerai?",
+      supportText: "Is everything OK?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -738,7 +738,7 @@ export default function createModule_4_3(profile = {}) {
             id: "s4m3l4_b4",
             type: "best_response",
             title: "Choose the best response",
-            prompt: { text: "You got the wrong drink. You've already said čia ne tai ką užsakiau. What do you say next?" },
+            prompt: { text: "You got the wrong drink. You've already said čia ne tai, ką užsisakiau. What do you say next?" },
             options: [
               { id: "a", text: "Viso gero.", isCorrect: false },
               { id: "b", text: "Ar galite atnešti kitą?", isCorrect: true },
@@ -796,7 +796,7 @@ export default function createModule_4_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Atsiprašau — čia ne tai, ką užsakiau. Ar galite pakeisti?",
+          text: "Atsiprašau — čia ne tai, ką užsisakiau. Ar galite pakeisti?",
           textEn: "Sorry — this is not what I ordered. Can you change it?",
           result: "best",
           progresses: true,
@@ -814,7 +814,7 @@ export default function createModule_4_3(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Labai atsiprašau. Ką užsakėte?",
+      speakerText: "Labai atsiprašau. Ką užsisakėte?",
       supportText: "I'm very sorry. What did you order?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
@@ -939,7 +939,7 @@ export default function createModule_4_3(profile = {}) {
               { id: "rx2", lt: "Per šalta.", en: "Too cold.", audioText: "Per šalta", saveable: true, core: true },
               { id: "rx3", lt: "Nelabai gerai.", en: "Not very good.", audioText: "Nelabai gerai", saveable: true, core: true },
               { id: "rx4", lt: "Labai gerai.", en: "Very good.", audioText: "Labai gerai", saveable: true, core: true },
-              { id: "rx5", lt: "Ar gerai?", en: "Is it OK?", audioText: "Ar gerai", saveable: false, core: false },
+              { id: "rx5", lt: "Ar viskas gerai?", en: "Is everything OK?", audioText: "Ar viskas gerai", saveable: false, core: false },
             ],
           },
           {
@@ -1016,7 +1016,7 @@ export default function createModule_4_3(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Atsiprašau — čia ne tai, ką užsakiau.",
+          text: "Atsiprašau — čia ne tai, ką užsisakiau.",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1041,8 +1041,8 @@ export default function createModule_4_3(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Ar gerai?",
-      supportText: "Is it OK?",
+      speakerText: "Ar viskas gerai?",
+      supportText: "Is everything OK?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1137,8 +1137,8 @@ export default function createModule_4_3(profile = {}) {
       id: "step_5",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Puiku. Ar dar ko norite?",
-      supportText: "Great. Anything else?",
+      speakerText: "Puiku. Ar dar ko nors norėtumėte?",
+      supportText: "Great. Would you like anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [

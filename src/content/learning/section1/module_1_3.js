@@ -197,7 +197,7 @@ export default function createModule_1_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Suprantu. Ačiū!",
+          text: "Supratau, ačiū!",
           result: "best",
           progresses: true,
         }
@@ -280,10 +280,10 @@ export default function createModule_1_3(profile = {}) {
             prompt: { text: "You heard most of it but missed the last word." },
             options: [
               { id: "a", text: "Prašau kalbėkite lėčiau", isCorrect: false },
-              { id: "b", text: "Dar kartą, prašau", isCorrect: true },
+              { id: "b", text: "Pakartokite, prašau", isCorrect: true },
               { id: "c", text: "Nesuprantu", isCorrect: false },
             ],
-            feedback: { correct: "Dar kartą, prašau — one more time please. Good when you almost caught it." },
+            feedback: { correct: "Pakartokite, prašau — please repeat. This is the more natural polite repair phrase." },
           },
           {
             id: "s1m3l2_b6",
@@ -401,7 +401,7 @@ export default function createModule_1_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Suprantu. Ačiū!",
+          text: "Supratau, ačiū!",
           result: "best",
           progresses: true,
         }
@@ -463,9 +463,9 @@ export default function createModule_1_3(profile = {}) {
             options: [
               { id: "a", text: "What is this?", isCorrect: false },
               { id: "b", text: "What does this mean?", isCorrect: false },
-              { id: "c", text: "What is that?", isCorrect: true },
+              { id: "c", text: "What is that / what is there?", isCorrect: true },
             ],
-            feedback: { correct: "Kas ten? — what is that? Ten points to something further away. Tai points to something near." },
+            feedback: { correct: "Kas ten? can mean what is that / what is there. Ten points to something further away or away from the speaker." },
           },
           {
             id: "s1m3l3_b4",
@@ -565,7 +565,7 @@ export default function createModule_1_3(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Suprantu. Ačiū!",
+          text: "Supratau, ačiū!",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -842,7 +842,7 @@ export default function createModule_1_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Dar kartą, prašau",
+          text: "Pakartokite, prašau",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -987,9 +987,9 @@ export default function createModule_1_3(profile = {}) {
             options: [
               { id: "a", text: "Prašau kalbėkite lėčiau", isCorrect: false },
               { id: "b", text: "Ar jūs kalbate angliškai?", isCorrect: false },
-              { id: "c", text: "Dar kartą, prašau", isCorrect: true },
+              { id: "c", text: "Pakartokite, prašau", isCorrect: true },
             ],
-            feedback: { correct: "Dar kartą, prašau — one more time please. Use this when you nearly got it. Prašau kalbėkite lėčiau is for when the speed is the problem." },
+            feedback: { correct: "Pakartokite, prašau — please repeat. Use this when you need the sentence again. Prašau kalbėkite lėčiau is for when the speed is the problem." },
           },
           {
             id: "s1m3c_b8b",
@@ -1197,7 +1197,7 @@ export default function createModule_1_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Ah! Suprantu. Ačiū labai!",
+          text: "Ah! Supratau, ačiū labai!",
           result: "best",
           progresses: true,
         }

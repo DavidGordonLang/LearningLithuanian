@@ -674,7 +674,7 @@ export default function createModule_3_2(profile = {}) {
   objects: [
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -1140,7 +1140,7 @@ export default function createModule_3_2(profile = {}) {
     },
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -1172,7 +1172,7 @@ export default function createModule_3_2(profile = {}) {
         },
         {
           id: "b",
-          text: "Laba diena! Kiek kava kainuoja?",
+          text: "Laba diena! Kiek kainuoja kava?",
           result: "best",
           progresses: true,
         },

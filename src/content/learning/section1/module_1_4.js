@@ -431,7 +431,8 @@ export default function createModule_1_4(profile = {}) {
             "Kur yra autobusų stotelė? — Where is the bus stop?",
             "Kur yra viešbutis? — Where is the hotel?",
             "Kur yra bankas? — Where is the bank?",
-            "Ten — Over there (short answer you'll hear back)",
+            "Ten — there",
+            "Va ten — over there (more definite, often with pointing)",
             "Čia — Here",
           ],
         },
@@ -448,8 +449,9 @@ export default function createModule_1_4(profile = {}) {
               { id: "w5", lt: "Kur yra bankas?", en: "Where is the bank?", audioText: "Kur yra bankas", saveable: true, core: true },
               { id: "w6", lt: "Viešbutis", en: "Hotel", audioText: "Viešbutis", saveable: true, core: false },
               { id: "w7", lt: "Bankas", en: "Bank", audioText: "Bankas", saveable: true, core: false },
-              { id: "w8", lt: "Ten", en: "Over there", audioText: "Ten", saveable: false, core: false },
-              { id: "w9", lt: "Čia", en: "Here", audioText: "Čia", saveable: false, core: false },
+              { id: "w8", lt: "Ten", en: "There", audioText: "Ten", saveable: false, core: false },
+              { id: "w9", lt: "Va ten", en: "Over there", audioText: "Va ten", saveable: false, core: false },
+              { id: "w10", lt: "Čia", en: "Here", audioText: "Čia", saveable: false, core: false },
             ],
           },
           {
@@ -511,8 +513,8 @@ export default function createModule_1_4(profile = {}) {
   type: "scenario_v2",
   title: "Conversation",
   description: "You've just arrived in Vilnius by train and need to find your hotel.",
-  sceneIntro: "You've just arrived in Vilnius by train and need to find your hotel.",
-  location: "hotel reception",
+  sceneIntro: "You've just arrived in Vilnius by train and need to find your hotel. A local woman notices you looking at your map.",
+  location: "street near the station",
   userRole: "guest",
   register: "polite_service",
   goal: "You've just arrived in Vilnius by train and need to find your hotel.",
@@ -520,12 +522,12 @@ export default function createModule_1_4(profile = {}) {
   participants: [
     {
       "id": "receptionist",
-      "label": "Receptionist",
+      "label": "Local",
       "name": "Aust?ja",
-      "role": "receptionist",
+      "role": "local resident",
       "gender": "female",
       "relationshipToUser": "stranger",
-      "register": "polite_service"
+      "register": "polite_neutral"
     },
   ],
   objects: [
@@ -548,10 +550,10 @@ export default function createModule_1_4(profile = {}) {
     {
       id: "step_1",
       speakerId: "receptionist",
-      speakerLabel: "Receptionist",
+      speakerLabel: "Local",
       speakerText: "Ar galiu jums padėti?",
       supportText: "They're asking if they can help.",
-      sceneDirection: "The exchange begins.",
+      sceneDirection: "A local woman stops beside you and offers help.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
@@ -579,10 +581,10 @@ export default function createModule_1_4(profile = {}) {
     {
       id: "step_2",
       speakerId: "receptionist",
-      speakerLabel: "Receptionist",
+      speakerLabel: "Local",
       speakerText: "Viešbutis yra ten, prie stoties.",
       supportText: "They said: The hotel is over there, near the station.",
-      sceneDirection: "The conversation continues.",
+      sceneDirection: "She points down the street toward the hotel.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
@@ -610,7 +612,7 @@ export default function createModule_1_4(profile = {}) {
     {
       id: "step_3",
       speakerId: "receptionist",
-      speakerLabel: "Receptionist",
+      speakerLabel: "Local",
       speakerText: "Prašom.",
       supportText: "You're welcome.",
       sceneDirection: "The conversation continues.",
@@ -864,7 +866,7 @@ export default function createModule_1_4(profile = {}) {
       id: "step_4",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Norėčiau kavos?",
+      speakerText: "Ar norite kavos?",
       supportText: "They're asking if you'd like coffee.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
@@ -1082,7 +1084,7 @@ export default function createModule_1_4(profile = {}) {
             id: "s1m4c_b1",
             type: "best_response",
             title: "Choose the best response",
-            prompt: { text: "You drop your bag in the street and things fall everywhere. A passer-by stops." },
+            prompt: { text: "You drop your bag in the street and things fall everywhere. A passer-by stops and catches your attention." },
             options: [
               { id: "a", text: "Ar galiu čia atsisėsti?", isCorrect: false },
               { id: "b", text: "Man reikia pagalbos!", isCorrect: true },

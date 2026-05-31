@@ -293,7 +293,7 @@ export default function createModule_3_1(profile = {}) {
           pattern: "Numbers in Lithuanian sit inside real phrases. Hearing 'dešimt' in isolation is different from hearing it inside 'Tai kainuoja dešimt eurų'. This lesson is about making that connection.",
           usage: [
             "Tai kainuoja dešimt eurų — it costs ten euros",
-            "Mes esame du — we are two",
+            "Mes esame dviese — there are two of us",
             "Man reikia trijų bilietų — I need three tickets",
             "Pradedame penktą valandą — we start at five o'clock",
           ],
@@ -305,7 +305,7 @@ export default function createModule_3_1(profile = {}) {
             title: "Numbers in real phrases",
             items: [
               { id: "ctx1", lt: "Tai kainuoja dešimt eurų",    en: "It costs ten euros",         audioText: "Tai kainuoja dešimt eurų",    saveable: true, core: true },
-              { id: "ctx2", lt: "Mes esame du",                 en: "We are two",                 audioText: "Mes esame du",                 saveable: true, core: true },
+              { id: "ctx2", lt: "Mes esame dviese",             en: "There are two of us",        audioText: "Mes esame dviese",             saveable: true, core: true },
               { id: "ctx3", lt: "Man reikia trijų bilietų",    en: "I need three tickets",       audioText: "Man reikia trijų bilietų",    saveable: true, core: true },
               { id: "ctx4", lt: "Pradedame penktą valandą",    en: "We start at five o'clock",   audioText: "Pradedame penktą valandą",    saveable: true, core: true },
               { id: "noun_val", lt: "valanda", en: "hour / o'clock", audioText: "valanda", core: false, saveable: true },
@@ -326,11 +326,11 @@ export default function createModule_3_1(profile = {}) {
             id: "s3m1l4_b3",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Mes esame du", audioText: "Mes esame du" },
+            prompt: { text: "Mes esame dviese", audioText: "Mes esame dviese" },
             options: [
               { id: "a", text: "We are ten", isCorrect: false },
               { id: "b", text: "We are five", isCorrect: false },
-              { id: "c", text: "We are two", isCorrect: true },
+              { id: "c", text: "There are two of us", isCorrect: true },
             ],
           },
           {
@@ -351,7 +351,7 @@ export default function createModule_3_1(profile = {}) {
             prompt: { text: "You're at a ticket desk. You need tickets for yourself and one friend. What do you say?" },
             options: [
               { id: "a", text: "Man reikia trijų bilietų", isCorrect: false },
-              { id: "b", text: "Mes esame du", isCorrect: false },
+              { id: "b", text: "Mes esame dviese", isCorrect: false },
               { id: "c", text: "Man reikia dviejų bilietų", isCorrect: true },
             ],
             feedback: { correct: "Two of you — dviejų bilietų. It's the same pattern as trijų bilietų." },
@@ -362,7 +362,7 @@ export default function createModule_3_1(profile = {}) {
   title: "Conversation",
   description: "You're at a café counter. The server asks how many coffees.",
   sceneIntro: "You're at a café counter. The server asks how many coffees.",
-  location: "caf?",
+  location: "café",
   userRole: "customer",
   register: "polite_service",
   goal: "You're at a café counter. The server asks how many coffees.",
@@ -613,7 +613,7 @@ export default function createModule_3_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Du bilietai, prašau",
+          text: "Man reikia dviejų bilietų, prašau",
           result: "best",
           progresses: true,
         },

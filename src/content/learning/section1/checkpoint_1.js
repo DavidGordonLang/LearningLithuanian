@@ -335,7 +335,7 @@ export default function createCheckpoint1(profile = {}) {
         },
         {
           id: "c",
-          text: "Prašau dar kartą",
+          text: "Pakartokite, prašau",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -347,7 +347,7 @@ export default function createCheckpoint1(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Ar galiu jums padėti? Kur jūs einate?",
-      supportText: "They're offering help and asking where you're going — but you didn't catch it all.",
+      supportText: "They're offering help and asking where you're going.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [

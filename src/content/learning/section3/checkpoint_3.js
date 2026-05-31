@@ -186,7 +186,7 @@ export default function createCheckpoint3(profile = {}) {
         },
         {
           id: "b",
-          text: "Laba diena. Du bilietai į Kauną, prašau.",
+          text: "Laba diena. Man reikėtų dviejų bilietų į Kauną, prašau.",
           result: "best",
           progresses: true,
         },
@@ -350,8 +350,8 @@ export default function createCheckpoint3(profile = {}) {
           { id: "m13", lt: "dabar",                    en: "now",                          audioText: "dabar" },
           { id: "m14", lt: "rytoj",                    en: "tomorrow",                     audioText: "rytoj" },
           // Quantities
-          { id: "m15", lt: "Du bilietai, prašau",      en: "Two tickets, please",          audioText: "Du bilietai, prašau" },
-          { id: "m16", lt: "Mes esame du",             en: "We are two",                   audioText: "Mes esame du" },
+          { id: "m15", lt: "Dviejų bilietų, prašau",   en: "Two tickets, please",          audioText: "Dviejų bilietų, prašau" },
+          { id: "m16", lt: "Mes esame dviese",         en: "There are two of us",          audioText: "Mes esame dviese" },
           { id: "m17", lt: "Dar vieną, prašau",        en: "One more, please",             audioText: "Dar vieną, prašau" },
           { id: "m18", lt: "Užtenka",                  en: "That's enough",                audioText: "Užtenka" },
           { id: "m19", lt: "Nepakanka pinigų",         en: "Not enough money",             audioText: "Nepakanka pinigų" },

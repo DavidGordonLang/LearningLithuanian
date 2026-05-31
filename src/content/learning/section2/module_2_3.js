@@ -19,11 +19,11 @@ export default function createModule_2_3(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Šitas = this (nearby). Tas = that (further away). Both are the everyday spoken forms for beginners — natural and transparent.",
+          pattern: "Šitas = this one (nearby, masculine). Tas = that one (further away). Kas čia? is the natural all-purpose way to ask “What is this?”",
           usage: [
             "Šitas geras. — This is good.",
             "Tas geras. — That is good.",
-            "Kas šitas? — What is this?",
+            "Kas čia? — What is this?",
             "Kas tas? — What is that?",
             "Šitas, prašau. — This one, please.",
           ],
@@ -38,7 +38,7 @@ export default function createModule_2_3(profile = {}) {
               { id: "t2", lt: "Tas", en: "That", audioText: "Tas", saveable: true, core: true },
               { id: "t3", lt: "Šitas geras.", en: "This is good.", audioText: "Šitas geras", saveable: true, core: true },
               { id: "t4", lt: "Tas geras.", en: "That is good.", audioText: "Tas geras", saveable: true, core: true },
-              { id: "t5", lt: "Kas šitas?", en: "What is this?", audioText: "Kas šitas", saveable: true, core: true },
+              { id: "t5", lt: "Kas čia?", en: "What is this?", audioText: "Kas čia", saveable: true, core: true },
               { id: "t6", lt: "Kas tas?", en: "What is that?", audioText: "Kas tas", saveable: true, core: true },
               { id: "t7", lt: "Duona", en: "Bread", audioText: "Duona", saveable: true, core: false },
               { id: "t8", lt: "Obuolys", en: "Apple", audioText: "Obuolys", saveable: true, core: false },
@@ -60,7 +60,7 @@ export default function createModule_2_3(profile = {}) {
             id: "s2m3l1_b3",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Kas šitas?", audioText: "Kas šitas" },
+            prompt: { text: "Kas čia?", audioText: "Kas čia" },
             options: [
               { id: "a", text: "What is that?", isCorrect: false },
               { id: "b", text: "What is this?", isCorrect: true },
@@ -74,18 +74,18 @@ export default function createModule_2_3(profile = {}) {
             prompt: { text: "You're pointing at an item right in front of you and want to know what it is." },
             options: [
               { id: "a", text: "Kas tas?", isCorrect: false },
-              { id: "b", text: "Kas šitas?", isCorrect: true },
+              { id: "b", text: "Kas čia?", isCorrect: true },
               { id: "c", text: "Kas ten?", isCorrect: false },
             ],
-            feedback: { correct: "Kas šitas? — for something right in front of you. Kas tas? or Kas ten? for something further away." },
+            feedback: { correct: "Kas čia? — the natural way to ask what something nearby is. Kas tas? or Kas ten? point further away." },
           },
           {
             id: "s2m3l1_b5",
             type: "speak_self_check",
             title: "Say it out loud",
             prompt: "Say: What is this?",
-            targetText: "Kas šitas?",
-            audioText: "Kas šitas",
+            targetText: "Kas čia?",
+            audioText: "Kas čia",
           },
           {
   id: "s2m3l1_b6_v2",
@@ -114,9 +114,10 @@ export default function createModule_2_3(profile = {}) {
       id: "step_1",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Atsiprašau…",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Laba diena. Kuo galėčiau padėti?",
+      supportText: "Kuo galėčiau padėti? means “How can I help?” — a polite service phrase.",
+      sceneDirection: "The seller notices you looking at a loaf of bread.",
+      learnerPrompt: "Ask what the item is.",
       options: [
         {
           id: "a",
@@ -127,7 +128,7 @@ export default function createModule_2_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Kas šitas?",
+          text: "Kas čia?",
           result: "best",
           progresses: true,
         },
@@ -145,9 +146,9 @@ export default function createModule_2_3(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Tai duona.",
-      supportText: "That's bread.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      supportText: "Duona means bread. It is feminine, so “this” becomes šita when you describe it.",
+      sceneDirection: "The seller points to the bread on the counter.",
+      learnerPrompt: "Ask if this bread is good.",
       options: [
         {
           id: "a",
@@ -158,7 +159,7 @@ export default function createModule_2_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Ačiū! Šitas geras?",
+          text: "Ačiū! Šita gera?",
           result: "best",
           progresses: true,
         },
@@ -175,10 +176,10 @@ export default function createModule_2_3(profile = {}) {
       id: "step_3",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Taip, labai geras!",
-      supportText: "Yes, very good!",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      speakerText: "Taip, labai gera!",
+      supportText: "Because duona is feminine, the seller says gera, not geras.",
+      sceneDirection: "The seller smiles and waits for your choice.",
+      learnerPrompt: "Say you want this one.",
       options: [
         {
           id: "a",
@@ -189,7 +190,7 @@ export default function createModule_2_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Noriu šito, prašau.",
+          text: "Šitos, prašau.",
           result: "best",
           progresses: true,
         },
@@ -327,7 +328,7 @@ export default function createModule_2_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Kas šitas?",
+          text: "Kas čia?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -433,6 +434,7 @@ export default function createModule_2_3(profile = {}) {
               { id: "pl7", lt: "Gėlės", en: "Flowers", audioText: "Gėlės", saveable: true, core: false },
               { id: "pl8", lt: "Vaisiai", en: "Fruit", audioText: "Vaisiai", saveable: true, core: false },
               { id: "pl9", lt: "Daržovės", en: "Vegetables", audioText: "Daržovės", saveable: true, core: false },
+              { id: "pl10", lt: "Uogos", en: "Berries", audioText: "Uogos", saveable: true, core: false },
             ],
           },
           {
@@ -504,10 +506,10 @@ export default function createModule_2_3(profile = {}) {
       id: "step_1",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Ko norite?",
-      supportText: "What do you want?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Ko norėtumėte?",
+      supportText: "What would you like? This is the polite service form.",
+      sceneDirection: "The baker points to several pastries in the case.",
+      learnerPrompt: "Choose several pastries nearby.",
       options: [
         {
           id: "a",
@@ -524,7 +526,7 @@ export default function createModule_2_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Kas šitas?",
+          text: "Kas čia?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -601,6 +603,7 @@ export default function createModule_2_3(profile = {}) {
               { id: "ch7", lt: "Batas", en: "Shoe", audioText: "Batas", saveable: true, core: false },
               { id: "ch8", lt: "Striukė", en: "Jacket", audioText: "Striukė", saveable: true, core: false },
               { id: "ch9", lt: "Dydis", en: "Size", audioText: "Dydis", saveable: true, core: false },
+              { id: "ch10", lt: "Batai", en: "Shoes", audioText: "Batai", saveable: true, core: false },
             ],
           },
           {
@@ -622,7 +625,7 @@ export default function createModule_2_3(profile = {}) {
             options: [
               { id: "a", text: "Kuris?", isCorrect: false },
               { id: "b", text: "Šitie tinka.", isCorrect: true },
-              { id: "c", text: "Kas šitas?", isCorrect: false },
+              { id: "c", text: "Kas čia?", isCorrect: false },
             ],
             feedback: { correct: "Šitie tinka — these are fine / these will do. Natural and practical." },
           },
@@ -669,11 +672,11 @@ export default function createModule_2_3(profile = {}) {
   ],
   objects: [
     {
-      "id": "card",
-      "lt": "kortel?",
-      "en": "card",
-      "gender": "feminine",
-      "number": "singular"
+      "id": "shoes",
+      "lt": "batai",
+      "en": "shoes",
+      "gender": "masculine",
+      "number": "plural"
     },
   ],
   steps: [
@@ -774,8 +777,8 @@ export default function createModule_2_3(profile = {}) {
       id: "step_4",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Puiku! Ar galima kortele?",
-      supportText: "Great! Can you pay by card?",
+      speakerText: "Puiku! Ar mokėsite kortele?",
+      supportText: "Great! Will you pay by card?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -788,7 +791,7 @@ export default function createModule_2_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Taip, galima. Turiu kortelę.",
+          text: "Taip, kortele.",
           result: "best",
           progresses: true,
         },
@@ -1056,10 +1059,10 @@ export default function createModule_2_3(profile = {}) {
       id: "step_1",
       speakerId: "seller",
       speakerLabel: "Seller",
-      speakerText: "Ko norite?",
-      supportText: "What do you want?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Ko norėtumėte?",
+      supportText: "What would you like? This is the polite service form.",
+      sceneDirection: "The shopkeeper waits while you choose between nearby items.",
+      learnerPrompt: "Choose the nearby group of items.",
       options: [
         {
           id: "a",
@@ -1076,7 +1079,7 @@ export default function createModule_2_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Kas šitas?",
+          text: "Kas čia?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1157,7 +1160,7 @@ export default function createModule_2_3(profile = {}) {
               { id: "m2",  lt: "Tas",              en: "That",                    audioText: "Tas" },
               { id: "m3",  lt: "Šitie",            en: "These",                   audioText: "Šitie" },
               { id: "m4",  lt: "Tie",              en: "Those",                   audioText: "Tie" },
-              { id: "m5",  lt: "Kas šitas?",       en: "What is this?",           audioText: "Kas šitas" },
+              { id: "m5",  lt: "Kas čia?",         en: "What is this?",           audioText: "Kas čia" },
               { id: "m6",  lt: "Šitas geras.",     en: "This is good.",           audioText: "Šitas geras" },
               { id: "m7",  lt: "Noriu šito.",      en: "I want this one.",        audioText: "Noriu šito" },
               { id: "m8",  lt: "Noriu to.",        en: "I want that one.",        audioText: "Noriu to" },
