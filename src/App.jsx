@@ -60,6 +60,10 @@ import {
 
 import { trackEvent, trackError } from "./services/analytics";
 import { IS_AUDIT_MODE } from "./auditMode";
+import {
+  applyAuditCaptureFixtures,
+  IS_AUDIT_CAPTURE_MODE,
+} from "./auditCaptureFixtures";
 
 /* ============================================================================ */
 const APP_VERSION = "3.0.0-beta";
@@ -336,6 +340,7 @@ function ScenarioPickerModal({
 
 export default function App() {
   useEffect(() => {
+    applyAuditCaptureFixtures();
     initAuthListener();
   }, []);
 
@@ -890,6 +895,7 @@ export default function App() {
     Number(profileOnboardingVersion || 0) < PROFILE_ONBOARDING_VERSION;
 
   useEffect(() => {
+    if (IS_AUDIT_CAPTURE_MODE) return;
     if (settingsLoading || needsProfileOnboarding || showOnboardingProfile || showUserGuide) return;
     if (user?.id && !hasSeenUserGuide) return;
     if (!lastSeenVersion) {
@@ -968,7 +974,7 @@ export default function App() {
   const dailyRecall = useDailyRecall({
     rows: visibleRows,
     appVersion: APP_VERSION,
-    blocked: dailyRecallBlocked,
+    blocked: dailyRecallBlocked || IS_AUDIT_CAPTURE_MODE,
   });
 
   useModalScrollLock(
