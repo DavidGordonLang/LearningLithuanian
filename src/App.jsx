@@ -340,7 +340,10 @@ function ScenarioPickerModal({
 
 export default function App() {
   useEffect(() => {
-    applyAuditCaptureFixtures();
+    if (IS_AUDIT_CAPTURE_MODE) {
+      applyAuditCaptureFixtures();
+      return;
+    }
     initAuthListener();
   }, []);
 
