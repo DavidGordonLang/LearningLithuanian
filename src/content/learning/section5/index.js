@@ -13,6 +13,7 @@ export default function createSection5(profile = {}) {
     code: "5",
     title: "Directions and Places",
     description: "Ask where things are, understand directions, identify key places, and navigate simple real-world location exchanges.",
+    moduleCount: 4,
     checkpointCount: 1,
     modules: [
       createModule_5_1(profile),
