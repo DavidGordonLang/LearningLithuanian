@@ -59,6 +59,7 @@ import {
 } from "./services/libraryIO";
 
 import { trackEvent, trackError } from "./services/analytics";
+import { IS_AUDIT_MODE } from "./auditMode";
 
 /* ============================================================================ */
 const APP_VERSION = "3.0.0-beta";
@@ -986,7 +987,7 @@ export default function App() {
       ? page
       : "scenarios";
 
-  if (authLoading || !allowlistChecked) {
+  if (!IS_AUDIT_MODE && (authLoading || !allowlistChecked)) {
     return (
       <div className="min-h-[100dvh] bg-zinc-950 text-zinc-100 flex items-center justify-center">
         <div className="text-sm text-zinc-400">Loading…</div>
@@ -994,11 +995,11 @@ export default function App() {
     );
   }
 
-  if (!user) {
+  if (!IS_AUDIT_MODE && !user) {
     return <AuthGate />;
   }
 
-  if (!isAllowlisted) {
+  if (!IS_AUDIT_MODE && !isAllowlisted) {
     return <BetaBlocked />;
   }
 

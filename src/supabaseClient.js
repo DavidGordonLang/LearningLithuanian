@@ -1,8 +1,14 @@
 // src/supabaseClient.js
 import { createClient } from "@supabase/supabase-js";
+import { IS_AUDIT_MODE } from "./auditMode";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// The isolated audit build must never receive or use production Supabase data.
+const supabaseUrl = IS_AUDIT_MODE
+  ? "https://audit.invalid"
+  : import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = IS_AUDIT_MODE
+  ? "audit-placeholder"
+  : import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
