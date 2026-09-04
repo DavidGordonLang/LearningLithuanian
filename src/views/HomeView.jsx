@@ -12,6 +12,10 @@ import useTranslate from "../hooks/useTranslate";
 import useSaveToLibrary from "../hooks/useSaveToLibrary";
 import { useSettingsStore } from "../stores/settingsStore";
 import InteractivePhraseText from "../components/audio/InteractivePhraseText";
+import {
+  AUDIT_CAPTURE_TRANSLATION,
+  IS_AUDIT_CAPTURE_MODE,
+} from "../auditCaptureFixtures";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -140,6 +144,7 @@ export default function HomeView({
   const {
     translating,
     result,
+    setResult,
     duplicateEntry,
     setDuplicateEntry,
     translateText,
@@ -151,6 +156,12 @@ export default function HomeView({
     speakerGender,
     showToast,
   });
+
+  useEffect(() => {
+    if (!IS_AUDIT_CAPTURE_MODE) return;
+    setInput(AUDIT_CAPTURE_TRANSLATION.input);
+    setResult(AUDIT_CAPTURE_TRANSLATION.result);
+  }, [setResult]);
 
   const canTranslate = useMemo(() => !!input.trim(), [input]);
   const canSave = useMemo(
