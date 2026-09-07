@@ -335,13 +335,14 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
   // Word-tap only available on LT options after the answer is revealed
   const showWordTap = isLithuanian && revealState !== "idle";
 
+  const Container = revealState === "idle" ? "button" : "div";
   return (
-    <button type="button" data-press onClick={handleClick} disabled={revealState !== "idle"}
+    <Container type={revealState === "idle" ? "button" : undefined} data-press onClick={revealState === "idle" ? handleClick : undefined}
       className={cn("w-full text-left rounded-2xl border px-4 py-3.5 text-[15px] leading-snug transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
       {showWordTap
         ? <InteractivePhraseText text={option.text} playText={playText} wordClassName="hover:text-emerald-300" />
         : option.text}
-    </button>
+    </Container>
   );
 }
 

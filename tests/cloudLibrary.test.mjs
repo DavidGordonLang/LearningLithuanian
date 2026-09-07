@@ -44,3 +44,23 @@ test("the RPC client is bound to the captured account credentials", async () => 
   assert.equal(captured, account);
   assert.equal(captured.accessToken, "synthetic-token-A");
 });
+
+test("read-only recovery is scoped and rejects a capped response", async () => {
+  const account = { id: 'A', version: 1 };
+  let response = { data: [{ data: { _id: 'one', Lithuanian: 'Labas' } }], count: 1 };
+  const calls = [];
+  const client = { from(table) { calls.push(table); return { select(columns, options) {
+    calls.push({ columns, options }); return { async eq(column, value) { calls.push({ column, value }); return response; } };
+  } }; } };
+  const cloud = createCloudLibrary(client, () => account);
+  assert.equal((await cloud.readForRecovery(account))[0]._id, 'one');
+  assert.deepEqual(calls, ['phrases', { columns: 'data', options: { count: 'exact' } }, { column: 'user_id', value: 'A' }]);
+  response = { ...response, count: 1200 };
+  await assert.rejects(cloud.readForRecovery(account), /full cloud library/);
+});
+
+test("missing migration exposes an actionable setup status", async () => {
+  const account = { id: 'A', version: 1 };
+  const cloud = createCloudLibrary({ rpc: async () => ({ error: { code: 'PGRST202' } }) }, () => account);
+  await assert.rejects(cloud.read(account), { code: 'SYNC_SETUP_REQUIRED' });
+});

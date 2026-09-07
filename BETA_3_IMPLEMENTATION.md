@@ -43,3 +43,16 @@ The security-invoker/permission approach follows [Supabase database-function gui
 | B15–B18, B22 | Scoring, notes, mobile readability, recall/cache consistency and truthful diagnostics/version reporting |
 
 No changes to dev/main, lesson wording, paid API permissions or production data are included in batch 1. The branch is a work in progress, not a beta release candidate approved for users.
+
+## Batch 2: preview recovery, first-run audio and pronunciation
+
+- Missing cloud functions now produce a setup message and a read-only **Load cloud phrases on this device** action in Settings after a failed sync. It uses the existing authenticated table read, requires an exact row count, rejects capped/incomplete responses, preserves current local identities (including deletions), and adds missing cloud entries. It performs no cloud writes. Large libraries exceeding the server response cap still require database setup; it does not claim a complete download in that case.
+- First-run profile setup is followed by one skippable, interactive word-audio screen instead of the nine-slide guide. Completing it suppresses the immediate release-notes popup. Settings retains the full guide and a Try word audio action. The profile form itself and contextual tips remain to be redesigned. The demo introduces phonetics settings in text; it does not yet show a native-reviewed EN/IPA pair.
+- Scenario V2 dialogue, history, feedback and reply text use word audio. Reply submission is a separate Choose button. Speaker voice overrides survive slow word playback. Revealed multiple-choice answers no longer contain audio controls under a disabled button.
+- Audio playback now owns pending requests and active URLs: the latest request wins, stopping invalidates pending playback, interruption releases URLs, and playback promises settle at end/stop. Top-level navigation/account/voice changes stop playback. Lesson block-level cleanup and delayed scenario autoplay still need review.
+- Vocabulary enrichment sends the original Lithuanian, rejects rewritten responses and preserves reviewed English, existing phonetics, and later edits/deletions. Existing incorrect library rows are not mass-rewritten.
+- Home, duplicate previews, Library, saved Scenarios and Daily Recall share the EN/IPA fallback policy. Missing IPA is explicitly labelled. Daily Recall and duplicate previews now support word taps.
+
+Validation: 14 focused Node tests pass; Vite production build and diff whitespace checks pass. Coverage includes audio races, interruption cleanup, missing migration, capped recovery, exact-text enrichment and phonetics fallback. These are synthetic tests, not successful live account recovery or physical-phone listening checks. Scenario reply layout and the new introduction still need authenticated browser/device verification. No database migration has been applied.
+
+Remaining: broader word coverage (grammar/building/matching/vocab selection/mixed notes), explicit language spans for English prompts, answer checking and progression, reviewed lesson content/nouns, the full profile onboarding redesign and the other audit items above. PR remains a draft.

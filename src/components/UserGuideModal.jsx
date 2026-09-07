@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 
 export default function UserGuideModal({
   onClose,
+  onTryAudio,
   firstLaunch = false,
   topOffset = 0,
 }) {
@@ -145,6 +146,7 @@ export default function UserGuideModal({
               </div>
             </div>
 
+            {onTryAudio ? <button type="button" className="z-btn z-btn-secondary px-3 py-2 text-[13px]" onClick={onTryAudio}>Try word audio</button> : null}
             {!firstLaunch && (
               <button
                 type="button"

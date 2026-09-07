@@ -10,6 +10,7 @@ export function captureSyncAccount() {
 }
 
 const cloud = createCloudLibrary((account) => createAccountClient(account.accessToken), captureSyncAccount);
+export const fetchCloudRecovery = (account = captureSyncAccount()) => cloud.readForRecovery(account);
 export const assertSyncAccount = cloud.assertAccount;
 export const fetchUserSnapshot = (account = captureSyncAccount()) => cloud.read(account);
 

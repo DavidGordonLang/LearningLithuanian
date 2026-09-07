@@ -1,3 +1,4 @@
+import { fetchCloudRecovery } from "../stores/supabasePhrases";
 // src/views/SettingsView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -238,6 +239,7 @@ export default function SettingsView({
   const [pendingConflicts, setPendingConflicts] = useState([]);
   const [pendingMergedRows, setPendingMergedRows] = useState([]);
   const [pendingSync, setPendingSync] = useState(null);
+  const [syncSetupRequired, setSyncSetupRequired] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
 
@@ -435,8 +437,30 @@ export default function SettingsView({
       showToast?.("Sync completed ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_merge" }, { app_version: appVersion }); } catch {}
+      if (e?.code === "SYNC_SETUP_REQUIRED") setSyncSetupRequired(true);
       showToast?.("Sync failed: " + (e?.message || "Unknown error"));
     } finally { setMerging(false); }
+  }
+
+  async function loadCloudCopy() {
+    const account = captureSyncAccount();
+    try {
+      setSyncingDown(true);
+      const localBefore = getAllStoredPhrases();
+      const cloudRows = await fetchCloudRecovery(account);
+      assertLocalSnapshot(account, localBefore);
+      const ids = new Set(localBefore.map((row) => row._id || row.id));
+      const additions = cloudRows.filter((row) => {
+        const id = row._id || row.id;
+        if (ids.has(id)) return false;
+        ids.add(id);
+        return true;
+      });
+      setRows([...localBefore, ...additions]);
+      showToast?.(`Loaded ${additions.filter((r) => !r._deleted).length} cloud phrases. Existing local entries were kept. Cloud has not been changed.`);
+    } catch (error) {
+      showToast?.(error?.message || "Could not load cloud phrases.");
+    } finally { setSyncingDown(false); }
   }
 
   async function finishConflictSync(resolutions) {
@@ -514,6 +538,15 @@ export default function SettingsView({
 
   const syncBanner = (() => {
     if (!user) return null;
+    if (syncSetupRequired) return (
+      <div className="z-inset p-4 space-y-3" role="status">
+        <div className="text-sm font-semibold">Cloud sync is awaiting setup</div>
+        <p className="text-sm">Load your cloud phrases onto this device to use them now. Existing local entries are kept; this does not upload changes.</p>
+        <button type="button" className="z-btn z-btn-secondary px-4 py-3" disabled={syncingDown || merging} onClick={loadCloudCopy}>
+          {syncingDown ? "Loading…" : "Load cloud phrases on this device"}
+        </button>
+      </div>
+    );
     if (pendingConflicts.length) {
       return (
         <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">

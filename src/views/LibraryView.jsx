@@ -1,3 +1,4 @@
+import { phoneticsDisplay } from "../utils/phoneticsDisplay";
 import React, {
   useMemo,
   useState,
@@ -326,10 +327,7 @@ export default function LibraryView({
           const hasNotes = !!String(r?.Notes || "").trim();
           const isHighlighted = highlightedId === id;
 
-          const displayedPhonetic =
-            phoneticsMode === "ipa"
-              ? String(r?.PhoneticIPA || r?.Phonetic || "").trim()
-              : String(r?.Phonetic || "").trim();
+          const displayedPhonetic = phoneticsDisplay(phoneticsMode, r?.Phonetic, r?.PhoneticIPA);
 
           const onCardTap = () => {
             if (!hasNotes) return;
