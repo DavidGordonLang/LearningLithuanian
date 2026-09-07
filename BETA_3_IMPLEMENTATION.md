@@ -56,3 +56,7 @@ No changes to dev/main, lesson wording, paid API permissions or production data 
 Validation: 14 focused Node tests pass; Vite production build and diff whitespace checks pass. Coverage includes audio races, interruption cleanup, missing migration, capped recovery, exact-text enrichment and phonetics fallback. These are synthetic tests, not successful live account recovery or physical-phone listening checks. Scenario reply layout and the new introduction still need authenticated browser/device verification. No database migration has been applied.
 
 Remaining: broader word coverage (grammar/building/matching/vocab selection/mixed notes), explicit language spans for English prompts, answer checking and progression, reviewed lesson content/nouns, the full profile onboarding redesign and the other audit items above. PR remains a draft.
+
+## Onboarding follow-up
+
+David's feedback: the one-screen audio introduction omitted too much app context. Replaced it with four skippable, compact steps: translation example, live word/phrase audio, Library/Scenario organisation, then personalised lessons and preferences. The whole-phrase control now pulses immediately, offers Stop audio, and resets when its promise settles or the user switches words/steps. It labels the pending request without claiming playback has already started. Reduced-motion preferences suppress the animation; the ring and button label remain. Settings' full guide opens this as Quick tour. Production build passes; physical-phone interaction verification remains outstanding.
