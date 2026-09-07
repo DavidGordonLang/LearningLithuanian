@@ -7,9 +7,13 @@ import {
   replaceUserPhrases,
   fetchUserPhrases,
   mergeUserPhrases,
+  fetchUserSnapshot,
+  captureSyncAccount,
+  assertSyncAccount,
 } from "../stores/supabasePhrases";
 import ConflictReviewModal from "../components/ConflictReviewModal";
 import ModalShell from "../components/ModalShell";
+import LegacyLibraryRecovery from "../components/LegacyLibraryRecovery";
 import applyMergeResolutions from "../utils/applyMergeResolutions";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useGameStore } from "../stores/gameStore";
@@ -233,6 +237,7 @@ export default function SettingsView({
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [pendingConflicts, setPendingConflicts] = useState([]);
   const [pendingMergedRows, setPendingMergedRows] = useState([]);
+  const [pendingSync, setPendingSync] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
 
@@ -279,6 +284,16 @@ export default function SettingsView({
   const isAdmin = !!user?.email && ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(String(user.email).toLowerCase());
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
+  const assertLocalSnapshot = (account, snapshot) => {
+    assertSyncAccount(account);
+    if (getAllStoredPhrases() !== snapshot) {
+      setPendingConflicts([]);
+      setPendingMergedRows([]);
+      setPendingSync(null);
+      setShowConflictModal(false);
+      throw new Error("Your local library changed during sync. Your latest entries have been kept; please sync again.");
+    }
+  };
   const lastHashRef = useRef("");
 
   useEffect(() => {
@@ -342,6 +357,7 @@ export default function SettingsView({
 
   async function uploadLibraryToCloud() {
     if (!user) return;
+    const account = captureSyncAccount();
     const ok = await confirmAction({
       title: "Overwrite cloud library?",
       body: "This will replace your cloud library with the library on this device. Other devices may lose cloud entries that are not present locally.",
@@ -352,9 +368,13 @@ export default function SettingsView({
     if (!ok) return;
     try {
       setSyncingUp(true);
+      assertSyncAccount(account);
       try { trackEvent("sync_upload_start", {}, { app_version: appVersion }); } catch {}
       const allPhrases = getAllStoredPhrases();
-      await replaceUserPhrases(allPhrases);
+      const snapshot = await fetchUserSnapshot(account);
+      assertLocalSnapshot(account, allPhrases);
+      await replaceUserPhrases(allPhrases, snapshot.revision, account);
+      assertLocalSnapshot(account, allPhrases);
       markSynced("Uploaded");
       try { trackEvent("sync_upload_complete", { rows: allPhrases.length }, { app_version: appVersion }); } catch {}
       showToast?.("Uploaded to cloud ✅");
@@ -366,6 +386,7 @@ export default function SettingsView({
 
   async function downloadLibraryFromCloud() {
     if (!user) return;
+    const account = captureSyncAccount();
     const ok = await confirmAction({
       title: "Overwrite local library?",
       body: "This will replace the library on this device with the cloud version. Local entries that are not in cloud may be lost.",
@@ -376,8 +397,11 @@ export default function SettingsView({
     if (!ok) return;
     try {
       setSyncingDown(true);
+      assertSyncAccount(account);
       try { trackEvent("sync_download_start", {}, { app_version: appVersion }); } catch {}
-      const cloudRows = await fetchUserPhrases();
+      const localBefore = getAllStoredPhrases();
+      const cloudRows = await fetchUserPhrases(account);
+      assertLocalSnapshot(account, localBefore);
       setRows(cloudRows);
       markSynced("Downloaded");
       try { trackEvent("sync_download_complete", { rows: cloudRows.length }, { app_version: appVersion }); } catch {}
@@ -390,6 +414,7 @@ export default function SettingsView({
 
   async function mergeLibraryWithCloud() {
     if (!user) return;
+    const account = captureSyncAccount();
     try {
       if (pendingConflicts.length) {
         try { trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion }); } catch {}
@@ -398,8 +423,10 @@ export default function SettingsView({
       setMerging(true);
       try { trackEvent("sync_merge_start", {}, { app_version: appVersion }); } catch {}
       const localAll = getAllStoredPhrases();
-      const result = await mergeUserPhrases(localAll);
+      const result = await mergeUserPhrases(localAll, account);
+      assertLocalSnapshot(account, localAll);
       if (result.conflicts?.length) {
+        setPendingSync({ account, revision: result.revision, localRows: localAll });
         try { trackEvent("sync_conflicts_found", { count: result.conflicts.length }, { app_version: appVersion }); } catch {}
         setPendingConflicts(result.conflicts); setPendingMergedRows(result.mergedRows || []); setShowConflictModal(true); return;
       }
@@ -416,16 +443,24 @@ export default function SettingsView({
     if (!user) return;
     if (!pendingMergedRows.length || !pendingConflicts.length) { setShowConflictModal(false); return; }
     try {
+      if (!pendingSync) throw new Error("Please sync again before reviewing conflicts.");
+      assertLocalSnapshot(pendingSync.account, pendingSync.localRows);
       setMerging(true);
       try { trackEvent("sync_conflicts_finish_start", { count: pendingConflicts.length }, { app_version: appVersion }); } catch {}
       const finalRows = applyMergeResolutions(pendingMergedRows, pendingConflicts, resolutions);
-      await replaceUserPhrases(finalRows);
+      await replaceUserPhrases(finalRows, pendingSync.revision, pendingSync.account);
+      assertLocalSnapshot(pendingSync.account, pendingSync.localRows);
       setRows(finalRows); markSynced("Synced");
+      setPendingSync(null);
       setPendingConflicts([]); setPendingMergedRows([]); setShowConflictModal(false);
       try { trackEvent("sync_conflicts_finish_complete", { rows: finalRows.length }, { app_version: appVersion }); } catch {}
       showToast?.("Sync completed ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_conflicts_finish" }, { app_version: appVersion }); } catch {}
+      // A failed save may have an outdated revision (or an uncertain network result).
+      // Read a fresh snapshot on retry instead of reopening the old comparison.
+      setPendingSync(null);
+      setPendingConflicts([]); setPendingMergedRows([]); setShowConflictModal(false);
       showToast?.("Finish sync failed: " + (e?.message || "Unknown error"));
     } finally { setMerging(false); }
   }
@@ -952,6 +987,7 @@ export default function SettingsView({
       </CollapsibleSection>
 
       <CollapsibleSection id="sec-account" title="Account" subtitle={user ? String(user.email) : "Sign in to enable cloud sync."} open={openAccount} setOpen={setOpenAccount}>
+        <LegacyLibraryRecovery key={user?.id || "signed-out"} confirmAction={confirmAction} showToast={showToast} />
         {syncBanner}
         <div className="flex flex-wrap gap-3">
           {!user ? (

@@ -11,6 +11,8 @@ import { CATEGORIES } from "../constants/categories";
 import { useSettingsStore } from "../stores/settingsStore";
 import InteractivePhraseText from "../components/audio/InteractivePhraseText";
 import AudioPlayButton from "../components/audio/AudioPlayButton";
+import { usePhraseStore } from "../stores/phraseStore";
+import { hasRecoverableLibrary } from "../stores/legacyLibrary";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -76,6 +78,9 @@ export default function LibraryView({
   const search = searchStore.getSnapshot() || "";
   const [category, setCategory] = useState("All");
   const [sortMode, setSortMode] = useState("Newest");
+  const accountId = usePhraseStore((s) => s.accountId);
+  const storageError = usePhraseStore((s) => s.storageError);
+  const hasLegacyLibrary = useMemo(() => hasRecoverableLibrary(accountId), [accountId, rows]);
 
   const [openDetails, setOpenDetails] = useState(() => new Set());
   const toggleDetails = useCallback((id) => {
@@ -239,6 +244,8 @@ export default function LibraryView({
       <div className="space-y-1">
         <h2 className="z-title">{T.libraryTitle || "Library"}</h2>
         <p className="z-subtitle">Browse, search, and manage your saved entries.</p>
+        {storageError ? <p role="alert" className="mt-2 text-sm text-rose-400">{storageError} Your stored copy has been preserved. Please reopen the app to retry.</p> : null}
+        {hasLegacyLibrary ? <p className="mt-2 text-sm text-zinc-400">Your previous library is still on this device. Recover it in Settings → Account.</p> : null}
       </div>
 
       {SearchBox ? (

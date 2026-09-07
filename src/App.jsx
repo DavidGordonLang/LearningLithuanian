@@ -334,9 +334,16 @@ function ScenarioPickerModal({
 }
 
 export default function App() {
+  const accountId = useAuthStore((s) => s.user?.id);
   useEffect(() => {
     initAuthListener();
   }, []);
+  // Private UI state (translation results, open editors and pending conflicts)
+  // must not survive a change of account.
+  return <AccountApp key={accountId || "signed-out"} />;
+}
+
+function AccountApp() {
 
   // ── Theme: apply data-theme to <html> whenever themeMode changes ──────────
   const themeMode = useSettingsStore((s) => s.themeMode);

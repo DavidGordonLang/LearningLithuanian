@@ -1,24 +1,8 @@
 import { create } from "zustand";
+import { createAccountStorage, bindAccountActions } from "./accountStorage.js";
 
-const LS_KEY = "lt_scenarios_v1";
-
-function loadScenarios() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveScenarios(rows) {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(rows));
-  } catch (err) {
-    console.error("Failed saving scenarios", err);
-  }
-}
+const storage = createAccountStorage("lt_scenarios_v1");
+const saveScenarios = (rows) => storage.save(rows);
 
 function makeId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -69,7 +53,9 @@ function moveItem(list, fromIndex, toIndex) {
 }
 
 export const useScenarioStore = create((set, get) => ({
-  scenarios: sortScenarios(loadScenarios().map(ensureScenario)),
+  scenarios: [],
+  accountId: null,
+  storageError: null,
 
   setScenarios: (update) => {
     set((state) => {
@@ -283,3 +269,15 @@ export const useScenarioStore = create((set, get) => ({
     return { ok: true };
   },
 }));
+
+const actions = Object.fromEntries(Object.entries(useScenarioStore.getState()).filter(([, value]) => typeof value === "function"));
+
+export function selectScenarioAccount(userId) {
+  let scenarios = [];
+  let storageError = null;
+  try { scenarios = sortScenarios(storage.select(userId).map(ensureScenario)); }
+  catch (error) { storageError = error?.message || "Could not read your saved scenarios."; }
+  useScenarioStore.setState({ scenarios, accountId: userId || null, storageError, ...bindAccountActions(actions, storage) });
+}
+
+selectScenarioAccount(null);

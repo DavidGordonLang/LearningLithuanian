@@ -1,39 +1,28 @@
 // src/stores/supabasePhrases.js
-import { supabase } from "../supabaseClient";
+import { createAccountClient } from "../supabaseClient";
 import { useAuthStore } from "./authStore";
 import { mergeUserPhrases as mergeEngine } from "./mergeUserPhrases";
+import { createCloudLibrary } from "./cloudLibrary.js";
 
-export async function replaceUserPhrases(rows) {
-  const { user } = useAuthStore.getState();
-  if (!user) throw new Error("Not authenticated");
+export function captureSyncAccount() {
+  const state = useAuthStore.getState();
+  return { id: state.user?.id, version: state._accountVersion, accessToken: state.session?.access_token };
+}
 
-  // HARD DELETE — scoped to user
-  const { error: delErr } = await supabase.from("phrases").delete().eq("user_id", user.id);
-  if (delErr) throw delErr;
+const cloud = createCloudLibrary((account) => createAccountClient(account.accessToken), captureSyncAccount);
+export const assertSyncAccount = cloud.assertAccount;
+export const fetchUserSnapshot = (account = captureSyncAccount()) => cloud.read(account);
 
-  if (!rows?.length) return;
-
-  const payload = rows.map((r) => ({
-    user_id: user.id,
-    data: r,
-  }));
-
-  const { error: insErr } = await supabase.from("phrases").insert(payload);
-  if (insErr) throw insErr;
+export async function replaceUserPhrases(rows, revision, account = captureSyncAccount()) {
+  return cloud.replace(rows, revision, account);
 }
 
 /**
  * Fetch ALL phrases for the current user
  * (cloud → local)
  */
-export async function fetchUserPhrases() {
-  const { user } = useAuthStore.getState();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data, error } = await supabase.from("phrases").select("data").eq("user_id", user.id);
-  if (error) throw error;
-
-  return (data || []).map((row) => row.data);
+export async function fetchUserPhrases(account = captureSyncAccount()) {
+  return (await cloud.read(account)).rows;
 }
 
 /**
@@ -48,21 +37,18 @@ export async function fetchUserPhrases() {
  * NOTE:
  * Persisting unresolved conflicts server-side is a later step (schema + UI).
  */
-export async function mergeUserPhrases(localRows) {
-  const { user } = useAuthStore.getState();
-  if (!user) throw new Error("Not authenticated");
-
-  const cloudRows = await fetchUserPhrases();
+export async function mergeUserPhrases(localRows, account = captureSyncAccount()) {
+  const { rows: cloudRows, revision } = await cloud.read(account);
 
   const { mergedRows, conflicts, stats } = mergeEngine(localRows, cloudRows);
 
   // If conflicts exist, don't write merged result yet.
   // (Later: we’ll persist conflicts to Supabase so they show up on future merges.)
   if (conflicts.length) {
-    return { mergedRows, conflicts, stats, wroteToCloud: false };
+    return { mergedRows, conflicts, stats, revision, account, wroteToCloud: false };
   }
 
-  await replaceUserPhrases(mergedRows);
+  await cloud.replace(mergedRows, revision, account);
 
   return { mergedRows, conflicts, stats, wroteToCloud: true };
 }
