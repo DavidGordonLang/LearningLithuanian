@@ -43,7 +43,7 @@ Run the unchanged migration once. Installation creates or replaces the two funct
 
 ### 4. Transactional behaviour checks
 
-Run the following checks inside a single explicit transaction and finish with `rollback`:
+Run `supabase/validate_atomic_phrase_sync.sql`. It selects an eligible account internally without printing or storing its identity, performs the following checks in one explicit transaction, and finishes with `rollback`:
 
 - Capture one allowlisted account's full snapshot and revision.
 - Add one uniquely named synthetic phrase through `zodis_replace_phrase_snapshot`; confirm it receives a database UUID and the returned revision changes.
