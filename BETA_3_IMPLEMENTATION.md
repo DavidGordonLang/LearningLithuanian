@@ -60,3 +60,17 @@ Remaining: broader word coverage (grammar/building/matching/vocab selection/mixe
 ## Onboarding follow-up
 
 David's feedback: the one-screen audio introduction omitted too much app context. Replaced it with four skippable, compact steps: translation example, live word/phrase audio, Library/Scenario organisation, then personalised lessons and preferences. The whole-phrase control now pulses immediately, offers Stop audio, and resets when its promise settles or the user switches words/steps. It labels the pending request without claiming playback has already started. Reduced-motion preferences suppress the animation; the ring and button label remain. Settings' full guide opens this as Quick tour. Production build passes; physical-phone interaction verification remains outstanding.
+
+## Scenario cloud-sync follow-up
+
+David confirmed that phrase sync works on his device but saved Scenarios do not return from cloud. The cause is confirmed: all existing cloud operations carry phrases only, while Scenarios remain in account-scoped browser storage.
+
+Prepared locally and installed at the database layer, but not yet committed or deployed in the app:
+
+- Scenario records retain deletion tombstones while the visible store exposes only active Scenarios.
+- Scenario merging uses stable IDs and whole-record timestamps. The newest ordered record wins; phrase arrays are not unioned because that could undo an intentional removal or reorder.
+- Settings upload, download, merge, conflict completion and dirty-state tracking now cover phrases and Scenarios together.
+- `20260908_atomic_learning_sync.sql` adds an RLS-protected scenario table and combined snapshot/replacement RPCs. Phrase and Scenario changes share one account lock, revision check and database transaction. Existing phrase rows are still updated in place to preserve pronunciation links.
+- `validate_atomic_learning_sync.sql` prepares rolled-back checks for insert/update, stable phrase UUIDs, linked pronunciation preservation, scenario links, stale revisions, invalid-input rollback, RLS isolation and anonymous denial.
+
+Local result: 20 focused tests and the production Vite build pass. The production migration compiled in a rolled-back transaction, installed successfully, and passed the rollback-only database validation. Post-validation integrity remained at 1,009 phrases and 292 pronunciation queue records; the new scenario table remained empty and no synthetic rows or markers survived. Authenticated execution is granted, anonymous execution is denied, RLS is enabled and four account policies are installed. App deployment, authenticated two-device sync and physical-device verification are still pending.

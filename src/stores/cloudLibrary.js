@@ -55,3 +55,47 @@ export function createCloudLibrary(client, getAccount) {
   };
   return { read, replace, readForRecovery, assertAccount };
 }
+
+export function createCloudLearningLibrary(client, getAccount) {
+  const phraseCloud = createCloudLibrary(client, getAccount);
+  const { assertAccount } = phraseCloud;
+
+  const read = async (account) => {
+    assertAccount(account);
+    const requestClient = typeof client === "function" ? client(account) : client;
+    const { data, error } = await requestClient.rpc("zodis_learning_snapshot");
+    assertAccount(account);
+    if (error) throw cloudError(error);
+    if (
+      !Array.isArray(data?.phrases) ||
+      !Array.isArray(data?.scenarios) ||
+      typeof data?.revision !== "string"
+    ) {
+      throw new Error("The cloud Library response was incomplete. Nothing was replaced.");
+    }
+    return data;
+  };
+
+  const replace = async (phrases, scenarios, revision, account) => {
+    assertAccount(account);
+    if (!Array.isArray(phrases) || !Array.isArray(scenarios) || typeof revision !== "string") {
+      throw new Error("Read the cloud Library before replacing it.");
+    }
+    const requestClient = typeof client === "function" ? client(account) : client;
+    const { data, error } = await requestClient.rpc("zodis_replace_learning_snapshot", {
+      p_phrases: phrases,
+      p_scenarios: scenarios,
+      p_expected_revision: revision,
+    });
+    assertAccount(account);
+    if (error) {
+      if (error.code === "40001") {
+        throw new Error("Your cloud Library changed on another device. Please sync again.");
+      }
+      throw cloudError(error);
+    }
+    return data;
+  };
+
+  return { read, replace, assertAccount };
+}

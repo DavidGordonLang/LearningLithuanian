@@ -55,3 +55,15 @@ test("a failed save does not update memory; corrupt stored data is not overwritt
   assert.throws(() => usePhraseStore.getState().setPhrases([]), /unavailable/);
   assert.equal(memory.get("lt_phrasebook_v3:account:broken"), "not json");
 });
+
+test("scenario deletion is retained as a hidden tombstone for cloud sync", () => {
+  selectScenarioAccount("scenario-delete");
+  const created = useScenarioStore.getState().createScenario("Travel").scenario;
+  useScenarioStore.getState().deleteScenario(created.id);
+  assert.deepEqual(useScenarioStore.getState().scenarios, []);
+  const records = useScenarioStore.getState().scenarioRecords;
+  assert.equal(records.length, 1);
+  assert.equal(records[0].id, created.id);
+  assert.equal(records[0]._deleted, true);
+  assert.equal(typeof records[0]._deleted_ts, "number");
+});

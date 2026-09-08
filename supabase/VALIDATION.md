@@ -11,7 +11,7 @@ Target: Supabase project `Zodis-app / zodis` (`gsxfdekilabnalxuqose`), `main` / 
 - `phonetic_ipa_backfill_queue.phrase_id` and `phonetic_ipa_backfill_jobs.phrase_id` reference `phrases(id)` with `ON DELETE CASCADE`.
 - Row-level security is enabled. SELECT, INSERT, UPDATE, and DELETE require `auth.uid() = user_id` and a matching email in `beta_allowlist`.
 - The live table currently contains 1,009 rows, no missing `_id` values, and no duplicate `(user_id, data->_id)` groups. The pronunciation queue contains 292 rows and the jobs table contains none.
-- Neither `zodis_phrase_snapshot()` nor `zodis_replace_phrase_snapshot(jsonb, text)` is installed yet.
+- `zodis_phrase_snapshot()` and `zodis_replace_phrase_snapshot(jsonb, text)` were installed and validated on 8 September 2026.
 
 These are global database counts. They are not a count of any one user's Library.
 
@@ -85,3 +85,24 @@ The advisory lock coordinates clients using the new RPC. An older deployed clien
 - The validation covered insert, in-place update, stable phrase UUIDs, preservation of a linked pronunciation row, stale-revision rejection, invalid-input rollback, RLS isolation, anonymous denial, synthetic deletion, and restoration of the original snapshot.
 - Post-test integrity check: 1,009 phrase rows, 292 pronunciation queue rows, zero validation rows, zero validation markers, zero missing IDs, and zero duplicate identity groups. Both functions remained installed.
 - The final browser-level app check is pending. Google OAuth returned `502 Bad Gateway` in the cloud browser before Žodis received a session. This is an authentication-path blockage, not evidence of a sync failure.
+
+## Scenario-sync extension — execution record
+
+`20260908_atomic_learning_sync.sql` was compiled, installed and database-validated on production on 8 September 2026. It has not yet been committed, pushed or deployed in the app. It:
+
+- create `public.zodis_scenarios` with account ownership, JSON identity constraints and RLS policies;
+- grant authenticated callers only the table operations required by the security-invoker functions;
+- add `zodis_learning_snapshot()` and `zodis_replace_learning_snapshot(jsonb,jsonb,text)`;
+- update retained phrases in place, preserving their database UUIDs and pronunciation links;
+- replace phrases and Scenarios in one transaction using the same per-account advisory lock and a combined revision.
+
+Execution result:
+
+- Read-only preflight found no existing `zodis_scenarios` table or combined-sync functions, 1,009 phrase rows, 292 pronunciation queue rows, zero missing phrase IDs and zero duplicate per-account phrase IDs.
+- The exact migration compiled successfully with its final `commit` changed to `rollback`; no objects survived that compilation check.
+- The unchanged migration then installed successfully.
+- `validate_atomic_learning_sync.sql` reported PASS and rolled back. It covered phrase and Scenario insertion/update, phrase-to-Scenario links, stable phrase UUIDs, linked pronunciation preservation, stale-revision rejection, invalid Scenario rollback, RLS account isolation and anonymous denial.
+- Final integrity: 1,009 phrase rows, 292 pronunciation queue rows, zero Scenario rows, zero synthetic validation phrases and zero validation markers.
+- `zodis_scenarios` has RLS enabled and four account policies. `authenticated` can execute both combined RPCs; `anon` cannot.
+
+The remaining proof is application-level: deploy the prepared client, upload existing local Scenarios through Sync, then verify create, rename, reorder, delete and restore across two authenticated devices.
