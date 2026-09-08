@@ -1,3 +1,4 @@
+import QuickStartModal from "./components/QuickStartModal";
 import React, {
   useCallback,
   useEffect,
@@ -339,6 +340,7 @@ function ScenarioPickerModal({
 }
 
 export default function App() {
+  const accountId = useAuthStore((s) => s.user?.id);
   useEffect(() => {
     if (IS_AUDIT_CAPTURE_MODE) {
       applyAuditCaptureFixtures();
@@ -346,6 +348,12 @@ export default function App() {
     }
     initAuthListener();
   }, []);
+  // Private UI state (translation results, open editors and pending conflicts)
+  // must not survive a change of account.
+  return <AccountApp key={accountId || "signed-out"} />;
+}
+
+function AccountApp() {
 
   // ── Theme: apply data-theme to <html> whenever themeMode changes ──────────
   const themeMode = useSettingsStore((s) => s.themeMode);
@@ -481,6 +489,8 @@ export default function App() {
       showToast("Audio unavailable — check your connection", 3000);
     },
   });
+
+  useEffect(() => stop, [stop, page, selectedScenarioId]);
 
   const playTextTracked = useCallback((text, opts) => {
     const effectiveVoice = opts?.voice || azureVoiceShortName;
@@ -940,10 +950,12 @@ export default function App() {
   const closeUserGuide = useCallback(() => {
     if (userGuideFirstLaunch) {
       setSeenUserGuide(true);
+      setLastSeenVersion(APP_VERSION);
+      setShowWhatsNew(false);
       setUserGuideFirstLaunch(false);
     }
     setShowUserGuide(false);
-  }, [setSeenUserGuide, userGuideFirstLaunch]);
+  }, [setSeenUserGuide, setLastSeenVersion, userGuideFirstLaunch]);
 
   const closeConfirm = useCallback((result) => {
     const resolve = confirmResolveRef.current;
@@ -1262,10 +1274,8 @@ export default function App() {
       />
 
       {showUserGuide && (
-        <UserGuideModal
-          firstLaunch={userGuideFirstLaunch}
-          onClose={closeUserGuide}
-        />
+        userGuideFirstLaunch ? <QuickStartModal playText={playTextTracked} stopText={stop} onClose={closeUserGuide} /> :
+        <UserGuideModal onClose={closeUserGuide} onTryAudio={() => setUserGuideFirstLaunch(true)} />
       )}
 
       {showWhatsNew && (

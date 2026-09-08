@@ -1,3 +1,4 @@
+import { enrichSavedRow } from "../../services/enrichSavedRow";
 // src/views/training/VocabSaveView.jsx
 //
 // Shown after the module celebration screen.
@@ -35,62 +36,6 @@ function ActionButton({ children, onClick, disabled = false, variant = "primary"
 // ─── Background enrichment ────────────────────────────────────────────────────
 // Calls /api/translate to get phonetics, then /api/enrich for Notes/Usage/Category.
 // Patches the row in the store when each call returns.
-
-async function enrichSavedRow(lt, en, rowId, setRows) {
-  try {
-    // Step 1: translate to get phonetics
-    const transResp = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: en, sourceLang: "en" }),
-    });
-
-    if (transResp.ok) {
-      const transData = await transResp.json();
-      const phonetic = String(transData?.phonetics || "").trim();
-      const phoneticIPA = String(transData?.phonetics_ipa || "").trim();
-      const enNatural = String(transData?.en_natural || en).trim();
-      const enLiteral = String(transData?.en_literal || en).trim();
-
-      setRows((prev) => Array.isArray(prev) ? prev.map((r) => {
-        if ((r._id || r.id) === rowId) {
-          return { ...r, Phonetic: phonetic, PhoneticIPA: phoneticIPA,
-            EnglishNatural: enNatural, EnglishLiteral: enLiteral,
-            English: enNatural || enLiteral || en };
-        }
-        return r;
-      }) : prev);
-
-      // Step 2: enrich for Notes/Usage/Category
-      try {
-        const enrichResp = await fetch("/api/enrich", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lt,
-            en_natural: enNatural || en,
-            en_literal: enLiteral || en,
-            phonetics: phonetic,
-          }),
-        });
-
-        if (enrichResp.ok) {
-          const enrichData = await enrichResp.json();
-          const category = String(enrichData?.Category || "General").trim();
-          const usage = String(enrichData?.Usage || "").trim();
-          const notes = String(enrichData?.Notes || "").trim();
-
-          setRows((prev) => Array.isArray(prev) ? prev.map((r) => {
-            if ((r._id || r.id) === rowId) {
-              return { ...r, Category: category, Usage: usage, Notes: notes };
-            }
-            return r;
-          }) : prev);
-        }
-      } catch {}
-    }
-  } catch {}
-}
 
 // ─── Main view ────────────────────────────────────────────────────────────────
 

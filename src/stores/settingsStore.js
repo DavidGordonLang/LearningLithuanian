@@ -84,6 +84,7 @@ export const useSettingsStore = create((set, get) => ({
 
   /* -------------------- Internal -------------------- */
   _loadedForUserId: null,
+  _loadVersion: 0,
 
   /* -------------------- Load / init -------------------- */
   ensureLoadedForUser: async (userId) => {
@@ -96,7 +97,8 @@ export const useSettingsStore = create((set, get) => ({
       return;
     }
 
-    set({ loading: true, error: null });
+    const loadVersion = get()._loadVersion + 1;
+    set({ loading: true, error: null, _loadVersion: loadVersion });
 
     try {
       const { data: row, error } = await supabase
@@ -104,6 +106,7 @@ export const useSettingsStore = create((set, get) => ({
         .select("*")
         .eq("user_id", userId)
         .single();
+      if (get()._loadVersion !== loadVersion) return;
 
       // If row does not exist, create it (new user)
       if (error && (error.code === "PGRST116" || error.details?.includes("0 rows"))) {
@@ -111,6 +114,8 @@ export const useSettingsStore = create((set, get) => ({
         const { error: insertError } = await supabase
           .from(TABLE_NAME)
           .insert([{ user_id: userId, data: defaults }]);
+
+        if (get()._loadVersion !== loadVersion) return;
 
         if (insertError) throw insertError;
 
@@ -148,6 +153,7 @@ export const useSettingsStore = create((set, get) => ({
           .eq("user_id", userId);
       }
     } catch (e) {
+      if (get()._loadVersion !== loadVersion) return;
       console.error("Settings load error:", e);
       set({
         data: { ...DEFAULTS },
@@ -161,6 +167,7 @@ export const useSettingsStore = create((set, get) => ({
 
   reset: () => {
     set({
+      _loadVersion: get()._loadVersion + 1,
       loading: true,
       error: null,
       data: { ...DEFAULTS },
@@ -179,6 +186,8 @@ export const useSettingsStore = create((set, get) => ({
   /* -------------------- Write helpers -------------------- */
 
   setSetting: async (userId, key, value) => {
+    if (userId && get()._loadedForUserId !== userId) return;
+    const loadVersion = get()._loadVersion;
     const nextData = mergeDefaults({ ...(get().data || {}), [key]: value });
 
     // optimistic local update
@@ -195,12 +204,15 @@ export const useSettingsStore = create((set, get) => ({
 
       if (error) throw error;
     } catch (e) {
+      if (get()._loadVersion !== loadVersion) return;
       console.error("Failed to persist setting:", e);
       set({ error: e?.message || "Failed to persist setting" });
     }
   },
 
   saveProfileOnboarding: async (userId, values = {}, version) => {
+    if (!userId || get()._loadedForUserId !== userId) throw new Error("Please wait for your account to load before saving.");
+    const loadVersion = get()._loadVersion;
     const n = Number(version);
     const nextVersion = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
     const nextData = mergeDefaults({
@@ -229,11 +241,12 @@ export const useSettingsStore = create((set, get) => ({
 
       if (error) throw error;
 
+      if (get()._loadVersion !== loadVersion) throw new Error("Your account changed. Please retry.");
       set({ data: nextData, ...derive(nextData), error: null });
       return { ok: true };
     } catch (e) {
       console.error("Failed to save profile onboarding:", e);
-      set({ error: e?.message || "Failed to save profile setup" });
+      if (get()._loadVersion === loadVersion) set({ error: e?.message || "Failed to save profile setup" });
       throw e;
     }
   },

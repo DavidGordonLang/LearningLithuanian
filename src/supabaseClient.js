@@ -26,3 +26,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
+
+// A sync operation must keep the identity it started with, even if the shared
+// browser session changes while the SDK is preparing the request.
+export function createAccountClient(accessToken) {
+  if (!accessToken) throw new Error("Sign in again before syncing.");
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+}

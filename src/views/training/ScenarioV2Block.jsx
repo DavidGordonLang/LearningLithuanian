@@ -1,3 +1,4 @@
+import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -266,7 +267,7 @@ function resultMeta(option) {
   return { label: "Try again", tone: "border-rose-400/25 bg-rose-500/[0.07] text-rose-200" };
 }
 
-function ScenarioV2FeedbackSheet({ option, onRetry, onContinue }) {
+function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText }) {
   if (!option) return null;
   const meta = resultMeta(option);
   const progresses = optionCanProgress(option);
@@ -282,13 +283,13 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue }) {
               <div className="text-[13px] font-semibold">{meta.label}</div>
               <div className="scenario-v2-feedback-inset mt-1 rounded-2xl border px-3 py-2">
                 <div className="text-[10px] uppercase tracking-widest text-zinc-500">Your answer</div>
-                <div className="mt-0.5 text-[14px] font-semibold text-zinc-100">{option.text}</div>
+                <div className="mt-0.5 text-[14px] font-semibold text-zinc-100"><InteractivePhraseText text={option.text} playText={playText} /></div>
               </div>
               {option.feedback ? <div className="mt-2 text-[13px] leading-snug text-zinc-200">{option.feedback}</div> : null}
               {option.betterAnswer ? (
                 <div className="scenario-v2-feedback-inset mt-2 rounded-xl border px-3 py-2">
                   <div className="text-[10px] uppercase tracking-widest text-zinc-500">Better answer</div>
-                  <div className="mt-0.5 text-[13px] font-semibold text-zinc-100">{option.betterAnswer}</div>
+                  <div className="mt-0.5 text-[13px] font-semibold text-zinc-100"><InteractivePhraseText text={option.betterAnswer} playText={playText} /></div>
                 </div>
               ) : null}
             </div>
@@ -333,7 +334,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
               <div className="min-w-0 text-[11px] font-semibold text-zinc-400">{speakerLabel}</div>
               <AudioIconButton text={turn.speakerText} playText={playText} playOptions={playOptions} label="Replay speaker line" />
             </div>
-            <div className="text-[17px] font-semibold leading-snug text-zinc-100">{turn.speakerText}</div>
+            <div className="text-[17px] font-semibold leading-snug text-zinc-100"><InteractivePhraseText text={turn.speakerText} playText={(text, options) => playText?.(text, { ...playOptions, ...options })} /></div>
           </div>
         </div>
       ) : null}
@@ -348,19 +349,19 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
   );
 }
 
-function ScenarioV2UserBubble({ item }) {
+function ScenarioV2UserBubble({ item, playText }) {
   return (
     <div className="flex justify-end">
       <div className="scenario-v2-bubble scenario-v2-bubble-right scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
         <div className="scenario-v2-user-label text-[11px] font-semibold">You</div>
-        <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug">{item.text}</div>
+        <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug"><InteractivePhraseText text={item.text} playText={playText} /></div>
       </div>
     </div>
   );
 }
 
 function ScenarioV2HistoryItem({ block, item, playText }) {
-  if (item.role === "learner") return <ScenarioV2UserBubble item={item} />;
+  if (item.role === "learner") return <ScenarioV2UserBubble item={item} playText={playText} />;
   return (
     <ScenarioV2SystemTurn
       block={block}
@@ -623,21 +624,12 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
             {step.learnerPrompt ? <div className="mb-3 text-[14px] font-semibold leading-snug text-zinc-100">{step.learnerPrompt}</div> : null}
             <div className="grid gap-2">
               {options.map((option) => (
-                <button
-                  key={`${step.id}:${option.id}`}
-                  type="button"
-                  data-press
-                  onClick={() => handleOption(option)}
-                  disabled={!activeSpeakerReady || !!selectedOptionForStep}
-                  className={cn(
-                    "w-full rounded-2xl border px-4 py-3 text-left transition",
-                    selectedOptionForStep?.id === option.id ? "scenario-v2-option-selected" : "scenario-v2-option",
-                    selectedOptionForStep && selectedOptionForStep.id !== option.id ? "opacity-45" : "",
-                    !activeSpeakerReady ? "cursor-wait" : ""
-                  )}
-                >
-                  <div className="text-[15px] font-semibold text-zinc-100">{option.text}</div>
-                </button>
+                <div key={`${step.id}:${option.id}`} className="scenario-v2-option rounded-2xl border px-3 py-2 flex items-center gap-3">
+                  <div className="flex-1 text-[15px] font-semibold"><InteractivePhraseText text={option.text} playText={playText} /></div>
+                  <button type="button" className="z-btn z-btn-secondary px-3 py-2 shrink-0"
+                    aria-label={`Choose reply: ${option.text}`}
+                    onClick={() => handleOption(option)} disabled={!activeSpeakerReady || !!selectedOptionForStep}>Choose</button>
+                </div>
               ))}
             </div>
           </div>
@@ -650,6 +642,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
 
       {selectedOptionForStep ? (
         <ScenarioV2FeedbackSheet
+          playText={playText}
           option={selectedOptionForStep}
           onRetry={() => setSelectedOption(null)}
           onContinue={handleFeedbackContinue}
