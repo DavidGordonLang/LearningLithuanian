@@ -1,7 +1,8 @@
 // src/stores/phraseStore.js
 import { create } from "zustand";
+import { createAccountStorage, bindAccountActions } from "./accountStorage.js";
 
-const LS_KEY = "lt_phrasebook_v3";
+const storage = createAccountStorage("lt_phrasebook_v3");
 
 /* --------------------------- Normalisation --------------------------- */
 
@@ -33,23 +34,7 @@ function buildContentKey(row) {
 
 /* --------------------------- Storage --------------------------- */
 
-const loadRows = () => {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveRows = (rows) => {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(rows));
-  } catch (err) {
-    console.error("Failed saving rows", err);
-  }
-};
+const saveRows = (rows) => storage.save(rows);
 
 /* --------------------------- Guards --------------------------- */
 
@@ -123,7 +108,9 @@ const ensureAll = (r) =>
 /* ------------------------ Zustand Store ------------------------ */
 
 export const usePhraseStore = create((set, get) => ({
-  phrases: loadRows(),
+  phrases: [],
+  accountId: null,
+  storageError: null,
 
   /* ---------- Migration ---------- */
 
@@ -276,5 +263,14 @@ export const usePhraseStore = create((set, get) => ({
     }),
 }));
 
-// Run migration immediately
-usePhraseStore.getState()._migrateRows();
+const actions = Object.fromEntries(Object.entries(usePhraseStore.getState()).filter(([, value]) => typeof value === "function"));
+
+export function selectPhraseAccount(userId) {
+  let phrases = [];
+  let storageError = null;
+  try { phrases = storage.select(userId).map(ensureAll); }
+  catch (error) { storageError = error?.message || "Could not read your saved library."; }
+  usePhraseStore.setState({ phrases, accountId: userId || null, storageError, ...bindAccountActions(actions, storage) });
+}
+
+selectPhraseAccount(null);

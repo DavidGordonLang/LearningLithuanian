@@ -1,3 +1,4 @@
+import { phoneticsDisplay } from "../utils/phoneticsDisplay";
 import React, {
   memo,
   useCallback,
@@ -158,12 +159,7 @@ export default function HomeView({
     [result.ltOut, result.enNatural, result.enLiteral]
   );
 
-  const displayedPhonetics = useMemo(() => {
-    if (phoneticsMode === "ipa") {
-      return (result.phoneticsIpa || result.phonetics || "").trim();
-    }
-    return (result.phonetics || "").trim();
-  }, [phoneticsMode, result.phonetics, result.phoneticsIpa]);
+  const displayedPhonetics = phoneticsDisplay(phoneticsMode, result.phonetics, result.phoneticsIpa);
 
   const handleClear = useCallback(() => {
     blurTextarea();
@@ -535,12 +531,12 @@ export default function HomeView({
             {duplicateEntry.English || "—"}
           </div>
           <div className="text-sm text-zinc-200 truncate">
-            {duplicateEntry.Lithuanian || "—"}
+            <InteractivePhraseText text={duplicateEntry.Lithuanian || "—"} playText={playText} />
           </div>
 
-          {duplicateEntry.Phonetic && (
+          {(duplicateEntry.Phonetic || duplicateEntry.PhoneticIPA || phoneticsMode === "ipa") && (
             <div className="text-[11px] text-zinc-400 italic mt-1 truncate">
-              {duplicateEntry.Phonetic}
+              {phoneticsDisplay(phoneticsMode, duplicateEntry.Phonetic, duplicateEntry.PhoneticIPA)}
             </div>
           )}
 

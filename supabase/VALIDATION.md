@@ -1,0 +1,108 @@
+# Atomic Library sync validation
+
+Target: Supabase project `Zodis-app / zodis` (`gsxfdekilabnalxuqose`), `main` / Production.
+
+## Confirmed configuration
+
+- The ready Vercel preview at `learning-lithuanian-5kuathwlt-davids-projects-25f8617a.vercel.app` was built from commit `4a39d7694681cd218e6092c5728e63809b578a39` on `codex/beta-3-release-fixes`.
+- Its compiled client contains `https://gsxfdekilabnalxuqose.supabase.co`, so the preview and the inspected database match.
+- `public.phrases` has a UUID primary key plus `user_id`, `data`, `updated_at`, `deleted_at`, `local_id`, and `content_key`.
+- `(user_id, local_id)` is unique. `user_id` references `auth.users(id)` with `ON DELETE CASCADE`.
+- `phonetic_ipa_backfill_queue.phrase_id` and `phonetic_ipa_backfill_jobs.phrase_id` reference `phrases(id)` with `ON DELETE CASCADE`.
+- Row-level security is enabled. SELECT, INSERT, UPDATE, and DELETE require `auth.uid() = user_id` and a matching email in `beta_allowlist`.
+- The live table currently contains 1,009 rows, no missing `_id` values, and no duplicate `(user_id, data->_id)` groups. The pronunciation queue contains 292 rows and the jobs table contains none.
+- `zodis_phrase_snapshot()` and `zodis_replace_phrase_snapshot(jsonb, text)` were installed and validated on 8 September 2026.
+
+These are global database counts. They are not a count of any one user's Library.
+
+## Migration invariants
+
+The migration must preserve all of the following:
+
+1. A signed-in caller can only read or replace their own Library under the existing RLS policies.
+2. Every supplied entry is an object with a non-empty string `_id`, and `_id` values are unique within the supplied snapshot.
+3. A replacement is accepted only when its expected revision matches a fresh snapshot taken after the account advisory lock is acquired.
+4. Existing rows with retained `_id` values are updated in place. Their `phrases.id` UUID and linked pronunciation records therefore survive.
+5. Rows absent from the requested complete snapshot are deleted. This is intentional overwrite behaviour and will cascade to their linked pronunciation records.
+6. Inserts, updates, deletes, and the returned revision occur in one transaction. Any constraint, RLS, or validation error rolls the replacement back.
+7. `anon` and `public` cannot execute either RPC. `authenticated` can execute them, while RLS remains the data-access boundary because both functions are `SECURITY INVOKER`.
+
+## Production validation sequence
+
+### 1. Read-only preflight
+
+Repeat the schema, constraint, RLS, function-existence, and identity-count queries immediately before installation. Stop if the results differ from the confirmed configuration above.
+
+### 2. Rolled-back installation check
+
+Run the exact migration in a transaction with the final `commit` changed to `rollback`. Confirm both function definitions compile and all GRANT/REVOKE statements succeed. Confirm afterwards that neither function exists.
+
+### 3. Install
+
+Run the unchanged migration once. Installation creates or replaces the two functions and their execution permissions; it does not alter any phrase row.
+
+### 4. Transactional behaviour checks
+
+Run `supabase/validate_atomic_phrase_sync.sql`. It selects an eligible account internally without printing or storing its identity, performs the following checks in one explicit transaction, and finishes with `rollback`:
+
+- Capture one allowlisted account's full snapshot and revision.
+- Add one uniquely named synthetic phrase through `zodis_replace_phrase_snapshot`; confirm it receives a database UUID and the returned revision changes.
+- Replace that synthetic phrase with changed JSON; confirm its database UUID is unchanged.
+- If the chosen account has an existing pronunciation queue record, update that phrase's JSON through the RPC and confirm both its UUID and linked queue row remain unchanged.
+- Retry using the earlier revision; require SQLSTATE `40001` and confirm the snapshot did not change.
+- Submit a duplicate `_id` and an entry without `_id`; require SQLSTATE `22023` and confirm neither attempt changes the snapshot.
+- Remove only the synthetic phrase from the submitted snapshot; confirm only that phrase is removed.
+- Under the authenticated role and the chosen account's claims, confirm rows belonging to other users remain invisible.
+- Under the anonymous role with no user claim, confirm execution is denied/sign-in is required.
+- Roll back, then confirm the account's row count, phrase UUIDs, snapshot revision, and pronunciation queue counts match their pre-test values.
+
+Do not use a partial list as the RPC input: it represents the complete Library and omissions are deletions.
+
+### 5. App verification
+
+Using the authenticated preview:
+
+1. Load the cloud Library and record the visible phrase count.
+2. Add a distinctive test phrase locally and run **Sync (merge)**.
+3. Refresh or open a second browser/device, load cloud, and confirm the phrase appears.
+4. Edit the phrase on the second client, sync, then sync the first client and confirm the change is received.
+5. Create a stale-revision situation and confirm the app asks for another sync instead of overwriting the newer cloud state.
+6. Confirm a phrase with pronunciation data still plays correctly after an in-place Library update.
+7. Remove the distinctive test phrase and sync again.
+
+## Known rollout limit
+
+The advisory lock coordinates clients using the new RPC. An older deployed client that writes `phrases` directly does not acquire that lock and can still race with a new client. Retire or disable legacy direct-write sync before treating revision protection as universal.
+
+## Execution record — 8 September 2026
+
+- Confirmed the preview bundle points to `https://gsxfdekilabnalxuqose.supabase.co`.
+- Repeated the production preflight: 1,009 phrase rows, zero missing `_id` values, zero duplicate identity groups, 292 pronunciation queue rows, zero pronunciation job rows, three allowlisted accounts with phrases, and two allowlisted accounts with linked pronunciation rows.
+- Compiled the exact migration with its final `commit` changed to `rollback`. Both functions and the permission statements compiled successfully, and a follow-up query confirmed neither function remained installed.
+- Installed the unchanged migration successfully.
+- Confirmed both functions are installed, `authenticated` has execution permission, and `anon` does not.
+- Ran `validate_atomic_phrase_sync.sql` successfully. It reported PASS and rolled back.
+- The validation covered insert, in-place update, stable phrase UUIDs, preservation of a linked pronunciation row, stale-revision rejection, invalid-input rollback, RLS isolation, anonymous denial, synthetic deletion, and restoration of the original snapshot.
+- Post-test integrity check: 1,009 phrase rows, 292 pronunciation queue rows, zero validation rows, zero validation markers, zero missing IDs, and zero duplicate identity groups. Both functions remained installed.
+- The final browser-level app check is pending. Google OAuth returned `502 Bad Gateway` in the cloud browser before Žodis received a session. This is an authentication-path blockage, not evidence of a sync failure.
+
+## Scenario-sync extension — execution record
+
+`20260908_atomic_learning_sync.sql` was compiled, installed and database-validated on production on 8 September 2026. It has not yet been committed, pushed or deployed in the app. It:
+
+- create `public.zodis_scenarios` with account ownership, JSON identity constraints and RLS policies;
+- grant authenticated callers only the table operations required by the security-invoker functions;
+- add `zodis_learning_snapshot()` and `zodis_replace_learning_snapshot(jsonb,jsonb,text)`;
+- update retained phrases in place, preserving their database UUIDs and pronunciation links;
+- replace phrases and Scenarios in one transaction using the same per-account advisory lock and a combined revision.
+
+Execution result:
+
+- Read-only preflight found no existing `zodis_scenarios` table or combined-sync functions, 1,009 phrase rows, 292 pronunciation queue rows, zero missing phrase IDs and zero duplicate per-account phrase IDs.
+- The exact migration compiled successfully with its final `commit` changed to `rollback`; no objects survived that compilation check.
+- The unchanged migration then installed successfully.
+- `validate_atomic_learning_sync.sql` reported PASS and rolled back. It covered phrase and Scenario insertion/update, phrase-to-Scenario links, stable phrase UUIDs, linked pronunciation preservation, stale-revision rejection, invalid Scenario rollback, RLS account isolation and anonymous denial.
+- Final integrity: 1,009 phrase rows, 292 pronunciation queue rows, zero Scenario rows, zero synthetic validation phrases and zero validation markers.
+- `zodis_scenarios` has RLS enabled and four account policies. `authenticated` can execute both combined RPCs; `anon` cannot.
+
+The remaining proof is application-level: deploy the prepared client, upload existing local Scenarios through Sync, then verify create, rename, reorder, delete and restore across two authenticated devices.

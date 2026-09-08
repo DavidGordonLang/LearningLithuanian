@@ -1,3 +1,6 @@
+import InteractivePhraseText from "./audio/InteractivePhraseText";
+import { useSettingsStore } from "../stores/settingsStore";
+import { phoneticsDisplay } from "../utils/phoneticsDisplay";
 // src/components/DailyRecallModal.jsx
 import React, { useMemo } from "react";
 import { getEnglishForRecall } from "../hooks/useDailyRecall";
@@ -9,7 +12,8 @@ export default function DailyRecallModal({
   onClose,
 }) {
   const lt = String(phrase?.Lithuanian || "").trim();
-  const phon = String(phrase?.Phonetic || "").trim();
+  const mode = useSettingsStore((s) => s.phoneticsMode);
+  const phon = phoneticsDisplay(mode, phrase?.Phonetic, phrase?.PhoneticIPA);
   const en = useMemo(() => getEnglishForRecall(phrase), [phrase]);
 
   return (
@@ -38,7 +42,7 @@ export default function DailyRecallModal({
       <div className="p-5 space-y-5">
         <div className="z-inset p-4">
           <div className="text-xl font-semibold leading-snug break-words">
-            {lt || "—"}
+            <InteractivePhraseText text={lt || "—"} playText={playText} />
           </div>
 
           {phon ? (

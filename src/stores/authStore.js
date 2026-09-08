@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { supabase } from "../supabaseClient";
 import { useSettingsStore } from "./settingsStore";
 import { useGameStore } from "./gameStore";
+import { selectPhraseAccount } from "./phraseStore";
+import { selectScenarioAccount } from "./scenarioStore";
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
@@ -20,15 +22,23 @@ export const useAuthStore = create((set, get) => ({
   session: null,
   loading: true,
   _bootstrapToken: 0,
+  _accountVersion: 0,
 
   _setSession: (session) => {
+    const uid = session?.user?.id || null;
+    if (uid !== get().user?.id && !(uid === null && get().user === null)) {
+      set({ _accountVersion: get()._accountVersion + 1 });
+      selectPhraseAccount(uid);
+      selectScenarioAccount(uid);
+      useSettingsStore.getState().reset();
+      useGameStore.getState().reset();
+    }
     set({
       session,
       user: session?.user ?? null,
       loading: false,
     });
 
-    const uid = session?.user?.id;
     if (uid) {
       // Load per-user settings
       useSettingsStore.getState().ensureLoadedForUser(uid);
@@ -38,6 +48,9 @@ export const useAuthStore = create((set, get) => ({
   },
 
   _clearSession: () => {
+    set({ _accountVersion: get()._accountVersion + 1, _bootstrapToken: 0 });
+    selectPhraseAccount(null);
+    selectScenarioAccount(null);
     set({ session: null, user: null, loading: false });
     useSettingsStore.getState().reset();
     useGameStore.getState().reset();
@@ -61,9 +74,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (err) {
       console.warn("Supabase signOut failed, continuing local logout", err);
     } finally {
-      set({ user: null, session: null, loading: false });
-      useSettingsStore.getState().reset();
-      useGameStore.getState().reset();
+      get()._clearSession();
     }
   },
 }));
