@@ -73,3 +73,15 @@ Using the authenticated preview:
 ## Known rollout limit
 
 The advisory lock coordinates clients using the new RPC. An older deployed client that writes `phrases` directly does not acquire that lock and can still race with a new client. Retire or disable legacy direct-write sync before treating revision protection as universal.
+
+## Execution record — 8 September 2026
+
+- Confirmed the preview bundle points to `https://gsxfdekilabnalxuqose.supabase.co`.
+- Repeated the production preflight: 1,009 phrase rows, zero missing `_id` values, zero duplicate identity groups, 292 pronunciation queue rows, zero pronunciation job rows, three allowlisted accounts with phrases, and two allowlisted accounts with linked pronunciation rows.
+- Compiled the exact migration with its final `commit` changed to `rollback`. Both functions and the permission statements compiled successfully, and a follow-up query confirmed neither function remained installed.
+- Installed the unchanged migration successfully.
+- Confirmed both functions are installed, `authenticated` has execution permission, and `anon` does not.
+- Ran `validate_atomic_phrase_sync.sql` successfully. It reported PASS and rolled back.
+- The validation covered insert, in-place update, stable phrase UUIDs, preservation of a linked pronunciation row, stale-revision rejection, invalid-input rollback, RLS isolation, anonymous denial, synthetic deletion, and restoration of the original snapshot.
+- Post-test integrity check: 1,009 phrase rows, 292 pronunciation queue rows, zero validation rows, zero validation markers, zero missing IDs, and zero duplicate identity groups. Both functions remained installed.
+- The final browser-level app check is pending. Google OAuth returned `502 Bad Gateway` in the cloud browser before Žodis received a session. This is an authentication-path blockage, not evidence of a sync failure.
