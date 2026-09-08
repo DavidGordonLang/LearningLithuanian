@@ -1,7 +1,7 @@
 import { IS_AUDIT_MODE } from "./auditMode";
 import { useGameStore } from "./stores/gameStore";
-import { usePhraseStore } from "./stores/phraseStore";
-import { useScenarioStore } from "./stores/scenarioStore";
+import { selectPhraseAccount, usePhraseStore } from "./stores/phraseStore";
+import { selectScenarioAccount, useScenarioStore } from "./stores/scenarioStore";
 import { useSettingsStore } from "./stores/settingsStore";
 
 export const IS_AUDIT_CAPTURE_MODE =
@@ -10,6 +10,7 @@ export const IS_AUDIT_CAPTURE_MODE =
   new URLSearchParams(window.location.search).get("audit-capture") === "mobile";
 
 const BASE_TS = Date.UTC(2026, 8, 4, 12, 0, 0);
+const AUDIT_ACCOUNT_ID = "audit-capture-fixtures";
 
 function phrase({
   id,
@@ -257,6 +258,10 @@ export function applyAuditCaptureFixtures() {
     localStorage.setItem("lt_daily_recall_enabled", "0");
   } catch {}
 
+  // Account-scoped stores reject writes until an owner has been selected.
+  // The audit owner is local-only because audit mode uses an inert Supabase URL.
+  selectPhraseAccount(AUDIT_ACCOUNT_ID);
+  selectScenarioAccount(AUDIT_ACCOUNT_ID);
   usePhraseStore.getState().setPhrases(AUDIT_CAPTURE_PHRASES);
   useScenarioStore.getState().setScenarios(AUDIT_CAPTURE_SCENARIOS);
 
