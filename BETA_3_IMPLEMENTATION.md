@@ -16,18 +16,18 @@ Implemented for review:
 
 Validation completed locally: seven focused tests using synthetic local storage/RPC responses, plus a production Vite build. The tests verify account separation, stale writes, failed storage writes, recovery retry/ownership, revision submission, missing/incomplete RPC handling and captured request identity. These tests do not establish actual database rollback or live RLS behaviour.
 
-## Database prerequisite — not applied
+## Database prerequisite — installed and database-validated
 
 `supabase/migrations/20260907_atomic_phrase_sync.sql` installs two security-invoker functions on the existing `phrases(user_id, data)` contract. It does not rewrite existing data when installed. The functions use caller authentication and existing row-level policies; no service-role bypass is introduced.
 
-Before merging/releasing:
+Completed on the production project `gsxfdekilabnalxuqose` on 8 September 2026:
 
-1. Inspect the actual staging table definition, constraints, triggers and authenticated SELECT/INSERT/DELETE policies. Confirm the existing insertion contract and that users cannot read or alter another user's rows.
-2. Apply the migration to staging. Test empty and large libraries, a forced insertion failure, two competing writes based on the same revision, and anonymous/other-account access. A failed insertion must leave the prior rows intact. Exactly one competing write should succeed.
-3. Test full account switching and cloud merge through the normal preview login with disposable users. Verify private views, settings and progress along with phrase data.
-4. Exercise previous-beta upgrade/recovery on real Android and iPhone. Preserve a backup and verify recovery after storage failure. Retire old client sync writers during rollout: the advisory lock/revision contract coordinates upgraded RPC clients, not historical clients still using direct delete/insert calls.
+1. Confirmed the preview uses this project and inspected the live table, constraints, triggers, row-level policies and dependent pronunciation tables.
+2. Compiled the migration in a rolled-back transaction, installed it, and verified the intended execution permissions.
+3. Ran the transactional validation in `supabase/validate_atomic_phrase_sync.sql`. Insert, in-place update, stable UUIDs, linked pronunciation preservation, stale revision rejection, invalid-input rollback, RLS isolation and anonymous denial passed.
+4. Confirmed the validation left 1,009 phrase rows and 292 pronunciation queue rows, with no test data, missing IDs or duplicate identities.
 
-No Supabase administration connection or local PostgreSQL runtime was available in this session. The migration has not been applied or database-tested. Cloud sync on the fixes preview requires the migration; missing functions produce an error without deleting cloud rows. Do not merge or promote this branch until the staging prerequisites pass.
+The remaining sync checks are the normal authenticated preview journey and previous-beta upgrade/recovery on real Android and iPhone. The cloud browser's Google OAuth request returned `502 Bad Gateway`, so the preview journey is not yet marked as passed. Retire old client sync writers during rollout: the advisory lock/revision contract coordinates upgraded RPC clients, not historical clients still using direct delete/insert calls. Full results are recorded in `supabase/VALIDATION.md`.
 
 The security-invoker/permission approach follows [Supabase database-function guidance](https://supabase.com/docs/guides/database/functions). The captured request header uses the client's [custom-header configuration](https://supabase.com/docs/reference/javascript/initializing).
 
@@ -35,7 +35,7 @@ The security-invoker/permission approach follows [Supabase database-function gui
 
 | Findings | Work remaining |
 |---|---|
-| B09, B21 | Database/staging/mobile validation above; then release sign-off |
+| B09, B21 | Browser-level sync plus real Android/iPhone upgrade checks; then release sign-off |
 | B10 | Verify deployment controls and enforce server-side caller policy/request limits |
 | B02, B03, B05–B07, B11–B12 | Speaking escape route, fair answer checking, progression/checkpoints, vocabulary selection and feedback |
 | B01, B08, B13–B14, B19 | Exact-phrase pronunciation enrichment, audio request ordering, EN/IPA policy and word-control coverage |
