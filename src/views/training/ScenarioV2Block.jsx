@@ -715,14 +715,36 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
             ) : null}
             {step.learnerPrompt ? <div className="mb-3 text-[14px] font-semibold leading-snug text-zinc-100">{step.learnerPrompt}</div> : null}
             <div className="grid gap-2">
-              {options.map((option) => (
-                <div key={`${step.id}:${option.id}`} className="scenario-v2-option rounded-2xl border px-3 py-2 flex items-center gap-3">
-                  <div className="flex-1 text-[15px] font-semibold"><InteractivePhraseText text={option.text} playText={playText} /></div>
-                  <button type="button" className="z-btn z-btn-secondary px-3 py-2 shrink-0"
+              {options.map((option) => {
+                const optionDisabled = !activeSpeakerReady || !!selectedOptionForStep;
+                const chooseOption = () => {
+                  if (optionDisabled) return;
+                  handleOption(option);
+                };
+                return (
+                  <div
+                    key={`${step.id}:${option.id}`}
+                    role="button"
+                    tabIndex={optionDisabled ? -1 : 0}
+                    aria-disabled={optionDisabled}
                     aria-label={`Choose reply: ${option.text}`}
-                    onClick={() => handleOption(option)} disabled={!activeSpeakerReady || !!selectedOptionForStep}>Choose</button>
-                </div>
-              ))}
+                    onClick={chooseOption}
+                    onKeyDown={(event) => {
+                      if (optionDisabled || (event.key !== "Enter" && event.key !== " ")) return;
+                      event.preventDefault();
+                      chooseOption();
+                    }}
+                    className={cn(
+                      "scenario-v2-option rounded-2xl border px-3 py-3 transition",
+                      optionDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                    )}
+                  >
+                    <div className="text-[15px] font-semibold">
+                      <InteractivePhraseText text={option.text} playText={playText} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : null}
