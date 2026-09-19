@@ -564,6 +564,10 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     },
     shortRecordingMessage: "Hold a little longer and speak after the mic turns green.",
     language: "lt",
+    transcriptionModel: "gpt-transcribe",
+    transcriptionPrompt: "A learner is speaking one short Lithuanian practice phrase.",
+    transcriptionKeywords: targetText ? [targetText] : [],
+    minRecordingMs: 250,
   });
 
   const isRecording  = sttState === "recording";
@@ -609,10 +613,27 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
   };
   const handleLostPointerCapture = (event) => {
     if (pointerIdRef.current !== event.pointerId) return;
-    pointerIdRef.current = null;
-    playMicStopIfNeeded();
-    stopRecording();
+    // Pointer capture can be lost transiently while the browser is acquiring
+    // microphone access. Window-level pointerup/pointercancel handlers below
+    // still finish the active hold, so do not cancel an otherwise valid take.
   };
+
+  React.useEffect(() => {
+    const handleWindowPointerUp = (event) => {
+      if (pointerIdRef.current !== event.pointerId) return;
+      finishMicHold(event);
+    };
+    const handleWindowPointerCancel = (event) => {
+      if (pointerIdRef.current !== event.pointerId) return;
+      cancelMicHold(event);
+    };
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    window.addEventListener("pointercancel", handleWindowPointerCancel);
+    return () => {
+      window.removeEventListener("pointerup", handleWindowPointerUp);
+      window.removeEventListener("pointercancel", handleWindowPointerCancel);
+    };
+  });
 
   const micLabel = isPending ? "Getting microphone..." : isRecording ? "Listening... release when done" : isProcessing ? "Checking..." : supported ? "Hold to speak" : "Microphone unavailable";
   const statusLabel = attemptState === "result_pass" ? "Nice, spoken" : attemptState === "result_fail" ? "Not quite yet. Hold the mic and try again." : micLabel;
@@ -680,7 +701,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
                 onPointerUp={finishMicHold}
                 onPointerCancel={cancelMicHold}
                 onLostPointerCapture={handleLostPointerCapture}
-                className={cn("h-20 w-20 rounded-full border-2 flex items-center justify-center transition-all select-none",
+                className={cn("h-20 w-20 rounded-full border-2 flex items-center justify-center transition-all select-none touch-none",
                   isRecording ? "bg-emerald-500/25 border-emerald-400/60 scale-105 shadow-[0_0_32px_rgba(16,185,129,0.3)]"
                   : isPending ? "bg-white/[0.06] border-white/15 opacity-85"
                   : isProcessing ? "bg-white/[0.06] border-white/10 opacity-70"
