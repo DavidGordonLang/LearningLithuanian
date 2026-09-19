@@ -30,7 +30,7 @@ export default function createModule_4_4(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Alkanas / alkana means hungry and changes with gender. Ištroškęs / ištroškusi means thirsty. Aš noriu gerti literally means 'I want to drink' and is useful too, but it is not the direct equivalent of 'I'm thirsty'."
+          pattern: "Alkanas / alkana means hungry and changes with gender. Ištroškęs / ištroškusi means thirsty. Aš noriu gerti literally means 'I want to drink' and is useful too, but it is not the direct equivalent of 'I'm thirsty'.",
           usage: [
             "Aš alkanas — I'm hungry (male)",
             "Aš alkana — I'm hungry (female)",
