@@ -905,6 +905,7 @@ export default function createModule_5_2(profile = {}) {
         purpose: "Check that key place words are solid in context.",
         supportLevel: "low",
         newLanguageLoad: "none",
+        isCheckpoint: true,
         blocks: [
           {
             id: "s5m2c_b1",

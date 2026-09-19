@@ -877,6 +877,7 @@ export default function createModule_5_1(profile = {}) {
         purpose: "Confirm the core location-question system is fast and reliable.",
         supportLevel: "low",
         newLanguageLoad: "none",
+        isCheckpoint: true,
         blocks: [
           {
             id: "s5m1c_b1",

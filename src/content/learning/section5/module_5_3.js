@@ -976,6 +976,7 @@ export default function createModule_5_3(profile = {}) {
         purpose: "Confirm movement and location language is working together.",
         supportLevel: "low",
         newLanguageLoad: "none",
+        isCheckpoint: true,
         blocks: [
           {
             id: "s5m3c_b1",

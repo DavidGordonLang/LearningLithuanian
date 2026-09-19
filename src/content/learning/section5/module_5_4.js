@@ -983,6 +983,7 @@ export default function createModule_5_4(profile = {}) {
         purpose: "Confirm route-asking and direction-following is working.",
         supportLevel: "low",
         newLanguageLoad: "none",
+        isCheckpoint: true,
         blocks: [
           {
             id: "s5m4c_b1",
