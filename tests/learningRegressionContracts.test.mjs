@@ -200,3 +200,13 @@ test("lesson mic does not abort an active hold when pointer capture is lost duri
   assert.match(src, /window\.addEventListener\("pointercancel", handleWindowPointerCancel\)/);
   assert.match(src, /select-none touch-none/);
 });
+
+
+test("lesson speech checks suppress the generic captured toast so retries are not blocked", () => {
+  const lessonSrc = source("src/views/training/LearningLessonView.jsx");
+  const sttSrc = source("src/hooks/useSpeechToTextHold.js");
+
+  assert.match(lessonSrc, /showCapturedToast:\s*false/);
+  assert.match(sttSrc, /showCapturedToast = true/);
+  assert.match(sttSrc, /if \(showCapturedToast\) showToast\?\.\("Speech captured"\)/);
+});
