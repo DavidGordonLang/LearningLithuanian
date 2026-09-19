@@ -301,7 +301,6 @@ export default function useSpeechToTextHold({
             : "speech.webm";
           fd.append("file", blob, filename);
           fd.append("model", transcriptionModel);
-          fd.append("max_seconds", "15");
 
           if (transcriptionPrompt) {
             fd.append("prompt", String(transcriptionPrompt));
