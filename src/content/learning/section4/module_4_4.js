@@ -9,6 +9,7 @@ export default function createModule_4_4(profile = {}) {
   } = profile;
   const isMale = speakerGender !== "female";
   const alkanas = isMale ? "alkanas" : "alkana";
+  const istroskes = isMale ? "ištroškęs" : "ištroškusi";
   const vegetarX = isMale ? "vegetaras" : "vegetarė";
   const vegetarXEn = isMale ? "I am vegetarian. (male)" : "I am vegetarian. (female)";
 
@@ -29,11 +30,11 @@ export default function createModule_4_4(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Alkanas (hungry) changes ending by gender — alkanas for male, alkana for female. You have already seen this pattern with vegetaras / vegetarė. Aš noriu gerti — literally 'I want to drink' — is the natural way to say you're thirsty.",
+          pattern: "Alkanas / alkana means hungry and changes with gender. Ištroškęs / ištroškusi means thirsty. Aš noriu gerti literally means 'I want to drink' and is useful too, but it is not the direct equivalent of 'I'm thirsty'."
           usage: [
             "Aš alkanas — I'm hungry (male)",
             "Aš alkana — I'm hungry (female)",
-            "Aš noriu gerti — I'm thirsty",
+            "Aš ištroškęs / ištroškusi — I'm thirsty",
             "Ar tu alkanas? — Are you hungry? (informal, to male)",
           ],
         },
@@ -44,7 +45,8 @@ export default function createModule_4_4(profile = {}) {
             title: "Hunger and thirst",
             items: [
               { id: "ht1", lt: `Aš ${alkanas}.`, en: `I'm hungry.`, audioText: `Aš ${alkanas}`, saveable: true, core: true },
-              { id: "ht2", lt: "Aš noriu gerti.", en: "I'm thirsty.", audioText: "Aš noriu gerti", saveable: true, core: true },
+              { id: "ht2", lt: `Aš ${istroskes}.`, en: "I'm thirsty.", audioText: `Aš ${istroskes}`, saveable: true, core: true },
+              { id: "ht2b", lt: "Aš noriu gerti.", en: "I want to drink.", audioText: "Aš noriu gerti", saveable: false, core: false },
               { id: "ht3", lt: "Ar tu alkanas?", en: "Are you hungry? (informal, to male)", audioText: "Ar tu alkanas", saveable: false, core: false },
               { id: "ht4", lt: "Ar tu alkana?", en: "Are you hungry? (informal, to female)", audioText: "Ar tu alkana", saveable: false, core: false },
             ],
@@ -64,7 +66,7 @@ export default function createModule_4_4(profile = {}) {
             id: "s4m4l1_b3",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Aš noriu gerti.", audioText: "Aš noriu gerti" },
+            prompt: { text: `Aš ${istroskes}.`, audioText: `Aš ${istroskes}` },
             options: [
               { id: "a", text: "I'm hungry.", isCorrect: false },
               { id: "b", text: "I want coffee.", isCorrect: false },
@@ -106,10 +108,16 @@ export default function createModule_4_4(profile = {}) {
       id: "step_1",
       speakerId: "friend",
       speakerLabel: "Friend",
-      speakerText: `${userNameSafe}, ar tu alkanas?`,
-      supportText: "Are you hungry?",
+      speakerText: `${userNameSafe}, ar tu ${alkanas}?`,
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          { sceneDirection: "Your friend gestures towards their stomach and then towards the café.", speakerText: `Alkanas?` },
+          { sceneDirection: "They mime eating and point towards the café." },
+          { speakerText: "Are you hungry?", spokenLanguage: "en", audio: false },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -124,13 +132,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Yes, I'm hungry. And you?",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -139,7 +140,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Aš irgi. Ir noriu gerti.",
-      supportText: "Me too. And I'm thirsty.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -156,13 +156,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Let's go to the café!",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     }
@@ -276,13 +269,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Hi! Do you want coffee?",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -291,7 +277,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: "Taip, prašau! Su pienu.",
-      supportText: "Yes, please! With milk.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -308,13 +293,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Great! With sugar?",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -323,13 +301,12 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: "Ne, be cukraus.",
-      supportText: "No, without sugar.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Ko norėtumėte?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -421,7 +398,7 @@ export default function createModule_4_4(profile = {}) {
   title: "Conversation",
   description: "You suggest going for a coffee with a friend.",
   sceneIntro: "You suggest going for a coffee with a friend.",
-  location: "caf?",
+  location: "café",
   userRole: "customer",
   register: "polite_service",
   goal: "You suggest going for a coffee with a friend.",
@@ -468,13 +445,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Hi! Let's go to the café!",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -483,7 +453,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Gerai! Dabar?",
-      supportText: "Great! Now?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -500,13 +469,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Yes, now!",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -515,7 +477,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Puiku! Išgerkime kavos.",
-      supportText: "Great! Let's drink coffee.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -532,13 +493,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Yes! And maybe let's eat too.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     }
@@ -669,18 +623,10 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: "Ko norėtumėte?",
-      supportText: "What would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
+                {
           id: "b",
           text: "Man kavos ir tau arbatos, prašau.",
           textEn: "Coffee for me and tea for you, please.",
@@ -701,7 +647,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: "Gerai. Kam kava?",
-      supportText: "OK. Who is the coffee for?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -718,13 +663,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "For me, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -733,13 +671,12 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: "Prašom.",
-      supportText: "Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Ko norėtumėte?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -857,7 +794,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Ar skanu?",
-      supportText: "Is it tasty?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -874,13 +810,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Yes! Very tasty. I like it.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -889,18 +818,10 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Man irgi! Ar nori dar?",
-      supportText: "Me too! Do you want more?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
+                {
           id: "b",
           text: "Ne, ačiū. Pakanka.",
           textEn: "No, thank you. That's enough.",
@@ -909,7 +830,7 @@ export default function createModule_4_4(profile = {}) {
         },
         {
           id: "c",
-          text: "Sąskaitą, prašau.",
+          text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -939,7 +860,7 @@ export default function createModule_4_4(profile = {}) {
             options: [
               { id: "a", text: "Ne, ačiū.", isCorrect: false },
               { id: "b", text: "Taip, prašau!", isCorrect: true },
-              { id: "c", text: "Sąskaitą, prašau.", isCorrect: false },
+              { id: "c", text: "Ar galėčiau gauti sąskaitą, prašau?", isCorrect: false },
             ],
             feedback: { correct: "Taip, prašau — Yes, please. Natural and immediate." },
           },
@@ -1024,7 +945,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: `Labas, ${userNameSafe}! Ar tu alkanas?`,
-      supportText: "Hi! Are you hungry?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1041,13 +961,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Yes! Let's go to the café.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -1056,7 +969,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Gerai! Ar nori kavos?",
-      supportText: "Great! Do you want coffee?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1073,13 +985,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Yes, please. Coffee with milk for me.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -1088,13 +993,12 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Aš noriu arbatos. Ir pavalgykime!",
-      supportText: "I want tea. And let's eat!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
           id: "a",
-          text: "Ko norite?",
+          text: "Ko norėtumėte?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1120,7 +1024,6 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Ar skanu?",
-      supportText: "Is it tasty?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1137,13 +1040,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Yes, very tasty! I like it.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -1168,13 +1064,6 @@ export default function createModule_4_4(profile = {}) {
           textEn: "Goodbye! Thank you!",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     }

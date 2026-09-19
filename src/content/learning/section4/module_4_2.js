@@ -103,7 +103,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Laba diena! Ko norėtumėte?",
-      supportText: "Good day! What would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -120,13 +119,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "I would like coffee, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -135,7 +127,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Žinoma. Prašom.",
-      supportText: "Of course. Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -231,7 +222,7 @@ export default function createModule_4_2(profile = {}) {
   title: "Conversation",
   description: "You order a coffee at a takeaway counter. They ask the for-here question.",
   sceneIntro: "You order a coffee at a takeaway counter. They ask the for-here question.",
-  location: "caf?",
+  location: "café",
   userRole: "customer",
   register: "polite_service",
   goal: "You order a coffee at a takeaway counter. They ask the for-here question.",
@@ -262,18 +253,10 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Ko norėtumėte?",
-      supportText: "What would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
+                {
           id: "b",
           text: "Norėčiau kavos, prašau.",
           textEn: "I would like coffee, please.",
@@ -294,9 +277,15 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Čia ar išsinešti?",
-      supportText: "For here or to go?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          { sceneDirection: "The barista points to the tables, then to a takeaway cup.", speakerText: "Čia?" },
+          { sceneDirection: "She points to the takeaway bag, then back to the tables." },
+          { speakerText: "For here or to go?", spokenLanguage: "en", audio: false },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -311,13 +300,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "To go, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -326,7 +308,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Gerai. Prašom.",
-      supportText: "OK. Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -449,7 +430,7 @@ export default function createModule_4_2(profile = {}) {
   title: "Conversation",
   description: "You order a coffee and customise it exactly how you want it.",
   sceneIntro: "You order a coffee and customise it exactly how you want it.",
-  location: "caf?",
+  location: "café",
   userRole: "customer",
   register: "polite_service",
   goal: "You order a coffee and customise it exactly how you want it.",
@@ -480,7 +461,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Ko norėtumėte?",
-      supportText: "What would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -497,13 +477,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "I would like coffee, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -512,7 +485,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Su pienu ar be pieno?",
-      supportText: "With milk or without milk?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -544,7 +516,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Ar su cukrumi?",
-      supportText: "With sugar?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -561,13 +532,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "No, without sugar, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -576,7 +540,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Prašom.",
-      supportText: "Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -621,7 +584,7 @@ export default function createModule_4_2(profile = {}) {
           usage: [
             "Sąskaitą, prašau — The bill, please",
             "Noriu sumokėti — I want to pay",
-            "Galima mokėti kortele? — Can I pay by card?",
+            "Ar galima mokėti kortele? — Can I pay by card?",
           ],
         },
         blocks: [
@@ -630,9 +593,9 @@ export default function createModule_4_2(profile = {}) {
             type: "learn",
             title: "Closing the café interaction",
             items: [
-              { id: "bl1", lt: "Sąskaitą, prašau.", en: "The bill, please.", audioText: "Sąskaitą, prašau", saveable: true, core: true },
+              { id: "bl1", lt: "Ar galėčiau gauti sąskaitą, prašau?", en: "The bill, please.", audioText: "Ar galėčiau gauti sąskaitą, prašau", saveable: true, core: true },
               { id: "bl2", lt: "Noriu sumokėti.", en: "I want to pay.", audioText: "Noriu sumokėti", saveable: true, core: true },
-              { id: "bl3", lt: "Galima mokėti kortele?", en: "Can I pay by card?", audioText: "Galima mokėti kortele", saveable: true, core: true },
+              { id: "bl3", lt: "Ar galima mokėti kortele?", en: "Can I pay by card?", audioText: "Galima mokėti kortele", saveable: true, core: true },
               { id: "bl4", lt: "Grynaisiais ar kortele?", en: "Cash or card?", audioText: "Grynaisiais ar kortele", saveable: false, core: false },
             ],
           },
@@ -640,7 +603,7 @@ export default function createModule_4_2(profile = {}) {
             id: "s4m2l4_b2",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Sąskaitą, prašau.", audioText: "Sąskaitą, prašau" },
+            prompt: { text: "Ar galėčiau gauti sąskaitą, prašau?", audioText: "Ar galėčiau gauti sąskaitą, prašau" },
             options: [
               { id: "a", text: "The coffee, please.", isCorrect: false },
               { id: "b", text: "The bill, please.", isCorrect: true },
@@ -654,7 +617,7 @@ export default function createModule_4_2(profile = {}) {
             prompt: { text: "You are finished at the café and want to pay. What do you say?" },
             options: [
               { id: "a", text: "Norėčiau kavos.", isCorrect: false },
-              { id: "b", text: "Sąskaitą, prašau.", isCorrect: true },
+              { id: "b", text: "Ar galėčiau gauti sąskaitą, prašau?", isCorrect: true },
               { id: "c", text: "Viso gero.", isCorrect: false },
             ],
             feedback: { correct: "Sąskaitą, prašau — The bill, please. The natural way to close any café or restaurant interaction." },
@@ -664,8 +627,8 @@ export default function createModule_4_2(profile = {}) {
             type: "speak_self_check",
             title: "Say it out loud",
             prompt: "Ask for the bill",
-            targetText: "Sąskaitą, prašau",
-            audioText: "Sąskaitą, prašau",
+            targetText: "Ar galėčiau gauti sąskaitą, prašau?",
+            audioText: "Ar galėčiau gauti sąskaitą, prašau",
           },
           {
   id: "s4m2l4_b5_v2",
@@ -673,7 +636,7 @@ export default function createModule_4_2(profile = {}) {
   title: "Conversation",
   description: "You have finished your coffee. Time to pay and leave.",
   sceneIntro: "You have finished your coffee. Time to pay and leave.",
-  location: "caf?",
+  location: "café",
   userRole: "customer",
   register: "polite_service",
   goal: "You have finished your coffee. Time to pay and leave.",
@@ -718,7 +681,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Ar viskas gerai?",
-      supportText: "Is everything OK?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -735,13 +697,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "Yes, thank you! The bill, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -750,13 +705,19 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Žinoma. Grynaisiais ar kortele?",
-      supportText: "Of course. Cash or card?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          { sceneDirection: "The barista points to the cash tray and then the card terminal.", speakerText: "Kortele?" },
+          { sceneDirection: "She holds up a bank card beside the terminal." },
+          { speakerText: "Cash or card?", spokenLanguage: "en", audio: false },
+        ],
+      },
       options: [
         {
           id: "a",
-          text: "Sąskaitą, prašau.",
+          text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -767,13 +728,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "By card, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -782,7 +736,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Prašom. Ačiū!",
-      supportText: "Here you are. Thank you!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -912,7 +865,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Laba diena! Ko norėtumėte?",
-      supportText: "Good day! What would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -929,13 +881,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "Good day! I would like coffee.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -944,7 +889,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Čia ar išsinešti?",
-      supportText: "For here or to go?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -961,13 +905,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "For here, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -976,7 +913,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Su pienu ar be pieno?",
-      supportText: "With milk or without milk?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1008,7 +944,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Prašom.",
-      supportText: "Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1040,13 +975,12 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Grynaisiais ar kortele?",
-      supportText: "Cash or card?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
           id: "a",
-          text: "Sąskaitą, prašau.",
+          text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1057,13 +991,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "By card, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -1088,13 +1015,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "Thank you! Goodbye!",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     }
@@ -1215,18 +1135,10 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Laba diena! Ko norėtumėte?",
-      supportText: "Good day! What would you like?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
+                {
           id: "b",
           text: "Laba diena! Norėčiau arbatos, prašau.",
           textEn: "Good day! I would like tea, please.",
@@ -1247,7 +1159,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Čia ar išsinešti?",
-      supportText: "For here or to go?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1264,13 +1175,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "To go, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -1279,7 +1183,6 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Su citrina ar be?",
-      supportText: "With lemon or without?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1311,13 +1214,12 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Prašom. Grynaisiais ar kortele?",
-      supportText: "Here you go. Cash or card?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
         {
           id: "a",
-          text: "Sąskaitą, prašau.",
+          text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1328,13 +1230,6 @@ export default function createModule_4_2(profile = {}) {
           textEn: "Cash, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -1391,8 +1286,8 @@ export default function createModule_4_2(profile = {}) {
               { id: "m13", lt: "pienas",                  en: "milk",                       audioText: "pienas" },
               { id: "m14", lt: "cukrus",                  en: "sugar",                      audioText: "cukrus" },
               { id: "m15", lt: "citrina",                 en: "lemon",                      audioText: "citrina" },
-              { id: "m16", lt: "Sąskaitą, prašau.",       en: "The bill, please.",          audioText: "Sąskaitą, prašau" },
-              { id: "m17", lt: "Galima mokėti kortele?",  en: "Can I pay by card?",         audioText: "Galima mokėti kortele" },
+              { id: "m16", lt: "Ar galėčiau gauti sąskaitą, prašau?",       en: "The bill, please.",          audioText: "Ar galėčiau gauti sąskaitą, prašau" },
+              { id: "m17", lt: "Ar galima mokėti kortele?",  en: "Can I pay by card?",         audioText: "Galima mokėti kortele" },
               { id: "m18", lt: "Grynaisiais ar kortele?", en: "Cash or card?",              audioText: "Grynaisiais ar kortele" },
               { id: "m19", lt: "Su pienu ar be pieno?",   en: "With milk or without milk?", audioText: "Su pienu ar be pieno" },
               { id: "m20", lt: "Norėčiau užsisakyti.",    en: "I would like to order.",     audioText: "Norėčiau užsisakyti" },

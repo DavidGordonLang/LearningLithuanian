@@ -5,7 +5,10 @@ export default function createCheckpoint4(profile = {}) {
   const {
     userNameSafe = "Davidas",
     userFromPhrase = "Aš esu iš Škotijos",
+    speakerGender = "male",
   } = profile;
+  const isMale = speakerGender !== "female";
+  const alkanas = isMale ? "alkanas" : "alkana";
 
   return {
     id: "section_4_checkpoint",
@@ -48,7 +51,7 @@ export default function createCheckpoint4(profile = {}) {
         id: "s4c_b3",
         type: "recognise_mcq",
         title: "Choose the correct meaning",
-        prompt: { text: "Čia ne tai, ką užsakiau.", audioText: "Čia ne tai, ką užsakiau" },
+        prompt: { text: "Čia ne tai, ką užsisakiau.", audioText: "Čia ne tai, ką užsisakiau" },
         options: [
           { id: "a", text: "I would like to order.", isCorrect: false },
           { id: "b", text: "This is not what I ordered.", isCorrect: true },
@@ -95,7 +98,7 @@ export default function createCheckpoint4(profile = {}) {
         title: "Choose the best response",
         prompt: { text: "Staff asks: Grynaisiais ar kortele? You want to pay by card." },
         options: [
-          { id: "a", text: "Sąskaitą, prašau.", isCorrect: false },
+          { id: "a", text: "Ar galėčiau gauti sąskaitą, prašau?", isCorrect: false },
           { id: "b", text: "Kortele, prašau.", isCorrect: true },
           { id: "c", text: "Išsinešti, prašau.", isCorrect: false },
         ],
@@ -122,20 +125,20 @@ export default function createCheckpoint4(profile = {}) {
         prompt: { text: "The wrong drink arrives. What do you say?" },
         options: [
           { id: "a", text: "Ačiū labai!", isCorrect: false },
-          { id: "b", text: "Čia ne tai, ką užsakiau. Ar galite pakeisti?", isCorrect: true },
-          { id: "c", text: "Sąskaitą, prašau.", isCorrect: false },
+          { id: "b", text: "Čia ne tai, ką užsisakiau. Ar galite pakeisti?", isCorrect: true },
+          { id: "c", text: "Ar galėčiau gauti sąskaitą, prašau?", isCorrect: false },
         ],
-        feedback: { correct: "Čia ne tai, ką užsakiau. Ar galite pakeisti? — This is not what I ordered. Can you change it? Calm, clear, effective." },
+        feedback: { correct: "Čia ne tai, ką užsisakiau. Ar galite pakeisti? — This is not what I ordered. Can you change it? Calm, clear, effective." },
       },
 
       {
         id: "s4c_b9",
         type: "best_response",
         title: "Choose the best response",
-        prompt: { text: "Staff asks: Ar gerai? Your coffee is too cold." },
+        prompt: { text: "Staff asks: Ar viskas gerai? Your coffee is too cold." },
         options: [
           { id: "a", text: "Taip, labai gerai.", isCorrect: false },
-          { id: "b", text: "Nelabai gerai — per šalta.", isCorrect: true },
+          { id: "b", text: "Nelabai gerai — kava per šalta.", isCorrect: true },
           { id: "c", text: "Norėčiau arbatos.", isCorrect: false },
         ],
         feedback: { correct: "Nelabai gerai — per šalta. Not very good — too cold." },
@@ -156,8 +159,8 @@ export default function createCheckpoint4(profile = {}) {
         type: "speak_self_check",
         title: "Say it out loud",
         prompt: "Ask for the bill",
-        targetText: "Sąskaitą, prašau",
-        audioText: "Sąskaitą, prašau",
+        targetText: "Ar galėčiau gauti sąskaitą, prašau?",
+        audioText: "Ar galėčiau gauti sąskaitą, prašau",
       },
 
       // ── Block 6 — Conversation Chain ──────────────────────────────────────────
@@ -193,7 +196,7 @@ export default function createCheckpoint4(profile = {}) {
     },
     {
       "id": "card",
-      "lt": "kortel?",
+      "lt": "kortelė",
       "en": "card",
       "gender": "feminine",
       "number": "singular"
@@ -211,8 +214,7 @@ export default function createCheckpoint4(profile = {}) {
       id: "step_1",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Labas! Ar tu alkanas?",
-      supportText: "Hi! Are you hungry?",
+      speakerText: `Labas! Ar tu ${alkanas}?`,
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -225,17 +227,10 @@ export default function createCheckpoint4(profile = {}) {
         },
         {
           id: "b",
-          text: "Taip! Aš alkanas. Eikime į kavinę.",
+          text: `Taip! Aš ${alkanas}. Eikime į kavinę.`,
           textEn: "Yes! I'm hungry. Let's go to the café.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -244,18 +239,17 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena! Ko norėtumėte?",
-      supportText: "Good day! What would you like?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          { sceneDirection: "The server opens the menu and gestures towards the drinks.", speakerText: "Kavos? Arbatos?" },
+          { sceneDirection: "The server points between the coffee and tea options." },
+          { speakerText: "What would you like?", spokenLanguage: "en", audio: false },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
+                {
           id: "b",
           text: "Laba diena! Man kavos su pienu ir tau arbatos, prašau.",
           textEn: "Good day! Coffee with milk for me and tea for you, please.",
@@ -276,9 +270,15 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Čia ar išsinešti?",
-      supportText: "For here or to go?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          { sceneDirection: "The server points to the table, then to a takeaway cup.", speakerText: "Čia?" },
+          { sceneDirection: "The server points between the table and takeaway bag." },
+          { speakerText: "For here or to go?", spokenLanguage: "en", audio: false },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -293,13 +293,6 @@ export default function createCheckpoint4(profile = {}) {
           textEn: "For here, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -308,7 +301,6 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Prašom. Dvi arbatos.",
-      supportText: "Here you go. Two teas. — The wrong order — you ordered one coffee.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -321,14 +313,14 @@ export default function createCheckpoint4(profile = {}) {
         },
         {
           id: "b",
-          text: "Atsiprašau — čia ne tai, ką užsakiau. Man kavos, prašau. Ar galite pakeisti?",
+          text: "Atsiprašau — čia ne tai, ką užsisakiau. Man kavos, prašau. Ar galite pakeisti?",
           textEn: "Excuse me — this is not what I ordered. Coffee for me, please. Can you change it?",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Sąskaitą, prašau.",
+          text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -340,7 +332,6 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Labai atsiprašau. Prašom — kava su pienu. Ar skanu?",
-      supportText: "Very sorry. Here you go — coffee with milk. Is it tasty?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -371,8 +362,7 @@ export default function createCheckpoint4(profile = {}) {
       id: "step_6",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Puiku! Ar dar ko norite?",
-      supportText: "Great! Anything else?",
+      speakerText: "Puiku! Ar dar ko nors norėtumėte?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -404,9 +394,15 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Žinoma. Dešimt eurų. Grynaisiais ar kortele?",
-      supportText: "Of course. Ten euros. Cash or card?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          { sceneDirection: "The server points to the cash tray and then to the card terminal.", speakerText: "Kortele?" },
+          { sceneDirection: "The server holds up a bank card beside the terminal." },
+          { speakerText: "Cash or card?", spokenLanguage: "en", audio: false },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -421,13 +417,6 @@ export default function createCheckpoint4(profile = {}) {
           textEn: "By card, please.",
           result: "best",
           progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
         }
       ],
     },
@@ -436,7 +425,6 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Prašom. Viso gero!",
-      supportText: "Here you go. Goodbye!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -480,11 +468,11 @@ export default function createCheckpoint4(profile = {}) {
           { id: "m6",  lt: "Išsinešti, prašau.",          en: "To go, please.",                   audioText: "Išsinešti, prašau" },
           { id: "m7",  lt: "su pienu",                    en: "with milk",                        audioText: "su pienu" },
           { id: "m8",  lt: "be cukraus",                  en: "without sugar",                    audioText: "be cukraus" },
-          { id: "m9",  lt: "Sąskaitą, prašau.",           en: "The bill, please.",                audioText: "Sąskaitą, prašau" },
-          { id: "m10", lt: "Galima mokėti kortele?",       en: "Can I pay by card?",               audioText: "Galima mokėti kortele" },
+          { id: "m9",  lt: "Ar galėčiau gauti sąskaitą, prašau?",           en: "The bill, please.",                audioText: "Ar galėčiau gauti sąskaitą, prašau" },
+          { id: "m10", lt: "Ar galima mokėti kortele?",       en: "Can I pay by card?",               audioText: "Galima mokėti kortele" },
           { id: "m11", lt: "Nenoriu šito.",               en: "I don't want this.",               audioText: "Nenoriu šito" },
           { id: "m12", lt: "Nevalgau mėsos.",             en: "I don't eat meat.",                audioText: "Nevalgau mėsos" },
-          { id: "m13", lt: "Čia ne tai, ką užsakiau.",    en: "This is not what I ordered.",      audioText: "Čia ne tai, ką užsakiau" },
+          { id: "m13", lt: "Čia ne tai, ką užsisakiau.",    en: "This is not what I ordered.",      audioText: "Čia ne tai, ką užsisakiau" },
           { id: "m14", lt: "Ar galite pakeisti?",         en: "Can you change it?",               audioText: "Ar galite pakeisti" },
           { id: "m15", lt: "Per karšta.",                 en: "Too hot.",                         audioText: "Per karšta" },
           { id: "m16", lt: "Ar nori kavos?",              en: "Do you want coffee? (informal)",   audioText: "Ar nori kavos" },
