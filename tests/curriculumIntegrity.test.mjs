@@ -1,0 +1,110 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import module11 from "../src/content/learning/section1/module_1_1.js";
+import createModule12 from "../src/content/learning/section1/module_1_2.js";
+import createModule13 from "../src/content/learning/section1/module_1_3.js";
+import createModule14 from "../src/content/learning/section1/module_1_4.js";
+import createCheckpoint1 from "../src/content/learning/section1/checkpoint_1.js";
+
+import createModule21 from "../src/content/learning/section2/module_2_1.js";
+import createModule22 from "../src/content/learning/section2/module_2_2.js";
+import createModule23 from "../src/content/learning/section2/module_2_3.js";
+import createModule24 from "../src/content/learning/section2/module_2_4.js";
+import createCheckpoint2 from "../src/content/learning/section2/checkpoint_2.js";
+
+import createModule31 from "../src/content/learning/section3/module_3_1.js";
+import createModule32 from "../src/content/learning/section3/module_3_2.js";
+import createModule33 from "../src/content/learning/section3/module_3_3.js";
+import createModule34 from "../src/content/learning/section3/module_3_4.js";
+import createCheckpoint3 from "../src/content/learning/section3/checkpoint_3.js";
+
+import createModule41 from "../src/content/learning/section4/module_4_1.js";
+import createModule42 from "../src/content/learning/section4/module_4_2.js";
+import createModule43 from "../src/content/learning/section4/module_4_3.js";
+import createModule44 from "../src/content/learning/section4/module_4_4.js";
+import createCheckpoint4 from "../src/content/learning/section4/checkpoint_4.js";
+
+import createModule51 from "../src/content/learning/section5/module_5_1.js";
+import createModule52 from "../src/content/learning/section5/module_5_2.js";
+import createModule53 from "../src/content/learning/section5/module_5_3.js";
+import createModule54 from "../src/content/learning/section5/module_5_4.js";
+import createCheckpoint5 from "../src/content/learning/section5/checkpoint_5.js";
+
+const profile = {
+  userNameSafe: "Davidas",
+  speakerGender: "male",
+  userFromPhrase: "Aš esu iš Škotijos",
+  userFromCountryLtGenitive: "Škotijos",
+  userFromCountryLabelEn: "Scotland",
+  userAgeYears: 45,
+  userAgePhraseLt: "Man keturiasdešimt penkeri metai",
+  userAgePhraseEn: "I am 45 years old",
+};
+
+const modules = [
+  module11,
+  createModule12(profile), createModule13(profile), createModule14(profile),
+  createModule21(profile), createModule22(profile), createModule23(profile), createModule24(profile),
+  createModule31(profile), createModule32(profile), createModule33(profile), createModule34(profile),
+  createModule41(profile), createModule42(profile), createModule43(profile), createModule44(profile),
+  createModule51(profile), createModule52(profile), createModule53(profile), createModule54(profile),
+];
+
+const checkpoints = [
+  createCheckpoint1(profile), createCheckpoint2(profile), createCheckpoint3(profile),
+  createCheckpoint4(profile), createCheckpoint5(profile),
+];
+
+test("module metadata matches the actual lesson arrays after curriculum restructuring", () => {
+  for (const module of modules) {
+    assert.equal(module.lessonCount, module.lessons.length, module.code);
+    assert.equal(new Set(module.lessons.map((lesson) => lesson.id)).size, module.lessons.length, `${module.code} duplicate lesson id`);
+    assert.equal(new Set(module.lessons.map((lesson) => lesson.code)).size, module.lessons.length, `${module.code} duplicate lesson code`);
+  }
+});
+
+test("block IDs remain unique across Sections 1–5", () => {
+  const ids = [];
+  for (const module of modules) {
+    for (const lesson of module.lessons) {
+      for (const block of lesson.blocks || []) ids.push(block.id);
+    }
+  }
+  for (const cp of checkpoints) {
+    for (const block of cp.blocks || []) ids.push(block.id);
+  }
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("every authored Scenario V2 decision retains a progressing answer", () => {
+  const units = [
+    ...modules.flatMap((module) => module.lessons),
+    ...checkpoints,
+  ];
+  for (const unit of units) {
+    for (const scenario of (unit.blocks || []).filter((block) => block.type === "scenario_v2")) {
+      for (const step of scenario.steps || []) {
+        if (!step.options?.length) continue;
+        assert.ok(
+          step.options.some((option) => ["best", "acceptable", "awkward"].includes(option.result) && option.progresses !== false),
+          `${scenario.id}:${step.id}`
+        );
+        for (const level of step.help?.levels || []) {
+          if (level.spokenLanguage === "en") assert.equal(level.audio, false, `${scenario.id} English helper audio`);
+        }
+      }
+    }
+  }
+});
+
+test("Section 2 defers time, prices and plural-comparison shopping while Section 3 owns time and prices", () => {
+  const section2 = JSON.stringify([createModule21(profile), createModule22(profile), createModule23(profile), createModule24(profile), createCheckpoint2(profile)]);
+  for (const deferred of ["Kada pradedame?", "Kiek tai kainuoja?", "Tas geresnis.", "Noriu šitų."]) {
+    assert.equal(section2.includes(deferred), false, deferred);
+  }
+
+  const section3 = JSON.stringify([createModule31(profile), createModule32(profile), createModule33(profile), createModule34(profile), createCheckpoint3(profile)]);
+  assert.ok(section3.includes("Kiek tai kainuoja?"));
+  assert.ok(section3.includes("Kada"));
+});
