@@ -11,7 +11,7 @@ export default function createModule_2_2(profile = {}) {
     code: "2.2",
     title: "Can / Can't / Possible?",
     status: "active",
-    lessonCount: 5,
+    lessonCount: 4,
     lessons: [
 
       // ── Lesson 1 ────────────────────────────────────────────────────────────

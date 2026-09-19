@@ -12,7 +12,7 @@ function getBlock(lesson, id) {
 
 test("Module 1.2 adds People Around You with the intended learning mechanics", () => {
   const module = createModule_1_2();
-  assert.equal(module.lessonCount, 6);
+  assert.equal(module.lessonCount, 5);
 
   const lesson = getLesson(module, "1.2.5");
   assert.ok(lesson);

@@ -14,7 +14,7 @@ export default function createModule_1_4(profile = {}) {
     code: "1.4",
     title: "Help and Contact",
     status: "active",
-    lessonCount: 6,
+    lessonCount: 5,
     lessons: [
 
       // ── Lesson 1 ────────────────────────────────────────────────────────────

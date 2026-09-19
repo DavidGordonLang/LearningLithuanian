@@ -12,7 +12,7 @@ export default function createModule_1_3(profile = {}) {
     code: "1.3",
     title: "I Don't Understand",
     status: "active",
-    lessonCount: 5,
+    lessonCount: 4,
     lessons: [
 
       // ── Lesson 1 ────────────────────────────────────────────────────────────

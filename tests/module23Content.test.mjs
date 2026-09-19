@@ -14,7 +14,7 @@ function scenarios(module) {
 
 test("Module 2.3 is reduced to singular demonstratives, singular selection and checkpoint", () => {
   const module = createModule_2_3();
-  assert.equal(module.lessonCount, 3);
+  assert.equal(module.lessonCount, 2);
   assert.deepEqual(module.lessons.map((lesson) => lesson.code), ["2.3.1", "2.3.2", "2.3.C"]);
 });
 

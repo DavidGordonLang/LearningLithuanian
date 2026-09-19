@@ -7,7 +7,7 @@ export default function createModule_2_3(profile = {}) {
     code: "2.3",
     title: "This / That / Choosing",
     status: "active",
-    lessonCount: 3,
+    lessonCount: 2,
     lessons: [
 
       // ── Lesson 1 ────────────────────────────────────────────────────────────

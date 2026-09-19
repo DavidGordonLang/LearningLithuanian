@@ -58,7 +58,10 @@ const checkpoints = [
 
 test("module metadata matches the actual lesson arrays after curriculum restructuring", () => {
   for (const module of modules) {
-    assert.equal(module.lessonCount, module.lessons.length, module.code);
+    const teachingLessons = module.lessons.filter((lesson) => !lesson.isCheckpoint);
+    const moduleCheckpoints = module.lessons.filter((lesson) => lesson.isCheckpoint);
+    assert.equal(module.lessonCount, teachingLessons.length, `${module.code} teaching lesson count`);
+    assert.equal(moduleCheckpoints.length, 1, `${module.code} checkpoint count`);
     assert.equal(new Set(module.lessons.map((lesson) => lesson.id)).size, module.lessons.length, `${module.code} duplicate lesson id`);
     assert.equal(new Set(module.lessons.map((lesson) => lesson.code)).size, module.lessons.length, `${module.code} duplicate lesson code`);
   }

@@ -14,7 +14,7 @@ function scenarios(module) {
 
 test("Module 2.2 is consolidated to four lessons plus checkpoint", () => {
   const module = createModule_2_2();
-  assert.equal(module.lessonCount, 5);
+  assert.equal(module.lessonCount, 4);
   assert.deepEqual(module.lessons.map((lesson) => lesson.code), ["2.2.1", "2.2.2", "2.2.3", "2.2.4", "2.2.C"]);
 });
 

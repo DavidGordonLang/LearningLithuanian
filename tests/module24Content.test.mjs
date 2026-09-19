@@ -14,7 +14,7 @@ function scenarios(module) {
 
 test("Module 2.4 is reduced to What, Where, Who and checkpoint", () => {
   const module = createModule_2_4();
-  assert.equal(module.lessonCount, 4);
+  assert.equal(module.lessonCount, 3);
   assert.deepEqual(module.lessons.map((lesson) => lesson.code), ["2.4.1", "2.4.2", "2.4.3", "2.4.C"]);
 });
 

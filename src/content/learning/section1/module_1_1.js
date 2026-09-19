@@ -6,7 +6,7 @@ const module_1_1 =     {
       code: "1.1",
       title: "Greeting and Politeness",
       status: "active",
-      lessonCount: 5,
+      lessonCount: 4,
       lessons: [
 
         // ── Lesson 1 ──────────────────────────────────────────────────────────

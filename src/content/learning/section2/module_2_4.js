@@ -12,7 +12,7 @@ export default function createModule_2_4(profile = {}) {
     code: "2.4",
     title: "Basic Questions",
     status: "active",
-    lessonCount: 4,
+    lessonCount: 3,
     lessons: [
 
       // ── Lesson 1 ────────────────────────────────────────────────────────────
