@@ -235,17 +235,22 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: "Šiandien, trečią valandą.",
-      supportText: "Today, at three o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Today, at three o'clock.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Gerai, ačiū!",
@@ -408,17 +413,22 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Laba diena! Ar galiu jums padėti?",
-      supportText: "Can I help you?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Can I help you?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Laba diena. Kada išvyksta traukinys?",
@@ -439,17 +449,22 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Traukinys išvyksta šeštą valandą.",
-      supportText: "The train leaves at six o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "The train leaves at six o'clock.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Šeštą valandą. Gerai, ačiū!",
@@ -470,9 +485,20 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Prašom. Viso gero!",
-      supportText: "You're welcome. Goodbye!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "You're welcome. Goodbye!",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -611,9 +637,20 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Labas! Kada susitinkame?",
-      supportText: "When do we meet?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "When do we meet?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -642,17 +679,22 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Puiku! Susitinkame penktą valandą.",
-      supportText: "Great! We meet at five o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Great! We meet at five o'clock.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Gerai! Ir kur susitinkame?",
@@ -674,9 +716,20 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Kavinėje. Iki!",
-      supportText: "At the café. See you!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "At the café. See you!",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -827,17 +880,22 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Atsidaro devintą valandą.",
-      supportText: "It opens at nine o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "It opens at nine o'clock.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Ačiū. Ir kada užsidaro?",
@@ -858,9 +916,20 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Šiandien užsidaro šeštą valandą.",
-      supportText: "Today it closes at six o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Today it closes at six o'clock.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -1003,17 +1072,22 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Laba diena! Ar galiu jums padėti?",
-      supportText: "Can I help you?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Can I help you?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Laba diena. Kada išvyksta autobusas į Kauną?",
@@ -1034,17 +1108,22 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Autobusas išvyksta trečią valandą.",
-      supportText: "The bus leaves at three o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "The bus leaves at three o'clock.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Trečią valandą — gerai, ačiū!",
@@ -1065,9 +1144,20 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Dabar antra valanda — turite laiko.",
-      supportText: "It's two o'clock now — you have time.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "It's two o'clock now",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",

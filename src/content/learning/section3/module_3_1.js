@@ -393,9 +393,20 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Laba diena! Kiek kavų?",
-      supportText: "How many coffees?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "How many coffees?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -424,9 +435,20 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Tai kainuoja šešis eurus.",
-      supportText: "It costs six euros.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "It costs six euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -455,9 +477,20 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Prašom!",
-      supportText: "Here you go!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go!",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -600,9 +633,20 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Laba diena! Kiek bilietų?",
-      supportText: "How many tickets?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "How many tickets?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -631,9 +675,20 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Dvidešimt eurų.",
-      supportText: "Twenty euros.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Twenty euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -662,9 +717,20 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Prašom, du bilietai.",
-      supportText: "Here you go, two tickets.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go, two tickets.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -673,12 +739,7 @@ export default function createModule_3_1(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Ačiū labai!",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",

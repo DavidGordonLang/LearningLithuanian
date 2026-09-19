@@ -173,9 +173,20 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Laba diena! Ar galiu jums padėti?",
-      supportText: "Can I help you?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Can I help you?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -184,12 +195,7 @@ export default function createCheckpoint3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Laba diena. Man reikėtų dviejų bilietų į Kauną, prašau.",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -204,9 +210,20 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Tai kainuoja dvidešimt eurų.",
-      supportText: "That costs twenty euros.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "That costs twenty euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -235,9 +252,20 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Taip, galima. Prašom.",
-      supportText: "Yes, you can. Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Yes, you can. Here you go.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -246,12 +274,7 @@ export default function createCheckpoint3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Ačiū. Ir — kada išvyksta traukinys?",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -266,9 +289,20 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Traukinys išvyksta penktą valandą.",
-      supportText: "The train leaves at five o'clock.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "The train leaves at five o'clock.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -297,9 +331,20 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Prašom. Viso gero ir geros kelionės!",
-      supportText: "You're welcome. Goodbye and have a good journey!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "You're welcome. Goodbye and have a good journey!",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -308,12 +353,7 @@ export default function createCheckpoint3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Ačiū labai! Viso gero!",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",

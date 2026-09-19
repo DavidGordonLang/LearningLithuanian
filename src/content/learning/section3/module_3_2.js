@@ -115,6 +115,13 @@ export default function createModule_3_2(profile = {}) {
       speakerText: "Laba diena!",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -122,13 +129,7 @@ export default function createModule_3_2(profile = {}) {
           result: "best",
           progresses: true,
         },
-        {
-          id: "b",
-          text: "Viso gero!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -143,9 +144,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Dešimt eurų.",
-      supportText: "Ten euros.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Ten euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -308,17 +320,22 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Tai kainuoja penkiolika eurų.",
-      supportText: "It costs fifteen euros. — imu means I'll take it.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "It costs fifteen euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Gerai, imu!",
@@ -340,9 +357,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Prašom.",
-      supportText: "Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -483,9 +511,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Tai kainuoja septynis eurus.",
-      supportText: "It costs seven euros.",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "It costs seven euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -514,9 +553,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Taip, galima.",
-      supportText: "Yes, it is possible.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Yes, it is possible.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -545,9 +595,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Prašom.",
-      supportText: "Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -556,12 +617,7 @@ export default function createModule_3_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Ačiū labai!",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -725,9 +781,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Tai kainuoja dvidešimt eurų.",
-      supportText: "It costs twenty euros.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "It costs twenty euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -736,12 +803,7 @@ export default function createModule_3_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Gerai, imu!",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -756,9 +818,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Grynaisiais ar kortele?",
-      supportText: "Cash or card?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Cash or card?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -787,9 +860,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Prašom.",
-      supportText: "Here you go.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -798,12 +882,7 @@ export default function createModule_3_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Ačiū labai! Viso gero!",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -916,17 +995,22 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Ar viskas gerai?",
-      supportText: "Is everything okay?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Is everything okay?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
-        {
-          id: "a",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
+        
         {
           id: "b",
           text: "Taip, ačiū. Ar galėčiau gauti sąskaitą, prašau?.",
@@ -947,9 +1031,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Žinoma. Tai kainuoja keturiolika eurų.",
-      supportText: "Of course. It costs fourteen euros.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Of course. It costs fourteen euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -978,9 +1073,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Taip, galima.",
-      supportText: "Yes, you can.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Yes, you can.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -989,12 +1095,7 @@ export default function createModule_3_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Gerai, ačiū.",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -1009,9 +1110,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Prašom. Ačiū, viso gero!",
-      supportText: "Here you go. Thank you, goodbye!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go. Thank you, goodbye!",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -1161,9 +1273,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena! Ar galiu jums padėti?",
-      supportText: "Can I help you?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Can I help you?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -1172,12 +1295,7 @@ export default function createModule_3_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Laba diena! Kiek kainuoja kava?",
-          result: "best",
-          progresses: true,
-        },
+        
         {
           id: "c",
           text: "Nesuprantu",
@@ -1192,9 +1310,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Kava kainuoja tris eurus.",
-      supportText: "Coffee costs three euros.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Coffee costs three euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -1223,9 +1352,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Žinoma. Grynaisiais ar kortele?",
-      supportText: "Of course. Cash or card?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Of course. Cash or card?",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
@@ -1254,9 +1394,20 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Prašom. Ačiū!",
-      supportText: "Here you go. Thank you!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go. Thank you!",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
       options: [
         {
           id: "a",
