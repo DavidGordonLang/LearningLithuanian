@@ -100,3 +100,13 @@ test("Scenario V2 escalating help stays separate from wrong-answer and progressi
   assert.match(src, /stepSpeakerCommitted/);
   assert.match(src, /withScenarioHelpOption/);
 });
+
+
+test("Scenario V2 can suppress all audio for English or mixed helper turns", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /isScenarioTurnAudioEnabled\(turn\)/);
+  assert.match(src, /audioEnabled \? <AudioIconButton/);
+  assert.match(src, /audioEnabled \? \([\s\S]*?<InteractivePhraseText[\s\S]*?\) : \([\s\S]*?<span>\{turn\.speakerText\}<\/span>/);
+  assert.match(src, /helpTurn\.speakerText && isScenarioTurnAudioEnabled\(helpTurn\)/);
+});

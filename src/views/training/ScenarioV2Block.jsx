@@ -1,4 +1,5 @@
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
+import { isScenarioTurnAudioEnabled } from "../../utils/scenarioAudio.js";
 import { getScenarioHelpOption, getScenarioHelpTurn, withScenarioHelpOption } from "../../utils/scenarioHelp.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -320,7 +321,8 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
   const showSpeaker = phase === "speaker" && hasSpeakerText;
   const showSupport = phase === "speaker" && !!(turn.supportText || turn.meaningText);
   const speakerLabel = getSpeakerLabel(block, turn);
-  const playOptions = getTurnVoiceOptions(block, turn);
+  const audioEnabled = isScenarioTurnAudioEnabled(turn);
+  const playOptions = audioEnabled ? getTurnVoiceOptions(block, turn) : undefined;
 
   return (
     <div className="space-y-2">
@@ -335,9 +337,15 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
           <div className={cn("scenario-v2-bubble scenario-v2-bubble-left max-w-[86%] rounded-[22px] border px-4 py-3", final ? "scenario-v2-final-bubble" : "scenario-v2-speaker-bubble")}>
             <div className="mb-1 flex items-center justify-between gap-3">
               <div className="min-w-0 text-[11px] font-semibold text-zinc-400">{speakerLabel}</div>
-              <AudioIconButton text={turn.speakerText} playText={playText} playOptions={playOptions} label="Replay speaker line" />
+              {audioEnabled ? <AudioIconButton text={turn.speakerText} playText={playText} playOptions={playOptions} label="Replay speaker line" /> : null}
             </div>
-            <div className="text-[17px] font-semibold leading-snug text-zinc-100"><InteractivePhraseText text={turn.speakerText} playText={(text, options) => playText?.(text, { ...playOptions, ...options })} /></div>
+            <div className="text-[17px] font-semibold leading-snug text-zinc-100">
+              {audioEnabled ? (
+                <InteractivePhraseText text={turn.speakerText} playText={(text, options) => playText?.(text, { ...playOptions, ...options })} />
+              ) : (
+                <span>{turn.speakerText}</span>
+              )}
+            </div>
           </div>
         </div>
       ) : null}
@@ -474,7 +482,9 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => {
       setTurnPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
-      autoplayOnce(autoplayStartedKeysRef, turnKey, step.speakerText, playTextRef.current, getTurnVoiceOptions(block, step));
+      if (isScenarioTurnAudioEnabled(step)) {
+        autoplayOnce(autoplayStartedKeysRef, turnKey, step.speakerText, playTextRef.current, getTurnVoiceOptions(block, step));
+      }
     }, delay);
   }, [activeStepTurnKey, step?.sceneDirection, step?.speakerText, stepSpeakerCommitted, followUpTurn, helpTurn, finalTurn, complete]);
 
@@ -489,7 +499,9 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => {
       setFollowUpPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
-      autoplayOnce(autoplayStartedKeysRef, turnKey, followUpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, followUpTurn));
+      if (isScenarioTurnAudioEnabled(followUpTurn)) {
+        autoplayOnce(autoplayStartedKeysRef, turnKey, followUpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, followUpTurn));
+      }
     }, delay);
     queueTimeout(() => {
       setHistory((prev) => [
@@ -502,6 +514,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           speakerText: followUpTurn.speakerText || "",
           sceneDirection: null,
           supportText: followUpTurn.supportText || followUpTurn.meaningText || "",
+          audio: followUpTurn.audio,
+          spokenLanguage: followUpTurn.spokenLanguage || followUpTurn.language || null,
         },
       ]);
       setFollowUpTurn(null);
@@ -520,7 +534,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => {
       setHelpPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
-      if (helpTurn.speakerText) {
+      if (helpTurn.speakerText && isScenarioTurnAudioEnabled(helpTurn)) {
         autoplayOnce(autoplayStartedKeysRef, turnKey, helpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, helpTurn));
       }
     }, delay);
@@ -535,6 +549,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           speakerText: helpTurn.speakerText || "",
           sceneDirection: helpTurn.sceneDirection || null,
           supportText: helpTurn.supportText || helpTurn.meaningText || "",
+          audio: helpTurn.audio,
+          spokenLanguage: helpTurn.spokenLanguage || helpTurn.language || null,
         },
       ]);
       setHelpTurn(null);
@@ -551,7 +567,9 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => {
       setFinalPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
-      autoplayOnce(autoplayStartedKeysRef, turnKey, finalTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, finalTurn));
+      if (isScenarioTurnAudioEnabled(finalTurn)) {
+        autoplayOnce(autoplayStartedKeysRef, turnKey, finalTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, finalTurn));
+      }
     }, delay);
     queueTimeout(() => setComplete(true), delay + 950);
   }, [finalTurnKey, finalTurn?.sceneDirection, finalTurn?.speakerText]);
@@ -570,6 +588,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           speakerText: step?.speakerText || "",
           sceneDirection: null,
           supportText: step?.supportText || step?.meaningText || "",
+          audio: step?.audio,
+          spokenLanguage: step?.spokenLanguage || step?.language || null,
         });
       }
       additions.push({
@@ -643,6 +663,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
       speakerText: step.speakerText,
       sceneDirection: step.sceneDirection,
       supportText: step.supportText || step.meaningText,
+      audio: step.audio,
+      spokenLanguage: step.spokenLanguage || step.language || null,
     }
     : null;
 

@@ -22,8 +22,9 @@ const step = {
         speakerText: "Stotis — va ten.",
       },
       {
-        speakerText: "Stotis.",
-        supportText: "Station — over there.",
+        speakerText: "Station. Over there.",
+        spokenLanguage: "en",
+        audio: false,
       },
     ],
   },
@@ -43,7 +44,9 @@ test("Scenario V2 help escalates one authored level at a time", () => {
 
   const third = getScenarioHelpTurn(step, 2);
   assert.equal(third.helpLevel, 3);
-  assert.equal(third.supportText, "Station — over there.");
+  assert.equal(third.speakerText, "Station. Over there.");
+  assert.equal(third.spokenLanguage, "en");
+  assert.equal(third.audio, false);
 
   assert.equal(getScenarioHelpTurn(step, 3), null);
 });
