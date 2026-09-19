@@ -173,5 +173,7 @@ test("Scenario V2 reply cards submit directly without a separate Choose button",
   assert.match(src, /role="button"[\s\S]*?aria-label=\{\`Choose reply:/);
   assert.match(src, /onClick=\{chooseOption\}/);
   assert.match(src, /event\.key !== "Enter" && event\.key !== " "/);
+  assert.match(src, /scenario-v2-option rounded-2xl[\s\S]*?\{option\.text\}/);
+  assert.doesNotMatch(src, /scenario-v2-option rounded-2xl[\s\S]*?<InteractivePhraseText text=\{option\.text\}/);
   assert.doesNotMatch(src, />Choose<\/button>/);
 });
