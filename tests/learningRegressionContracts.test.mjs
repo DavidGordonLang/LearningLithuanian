@@ -165,3 +165,13 @@ test("lesson and admin resets persist the intended account state instead of usin
     /resetAllProgress:\s*async \(userId\)[\s\S]*?_loadedForUserId:\s*userId[\s\S]*?await get\(\)\._save\(userId\)/
   );
 });
+
+
+test("Scenario V2 reply cards submit directly without a separate Choose button", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /role="button"[\s\S]*?aria-label=\{\`Choose reply:/);
+  assert.match(src, /onClick=\{chooseOption\}/);
+  assert.match(src, /event\.key !== "Enter" && event\.key !== " "/);
+  assert.doesNotMatch(src, />Choose<\/button>/);
+});
