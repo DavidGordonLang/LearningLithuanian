@@ -568,6 +568,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     transcriptionPrompt: "A learner is speaking one short Lithuanian practice phrase.",
     transcriptionKeywords: targetText ? [targetText] : [],
     minRecordingMs: 250,
+    showCapturedToast: false,
   });
 
   const isRecording  = sttState === "recording";
