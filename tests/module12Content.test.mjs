@@ -77,3 +77,16 @@ test("Module 1.2 checkpoint scenario reuses the new people vocabulary naturally"
   assert.match(scenario.steps[2].speakerText, /mano sesuo/);
   assert.equal(scenario.steps[2].finalSystemLine.speakerText, "Man irgi!");
 });
+
+
+test("Module 1.2 scenarios do not use Pakartokite as a generic scenario distractor", () => {
+  const module = createModule_1_2();
+  const scenarioOptions = module.lessons
+    .flatMap((lesson) => lesson.blocks)
+    .filter((block) => block.type === "scenario_v2")
+    .flatMap((block) => block.steps)
+    .flatMap((step) => step.options || [])
+    .map((option) => option.text);
+
+  assert.equal(scenarioOptions.includes("Pakartokite, prašau"), false);
+});

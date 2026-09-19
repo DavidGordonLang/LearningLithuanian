@@ -1027,9 +1027,9 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Pakartokite, prašau",
+          text: "Viso gero!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rokas has just asked your name. Do not end the exchange here.",
           progresses: false,
         }
       ],
