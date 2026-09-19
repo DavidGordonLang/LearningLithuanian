@@ -28,6 +28,7 @@ export default function useSpeechToTextHold({
   transcriptionPrompt = null,
   transcriptionKeywords = [],
   minRecordingMs = 650,
+  showCapturedToast = true,
 } = {}) {
   const [sttState, setSttState] = useState("idle");
   const sttStateRef = useRef("idle");
@@ -361,7 +362,7 @@ export default function useSpeechToTextHold({
             return;
           }
 
-          showToast?.("Speech captured");
+          if (showCapturedToast) showToast?.("Speech captured");
           forceResetStt();
         } catch (err) {
           console.error(err);
@@ -406,6 +407,7 @@ export default function useSpeechToTextHold({
     onTranslateText,
     setInput,
     setSttStateSafe,
+    showCapturedToast,
     showToast,
     transcriptionKeywords,
     transcriptionModel,
