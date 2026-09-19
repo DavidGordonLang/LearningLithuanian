@@ -125,3 +125,23 @@ test("Speak Self Check remains hold-to-speak with a visible recording state and 
   assert.match(src, /isRecording \? "bg-emerald-500\/25/);
   assert.equal((src.match(/capturedText/g) || []).length, 1);
 });
+
+
+test("Build Phrase can submit overfilled answers so distractors return explicit wrong feedback", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /const isReady = built\.length >= requiredLength && requiredLength > 0/);
+  assert.match(src, /if \(builtText === correctAnswer\.trim\(\)\)[\s\S]*?setCheckState\("correct"\)[\s\S]*?else \{[\s\S]*?setCheckState\("wrong"\)/);
+});
+
+test("in-progress lesson position is persisted per account and restored by block identity", () => {
+  const lessonSrc = source("src/views/training/LearningLessonView.jsx");
+  const gameSrc = source("src/stores/gameStore.js");
+
+  assert.match(gameSrc, /lessonProgress:\s*\{\}/);
+  assert.match(gameSrc, /setLessonProgress:\s*\(lessonId, blockId, blockIndex, userId\)/);
+  assert.match(gameSrc, /delete nextLessonProgress\[lessonId\]/);
+  assert.match(lessonSrc, /lessonProgress\?\.\[lesson\.id\]/);
+  assert.match(lessonSrc, /blocks\.findIndex\(\(candidate\) => candidate\?\.id === saved\.blockId\)/);
+  assert.match(lessonSrc, /setLessonProgress\(lesson\.id, currentBlock\.id, blockIndex, userId\)/);
+});
