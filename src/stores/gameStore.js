@@ -61,6 +61,7 @@ function defaultData() {
     seenModuleCompleteIds: [], // module ids where celebration has already shown
     seenSectionCompleteIds: [], // section ids where section celebration has shown
     lessonXP: {},              // { lessonId: xpEarned } — tracks best XP per lesson
+    lessonProgress: {},        // { lessonId: { blockId, blockIndex, updatedAt } }
   };
 }
 
@@ -76,6 +77,7 @@ export const useGameStore = create((set, get) => ({
   seenModuleCompleteIds: [],
   seenSectionCompleteIds: [],
   lessonXP: {},
+  lessonProgress: {},
 
   // Meta
   loading: false,
@@ -120,6 +122,7 @@ export const useGameStore = create((set, get) => ({
         seenModuleCompleteIds: Array.isArray(merged.seenModuleCompleteIds) ? merged.seenModuleCompleteIds : [],
         seenSectionCompleteIds: Array.isArray(merged.seenSectionCompleteIds) ? merged.seenSectionCompleteIds : [],
         lessonXP: (merged.lessonXP && typeof merged.lessonXP === "object") ? merged.lessonXP : {},
+        lessonProgress: (merged.lessonProgress && typeof merged.lessonProgress === "object") ? merged.lessonProgress : {},
         loading: false,
         _loadedForUserId: userId,
       });
@@ -143,8 +146,8 @@ export const useGameStore = create((set, get) => ({
 
   _save: async (userId) => {
     if (!userId || get()._loadedForUserId !== userId) return;
-    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP } = get();
-    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP };
+    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonProgress } = get();
+    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonProgress };
 
     try {
       await supabase
@@ -232,10 +235,20 @@ export const useGameStore = create((set, get) => ({
 
     const current = get().completedLessonIds;
     const wasAlreadyComplete = current.includes(lessonId);
+    const currentProgress = get().lessonProgress || {};
+    const nextLessonProgress = { ...currentProgress };
+    const hadProgress = Object.prototype.hasOwnProperty.call(nextLessonProgress, lessonId);
+    if (hadProgress) delete nextLessonProgress[lessonId];
 
     if (!wasAlreadyComplete) {
-      set({ completedLessonIds: [...current, lessonId] });
+      set({
+        completedLessonIds: [...current, lessonId],
+        lessonProgress: nextLessonProgress,
+      });
       get().recordActivity(userId);
+      get()._save(userId);
+    } else if (hadProgress) {
+      set({ lessonProgress: nextLessonProgress });
       get()._save(userId);
     }
 
@@ -244,6 +257,33 @@ export const useGameStore = create((set, get) => ({
 
   isLessonComplete: (lessonId) => {
     return get().completedLessonIds.includes(lessonId);
+  },
+
+  setLessonProgress: (lessonId, blockId, blockIndex, userId) => {
+    if (!userId || get()._loadedForUserId !== userId || !lessonId) return;
+    const safeIndex = Number.isInteger(blockIndex) && blockIndex >= 0 ? blockIndex : 0;
+    const safeBlockId = typeof blockId === "string" && blockId ? blockId : null;
+    const current = get().lessonProgress || {};
+    const previous = current[lessonId];
+
+    if (previous?.blockId === safeBlockId && previous?.blockIndex === safeIndex) return;
+
+    set({
+      lessonProgress: {
+        ...current,
+        [lessonId]: {
+          blockId: safeBlockId,
+          blockIndex: safeIndex,
+          updatedAt: Date.now(),
+        },
+      },
+    });
+    get()._save(userId);
+  },
+
+  getLessonProgress: (lessonId) => {
+    if (!lessonId) return null;
+    return get().lessonProgress?.[lessonId] || null;
   },
 
   // ── Lesson XP (best-score) ──────────────────────────────────────────────────
