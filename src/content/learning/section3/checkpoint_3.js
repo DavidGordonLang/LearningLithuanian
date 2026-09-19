@@ -189,20 +189,18 @@ export default function createCheckpoint3(profile = {}) {
       },
       options: [
         {
-          id: "a",
-          text: "Viso gero",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        
+                  id: "a",
+                  text: "Viso gero",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                },
         {
-          id: "c",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "b",
+                  text: "Laba diena. Man reikėtų dviejų bilietų į Kauną, prašau.",
+                  result: "best",
+                  progresses: true,
+                }
       ],
     },
     {
@@ -212,18 +210,6 @@ export default function createCheckpoint3(profile = {}) {
       speakerText: "Tai kainuoja dvidešimt eurų.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "That costs twenty euros.",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
@@ -268,20 +254,18 @@ export default function createCheckpoint3(profile = {}) {
       },
       options: [
         {
-          id: "a",
-          text: "Nepakanka pinigų",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        
+                  id: "a",
+                  text: "Nepakanka pinigų",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                },
         {
-          id: "c",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "b",
+                  text: "Ačiū. Ir — kada išvyksta traukinys?",
+                  result: "best",
+                  progresses: true,
+                }
       ],
     },
     {
@@ -291,18 +275,6 @@ export default function createCheckpoint3(profile = {}) {
       speakerText: "Traukinys išvyksta penktą valandą.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "The train leaves at five o'clock.",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
@@ -347,20 +319,18 @@ export default function createCheckpoint3(profile = {}) {
       },
       options: [
         {
-          id: "a",
-          text: "Atsiprašau",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        
+                  id: "a",
+                  text: "Atsiprašau",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                },
         {
-          id: "c",
-          text: "Nesuprantu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "b",
+                  text: "Ačiū labai! Viso gero!",
+                  result: "best",
+                  progresses: true,
+                }
       ],
     }
   ],

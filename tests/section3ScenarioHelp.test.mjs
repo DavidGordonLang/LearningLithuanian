@@ -15,6 +15,9 @@ test("Section 3 Scenario V2 does not reveal English meaning by default or mark N
     for(const scenario of scenarios(unit)){
       for(const step of scenario.steps||[]){
         assert.equal(Object.prototype.hasOwnProperty.call(step,"supportText"),false,scenario.id);
+        if(step.options?.length){
+          assert.ok(step.options.some((option)=>["best","acceptable","awkward"].includes(option.result)), `${scenario.id}:${step.id} must retain a progressing answer`);
+        }
         for(const option of step.options||[]){
           assert.equal(/nesuprantu/i.test(option.text||""),false,scenario.id);
           assert.notEqual(option.result,"repair",scenario.id);

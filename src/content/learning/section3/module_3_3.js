@@ -250,20 +250,19 @@ export default function createModule_3_3(profile = {}) {
         ],
       },
       options: [
-        
         {
-          id: "b",
-          text: "Gerai, ačiū!",
-          result: "best",
-          progresses: true,
-        },
+                  id: "b",
+                  text: "Gerai, ačiū!",
+                  result: "best",
+                  progresses: true,
+                },
         {
-          id: "c",
-          text: "Rytoj?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "c",
+                  text: "Rytoj?",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                }
       ],
     },
     {
@@ -428,20 +427,19 @@ export default function createModule_3_3(profile = {}) {
         ],
       },
       options: [
-        
         {
-          id: "b",
-          text: "Laba diena. Kada išvyksta traukinys?",
-          result: "best",
-          progresses: true,
-        },
+                  id: "b",
+                  text: "Laba diena. Kada išvyksta traukinys?",
+                  result: "best",
+                  progresses: true,
+                },
         {
-          id: "c",
-          text: "Kiek valandų?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "c",
+                  text: "Kiek valandų?",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                }
       ],
     },
     {
@@ -464,20 +462,19 @@ export default function createModule_3_3(profile = {}) {
         ],
       },
       options: [
-        
         {
-          id: "b",
-          text: "Šeštą valandą. Gerai, ačiū!",
-          result: "best",
-          progresses: true,
-        },
+                  id: "b",
+                  text: "Šeštą valandą. Gerai, ačiū!",
+                  result: "best",
+                  progresses: true,
+                },
         {
-          id: "c",
-          text: "Per brangu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "c",
+                  text: "Per brangu",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                }
       ],
     },
     {
@@ -487,18 +484,6 @@ export default function createModule_3_3(profile = {}) {
       speakerText: "Prašom. Viso gero!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "You're welcome. Goodbye!",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
@@ -639,18 +624,6 @@ export default function createModule_3_3(profile = {}) {
       speakerText: "Labas! Kada susitinkame?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "When do we meet?",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
@@ -694,21 +667,20 @@ export default function createModule_3_3(profile = {}) {
         ],
       },
       options: [
-        
         {
-          id: "b",
-          text: "Gerai! Ir kur susitinkame?",
-          textEn: "Great! And where do we meet?",
-          result: "best",
-          progresses: true,
-        },
+                  id: "b",
+                  text: "Gerai! Ir kur susitinkame?",
+                  textEn: "Great! And where do we meet?",
+                  result: "best",
+                  progresses: true,
+                },
         {
-          id: "c",
-          text: "Per brangu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "c",
+                  text: "Per brangu",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                }
       ],
     },
     {
@@ -718,18 +690,6 @@ export default function createModule_3_3(profile = {}) {
       speakerText: "Kavinėje. Iki!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "At the café. See you!",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
@@ -895,20 +855,19 @@ export default function createModule_3_3(profile = {}) {
         ],
       },
       options: [
-        
         {
-          id: "b",
-          text: "Ačiū. Ir kada užsidaro?",
-          result: "best",
-          progresses: true,
-        },
+                  id: "b",
+                  text: "Ačiū. Ir kada užsidaro?",
+                  result: "best",
+                  progresses: true,
+                },
         {
-          id: "c",
-          text: "Per brangu",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "c",
+                  text: "Per brangu",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                }
       ],
     },
     {
@@ -918,18 +877,6 @@ export default function createModule_3_3(profile = {}) {
       speakerText: "Šiandien užsidaro šeštą valandą.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "Today it closes at six o'clock.",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
@@ -1087,20 +1034,19 @@ export default function createModule_3_3(profile = {}) {
         ],
       },
       options: [
-        
         {
-          id: "b",
-          text: "Laba diena. Kada išvyksta autobusas į Kauną?",
-          result: "best",
-          progresses: true,
-        },
+                  id: "b",
+                  text: "Laba diena. Kada išvyksta autobusas į Kauną?",
+                  result: "best",
+                  progresses: true,
+                },
         {
-          id: "c",
-          text: "Kiek valandų?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "c",
+                  text: "Kiek valandų?",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                }
       ],
     },
     {
@@ -1123,20 +1069,19 @@ export default function createModule_3_3(profile = {}) {
         ],
       },
       options: [
-        
         {
-          id: "b",
-          text: "Trečią valandą — gerai, ačiū!",
-          result: "best",
-          progresses: true,
-        },
+                  id: "b",
+                  text: "Trečią valandą — gerai, ačiū!",
+                  result: "best",
+                  progresses: true,
+                },
         {
-          id: "c",
-          text: "Rytoj?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
+                  id: "c",
+                  text: "Rytoj?",
+                  result: "wrong",
+                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  progresses: false,
+                }
       ],
     },
     {
@@ -1146,18 +1091,6 @@ export default function createModule_3_3(profile = {}) {
       speakerText: "Dabar antra valanda — turite laiko.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "It's two o'clock now",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
