@@ -210,3 +210,12 @@ test("lesson speech checks suppress the generic captured toast so retries are no
   assert.match(sttSrc, /showCapturedToast = true/);
   assert.match(sttSrc, /if \(showCapturedToast\) showToast\?\.\("Speech captured"\)/);
 });
+
+
+test("Scenario V2 focused mode shows the full scene setup instead of truncating it", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /\{block\.sceneIntro \|\| block\.goal\}/);
+  assert.match(src, /text-\[12px\] leading-snug text-zinc-500/);
+  assert.doesNotMatch(src, /mt-0\.5 truncate text-\[12px\] text-zinc-500/);
+});
