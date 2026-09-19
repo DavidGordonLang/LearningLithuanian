@@ -599,7 +599,7 @@ export default function createModule_3_4(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Užtenka — that's enough. Nepakanka — not enough. These are two of the most useful judgment words in Lithuanian. Nepakanka pinigų (not enough money) and Nepakanka laiko (not enough time) are phrases you'll use or hear often.",
+          pattern: "Užtenka means 'that's enough'; pakanka / nepakanka express sufficiency or shortage. Ar užtenka? fits a real amount check such as someone pouring a drink. It should not be treated as the general service question 'Is that all?'.",
           usage: [
             "Pakanka — enough / it is enough",
             "Nepakanka — not enough",
@@ -674,137 +674,37 @@ export default function createModule_3_4(profile = {}) {
           {
   id: "s3m4l4_b6_v2",
   type: "scenario_v2",
-  title: "Conversation",
-  description: "You're at a market and realise you may not have enough cash.",
-  sceneIntro: "You're at a market and realise you may not have enough cash.",
-  location: "shop counter",
+  title: "Is that enough?",
+  description: "At a café, the server is pouring water and checks whether you have enough.",
+  sceneIntro: "At a café, the server is pouring water and checks whether you have enough.",
+  location: "café",
   userRole: "customer",
   register: "polite_service",
-  goal: "You're at a market and realise you may not have enough cash.",
-  focus: ["payment"],
+  goal: "Use Ar užtenka? as a genuine sufficiency check.",
+  focus: ["Ar užtenka?", "užtenka", "Nesuprantu"],
   participants: [
-    {
-      "id": "seller",
-      "label": "Seller",
-      "name": "Tomas",
-      "role": "seller",
-      "gender": "male",
-      "relationshipToUser": "stranger",
-      "register": "polite_service"
-    },
-  ],
-  objects: [
-    {
-      "id": "card",
-      "lt": "kortelė",
-      "en": "card",
-      "gender": "feminine",
-      "number": "singular"
-    },
-    {
-      "id": "cash",
-      "lt": "grynieji",
-      "en": "cash",
-      "gender": "masculine",
-      "number": "plural"
-    },
+    { id: "server", label: "Server", name: "Ieva", role: "server", gender: "female", relationshipToUser: "stranger", register: "polite_service" },
   ],
   steps: [
     {
       id: "step_1",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Tai kainuoja penkiasdešimt eurų.",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Imu!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Atsiprašau — nepakanka pinigų. Ar galima mokėti kortele?",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Tinka",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    },
-    {
-      id: "step_2",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Taip, galima mokėti kortele.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerId: "server",
+      speakerLabel: "Server",
+      speakerText: "Ar užtenka?",
+      sceneDirection: "Ieva pauses while pouring water into your glass and waits for you to say whether the amount is enough.",
+      learnerPrompt: "Tell her that it is enough. If the question is unclear, use Nesuprantu.",
       help: {
         levels: [
-          {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
-          },
-          {
-            speakerText: "Yes, you can pay by card.",
-            spokenLanguage: "en",
-            audio: false,
-          },
+          { sceneDirection: "She holds the water jug above your glass and makes a small stopping gesture.", speakerText: "Užtenka?" },
+          { speakerText: "Is that enough?", spokenLanguage: "en", audio: false },
         ],
       },
       options: [
-        {
-                  id: "b",
-                  text: "Gerai! Imu.",
-                  result: "best",
-                  progresses: true,
-                },
-        {
-                  id: "c",
-                  text: "Per brangu",
-                  result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-                  progresses: false,
-                }
+        { id: "a", text: "Taip, užtenka. Ačiū!", result: "best", progresses: true },
+        { id: "b", text: "Nepakanka laiko.", result: "wrong", feedback: "The question is about the amount of water, not time.", progresses: false },
+        { id: "c", text: "Kiek tai kainuoja?", result: "wrong", feedback: "The server is checking the amount of water, not the price.", progresses: false },
       ],
     },
-    {
-      id: "step_3",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Ar užtenka?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
-      options: [
-        {
-          id: "a",
-          text: "Nepakanka laiko",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Taip, užtenka. Ačiū!",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Daugiau, prašau",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    }
   ],
 },
         ],
@@ -822,7 +722,7 @@ export default function createModule_3_4(profile = {}) {
           pattern: "This lesson pulls all the quantity language together — ordering, adjusting, confirming. Mes esame dviese (there are two of us) is the most natural way to tell a host or server how many people you are.",
           usage: [
             "Mes esame dviese — there are two of us",
-            "Viena kava ir dvi arbatos — one coffee and two teas",
+            "Vieną kavą ir dvi arbatas, prašau — one coffee and two teas, please",
             "Dar vieną, prašau — one more, please",
             "Užtenka — that's enough",
             "Kiek jūsų? — how many of you are there?",
@@ -835,7 +735,7 @@ export default function createModule_3_4(profile = {}) {
             title: "Quantity in real situations",
             items: [
               { id: "qa1", lt: "Mes esame dviese",            en: "There are two of us",          audioText: "Mes esame dviese",            saveable: true, core: true },
-              { id: "qa2", lt: "Viena kava ir dvi arbatos",   en: "One coffee and two teas",      audioText: "Viena kava ir dvi arbatos",   saveable: true, core: true },
+              { id: "qa2", lt: "Vieną kavą ir dvi arbatas, prašau", en: "One coffee and two teas, please", audioText: "Vieną kavą ir dvi arbatas, prašau", saveable: true, core: true },
               { id: "qa3", lt: "Kiek jūsų?",                  en: "How many of you are there?",   audioText: "Kiek jūsų",                   saveable: true, core: true },
             ],
           },
@@ -854,16 +754,17 @@ export default function createModule_3_4(profile = {}) {
             id: "s3m4l5_b3",
             type: "build_phrase",
             title: "Build the phrase",
-            prompt: { text: "One coffee and two teas" },
+            prompt: { text: "One coffee and two teas, please" },
             tokens: [
-              { id: "t1", text: "Viena",   correctIndex: 0 },
-              { id: "t2", text: "kava",    correctIndex: 1 },
-              { id: "t3", text: "ir",      correctIndex: 2 },
-              { id: "t4", text: "dvi",     correctIndex: 3 },
-              { id: "t5", text: "arbatos", correctIndex: 4 },
-              { id: "t6", text: "trys",    isDistractor: true },
+              { id: "t1", text: "Vieną", correctIndex: 0 },
+              { id: "t2", text: "kavą", correctIndex: 1 },
+              { id: "t3", text: "ir", correctIndex: 2 },
+              { id: "t4", text: "dvi", correctIndex: 3 },
+              { id: "t5", text: "arbatas,", correctIndex: 4 },
+              { id: "t6", text: "prašau.", correctIndex: 5 },
+              { id: "t7", text: "Viena", isDistractor: true },
             ],
-            answerText: "Viena kava ir dvi arbatos",
+            answerText: "Vieną kavą ir dvi arbatas, prašau.",
           },
           {
             id: "s3m4l5_b4",
@@ -975,7 +876,7 @@ export default function createModule_3_4(profile = {}) {
                 },
         {
                   id: "b",
-                  text: "Viena kava ir dvi arbatos, prašau.",
+                  text: "Vieną kavą ir dvi arbatas, prašau.",
                   result: "best",
                   progresses: true,
                 }

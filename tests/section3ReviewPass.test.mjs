@@ -37,3 +37,16 @@ test("Section 3 quantity examples keep service context coherent",()=>{
   assert.ok(s.includes("Ar dar ko nors norėtumėte?"));
   assert.ok(s.includes("asks your party size before seating you"));
 });
+
+
+test("Ar užtenka stays a sufficiency check and customer order quantities use request forms",()=>{
+  const m=createModule34();
+  const enough=m.lessons.find(l=>l.code==="3.4.4");
+  assert.match(enough.notes.pattern,/should not be treated as the general service question 'Is that all\?'/);
+  const enoughScenario=enough.blocks.find(b=>b.id==="s3m4l4_b6_v2");
+  assert.match(enoughScenario.steps[0].sceneDirection,/pouring water/);
+  assert.equal(enoughScenario.steps[0].help.levels.at(-1).audio,false);
+
+  const quantities=m.lessons.find(l=>l.code==="3.4.5");
+  assert.ok(JSON.stringify(quantities).includes("Vieną kavą ir dvi arbatas, prašau"));
+});
