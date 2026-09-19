@@ -722,8 +722,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
 // ─── Build phrase ─────────────────────────────────────────────────────────────
 //
 // All tokens are shown and tappable — including distractors (isDistractor:true).
-// "Check phrase" enables once the user has placed exactly as many tokens as
-// the correct answer requires (answerTokens.length).
+// "Check phrase" enables once the user has placed at least as many tokens as
+// the correct answer requires (answerTokens.length). Extra selected distractors
+// remain submit-able so the learner gets explicit incorrect feedback.
 // On check: compare built text against correctAnswer.
 //   Correct → green, mark complete.
 //   Wrong   → red, show correct answer, allow retry.
@@ -766,7 +767,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
   });
 
   const placedIds = new Set(built);
-  const isReady = built.length === requiredLength && requiredLength > 0;
+  const isReady = built.length >= requiredLength && requiredLength > 0;
   const dragThreshold = 7;
 
   const setChipRef = (id) => (node) => {
@@ -1951,9 +1952,13 @@ export default function LearningLessonView({
   const [lessonDone, setLessonDone] = useState(false); // true only after user taps Continue/advance on last block
   const navBarRef = useRef(null);
   const completionFiredRef = useRef(false);
+  const resumeInitialisedRef = useRef(null);
 
   const completeLesson = useGameStore((s) => s.completeLesson);
   const earnLessonXP = useGameStore((s) => s.earnLessonXP);
+  const lessonProgress = useGameStore((s) => s.lessonProgress);
+  const gameLoadedForUserId = useGameStore((s) => s._loadedForUserId);
+  const setLessonProgress = useGameStore((s) => s.setLessonProgress);
 
   useEffect(() => {
     setPhase("loading");
@@ -1964,7 +1969,33 @@ export default function LearningLessonView({
     setWrongAnswerCount(0);
     setLessonDone(false);
     completionFiredRef.current = false;
-  }, [lesson?.id]);
+    resumeInitialisedRef.current = null;
+  }, [lesson?.id, userId]);
+
+  useEffect(() => {
+    if (!lesson?.id || !userId || gameLoadedForUserId !== userId) return;
+
+    const resumeKey = `${userId}:${lesson.id}`;
+    if (resumeInitialisedRef.current === resumeKey) return;
+
+    const saved = lessonProgress?.[lesson.id];
+    let nextIndex = 0;
+
+    if (saved && blocks.length > 0) {
+      const blockIdIndex = saved.blockId
+        ? blocks.findIndex((candidate) => candidate?.id === saved.blockId)
+        : -1;
+
+      if (blockIdIndex >= 0) {
+        nextIndex = blockIdIndex;
+      } else if (Number.isInteger(saved.blockIndex)) {
+        nextIndex = Math.max(0, Math.min(saved.blockIndex, blocks.length - 1));
+      }
+    }
+
+    setBlockIndex(nextIndex);
+    resumeInitialisedRef.current = resumeKey;
+  }, [blocks, gameLoadedForUserId, lesson?.id, lessonProgress, userId]);
 
   const handleLoadingReady = useCallback(() => setPhase("running"), []);
 
@@ -2017,6 +2048,20 @@ export default function LearningLessonView({
 
   const currentBlock = blocks[blockIndex] || null;
   const totalBlocks = blocks.length;
+
+  useEffect(() => {
+    if (!lesson?.id || !currentBlock?.id || !userId || gameLoadedForUserId !== userId) return;
+    const resumeKey = `${userId}:${lesson.id}`;
+    if (resumeInitialisedRef.current !== resumeKey) return;
+    setLessonProgress(lesson.id, currentBlock.id, blockIndex, userId);
+  }, [
+    blockIndex,
+    currentBlock?.id,
+    gameLoadedForUserId,
+    lesson?.id,
+    setLessonProgress,
+    userId,
+  ]);
   const progressPct = totalBlocks ? Math.round(((blockIndex + 1) / totalBlocks) * 100) : 0;
   const isCurrentCompleted = !!currentBlock?.id && !!completedBlockIds[currentBlock.id];
   const isLastBlock = blockIndex === totalBlocks - 1;
