@@ -177,3 +177,26 @@ test("Scenario V2 reply cards submit directly without a separate Choose button",
   assert.doesNotMatch(src, /scenario-v2-option rounded-2xl[\s\S]*?<InteractivePhraseText text=\{option\.text\}/);
   assert.doesNotMatch(src, />Choose<\/button>/);
 });
+
+
+test("lesson speech checks use the high-accuracy Lithuanian transcription path and short-word threshold", () => {
+  const lessonSrc = source("src/views/training/LearningLessonView.jsx");
+  const sttSrc = source("src/hooks/useSpeechToTextHold.js");
+
+  assert.match(lessonSrc, /transcriptionModel:\s*"gpt-transcribe"/);
+  assert.match(lessonSrc, /transcriptionKeywords:\s*targetText \? \[targetText\] : \[\]/);
+  assert.match(lessonSrc, /minRecordingMs:\s*250/);
+  assert.match(sttSrc, /fd\.append\("languages\[\]", language\)/);
+  assert.match(sttSrc, /fd\.append\("keywords\[\]", keyword\)/);
+  assert.match(sttSrc, /recordedMimeType\.includes\("mp4"\)/);
+  assert.doesNotMatch(sttSrc, /fd\.append\("max_seconds"/);
+});
+
+test("lesson mic does not abort an active hold when pointer capture is lost during mic acquisition", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /const handleLostPointerCapture = \(event\) => \{[\s\S]*?do not cancel an otherwise valid take/);
+  assert.match(src, /window\.addEventListener\("pointerup", handleWindowPointerUp\)/);
+  assert.match(src, /window\.addEventListener\("pointercancel", handleWindowPointerCancel\)/);
+  assert.match(src, /select-none touch-none/);
+});
