@@ -2,423 +2,209 @@
 // Section 2 Checkpoint — Core Conversation Control
 
 export default function createCheckpoint2(profile = {}) {
-  const {
-    userNameSafe = "Davidas",
-    userFromPhrase = "Aš esu iš Škotijos",
-  } = profile;
-
   return {
     id: "section_2_checkpoint",
     code: "2.C",
     title: "Core Conversation Control",
-    purpose: "Bring the whole of Section 2 together. Real retrieval across all four modules.",
+    purpose: "Bring the restructured Section 2 together: wants and needs, action frames, singular selection, and core What / Where / Who questions.",
     isCheckpoint: true,
     isSectionCheckpoint: true,
     status: "active",
     supportLevel: "none",
     newLanguageLoad: "none",
     blocks: [
-
-      // ── Block 1 — Quick Recognise Warm-Up ─────────────────────────────────
       {
         id: "s2c_b1",
         type: "recognise_mcq",
         title: "Choose the correct meaning",
-        prompt: { text: "Noriu vandens.", audioText: "Noriu vandens" },
+        prompt: { text: "Man reikia bilieto.", audioText: "Man reikia bilieto" },
         options: [
-          { id: "a", text: "I need water.", isCorrect: false },
-          { id: "b", text: "I want water.", isCorrect: true },
-          { id: "c", text: "I have water.", isCorrect: false },
+          { id: "a", text: "I want a ticket.", isCorrect: false },
+          { id: "b", text: "I need a ticket.", isCorrect: true },
+          { id: "c", text: "I have a ticket.", isCorrect: false },
         ],
       },
-
       {
         id: "s2c_b2",
-        type: "recognise_mcq",
-        title: "Choose the correct meaning",
-        prompt: { text: "Aš negaliu suprasti.", audioText: "Aš negaliu suprasti" },
+        type: "context_gap_select",
+        title: "I or we?",
+        prompt: "You are with a friend and want to ask whether both of you can wait here.",
+        sentence: "Ar ___ čia palaukti?",
+        translation_en: "Can we wait here?",
         options: [
-          { id: "a", text: "I don't understand.", isCorrect: false },
-          { id: "b", text: "I can't understand.", isCorrect: true },
-          { id: "c", text: "I need to understand.", isCorrect: false },
+          { id: "a", text: "galiu", isCorrect: false },
+          { id: "b", text: "galime", isCorrect: true },
+          { id: "c", text: "galite", isCorrect: false },
         ],
+        explanation: "Galime is the we-form: the action involves you and your friend together.",
       },
-
       {
         id: "s2c_b3",
-        type: "recognise_mcq",
-        title: "Choose the correct meaning",
-        prompt: { text: "Kiek tai kainuoja?", audioText: "Kiek tai kainuoja" },
-        options: [
-          { id: "a", text: "What is this?", isCorrect: false },
-          { id: "b", text: "Is this expensive?", isCorrect: false },
-          { id: "c", text: "How much does this cost?", isCorrect: true },
-        ],
-      },
-
-      // ── Block 2 — Guided Produce ───────────────────────────────────────────
-      {
-        id: "s2c_b4",
-        type: "build_phrase",
-        title: "Build the phrase",
-        prompt: { text: "I need a ticket." },
-        tokens: [
-          { id: "t1", text: "Man", correctIndex: 0 },
-          { id: "t2", text: "reikia", correctIndex: 1 },
-          { id: "t3", text: "bilieto.", correctIndex: 2 },
-          { id: "t4", text: "Noriu", isDistractor: true },
-        ],
-        answerText: "Man reikia bilieto.",
-      },
-
-      {
-        id: "s2c_b5",
-        type: "build_phrase",
-        title: "Build the phrase",
-        prompt: { text: "Do you have a menu?" },
-        tokens: [
-          { id: "t1", text: "Ar", correctIndex: 0 },
-          { id: "t2", text: "turite", correctIndex: 1 },
-          { id: "t3", text: "meniu?", correctIndex: 2 },
-          { id: "t4", text: "galite", isDistractor: true },
-        ],
-        answerText: "Ar turite meniu?",
-      },
-
-      {
-        id: "s2c_b6",
-        type: "build_phrase",
-        title: "Build the phrase",
-        prompt: { text: "That one is better." },
-        tokens: [
-          { id: "t1", text: "Tas", correctIndex: 0 },
-          { id: "t2", text: "geresnis.", correctIndex: 1 },
-          { id: "t3", text: "Šitas", isDistractor: true },
-        ],
-        answerText: "Tas geresnis.",
-      },
-
-      // ── Block 3 — Audio Response Selection ────────────────────────────────
-      {
-        id: "s2c_b7",
         type: "listen_mcq",
         title: "Listen and choose",
         prompt: { text: "Ar galite parodyti?", audioText: "Ar galite parodyti" },
         options: [
-          { id: "a", text: "Can you repeat?", isCorrect: false },
-          { id: "b", text: "Can you show me?", isCorrect: true },
-          { id: "c", text: "Can you help?", isCorrect: false },
+          { id: "a", text: "Can you show me?", isCorrect: true },
+          { id: "b", text: "Can we wait?", isCorrect: false },
+          { id: "c", text: "Is it allowed?", isCorrect: false },
         ],
       },
-
+      {
+        id: "s2c_b4",
+        type: "context_gap_select",
+        title: "Choose the selection form",
+        prompt: "A loaf of bread is further away. Duona is feminine.",
+        sentence: "Noriu ___.",
+        translation_en: "I want that one.",
+        options: [
+          { id: "a", text: "tos", isCorrect: true },
+          { id: "b", text: "to", isCorrect: false },
+          { id: "c", text: "šitos", isCorrect: false },
+        ],
+        explanation: "Farther-away feminine item: tos.",
+      },
+      {
+        id: "s2c_b5",
+        type: "recognise_mcq",
+        title: "Choose the correct meaning",
+        prompt: { text: "Kuo galėčiau padėti?", audioText: "Kuo galėčiau padėti" },
+        options: [
+          { id: "a", text: "How can I help?", isCorrect: true },
+          { id: "b", text: "What would you like?", isCorrect: false },
+          { id: "c", text: "Where do you live?", isCorrect: false },
+        ],
+      },
+      {
+        id: "s2c_b6",
+        type: "context_gap_select",
+        title: "Ask about a person",
+        prompt: "You point to a woman across the room and ask who she is.",
+        sentence: "Kas ___?",
+        translation_en: "Who is she?",
+        options: [
+          { id: "a", text: "ji", isCorrect: true },
+          { id: "b", text: "jis", isCorrect: false },
+          { id: "c", text: "tai", isCorrect: false },
+        ],
+        explanation: "Kas ji? asks who a specific woman is.",
+      },
+      {
+        id: "s2c_b7",
+        type: "build_phrase",
+        title: "Build the phrase",
+        prompt: { text: "Is it possible to pay by card?" },
+        tokens: [
+          { id: "t1", text: "Ar", correctIndex: 0 },
+          { id: "t2", text: "galima", correctIndex: 1 },
+          { id: "t3", text: "mokėti", correctIndex: 2 },
+          { id: "t4", text: "kortele?", correctIndex: 3 },
+          { id: "t5", text: "galite", isDistractor: true },
+        ],
+        answerText: "Ar galima mokėti kortele?",
+      },
       {
         id: "s2c_b8",
-        type: "listen_mcq",
-        title: "Listen and choose",
-        prompt: { text: "Neturiu grynųjų.", audioText: "Neturiu grynųjų" },
-        options: [
-          { id: "a", text: "I have cash.", isCorrect: false },
-          { id: "b", text: "I need cash.", isCorrect: false },
-          { id: "c", text: "I don't have cash.", isCorrect: true },
-        ],
+        type: "speak_self_check",
+        title: "Say it out loud",
+        prompt: "Ask politely: Where do you live?",
+        targetText: "Kur gyvenate?",
+        audioText: "Kur gyvenate",
       },
-
       {
-        id: "s2c_b9",
-        type: "listen_mcq",
-        title: "Listen and choose",
-        prompt: { text: "Kada pradedame?", audioText: "Kada pradedame" },
-        options: [
-          { id: "a", text: "Where do we start?", isCorrect: false },
-          { id: "b", text: "When do we start?", isCorrect: true },
-          { id: "c", text: "Can we start?", isCorrect: false },
+        id: "s2c_b9_v2",
+        type: "scenario_v2",
+        title: "At a market stall",
+        description: "At a market stall, you want the loaf further away and need to check whether card payment is possible.",
+        sceneIntro: "At a market stall, you want the loaf further away and need to check whether card payment is possible.",
+        location: "market stall",
+        userRole: "customer",
+        register: "polite_service",
+        goal: "Combine polite service language, singular selection and Ar galima without pulling price or plural-comparison material back into Section 2.",
+        focus: ["Ko norėtumėte?", "tos", "Ar galima…?", "Nesuprantu"],
+        participants: [
+          { id: "seller", label: "Seller", name: "Rasa", role: "seller", gender: "female", relationshipToUser: "stranger", register: "polite_service" },
+        ],
+        objects: [
+          { id: "bread", lt: "duona", en: "bread", gender: "feminine", number: "singular" },
+          { id: "card", lt: "kortelė", en: "card", gender: "feminine", number: "singular" },
+        ],
+        steps: [
+          {
+            id: "step_1",
+            speakerId: "seller",
+            speakerLabel: "Seller",
+            speakerText: "Laba diena! Ko norėtumėte?",
+            sceneDirection: "One loaf is beside you and another is further along the counter. You want the farther loaf.",
+            learnerPrompt: "Choose the loaf you want. If the service question is unclear, use Nesuprantu.",
+            help: {
+              levels: [
+                { sceneDirection: "She gestures towards the two loaves and waits for you to choose.", speakerText: "Duona?" },
+                { sceneDirection: "She points first to the nearby loaf, then the farther loaf as a question." },
+                { speakerText: "Which would you like?", spokenLanguage: "en", audio: false },
+              ],
+            },
+            options: [
+              { id: "a", text: "Laba diena! Noriu tos, prašau.", result: "best", progresses: true },
+              { id: "b", text: "Noriu šitos, prašau.", result: "wrong", feedback: "Šitos points to the nearby loaf. You want the farther one.", progresses: false },
+              { id: "c", text: "Noriu to, prašau.", result: "wrong", feedback: "Duona is feminine here, so use tos.", progresses: false },
+            ],
+          },
+          {
+            id: "step_2",
+            speakerId: "seller",
+            speakerLabel: "Seller",
+            speakerText: "Gerai.",
+            sceneDirection: "She places the farther loaf beside the card terminal and cash tray.",
+            learnerPrompt: "Ask whether card payment is possible.",
+            options: [
+              { id: "a", text: "Ar galima mokėti kortele?", result: "best", progresses: true },
+              { id: "b", text: "Ar galite parodyti?", result: "wrong", feedback: "The loaf is already in front of you. You need to ask about payment.", progresses: false },
+              { id: "c", text: "Kur gyvenate?", result: "wrong", feedback: "That is a social question, not a payment question.", progresses: false },
+            ],
+          },
+          {
+            id: "step_3",
+            speakerId: "seller",
+            speakerLabel: "Seller",
+            speakerText: "Taip, galima.",
+            sceneDirection: "She turns the card terminal towards you.",
+            learnerPrompt: "Acknowledge the answer.",
+            options: [
+              { id: "a", text: "Ačiū!", result: "best", progresses: true },
+              { id: "b", text: "Ne, negaliu.", result: "wrong", feedback: "She has confirmed card payment is possible.", progresses: false },
+              { id: "c", text: "Kas ji?", result: "wrong", feedback: "There is no person-identification question here.", progresses: false },
+            ],
+            finalSystemLine: { speakerId: "seller", speakerLabel: "Seller", speakerText: "Prašom.", sceneDirection: "She smiles as you finish the purchase." },
+          },
         ],
       },
-
-      // ── Block 4 — Speak Prompts ────────────────────────────────────────────
       {
         id: "s2c_b10",
-        type: "speak_self_check",
-        title: "Say it out loud",
-        prompt: "Say: I want coffee",
-        targetText: "Noriu kavos.",
-        audioText: "Noriu kavos",
-      },
-
-      {
-        id: "s2c_b11",
-        type: "speak_self_check",
-        title: "Say it out loud",
-        prompt: "Ask: How much does this cost?",
-        targetText: "Kiek tai kainuoja?",
-        audioText: "Kiek tai kainuoja",
-      },
-
-      // ── Block 5 — Best Response ────────────────────────────────────────────
-      {
-        id: "s2c_b12",
-        type: "best_response",
-        title: "Choose the best response",
-        prompt: { text: "A cashier asks if you have cash. You have a card but no cash." },
-        options: [
-          { id: "a", text: "Turiu grynųjų.", isCorrect: false },
-          { id: "b", text: "Neturiu grynųjų. Ar galima mokėti kortele?", isCorrect: true },
-          { id: "c", text: "Man reikia pagalbos.", isCorrect: false },
-        ],
-        feedback: { correct: "State what you don't have, then offer what you do. Perfect combination." },
-      },
-
-      {
-        id: "s2c_b13",
-        type: "best_response",
-        title: "Choose the best response",
-        prompt: { text: "Someone shows you two items and you want the one that's further away." },
-        options: [
-          { id: "a", text: "Šito, prašau.", isCorrect: false },
-          { id: "b", text: "To, prašau.", isCorrect: true },
-          { id: "c", text: "Šitie tinka.", isCorrect: false },
-        ],
-        feedback: { correct: "To, prašau — that one, please. For the item further away." },
-      },
-
-      {
-        id: "s2c_b14",
-        type: "best_response",
-        title: "Choose the best response",
-        prompt: { text: "Someone is speaking too fast and you need them to slow down." },
-        options: [
-          { id: "a", text: "Ar galite padėti?", isCorrect: false },
-          { id: "b", text: "Ar galite pakartoti?", isCorrect: false },
-          { id: "c", text: "Ar galite kalbėti lėčiau?", isCorrect: true },
-        ],
-        feedback: { correct: "Ar galite kalbėti lėčiau? — the right tool when pace is the problem." },
-      },
-
-      // ── Block 6 — Conversation Chain ──────────────────────────────────────
-      {
-  id: "s2c_b15_v2",
-  type: "scenario_v2",
-  title: "Conversation",
-  description: "You're at a market in Vilnius. You want to buy something, ask the price, and pay by card.",
-  sceneIntro: "You're at a market in Vilnius. You want to buy something, ask the price, and pay by card.",
-  location: "shop counter",
-  userRole: "customer",
-  register: "polite_service",
-  goal: "You're at a market in Vilnius. You want to buy something, ask the price, and pay by card.",
-  focus: ["payment"],
-  participants: [
-    {
-      "id": "seller",
-      "label": "Seller",
-      "name": "Tomas",
-      "role": "seller",
-      "gender": "male",
-      "relationshipToUser": "stranger",
-      "register": "polite_service"
-    },
-  ],
-  objects: [
-    {
-      "id": "card",
-      "lt": "kortelė",
-      "en": "card",
-      "gender": "feminine",
-      "number": "singular"
-    },
-  ],
-  steps: [
-    {
-      id: "step_1",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Laba diena! Ko norėtumėte?",
-      supportText: "Good day! What would you like?",
-      sceneDirection: "The seller greets you at the market stall.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Viso gero.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Laba diena! Noriu šito. Kiek tai kainuoja?",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Nesuprantu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    },
-    {
-      id: "step_2",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Aštuoni eurai.",
-      supportText: "Eight euros.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Brangu!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Neturiu grynųjų. Ar galima mokėti kortele?",
-          textEn: "I don't have cash. Is card OK?",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Man reikia pagalbos.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    },
-    {
-      id: "step_3",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Taip, galima.",
-      supportText: "Yes, that's fine.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Kiek tai kainuoja?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Ačiū! Štai kortelė.",
-          textEn: "Thank you! Here's my card.",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Aš negaliu eiti.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    },
-    {
-      id: "step_4",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Prašau. Ar norite šitų taip pat?",
-      supportText: "Here you go. Would you like these as well?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Brangu.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Kada einame?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "c",
-          text: "Ne, ačiū. Viso gero!",
-          result: "best",
-          progresses: true,
-        }
-      ],
-    },
-    {
-      id: "step_5",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Viso gero! Ačiū.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
-      options: [
-        {
-          id: "a",
-          text: "Kiek tai kainuoja?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Ačiū labai!",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Man reikia bilieto.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    }
-  ],
-},
-
-      // ── Word Match — ~5 best pairs from each module ────────────────────────
-      {
-        id: "s2c_b16",
         type: "word_match",
         title: "Match the pairs",
         pairs: [
-          // From 2.1 — I Want / I Need / I Have
-          { id: "m1",  lt: "Noriu kavos.",           en: "I want coffee.",                audioText: "Noriu kavos" },
-          { id: "m2",  lt: "Man reikia bilieto.",    en: "I need a ticket.",              audioText: "Man reikia bilieto" },
-          { id: "m3",  lt: "Neturiu grynųjų.",       en: "I don't have cash.",            audioText: "Neturiu grynųjų" },
-          { id: "m4",  lt: "Turiu kortelę.",         en: "I have a card.",                audioText: "Turiu kortelę" },
-          { id: "m5",  lt: "Ar turite meniu?",       en: "Do you have a menu?",           audioText: "Ar turite meniu" },
-          // From 2.2 — Can / Can't / Possible?
-          { id: "m6",  lt: "Ar galiu pažiūrėti?",   en: "Can I have a look?",            audioText: "Ar galiu pažiūrėti" },
-          { id: "m7",  lt: "Ar galite parodyti?",    en: "Can you show me?",              audioText: "Ar galite parodyti" },
-          { id: "m8",  lt: "Aš negaliu suprasti.",   en: "I can't understand.",           audioText: "Aš negaliu suprasti" },
-          { id: "m9",  lt: "Ar galima mokėti kortele?", en: "Can I pay by card?",          audioText: "Ar galima mokėti kortele" },
-          { id: "m10", lt: "Aš galiu palaukti.",     en: "I can wait.",                   audioText: "Aš galiu palaukti" },
-          // From 2.3 — This / That / These / Those
-          { id: "m11", lt: "Noriu šito.",            en: "I want this one.",              audioText: "Noriu šito" },
-          { id: "m12", lt: "To, prašau.",            en: "That one, please.",             audioText: "To, prašau" },
-          { id: "m13", lt: "Tas geresnis.",          en: "That one is better.",           audioText: "Tas geresnis" },
-          { id: "m14", lt: "Kuris?",                 en: "Which one?",                    audioText: "Kuris" },
-          { id: "m15", lt: "Šitie tinka.",           en: "These are fine.",               audioText: "Šitie tinka" },
-          // From 2.4 — Basic Questions
-          { id: "m16", lt: "Kiek tai kainuoja?",     en: "How much does this cost?",      audioText: "Kiek tai kainuoja" },
-          { id: "m17", lt: "Kur einame?",            en: "Where are we going?",           audioText: "Kur einame" },
-          { id: "m18", lt: "Kada pradedame?",        en: "When do we start?",             audioText: "Kada pradedame" },
-          { id: "m19", lt: "Rytoj.",                 en: "Tomorrow.",                     audioText: "Rytoj" },
-          { id: "m20", lt: "Brangu.",                en: "Expensive.",                    audioText: "Brangu" },
+          { id: "m1",  lt: "Noriu kavos.",                    en: "I want coffee.",                         audioText: "Noriu kavos" },
+          { id: "m2",  lt: "Man reikia bilieto.",             en: "I need a ticket.",                       audioText: "Man reikia bilieto" },
+          { id: "m3",  lt: "Turiu kortelę.",                  en: "I have a card.",                         audioText: "Turiu kortelę" },
+          { id: "m4",  lt: "Ar turite kavos?",                en: "Do you have coffee?",                    audioText: "Ar turite kavos" },
+          { id: "m5",  lt: "Ar galime palaukti?",             en: "Can we wait?",                          audioText: "Ar galime palaukti" },
+          { id: "m6",  lt: "Ar galite parodyti?",             en: "Can you show me?",                       audioText: "Ar galite parodyti" },
+          { id: "m7",  lt: "Galiu palaukti.",                 en: "I can wait.",                            audioText: "Galiu palaukti" },
+          { id: "m8",  lt: "Negaliu eiti.",                   en: "I can't go.",                            audioText: "Negaliu eiti" },
+          { id: "m9",  lt: "Ar galima mokėti kortele?",       en: "Is it possible to pay by card?",        audioText: "Ar galima mokėti kortele" },
+          { id: "m10", lt: "Šitas obuolys",                   en: "This apple.",                            audioText: "Šitas obuolys" },
+          { id: "m11", lt: "Ta duona",                        en: "That bread.",                            audioText: "Ta duona" },
+          { id: "m12", lt: "Noriu šito.",                     en: "I want this one. (masculine)",          audioText: "Noriu šito" },
+          { id: "m13", lt: "Noriu tos.",                      en: "I want that one. (feminine)",           audioText: "Noriu tos" },
+          { id: "m14", lt: "Kuo galėčiau padėti?",           en: "How can I help?",                        audioText: "Kuo galėčiau padėti" },
+          { id: "m15", lt: "Ko norėtumėte?",                 en: "What would you like?",                   audioText: "Ko norėtumėte" },
+          { id: "m16", lt: "Kur gyvenate?",                  en: "Where do you live?",                     audioText: "Kur gyvenate" },
+          { id: "m17", lt: "Kur einame?",                    en: "Where are we going?",                    audioText: "Kur einame" },
+          { id: "m18", lt: "Kas jis?",                       en: "Who is he?",                             audioText: "Kas jis" },
+          { id: "m19", lt: "Kas ji?",                        en: "Who is she?",                            audioText: "Kas ji" },
+          { id: "m20", lt: "Ji mano kaimynė.",               en: "She is my neighbour.",                   audioText: "Ji mano kaimynė" },
         ],
       },
-
     ],
   };
 }
