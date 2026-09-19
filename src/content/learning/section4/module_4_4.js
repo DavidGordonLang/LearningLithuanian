@@ -173,7 +173,7 @@ export default function createModule_4_4(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low_to_medium",
         notes: {
-          pattern: "Ar nori…? (informal) and Ar norite…? (formal/plural) — you know norite from Ko norite?. Taip, prašau / Ne, ačiū are your already-known yes and no responses.",
+          pattern: "Ar nori…? (informal) and Ar norite…? (formal/plural). You already know the polite service form Ko norėtumėte?. Taip, prašau / Ne, ačiū are your already-known yes and no responses.",
           usage: [
             "Ar nori kavos? — Do you want coffee? (informal)",
             "Ar norite kavos? — Do you want coffee? (formal/plural)",
