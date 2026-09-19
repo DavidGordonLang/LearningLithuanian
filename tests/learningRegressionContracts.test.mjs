@@ -110,3 +110,18 @@ test("Scenario V2 can suppress all audio for English or mixed helper turns", () 
   assert.match(src, /audioEnabled \? \([\s\S]*?<InteractivePhraseText[\s\S]*?\) : \([\s\S]*?<span>\{turn\.speakerText\}<\/span>/);
   assert.match(src, /helpTurn\.speakerText && isScenarioTurnAudioEnabled\(helpTurn\)/);
 });
+
+
+test("lesson audio preloading covers Word Match pairs before they are matched", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+  assert.match(src, /Array\.isArray\(block\?\.pairs\)[\s\S]*?pair\?\.audioText[\s\S]*?set\.add\(pair\.audioText\)/);
+  assert.match(src, /preloadText\(text\)/);
+});
+
+test("Speak Self Check remains hold-to-speak with a visible recording state and no transcript display", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+  assert.match(src, /onPointerDown=\{handleMicPointerDown\}/);
+  assert.match(src, /onPointerUp=\{finishMicHold\}/);
+  assert.match(src, /isRecording \? "bg-emerald-500\/25/);
+  assert.equal((src.match(/capturedText/g) || []).length, 1);
+});
