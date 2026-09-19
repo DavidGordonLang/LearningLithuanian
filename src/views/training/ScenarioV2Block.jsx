@@ -740,7 +740,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
                     )}
                   >
                     <div className="text-[15px] font-semibold">
-                      <InteractivePhraseText text={option.text} playText={playText} />
+                      {option.text}
                     </div>
                   </div>
                 );
