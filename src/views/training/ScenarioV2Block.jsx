@@ -672,10 +672,14 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     <div className="fixed inset-0 z-[12000] bg-zinc-950 text-zinc-100">
       <div className="mx-auto flex h-[100dvh] max-w-xl flex-col px-4 py-4">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-[11px] uppercase tracking-widest text-zinc-500">Scenario</div>
             <div className="truncate text-[18px] font-semibold text-zinc-100">{block?.title || "Scenario"}</div>
-            {block?.goal ? <div className="mt-0.5 truncate text-[12px] text-zinc-500">{block.goal}</div> : null}
+            {(block?.sceneIntro || block?.goal) ? (
+              <div className="mt-0.5 text-[12px] leading-snug text-zinc-500">
+                {block.sceneIntro || block.goal}
+              </div>
+            ) : null}
           </div>
           <button type="button" data-press onClick={onExit} className="rounded-full border border-white/10 px-3 py-1.5 text-[12px] text-zinc-400 transition hover:bg-white/[0.05] hover:text-zinc-200">
             Exit
