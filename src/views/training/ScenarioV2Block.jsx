@@ -1,4 +1,5 @@
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
+import { getScenarioHelpOption, getScenarioHelpTurn, withScenarioHelpOption } from "../../utils/scenarioHelp.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -315,7 +316,9 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText }) {
 function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final = false }) {
   if (!turn) return null;
   const showScene = !!turn.sceneDirection && (phase === "scene" || phase === "speaker");
-  const showSpeaker = phase === "speaker";
+  const hasSpeakerText = !!String(turn.speakerText || "").trim();
+  const showSpeaker = phase === "speaker" && hasSpeakerText;
+  const showSupport = phase === "speaker" && !!(turn.supportText || turn.meaningText);
   const speakerLabel = getSpeakerLabel(block, turn);
   const playOptions = getTurnVoiceOptions(block, turn);
 
@@ -339,7 +342,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
         </div>
       ) : null}
 
-      {showSpeaker && (turn.supportText || turn.meaningText) ? (
+      {showSupport ? (
         <div className="scenario-v2-fade scenario-v2-support-panel max-w-[86%] rounded-2xl border px-3 py-2">
           <div className="scenario-v2-support-label text-[10px] uppercase tracking-widest">Meaning</div>
           <div className="mt-0.5 text-[12px] leading-snug">{turn.supportText || turn.meaningText}</div>
@@ -397,21 +400,32 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   const [turnPhase, setTurnPhase] = useState("scene");
   const [followUpTurn, setFollowUpTurn] = useState(null);
   const [followUpPhase, setFollowUpPhase] = useState("scene");
+  const [helpTurn, setHelpTurn] = useState(null);
+  const [helpPhase, setHelpPhase] = useState("scene");
+  const [helpCounts, setHelpCounts] = useState({});
   const [finalTurn, setFinalTurn] = useState(null);
   const [finalPhase, setFinalPhase] = useState("scene");
   const [complete, setComplete] = useState(false);
 
   const step = steps[stepIndex] || null;
   const authoredOptions = Array.isArray(step?.options) ? step.options : [];
-  const options = useMemo(() => shuffledCopy(authoredOptions), [step?.id]);
+  const shuffledAuthoredOptions = useMemo(() => shuffledCopy(authoredOptions), [step?.id]);
+  const helpCount = step?.id ? (helpCounts[step.id] || 0) : 0;
+  const options = useMemo(
+    () => withScenarioHelpOption(shuffledAuthoredOptions, step, helpCount),
+    [shuffledAuthoredOptions, step, helpCount]
+  );
   const participant = Array.isArray(block?.participants)
     ? block.participants.find((p) => p.id === step?.speakerId)
     : null;
   const speakerLabel = step?.speakerLabel || participant?.label || "Speaker";
   const activeStepTurnKey = step?.id ? `step:${step.id}` : null;
   const followUpTurnKey = followUpTurn?.speakerText ? `followup:${step?.id || "step"}:${followUpTurn.speakerText}` : null;
+  const helpTurnKey = helpTurn ? `help:${step?.id || "step"}:${helpTurn.helpLevel || 0}:${helpTurn.speakerText || helpTurn.sceneDirection || "context"}` : null;
   const finalTurnKey = finalTurn?.speakerText ? `final:${step?.id || "step"}:${finalTurn.speakerText}` : null;
   const selectedOptionForStep = selectedOption?.stepId === step?.id ? selectedOption.option : null;
+  const stepSpeakerHistoryId = step?.id ? `${step.id}_speaker` : null;
+  const stepSpeakerCommitted = !!stepSpeakerHistoryId && history.some((item) => item.id === stepSpeakerHistoryId);
 
   function clearTimers() {
     timersRef.current.forEach((id) => clearTimeout(id));
@@ -444,11 +458,15 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         el.scrollTop = el.scrollHeight;
       }
     });
-  }, [history, turnPhase, finalPhase, finalTurn, complete]);
+  }, [history, turnPhase, followUpPhase, helpPhase, helpTurn, finalPhase, finalTurn, complete]);
 
   useEffect(() => {
     clearTimers();
-    if (!step || followUpTurn || finalTurn || complete) return;
+    if (!step || followUpTurn || helpTurn || finalTurn || complete) return;
+    if (stepSpeakerCommitted) {
+      setTurnPhase("speaker");
+      return;
+    }
     const turnKey = activeStepTurnKey;
     revealedTurnKeyRef.current = null;
     setTurnPhase(step.sceneDirection ? "scene" : "speaker");
@@ -458,7 +476,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
       revealedTurnKeyRef.current = turnKey;
       autoplayOnce(autoplayStartedKeysRef, turnKey, step.speakerText, playTextRef.current, getTurnVoiceOptions(block, step));
     }, delay);
-  }, [activeStepTurnKey, step?.sceneDirection, step?.speakerText, followUpTurn, finalTurn, complete]);
+  }, [activeStepTurnKey, step?.sceneDirection, step?.speakerText, stepSpeakerCommitted, followUpTurn, helpTurn, finalTurn, complete]);
 
   useEffect(() => {
     if (!followUpTurn) return;
@@ -492,6 +510,38 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   }, [followUpTurnKey, followUpTurn?.sceneDirection, followUpTurn?.speakerText]);
 
   useEffect(() => {
+    if (!helpTurn) return;
+    clearTimers();
+    const turnKey = helpTurnKey;
+    revealedTurnKeyRef.current = null;
+    setHelpPhase(helpTurn.sceneDirection ? "scene" : "speaker");
+    const delay = helpTurn.sceneDirection ? 650 : 120;
+    const settleDelay = delay + estimateSpeechDelayMs(helpTurn.speakerText);
+    queueTimeout(() => {
+      setHelpPhase("speaker");
+      revealedTurnKeyRef.current = turnKey;
+      if (helpTurn.speakerText) {
+        autoplayOnce(autoplayStartedKeysRef, turnKey, helpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, helpTurn));
+      }
+    }, delay);
+    queueTimeout(() => {
+      setHistory((prev) => [
+        ...prev,
+        {
+          id: `${step?.id || "step"}_help_response_${helpTurn.helpLevel || 1}`,
+          role: "speaker",
+          speakerId: helpTurn.speakerId,
+          speakerLabel: helpTurn.speakerLabel,
+          speakerText: helpTurn.speakerText || "",
+          sceneDirection: helpTurn.sceneDirection || null,
+          supportText: helpTurn.supportText || helpTurn.meaningText || "",
+        },
+      ]);
+      setHelpTurn(null);
+    }, settleDelay);
+  }, [helpTurnKey, helpTurn?.sceneDirection, helpTurn?.speakerText]);
+
+  useEffect(() => {
     if (!finalTurn) return;
     clearTimers();
     const turnKey = finalTurnKey;
@@ -506,30 +556,46 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => setComplete(true), delay + 950);
   }, [finalTurnKey, finalTurn?.sceneDirection, finalTurn?.speakerText]);
 
-  function addCurrentExchange(option) {
-    setHistory((prev) => [
-      ...prev,
-      {
-        id: `${step?.id || "step"}_speaker`,
-        role: "speaker",
-        speakerId: step?.speakerId,
-        speakerLabel,
-        text: step?.speakerText || "",
-        speakerText: step?.speakerText || "",
-        sceneDirection: null,
-        supportText: step?.supportText || step?.meaningText || "",
-      },
-      {
-        id: `${step?.id || "step"}_${option?.id || "option"}`,
+  function addCurrentExchange(option, learnerHistoryId = null) {
+    setHistory((prev) => {
+      const speakerHistoryId = `${step?.id || "step"}_speaker`;
+      const additions = [];
+      if (!prev.some((item) => item.id === speakerHistoryId)) {
+        additions.push({
+          id: speakerHistoryId,
+          role: "speaker",
+          speakerId: step?.speakerId,
+          speakerLabel,
+          text: step?.speakerText || "",
+          speakerText: step?.speakerText || "",
+          sceneDirection: null,
+          supportText: step?.supportText || step?.meaningText || "",
+        });
+      }
+      additions.push({
+        id: learnerHistoryId || `${step?.id || "step"}_${option?.id || "option"}`,
         role: "learner",
         speakerLabel: "You",
         text: option?.text || "",
-      },
-    ]);
+      });
+      return [...prev, ...additions];
+    });
+  }
+
+  function handleScenarioHelp(option) {
+    const turn = getScenarioHelpTurn(step, helpCount);
+    if (!turn) return;
+    addCurrentExchange(option, `${step?.id || "step"}_help_request_${helpCount + 1}`);
+    setHelpCounts((prev) => ({ ...prev, [step.id]: helpCount + 1 }));
+    setHelpTurn(turn);
   }
 
   function handleOption(option) {
-    if (selectedOptionForStep || complete) return;
+    if (selectedOptionForStep || helpTurn || complete) return;
+    if (option?.isScenarioHelp || option?.result === "help") {
+      handleScenarioHelp(option);
+      return;
+    }
     if (!optionCanProgress(option)) onWrongAnswer?.();
     if (!optionNeedsFeedback(option)) {
       processProgressingOption(option);
@@ -569,8 +635,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     setStepIndex((prev) => prev + 1);
   }
 
-  const activeSpeakerReady = turnPhase === "speaker" && !followUpTurn && !finalTurn && !complete;
-  const activeTurn = step
+  const activeSpeakerReady = (stepSpeakerCommitted || turnPhase === "speaker") && !followUpTurn && !helpTurn && !finalTurn && !complete;
+  const activeTurn = step && !stepSpeakerCommitted
     ? {
       speakerId: step.speakerId,
       speakerLabel: step.speakerLabel,
@@ -600,12 +666,16 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
               <ScenarioV2HistoryItem key={item.id} block={block} item={item} playText={playText} />
             ))}
 
-            {!complete && !followUpTurn && !finalTurn && step ? (
+            {!complete && !followUpTurn && !helpTurn && !finalTurn && step && activeTurn ? (
               <ScenarioV2SystemTurn block={block} turn={activeTurn} phase={turnPhase} playText={playText} />
             ) : null}
 
             {followUpTurn ? (
               <ScenarioV2SystemTurn block={block} turn={followUpTurn} phase={followUpPhase} playText={playText} />
+            ) : null}
+
+            {helpTurn ? (
+              <ScenarioV2SystemTurn block={block} turn={helpTurn} phase={helpPhase} playText={playText} />
             ) : null}
 
             {finalTurn ? (
@@ -614,7 +684,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           </div>
         </div>
 
-        {!complete && !followUpTurn && !finalTurn && step ? (
+        {!complete && !followUpTurn && !helpTurn && !finalTurn && step ? (
           <div className={cn("scenario-v2-reply-tray mt-3 rounded-[24px] border px-4 py-3 transition", activeSpeakerReady ? "opacity-100" : "opacity-60")}>
             {step.helperText && activeSpeakerReady ? (
               <div className="scenario-v2-support-panel mb-3 rounded-2xl border px-3 py-2 text-[12px] leading-snug">

@@ -88,3 +88,15 @@ test("Scenario V2 progression semantics remain explicit", () => {
   assert.match(src, /result === "repair" && option\?\.progresses === true/);
   assert.match(src, /Try another answer/);
 });
+
+
+test("Scenario V2 escalating help stays separate from wrong-answer and progression paths", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /option\?\.isScenarioHelp \|\| option\?\.result === "help"/);
+  assert.match(src, /handleScenarioHelp\(option\);[\s\S]*?return;[\s\S]*?if \(!optionCanProgress\(option\)\) onWrongAnswer\?\.\(\)/);
+  assert.match(src, /setHelpTurn\(turn\)/);
+  assert.match(src, /setHelpTurn\(null\)/);
+  assert.match(src, /stepSpeakerCommitted/);
+  assert.match(src, /withScenarioHelpOption/);
+});
