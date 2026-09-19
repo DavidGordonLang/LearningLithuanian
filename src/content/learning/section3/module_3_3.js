@@ -21,7 +21,7 @@ export default function createModule_3_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Kiek valandų? is the most common way to ask the time. Kelinta valanda? is also used — you'll hear both. Clock answers use ordinal forms: trečia valanda (third hour = 3 o'clock), penkta valanda (fifth hour = 5 o'clock). Learn the phrases as chunks for now.",
+          pattern: "Kiek valandų? and Kelinta valanda? both ask the time. Trečia valanda means it is three o'clock; trečią valandą means at three o'clock in a schedule. Learn those as separate useful chunks rather than treating the endings as interchangeable.",
           usage: [
             "Kiek valandų? — what time is it?",
             "Kelinta valanda? — what time is it? (which hour?)",

@@ -61,10 +61,10 @@ export default function createCheckpoint3(profile = {}) {
         id: "s3c_b4",
         type: "recognise_mcq",
         title: "Choose the correct meaning",
-        prompt: { text: "Kiek šitas kainuoja?", audioText: "Kiek šitas kainuoja" },
+        prompt: { text: "Kiek kainuoja kava?", audioText: "Kiek kainuoja kava" },
         options: [
           { id: "a", text: "How much does that one cost?", isCorrect: false },
-          { id: "b", text: "How much does this one cost?", isCorrect: true },
+          { id: "b", text: "How much does the coffee cost?", isCorrect: true },
           { id: "c", text: "Can I have this?", isCorrect: false },
         ],
       },
@@ -342,7 +342,7 @@ export default function createCheckpoint3(profile = {}) {
           { id: "m6",  lt: "Ar galima mokėti kortele?", en: "Can I pay by card?",          audioText: "Ar galima mokėti kortele" },
           { id: "m7",  lt: "Per brangu",               en: "Too expensive",                audioText: "Per brangu" },
           { id: "m8",  lt: "Noriu sumokėti",           en: "I want to pay",                audioText: "Noriu sumokėti" },
-          { id: "m9",  lt: "Sąskaitą, prašau",        en: "The bill, please",             audioText: "Sąskaitą, prašau" },
+          { id: "m9",  lt: "Ar galėčiau gauti sąskaitą, prašau?",        en: "Could I get the bill, please?",             audioText: "Ar galėčiau gauti sąskaitą, prašau?" },
           // Time
           { id: "m10", lt: "Kiek valandų?",            en: "What time is it?",             audioText: "Kiek valandų" },
           { id: "m11", lt: "Kada išvyksta autobusas?",  en: "When does the bus leave?",    audioText: "Kada išvyksta autobusas" },

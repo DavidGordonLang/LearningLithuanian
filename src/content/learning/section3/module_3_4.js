@@ -457,13 +457,13 @@ export default function createModule_3_4(profile = {}) {
             id: "s3m4l3_b4",
             type: "best_response",
             title: "Choose the best response",
-            prompt: { text: "A server asks 'Ar dar ko nors?' after topping up your water. You want more." },
+            prompt: { text: "A server asks 'Ar dar ko nors?' after you finish your coffee. You want one more coffee." },
             options: [
               { id: "a", text: "Ne, ačiū", isCorrect: false },
-              { id: "b", text: "Taip, dar vieną, prašau", isCorrect: true },
+              { id: "b", text: "Taip, dar vieną kavą, prašau", isCorrect: true },
               { id: "c", text: "Mažiau, prašau", isCorrect: false },
             ],
-            feedback: { correct: "Taip, dar vieną, prašau — yes, one more, please. Natural and polite." },
+            feedback: { correct: "Taip, dar vieną kavą, prašau — yes, one more coffee, please. The noun makes the request clear." },
           },
           {
             id: "s3m4l3_b5",
@@ -554,7 +554,7 @@ export default function createModule_3_4(profile = {}) {
         },
         {
           id: "b",
-          text: "Taip, daugiau vandens, prašau.",
+          text: "Taip, dar ir vandens, prašau.",
           result: "best",
           progresses: true,
         },
@@ -872,12 +872,12 @@ export default function createModule_3_4(profile = {}) {
   id: "s3m4l5_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You and a friend arrive at a café. The host seats you and takes your order.",
-  sceneIntro: "You and a friend arrive at a café. The host seats you and takes your order.",
+  description: "You and a friend arrive at a café. The server asks your party size before seating you, then takes your order.",
+  sceneIntro: "You and a friend arrive at a café. The server asks your party size before seating you, then takes your order.",
   location: "café",
   userRole: "customer",
   register: "polite_service",
-  goal: "You and a friend arrive at a café. The host seats you and takes your order.",
+  goal: "You and a friend arrive at a café. The server asks your party size before seating you, then takes your order.",
   focus: ["ordering"],
   participants: [
     {
@@ -958,7 +958,7 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "server",
       speakerLabel: "Server",
       speakerText: "Žinoma. Ar dar ko nors?",
-      supportText: "Of course. Anything else?",
+      supportText: "Of course. Would you like anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1179,8 +1179,8 @@ export default function createModule_3_4(profile = {}) {
       id: "step_3",
       speakerId: "server",
       speakerLabel: "Server",
-      speakerText: "Prašom. Ar dar ko nors?",
-      supportText: "Here you go. Anything else?",
+      speakerText: "Prašom. Ar dar ko nors norėtumėte?",
+      supportText: "Here you go. Would you like anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1210,8 +1210,8 @@ export default function createModule_3_4(profile = {}) {
       id: "step_4",
       speakerId: "server",
       speakerLabel: "Server",
-      speakerText: "Žinoma. Dar kas nors?",
-      supportText: "Of course. Anything else?",
+      speakerText: "Žinoma. Ar dar ko nors norėtumėte?",
+      supportText: "Of course. Would you like anything else?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
