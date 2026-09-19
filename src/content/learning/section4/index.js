@@ -13,6 +13,7 @@ export default function createSection4(profile = {}) {
     code: "4",
     title: "Food and Drink",
     description: "Order, customise, pay, and interact socially around food and drink.",
+    moduleCount: 4,
     checkpointCount: 1,
     modules: [
       createModule_4_1(profile),

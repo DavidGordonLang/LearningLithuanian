@@ -125,7 +125,9 @@ PHONETICS (ENGLISH-READER FRIENDLY)
 phonetics:
 - English-reader friendly pronunciation hints only. This is NOT IPA.
 - Separate syllables with hyphens.
-- Mark the stressed syllable of each Lithuanian word in ALL CAPS.
+- Mark the normatively stressed syllable of each Lithuanian word in ALL CAPS.
+- Lithuanian stress is not reliably predictable from spelling. Do not guess from
+  the first syllable or copy capitalisation from the Lithuanian input.
 - Represent every Lithuanian syllable and ending. Do not drop final vowels.
 - Do not compress a multi-syllable Lithuanian word into one vague English sound.
 - No IPA symbols.
@@ -143,10 +145,9 @@ phonetics:
 Examples:
 - Labas -> LAH-bahs
 - Prašau -> prah-SHAU
-- Malonu -> mah-LOH-noo
-- Laba diena -> LAH-bah DYEH-nah
-- Šitie -> SHIH-tyeh
-- Šitie tinka -> SHIH-tyeh TIN-kah
+- Malonu -> mah-loh-NOO
+- Laba diena -> lah-BAH dyeh-NAH
+- Norėčiau kavos, prašau -> noh-REH-chow kah-VOHS prah-SHAU
 
 ────────────────────────────────
 PHONETICS_IPA (STANDARD IPA)
@@ -156,6 +157,10 @@ phonetics_ipa:
 - No slashes / /. No brackets [ ].
 - Include spaces between words as in the original phrase.
 - Must be a non-empty string.
+
+Normative stress examples:
+- Laba diena -> lɐˈbɐ dʲɪɛˈnɐ
+- Norėčiau kavos, prašau -> noːˈrʲeːt͡ʃʲɛʊ kɐˈvoːs prɐˈʃɐʊ
 
 ────────────────────────────────
 ENGLISH OUTPUT RULES
