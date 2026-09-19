@@ -145,3 +145,23 @@ test("in-progress lesson position is persisted per account and restored by block
   assert.match(lessonSrc, /blocks\.findIndex\(\(candidate\) => candidate\?\.id === saved\.blockId\)/);
   assert.match(lessonSrc, /setLessonProgress\(lesson\.id, currentBlock\.id, blockIndex, userId\)/);
 });
+
+
+test("lesson and admin resets persist the intended account state instead of using logout reset", () => {
+  const settingsSrc = source("src/views/SettingsView.jsx");
+  const gameSrc = source("src/stores/gameStore.js");
+
+  assert.match(settingsSrc, /const resetLessonProgress = useGameStore\(\(s\) => s\.resetLessonProgress\)/);
+  assert.match(settingsSrc, /const resetAllProgress = useGameStore\(\(s\) => s\.resetAllProgress\)/);
+  assert.doesNotMatch(settingsSrc, /gameReset\(\)[\s\S]*?gameSave\(user\?\.id\)/);
+
+  assert.match(
+    gameSrc,
+    /resetLessonProgress:\s*async \(userId\)[\s\S]*?completedLessonIds:\s*\[\][\s\S]*?seenModuleCompleteIds:\s*\[\][\s\S]*?seenSectionCompleteIds:\s*\[\][\s\S]*?lessonProgress:\s*\{\}[\s\S]*?await get\(\)\._save\(userId\)/
+  );
+
+  assert.match(
+    gameSrc,
+    /resetAllProgress:\s*async \(userId\)[\s\S]*?_loadedForUserId:\s*userId[\s\S]*?await get\(\)\._save\(userId\)/
+  );
+});
