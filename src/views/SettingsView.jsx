@@ -281,8 +281,8 @@ export default function SettingsView({
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
   const totalXP = useGameStore((s) => s.totalXP);
   const streakDays = useGameStore((s) => s.streakDays);
-  const gameReset = useGameStore((s) => s.reset);
-  const gameSave = useGameStore((s) => s._save);
+  const resetLessonProgress = useGameStore((s) => s.resetLessonProgress);
+  const resetAllProgress = useGameStore((s) => s.resetAllProgress);
   const [progressResetting, setProgressResetting] = useState(false);
 
   const [openLearning, setOpenLearning] = useState(false);
@@ -533,10 +533,8 @@ export default function SettingsView({
     if (!ok) return;
     try {
       setProgressResetting(true);
-      // Clear completedLessonIds in store, keep XP and streak
-      useGameStore.setState({ completedLessonIds: [] });
-      // Persist the change
-      await gameSave(user?.id);
+      const saved = await resetLessonProgress(user?.id);
+      if (!saved) throw new Error("Progress is not loaded for this account yet.");
       showToast?.("Lesson progress reset ✅");
     } catch (e) {
       showToast?.("Reset failed: " + (e?.message || "Unknown error"));
@@ -557,8 +555,8 @@ export default function SettingsView({
     if (!ok) return;
     try {
       setProgressResetting(true);
-      gameReset();
-      await gameSave(user?.id);
+      const saved = await resetAllProgress(user?.id);
+      if (!saved) throw new Error("Progress is not loaded for this account yet.");
       showToast?.("All progress reset ✅");
     } catch (e) {
       showToast?.("Reset failed: " + (e?.message || "Unknown error"));
