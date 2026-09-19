@@ -1,24 +1,8 @@
 import { create } from "zustand";
+import { createAccountStorage, bindAccountActions } from "./accountStorage.js";
 
-const LS_KEY = "lt_scenarios_v1";
-
-function loadScenarios() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveScenarios(rows) {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(rows));
-  } catch (err) {
-    console.error("Failed saving scenarios", err);
-  }
-}
+const storage = createAccountStorage("lt_scenarios_v1");
+const saveScenarios = (rows) => storage.save(rows);
 
 function makeId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -41,6 +25,11 @@ function ensureScenario(row) {
     phraseIds,
     createdAt: typeof row?.createdAt === "number" ? row.createdAt : now,
     updatedAt: typeof row?.updatedAt === "number" ? row.updatedAt : now,
+    _deleted: row?._deleted === true,
+    _deleted_ts:
+      row?._deleted === true && typeof row?._deleted_ts === "number"
+        ? row._deleted_ts
+        : null,
   };
 }
 
@@ -50,6 +39,10 @@ function sortScenarios(list) {
       sensitivity: "base",
     })
   );
+}
+
+function activeScenarios(records) {
+  return sortScenarios((records || []).filter((row) => row?._deleted !== true));
 }
 
 function moveItem(list, fromIndex, toIndex) {
@@ -69,19 +62,37 @@ function moveItem(list, fromIndex, toIndex) {
 }
 
 export const useScenarioStore = create((set, get) => ({
-  scenarios: sortScenarios(loadScenarios().map(ensureScenario)),
+  scenarios: [],
+  scenarioRecords: [],
+  accountId: null,
+  storageError: null,
 
   setScenarios: (update) => {
     set((state) => {
       const next =
         typeof update === "function" ? update(state.scenarios) : update;
 
-      const safe = Array.isArray(next)
+      const active = Array.isArray(next)
         ? sortScenarios(next.map(ensureScenario))
         : [];
+      const activeIds = new Set(active.map((row) => row.id));
+      const tombstones = (state.scenarioRecords || []).filter(
+        (row) => row?._deleted === true && !activeIds.has(row.id)
+      );
+      const safe = [...active, ...tombstones];
 
       saveScenarios(safe);
-      return { scenarios: safe };
+      return { scenarioRecords: safe, scenarios: activeScenarios(safe) };
+    });
+  },
+
+  setScenarioRecords: (update) => {
+    set((state) => {
+      const next =
+        typeof update === "function" ? update(state.scenarioRecords) : update;
+      const safe = Array.isArray(next) ? next.map(ensureScenario) : [];
+      saveScenarios(safe);
+      return { scenarioRecords: safe, scenarios: activeScenarios(safe) };
     });
   },
 
@@ -91,9 +102,9 @@ export const useScenarioStore = create((set, get) => ({
       return { ok: false, error: "Title is required." };
     }
 
-    const existing = get().scenarios || [];
+    const existing = get().scenarioRecords || [];
     const dupe = existing.some(
-      (s) => String(s.title || "").toLowerCase() === clean.toLowerCase()
+      (s) => s?._deleted !== true && String(s.title || "").toLowerCase() === clean.toLowerCase()
     );
 
     if (dupe) {
@@ -109,7 +120,7 @@ export const useScenarioStore = create((set, get) => ({
 
     const next = sortScenarios([nextRow, ...existing]);
     saveScenarios(next);
-    set({ scenarios: next });
+    set({ scenarioRecords: next, scenarios: activeScenarios(next) });
 
     return { ok: true, scenario: nextRow };
   },
@@ -123,11 +134,11 @@ export const useScenarioStore = create((set, get) => ({
       return { ok: false, error: "Title is required." };
     }
 
-    const existing = get().scenarios || [];
+    const existing = get().scenarioRecords || [];
 
     const dupe = existing.some(
       (s) =>
-        s.id !== id &&
+        s.id !== id && s?._deleted !== true &&
         String(s.title || "").toLowerCase() === clean.toLowerCase()
     );
 
@@ -148,7 +159,7 @@ export const useScenarioStore = create((set, get) => ({
     );
 
     saveScenarios(next);
-    set({ scenarios: next });
+    set({ scenarioRecords: next, scenarios: activeScenarios(next) });
 
     return { ok: true };
   },
@@ -156,9 +167,14 @@ export const useScenarioStore = create((set, get) => ({
   deleteScenario: (id) => {
     if (!id) return;
 
-    const next = (get().scenarios || []).filter((s) => s.id !== id);
+    const now = Date.now();
+    const next = (get().scenarioRecords || []).map((s) =>
+      s.id === id && s?._deleted !== true
+        ? ensureScenario({ ...s, updatedAt: now, _deleted: true, _deleted_ts: now })
+        : s
+    );
     saveScenarios(next);
-    set({ scenarios: next });
+    set({ scenarioRecords: next, scenarios: activeScenarios(next) });
   },
 
   addPhraseToScenario: (scenarioId, phraseId) => {
@@ -169,8 +185,8 @@ export const useScenarioStore = create((set, get) => ({
       return { ok: false, error: "Phrase id is required." };
     }
 
-    const existing = get().scenarios || [];
-    const target = existing.find((s) => s.id === scenarioId);
+    const existing = get().scenarioRecords || [];
+    const target = existing.find((s) => s.id === scenarioId && s?._deleted !== true);
 
     if (!target) {
       return { ok: false, error: "Scenario not found." };
@@ -193,7 +209,7 @@ export const useScenarioStore = create((set, get) => ({
     );
 
     saveScenarios(next);
-    set({ scenarios: next });
+    set({ scenarioRecords: next, scenarios: activeScenarios(next) });
 
     return { ok: true };
   },
@@ -206,8 +222,8 @@ export const useScenarioStore = create((set, get) => ({
       return { ok: false, error: "Phrase id is required." };
     }
 
-    const existing = get().scenarios || [];
-    const target = existing.find((s) => s.id === scenarioId);
+    const existing = get().scenarioRecords || [];
+    const target = existing.find((s) => s.id === scenarioId && s?._deleted !== true);
 
     if (!target) {
       return { ok: false, error: "Scenario not found." };
@@ -231,7 +247,7 @@ export const useScenarioStore = create((set, get) => ({
     );
 
     saveScenarios(next);
-    set({ scenarios: next });
+    set({ scenarioRecords: next, scenarios: activeScenarios(next) });
 
     return { ok: true };
   },
@@ -241,8 +257,8 @@ export const useScenarioStore = create((set, get) => ({
       return { ok: false, error: "Scenario id is required." };
     }
 
-    const existing = get().scenarios || [];
-    const target = existing.find((s) => s.id === scenarioId);
+    const existing = get().scenarioRecords || [];
+    const target = existing.find((s) => s.id === scenarioId && s?._deleted !== true);
 
     if (!target) {
       return { ok: false, error: "Scenario not found." };
@@ -278,8 +294,26 @@ export const useScenarioStore = create((set, get) => ({
     );
 
     saveScenarios(next);
-    set({ scenarios: next });
+    set({ scenarioRecords: next, scenarios: activeScenarios(next) });
 
     return { ok: true };
   },
 }));
+
+const actions = Object.fromEntries(Object.entries(useScenarioStore.getState()).filter(([, value]) => typeof value === "function"));
+
+export function selectScenarioAccount(userId) {
+  let scenarioRecords = [];
+  let storageError = null;
+  try { scenarioRecords = storage.select(userId).map(ensureScenario); }
+  catch (error) { storageError = error?.message || "Could not read your saved scenarios."; }
+  useScenarioStore.setState({
+    scenarioRecords,
+    scenarios: activeScenarios(scenarioRecords),
+    accountId: userId || null,
+    storageError,
+    ...bindAccountActions(actions, storage),
+  });
+}
+
+selectScenarioAccount(null);

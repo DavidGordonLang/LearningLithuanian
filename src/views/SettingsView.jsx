@@ -1,15 +1,19 @@
+import { fetchCloudRecovery, captureSyncAccount } from "../stores/supabasePhrases";
 // src/views/SettingsView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuthStore } from "../stores/authStore";
 import { usePhraseStore } from "../stores/phraseStore";
 import {
-  replaceUserPhrases,
-  fetchUserPhrases,
-  mergeUserPhrases,
-} from "../stores/supabasePhrases";
+  assertLearningSyncAccount,
+  fetchLearningSnapshot,
+  mergeUserLearningSnapshot,
+  replaceUserLearningSnapshot,
+} from "../stores/supabaseLearning";
+import { useScenarioStore } from "../stores/scenarioStore";
 import ConflictReviewModal from "../components/ConflictReviewModal";
 import ModalShell from "../components/ModalShell";
+import LegacyLibraryRecovery from "../components/LegacyLibraryRecovery";
 import applyMergeResolutions from "../utils/applyMergeResolutions";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useGameStore } from "../stores/gameStore";
@@ -29,6 +33,18 @@ import {
 const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me", "barbora.gaulyte@gmail.com"];
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+function makeLibraryHash(phrases, scenarios) {
+  const phraseSig = (phrases || []).map((r) => `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`).join("~");
+  const scenarioSig = (scenarios || []).map((s) => `${s?.id || ""}|${s?.updatedAt || 0}|${s?._deleted_ts || 0}|${(s?.phraseIds || []).join(",")}`).join("~");
+  const sig = `${phraseSig}::${scenarioSig}`;
+  let hash = 2166136261;
+  for (let i = 0; i < sig.length; i += 1) {
+    hash ^= sig.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${sig.length}:${hash >>> 0}`;
+}
 
 function SectionHeader({ title, subtitle, accent = false }) {
   return (
@@ -223,6 +239,9 @@ export default function SettingsView({
 }) {
   const { user, session, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
+  const storedPhrases = usePhraseStore((s) => s.phrases);
+  const scenarioRecords = useScenarioStore((s) => s.scenarioRecords);
+  const setScenarioRecords = useScenarioStore((s) => s.setScenarioRecords);
 
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
@@ -233,6 +252,9 @@ export default function SettingsView({
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [pendingConflicts, setPendingConflicts] = useState([]);
   const [pendingMergedRows, setPendingMergedRows] = useState([]);
+  const [pendingMergedScenarios, setPendingMergedScenarios] = useState([]);
+  const [pendingSync, setPendingSync] = useState(null);
+  const [syncSetupRequired, setSyncSetupRequired] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
 
@@ -279,6 +301,21 @@ export default function SettingsView({
   const isAdmin = !!user?.email && ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(String(user.email).toLowerCase());
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
+  const getAllStoredScenarios = () => useScenarioStore.getState().scenarioRecords || [];
+  const assertLocalSnapshot = (account, phraseSnapshot, scenarioSnapshot) => {
+    assertLearningSyncAccount(account);
+    if (
+      getAllStoredPhrases() !== phraseSnapshot ||
+      getAllStoredScenarios() !== scenarioSnapshot
+    ) {
+      setPendingConflicts([]);
+      setPendingMergedRows([]);
+      setPendingMergedScenarios([]);
+      setPendingSync(null);
+      setShowConflictModal(false);
+      throw new Error("Your local Library or Scenarios changed during sync. Your latest changes were kept; please sync again.");
+    }
+  };
   const lastHashRef = useRef("");
 
   useEffect(() => {
@@ -286,20 +323,19 @@ export default function SettingsView({
   }, [userName]);
 
   const localHash = useMemo(() => {
-    try {
-      const all = getAllStoredPhrases();
-      const sig = all.map((r) => `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`).join("~");
-      return String(sig.length) + ":" + String(sig.slice(0, 200));
-    } catch { return "0:"; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows?.length]);
+    try { return makeLibraryHash(storedPhrases, scenarioRecords); }
+    catch { return "0:"; }
+  }, [storedPhrases, scenarioRecords]);
 
   useEffect(() => {
     if (!lastHashRef.current) { lastHashRef.current = localHash; return; }
     if (localHash !== lastHashRef.current) { lastHashRef.current = localHash; setSyncDirty(true); setLastSyncLabel(""); setLastSyncAt(null); }
   }, [localHash]);
 
-  function markSynced(label) { setSyncDirty(false); setLastSyncLabel(label); setLastSyncAt(Date.now()); lastHashRef.current = localHash; }
+  function markSynced(label) {
+    lastHashRef.current = makeLibraryHash(getAllStoredPhrases(), getAllStoredScenarios());
+    setSyncDirty(false); setLastSyncLabel(label); setLastSyncAt(Date.now());
+  }
   function formatWhen(ts) { if (!ts) return ""; try { return new Date(ts).toLocaleString(); } catch { return ""; } }
 
   async function persistUserName() {
@@ -342,9 +378,10 @@ export default function SettingsView({
 
   async function uploadLibraryToCloud() {
     if (!user) return;
+    const account = captureSyncAccount();
     const ok = await confirmAction({
       title: "Overwrite cloud library?",
-      body: "This will replace your cloud library with the library on this device. Other devices may lose cloud entries that are not present locally.",
+      body: "This will replace your cloud phrases and scenarios with those on this device. Other devices may lose cloud entries that are not present locally.",
       confirmLabel: "Overwrite cloud",
       cancelLabel: "Cancel",
       destructive: true,
@@ -352,11 +389,16 @@ export default function SettingsView({
     if (!ok) return;
     try {
       setSyncingUp(true);
+      assertLearningSyncAccount(account);
       try { trackEvent("sync_upload_start", {}, { app_version: appVersion }); } catch {}
       const allPhrases = getAllStoredPhrases();
-      await replaceUserPhrases(allPhrases);
+      const allScenarios = getAllStoredScenarios();
+      const snapshot = await fetchLearningSnapshot(account);
+      assertLocalSnapshot(account, allPhrases, allScenarios);
+      await replaceUserLearningSnapshot(allPhrases, allScenarios, snapshot.revision, account);
+      assertLocalSnapshot(account, allPhrases, allScenarios);
       markSynced("Uploaded");
-      try { trackEvent("sync_upload_complete", { rows: allPhrases.length }, { app_version: appVersion }); } catch {}
+      try { trackEvent("sync_upload_complete", { rows: allPhrases.length, scenarios: allScenarios.length }, { app_version: appVersion }); } catch {}
       showToast?.("Uploaded to cloud ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_upload" }, { app_version: appVersion }); } catch {}
@@ -366,9 +408,10 @@ export default function SettingsView({
 
   async function downloadLibraryFromCloud() {
     if (!user) return;
+    const account = captureSyncAccount();
     const ok = await confirmAction({
       title: "Overwrite local library?",
-      body: "This will replace the library on this device with the cloud version. Local entries that are not in cloud may be lost.",
+      body: "This will replace the phrases and scenarios on this device with the cloud version. Local entries that are not in cloud may be lost.",
       confirmLabel: "Overwrite local",
       cancelLabel: "Cancel",
       destructive: true,
@@ -376,12 +419,17 @@ export default function SettingsView({
     if (!ok) return;
     try {
       setSyncingDown(true);
+      assertLearningSyncAccount(account);
       try { trackEvent("sync_download_start", {}, { app_version: appVersion }); } catch {}
-      const cloudRows = await fetchUserPhrases();
-      setRows(cloudRows);
+      const localPhrasesBefore = getAllStoredPhrases();
+      const localScenariosBefore = getAllStoredScenarios();
+      const snapshot = await fetchLearningSnapshot(account);
+      assertLocalSnapshot(account, localPhrasesBefore, localScenariosBefore);
+      setRows(snapshot.phrases);
+      setScenarioRecords(snapshot.scenarios);
       markSynced("Downloaded");
-      try { trackEvent("sync_download_complete", { rows: cloudRows.length }, { app_version: appVersion }); } catch {}
-      showToast?.(`Downloaded ${cloudRows.length} entries ✅`);
+      try { trackEvent("sync_download_complete", { rows: snapshot.phrases.length, scenarios: snapshot.scenarios.length }, { app_version: appVersion }); } catch {}
+      showToast?.(`Downloaded ${snapshot.phrases.length} entries and ${snapshot.scenarios.filter((s) => !s?._deleted).length} scenarios ✅`);
     } catch (e) {
       try { trackError(e, { source: "sync_download" }, { app_version: appVersion }); } catch {}
       showToast?.("Download failed: " + (e?.message || "Unknown error"));
@@ -390,6 +438,7 @@ export default function SettingsView({
 
   async function mergeLibraryWithCloud() {
     if (!user) return;
+    const account = captureSyncAccount();
     try {
       if (pendingConflicts.length) {
         try { trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion }); } catch {}
@@ -397,35 +446,76 @@ export default function SettingsView({
       }
       setMerging(true);
       try { trackEvent("sync_merge_start", {}, { app_version: appVersion }); } catch {}
-      const localAll = getAllStoredPhrases();
-      const result = await mergeUserPhrases(localAll);
+      const localPhrases = getAllStoredPhrases();
+      const localScenarios = getAllStoredScenarios();
+      const result = await mergeUserLearningSnapshot(localPhrases, localScenarios, account);
+      assertLocalSnapshot(account, localPhrases, localScenarios);
       if (result.conflicts?.length) {
+        setPendingSync({ account, revision: result.revision, localPhrases, localScenarios });
         try { trackEvent("sync_conflicts_found", { count: result.conflicts.length }, { app_version: appVersion }); } catch {}
-        setPendingConflicts(result.conflicts); setPendingMergedRows(result.mergedRows || []); setShowConflictModal(true); return;
+        setPendingConflicts(result.conflicts);
+        setPendingMergedRows(result.mergedPhrases || []);
+        setPendingMergedScenarios(result.mergedScenarios || []);
+        setShowConflictModal(true); return;
       }
-      setRows(result.mergedRows); markSynced("Synced");
-      try { trackEvent("sync_merge_complete", { rows: result.mergedRows?.length || 0 }, { app_version: appVersion }); } catch {}
+      setRows(result.mergedPhrases);
+      setScenarioRecords(result.mergedScenarios);
+      markSynced("Synced");
+      try { trackEvent("sync_merge_complete", { rows: result.mergedPhrases?.length || 0, scenarios: result.mergedScenarios?.length || 0 }, { app_version: appVersion }); } catch {}
       showToast?.("Sync completed ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_merge" }, { app_version: appVersion }); } catch {}
+      if (e?.code === "SYNC_SETUP_REQUIRED") setSyncSetupRequired(true);
       showToast?.("Sync failed: " + (e?.message || "Unknown error"));
     } finally { setMerging(false); }
+  }
+
+  async function loadCloudCopy() {
+    const account = captureSyncAccount();
+    try {
+      setSyncingDown(true);
+      const localBefore = getAllStoredPhrases();
+      const localScenariosBefore = getAllStoredScenarios();
+      const cloudRows = await fetchCloudRecovery(account);
+      assertLocalSnapshot(account, localBefore, localScenariosBefore);
+      const ids = new Set(localBefore.map((row) => row._id || row.id));
+      const additions = cloudRows.filter((row) => {
+        const id = row._id || row.id;
+        if (ids.has(id)) return false;
+        ids.add(id);
+        return true;
+      });
+      setRows([...localBefore, ...additions]);
+      showToast?.(`Loaded ${additions.filter((r) => !r._deleted).length} cloud phrases. Existing local entries were kept. Cloud has not been changed.`);
+    } catch (error) {
+      showToast?.(error?.message || "Could not load cloud phrases.");
+    } finally { setSyncingDown(false); }
   }
 
   async function finishConflictSync(resolutions) {
     if (!user) return;
     if (!pendingMergedRows.length || !pendingConflicts.length) { setShowConflictModal(false); return; }
     try {
+      if (!pendingSync) throw new Error("Please sync again before reviewing conflicts.");
+      assertLocalSnapshot(pendingSync.account, pendingSync.localPhrases, pendingSync.localScenarios);
       setMerging(true);
       try { trackEvent("sync_conflicts_finish_start", { count: pendingConflicts.length }, { app_version: appVersion }); } catch {}
       const finalRows = applyMergeResolutions(pendingMergedRows, pendingConflicts, resolutions);
-      await replaceUserPhrases(finalRows);
-      setRows(finalRows); markSynced("Synced");
-      setPendingConflicts([]); setPendingMergedRows([]); setShowConflictModal(false);
+      await replaceUserLearningSnapshot(finalRows, pendingMergedScenarios, pendingSync.revision, pendingSync.account);
+      assertLocalSnapshot(pendingSync.account, pendingSync.localPhrases, pendingSync.localScenarios);
+      setRows(finalRows);
+      setScenarioRecords(pendingMergedScenarios);
+      markSynced("Synced");
+      setPendingSync(null);
+      setPendingConflicts([]); setPendingMergedRows([]); setPendingMergedScenarios([]); setShowConflictModal(false);
       try { trackEvent("sync_conflicts_finish_complete", { rows: finalRows.length }, { app_version: appVersion }); } catch {}
       showToast?.("Sync completed ✅");
     } catch (e) {
       try { trackError(e, { source: "sync_conflicts_finish" }, { app_version: appVersion }); } catch {}
+      // A failed save may have an outdated revision (or an uncertain network result).
+      // Read a fresh snapshot on retry instead of reopening the old comparison.
+      setPendingSync(null);
+      setPendingConflicts([]); setPendingMergedRows([]); setPendingMergedScenarios([]); setShowConflictModal(false);
       showToast?.("Finish sync failed: " + (e?.message || "Unknown error"));
     } finally { setMerging(false); }
   }
@@ -479,6 +569,15 @@ export default function SettingsView({
 
   const syncBanner = (() => {
     if (!user) return null;
+    if (syncSetupRequired) return (
+      <div className="z-inset p-4 space-y-3" role="status">
+        <div className="text-sm font-semibold">Cloud sync is awaiting setup</div>
+        <p className="text-sm">Load your cloud phrases onto this device to use them now. Existing local entries are kept; this does not upload changes.</p>
+        <button type="button" className="z-btn z-btn-secondary px-4 py-3" disabled={syncingDown || merging} onClick={loadCloudCopy}>
+          {syncingDown ? "Loading…" : "Load cloud phrases on this device"}
+        </button>
+      </div>
+    );
     if (pendingConflicts.length) {
       return (
         <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">
@@ -952,6 +1051,7 @@ export default function SettingsView({
       </CollapsibleSection>
 
       <CollapsibleSection id="sec-account" title="Account" subtitle={user ? String(user.email) : "Sign in to enable cloud sync."} open={openAccount} setOpen={setOpenAccount}>
+        <LegacyLibraryRecovery key={user?.id || "signed-out"} confirmAction={confirmAction} showToast={showToast} />
         {syncBanner}
         <div className="flex flex-wrap gap-3">
           {!user ? (

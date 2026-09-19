@@ -80,6 +80,7 @@ export const useGameStore = create((set, get) => ({
   // Meta
   loading: false,
   _loadedForUserId: null,
+  _loadVersion: 0,
 
   // ── Derived (computed on read) ──────────────────────────────────────────────
 
@@ -91,7 +92,8 @@ export const useGameStore = create((set, get) => ({
     if (!userId) return;
     if (get()._loadedForUserId === userId) return;
 
-    set({ loading: true });
+    const loadVersion = get()._loadVersion + 1;
+    set({ loading: true, _loadVersion: loadVersion });
 
     try {
       const { data, error } = await supabase
@@ -99,6 +101,7 @@ export const useGameStore = create((set, get) => ({
         .select("data")
         .eq("user_id", userId)
         .single();
+      if (get()._loadVersion !== loadVersion) return;
 
       if (error && error.code !== "PGRST116") {
         // PGRST116 = no rows — first time user, that's fine
@@ -121,6 +124,7 @@ export const useGameStore = create((set, get) => ({
         _loadedForUserId: userId,
       });
     } catch (err) {
+      if (get()._loadVersion !== loadVersion) return;
       console.error("gameStore ensureLoadedForUser failed:", err);
       set({ loading: false, _loadedForUserId: userId });
     }
@@ -128,6 +132,7 @@ export const useGameStore = create((set, get) => ({
 
   reset: () => {
     set({
+      _loadVersion: get()._loadVersion + 1,
       ...defaultData(),
       loading: false,
       _loadedForUserId: null,
@@ -137,7 +142,7 @@ export const useGameStore = create((set, get) => ({
   // ── Persistence ─────────────────────────────────────────────────────────────
 
   _save: async (userId) => {
-    if (!userId) return;
+    if (!userId || get()._loadedForUserId !== userId) return;
     const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP } = get();
     const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP };
 
@@ -154,6 +159,7 @@ export const useGameStore = create((set, get) => ({
   // ── XP ──────────────────────────────────────────────────────────────────────
 
   earnXP: (action, userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return { xpGained: 0 };
     const reward = XP_REWARDS[action] ?? 0;
     if (!reward) return { xpGained: 0 };
 
@@ -173,6 +179,7 @@ export const useGameStore = create((set, get) => ({
   // ── Streak ──────────────────────────────────────────────────────────────────
 
   recordActivity: (userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return;
     const today = todayDateString();
     const { lastActivityDate, streakDays, graceUsedThisWeek } = get();
 
@@ -220,6 +227,7 @@ export const useGameStore = create((set, get) => ({
   // ── Lesson completion ────────────────────────────────────────────────────────
 
   completeLesson: (lessonId, userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return { wasAlreadyComplete: false };
     if (!lessonId) return { wasAlreadyComplete: false };
 
     const current = get().completedLessonIds;
@@ -245,6 +253,7 @@ export const useGameStore = create((set, get) => ({
   // Never deducts XP — worst case is no change.
 
   earnLessonXP: (lessonId, xpThisAttempt, userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return { xpGained: 0 };
     if (!lessonId || !xpThisAttempt) return { xpGained: 0 };
 
     const { lessonXP, totalXP } = get();
@@ -279,6 +288,7 @@ export const useGameStore = create((set, get) => ({
   // ── Module celebration ───────────────────────────────────────────────────────
 
   markModuleCompleteSeen: (moduleId, userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return;
     if (!moduleId) return;
     const current = get().seenModuleCompleteIds;
     if (current.includes(moduleId)) return;
@@ -291,6 +301,7 @@ export const useGameStore = create((set, get) => ({
   },
 
   markSectionCompleteSeen: (sectionId, userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return;
     if (!sectionId) return;
     const current = get().seenSectionCompleteIds;
     if (current.includes(sectionId)) return;

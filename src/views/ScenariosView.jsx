@@ -263,6 +263,7 @@ function RenameScenarioModal({ open, scenario, onClose, onSave }) {
 }
 
 export default function ScenariosView({ T, onOpenScenario, confirmAction, showToast }) {
+  const storageError = useScenarioStore((s) => s.storageError);
   const scenarios = useScenarioStore((s) => s.scenarios);
   const createScenario = useScenarioStore((s) => s.createScenario);
   const renameScenario = useScenarioStore((s) => s.renameScenario);
@@ -330,6 +331,7 @@ export default function ScenariosView({ T, onOpenScenario, confirmAction, showTo
       <div className="z-page z-page-y pb-28 space-y-4">
         <div className="space-y-1">
           <h2 className="z-title">Scenarios</h2>
+          {storageError ? <p role="alert" className="mt-2 text-sm text-rose-400">{storageError} Your stored copy has been preserved. Please reopen the app to retry.</p> : null}
           <p className="z-subtitle">
             Organise phrases by real-life situation.
           </p>

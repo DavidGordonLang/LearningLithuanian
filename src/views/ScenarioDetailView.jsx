@@ -1,3 +1,4 @@
+import { phoneticsDisplay } from "../utils/phoneticsDisplay";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useScenarioStore } from "../stores/scenarioStore";
@@ -98,10 +99,7 @@ function ScenarioPhraseRow({
 
   const rowId = row?.id || row?._id;
 
-  const displayedPhonetic =
-    phoneticsMode === "ipa"
-      ? String(row?.PhoneticIPA || row?.Phonetic || "").trim()
-      : String(row?.Phonetic || "").trim();
+  const displayedPhonetic = phoneticsDisplay(phoneticsMode, row?.Phonetic, row?.PhoneticIPA);
 
   const handleWordPlay = useCallback(
     (text, opts) => {

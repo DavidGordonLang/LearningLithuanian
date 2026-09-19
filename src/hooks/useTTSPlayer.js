@@ -1,5 +1,6 @@
 // src/hooks/useTTSPlayer.js
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createAudioPlayback } from "../utils/audioPlayback";
 import { ttsIdbGet, ttsIdbSet } from "../utils/ttsCache";
 
 // Fast deterministic hash (FNV-1a 32-bit)
@@ -42,45 +43,11 @@ export default function useTTSPlayer({
   // Session cache: key -> Blob
   const mem = useRef(new Map());
 
-  // Current audio instance
-  const audioRef = useRef(null);
-
-  // Deduplicate concurrent fetches/preloads
+  const playback = useRef(null);
+  if (!playback.current) playback.current = createAudioPlayback();
   const inflight = useRef(new Map());
-
-  const stop = useCallback(() => {
-    try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    } catch {
-      audioRef.current = null;
-    }
-  }, []);
-
-  const playBlob = useCallback(async (blob) => {
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audioRef.current = audio;
-
-    audio.onended = () => {
-      try {
-        URL.revokeObjectURL(url);
-      } catch {}
-      if (audioRef.current === audio) audioRef.current = null;
-    };
-
-    try {
-      await audio.play();
-    } catch (e) {
-      try {
-        URL.revokeObjectURL(url);
-      } catch {}
-      if (audioRef.current === audio) audioRef.current = null;
-      throw e;
-    }
-  }, []);
+  const stop = useCallback(() => playback.current.stop(), []);
+  useEffect(() => stop, [stop, voice]);
 
   const fetchTTS = useCallback(
     async ({ text, slow, voice: requestVoice }) => {
@@ -161,21 +128,15 @@ export default function useTTSPlayer({
       const raw = String(text || "");
       if (!raw.trim()) return;
 
-      stop();
-
-      try {
-        const blob = await getOrFetchBlob(raw, { slow, voice: requestVoice });
-        if (!blob) return;
-        await playBlob(blob);
-      } catch (e) {
-        if (typeof onError === "function") {
-          onError(e);
-        } else {
-          console.warn("Voice error:", e);
+      await playback.current.play(
+        () => getOrFetchBlob(raw, { slow, voice: requestVoice }),
+        (error) => {
+          if (typeof onError === "function") onError(error);
+          else console.warn("Voice error:", error);
         }
-      }
+      );
     },
-    [getOrFetchBlob, onError, playBlob, stop]
+    [getOrFetchBlob, onError]
   );
 
   return useMemo(
