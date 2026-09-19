@@ -142,6 +142,34 @@ export const useGameStore = create((set, get) => ({
     });
   },
 
+  resetLessonProgress: async (userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return false;
+
+    set({
+      completedLessonIds: [],
+      seenModuleCompleteIds: [],
+      seenSectionCompleteIds: [],
+      lessonProgress: {},
+    });
+
+    await get()._save(userId);
+    return true;
+  },
+
+  resetAllProgress: async (userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return false;
+
+    set({
+      _loadVersion: get()._loadVersion + 1,
+      ...defaultData(),
+      loading: false,
+      _loadedForUserId: userId,
+    });
+
+    await get()._save(userId);
+    return true;
+  },
+
   // ── Persistence ─────────────────────────────────────────────────────────────
 
   _save: async (userId) => {
