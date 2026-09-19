@@ -23,7 +23,11 @@ export default function useSpeechToTextHold({
   onSpeechCaptured,
   onRecordingStart,
   shortRecordingMessage = "Hold a little longer and speak after the mic turns green.",
-  language = null, // NEW: optional ISO 639-1 code e.g. "lt"
+  language = null,
+  transcriptionModel = "gpt-4o-mini-transcribe",
+  transcriptionPrompt = null,
+  transcriptionKeywords = [],
+  minRecordingMs = 650,
 } = {}) {
   const [sttState, setSttState] = useState("idle");
   const sttStateRef = useRef("idle");
@@ -48,8 +52,8 @@ export default function useSpeechToTextHold({
   const STT_FETCH_TIMEOUT_MS = 20000;
   const STT_PROCESS_WATCHDOG_MS = 30000;
   const STOP_GRACE_MS = 2500;
-  const MIN_RECORDING_MS = 650;
-  const MIN_AUDIO_BYTES = 1000;
+  const MIN_RECORDING_MS = Math.max(0, Number(minRecordingMs) || 0);
+  const MIN_AUDIO_BYTES = 700;
 
   const setSttStateSafe = useCallback((next) => {
     sttStateRef.current = next;
@@ -287,17 +291,36 @@ export default function useSpeechToTextHold({
 
         try {
           const fd = new FormData();
-          fd.append("file", blob, "speech.webm");
-          fd.append("model", "gpt-4o-mini-transcribe");
+          const recordedMimeType = String(blob.type || mr.mimeType || "").toLowerCase();
+          const filename = recordedMimeType.includes("mp4")
+            ? "speech.mp4"
+            : recordedMimeType.includes("ogg")
+            ? "speech.ogg"
+            : recordedMimeType.includes("wav")
+            ? "speech.wav"
+            : "speech.webm";
+          fd.append("file", blob, filename);
+          fd.append("model", transcriptionModel);
           fd.append("max_seconds", "15");
 
-          // Attach language hint if provided — both as FormData field AND
-          // as a query param so the server can reliably read it either way.
-          if (language) {
-            fd.append("language", language);
+          if (transcriptionPrompt) {
+            fd.append("prompt", String(transcriptionPrompt));
           }
 
-          const sttUrl = language ? `/api/stt?lang=${encodeURIComponent(language)}` : "/api/stt";
+          const safeKeywords = Array.isArray(transcriptionKeywords)
+            ? transcriptionKeywords.map((value) => String(value || "").trim()).filter(Boolean)
+            : [];
+          safeKeywords.forEach((keyword) => fd.append("keywords[]", keyword));
+
+          if (language) {
+            if (transcriptionModel === "gpt-transcribe") {
+              fd.append("languages[]", language);
+            } else {
+              fd.append("language", language);
+            }
+          }
+
+          const sttUrl = "/api/stt";
 
           const resp = await fetch(sttUrl, {
             method: "POST",
@@ -378,12 +401,16 @@ export default function useSpeechToTextHold({
     clearStopTimers,
     forceResetStt,
     language,
+    minRecordingMs,
     onRecordingStart,
     onSpeechCaptured,
     onTranslateText,
     setInput,
     setSttStateSafe,
     showToast,
+    transcriptionKeywords,
+    transcriptionModel,
+    transcriptionPrompt,
     shortRecordingMessage,
     stopRecording,
     sttSupported,
