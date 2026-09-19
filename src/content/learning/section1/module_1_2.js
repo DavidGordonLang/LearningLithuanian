@@ -14,13 +14,20 @@ export default function createModule_1_2(profile = {}) {
   const selfFromLine = `${userFromPhrase}.`;
   const selfFromLineNoPeriod = userFromPhrase;
   const selfFromEnglish = `I am from ${userFromCountryLabelEn}`;
+  const normaliseCountry = (value) => String(value || "").trim().toLocaleLowerCase("lt-LT");
+  const originEnglishDistractors = ["Lithuania", "Ukraine", "England", "Germany", "France", "America"]
+    .filter((country) => normaliseCountry(country) !== normaliseCountry(userFromCountryLabelEn))
+    .slice(0, 2)
+    .map((country) => `I am from ${country}`);
+  const originGenitiveDistractor = ["Lietuvos", "Ukrainos", "Anglijos", "Vokietijos", "Prancūzijos", "Amerikos"]
+    .find((country) => normaliseCountry(country) !== normaliseCountry(userFromCountryLtGenitive)) || "Lietuvos";
 
   return {
     id: "module_1_2",
     code: "1.2",
     title: "Who I Am",
     status: "active",
-    lessonCount: 5,
+    lessonCount: 6,
     lessons: [
 
       // ── Lesson 1 ──────────────────────────────────────────────────────────────
@@ -237,8 +244,8 @@ export default function createModule_1_2(profile = {}) {
             prompt: { text: selfFromLineNoPeriod, audioText: selfFromLineNoPeriod },
             options: [
               { id: "a", text: selfFromEnglish, isCorrect: true },
-              { id: "b", text: "I am from Lithuania", isCorrect: false },
-              { id: "c", text: "I am from Ukraine", isCorrect: false },
+              { id: "b", text: originEnglishDistractors[0], isCorrect: false },
+              { id: "c", text: originEnglishDistractors[1], isCorrect: false },
             ],
           },
           {
@@ -274,7 +281,7 @@ export default function createModule_1_2(profile = {}) {
               { id: "t2", text: "esu", correctIndex: 1 },
               { id: "t3", text: "iš", correctIndex: 2 },
               { id: "t4", text: userFromCountryLtGenitive, correctIndex: 3 },
-              { id: "t5", text: "Lietuvos", isDistractor: true },
+              { id: "t5", text: originGenitiveDistractor, isDistractor: true },
             ],
             answerText: selfFromLineNoPeriod,
           },
@@ -343,9 +350,39 @@ export default function createModule_1_2(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
+      speakerText: "Kaip sekasi?",
+      sceneDirection: "Rasa smiles and keeps the conversation going.",
+      learnerPrompt: "Answer the friendly question.",
+      options: [
+        {
+          id: "a",
+          text: "Gerai, ačiū!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "Rasa is asking how you are, not ending the conversation.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: plainNameLine,
+          result: "wrong",
+          feedback: "You already introduced yourself. Rasa is asking how you are.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "local",
+      speakerLabel: "Local",
       speakerText: "Viso gero!",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      sceneDirection: "After a short chat, Rasa gets ready to leave.",
+      learnerPrompt: "Close the exchange naturally.",
       options: [
         {
           id: "a",
@@ -357,14 +394,14 @@ export default function createModule_1_2(profile = {}) {
           id: "b",
           text: "Gerai, ačiū!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That answers Kaip sekasi? Rasa is saying goodbye now.",
           progresses: false,
         },
         {
           id: "c",
-          text: "Atsiprašau",
+          text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "There is nothing to apologise for. Use a farewell.",
           progresses: false,
         }
       ],
@@ -659,7 +696,7 @@ export default function createModule_1_2(profile = {}) {
   userRole: "friend",
   register: "casual",
   goal: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
-  focus: ["numbers"],
+  focus: ["introductions", "jis / ji"],
   participants: [
     {
       "id": "friend",
@@ -695,9 +732,9 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Pakartokite, prašau",
+          text: "Viso gero!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rokas has just greeted you and asked how you are. Do not end the exchange here.",
           progresses: false,
         }
       ],
@@ -737,6 +774,102 @@ export default function createModule_1_2(profile = {}) {
         ],
       },
 
+      // ── Lesson 5 ──────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_2_lesson_5",
+        code: "1.2.5",
+        title: "People Around You",
+        purpose: "Seed six common people nouns and reuse language the learner already knows without turning this into a full family lesson.",
+        supportLevel: "medium",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Learn these as useful people nouns first. Brolis and sesuo also fit naturally into the introduction pattern you already know: Čia mano brolis / Čia mano sesuo.",
+          usage: [
+            "Vyras — man",
+            "Moteris — woman",
+            "Berniukas — boy",
+            "Mergaitė — girl",
+            "Brolis — brother",
+            "Sesuo — sister",
+            "Čia mano brolis — This is my brother",
+            "Čia mano sesuo — This is my sister",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m2l5_b1",
+            type: "learn",
+            title: "People around you",
+            items: [
+              { id: "p1", lt: "Vyras", en: "Man", audioText: "Vyras", saveable: true, core: true },
+              { id: "p2", lt: "Moteris", en: "Woman", audioText: "Moteris", saveable: true, core: true },
+              { id: "p3", lt: "Berniukas", en: "Boy", audioText: "Berniukas", saveable: true, core: true },
+              { id: "p4", lt: "Mergaitė", en: "Girl", audioText: "Mergaitė", saveable: true, core: true },
+              { id: "p5", lt: "Brolis", en: "Brother", audioText: "Brolis", saveable: true, core: true },
+              { id: "p6", lt: "Sesuo", en: "Sister", audioText: "Sesuo", saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s1m2l5_b2",
+            type: "word_match",
+            title: "Match the people",
+            pairs: [
+              { id: "m1", lt: "Vyras", en: "Man", audioText: "Vyras" },
+              { id: "m2", lt: "Moteris", en: "Woman", audioText: "Moteris" },
+              { id: "m3", lt: "Berniukas", en: "Boy", audioText: "Berniukas" },
+              { id: "m4", lt: "Mergaitė", en: "Girl", audioText: "Mergaitė" },
+              { id: "m5", lt: "Brolis", en: "Brother", audioText: "Brolis" },
+              { id: "m6", lt: "Sesuo", en: "Sister", audioText: "Sesuo" },
+            ],
+          },
+          {
+            id: "s1m2l5_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Moteris", audioText: "Moteris" },
+            options: [
+              { id: "a", text: "Girl", isCorrect: false },
+              { id: "b", text: "Woman", isCorrect: true },
+              { id: "c", text: "Man", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2l5_b4",
+            type: "context_gap_select",
+            prompt: "Choose the word that completes the introduction",
+            sentence: "Čia mano ___.",
+            translation_en: "This is my brother.",
+            options: [
+              { id: "a", text: "sesuo", isCorrect: false },
+              { id: "b", text: "brolis", isCorrect: true },
+              { id: "c", text: "mergaitė", isCorrect: false },
+            ],
+            explanation: "Brolis means brother. Čia mano brolis is a natural short introduction.",
+          },
+          {
+            id: "s1m2l5_b5",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "This is my sister" },
+            tokens: [
+              { id: "t1", text: "Čia", correctIndex: 0 },
+              { id: "t2", text: "mano", correctIndex: 1 },
+              { id: "t3", text: "sesuo", correctIndex: 2 },
+              { id: "t4", text: "brolis", isDistractor: true },
+            ],
+            answerText: "Čia mano sesuo",
+          },
+          {
+            id: "s1m2l5_b6",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: This is my brother",
+            targetText: "Čia mano brolis",
+            audioText: "Čia mano brolis",
+          },
+        ],
+      },
+
       // ── Checkpoint ────────────────────────────────────────────────────────────
       {
         id: "section_1_module_2_checkpoint",
@@ -763,34 +896,35 @@ export default function createModule_1_2(profile = {}) {
             id: "s1m2c_b2",
             type: "listen_mcq",
             title: "Listen and identify",
-            prompt: { text: "Ji yra iš Ukrainos", audioText: "Ji yra iš Ukrainos" },
+            prompt: { text: "Moteris", audioText: "Moteris" },
             options: [
-              { id: "a", text: "She is from Lithuania", isCorrect: false },
-              { id: "b", text: "She is from America", isCorrect: false },
-              { id: "c", text: "She is from Ukraine", isCorrect: true },
+              { id: "a", text: "Man", isCorrect: false },
+              { id: "b", text: "Woman", isCorrect: true },
+              { id: "c", text: "Girl", isCorrect: false },
             ],
           },
           {
             id: "s1m2c_b3",
-            type: "best_response",
-            title: "Choose the best response",
-            prompt: { text: "You want to say your colleague is from Poland. He is male." },
+            type: "context_gap_select",
+            prompt: "Choose the word that completes the introduction",
+            sentence: "Čia mano ___.",
+            translation_en: "This is my brother.",
             options: [
-              { id: "a", text: "Ji yra iš Lenkijos", isCorrect: false },
-              { id: "b", text: "Jis yra iš Lenkijos", isCorrect: true },
-              { id: "c", text: "Aš esu iš Lenkijos", isCorrect: false },
+              { id: "a", text: "sesuo", isCorrect: false },
+              { id: "b", text: "brolis", isCorrect: true },
+              { id: "c", text: "draugė", isCorrect: false },
             ],
-            feedback: { correct: "Jis for a male — ji would be used for a female colleague. Aš esu means I am, not he is." },
+            explanation: "Brolis means brother.",
           },
           {
             id: "s1m2c_b4",
             type: "recognise_mcq",
             title: "Choose the correct meaning",
-            prompt: { text: "Jis yra iš Vokietijos", audioText: "Jis yra iš Vokietijos" },
+            prompt: { text: "Ji yra mano sesuo", audioText: "Ji yra mano sesuo" },
             options: [
-              { id: "a", text: "She is from Germany", isCorrect: false },
-              { id: "b", text: "He is from Poland", isCorrect: false },
-              { id: "c", text: "He is from Germany", isCorrect: true },
+              { id: "a", text: "She is my sister", isCorrect: true },
+              { id: "b", text: "She is my friend", isCorrect: false },
+              { id: "c", text: "He is my brother", isCorrect: false },
             ],
           },
           {
@@ -859,6 +993,15 @@ export default function createModule_1_2(profile = {}) {
       "relationshipToUser": "stranger",
       "register": "polite_neutral"
     },
+    {
+      "id": "sister",
+      "label": "Sister",
+      "name": "Rasa",
+      "role": "Rokas's sister",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_friendly"
+    },
   ],
   steps: [
     {
@@ -925,31 +1068,37 @@ export default function createModule_1_2(profile = {}) {
       id: "step_3",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Viso gero!",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      speakerText: "Čia mano sesuo Rasa.",
+      sceneDirection: "Rokas gestures to the woman standing beside him and introduces his sister.",
+      learnerPrompt: "Greet Rasa naturally.",
       options: [
         {
           id: "a",
-          text: "Man irgi!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Iki!",
+          text: "Malonu susipažinti!",
           result: "best",
           progresses: true,
         },
         {
-          id: "c",
-          text: "Atsiprašau",
+          id: "b",
+          text: "Viso gero!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rokas has just introduced Rasa. Greet her rather than ending the exchange.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Ne, ačiū.",
+          result: "wrong",
+          feedback: "Nothing is being offered. Respond to the introduction.",
           progresses: false,
         }
       ],
+      finalSystemLine: {
+        speakerId: "sister",
+        speakerLabel: "Sister",
+        speakerText: "Man irgi!",
+        sceneDirection: "Rasa smiles and returns the greeting.",
+      },
     }
   ],
 },
@@ -963,20 +1112,20 @@ export default function createModule_1_2(profile = {}) {
               { id: "wm3",  lt: "Koks tavo vardas?",         en: "What is your name? (informal)",   audioText: "Koks tavo vardas" },
               { id: "wm4",  lt: "Koks jūsų vardas?",         en: "What is your name? (formal)",     audioText: "Koks jūsų vardas" },
               { id: "wm5",  lt: "Aš esu iš Škotijos",        en: "I am from Scotland",              audioText: "Aš esu iš Škotijos" },
-              { id: "wm6",  lt: "Aš esu iš Lietuvos",        en: "I am from Lithuania",             audioText: "Aš esu iš Lietuvos" },
-              { id: "wm7",  lt: "Aš esu iš Ukrainos",        en: "I am from Ukraine",               audioText: "Aš esu iš Ukrainos" },
-              { id: "wm8",  lt: "Aš esu iš Amerikos",        en: "I am from America",               audioText: "Aš esu iš Amerikos" },
+              { id: "wm6",  lt: "Vyras",                     en: "Man",                             audioText: "Vyras" },
+              { id: "wm7",  lt: "Moteris",                   en: "Woman",                           audioText: "Moteris" },
+              { id: "wm8",  lt: "Berniukas",                 en: "Boy",                             audioText: "Berniukas" },
               { id: "wm9",  lt: "Iš kur jūs esate?",         en: "Where are you from? (formal)",    audioText: "Iš kur jūs esate" },
               { id: "wm10", lt: "Iš kur tu esi?",            en: "Where are you from? (informal)",  audioText: "Iš kur tu esi" },
               { id: "wm11", lt: "Malonu susipažinti",        en: "Nice to meet you",                audioText: "Malonu susipažinti" },
               { id: "wm12", lt: "Man irgi",                  en: "Me too / Likewise",               audioText: "Man irgi" },
-              { id: "wm13", lt: "Labai malonu",              en: "Very pleased to meet you",        audioText: "Labai malonu" },
+              { id: "wm13", lt: "Labai malonu susipažinti",  en: "Very pleased to meet you",        audioText: "Labai malonu susipažinti" },
               { id: "wm14", lt: "Jis yra mano kolega",       en: "He is my colleague",              audioText: "Jis yra mano kolega" },
               { id: "wm15", lt: "Jis yra mano draugas",      en: "He is my friend",                 audioText: "Jis yra mano draugas" },
               { id: "wm16", lt: "Ji yra mano draugė",        en: "She is my friend",                audioText: "Ji yra mano draugė" },
-              { id: "wm17", lt: "Jis yra iš Lenkijos",       en: "He is from Poland",               audioText: "Jis yra iš Lenkijos" },
-              { id: "wm18", lt: "Ji yra iš Vokietijos",      en: "She is from Germany",             audioText: "Ji yra iš Vokietijos" },
-              { id: "wm19", lt: "Aš esu iš Anglijos",        en: "I am from England",               audioText: "Aš esu iš Anglijos" },
+              { id: "wm17", lt: "Mergaitė",                  en: "Girl",                            audioText: "Mergaitė" },
+              { id: "wm18", lt: "Brolis",                    en: "Brother",                         audioText: "Brolis" },
+              { id: "wm19", lt: "Sesuo",                     en: "Sister",                          audioText: "Sesuo" },
               { id: "wm20", lt: "Prancūzija",                en: "France",                          audioText: "Prancūzija" },
             ],
           },
