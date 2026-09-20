@@ -388,11 +388,11 @@ export default function createModule_5_4(profile = {}) {
         id: "section_5_module_4_lesson_3",
         code: "5.4.3",
         title: "Chaining Directions",
-        purpose: "Add paskui and chain familiar direction instructions into short routes.",
+        purpose: "Practice chaining familiar direction instructions into short routes.",
         supportLevel: "medium",
-        newLanguageLoad: "very_low",
+        newLanguageLoad: "none",
         notes: {
-          pattern: "You already know kairėn, dešinėn, and tiesiai. Now they appear as instructions — Eikite tiesiai, Pasukite kairėn, Pasukite dešinėn. Paskui means then and lets you chain two directions together.",
+          pattern: "You already know the direction instructions and paskui. This lesson combines them into short routes such as Tiesiai, paskui kairėn.",
           usage: [
             "Eikite tiesiai — go straight ahead",
             "Pasukite kairėn — turn left",
@@ -401,16 +401,6 @@ export default function createModule_5_4(profile = {}) {
           ],
         },
         blocks: [
-          {
-            id: "s5m4l3_b1",
-            type: "learn",
-            title: "Chaining known directions",
-            items: [
-              { id: "i0", lt: "paskui",                    en: "then / afterwards",      audioText: "paskui",                    saveable: true, core: true },
-              { id: "i4", lt: "Tiesiai, paskui kairėn.",  en: "Straight, then left.",   audioText: "Tiesiai, paskui kairėn",   saveable: true, core: true },
-              { id: "i5", lt: "Tiesiai, paskui dešinėn.", en: "Straight, then right.",  audioText: "Tiesiai, paskui dešinėn",  saveable: true, core: true },
-            ],
-          },
           {
             id: "s5m4l3_b2",
             type: "listen_mcq",
