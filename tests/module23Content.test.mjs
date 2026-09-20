@@ -32,14 +32,15 @@ test("2.3.1 grounds this/that in physical distance and noun gender", () => {
   assert.equal(getBlock(lesson, "s2m3l1_b3").options.find((o) => o.isCorrect).text, "Ta");
 });
 
-test("2.3.2 makes masculine and feminine singular selection forms explicit", () => {
+test("2.3.2 adds feminine selection forms and retrieves the already-taught masculine forms", () => {
   const module = createModule_2_3();
   const lesson = getLesson(module, "2.3.2");
   const items = getBlock(lesson, "s2m3l2_b1").items.map((item) => item.lt);
 
-  for (const phrase of ["Noriu šito.", "Noriu to.", "Noriu šitos.", "Noriu tos."]) {
-    assert.ok(items.includes(phrase), `missing ${phrase}`);
-  }
+  assert.ok(items.includes("Noriu šitos."));
+  assert.ok(items.includes("Noriu tos."));
+  assert.equal(items.includes("Noriu šito."), false);
+  assert.equal(items.includes("Noriu to."), false);
 
   assert.equal(getBlock(lesson, "s2m3l2_b2").options.find((o) => o.isCorrect).text, "šito");
   assert.equal(getBlock(lesson, "s2m3l2_b3").options.find((o) => o.isCorrect).text, "tos");
