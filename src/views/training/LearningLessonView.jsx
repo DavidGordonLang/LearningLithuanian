@@ -1060,7 +1060,11 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                   onLostPointerCapture={(event) => {
                     if (dragRef.current.id === id && dragRef.current.pointerId === event.pointerId) resetDrag(event);
                   }}
-                  aria-label="Drag to reorder or tap to remove"
+                  aria-label={
+                    checkState === "wrong" && diagnosticStatus
+                      ? `${token?.text || "word"}, ${diagnosticStatus === "correct" ? "correct word in the correct position" : "needs changing or moving"}`
+                      : "Drag to reorder or tap to remove"
+                  }
                   title="Drag to reorder or tap to remove"
                   style={placeholderStyle}
                   className={cn(
@@ -1157,8 +1161,8 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
             {repairDiagnosis.detail}
           </div>
           <div className="mt-2 text-[11px] text-zinc-500">
-            <span className="text-emerald-300 font-semibold">✓ Green</span> = right word, right place ·{" "}
-            <span className="text-rose-300 font-semibold">× Red</span> = change or move
+            <span className="build-phrase-legend-correct font-semibold">✓ Green</span> = right word, right place ·{" "}
+            <span className="build-phrase-legend-wrong font-semibold">× Red</span> = change or move
           </div>
         </div>
       ) : null}
