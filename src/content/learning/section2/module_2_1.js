@@ -411,6 +411,7 @@ export default function createModule_2_1(profile = {}) {
             "Pinigai — money",
             "Turiu kortelę — I have a card",
             "Neturiu laiko — I don't have time",
+            "tik — only / just, as in tik kortelę — only a card",
           ],
         },
         blocks: [
@@ -427,6 +428,7 @@ export default function createModule_2_1(profile = {}) {
               { id: "h6", lt: "Neturiu laiko.", en: "I don't have time.", audioText: "Neturiu laiko", saveable: true, core: true },
               { id: "h7", lt: "Kortelė", en: "Card (payment)", audioText: "Kortelė", saveable: true, core: false },
               { id: "h8", lt: "Pinigai", en: "Money", audioText: "Pinigai", saveable: true, core: false },
+              { id: "h9", lt: "Tik", en: "Only / just", audioText: "Tik", saveable: true, core: false },
             ],
           },
           {
