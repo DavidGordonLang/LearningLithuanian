@@ -447,9 +447,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
       <div className="flex min-h-[54dvh] flex-col">
         <div className={cn("shrink-0 p-3", choicePanelClass)}>
           {/* Instruction */}
-          <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
-            {instructionLabel}
-          </div>
+          <div className="text-[12px] text-zinc-500 tracking-wide mb-3">\n            {instructionLabel}\n          </div>
 
           {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
           {isListen && promptText ? (
@@ -1596,7 +1594,7 @@ function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvanc
     <div className="space-y-4">
       {/* Prompt */}
       {block?.prompt ? (
-        <div className="text-[13px] text-zinc-500 uppercase tracking-wide">{block.prompt}</div>
+        <div className="text-[13px] text-zinc-500 leading-snug">{block.prompt}</div>
       ) : null}
 
       {/* Sentence or dialogue */}
@@ -1723,7 +1721,7 @@ function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvan
       {/* Sentence with gap */}
       <SurfaceCard className="px-4 py-4">
         {block?.prompt ? (
-          <div className="text-[12px] text-zinc-500 uppercase tracking-wide mb-2">{block.prompt}</div>
+          <div className="text-[12px] text-zinc-500 leading-snug mb-2">{block.prompt}</div>
         ) : null}
         <div className="text-[18px] leading-snug text-zinc-100 font-medium">
           {renderSentenceWithGap(block?.sentence || "")}
