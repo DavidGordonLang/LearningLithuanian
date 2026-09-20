@@ -22,6 +22,7 @@ export default function useSpeechToTextHold({
   onTranslateText,
   onSpeechCaptured,
   onRecordingStart,
+  onNoSpeech,
   shortRecordingMessage = "Hold a little longer and speak after the mic turns green.",
   language = null,
   transcriptionModel = "gpt-4o-mini-transcribe",
@@ -29,6 +30,7 @@ export default function useSpeechToTextHold({
   transcriptionKeywords = [],
   minRecordingMs = 650,
   showCapturedToast = true,
+  showNoSpeechToast = true,
 } = {}) {
   const [sttState, setSttState] = useState("idle");
   const sttStateRef = useRef("idle");
@@ -345,7 +347,8 @@ export default function useSpeechToTextHold({
 
           const text = String(data?.text || "").trim();
           if (!text) {
-            forceResetStt("Didn't catch that — try again");
+            onNoSpeech?.();
+            forceResetStt(showNoSpeechToast ? "Didn't catch that — try again" : null);
             return;
           }
 
@@ -402,12 +405,14 @@ export default function useSpeechToTextHold({
     forceResetStt,
     language,
     minRecordingMs,
+    onNoSpeech,
     onRecordingStart,
     onSpeechCaptured,
     onTranslateText,
     setInput,
     setSttStateSafe,
     showCapturedToast,
+    showNoSpeechToast,
     showToast,
     transcriptionKeywords,
     transcriptionModel,
