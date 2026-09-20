@@ -117,6 +117,8 @@ function ScenarioV2Styles() {
       .scenario-v2-user-text { color: #ffffff; }
       .scenario-v2-support-panel { background: rgba(14,165,233,0.08); border-color: rgba(56,189,248,0.22); color: #e0f2fe; }
       .scenario-v2-support-label { color: rgba(125,211,252,0.92); }
+      .scenario-v2-translation-reveal { background: rgba(139,92,246,0.08); border-color: rgba(167,139,250,0.24); }
+      .scenario-v2-translation-label { color: rgba(196,181,253,0.96); }
       .scenario-v2-reply-tray { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.10); }
       .scenario-v2-option { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
       .scenario-v2-option:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); }
@@ -169,6 +171,11 @@ function ScenarioV2Styles() {
         color: #243f2f;
       }
       html[data-theme="light"] .scenario-v2-support-label { color: #3f6f4e; }
+      html[data-theme="light"] .scenario-v2-translation-reveal {
+        background: rgba(239,233,252,0.98);
+        border-color: rgba(111,78,157,0.22);
+      }
+      html[data-theme="light"] .scenario-v2-translation-label { color: #69488f; }
       html[data-theme="light"] .scenario-v2-feedback-backdrop {
         background: rgba(55,44,27,0.26);
       }
@@ -314,12 +321,34 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText }) {
   );
 }
 
+function ScenarioV2TranslationReveal({ items }) {
+  const rows = Array.isArray(items)
+    ? items.filter((item) => item && (item.lt || item.en))
+    : [];
+  if (!rows.length) return null;
+
+  return (
+    <div className="scenario-v2-fade scenario-v2-translation-reveal rounded-2xl border px-3 py-3">
+      <div className="scenario-v2-translation-label text-[10px] uppercase tracking-widest">Meaning revealed</div>
+      <div className="mt-2 space-y-2">
+        {rows.map((item, index) => (
+          <div key={item.id || `translation_${index}`}>
+            {item.lt ? <div className="text-[13px] font-semibold leading-snug text-zinc-100">{item.lt}</div> : null}
+            {item.en ? <div className="mt-0.5 text-[12px] leading-snug text-zinc-400">{item.en}</div> : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final = false }) {
   if (!turn) return null;
   const showScene = !!turn.sceneDirection && (phase === "scene" || phase === "speaker");
   const hasSpeakerText = !!String(turn.speakerText || "").trim();
   const showSpeaker = phase === "speaker" && hasSpeakerText;
   const showSupport = phase === "speaker" && !!(turn.supportText || turn.meaningText);
+  const showTranslationReveal = phase === "speaker" && Array.isArray(turn.translationReveal) && turn.translationReveal.length > 0;
   const speakerLabel = getSpeakerLabel(block, turn);
   const audioEnabled = isScenarioTurnAudioEnabled(turn);
   const playOptions = audioEnabled ? getTurnVoiceOptions(block, turn) : undefined;
@@ -355,6 +384,10 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
           <div className="scenario-v2-support-label text-[10px] uppercase tracking-widest">Meaning</div>
           <div className="mt-0.5 text-[12px] leading-snug">{turn.supportText || turn.meaningText}</div>
         </div>
+      ) : null}
+
+      {showTranslationReveal ? (
+        <ScenarioV2TranslationReveal items={turn.translationReveal} />
       ) : null}
     </div>
   );
@@ -549,6 +582,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           speakerText: helpTurn.speakerText || "",
           sceneDirection: helpTurn.sceneDirection || null,
           supportText: helpTurn.supportText || helpTurn.meaningText || "",
+          translationReveal: helpTurn.translationReveal || null,
           audio: helpTurn.audio,
           spokenLanguage: helpTurn.spokenLanguage || helpTurn.language || null,
         },
