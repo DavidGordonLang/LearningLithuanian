@@ -469,6 +469,11 @@ export default function createModule_2_3(profile = {}) {
               { id: "m14", lt: "To, prašau.",        en: "That one, please. (masculine)",       audioText: "To, prašau" },
               { id: "m15", lt: "Šitos, prašau.",     en: "This one, please. (feminine)",        audioText: "Šitos, prašau" },
               { id: "m16", lt: "Tos, prašau.",       en: "That one, please. (feminine)",        audioText: "Tos, prašau" },
+              // Spaced retrieval from earlier Section 2 modules
+              { id: "m17", lt: "Man reikia bilieto.",       en: "I need a ticket.",                       audioText: "Man reikia bilieto" },
+              { id: "m18", lt: "Ar galite parodyti?",       en: "Can you show me?",                        audioText: "Ar galite parodyti" },
+              { id: "m19", lt: "Negaliu eiti.",             en: "I can't go.",                             audioText: "Negaliu eiti" },
+              { id: "m20", lt: "Ar galima mokėti kortele?", en: "Is it possible to pay by card?",         audioText: "Ar galima mokėti kortele" },
             ],
           },
         ],
