@@ -312,3 +312,24 @@ test("Build Phrase repair mode stays active while the learner edits the phrase",
   assert.doesNotMatch(buildPhrase, /setBuilt\(\(prev\) => prev\.filter\(\(x\) => x !== id\)\);\s*setCheckState\("idle"\)/);
 });
 
+test("lesson scoring counts objective blocks once and Section Complete uses persisted section metrics", () => {
+  const lessonSrc = source("src/views/training/LearningLessonView.jsx");
+  const trainingSrc = source("src/views/TrainingView.jsx");
+  const gameSrc = source("src/stores/gameStore.js");
+
+  assert.match(lessonSrc, /countScoreableBlocks\(lesson\)/);
+  assert.match(lessonSrc, /setWrongBlockIds\(\(prev\) => prev\[currentBlock\.id\]/);
+  assert.match(lessonSrc, /recordLessonMetrics\?\.\(lesson\.id/);
+  assert.match(lessonSrc, /function BuildPhraseBlock\([^)]*onWrongAnswer/);
+  assert.match(lessonSrc, /setCheckState\("wrong"\);\s*onWrongAnswer\?\.\(\)/);
+  assert.match(lessonSrc, /function WordMatchBlock\([^)]*onWrongAnswer/);
+
+  assert.match(trainingSrc, /aggregateSectionMetrics\(sec, lessonMetrics\)/);
+  assert.match(trainingSrc, /sectionXpEarned/);
+  assert.match(trainingSrc, /accuracyPct: sectionMetrics\?\.accuracyPct \?\? null/);
+
+  assert.match(gameSrc, /lessonMetrics: \{\}/);
+  assert.match(gameSrc, /recordLessonMetrics:/);
+  assert.match(gameSrc, /if \(current\[lessonId\]\) return false/);
+});
+
