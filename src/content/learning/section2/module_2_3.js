@@ -128,8 +128,6 @@ export default function createModule_2_3(profile = {}) {
             type: "learn",
             title: "Choosing one item",
             items: [
-              { id: "o1", lt: "Noriu šito.", en: "I want this one. (masculine item)", audioText: "Noriu šito", saveable: true, core: true },
-              { id: "o2", lt: "Noriu to.", en: "I want that one. (masculine item)", audioText: "Noriu to", saveable: true, core: true },
               { id: "o3", lt: "Noriu šitos.", en: "I want this one. (feminine item)", audioText: "Noriu šitos", saveable: true, core: true },
               { id: "o4", lt: "Noriu tos.", en: "I want that one. (feminine item)", audioText: "Noriu tos", saveable: true, core: true },
               { id: "o5", lt: "Šito, prašau.", en: "This one, please. (masculine item)", audioText: "Šito, prašau", saveable: true, core: true },
