@@ -400,7 +400,6 @@ export default function createModule_1_4(profile = {}) {
               { id: "w7", lt: "Bankas", en: "Bank", audioText: "Bankas", saveable: true, core: false },
               { id: "w8", lt: "Ten", en: "There", audioText: "Ten", saveable: false, core: false },
               { id: "w9", lt: "Va ten", en: "Over there", audioText: "Va ten", saveable: false, core: false },
-              { id: "w10", lt: "Čia", en: "Here", audioText: "Čia", saveable: false, core: false },
             ],
           },
           {
@@ -813,11 +812,11 @@ export default function createModule_1_4(profile = {}) {
         id: "section_1_module_4_lesson_5",
         code: "1.4.5",
         title: "Tu and Jūs — A Pattern to Notice",
-        purpose: "Recognition only. Stop learners being confused when they see two versions of 'you' — not mastery, just awareness.",
+        purpose: "Make the familiar tu/jūs distinction explicit through recognition and application rather than re-teaching known phrases.",
         supportLevel: "high",
-        newLanguageLoad: "very_low",
+        newLanguageLoad: "none",
         notes: {
-          pattern: "Tu is informal — typically family, friends and people you are on familiar terms with. Jūs is polite/formal or plural. With an unfamiliar adult, jūs is the safe starting point until the relationship becomes more informal.",
+          pattern: "You have already seen both forms in earlier phrases. Tu is informal — typically family, friends and people you are on familiar terms with. Jūs is polite/formal or plural. With an unfamiliar adult, jūs is the safe starting point until the relationship becomes more informal.",
           usage: [
             "tu — you (one person, informal)",
             "jūs — you (polite, or more than one person)",
@@ -828,18 +827,6 @@ export default function createModule_1_4(profile = {}) {
           ],
         },
         blocks: [
-          {
-            id: "s1m4l5_b1",
-            type: "learn",
-            title: "Two ways to say 'you'",
-            items: [
-              { id: "y1", lt: "Tu", en: "You (informal — friend, peer)", audioText: "Tu", saveable: false, core: true },
-              { id: "y2", lt: "Jūs", en: "You (polite or plural)", audioText: "Jūs", saveable: false, core: true },
-              { id: "y3", lt: "Koks tavo vardas?", en: "What's your name? (informal)", audioText: "Koks tavo vardas", saveable: false, core: false },
-              { id: "y4", lt: "Koks jūsų vardas?", en: "What's your name? (polite)", audioText: "Koks jūsų vardas", saveable: false, core: false },
-              { id: "y5", lt: "Ar jūs kalbate angliškai?", en: "Do you speak English? (polite — what you've been learning)", audioText: "Ar jūs kalbate angliškai", saveable: false, core: false },
-            ],
-          },
           {
             id: "s1m4l5_b2",
             type: "recognise_mcq",
@@ -875,19 +862,6 @@ export default function createModule_1_4(profile = {}) {
               { id: "c", text: "Kas tavo vardas?", isCorrect: false },
             ],
             feedback: { correct: "Koks jūsų vardas? — jūs form, right for any formal or unfamiliar situation." },
-          },
-          {
-            id: "s1m4l5_b5",
-            type: "best_response",
-            title: "Choose the best response",
-            prompt: { text: "You've been learning 'Ar jūs kalbate angliškai?' — why jūs and not tu here?" },
-            noOptionAudio: true,
-            options: [
-              { id: "a", text: "Tu is harder to pronounce", isCorrect: false },
-              { id: "b", text: "You're usually asking a stranger, so jūs is right", isCorrect: true },
-              { id: "c", text: "They mean the same thing", isCorrect: false },
-            ],
-            feedback: { correct: "Exactly — you'd normally ask a stranger if they speak English, so jūs is the right choice." },
           },
           {
             id: "s1m4l5_b6_v2",
