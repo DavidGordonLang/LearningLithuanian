@@ -35,10 +35,23 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection }
   let currentLesson = null;
   let currentSection = null;
   let currentLessonIndex = 0;
+  let currentIsSectionCheckpoint = false;
 
   outer: for (const sec of allSections) {
     for (const mod of (sec.modules || [])) {
-      if (mod.status !== "active") continue;
+      if (mod.status !== "active" && !mod.isSectionCheckpoint) continue;
+
+      if (mod.isSectionCheckpoint) {
+        if (mod.id && !completed.has(mod.id)) {
+          currentLesson = mod;
+          currentSection = sec;
+          currentLessonIndex = 0;
+          currentIsSectionCheckpoint = true;
+          break outer;
+        }
+        continue;
+      }
+
       for (let i = 0; i < (mod.lessons || []).length; i++) {
         const l = mod.lessons[i];
         if (!completed.has(l.id)) {
@@ -98,7 +111,9 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection }
               <div className="text-[11px] uppercase tracking-wide text-zinc-500">Current lesson</div>
               <div className="mt-2">
                 <div className="text-[16px] font-semibold text-zinc-100">
-                  Lesson {currentLessonIndex + 1} — {currentLesson.title}
+                  {currentIsSectionCheckpoint
+                    ? `Section checkpoint — ${currentLesson.title}`
+                    : `Lesson ${currentLessonIndex + 1} — ${currentLesson.title}`}
                 </div>
                 <div className="text-[13px] text-zinc-400 mt-1">
                   {currentSection.title}
