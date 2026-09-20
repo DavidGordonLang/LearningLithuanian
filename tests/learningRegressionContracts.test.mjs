@@ -219,3 +219,25 @@ test("Scenario V2 focused mode shows the full scene setup instead of truncating 
   assert.match(src, /text-\[12px\] leading-snug text-zinc-500/);
   assert.doesNotMatch(src, /mt-0\.5 truncate text-\[12px\] text-zinc-500/);
 });
+
+
+test("learner course browser uses real progress state instead of content active/dev shortcuts", () => {
+  const sectionSrc = source("src/views/training/LearningSectionView.jsx");
+  const moduleSrc = source("src/views/training/LearningModuleView.jsx");
+  const homeSrc = source("src/views/training/LearningHome.jsx");
+  const trainingSrc = source("src/views/TrainingView.jsx");
+
+  assert.match(sectionSrc, /getSectionBrowseState\(section, completedLessonIds\)/);
+  assert.match(sectionSrc, /Section checkpoint —/);
+  assert.match(sectionSrc, /status !== "locked"/);
+  assert.doesNotMatch(sectionSrc, /status=\{module\.status\}/);
+
+  assert.doesNotMatch(moduleSrc, /devMode/);
+  assert.match(moduleSrc, /allLessonsDone[\s\S]*\? "current"[\s\S]*: "locked"/);
+
+  assert.match(homeSrc, /getCourseBrowseState\(allSections, completedLessonIds\)/);
+  assert.match(homeSrc, /<SmallMetaPill>Locked<\/SmallMetaPill>/);
+  assert.match(homeSrc, /mod\.isSectionCheckpoint/);
+
+  assert.match(trainingSrc, /onOpenCheckpoint=\{\(checkpointId\) =>/);
+});
