@@ -466,7 +466,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         el.scrollTop = el.scrollHeight;
       }
     });
-  }, [history, turnPhase, followUpPhase, helpPhase, helpTurn, finalPhase, finalTurn, complete]);
+  }, [history, stepIndex, turnPhase, followUpPhase, helpPhase, helpTurn, finalPhase, finalTurn, complete]);
 
   useEffect(() => {
     clearTimers();
@@ -710,8 +710,14 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           </div>
         </div>
 
-        {!complete && !followUpTurn && !helpTurn && !finalTurn && step ? (
-          <div className={cn("scenario-v2-reply-tray mt-3 rounded-[24px] border px-4 py-3 transition", activeSpeakerReady ? "opacity-100" : "opacity-60")}>
+        {!complete && step ? (
+          <div
+            aria-busy={!activeSpeakerReady}
+            className={cn(
+              "scenario-v2-reply-tray mt-3 rounded-[24px] border px-4 py-3 transition-opacity duration-150",
+              activeSpeakerReady ? "opacity-100" : "opacity-80"
+            )}
+          >
             {step.helperText && activeSpeakerReady ? (
               <div className="scenario-v2-support-panel mb-3 rounded-2xl border px-3 py-2 text-[12px] leading-snug">
                 {step.helperText}
