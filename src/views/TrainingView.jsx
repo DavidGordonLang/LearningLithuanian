@@ -334,6 +334,16 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           setSelectedLessonId(null);
           setScreen("learningModule");
         }}
+        onOpenCheckpoint={(checkpointId) => {
+          if (!checkpointId) return;
+          setSelectedModuleId(checkpointId);
+          setSelectedLessonId(checkpointId);
+          setLessonReturnScreen("learningSection");
+          setModuleWrongAnswers(0);
+          setModuleScoreableBlocks(0);
+          setModuleXpEarned(0);
+          setScreen("learningLesson");
+        }}
       />
     );
   }
@@ -343,7 +353,6 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       <LearningModuleView
         section={learningSection}
         module={learningModule}
-        devMode={effectiveDevMode}
         onBack={() => setScreen("learningSection")}
         onOpenLesson={(lessonId) => {
           if (!lessonId) return;
