@@ -333,6 +333,12 @@ export default function createCheckpoint1(profile = {}) {
           text: "Malonu susipažinti!",
           result: "best",
           progresses: true,
+          followUp: {
+            speakerId: "sister",
+            speakerLabel: "Ieva",
+            speakerText: "Man irgi!",
+            sceneDirection: "Ieva smiles and returns the greeting.",
+          },
         },
         {
           id: "b",
@@ -349,12 +355,6 @@ export default function createCheckpoint1(profile = {}) {
           progresses: false,
         },
       ],
-      finalSystemLine: {
-        speakerId: "sister",
-        speakerLabel: "Ieva",
-        speakerText: "Man irgi!",
-        sceneDirection: "Ieva smiles and returns the greeting.",
-      },
     },
     {
       id: "step_4",
