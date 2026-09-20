@@ -9,6 +9,7 @@ import TrainingBackButton from "./TrainingBackButton";
 import ScenarioV2Block from "./ScenarioV2Block";
 import { calculateAccuracyPct, countScoreableBlocks } from "../../lib/trainingScoring";
 import { getBuildPhraseDistractorMeaning } from "../../lib/buildPhraseFeedback";
+import { phraseMatchesSpeech } from "../../lib/speechMatch";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -74,73 +75,6 @@ function playMicStop() {
 }
 
 // ─── Phrase matching ──────────────────────────────────────────────────────────
-
-function normaliseForMatch(str) {
-  // Strip Lithuanian diacritics before matching so STT transcriptions without
-  // diacritics (š→s, ž→z, č→c, ė→e, ų→u, ū→u, etc.) still match correctly.
-  const stripped = String(str || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-  return stripped
-    .toLowerCase()
-    .replace(/[.,!?;:"""''„"–—\-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// Character-level similarity (Levenshtein ratio) for fuzzy single-word matching.
-// Handles speech recognition transcribing š as š/s/sh, ž as ž/z, č as č/c etc.
-function charSimilarity(a, b) {
-  if (a === b) return 1;
-  const la = a.length, lb = b.length;
-  if (!la || !lb) return 0;
-  // Build DP matrix
-  const dp = Array.from({ length: la + 1 }, (_, i) => [i]);
-  for (let j = 0; j <= lb; j++) dp[0][j] = j;
-  for (let i = 1; i <= la; i++) {
-    for (let j = 1; j <= lb; j++) {
-      dp[i][j] = a[i-1] === b[j-1]
-        ? dp[i-1][j-1]
-        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
-    }
-  }
-  const dist = dp[la][lb];
-  return 1 - dist / Math.max(la, lb);
-}
-
-function phraseMatches(captured, target) {
-  if (!captured || !target) return false;
-  const c = normaliseForMatch(captured);
-  const t = normaliseForMatch(target);
-  if (!c || !t) return false;
-  if (c === t) return true;
-  if (c.includes(t)) return true;
-  if (t.includes(c)) return true;
-  const targetWords = t.split(" ").filter(Boolean);
-  const capturedWords = c.split(" ").filter(Boolean);
-  if (targetWords.length === 0) return false;
-
-  // Exact word match — ≥75% of target words found anywhere in capture
-  const matched = targetWords.filter((w) => capturedWords.includes(w));
-  if (matched.length / targetWords.length >= 0.75) return true;
-
-  // Positional fuzzy match for phrases up to 5 words.
-  // Pairs each target word with the capture word at the same position.
-  // Requires: avg similarity ≥ 0.70 AND every word ≥ 0.60.
-  // The minimum check prevents "Per šalta" matching "Per karšta" (per/per=1.0
-  // inflates avg, but šalta/karšta=0.43 fails the minimum).
-  if (targetWords.length <= 5) {
-    const sims = targetWords.map((w, i) => charSimilarity(w, capturedWords[i] ?? ""));
-    const avgSim = sims.reduce((a, b) => a + b, 0) / sims.length;
-    const minSim = Math.min(...sims);
-    if (avgSim >= 0.70 && minSim >= 0.60) return true;
-
-    // Whole-phrase character similarity fallback for very short phrases (≤3 words)
-    if (targetWords.length <= 3 && charSimilarity(c, t) >= 0.78) return true;
-  }
-
-  return false;
-}
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -547,7 +481,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     setInput: (text) => {
       const captured = String(text || "").trim();
       setCapturedText(captured);
-      if (phraseMatches(captured, targetText)) {
+      if (phraseMatchesSpeech(captured, targetText)) {
         setAttemptState("result_pass");
         onComplete?.();
       } else {
@@ -569,8 +503,8 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     shortRecordingMessage: "Hold a little longer and speak after the mic turns green.",
     language: "lt",
     transcriptionModel: "gpt-transcribe",
-    transcriptionPrompt: "A learner is speaking one short Lithuanian practice phrase.",
-    transcriptionKeywords: targetText ? [targetText] : [],
+    transcriptionPrompt: "Transcribe only clearly audible Lithuanian speech. Do not infer, complete, or guess an expected practice phrase. If no clear speech is audible, return an empty transcript.",
+    transcriptionKeywords: [],
     minRecordingMs: 250,
     showCapturedToast: false,
     showNoSpeechToast: false,
