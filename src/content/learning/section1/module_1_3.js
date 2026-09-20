@@ -338,10 +338,7 @@ export default function createModule_1_3(profile = {}) {
       help: {
         levels: [
           {
-            sceneDirection: "She taps the medicine box, holds up two fingers, then points to a clock and the day on a calendar.",
-          },
-          {
-            sceneDirection: "She separates the phrase into smaller chunks and repeats it carefully.",
+            sceneDirection: "She taps the medicine box, holds up two fingers, points to the clock and the day, then separates the phrase into smaller chunks as she repeats it carefully.",
             speakerText: "Du kartus. Per dieną.",
           },
           {
