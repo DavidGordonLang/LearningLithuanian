@@ -7,6 +7,7 @@ import { matchPairsCss } from "./matchPairs/matchPairsStyles";
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
 import TrainingBackButton from "./TrainingBackButton";
 import ScenarioV2Block from "./ScenarioV2Block";
+import { calculateAccuracyPct, countScoreableBlocks } from "../../lib/trainingScoring";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -750,7 +751,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
 //   Wrong   → red, show correct answer, allow retry.
 // Tapping a built token removes it back to the source row (ghost stays).
 
-function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed }) {
+function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, completed }) {
   const rawTokens = Array.isArray(block?.tokens) ? block.tokens : [];
   const tokens = React.useMemo(() => {
     const arr = [...rawTokens];
@@ -1016,6 +1017,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
       onComplete?.();
     } else {
       setCheckState("wrong");
+      onWrongAnswer?.();
     }
   };
 
@@ -1528,7 +1530,7 @@ function useWordMatchSession({ rawPairs, pagePairs, rightSelectAmberMs, correctP
   return { progress, leftTiles: currentPage?.left || [], rightTiles: currentPage?.right || [], selected, matchedPairIds, pulse, busy, phase, mistakes, showDone, tap, lastCorrectMatchAudio };
 }
 
-function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
+function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, completed }) {
   const rawPairs = Array.isArray(block?.pairs) ? block.pairs : [];
 
   const s = useWordMatchSession({
@@ -1542,6 +1544,14 @@ function WordMatchBlock({ block, playText, onComplete, onAdvance, completed }) {
   });
 
   const lastPlayedRef = React.useRef("");
+  const reportedMistakeRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (s.mistakes > 0 && !reportedMistakeRef.current) {
+      reportedMistakeRef.current = true;
+      onWrongAnswer?.();
+    }
+  }, [s.mistakes, onWrongAnswer]);
 
   React.useEffect(() => {
     const payload = s.lastCorrectMatchAudio;
@@ -1981,8 +1991,8 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
-    case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
-    case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
+    case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
+    case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "scenario_v2": return <ScenarioV2Block block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "context_gap_select": return <ContextGapSelect block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
@@ -2060,7 +2070,8 @@ export default function LearningLessonView({
   const [blockIndex, setBlockIndex] = useState(0);
   const [completedBlockIds, setCompletedBlockIds] = useState({});
   const [xpEarned, setXpEarned] = useState(null);
-  const [wrongAnswerCount, setWrongAnswerCount] = useState(0);
+  const [wrongBlockIds, setWrongBlockIds] = useState({});
+  const wrongAnswerCount = Object.keys(wrongBlockIds).length;
   const [accuracyPct, setAccuracyPct] = useState(null);
   const [lessonDone, setLessonDone] = useState(false); // true only after user taps Continue/advance on last block
   const navBarRef = useRef(null);
@@ -2069,6 +2080,7 @@ export default function LearningLessonView({
 
   const completeLesson = useGameStore((s) => s.completeLesson);
   const earnLessonXP = useGameStore((s) => s.earnLessonXP);
+  const recordLessonMetrics = useGameStore((s) => s.recordLessonMetrics);
   const lessonProgress = useGameStore((s) => s.lessonProgress);
   const gameLoadedForUserId = useGameStore((s) => s._loadedForUserId);
   const setLessonProgress = useGameStore((s) => s.setLessonProgress);
@@ -2079,7 +2091,7 @@ export default function LearningLessonView({
     setCompletedBlockIds({});
     setXpEarned(null);
     setAccuracyPct(null);
-    setWrongAnswerCount(0);
+    setWrongBlockIds({});
     setLessonDone(false);
     completionFiredRef.current = false;
     resumeInitialisedRef.current = null;
@@ -2193,13 +2205,13 @@ export default function LearningLessonView({
     completionFiredRef.current = true;
     if (lesson?.id) {
       completeLesson(lesson.id, userId);
-      const scoreableBlocks = (lesson.blocks || []).filter(b =>
-        ["recognise_mcq", "listen_mcq", "best_response", "scenario_chain", "scenario_v2"].includes(b.type)
-      ).length;
-      const accuracy = scoreableBlocks > 0
-        ? Math.round(((scoreableBlocks - Math.min(wrongAnswerCount, scoreableBlocks)) / scoreableBlocks) * 100)
-        : 100;
-      setAccuracyPct(accuracy);
+      const scoreableBlocks = countScoreableBlocks(lesson);
+      const accuracy = calculateAccuracyPct(wrongAnswerCount, scoreableBlocks);
+      setAccuracyPct(accuracy ?? 100);
+      recordLessonMetrics?.(lesson.id, {
+        wrongBlocks: wrongAnswerCount,
+        scoreableBlocks,
+      }, userId);
       const base = 30;
       const earned = Math.max(10, base - wrongAnswerCount * 2);
       const result = earnLessonXP(lesson.id, earned, userId);
@@ -2208,7 +2220,7 @@ export default function LearningLessonView({
     } else {
       onLessonComplete?.({ wrongAnswers: 0, scoreableBlocks: 0, xpAwarded: 0 });
     }
-  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete, wrongAnswerCount]);
+  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, recordLessonMetrics, onLessonComplete, wrongAnswerCount]);
 
   const advanceBlock = useCallback(() => {
     setBlockIndex((prev) => {
@@ -2224,6 +2236,11 @@ export default function LearningLessonView({
   const markCurrentComplete = useCallback(() => {
     if (!currentBlock?.id) return;
     setCompletedBlockIds((prev) => prev[currentBlock.id] ? prev : { ...prev, [currentBlock.id]: true });
+  }, [currentBlock?.id]);
+
+  const markCurrentWrong = useCallback(() => {
+    if (!currentBlock?.id) return;
+    setWrongBlockIds((prev) => prev[currentBlock.id] ? prev : { ...prev, [currentBlock.id]: true });
   }, [currentBlock?.id]);
 
   // "Lesson 3" — clean label without nested numbering codes
@@ -2300,7 +2317,7 @@ export default function LearningLessonView({
                 playText={playText}
                 showToast={showToast}
                 onComplete={markCurrentComplete}
-                onWrongAnswer={() => setWrongAnswerCount((n) => n + 1)}
+                onWrongAnswer={markCurrentWrong}
                 completed={isCurrentCompleted}
                 onAdvance={advanceBlock}
                 navBarRef={navBarRef}
