@@ -190,8 +190,6 @@ export default function createModule_4_4(profile = {}) {
               { id: "of1", lt: "Ar nori kavos?", en: "Do you want coffee? (informal)", audioText: "Ar nori kavos", saveable: true, core: true },
               { id: "of2", lt: "Ar norite kavos?", en: "Do you want coffee? (formal / plural)", audioText: "Ar norite kavos", saveable: true, core: true },
               { id: "of3", lt: "Ar nori arbatos?", en: "Do you want tea? (informal)", audioText: "Ar nori arbatos", saveable: true, core: true },
-              { id: "of4", lt: "Taip, prašau.", en: "Yes, please.", audioText: "Taip, prašau", saveable: true, core: true },
-              { id: "of5", lt: "Ne, ačiū.", en: "No, thank you.", audioText: "Ne, ačiū", saveable: true, core: true },
             ],
           },
           {
@@ -558,20 +556,6 @@ export default function createModule_4_4(profile = {}) {
             ],
           },
           // ── Pattern to Notice ────────────────────────────────────────────────
-          {
-            id: "s4m4l4_b4",
-            type: "learn",
-            title: "Pattern to notice — man, tau, mums",
-            items: [
-              { id: "pn1", lt: "Man reikia pagalbos.", en: "I need help. (man = to/for me)", audioText: "Man reikia pagalbos", saveable: false, core: false },
-              { id: "pn2", lt: "Man kavos, prašau.", en: "Coffee for me, please.", audioText: "Man kavos, prašau", saveable: false, core: false },
-              { id: "pn3", lt: "Tau kavos?", en: "Coffee for you? (tau = to/for you, informal)", audioText: "Tau kavos", saveable: false, core: false },
-              { id: "pn4", lt: "Mums dvi arbatas.", en: "Two teas for us. (mums = to/for us)", audioText: "Mums dvi arbatas", saveable: false, core: false },
-            ],
-            notes: {
-              pattern: "Man means for me or to me. Tau means for you (informal). Mums means for us. You have already used man many times — in Man reikia… (I need…) and Man irgi (me too). These are the same small word doing the same job in a new situation. You do not need to memorise grammar rules — just notice that man, tau, and mums all follow the same pattern: they tell you who something is for.",
-            },
-          },
           {
             id: "s4m4l4_b5",
             type: "build_phrase",
