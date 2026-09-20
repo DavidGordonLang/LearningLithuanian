@@ -33,14 +33,9 @@ export default function createModule_4_1(profile = {}) {
           {
             id: "s4m1l1_b1",
             type: "learn",
-            title: "Ordering with Noriu",
+            title: "New food language with Noriu",
             items: [
-              { id: "ow1", lt: "Noriu kavos.", en: "I want coffee.", audioText: "Noriu kavos", saveable: true, core: true },
-              { id: "ow2", lt: "Noriu arbatos.", en: "I want tea.", audioText: "Noriu arbatos", saveable: true, core: true },
-              { id: "ow3", lt: "Noriu vandens.", en: "I want water.", audioText: "Noriu vandens", saveable: true, core: true },
               { id: "ow4", lt: "Noriu sriubos.", en: "I want soup.", audioText: "Noriu sriubos", saveable: true, core: true },
-              { id: "ow5", lt: "Noriu šito.", en: "I want this.", audioText: "Noriu šito", saveable: true, core: true },
-              { id: "ow6", lt: "Noriu to.", en: "I want that.", audioText: "Noriu to", saveable: true, core: true },
               { id: "noun_tortas", lt: "tortas", en: "cake", audioText: "tortas", saveable: true, core: false },
               { id: "noun_ledai", lt: "ledai", en: "ice cream", audioText: "ledai", saveable: true, core: false },
             ],
@@ -187,7 +182,6 @@ export default function createModule_4_1(profile = {}) {
               { id: "po3", lt: "Norėčiau vandens.", en: "I would like water.", audioText: "Norėčiau vandens", saveable: true, core: true },
               { id: "po4", lt: "Norėčiau šito.", en: "I would like this.", audioText: "Norėčiau šito", saveable: true, core: true },
               { id: "po5", lt: "Norėčiau užsisakyti.", en: "I would like to order.", audioText: "Norėčiau užsisakyti", saveable: true, core: true },
-              { id: "po6", lt: "Ko norėtumėte?", en: "What would you like?", audioText: "Ko norėtumėte", saveable: false, core: false },
             ],
           },
           {
@@ -350,7 +344,6 @@ export default function createModule_4_1(profile = {}) {
             type: "learn",
             title: "Pointing to order",
             items: [
-              { id: "pt1", lt: "Šito, prašau.", en: "This one, please.", audioText: "Šito, prašau", saveable: true, core: true },
               { id: "pt2", lt: "To, prašau.", en: "That one, please.", audioText: "To, prašau", saveable: true, core: true },
               { id: "pt3", lt: "Šitą, prašau.", en: "This, please.", audioText: "Šitą, prašau", saveable: true, core: true },
               { id: "pt4", lt: "Tą, prašau.", en: "That, please.", audioText: "Tą, prašau", saveable: true, core: true },
@@ -534,8 +527,6 @@ export default function createModule_4_1(profile = {}) {
               { id: "oq1", lt: "Vieną kavą, prašau.", en: "One coffee, please.", audioText: "Vieną kavą, prašau", saveable: true, core: true },
               { id: "oq2", lt: "Dvi arbatas, prašau.", en: "Two teas, please.", audioText: "Dvi arbatas, prašau", saveable: true, core: true },
               { id: "oq3", lt: "Vieną stiklinę vandens, prašau.", en: "One glass of water, please.", audioText: "Vieną stiklinę vandens, prašau", saveable: true, core: true },
-              { id: "oq4", lt: "Dar vieną, prašau.", en: "One more, please.", audioText: "Dar vieną, prašau", saveable: true, core: true },
-              { id: "oq5", lt: "Kiek?", en: "How many?", audioText: "Kiek", saveable: false, core: false },
             ],
           },
           {
