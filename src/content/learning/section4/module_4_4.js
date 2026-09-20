@@ -565,7 +565,7 @@ export default function createModule_4_4(profile = {}) {
               { id: "t1", text: "Mums", correctIndex: 0 },
               { id: "t2", text: "dvi", correctIndex: 1 },
               { id: "t3", text: "arbatas", correctIndex: 2 },
-              { id: "t4", text: "Man", isDistractor: true },
+              { id: "t4", text: "Man", isDistractor: true, repairHint: "Man means “for me / to me”. The prompt says “for us”, so you need Mums." },
               { id: "t5", text: "kavą.", isDistractor: true },
             ],
             answerText: "Mums dvi arbatas",
