@@ -965,7 +965,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
       <div className={cn(
         "rounded-2xl border px-4 py-4 min-h-[60px] mb-4 transition",
         checkState === "correct" ? "border-emerald-400/20 bg-emerald-500/[0.06]"
-        : checkState === "wrong" ? "border-rose-400/20 bg-rose-500/[0.05]"
+        : checkState === "wrong" ? "build-phrase-wrong-area border-rose-400/20 bg-rose-500/[0.05]"
         : "border-white/10 bg-white/[0.03]"
       )}>
         <div className="flex flex-wrap gap-2">
@@ -1000,7 +1000,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                     checkState === "correct"
                       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100 cursor-default"
                       : checkState === "wrong"
-                      ? "border-rose-400/20 bg-rose-500/[0.10] text-rose-200"
+                      ? "build-phrase-wrong-token border-rose-400/20 bg-rose-500/[0.10] text-rose-200"
                       : completed
                       ? "border-white/15 bg-white/[0.08] text-zinc-100 cursor-default"
                       : "border-white/15 bg-white/[0.08] text-zinc-100 hover:bg-white/[0.11] cursor-grab active:cursor-grabbing",
