@@ -17,9 +17,9 @@ export default function createModule_5_1(profile = {}) {
         id: "section_5_module_1_lesson_1",
         code: "5.1.1",
         title: "Where Is…?",
-        purpose: "Lock in the main question frame for location.",
+        purpose: "Retrieve and apply the familiar Kur yra…? frame in practical location tasks.",
         supportLevel: "high",
-        newLanguageLoad: "low",
+        newLanguageLoad: "none",
         notes: {
           pattern: "Kur yra…? is one of the most useful frames in the whole app. It works with any place word. You already know several — stotis, tualetas, viešbutis, vaistinė all slot straight in.",
           usage: [
@@ -30,18 +30,6 @@ export default function createModule_5_1(profile = {}) {
           ],
         },
         blocks: [
-          {
-            id: "s5m1l1_b1",
-            type: "learn",
-            title: "Where is…?",
-            items: [
-              { id: "i1", lt: "Kur yra…?",          en: "Where is…?",            audioText: "Kur yra",           saveable: true,  core: true  },
-              { id: "i2", lt: "Kur yra stotis?",     en: "Where is the station?", audioText: "Kur yra stotis",    saveable: true,  core: true  },
-              { id: "i3", lt: "Kur yra tualetas?",   en: "Where is the toilet?",  audioText: "Kur yra tualetas",  saveable: true,  core: true  },
-              { id: "i4", lt: "Kur yra viešbutis?",  en: "Where is the hotel?",   audioText: "Kur yra viešbutis", saveable: true,  core: true  },
-              { id: "i5", lt: "Kur yra vaistinė?",   en: "Where is the pharmacy?",audioText: "Kur yra vaistinė",  saveable: true,  core: true  },
-            ],
-          },
           {
             id: "s5m1l1_b2",
             type: "listen_mcq",
@@ -57,10 +45,10 @@ export default function createModule_5_1(profile = {}) {
             id: "s5m1l1_b3",
             type: "recognise_mcq",
             title: "Choose the correct meaning",
-            prompt: { text: "Kur yra vaistinė?", audioText: "Kur yra vaistinė" },
+            prompt: { text: "Kur yra bankas?", audioText: "Kur yra bankas" },
             options: [
               { id: "a", text: "Where is the hotel?",    isCorrect: false },
-              { id: "b", text: "Where is the pharmacy?", isCorrect: true  },
+              { id: "b", text: "Where is the bank?",     isCorrect: true  },
               { id: "c", text: "Where is the toilet?",   isCorrect: false },
             ],
           },
@@ -88,19 +76,19 @@ export default function createModule_5_1(profile = {}) {
           {
   id: "s5m1l1_b6_v2",
   type: "scenario_v2",
-  title: "Finding the pharmacy",
-  description: "On the street, you ask a passer-by where the pharmacy is.",
-  sceneIntro: "On the street, you ask a passer-by where the pharmacy is.",
+  title: "Finding the bank",
+  description: "On the street, you ask a passer-by where the bank is.",
+  sceneIntro: "On the street, you ask a passer-by where the bank is.",
   location: "street",
   userRole: "traveller",
   register: "polite_neutral",
   goal: "Use Kur yra…? for a place you need.",
-  focus: ["Kur yra…?", "vaistinė"],
+  focus: ["Kur yra…?", "bankas"],
   participants: [
     { id: "local", label: "Local", name: "Rasa", role: "passer-by", gender: "female", relationshipToUser: "stranger", register: "polite_neutral" },
   ],
   objects: [
-    { id: "pharmacy", lt: "vaistinė", en: "pharmacy", gender: "feminine", number: "singular" },
+    { id: "bank", lt: "bankas", en: "bank", gender: "masculine", number: "singular" },
   ],
   steps: [
     {
@@ -109,22 +97,22 @@ export default function createModule_5_1(profile = {}) {
       speakerLabel: "Local",
       speakerText: "Laba diena!",
       sceneDirection: "A passer-by stops near you on the street.",
-      learnerPrompt: "Ask where the pharmacy is.",
+      learnerPrompt: "Ask where the bank is.",
       options: [
-        { id: "a", text: "Laba diena! Atsiprašau, kur yra vaistinė?", result: "best", progresses: true },
-        { id: "b", text: "Viso gero.", result: "wrong", feedback: "You still need to find the pharmacy.", progresses: false },
+        { id: "a", text: "Laba diena! Atsiprašau, kur yra bankas?", result: "best", progresses: true },
+        { id: "b", text: "Viso gero.", result: "wrong", feedback: "You still need to find the bank.", progresses: false },
       ],
     },
     {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Vaistinė — va ten.",
-      sceneDirection: "She points across the street at the pharmacy sign.",
+      speakerText: "Bankas — va ten.",
+      sceneDirection: "She points across the street at the bank.",
       learnerPrompt: "Acknowledge the answer.",
       options: [
         { id: "a", text: "Ačiū labai!", result: "best", progresses: true },
-        { id: "b", text: "Kur yra viešbutis?", result: "wrong", feedback: "You asked for the pharmacy and she has just shown it to you.", progresses: false },
+        { id: "b", text: "Kur yra viešbutis?", result: "wrong", feedback: "You asked for the bank and she has just shown it to you.", progresses: false },
       ],
       finalSystemLine: { speakerId: "local", speakerLabel: "Local", speakerText: "Prašom. Viso gero!", sceneDirection: "She smiles and continues on her way." },
     },
@@ -145,10 +133,8 @@ export default function createModule_5_1(profile = {}) {
           {
             id: "s5m1l2_b1",
             type: "learn",
-            title: "Here and there",
+            title: "Short location replies",
             items: [
-              { id: "i1", lt: "čia",       en: "here",        audioText: "čia",       saveable: true,  core: true },
-              { id: "i2", lt: "ten",       en: "there",       audioText: "ten",       saveable: true,  core: true },
               { id: "i3", lt: "Tai čia.",  en: "It's here.",  audioText: "Tai čia",   saveable: true,  core: true },
               { id: "i4", lt: "Tai ten.",  en: "It's there.", audioText: "Tai ten",   saveable: true,  core: true },
             ],
