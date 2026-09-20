@@ -88,7 +88,7 @@ export default function createModule_2_3(profile = {}) {
             tokens: [
               { id: "t1", text: "Tas", correctIndex: 0 },
               { id: "t2", text: "obuolys", correctIndex: 1 },
-              { id: "t3", text: "Ta", isDistractor: true },
+              { id: "t3", text: "Ta", isDistractor: true, repairHint: "Ta is the feminine “that” form. Obuolys (apple) is masculine, so this phrase needs Tas." },
             ],
             answerText: "Tas obuolys",
           },
@@ -181,7 +181,7 @@ export default function createModule_2_3(profile = {}) {
             tokens: [
               { id: "t1", text: "Noriu", correctIndex: 0 },
               { id: "t2", text: "tos.", correctIndex: 1 },
-              { id: "t3", text: "to.", isDistractor: true },
+              { id: "t3", text: "to.", isDistractor: true, repairHint: "to is the masculine form here. This phrase is referring to a feminine item, so it needs tos." },
             ],
             answerText: "Noriu tos.",
           },
