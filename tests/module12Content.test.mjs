@@ -18,11 +18,22 @@ test("Module 1.2 adds People Around You with the intended learning mechanics", (
   assert.ok(lesson);
   assert.deepEqual(
     lesson.blocks.map((block) => block.type),
-    ["learn", "word_match", "listen_mcq", "context_gap_select", "build_phrase", "speak_self_check"]
+    ["learn", "listen_mcq", "context_gap_select", "build_phrase", "speak_self_check", "word_match"]
   );
 
   const taught = getBlock(lesson, "s1m2l5_b1").items.map((item) => item.lt);
   assert.deepEqual(taught, ["Vyras", "Moteris", "Berniukas", "Mergaitė", "Brolis", "Sesuo"]);
+
+  const recap = getBlock(lesson, "s1m2l5_b2");
+  assert.equal(recap.pairs.length, 10);
+  for (const retained of [
+    "Koks jūsų vardas?",
+    "Iš kur jūs esate?",
+    "Malonu susipažinti",
+    "Ji yra mano draugė",
+  ]) {
+    assert.ok(recap.pairs.some((pair) => pair.lt === retained), `Lesson 5 recap should retrieve ${retained}`);
+  }
 });
 
 test("personalised origin questions never duplicate the learner's own country", () => {
