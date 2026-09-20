@@ -143,6 +143,15 @@ test("Build Phrase wrong-state remains legible in light mode", () => {
   assert.match(cssSrc, /html\[data-theme="light"\] \.build-phrase-wrong-token[\s\S]*?color: #881337/);
 });
 
+test("learner-facing lesson prompts are not forced into uppercase", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.doesNotMatch(src, /uppercase[^\n]*\{instructionLabel\}/);
+  assert.doesNotMatch(src, /uppercase[^\n]*\{block\.prompt\}/);
+  assert.match(src, /text-\[13px\] text-zinc-500 leading-snug">\{block\.prompt\}/);
+  assert.match(src, /text-\[12px\] text-zinc-500 leading-snug mb-2">\{block\.prompt\}/);
+});
+
 test("in-progress lesson position is persisted per account and restored by block identity", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
   const gameSrc = source("src/stores/gameStore.js");
