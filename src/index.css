@@ -213,6 +213,12 @@ html[data-theme="light"] .text-emerald-300 { color: #4a7d50; }
 html[data-theme="light"] .text-emerald-400 { color: #6B8F6E; }
 html[data-theme="light"] .text-emerald-500 { color: #5d8060; }
 
+html[data-theme="light"] .say-it-fail-status {
+  border-color: rgba(146, 64, 14, 0.34);
+  background-color: rgba(180, 83, 9, 0.10);
+  color: #78350f;
+}
+
 /* Build Phrase error state: keep wrong answers clearly readable on the warm light palette. */
 html[data-theme="light"] .build-phrase-wrong-area {
   border-color: rgba(190, 24, 93, 0.30);
