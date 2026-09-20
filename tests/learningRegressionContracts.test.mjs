@@ -319,7 +319,7 @@ test("lesson scoring counts objective blocks once and Section Complete uses pers
 
   assert.match(lessonSrc, /countScoreableBlocks\(lesson\)/);
   assert.match(lessonSrc, /setWrongBlockIds\(\(prev\) => prev\[currentBlock\.id\]/);
-  assert.match(lessonSrc, /recordLessonMetrics\?\.\(lesson\.id/);
+  assert.match(lessonSrc, /completeLesson\(lesson\.id, userId, \{/);
   assert.match(lessonSrc, /function BuildPhraseBlock\([^)]*onWrongAnswer/);
   assert.match(lessonSrc, /setCheckState\("wrong"\);\s*onWrongAnswer\?\.\(\)/);
   assert.match(lessonSrc, /function WordMatchBlock\([^)]*onWrongAnswer/);
@@ -329,7 +329,7 @@ test("lesson scoring counts objective blocks once and Section Complete uses pers
   assert.match(trainingSrc, /accuracyPct: sectionMetrics\?\.accuracyPct \?\? null/);
 
   assert.match(gameSrc, /lessonMetrics: \{\}/);
-  assert.match(gameSrc, /recordLessonMetrics:/);
-  assert.match(gameSrc, /if \(current\[lessonId\]\) return false/);
+  assert.match(gameSrc, /completeLesson: \(lessonId, userId, metrics = null\)/);
+  assert.match(gameSrc, /!currentMetrics\[lessonId\] && metrics/);
 });
 
