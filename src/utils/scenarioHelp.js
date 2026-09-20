@@ -20,7 +20,8 @@ export function getScenarioHelpLevels(step) {
       cleanText(level.speakerText) ||
       cleanText(level.sceneDirection) ||
       cleanText(level.supportText) ||
-      cleanText(level.meaningText)
+      cleanText(level.meaningText) ||
+      (Array.isArray(level.translationReveal) && level.translationReveal.length > 0)
     );
   });
 }
