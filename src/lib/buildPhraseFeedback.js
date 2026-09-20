@@ -52,6 +52,7 @@ export const BUILD_PHRASE_DISTRACTOR_MEANINGS = Object.freeze({
   cukraus: "sugar",
   "šito": "this / this one (masculine form)",
   man: "for me / to me",
+  lietuvos: "Lithuania's / of Lithuania",
 });
 
 export function normalizeBuildPhraseToken(text) {
