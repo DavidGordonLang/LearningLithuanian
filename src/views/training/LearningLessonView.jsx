@@ -506,8 +506,11 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     shortRecordingMessage: "Hold a little longer and speak after the mic turns green.",
     language: "lt",
     transcriptionModel: "gpt-transcribe",
-    transcriptionPrompt: "Transcribe only clearly audible Lithuanian speech. Do not infer, complete, or guess an expected practice phrase. If no clear speech is audible, return an empty transcript.",
-    transcriptionKeywords: Array.isArray(block?.transcriptionKeywords) ? block.transcriptionKeywords : [],
+    // Keep this diagnostic path deliberately unprompted: the language hint is
+    // Lithuanian, but no English instruction or expected-phrase vocabulary is
+    // supplied to transcription.
+    transcriptionPrompt: null,
+    transcriptionKeywords: [],
     minRecordingMs: 250,
     showCapturedToast: false,
     showNoSpeechToast: false,
