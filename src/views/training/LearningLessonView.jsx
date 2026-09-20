@@ -9,7 +9,7 @@ import TrainingBackButton from "./TrainingBackButton";
 import ScenarioV2Block from "./ScenarioV2Block";
 import { calculateAccuracyPct, countScoreableBlocks } from "../../lib/trainingScoring";
 import { getBuildPhraseDistractorMeaning } from "../../lib/buildPhraseFeedback";
-import { phraseMatchesSpeech } from "../../lib/speechMatch";
+import { normaliseSpeechForMatch, phraseMatchesSpeech } from "../../lib/speechMatch";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -470,6 +470,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
   const [capturedText, setCapturedText] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
   const targetText = block?.targetText || "";
+  const speechDebugEnabled = typeof window !== "undefined" && !["zodis.app", "www.zodis.app"].includes(window.location.hostname);
+  const debugHeard = capturedText ? normaliseSpeechForMatch(capturedText) : "";
+  const debugTarget = targetText ? normaliseSpeechForMatch(targetText) : "";
   const pointerIdRef = React.useRef(null);
   const buttonRef = React.useRef(null);
   const recordingToneActiveRef = React.useRef(false);
@@ -613,6 +616,14 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
           <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
           <div className="text-[13px] text-emerald-200 font-medium">Spoken</div>
         </div>
+        {speechDebugEnabled && capturedText ? (
+          <div className="mt-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-zinc-400">
+            <div><span className="font-semibold text-zinc-300">STT heard:</span> {capturedText}</div>
+            <div><span className="font-semibold text-zinc-300">Normalised:</span> {debugHeard}</div>
+            <div><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
+            <div><span className="font-semibold text-zinc-300">Matcher:</span> accepted</div>
+          </div>
+        ) : null}
         <ActionButton onClick={onAdvance} className="mt-3 w-full">Continue</ActionButton>
       </div>
     );
@@ -678,6 +689,14 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
                   </svg>
                 )}
               </button>
+              {speechDebugEnabled && capturedText ? (
+                <div className="w-full rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-zinc-400">
+                  <div><span className="font-semibold text-zinc-300">STT heard:</span> {capturedText}</div>
+                  <div><span className="font-semibold text-zinc-300">Normalised:</span> {debugHeard}</div>
+                  <div><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
+                  <div><span className="font-semibold text-zinc-300">Matcher:</span> rejected</div>
+                </div>
+              ) : null}
               {failedAttempts >= 2 ? (
                 <button
                   type="button"
