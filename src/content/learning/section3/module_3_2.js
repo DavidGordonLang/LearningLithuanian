@@ -197,7 +197,6 @@ export default function createModule_3_2(profile = {}) {
             title: "Price answers",
             items: [
               { id: "pa1", lt: "Tai kainuoja penkis eurus",    en: "It costs five euros",    audioText: "Tai kainuoja penkis eurus",    saveable: true, core: true },
-              { id: "pa2", lt: "Tai kainuoja dešimt eurų",     en: "It costs ten euros",     audioText: "Tai kainuoja dešimt eurų",     saveable: true, core: true },
               { id: "pa3", lt: "Tai kainuoja dvidešimt eurų",  en: "It costs twenty euros",  audioText: "Tai kainuoja dvidešimt eurų",  saveable: true, core: true },
               { id: "pa4", lt: "Tai kainuoja trisdešimt eurų", en: "It costs thirty euros",  audioText: "Tai kainuoja trisdešimt eurų", saveable: true, core: true },
               { id: "noun_sask", lt: "sąskaita", en: "bill / receipt", audioText: "sąskaita", core: false, saveable: true },
@@ -399,10 +398,7 @@ export default function createModule_3_2(profile = {}) {
             title: "Cash and card",
             items: [
               { id: "cc1", lt: "grynieji",                    en: "cash",                           audioText: "grynieji",                    saveable: true, core: true },
-              { id: "cc2", lt: "kortelė",                     en: "card",                           audioText: "kortelė",                     saveable: true, core: true },
               { id: "cc3", lt: "Turiu grynųjų",               en: "I have cash",                    audioText: "Turiu grynųjų",               saveable: true, core: true },
-              { id: "cc4", lt: "Turiu kortelę",               en: "I have a card",                  audioText: "Turiu kortelę",               saveable: true, core: true },
-              { id: "cc5", lt: "Ar galima mokėti kortele?",   en: "Is it possible to pay by card?", audioText: "Ar galima mokėti kortele",     saveable: true, core: true },
               { id: "cc6", lt: "Grynaisiais ar kortele?",     en: "Cash or card?",                  audioText: "Grynaisiais ar kortele",       saveable: true, core: true },
             ],
           },
