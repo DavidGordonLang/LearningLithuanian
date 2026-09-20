@@ -295,6 +295,9 @@ test("Build Phrase gives token-level guided repair after a wrong check", () => {
   assert.match(src, /token\.correctIndex === index \? "correct" : "wrong"/);
   assert.match(src, /const repairDiagnosis = \(\(\) =>/);
   assert.match(src, /token\.repairHint/);
+  assert.match(src, /getBuildPhraseDistractorMeaning\(token\.text\)/);
+  assert.match(src, /means “\$\{meaning\}”/);
+  assert.doesNotMatch(src, /This position needs “\$\{expected\.text\}”/);
   assert.match(src, /right word, right place/);
   assert.match(src, /change or move/);
   assert.match(src, /diagnosticStatus === "correct"/);
