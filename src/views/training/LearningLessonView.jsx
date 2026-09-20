@@ -520,6 +520,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     // supplied to transcription.
     transcriptionPrompt: null,
     transcriptionKeywords: [],
+    // Dev-only A/B diagnostic: compare the same recording without changing pass/fail.
     comparisonTranscriptionUrl: speechDebugEnabled ? "/api/stt-speechmatics" : null,
     onComparisonTranscript: ({ text, error }) => {
       setSpeechmaticsText(String(text || "").trim());
