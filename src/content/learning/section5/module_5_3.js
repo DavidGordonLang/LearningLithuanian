@@ -783,7 +783,7 @@ export default function createModule_5_3(profile = {}) {
         title: "Pattern to Notice",
         purpose: "Prevent the learner from being thrown off when place forms visibly shift.",
         supportLevel: "high",
-        newLanguageLoad: "very_low",
+        newLanguageLoad: "none",
         notes: {
           pattern: "Lithuanian uses endings to show what role a word plays in a sentence. To, from, and in are all expressed by changing the ending of the place word — not by keeping it the same and adding a separate word. You have already seen this happening. Here is the pattern in one place.",
           usage: [
@@ -796,19 +796,6 @@ export default function createModule_5_3(profile = {}) {
           ],
         },
         blocks: [
-          {
-            id: "s5m3l5_b1",
-            type: "learn",
-            title: "The three forms — to, from, in",
-            items: [
-              { id: "i1", lt: "į stotį",      en: "to the station",      audioText: "į stotį",      saveable: false, core: false },
-              { id: "i2", lt: "iš stoties",   en: "from the station",    audioText: "iš stoties",   saveable: false, core: false },
-              { id: "i3", lt: "stotyje",      en: "at / in the station", audioText: "stotyje",      saveable: false, core: false },
-              { id: "i4", lt: "į viešbutį",   en: "to the hotel",        audioText: "į viešbutį",   saveable: false, core: false },
-              { id: "i5", lt: "iš viešbučio", en: "from the hotel",      audioText: "iš viešbučio", saveable: false, core: false },
-              { id: "i6", lt: "viešbutyje",   en: "in the hotel",        audioText: "viešbutyje",   saveable: false, core: false },
-            ],
-          },
           {
             id: "s5m3l5_b2",
             type: "choose_correct_form",
