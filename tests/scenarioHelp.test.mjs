@@ -92,3 +92,30 @@ test("steps without authored help remain unchanged", () => {
   assert.deepEqual(withScenarioHelpOption(authored, { id: "step_no_help" }, 0), authored);
   assert.equal(getScenarioHelpOption({ id: "step_no_help" }, 0), null);
 });
+
+
+test("help levels can end in a translation-only reveal", () => {
+  const translationStep = {
+    speakerId: "pharmacist",
+    help: {
+      levels: [
+        {
+          translationReveal: [
+            { lt: "Du kartus per dieną.", en: "Twice a day." },
+          ],
+          spokenLanguage: "en",
+          audio: false,
+        },
+      ],
+    },
+  };
+
+  const levels = getScenarioHelpLevels(translationStep);
+  assert.equal(levels.length, 1);
+
+  const turn = getScenarioHelpTurn(translationStep, 0);
+  assert.equal(turn.translationReveal.length, 1);
+  assert.equal(turn.translationReveal[0].en, "Twice a day.");
+  assert.equal(turn.spokenLanguage, "en");
+  assert.equal(turn.audio, false);
+});
