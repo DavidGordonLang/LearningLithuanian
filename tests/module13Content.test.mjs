@@ -48,7 +48,9 @@ test("1.3.2 separates pace repair from genuine comprehension repair", () => {
 
   const comprehensionStep = scenario.steps[1];
   assert.equal(comprehensionStep.speakerText, "Du kartus per dieną.");
-  assert.equal(comprehensionStep.help.levels.length, 3);
+  assert.equal(comprehensionStep.help.levels.length, 2);
+  assert.equal(comprehensionStep.help.levels[0].speakerText, "Du kartus. Per dieną.");
+  assert.match(comprehensionStep.help.levels[0].sceneDirection, /holds up two fingers/);
   assert.equal(comprehensionStep.help.levels.at(-1).spokenLanguage, "en");
   assert.equal(comprehensionStep.help.levels.at(-1).audio, false);
   assert.equal(comprehensionStep.help.levels.at(-1).translationReveal.length, 2);
