@@ -90,7 +90,7 @@ export default function createModule_1_3(profile = {}) {
             tokens: [
               { id: "t1", text: "Ne,", correctIndex: 0 },
               { id: "t2", text: "nesuprantu", correctIndex: 1 },
-              { id: "t3", text: "suprantu", isDistractor: true, repairHint: "suprantu means “I understand”. The prompt says “I don’t understand”, so you need nesuprantu." },
+              { id: "t3", text: "suprantu", isDistractor: true, repairHint: "suprantu means “I understand”. The prompt says “I don’t understand”, so this positive form reverses the meaning." },
             ],
             answerText: "Ne, nesuprantu",
           },
