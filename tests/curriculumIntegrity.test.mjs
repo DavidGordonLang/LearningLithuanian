@@ -172,3 +172,58 @@ test("learner-facing authored prose is not written as all-caps shouting", () => 
   assert.deepEqual(offenders, []);
 });
 
+test("Learn blocks introduce each Lithuanian item only once", () => {
+  const seen = new Map();
+  const duplicates = [];
+
+  const normalize = (value) =>
+    String(value || "")
+      .toLocaleLowerCase("lt")
+      .replace(/[„“”"'’?!.,;:()[\]…]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  for (const module of modules) {
+    for (const lesson of module.lessons || []) {
+      for (const block of (lesson.blocks || []).filter((candidate) => candidate.type === "learn")) {
+        for (const item of block.items || []) {
+          const key = normalize(item.lt);
+          if (!key) continue;
+          if (seen.has(key)) {
+            duplicates.push(
+              `${lesson.code}:${block.id} repeats "${item.lt}" first introduced at ${seen.get(key)}`
+            );
+          } else {
+            seen.set(key, `${lesson.code}:${block.id}`);
+          }
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(duplicates, []);
+});
+
+test("pattern and consolidation lessons use retrieval/application instead of Learn cards", () => {
+  const applicationOnlyCodes = new Set([
+    "1.4.5",
+    "4.2.4",
+    "5.1.1",
+    "5.2.3",
+    "5.3.5",
+    "5.4.2",
+    "5.4.3",
+  ]);
+
+  for (const module of modules) {
+    for (const lesson of module.lessons || []) {
+      if (!applicationOnlyCodes.has(lesson.code)) continue;
+      assert.equal(
+        (lesson.blocks || []).some((block) => block.type === "learn"),
+        false,
+        `${lesson.code} should retrieve/apply known language rather than re-teach it`
+      );
+    }
+  }
+});
+
