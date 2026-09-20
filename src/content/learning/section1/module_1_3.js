@@ -781,8 +781,21 @@ export default function createModule_1_3(profile = {}) {
       finalSystemLine: {
         speakerId: "assistant",
         speakerLabel: "Assistant",
-        speakerText: "Gerai.",
-        sceneDirection: "She smiles and waits for you to continue.",
+        sceneDirection: "She switches to English and the conversation continues there.",
+        spokenLanguage: "en",
+        audio: false,
+        translationReveal: [
+          {
+            id: "greeting_help",
+            lt: "Laba diena. Kuo galiu padėti?",
+            en: "Good afternoon. How can I help you?",
+          },
+          {
+            id: "speaks_a_little",
+            lt: "Taip, truputį.",
+            en: "Yes, a little.",
+          },
+        ],
       },
     },
   ],
