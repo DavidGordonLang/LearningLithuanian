@@ -26,10 +26,7 @@ export default function createModule_5_2(profile = {}) {
             type: "learn",
             title: "Transport places",
             items: [
-              { id: "i1", lt: "autobusų stotis",     en: "bus station",       audioText: "autobusų stotis",    saveable: true, core: true },
               { id: "i2", lt: "traukinių stotis", en: "train station",     audioText: "traukinių stotis",saveable: true, core: true },
-              { id: "i3", lt: "stotelė",             en: "stop / bus stop",   audioText: "stotelė",            saveable: true, core: true },
-              { id: "i4", lt: "oro uostas",          en: "airport",           audioText: "oro uostas",         saveable: true, core: false },
             ],
           },
           {
@@ -360,15 +357,15 @@ export default function createModule_5_2(profile = {}) {
       {
         id: "section_5_module_2_lesson_3",
         code: "5.2.3",
-        title: "Daily Utility Places",
-        purpose: "Teach a few everyday service places.",
+        title: "Everyday Places in Context",
+        purpose: "Introduce kavinė and reuse familiar service-place vocabulary in location tasks.",
         supportLevel: "high",
-        newLanguageLoad: "low",
+        newLanguageLoad: "very_low",
         blocks: [
           {
             id: "s5m2l3_b1",
             type: "learn",
-            title: "Everyday places",
+            title: "One new place word",
             items: [
               { id: "i1", lt: "parduotuvė", en: "shop / store", audioText: "parduotuvė", saveable: true, core: true },
               { id: "i2", lt: "kavinė",     en: "café",         audioText: "kavinė",     saveable: true, core: true },
