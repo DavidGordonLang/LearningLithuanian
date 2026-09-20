@@ -108,7 +108,7 @@ export default function createCheckpoint1(profile = {}) {
         tokens: [
           { id: "t1", text: "Aš", correctIndex: 0 },
           { id: "t2", text: "nesuprantu", correctIndex: 1 },
-          { id: "t3", text: "suprantu", isDistractor: true, repairHint: "suprantu means “I understand”. The prompt says “I don’t understand”, so you need nesuprantu." },
+          { id: "t3", text: "suprantu", isDistractor: true, repairHint: "suprantu means “I understand”. The prompt says “I don’t understand”, so this positive form reverses the meaning." },
           { id: "t4", text: "kalbu", isDistractor: true },
         ],
         answerText: "Aš nesuprantu",
@@ -138,7 +138,7 @@ export default function createCheckpoint1(profile = {}) {
           { id: "t2", text: "galite", correctIndex: 1 },
           { id: "t3", text: "man", correctIndex: 2 },
           { id: "t4", text: "padėti?", correctIndex: 3 },
-          { id: "t5", text: "galiu", isDistractor: true, repairHint: "galiu is the “I” form: “I can”. Here you’re asking the other person “Can you help me?”, so use the polite you-form galite." },
+          { id: "t5", text: "galiu", isDistractor: true, repairHint: "galiu is the “I” form: “I can”. Here you’re asking the other person “Can you help me?”, so an “I can” form doesn’t fit." },
         ],
         answerText: "Ar galite man padėti?",
       },
