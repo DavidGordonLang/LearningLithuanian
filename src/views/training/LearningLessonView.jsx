@@ -8,6 +8,7 @@ import InteractivePhraseText from "../../components/audio/InteractivePhraseText"
 import TrainingBackButton from "./TrainingBackButton";
 import ScenarioV2Block from "./ScenarioV2Block";
 import { calculateAccuracyPct, countScoreableBlocks } from "../../lib/trainingScoring";
+import { getBuildPhraseDistractorMeaning } from "../../lib/buildPhraseFeedback";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -828,7 +829,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
       };
     }
 
-    const { token, index, expected } = firstWrong;
+    const { token } = firstWrong;
     if (!token) {
       return {
         title: "Close — check the red word.",
@@ -844,22 +845,18 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
     }
 
     if (token.isDistractor) {
+      const meaning = getBuildPhraseDistractorMeaning(token.text);
       return {
         title: `Close — “${token.text}” doesn't fit here.`,
-        detail: expected
-          ? `This position needs “${expected.text}”. Green words are already correct and correctly placed.`
-          : `“${token.text}” isn't part of this phrase. Green words are already correct and correctly placed.`,
+        detail: meaning
+          ? `“${token.text}” means “${meaning}”. Think about the meaning the prompt is asking for; green words can stay where they are.`
+          : `“${token.text}” isn't part of this phrase. Re-read the prompt and think about what this word means; green words can stay where they are.`,
       };
     }
 
-    const correctPosition = Number.isInteger(token.correctIndex) ? token.correctIndex : null;
     return {
       title: `“${token.text}” belongs in the phrase, but it's in the wrong position.`,
-      detail: expected
-        ? `This position needs “${expected.text}”. Move “${token.text}” to its correct place; green words can stay where they are.`
-        : correctPosition !== null
-        ? `Move “${token.text}” to position ${correctPosition + 1}. Green words can stay where they are.`
-        : "Move the red word while leaving green words in place.",
+      detail: `Move “${token.text}” to a different position. Green words can stay where they are.`,
     };
   })();
 
