@@ -279,12 +279,12 @@ export default function createModule_1_3(profile = {}) {
   id: "s1m3l2_b8_v2",
   type: "scenario_v2",
   title: "At the pharmacy",
-  description: "The pharmacist gives you medicine instructions quickly. Use a specific pace request when that is what you need, or Nesuprantu if you are simply lost.",
-  sceneIntro: "The pharmacist gives you medicine instructions quickly. Use a specific pace request when that is what you need, or Nesuprantu if you are simply lost.",
+  description: "The pharmacist gives you an important medicine instruction too quickly. First ask her to slow down; if you are still lost after the repeat, use Nesuprantu.",
+  sceneIntro: "The pharmacist gives you an important medicine instruction too quickly. First ask her to slow down; if you are still lost after the repeat, use Nesuprantu.",
   location: "pharmacy",
   userRole: "customer",
   register: "polite_service",
-  goal: "Choose between a specific request to slow down and the more general Nesuprantu help route.",
+  goal: "Use a specific pace repair first, then check whether it actually solved the comprehension problem.",
   focus: ["Prašau kalbėkite lėčiau", "Nesuprantu", "Supratau"],
   participants: [
     {
@@ -303,50 +303,85 @@ export default function createModule_1_3(profile = {}) {
       speakerId: "pharmacist",
       speakerLabel: "Pharmacist",
       speakerText: "Šiuos vaistus reikia vartoti du kartus per dieną.",
-      sceneDirection: "The pharmacist hands you the medicine and speaks quickly.",
-      learnerPrompt: "Respond based on what you need.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "She slows down, holds up two fingers and taps the medicine box.",
-            speakerText: "Du kartus per dieną.",
-          },
-          {
-            sceneDirection: "She points to the medicine, holds up two fingers, then points to a clock.",
-            speakerText: "Du kartus.",
-          },
-          {
-            speakerText: "Twice a day.",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
+      sceneDirection: "The pharmacist hands you the medicine and gives an important instruction too quickly for you to follow.",
+      learnerPrompt: "The speed is the problem. Ask her to slow down.",
       options: [
         {
           id: "a",
           text: "Prašau kalbėkite lėčiau.",
           result: "best",
           progresses: true,
-          followUp: {
-            speakerId: "pharmacist",
-            speakerLabel: "Pharmacist",
-            speakerText: "Du kartus per dieną.",
-            sceneDirection: "She repeats the important part more slowly and holds up two fingers.",
-          },
         },
         {
           id: "b",
-          text: "Supratau, ačiū!",
-          result: "acceptable",
-          feedback: "If you understood the instruction, this is a natural response. If not, ask for help rather than pretending.",
-          progresses: true,
+          text: "Pakartokite, prašau.",
+          result: "wrong",
+          feedback: "A repeat at the same speed may not solve the problem. Here the issue is specifically the pace, so ask her to speak more slowly.",
+          progresses: false,
         },
         {
           id: "c",
           text: "Viso gero.",
           result: "wrong",
-          feedback: "The pharmacist is still giving you important instructions.",
+          feedback: "The pharmacist is still giving you an important instruction.",
+          progresses: false,
+        },
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "pharmacist",
+      speakerLabel: "Pharmacist",
+      speakerText: "Du kartus per dieną.",
+      sceneDirection: "She repeats the important part more slowly and holds up two fingers.",
+      learnerPrompt: "Did that solve it? If you understand now, acknowledge her. If you are still lost, use Nesuprantu.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "She taps the medicine box, holds up two fingers, then points to a clock and the day on a calendar.",
+          },
+          {
+            sceneDirection: "She separates the phrase into smaller chunks and repeats it carefully.",
+            speakerText: "Du kartus. Per dieną.",
+          },
+          {
+            sceneDirection: "She pauses and shows you exactly what the instruction meant.",
+            spokenLanguage: "en",
+            audio: false,
+            translationReveal: [
+              {
+                id: "full_instruction",
+                lt: "Šiuos vaistus reikia vartoti du kartus per dieną.",
+                en: "These medicines need to be taken twice a day.",
+              },
+              {
+                id: "key_instruction",
+                lt: "Du kartus per dieną.",
+                en: "Twice a day.",
+              },
+            ],
+          },
+        ],
+      },
+      options: [
+        {
+          id: "a",
+          text: "Supratau, ačiū!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Taip.",
+          result: "wrong",
+          feedback: "Do not agree if you are not actually sure what the instruction means. Use Nesuprantu if you are still lost.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Viso gero.",
+          result: "wrong",
+          feedback: "Make sure you understand the instruction before ending the exchange.",
           progresses: false,
         },
       ],
