@@ -22,11 +22,11 @@ test("Section 5 removes corrupted text and reviewed terminology issues",()=>{
 
 test("Section 5 location scenarios match their physical setting",()=>{
  const m=createModule51();
- const pharmacy=m.lessons.flatMap(l=>l.blocks).find(b=>b.id==="s5m1l1_b6_v2");
+ const bank=m.lessons.flatMap(l=>l.blocks).find(b=>b.id==="s5m1l1_b6_v2");
  const hotel=m.lessons.flatMap(l=>l.blocks).find(b=>b.id==="s5m1l2_b6_v2");
- assert.equal(pharmacy.location,"street");
- assert.equal(pharmacy.participants[0].role,"passer-by");
- assert.equal(pharmacy.objects[0].lt,"vaistinė");
+ assert.equal(bank.location,"street");
+ assert.equal(bank.participants[0].role,"passer-by");
+ assert.equal(bank.objects[0].lt,"bankas");
  assert.equal(hotel.location,"street");
  assert.equal(hotel.steps[1].speakerText,"Viešbutis — va ten.");
 });
