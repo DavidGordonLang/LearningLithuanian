@@ -65,6 +65,21 @@ test("2.1.4 explains Ar as the beginner-safe frame without claiming it is always
   assert.match(scenario.steps[2].sceneDirection, /places the coffee/);
 });
 
+test("2.1.4 teaches raktas in a hotel context instead of as orphan vocabulary", () => {
+  const module = createModule_2_1();
+  const lesson = getLesson(module, "2.1.4");
+  const genericLearn = getBlock(lesson, "s2m1l4_b1");
+  const hotelLearn = getBlock(lesson, "s2m1l4_b8");
+  const hotelScenario = getBlock(lesson, "s2m1l4_b9_v2");
+
+  assert.equal(genericLearn.items.some((item) => /rakt/i.test(item.lt)), false);
+  assert.ok(hotelLearn.items.some((item) => item.lt === "Raktas" && item.en === "Key"));
+  assert.ok(hotelLearn.items.some((item) => item.lt === "Kambario raktas" && item.en === "Room key"));
+  assert.equal(hotelScenario.location, "hotel reception");
+  assert.match(hotelScenario.steps[0].speakerText, /kambario raktas/i);
+  assert.match(hotelScenario.steps[0].sceneDirection, /room key/i);
+});
+
 test("Module 2.1 scenarios no longer author Nesuprantu as a wrong answer", () => {
   const module = createModule_2_1();
 
