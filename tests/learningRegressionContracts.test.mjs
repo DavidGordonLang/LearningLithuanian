@@ -220,13 +220,19 @@ test("lesson mic does not abort an active hold when pointer capture is lost duri
 });
 
 
-test("lesson speech checks suppress the generic captured toast so retries are not blocked", () => {
+test("lesson speech checks keep retry feedback local so mic holds are not blocked by toasts", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
   const sttSrc = source("src/hooks/useSpeechToTextHold.js");
 
   assert.match(lessonSrc, /showCapturedToast:\s*false/);
+  assert.match(lessonSrc, /showNoSpeechToast:\s*false/);
+  assert.match(lessonSrc, /onNoSpeech:\s*\(\) => \{[\s\S]*?setAttemptState\("not_caught"\)/);
+  assert.match(lessonSrc, /Didn't catch that\. Hold the mic and try again\./);
+
   assert.match(sttSrc, /showCapturedToast = true/);
+  assert.match(sttSrc, /showNoSpeechToast = true/);
   assert.match(sttSrc, /if \(showCapturedToast\) showToast\?\.\("Speech captured"\)/);
+  assert.match(sttSrc, /onNoSpeech\?\.\(\);[\s\S]*?showNoSpeechToast \? "Didn't catch that — try again" : null/);
 });
 
 
