@@ -850,7 +850,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
       return {
         title: `Close — “${displayText}” doesn't fit here.`,
         detail: meaning
-          ? `“${displayText}” means “${meaning}”. Think about the meaning the prompt is asking for; green words can stay where they are.`
+          ? `“${displayText}” means “${meaning}”. The prompt is asking for something different; green words can stay where they are.`
           : `“${displayText}” isn't part of this phrase. Re-read the prompt and think about what this word means; green words can stay where they are.`,
       };
     }
