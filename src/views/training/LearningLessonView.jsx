@@ -790,6 +790,78 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
   const isReady = built.length >= requiredLength && requiredLength > 0;
   const dragThreshold = 7;
 
+  const expectedTokenAt = (index) => answerTokens.find((token) => token.correctIndex === index) || null;
+
+  const getBuiltTokenStatus = (tokenId, index) => {
+    if (checkState !== "wrong") return null;
+    const token = tokens.find((candidate) => candidate.id === tokenId);
+    if (!token || token.isDistractor) return "wrong";
+    return token.correctIndex === index ? "correct" : "wrong";
+  };
+
+  const repairDiagnosis = (() => {
+    if (checkState !== "wrong") return null;
+
+    const entries = built.map((tokenId, index) => {
+      const token = tokens.find((candidate) => candidate.id === tokenId) || null;
+      return {
+        token,
+        index,
+        status: getBuiltTokenStatus(tokenId, index),
+        expected: expectedTokenAt(index),
+      };
+    });
+
+    const firstWrong = entries.find((entry) => entry.status === "wrong") || null;
+
+    if (!firstWrong) {
+      if (built.length < requiredLength) {
+        return {
+          title: "Good correction — add the missing word.",
+          detail: "Everything currently placed is in the right position.",
+        };
+      }
+      return {
+        title: "That now looks right.",
+        detail: "Every word is in the correct position. Check the phrase to confirm it.",
+      };
+    }
+
+    const { token, index, expected } = firstWrong;
+    if (!token) {
+      return {
+        title: "Close — check the red word.",
+        detail: "Green words are already correct and correctly placed.",
+      };
+    }
+
+    if (token.repairHint) {
+      return {
+        title: `Close — “${token.text}” is the part to change.`,
+        detail: token.repairHint,
+      };
+    }
+
+    if (token.isDistractor) {
+      return {
+        title: `Close — “${token.text}” doesn't fit here.`,
+        detail: expected
+          ? `This position needs “${expected.text}”. Green words are already correct and correctly placed.`
+          : `“${token.text}” isn't part of this phrase. Green words are already correct and correctly placed.`,
+      };
+    }
+
+    const correctPosition = Number.isInteger(token.correctIndex) ? token.correctIndex : null;
+    return {
+      title: `“${token.text}” belongs in the phrase, but it's in the wrong position.`,
+      detail: expected
+        ? `This position needs “${expected.text}”. Move “${token.text}” to its correct place; green words can stay where they are.`
+        : correctPosition !== null
+        ? `Move “${token.text}” to position ${correctPosition + 1}. Green words can stay where they are.`
+        : "Move the red word while leaving green words in place.",
+    };
+  })();
+
   const setChipRef = (id) => (node) => {
     if (node) chipRefs.current.set(id, node);
     else chipRefs.current.delete(id);
@@ -857,7 +929,6 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
         return prev;
       }
 
-      if (checkState === "wrong") setCheckState("idle");
       return next;
     });
   };
@@ -928,7 +999,6 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
 
     if (!wasDragging && !revealed && !completed) {
       setBuilt((prev) => prev.filter((x) => x !== id));
-      setCheckState("idle");
     }
   };
 
@@ -963,13 +1033,14 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
       <div className={cn(
         "rounded-2xl border px-4 py-4 min-h-[60px] mb-4 transition",
         checkState === "correct" ? "border-emerald-400/20 bg-emerald-500/[0.06]"
-        : checkState === "wrong" ? "build-phrase-wrong-area border-rose-400/20 bg-rose-500/[0.05]"
+        : checkState === "wrong" ? "build-phrase-repair-area border-white/15 bg-white/[0.035]"
         : "border-white/10 bg-white/[0.03]"
       )}>
         <div className="flex flex-wrap gap-2">
           {built.length ? (
-            built.map((id) => {
+            built.map((id, index) => {
               const token = tokens.find((t) => t.id === id);
+              const diagnosticStatus = getBuiltTokenStatus(id, index);
               const isDragging = draggedId === id;
               const isFloating = floatingDrag?.id === id;
               const placeholderStyle = isFloating
@@ -997,8 +1068,10 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                     isFloating ? "opacity-0 pointer-events-none" : "",
                     checkState === "correct"
                       ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100 cursor-default"
-                      : checkState === "wrong"
-                      ? "build-phrase-wrong-token border-rose-400/20 bg-rose-500/[0.10] text-rose-200"
+                      : diagnosticStatus === "correct"
+                      ? "build-phrase-right-token border-emerald-400/30 bg-emerald-500/[0.11] text-emerald-200"
+                      : diagnosticStatus === "wrong"
+                      ? "build-phrase-wrong-token border-rose-400/30 bg-rose-500/[0.10] text-rose-200"
                       : completed
                       ? "border-white/15 bg-white/[0.08] text-zinc-100 cursor-default"
                       : "border-white/15 bg-white/[0.08] text-zinc-100 hover:bg-white/[0.11] cursor-grab active:cursor-grabbing",
@@ -1006,7 +1079,15 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
                       ? "z-10 scale-[1.04] border-white/30 shadow-[0_12px_28px_rgba(0,0,0,0.32)] cursor-grabbing"
                       : "z-0"
                   )}>
-                  {token?.text}
+                  <span>{token?.text}</span>
+                  {checkState === "wrong" && diagnosticStatus ? (
+                    <span
+                      className="ml-1.5 text-[11px] font-bold"
+                      aria-hidden="true"
+                    >
+                      {diagnosticStatus === "correct" ? "✓" : "×"}
+                    </span>
+                  ) : null}
                 </button>
               );
             })
@@ -1058,7 +1139,6 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
               onClick={() => {
                 if (revealed) return;
                 setBuilt((prev) => [...prev, token.id]);
-                if (checkState !== "idle") setCheckState("idle");
               }}
               className="rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-sm text-zinc-100 transition hover:bg-white/[0.09] hover:border-white/25">
               {token.text}
@@ -1067,10 +1147,19 @@ function BuildPhraseBlock({ block, playText, onComplete, onAdvance, completed })
         })}
       </div>
 
-      {/* Feedback */}
-      {checkState === "wrong" ? (
-        <div className="mb-3 text-[12px] text-zinc-500 px-1">
-          Drag words to reorder, or reset and try again.
+      {/* Guided repair feedback */}
+      {checkState === "wrong" && repairDiagnosis ? (
+        <div className="build-phrase-repair-feedback mb-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.05] px-4 py-3">
+          <div className="text-[13px] font-semibold text-zinc-200 leading-snug">
+            {repairDiagnosis.title}
+          </div>
+          <div className="mt-1 text-[12px] text-zinc-500 leading-relaxed">
+            {repairDiagnosis.detail}
+          </div>
+          <div className="mt-2 text-[11px] text-zinc-500">
+            <span className="text-emerald-300 font-semibold">✓ Green</span> = right word, right place ·{" "}
+            <span className="text-rose-300 font-semibold">× Red</span> = change or move
+          </div>
         </div>
       ) : null}
 
