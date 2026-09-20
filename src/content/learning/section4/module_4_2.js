@@ -37,12 +37,8 @@ export default function createModule_4_2(profile = {}) {
             title: "Core drink vocabulary",
             items: [
               { id: "dr1", lt: "kava", en: "coffee", audioText: "kava", saveable: true, core: true },
-              { id: "dr2", lt: "arbata", en: "tea", audioText: "arbata", saveable: true, core: true },
               { id: "dr3", lt: "vanduo", en: "water", audioText: "vanduo", saveable: true, core: true },
-              { id: "dr4", lt: "Norėčiau kavos.", en: "I would like coffee.", audioText: "Norėčiau kavos", saveable: true, core: true },
-              { id: "dr5", lt: "Norėčiau arbatos.", en: "I would like tea.", audioText: "Norėčiau arbatos", saveable: true, core: true },
               { id: "dr6", lt: "Vandens, prašau.", en: "Water, please.", audioText: "Vandens, prašau", saveable: true, core: true },
-              { id: "noun_sultys", lt: "sultys", en: "juice", audioText: "sultys", saveable: true, core: false },
             ],
           },
           {
@@ -576,9 +572,9 @@ export default function createModule_4_2(profile = {}) {
         id: "section_4_module_2_lesson_4",
         code: "4.2.4",
         title: "The Bill, Please",
-        purpose: "Close the café interaction cleanly — ask for the bill, pay, and leave.",
+        purpose: "Apply already-known payment language in a natural café closing sequence.",
         supportLevel: "medium",
-        newLanguageLoad: "low",
+        newLanguageLoad: "none",
         notes: {
           pattern: "Sąskaitą, prašau and Noriu sumokėti are already in your vocabulary from Section 3. This lesson brings them into a natural closing sequence.",
           usage: [
@@ -588,17 +584,6 @@ export default function createModule_4_2(profile = {}) {
           ],
         },
         blocks: [
-          {
-            id: "s4m2l4_b1",
-            type: "learn",
-            title: "Closing the café interaction",
-            items: [
-              { id: "bl1", lt: "Ar galėčiau gauti sąskaitą, prašau?", en: "The bill, please.", audioText: "Ar galėčiau gauti sąskaitą, prašau", saveable: true, core: true },
-              { id: "bl2", lt: "Noriu sumokėti.", en: "I want to pay.", audioText: "Noriu sumokėti", saveable: true, core: true },
-              { id: "bl3", lt: "Ar galima mokėti kortele?", en: "Can I pay by card?", audioText: "Galima mokėti kortele", saveable: true, core: true },
-              { id: "bl4", lt: "Grynaisiais ar kortele?", en: "Cash or card?", audioText: "Grynaisiais ar kortele", saveable: false, core: false },
-            ],
-          },
           {
             id: "s4m2l4_b2",
             type: "listen_mcq",
