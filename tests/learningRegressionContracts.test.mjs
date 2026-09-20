@@ -138,7 +138,7 @@ test("Build Phrase wrong-state remains legible in light mode", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
   const cssSrc = source("src/index.css");
 
-  assert.match(lessonSrc, /build-phrase-wrong-area/);
+  assert.match(lessonSrc, /build-phrase-repair-area/);
   assert.match(lessonSrc, /build-phrase-wrong-token/);
   assert.match(cssSrc, /html\[data-theme="light"\] \.build-phrase-wrong-token[\s\S]*?color: #881337/);
 });
@@ -202,7 +202,8 @@ test("lesson speech checks use the high-accuracy Lithuanian transcription path a
   const sttSrc = source("src/hooks/useSpeechToTextHold.js");
 
   assert.match(lessonSrc, /transcriptionModel:\s*"gpt-transcribe"/);
-  assert.match(lessonSrc, /transcriptionKeywords:\s*targetText \? \[targetText\] : \[\]/);
+  assert.match(lessonSrc, /transcriptionKeywords:\s*\[\]/);
+  assert.match(lessonSrc, /Do not infer, complete, or guess an expected practice phrase/);
   assert.match(lessonSrc, /minRecordingMs:\s*250/);
   assert.match(sttSrc, /fd\.append\("languages\[\]", language\)/);
   assert.match(sttSrc, /fd\.append\("keywords\[\]", keyword\)/);
