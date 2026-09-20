@@ -449,7 +449,6 @@ export default function createModule_4_3(profile = {}) {
               { id: "co3", lt: "Aš užsisakiau arbatos.", en: "I ordered tea.", audioText: "Aš užsisakiau arbatą", saveable: true, core: true },
               { id: "co4", lt: "Ne šitą.", en: "Not this one.", audioText: "Ne šitą", saveable: true, core: true },
               { id: "co5", lt: "Ne tą.", en: "Not that one.", audioText: "Ne tą", saveable: true, core: true },
-              { id: "co6", lt: "Atsiprašau.", en: "Sorry.", audioText: "Atsiprašau", saveable: false, core: false },
             ],
           },
           {
@@ -664,7 +663,6 @@ export default function createModule_4_3(profile = {}) {
               { id: "cr2", lt: "Ar galite atnešti kitą?", en: "Can you bring another one?", audioText: "Ar galite atnešti kitą", saveable: true, core: true },
               { id: "cr3", lt: "Kitą, prašau.", en: "Another one, please.", audioText: "Kitą, prašau", saveable: true, core: true },
               { id: "cr4", lt: "Noriu šito vietoj to.", en: "I want this instead of that.", audioText: "Noriu šito vietoj to", saveable: true, core: false },
-              { id: "cr5", lt: "Taip, žinoma.", en: "Yes, of course.", audioText: "Taip, žinoma", saveable: false, core: false },
             ],
           },
           {
