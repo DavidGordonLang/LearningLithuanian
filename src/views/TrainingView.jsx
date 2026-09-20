@@ -27,6 +27,7 @@ import createSection3 from "../content/learning/section3";
 import createSection4 from "../content/learning/section4";
 import createSection5 from "../content/learning/section5";
 import SequenceDebugView from "./training/SequenceDebugView";
+import { aggregateSectionMetrics } from "../lib/trainingScoring";
 
 const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me", "barbora.gaulyte@gmail.com"];
 
@@ -160,6 +161,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const showDevControls = import.meta.env.DEV || isAdmin;
   const effectiveDevMode = showDevControls && devMode;
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
+  const lessonMetrics = useGameStore((s) => s.lessonMetrics);
+  const lessonXP = useGameStore((s) => s.lessonXP);
   const hasSeenModuleComplete = useGameStore((s) => s.hasSeenModuleComplete);
   const markModuleCompleteSeen = useGameStore((s) => s.markModuleCompleteSeen);
   const hasSeenSectionComplete = useGameStore((s) => s.hasSeenSectionComplete);
@@ -530,6 +533,11 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
           const modAccuracy = moduleScoreableBlocks > 0
             ? Math.round(((moduleScoreableBlocks - moduleWrongAnswers) / moduleScoreableBlocks) * 100)
             : null;
+          const sectionMetrics = sec ? aggregateSectionMetrics(sec, lessonMetrics) : null;
+          const sectionXpEarned = sectionMetrics?.lessonIds?.reduce(
+            (sum, lessonId) => sum + (Number(lessonXP?.[lessonId]) || 0),
+            0
+          ) || 0;
 
           // Section complete check runs independently — fires even if module
           // complete screen was previously seen (e.g. via dev mode or earlier playthrough)
@@ -539,8 +547,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
             setSectionCompletePayload({
               section: sec,
               modules: sec.modules || [],
-              accuracyPct: modAccuracy,
-              xpEarned: moduleXpEarned > 0 ? moduleXpEarned : null,
+              accuracyPct: sectionMetrics?.accuracyPct ?? null,
+              xpEarned: sectionXpEarned > 0 ? sectionXpEarned : null,
             });
             setPendingSectionComplete(true);
             const checkpoint = (sec.modules || []).find((m) => m.isSectionCheckpoint) || mod;
