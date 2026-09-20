@@ -50,7 +50,12 @@ test("2.1.3 does not pull Ar galima payment language forward from Module 2.2", (
   assert.equal(serialized.includes("Ar galima"), false);
   assert.equal(scenario.steps[0].speakerText, "Bilietas?");
   assert.ok(scenario.steps[0].options.some((option) => option.text === "Turiu bilietą." && option.result === "best"));
-  assert.ok(getBlock(lesson, "s2m1l3_b1").items.some((item) => item.lt === "Pinigai"));
+  const learnItems = getBlock(lesson, "s2m1l3_b1").items;
+  assert.ok(learnItems.some((item) => item.lt === "Pinigai"));
+  assert.ok(learnItems.some((item) => item.lt === "Tik" && item.en === "Only / just"));
+
+  const testedAnswer = getBlock(lesson, "s2m1l3_b4").options.find((option) => option.isCorrect)?.text || "";
+  assert.match(testedAnswer, /tik kortelę/i);
 });
 
 test("2.1.4 explains Ar as the beginner-safe frame without claiming it is always mandatory", () => {
