@@ -125,7 +125,6 @@ export default function createModule_3_3(profile = {}) {
             type: "learn",
             title: "Time reference words",
             items: [
-              { id: "tr1", lt: "dabar",    en: "now",      audioText: "dabar",    saveable: true, core: true },
               { id: "tr2", lt: "vėliau",   en: "later",    audioText: "vėliau",   saveable: true, core: true },
               { id: "tr3", lt: "šiandien", en: "today",    audioText: "šiandien", saveable: true, core: true },
               { id: "tr4", lt: "rytoj",    en: "tomorrow", audioText: "rytoj",    saveable: true, core: true },
@@ -536,7 +535,6 @@ export default function createModule_3_3(profile = {}) {
             type: "learn",
             title: "Events at a time",
             items: [
-              { id: "at1", lt: "Pradedame penktą valandą",           en: "We start at five o'clock",          audioText: "Pradedame penktą valandą",           saveable: true, core: true },
               { id: "at2", lt: "Susitinkame šeštą valandą",          en: "We meet at six o'clock",            audioText: "Susitinkame šeštą valandą",          saveable: true, core: true },
               { id: "at3", lt: "Autobusas išvyksta dešimtą valandą", en: "The bus leaves at ten o'clock",    audioText: "Autobusas išvyksta dešimtą valandą", saveable: true, core: true },
               { id: "noun_trk", lt: "traukinys", en: "train", audioText: "traukinys", core: false, saveable: true },
