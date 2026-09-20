@@ -120,6 +120,7 @@ test("Module 2.1 checkpoint still keeps the workbook-reviewed polite water answe
 
 
 test("2.1.4 Say It Out Loud uses neutral STT vocabulary rather than the target phrase", () => {
+  const module = createModule_2_1();
   const lesson = getLesson(module, "2.1.4");
   const block = getBlock(lesson, "s2m1l4_b6");
 
