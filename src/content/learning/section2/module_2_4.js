@@ -39,8 +39,6 @@ export default function createModule_2_4(profile = {}) {
             title: "Useful question chunks",
             items: [
               { id: "q1", lt: "Kas?", en: "What? / Who? (depends on context)", audioText: "Kas", saveable: true, core: true },
-              { id: "q2", lt: "Kas tai?", en: "What is this?", audioText: "Kas tai", saveable: true, core: true },
-              { id: "q3", lt: "Ko norėtumėte?", en: "What would you like?", audioText: "Ko norėtumėte", saveable: true, core: true },
               { id: "q4", lt: "Kuo galėčiau padėti?", en: "How can I help?", audioText: "Kuo galėčiau padėti", saveable: true, core: true },
             ],
           },
@@ -174,7 +172,6 @@ export default function createModule_2_4(profile = {}) {
             title: "Where?",
             items: [
               { id: "wh1", lt: "Kur?", en: "Where?", audioText: "Kur", saveable: true, core: true },
-              { id: "wh2", lt: "Kur yra stotis?", en: "Where is the station?", audioText: "Kur yra stotis", saveable: true, core: true },
               { id: "wh3", lt: "Kur gyvenate?", en: "Where do you live?", audioText: "Kur gyvenate", saveable: true, core: true },
               { id: "wh4", lt: "Kur jūs gyvenate?", en: "Where do you live? (jūs explicit)", audioText: "Kur jūs gyvenate", saveable: false, core: false },
               { id: "wh5", lt: "Kur einame?", en: "Where are we going?", audioText: "Kur einame", saveable: true, core: true },
