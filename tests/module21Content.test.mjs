@@ -117,3 +117,23 @@ test("Module 2.1 checkpoint still keeps the workbook-reviewed polite water answe
   const block = getBlock(getLesson(module, "2.1.C"), "s2m1c_b1");
   assert.equal(block.options.find((option) => option.isCorrect).text, "Noriu vandens, prašau.");
 });
+
+
+test("2.1.4 Say It Out Loud uses neutral STT vocabulary rather than the target phrase", () => {
+  const lesson = getLesson(module, "2.1.4");
+  const block = getBlock(lesson, "s2m1l4_b6");
+
+  assert.deepEqual(block.transcriptionKeywords, [
+    "Ar",
+    "turite",
+    "turi",
+    "vandens",
+    "kavos",
+    "meniu",
+    "turime",
+    "neturime",
+  ]);
+  assert.equal(block.transcriptionKeywords.includes(block.targetText), false);
+  assert.equal(block.transcriptionKeywords.includes("turi"), true);
+  assert.equal(block.transcriptionKeywords.includes("kavos"), true);
+});
