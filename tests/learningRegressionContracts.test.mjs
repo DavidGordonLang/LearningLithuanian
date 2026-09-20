@@ -390,7 +390,7 @@ test("Speechmatics diagnostic STT keeps the API key server-side and uses Lithuan
   assert.match(apiSrc, /language,/);
   assert.match(apiSrc, /model: "enhanced"/);
   assert.match(apiSrc, /Authorization:/);
-  assert.match(apiSrc, /Bearer \\$\\{apiKey\\}/);
+  assert.match(apiSrc, /Bearer \$\{apiKey\}/);
   assert.doesNotMatch(hookSrc, /SPEECHMATICS_API_KEY/);
   assert.match(hookSrc, /comparisonTranscriptionUrl/);
   assert.match(hookSrc, /body: blob/);
