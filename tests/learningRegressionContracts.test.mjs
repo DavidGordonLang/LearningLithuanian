@@ -125,7 +125,8 @@ test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics of
   assert.match(src, /isRecording \? "bg-emerald-500\/25/);
   assert.match(src, /speechDebugEnabled/);
   assert.match(src, /!\["zodis\.app", "www\.zodis\.app"\]\.includes\(window\.location\.hostname\)/);
-  assert.match(src, /STT heard:/);
+  assert.match(src, /OpenAI heard:/);
+  assert.match(src, /Speechmatics heard:/);
 });
 
 
@@ -365,14 +366,31 @@ test("Say It Out Loud failure status stays readable in light mode", () => {
 
 
 
-test("Say It Out Loud exposes STT diagnostics off production without changing acceptance", () => {
+test("Say It Out Loud compares OpenAI and Speechmatics off production without changing acceptance", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
 
   assert.match(src, /speechDebugEnabled/);
   assert.match(src, /zodis\.app/);
   assert.match(src, /www\.zodis\.app/);
-  assert.match(src, /STT heard:/);
-  assert.match(src, /Normalised:/);
-  assert.match(src, /Matcher:<\/span> \{?"accepted"|Matcher:<\/span> rejected|Matcher:/);
+  assert.match(src, /comparisonTranscriptionUrl: speechDebugEnabled \? "\/api\/stt-speechmatics" : null/);
+  assert.match(src, /OpenAI heard:/);
+  assert.match(src, /Speechmatics heard:/);
+  assert.match(src, /Speechmatics matcher:/);
   assert.match(src, /phraseMatchesSpeech\(captured, targetText\)/);
+  assert.doesNotMatch(src, /if \(speechmaticsMatches\)[\s\S]*?onComplete/);
+});
+
+
+test("Speechmatics diagnostic STT keeps the API key server-side and uses Lithuanian enhanced batch transcription", () => {
+  const apiSrc = source("api/stt-speechmatics.js");
+  const hookSrc = source("src/hooks/useSpeechToTextHold.js");
+
+  assert.match(apiSrc, /process\.env\.SPEECHMATICS_API_KEY/);
+  assert.match(apiSrc, /eu1\.asr\.api\.speechmatics\.com\/v2\/jobs\/\?wait=20&format=txt/);
+  assert.match(apiSrc, /language,/);
+  assert.match(apiSrc, /model: "enhanced"/);
+  assert.match(apiSrc, /Authorization: \`Bearer \\$\{apiKey\}\`/);
+  assert.doesNotMatch(hookSrc, /SPEECHMATICS_API_KEY/);
+  assert.match(hookSrc, /comparisonTranscriptionUrl/);
+  assert.match(hookSrc, /body: blob/);
 });
