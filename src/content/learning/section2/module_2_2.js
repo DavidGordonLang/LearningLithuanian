@@ -325,7 +325,7 @@ export default function createModule_2_2(profile = {}) {
             tokens: [
               { id: "t1", text: "Galiu", correctIndex: 0 },
               { id: "t2", text: "palaukti.", correctIndex: 1 },
-              { id: "t3", text: "Negaliu", isDistractor: true },
+              { id: "t3", text: "Negaliu", isDistractor: true, repairHint: "Negaliu means “I can’t”. The prompt says “I can wait”, so you need Galiu." },
             ],
             answerText: "Galiu palaukti.",
           },
@@ -599,7 +599,7 @@ export default function createModule_2_2(profile = {}) {
               { id: "t2", text: "galima", correctIndex: 1 },
               { id: "t3", text: "mokėti", correctIndex: 2 },
               { id: "t4", text: "kortele?", correctIndex: 3 },
-              { id: "t5", text: "galite", isDistractor: true },
+              { id: "t5", text: "galite", isDistractor: true, repairHint: "galite is the polite “you can” form, used when asking what another person can do. Here the question is “Is it possible to pay by card?”, so the phrase uses galima." },
             ],
             answerText: "Ar galima mokėti kortele?",
           },
