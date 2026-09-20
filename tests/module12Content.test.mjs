@@ -25,12 +25,15 @@ test("Module 1.2 adds People Around You with the intended learning mechanics", (
   assert.deepEqual(taught, ["Vyras", "Moteris", "Berniukas", "Mergaitė", "Brolis", "Sesuo"]);
 
   const recap = getBlock(lesson, "s1m2l5_b2");
-  assert.equal(recap.pairs.length, 10);
+  assert.equal(recap.pairs.length, 20);
   for (const retained of [
     "Koks jūsų vardas?",
     "Iš kur jūs esate?",
     "Malonu susipažinti",
+    "Labai malonu susipažinti",
     "Ji yra mano draugė",
+    "Ji yra mano kolegė",
+    "Jis yra iš Lenkijos",
   ]) {
     assert.ok(recap.pairs.some((pair) => pair.lt === retained), `Lesson 5 recap should retrieve ${retained}`);
   }
