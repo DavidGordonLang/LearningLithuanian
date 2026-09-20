@@ -427,8 +427,6 @@ export default function createModule_2_1(profile = {}) {
               { id: "h6", lt: "Neturiu laiko.", en: "I don't have time.", audioText: "Neturiu laiko", saveable: true, core: true },
               { id: "h7", lt: "Kortelė", en: "Card (payment)", audioText: "Kortelė", saveable: true, core: false },
               { id: "h8", lt: "Pinigai", en: "Money", audioText: "Pinigai", saveable: true, core: false },
-              { id: "h9", lt: "Raktas", en: "Key", audioText: "Raktas", saveable: true, core: false },
-              { id: "h10", lt: "Kišenė", en: "Pocket / wallet area", audioText: "Kišenė", saveable: true, core: false },
             ],
           },
           {
