@@ -251,3 +251,13 @@ test("Scenario V2 keeps the reply tray mounted while system/help turns are playi
   assert.match(src, /optionDisabled = !activeSpeakerReady \|\| !!selectedOptionForStep/);
   assert.match(src, /\[history, stepIndex, turnPhase, followUpPhase, helpPhase, helpTurn, finalPhase, finalTurn, complete\]/);
 });
+
+
+test("Scenario V2 can reveal accumulated meaning as a text-only help endpoint", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /function ScenarioV2TranslationReveal/);
+  assert.match(src, /Meaning revealed/);
+  assert.match(src, /translationReveal: helpTurn\.translationReveal \|\| null/);
+  assert.match(src, /showTranslationReveal = phase === "speaker"/);
+});
