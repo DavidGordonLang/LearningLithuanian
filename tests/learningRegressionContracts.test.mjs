@@ -241,3 +241,14 @@ test("learner course browser uses real progress state instead of content active/
 
   assert.match(trainingSrc, /onOpenCheckpoint=\{\(checkpointId\) =>/);
 });
+
+
+test("Scenario V2 keeps the reply tray mounted while system/help turns are playing", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /\{!complete && step \? \(/);
+  assert.doesNotMatch(src, /!complete && !followUpTurn && !helpTurn && !finalTurn && step/);
+  assert.match(src, /aria-busy=\{!activeSpeakerReady\}/);
+  assert.match(src, /optionDisabled = !activeSpeakerReady \|\| !!selectedOptionForStep/);
+  assert.match(src, /\[history, stepIndex, turnPhase, followUpPhase, helpPhase, helpTurn, finalPhase, finalTurn, complete\]/);
+});
