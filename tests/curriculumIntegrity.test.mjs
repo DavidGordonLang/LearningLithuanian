@@ -111,3 +111,26 @@ test("Section 2 defers time, prices and plural-comparison shopping while Section
   assert.ok(section3.includes("Kiek tai kainuoja?"));
   assert.ok(section3.includes("Kada"));
 });
+
+
+test("Match Pairs is always the final recap block and stays recap-sized", () => {
+  const units = [
+    ...modules.flatMap((module) => module.lessons),
+    ...checkpoints,
+  ];
+
+  for (const unit of units) {
+    const blocks = unit.blocks || [];
+    const matches = blocks
+      .map((block, index) => ({ block, index }))
+      .filter(({ block }) => block.type === "word_match");
+
+    for (const { block, index } of matches) {
+      assert.equal(index, blocks.length - 1, `${unit.code || unit.id} word_match must be final`);
+      assert.ok(
+        Array.isArray(block.pairs) && block.pairs.length >= 18 && block.pairs.length <= 22,
+        `${unit.code || unit.id} word_match should contain about 20 pairs`
+      );
+    }
+  }
+});
