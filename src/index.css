@@ -220,7 +220,8 @@ html[data-theme="light"] .say-it-fail-status {
 }
 
 /* Build Phrase error state: keep wrong answers clearly readable on the warm light palette. */
-html[data-theme="light"] .build-phrase-wrong-area {
+html[data-theme="light"] .build-phrase-wrong-area,
+html[data-theme="light"] .build-phrase-repair-area {
   border-color: rgba(190, 24, 93, 0.30);
   background-color: rgba(190, 24, 93, 0.07);
 }
