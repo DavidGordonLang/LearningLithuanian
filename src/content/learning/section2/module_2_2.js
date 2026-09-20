@@ -37,8 +37,6 @@ export default function createModule_2_2(profile = {}) {
             type: "learn",
             title: "I or we?",
             items: [
-              { id: "r1", lt: "Ar galiu…?", en: "Can I…?", audioText: "Ar galiu", saveable: true, core: true },
-              { id: "r2", lt: "Ar galime…?", en: "Can we…?", audioText: "Ar galime", saveable: true, core: true },
               { id: "r3", lt: "Ar galiu pažiūrėti?", en: "Can I have a look?", audioText: "Ar galiu pažiūrėti", saveable: true, core: true },
               { id: "r4", lt: "Ar galime palaukti?", en: "Can we wait?", audioText: "Ar galime palaukti", saveable: true, core: true },
               { id: "r5", lt: "Palaukti", en: "To wait", audioText: "Palaukti", saveable: false, core: false },
