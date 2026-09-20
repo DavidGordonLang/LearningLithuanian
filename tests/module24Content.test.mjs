@@ -78,7 +78,7 @@ test("Module 2.4 scenarios use authored help rather than normal Nesuprantu answe
   }
 });
 
-test("2.4 checkpoint covers only What, Where and Who", () => {
+test("2.4 checkpoint keeps What, Where and Who as the core and ends with a 20-pair recap", () => {
   const module = createModule_2_4();
   const checkpoint = getLesson(module, "2.4.C");
   const serialized = JSON.stringify(checkpoint);
@@ -93,7 +93,22 @@ test("2.4 checkpoint covers only What, Where and Who", () => {
   assert.equal(scenario.steps[0].help.levels.at(-1).audio, false);
 
   const pairs = getBlock(checkpoint, "s2m4c_b7").pairs;
-  assert.equal(pairs.length, 12);
-  assert.ok(pairs.some((pair) => pair.lt === "Kur gyvenate?"));
-  assert.ok(pairs.some((pair) => pair.lt === "Kas ji?"));
+  const texts = pairs.map((pair) => pair.lt);
+  assert.equal(checkpoint.blocks.at(-1).type, "word_match");
+  assert.equal(pairs.length, 20);
+  assert.ok(texts.includes("Kur gyvenate?"));
+  assert.ok(texts.includes("Kas ji?"));
+  for (const retained of [
+    "Noriu kavos.",
+    "Man reikia bilieto.",
+    "Ar galite parodyti?",
+    "Negaliu eiti.",
+    "Ar galima mokėti kortele?",
+    "Šitas obuolys",
+    "Noriu šitos.",
+    "Tos, prašau.",
+  ]) {
+    assert.ok(texts.includes(retained), `2.4 recap should retrieve ${retained}`);
+  }
+  assert.equal(new Set(texts).size, texts.length);
 });
