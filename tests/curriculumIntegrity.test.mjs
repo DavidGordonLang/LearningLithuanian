@@ -266,3 +266,25 @@ test("every Build Phrase supports deterministic token diagnostics", () => {
   }
 });
 
+test("Scenario V2 finalSystemLine appears only on the final step", () => {
+  const owners = [
+    ...modules.flatMap((module) => module.lessons || []),
+    ...checkpoints,
+  ];
+
+  for (const owner of owners) {
+    for (const block of owner.blocks || []) {
+      if (block.type !== "scenario_v2") continue;
+      const steps = Array.isArray(block.steps) ? block.steps : [];
+      steps.forEach((step, index) => {
+        if (!step.finalSystemLine) return;
+        assert.equal(
+          index,
+          steps.length - 1,
+          `${block.id} uses finalSystemLine before the last step; use followUp for an intermediate reply`
+        );
+      });
+    }
+  }
+});
+
