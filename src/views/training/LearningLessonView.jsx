@@ -647,7 +647,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
                 statusTone === "recording" ? "border-emerald-400/30 bg-emerald-500/[0.08] text-emerald-200"
                 : statusTone === "pending" ? "border-white/10 bg-white/[0.05] text-zinc-300"
                 : statusTone === "checking" ? "border-white/10 bg-white/[0.05] text-zinc-300"
-                : statusTone === "fail" ? "border-amber-400/25 bg-amber-500/[0.06] text-amber-200"
+                : statusTone === "fail" ? "say-it-fail-status border-amber-400/25 bg-amber-500/[0.06] text-amber-200"
                 : "border-white/10 bg-white/[0.04] text-zinc-400")}>
                 {statusLabel}
               </div>
