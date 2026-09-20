@@ -134,6 +134,15 @@ test("Build Phrase can submit overfilled answers so distractors return explicit 
   assert.match(src, /if \(builtText === correctAnswer\.trim\(\)\)[\s\S]*?setCheckState\("correct"\)[\s\S]*?else \{[\s\S]*?setCheckState\("wrong"\)/);
 });
 
+test("Build Phrase wrong-state remains legible in light mode", () => {
+  const lessonSrc = source("src/views/training/LearningLessonView.jsx");
+  const cssSrc = source("src/index.css");
+
+  assert.match(lessonSrc, /build-phrase-wrong-area/);
+  assert.match(lessonSrc, /build-phrase-wrong-token/);
+  assert.match(cssSrc, /html\[data-theme="light"\] \.build-phrase-wrong-token[\s\S]*?color: #881337/);
+});
+
 test("in-progress lesson position is persisted per account and restored by block identity", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
   const gameSrc = source("src/stores/gameStore.js");
