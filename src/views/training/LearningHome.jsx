@@ -2,6 +2,7 @@
 import React from "react";
 import { useGameStore } from "../../stores/gameStore";
 import TrainingBackButton from "./TrainingBackButton";
+import { getCourseBrowseState } from "./learningProgress";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -28,8 +29,8 @@ function SmallMetaPill({ children, accent = "default" }) {
 
 export default function LearningHome({ onBack, allSections = [], onOpenSection }) {
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
-  const seenSectionCompleteIds = useGameStore((s) => s.seenSectionCompleteIds) || [];
   const completed = new Set(Array.isArray(completedLessonIds) ? completedLessonIds : []);
+  const sectionStates = getCourseBrowseState(allSections, completedLessonIds);
 
   // Find the next uncompleted lesson across all sections
   let currentLesson = null;
@@ -66,19 +67,6 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection }
 
   const allDone = !currentLesson;
 
-  // Calculate completion stats per section
-  function getSectionStats(sec) {
-    const allLessons = (sec.modules || []).flatMap(m => {
-      if (Array.isArray(m.lessons)) return m.lessons;
-      if (m.blocks && m.id) return [m]; // checkpoint
-      return [];
-    });
-    const completedCount = allLessons.filter(l => completed.has(l.id)).length;
-    const total = allLessons.length;
-    const pct = total ? Math.round((completedCount / total) * 100) : 0;
-    const sectionDone = seenSectionCompleteIds.includes(sec.id);
-    return { completedCount, total, pct, sectionDone };
-  }
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 pb-8">
@@ -97,7 +85,7 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection }
         <div className="text-sm text-zinc-400 mt-1 leading-snug">
           {allDone
             ? "You've finished all available lessons. More coming soon."
-            : "Select a section to browse lessons."}
+            : "Continue your current section or review completed work."}
         </div>
       </div>
 
@@ -130,44 +118,61 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection }
       {/* All sections */}
       <div className="mt-5 space-y-3">
         <div className="text-[11px] uppercase tracking-widest text-zinc-600 px-1">Sections</div>
-        {allSections.map((sec) => {
-          const { completedCount, total, pct, sectionDone } = getSectionStats(sec);
+        {sectionStates.map(({ section: sec, status, progress }) => {
+          const isCompleted = status === "completed";
+          const isCurrent = status === "current";
+          const isLocked = status === "locked";
+
+          const content = (
+            <SurfaceCard className={cn("p-4", isLocked ? "opacity-60" : "")}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+                    Section {sec.code}
+                  </div>
+                  <div className={cn(
+                    "text-[15px] font-semibold mt-1",
+                    isLocked ? "text-zinc-500" : "text-zinc-100"
+                  )}>
+                    {sec.title}
+                  </div>
+                  <div className="text-[12px] text-zinc-500 mt-0.5">
+                    {sec.moduleCount} modules · {sec.checkpointCount} checkpoint
+                  </div>
+                </div>
+                <div className="shrink-0 flex flex-col items-end gap-1.5">
+                  {isCompleted ? (
+                    <SmallMetaPill accent="emerald">Complete</SmallMetaPill>
+                  ) : isCurrent ? (
+                    <>
+                      <SmallMetaPill accent="emerald">
+                        {progress.pct > 0 ? "In progress" : "Next up"}
+                      </SmallMetaPill>
+                      {progress.pct > 0 ? <SmallMetaPill>{progress.pct}%</SmallMetaPill> : null}
+                    </>
+                  ) : (
+                    <SmallMetaPill>Locked</SmallMetaPill>
+                  )}
+                </div>
+              </div>
+              {isCurrent && progress.pct > 0 ? (
+                <div className="mt-3 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500/60 transition-all duration-500"
+                    style={{ width: `${progress.pct}%` }}
+                  />
+                </div>
+              ) : null}
+            </SurfaceCard>
+          );
+
+          if (isLocked) return <div key={sec.id}>{content}</div>;
+
           return (
             <button key={sec.id} type="button" data-press
               onClick={() => onOpenSection?.(sec.id)}
               className="w-full text-left">
-              <SurfaceCard className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                      Section {sec.code}
-                    </div>
-                    <div className="text-[15px] font-semibold text-zinc-100 mt-1">
-                      {sec.title}
-                    </div>
-                    <div className="text-[12px] text-zinc-500 mt-0.5">
-                      {sec.moduleCount} modules · {sec.checkpointCount} checkpoint
-                    </div>
-                  </div>
-                  <div className="shrink-0 flex flex-col items-end gap-1.5">
-                    {sectionDone ? (
-                      <SmallMetaPill accent="emerald">Complete</SmallMetaPill>
-                    ) : pct > 0 ? (
-                      <SmallMetaPill>{pct}%</SmallMetaPill>
-                    ) : (
-                      <SmallMetaPill>Start</SmallMetaPill>
-                    )}
-                  </div>
-                </div>
-                {pct > 0 && !sectionDone ? (
-                  <div className="mt-3 h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-emerald-500/60 transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                ) : null}
-              </SurfaceCard>
+              {content}
             </button>
           );
         })}
