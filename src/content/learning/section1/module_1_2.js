@@ -102,7 +102,7 @@ export default function createModule_1_2(profile = {}) {
               { id: "t1", text: "Koks", correctIndex: 0 },
               { id: "t2", text: "tavo", correctIndex: 1 },
               { id: "t3", text: "vardas?", correctIndex: 2 },
-              { id: "t4", text: "jūsų", isDistractor: true },
+              { id: "t4", text: "jūsų", isDistractor: true, repairHint: "jūsų is the polite/plural form of “your”. This prompt is informal, so the phrase needs tavo." },
             ],
             answerText: "Koks tavo vardas?",
           },
@@ -951,7 +951,7 @@ export default function createModule_1_2(profile = {}) {
             tokens: [
               { id: "t1", text: "Iš", correctIndex: 0 },
               { id: "t2", text: "kur", correctIndex: 1 },
-              { id: "t3", text: "jūsų", isDistractor: true },
+              { id: "t3", text: "jūsų", isDistractor: true, repairHint: "jūsų means “your”; jūs means “you” (polite/plural). Here you need the person — jūs — not possession." },
               { id: "t4", text: "jūs", correctIndex: 2 },
               { id: "t5", text: "esate?", correctIndex: 3 },
             ],
