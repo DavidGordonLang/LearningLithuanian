@@ -227,3 +227,42 @@ test("pattern and consolidation lessons use retrieval/application instead of Lea
   }
 });
 
+test("every Build Phrase supports deterministic token diagnostics", () => {
+  const buildBlocks = [];
+
+  for (const module of modules) {
+    for (const lesson of module.lessons || []) {
+      for (const block of lesson.blocks || []) {
+        if (block.type === "build_phrase") buildBlocks.push({ owner: lesson.code, block });
+      }
+    }
+  }
+  for (const checkpoint of checkpoints) {
+    for (const block of checkpoint.blocks || []) {
+      if (block.type === "build_phrase") buildBlocks.push({ owner: checkpoint.code || checkpoint.id, block });
+    }
+  }
+
+  assert.ok(buildBlocks.length >= 50, "expected the full Build Phrase curriculum to be covered");
+
+  for (const { owner, block } of buildBlocks) {
+    const tokens = Array.isArray(block.tokens) ? block.tokens : [];
+    const answerTokens = tokens.filter((token) => !token.isDistractor);
+    const indexes = answerTokens.map((token) => token.correctIndex).sort((a, b) => a - b);
+
+    assert.ok(answerTokens.length > 0, `${owner}:${block.id} has no answer tokens`);
+    assert.deepEqual(
+      indexes,
+      Array.from({ length: answerTokens.length }, (_, index) => index),
+      `${owner}:${block.id} needs contiguous correctIndex metadata for token diagnostics`
+    );
+
+    for (const token of tokens) {
+      if (token.repairHint !== undefined) {
+        assert.equal(typeof token.repairHint, "string", `${owner}:${block.id} repairHint must be text`);
+        assert.ok(token.repairHint.trim().length > 0, `${owner}:${block.id} repairHint cannot be empty`);
+      }
+    }
+  }
+});
+
