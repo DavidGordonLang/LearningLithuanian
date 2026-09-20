@@ -30,6 +30,7 @@ import createModule52 from "../src/content/learning/section5/module_5_2.js";
 import createModule53 from "../src/content/learning/section5/module_5_3.js";
 import createModule54 from "../src/content/learning/section5/module_5_4.js";
 import createCheckpoint5 from "../src/content/learning/section5/checkpoint_5.js";
+import { getBuildPhraseDistractorMeaning } from "../src/lib/buildPhraseFeedback.js";
 
 const profile = {
   userNameSafe: "Davidas",
@@ -286,5 +287,27 @@ test("Scenario V2 finalSystemLine appears only on the final step", () => {
       });
     }
   }
+});
+
+test("every Build Phrase distractor has a learner-facing meaning", () => {
+  const owners = [
+    ...modules.flatMap((module) => module.lessons || []),
+    ...checkpoints,
+  ];
+  const missing = [];
+
+  for (const owner of owners) {
+    for (const block of owner.blocks || []) {
+      if (block.type !== "build_phrase") continue;
+      for (const token of block.tokens || []) {
+        if (!token.isDistractor) continue;
+        if (!getBuildPhraseDistractorMeaning(token.text)) {
+          missing.push(`${owner.code || owner.id}:${block.id} “${token.text}”`);
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(missing, []);
 });
 
