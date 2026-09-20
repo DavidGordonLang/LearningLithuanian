@@ -200,7 +200,6 @@ export default function createModule_1_3(profile = {}) {
             type: "learn",
             title: "Repair phrases",
             items: [
-              { id: "r1", lt: "Pakartokite, prašau", en: "Please repeat", audioText: "Pakartokite, prašau", saveable: true, core: true },
               { id: "r2", lt: "Prašau kalbėkite lėčiau", en: "Please speak more slowly", audioText: "Prašau kalbėkite lėčiau", saveable: true, core: true },
               { id: "r3", lt: "Dar kartą, prašau", en: "One more time, please", audioText: "Dar kartą, prašau", saveable: true, core: true },
               { id: "r4", lt: "Lėčiau, prašau", en: "More slowly, please", audioText: "Lėčiau, prašau", saveable: true, core: true },
