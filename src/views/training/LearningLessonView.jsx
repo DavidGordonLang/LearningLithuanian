@@ -2080,7 +2080,6 @@ export default function LearningLessonView({
 
   const completeLesson = useGameStore((s) => s.completeLesson);
   const earnLessonXP = useGameStore((s) => s.earnLessonXP);
-  const recordLessonMetrics = useGameStore((s) => s.recordLessonMetrics);
   const lessonProgress = useGameStore((s) => s.lessonProgress);
   const gameLoadedForUserId = useGameStore((s) => s._loadedForUserId);
   const setLessonProgress = useGameStore((s) => s.setLessonProgress);
@@ -2204,14 +2203,13 @@ export default function LearningLessonView({
     if (!lessonDone || completionFiredRef.current) return;
     completionFiredRef.current = true;
     if (lesson?.id) {
-      completeLesson(lesson.id, userId);
       const scoreableBlocks = countScoreableBlocks(lesson);
       const accuracy = calculateAccuracyPct(wrongAnswerCount, scoreableBlocks);
       setAccuracyPct(accuracy ?? 100);
-      recordLessonMetrics?.(lesson.id, {
+      completeLesson(lesson.id, userId, {
         wrongBlocks: wrongAnswerCount,
         scoreableBlocks,
-      }, userId);
+      });
       const base = 30;
       const earned = Math.max(10, base - wrongAnswerCount * 2);
       const result = earnLessonXP(lesson.id, earned, userId);
@@ -2220,7 +2218,7 @@ export default function LearningLessonView({
     } else {
       onLessonComplete?.({ wrongAnswers: 0, scoreableBlocks: 0, xpAwarded: 0 });
     }
-  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, recordLessonMetrics, onLessonComplete, wrongAnswerCount]);
+  }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete, wrongAnswerCount]);
 
   const advanceBlock = useCallback(() => {
     setBlockIndex((prev) => {
