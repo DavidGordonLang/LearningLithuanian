@@ -33,6 +33,21 @@ test("1.3.1 introduces escalating Nesuprantu help with English audio suppressed 
   assert.equal(levels[2].audio, false);
 });
 
+test("1.3.4 English fallback ends by continuing in English and reuses translation reveal", () => {
+  const module = section.modules.find((item) => item.id === "section_1_module_3_lesson_4");
+  const scenario = module.blocks.find((block) => block.id === "s1m3l4_b7_v2");
+  const finalLine = scenario.steps.at(-1).finalSystemLine;
+
+  assert.equal(finalLine.sceneDirection, "She switches to English and the conversation continues there.");
+  assert.equal(finalLine.spokenLanguage, "en");
+  assert.equal(finalLine.audio, false);
+  assert.equal(finalLine.translationReveal.length, 2);
+  assert.equal(finalLine.translationReveal[0].lt, "Laba diena. Kuo galiu padėti?");
+  assert.equal(finalLine.translationReveal[0].en, "Good afternoon. How can I help you?");
+  assert.equal(finalLine.translationReveal[1].lt, "Taip, truputį.");
+  assert.equal(finalLine.translationReveal[1].en, "Yes, a little.");
+});
+
 test("1.3.2 separates pace repair from genuine comprehension repair", () => {
   const module = createModule_1_3();
   const lesson = getLesson(module, "1.3.2");
