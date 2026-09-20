@@ -558,6 +558,10 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     autoTranslate: false,
     onTranslateText: async () => {},
     onSpeechCaptured: () => { setCapturedText(""); setAttemptState("idle"); },
+    onNoSpeech: () => {
+      setCapturedText("");
+      setAttemptState("not_caught");
+    },
     onRecordingStart: () => {
       recordingToneActiveRef.current = true;
       playMicStart();
@@ -569,6 +573,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     transcriptionKeywords: targetText ? [targetText] : [],
     minRecordingMs: 250,
     showCapturedToast: false,
+    showNoSpeechToast: false,
   });
 
   const isRecording  = sttState === "recording";
@@ -637,8 +642,24 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
   });
 
   const micLabel = isPending ? "Getting microphone..." : isRecording ? "Listening... release when done" : isProcessing ? "Checking..." : supported ? "Hold to speak" : "Microphone unavailable";
-  const statusLabel = attemptState === "result_pass" ? "Nice, spoken" : attemptState === "result_fail" ? "Not quite yet. Hold the mic and try again." : micLabel;
-  const statusTone = attemptState === "result_pass" ? "success" : attemptState === "result_fail" ? "fail" : isRecording ? "recording" : isPending ? "pending" : isProcessing ? "checking" : "idle";
+  const statusLabel = attemptState === "result_pass"
+    ? "Nice, spoken"
+    : attemptState === "result_fail"
+    ? "Not quite yet. Hold the mic and try again."
+    : attemptState === "not_caught"
+    ? "Didn't catch that. Hold the mic and try again."
+    : micLabel;
+  const statusTone = attemptState === "result_pass"
+    ? "success"
+    : attemptState === "result_fail" || attemptState === "not_caught"
+    ? "fail"
+    : isRecording
+    ? "recording"
+    : isPending
+    ? "pending"
+    : isProcessing
+    ? "checking"
+    : "idle";
 
   if (completed) {
     return (
