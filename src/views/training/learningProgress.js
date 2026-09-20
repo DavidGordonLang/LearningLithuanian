@@ -84,3 +84,47 @@ export function getSectionBrowseState(section, completedLessonIds) {
     allTeachingModulesComplete,
   };
 }
+
+
+export function getSectionCompletion(section, completedLessonIds) {
+  const modules = Array.isArray(section?.modules) ? section.modules : [];
+  const units = [];
+
+  for (const module of modules) {
+    if (module?.isSectionCheckpoint) {
+      if (module.id) units.push(module.id);
+      continue;
+    }
+    for (const lesson of (module?.lessons || [])) {
+      if (lesson?.id) units.push(lesson.id);
+    }
+  }
+
+  const completed = completedSet(completedLessonIds);
+  const completedCount = units.filter((id) => completed.has(id)).length;
+  const total = units.length;
+  const pct = total ? Math.round((completedCount / total) * 100) : 0;
+
+  return {
+    completedCount,
+    total,
+    pct,
+    complete: total > 0 && completedCount === total,
+  };
+}
+
+export function getCourseBrowseState(sections, completedLessonIds) {
+  const list = Array.isArray(sections) ? sections : [];
+  const progress = list.map((section) => getSectionCompletion(section, completedLessonIds));
+  const firstIncompleteIndex = progress.findIndex((item) => !item.complete);
+
+  return list.map((section, index) => ({
+    section,
+    progress: progress[index],
+    status: progress[index].complete
+      ? "completed"
+      : index === firstIncompleteIndex
+      ? "current"
+      : "locked",
+  }));
+}
