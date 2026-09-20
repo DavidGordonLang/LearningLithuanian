@@ -1825,14 +1825,14 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
       <SurfaceCard className="px-4 py-4">
         <div className="space-y-3">
           {lines.map((line, i) => (
-            <div key={i} className="flex gap-3 items-start">
+            <div key={i} className="flex gap-3 items-start min-w-0">
               {line.speaker ? (
-                <div className="text-[11px] uppercase tracking-wide text-zinc-500 shrink-0 w-14 pt-[3px]">
+                <div className="text-[10px] uppercase tracking-[0.04em] text-zinc-500 shrink-0 w-[82px] max-w-[82px] leading-tight break-words pt-[3px]">
                   {line.speaker}
                 </div>
               ) : null}
               <div className={cn(
-                "text-[15px] leading-snug flex-1",
+                "text-[15px] leading-snug flex-1 min-w-0 break-words",
                 line.hasGap ? "text-zinc-100" : "text-zinc-300"
               )}>
                 {renderLineText(line)}
