@@ -51,7 +51,12 @@ test("Section 1 scenario stays inside taught material and uses escalating Nesupr
   const serialized = JSON.stringify(scenario);
 
   assert.equal(serialized.includes("Kur jūs einate"), false);
+  assert.equal(scenario.steps.length, 5);
   assert.match(scenario.steps[2].speakerText, /mano sesuo/);
+  assert.equal(scenario.steps[2].finalSystemLine, undefined);
+  assert.equal(scenario.steps[2].options.find((option) => option.result === "best").followUp.speakerText, "Man irgi!");
+  assert.equal(scenario.steps[3].speakerText, "Ar galiu jums padėti?");
+  assert.match(scenario.steps[3].options.find((option) => option.result === "best").text, /Kur yra viešbutis/);
   assert.equal(scenario.steps[4].speakerText, "Viešbutis — va ten.");
   assert.equal(scenario.steps[4].help.levels.length, 3);
   assert.equal(scenario.steps[4].help.levels.at(-1).spokenLanguage, "en");
