@@ -61,6 +61,7 @@ function defaultData() {
     seenModuleCompleteIds: [], // module ids where celebration has already shown
     seenSectionCompleteIds: [], // section ids where section celebration has shown
     lessonXP: {},              // { lessonId: xpEarned } — tracks best XP per lesson
+    lessonMetrics: {},         // { lessonId: { wrongBlocks, scoreableBlocks, accuracyPct, completedAt } }
     lessonProgress: {},        // { lessonId: { blockId, blockIndex, updatedAt } }
   };
 }
@@ -77,6 +78,7 @@ export const useGameStore = create((set, get) => ({
   seenModuleCompleteIds: [],
   seenSectionCompleteIds: [],
   lessonXP: {},
+  lessonMetrics: {},
   lessonProgress: {},
 
   // Meta
@@ -122,6 +124,7 @@ export const useGameStore = create((set, get) => ({
         seenModuleCompleteIds: Array.isArray(merged.seenModuleCompleteIds) ? merged.seenModuleCompleteIds : [],
         seenSectionCompleteIds: Array.isArray(merged.seenSectionCompleteIds) ? merged.seenSectionCompleteIds : [],
         lessonXP: (merged.lessonXP && typeof merged.lessonXP === "object") ? merged.lessonXP : {},
+        lessonMetrics: (merged.lessonMetrics && typeof merged.lessonMetrics === "object") ? merged.lessonMetrics : {},
         lessonProgress: (merged.lessonProgress && typeof merged.lessonProgress === "object") ? merged.lessonProgress : {},
         loading: false,
         _loadedForUserId: userId,
@@ -149,6 +152,7 @@ export const useGameStore = create((set, get) => ({
       completedLessonIds: [],
       seenModuleCompleteIds: [],
       seenSectionCompleteIds: [],
+      lessonMetrics: {},
       lessonProgress: {},
     });
 
@@ -174,8 +178,8 @@ export const useGameStore = create((set, get) => ({
 
   _save: async (userId) => {
     if (!userId || get()._loadedForUserId !== userId) return;
-    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonProgress } = get();
-    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonProgress };
+    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonMetrics, lessonProgress } = get();
+    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonMetrics, lessonProgress };
 
     try {
       await supabase
@@ -312,6 +316,43 @@ export const useGameStore = create((set, get) => ({
   getLessonProgress: (lessonId) => {
     if (!lessonId) return null;
     return get().lessonProgress?.[lessonId] || null;
+  },
+
+  // ── Lesson scoring metrics ───────────────────────────────────────────────────
+  //
+  // Preserve the first completed attempt for section-wide accuracy. Replays can
+  // improve XP separately, but they should not erase mistakes from the journey
+  // that completed the section.
+
+  recordLessonMetrics: (lessonId, metrics, userId) => {
+    if (!userId || get()._loadedForUserId !== userId || !lessonId) return false;
+    const current = get().lessonMetrics || {};
+    if (current[lessonId]) return false;
+
+    const scoreableBlocks = Math.max(0, Number(metrics?.scoreableBlocks) || 0);
+    const wrongBlocks = Math.max(0, Math.min(Number(metrics?.wrongBlocks) || 0, scoreableBlocks));
+    const accuracyPct = scoreableBlocks > 0
+      ? Math.round(((scoreableBlocks - wrongBlocks) / scoreableBlocks) * 100)
+      : null;
+
+    set({
+      lessonMetrics: {
+        ...current,
+        [lessonId]: {
+          wrongBlocks,
+          scoreableBlocks,
+          accuracyPct,
+          completedAt: Date.now(),
+        },
+      },
+    });
+    get()._save(userId);
+    return true;
+  },
+
+  getLessonMetrics: (lessonId) => {
+    if (!lessonId) return null;
+    return get().lessonMetrics?.[lessonId] || null;
   },
 
   // ── Lesson XP (best-score) ──────────────────────────────────────────────────
