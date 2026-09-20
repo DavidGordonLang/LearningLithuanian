@@ -28,6 +28,8 @@ export default function useSpeechToTextHold({
   transcriptionModel = "gpt-4o-mini-transcribe",
   transcriptionPrompt = null,
   transcriptionKeywords = [],
+  comparisonTranscriptionUrl = null,
+  onComparisonTranscript,
   minRecordingMs = 650,
   showCapturedToast = true,
   showNoSpeechToast = true,
@@ -322,6 +324,52 @@ export default function useSpeechToTextHold({
             }
           }
 
+          let comparisonPromise = null;
+          if (comparisonTranscriptionUrl) {
+            const separator = comparisonTranscriptionUrl.includes("?") ? "&" : "?";
+            const comparisonUrl = language
+              ? `${comparisonTranscriptionUrl}${separator}lang=${encodeURIComponent(language)}`
+              : comparisonTranscriptionUrl;
+
+            comparisonPromise = fetch(comparisonUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": blob.type || "audio/webm",
+              },
+              body: blob,
+              signal: controller.signal,
+            })
+              .then(async (comparisonResp) => {
+                let comparisonData = {};
+                try {
+                  comparisonData = await comparisonResp.json();
+                } catch {
+                  comparisonData = {};
+                }
+                if (!comparisonResp.ok) {
+                  throw new Error(comparisonData?.error || "Comparison transcription failed");
+                }
+                return String(comparisonData?.text || "").trim();
+              })
+              .then((comparisonText) => {
+                onComparisonTranscript?.({ text: comparisonText, error: null });
+                return comparisonText;
+              })
+              .catch((comparisonError) => {
+                if (comparisonError?.name !== "AbortError") {
+                  console.error("Comparison STT failed:", comparisonError);
+                }
+                onComparisonTranscript?.({
+                  text: "",
+                  error:
+                    comparisonError?.name === "AbortError"
+                      ? "Comparison transcription timed out"
+                      : String(comparisonError?.message || "Comparison transcription failed"),
+                });
+                return "";
+              });
+          }
+
           const sttUrl = "/api/stt";
 
           const resp = await fetch(sttUrl, {
@@ -344,6 +392,10 @@ export default function useSpeechToTextHold({
           }
 
           if (activeSessionRef.current !== sessionId) return;
+
+          if (comparisonPromise) {
+            await comparisonPromise;
+          }
 
           const text = String(data?.text || "").trim();
           if (!text) {
@@ -417,6 +469,8 @@ export default function useSpeechToTextHold({
     transcriptionKeywords,
     transcriptionModel,
     transcriptionPrompt,
+    comparisonTranscriptionUrl,
+    onComparisonTranscript,
     shortRecordingMessage,
     stopRecording,
     sttSupported,
