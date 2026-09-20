@@ -149,26 +149,26 @@ test("learner-facing authored prose is not written as all-caps shouting", () => 
   function inspect(value, key = "", path = "root") {
     if (typeof value === "string") {
       const text = value.trim();
-      const sentenceLike = text.length >= 12 && /\\s/.test(text) && /[A-Za-z]/.test(text);
+      const sentenceLike = text.length >= 12 && /\s/.test(text) && /[A-Za-z]/.test(text);
       const allCaps = sentenceLike && text === text.toUpperCase() && text !== text.toLowerCase();
-      if (proseKeys.has(key) && allCaps) offenders.push(\`${path}: ${text}\`);
+      if (proseKeys.has(key) && allCaps) offenders.push(`${path}: ${text}`);
       return;
     }
     if (Array.isArray(value)) {
-      value.forEach((item, index) => inspect(item, key, \`${path}[${index}]\`));
+      value.forEach((item, index) => inspect(item, key, `${path}[${index}]`));
       return;
     }
     if (!value || typeof value !== "object") return;
     for (const [childKey, childValue] of Object.entries(value)) {
       if (childKey === "prompt" && childValue && typeof childValue === "object") {
-        inspect(childValue.text, "prompt", \`${path}.prompt.text\`);
+        inspect(childValue.text, "prompt", `${path}.prompt.text`);
       } else {
-        inspect(childValue, childKey, \`${path}.${childKey}\`);
+        inspect(childValue, childKey, `${path}.${childKey}`);
       }
     }
   }
 
-  units.forEach((unit, index) => inspect(unit, "", \`unit[${index}]\`));
+  units.forEach((unit, index) => inspect(unit, "", `unit[${index}]`));
   assert.deepEqual(offenders, []);
 });
 
