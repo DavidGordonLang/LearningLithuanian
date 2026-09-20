@@ -33,15 +33,26 @@ test("1.3.1 introduces escalating Nesuprantu help with English audio suppressed 
   assert.equal(levels[2].audio, false);
 });
 
-test("1.3.2 keeps the specific slow-down request while allowing general help", () => {
+test("1.3.2 separates pace repair from genuine comprehension repair", () => {
   const module = createModule_1_3();
   const lesson = getLesson(module, "1.3.2");
   assert.match(getBlock(lesson, "s1m3l2_b4").prompt.text, /speed is still the problem/);
 
   const scenario = getBlock(lesson, "s1m3l2_b8_v2");
-  assert.ok(scenario.steps[0].help);
-  assert.ok(scenario.steps[0].options.some((option) => option.text === "Prašau kalbėkite lėčiau." && option.result === "best"));
-  assert.ok(scenario.steps[0].options.some((option) => option.text === "Supratau, ačiū!" && option.result === "acceptable"));
+  assert.equal(scenario.steps.length, 2);
+
+  const paceStep = scenario.steps[0];
+  assert.equal(paceStep.help, undefined);
+  assert.ok(paceStep.options.some((option) => option.text === "Prašau kalbėkite lėčiau." && option.result === "best"));
+  assert.ok(paceStep.options.some((option) => option.text === "Pakartokite, prašau." && option.result === "wrong"));
+
+  const comprehensionStep = scenario.steps[1];
+  assert.equal(comprehensionStep.speakerText, "Du kartus per dieną.");
+  assert.equal(comprehensionStep.help.levels.length, 3);
+  assert.equal(comprehensionStep.help.levels.at(-1).spokenLanguage, "en");
+  assert.equal(comprehensionStep.help.levels.at(-1).audio, false);
+  assert.equal(comprehensionStep.help.levels.at(-1).translationReveal.length, 2);
+  assert.ok(comprehensionStep.options.some((option) => option.text === "Supratau, ačiū!" && option.result === "best"));
 });
 
 test("1.3.3 teaches this versus that through physical context", () => {
