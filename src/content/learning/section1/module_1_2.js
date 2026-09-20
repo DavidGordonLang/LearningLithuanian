@@ -810,19 +810,6 @@ export default function createModule_1_2(profile = {}) {
             ],
           },
           {
-            id: "s1m2l5_b2",
-            type: "word_match",
-            title: "Match the people",
-            pairs: [
-              { id: "m1", lt: "Vyras", en: "Man", audioText: "Vyras" },
-              { id: "m2", lt: "Moteris", en: "Woman", audioText: "Moteris" },
-              { id: "m3", lt: "Berniukas", en: "Boy", audioText: "Berniukas" },
-              { id: "m4", lt: "Mergaitė", en: "Girl", audioText: "Mergaitė" },
-              { id: "m5", lt: "Brolis", en: "Brother", audioText: "Brolis" },
-              { id: "m6", lt: "Sesuo", en: "Sister", audioText: "Sesuo" },
-            ],
-          },
-          {
             id: "s1m2l5_b3",
             type: "listen_mcq",
             title: "Listen and choose",
@@ -866,6 +853,25 @@ export default function createModule_1_2(profile = {}) {
             prompt: "Say: This is my brother",
             targetText: "Čia mano brolis",
             audioText: "Čia mano brolis",
+          },
+          {
+            id: "s1m2l5_b2",
+            type: "word_match",
+            title: "Match what you know",
+            pairs: [
+              // New people vocabulary
+              { id: "m1", lt: "Vyras", en: "Man", audioText: "Vyras" },
+              { id: "m2", lt: "Moteris", en: "Woman", audioText: "Moteris" },
+              { id: "m3", lt: "Berniukas", en: "Boy", audioText: "Berniukas" },
+              { id: "m4", lt: "Mergaitė", en: "Girl", audioText: "Mergaitė" },
+              { id: "m5", lt: "Brolis", en: "Brother", audioText: "Brolis" },
+              { id: "m6", lt: "Sesuo", en: "Sister", audioText: "Sesuo" },
+              // Spaced retrieval from earlier Module 1.2 lessons
+              { id: "m7", lt: "Koks jūsų vardas?", en: "What is your name? (formal)", audioText: "Koks jūsų vardas" },
+              { id: "m8", lt: "Iš kur jūs esate?", en: "Where are you from? (formal)", audioText: "Iš kur jūs esate" },
+              { id: "m9", lt: "Malonu susipažinti", en: "Nice to meet you", audioText: "Malonu susipažinti" },
+              { id: "m10", lt: "Ji yra mano draugė", en: "She is my friend", audioText: "Ji yra mano draugė" },
+            ],
           },
         ],
       },
