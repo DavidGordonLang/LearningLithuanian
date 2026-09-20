@@ -230,7 +230,6 @@ export default function createModule_2_1(profile = {}) {
             items: [
               { id: "n1", lt: "Man reikia…", en: "I need…", audioText: "Man reikia", saveable: true, core: true },
               { id: "n2", lt: "Man reikia vandens.", en: "I need water.", audioText: "Man reikia vandens", saveable: true, core: true },
-              { id: "n3", lt: "Man reikia pagalbos.", en: "I need help.", audioText: "Man reikia pagalbos", saveable: true, core: true },
               { id: "n4", lt: "Man reikia bilieto.", en: "I need a ticket.", audioText: "Man reikia bilieto", saveable: true, core: true },
               { id: "n5", lt: "Man reikia tualeto.", en: "I need a toilet.", audioText: "Man reikia tualeto", saveable: true, core: true },
               { id: "n6", lt: "Bilietas", en: "Ticket", audioText: "Bilietas", saveable: true, core: false },
