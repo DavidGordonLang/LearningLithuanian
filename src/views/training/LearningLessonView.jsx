@@ -468,11 +468,15 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
 function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance, completed }) {
   const [attemptState, setAttemptState] = useState("idle");
   const [capturedText, setCapturedText] = useState("");
+  const [speechmaticsText, setSpeechmaticsText] = useState("");
+  const [speechmaticsError, setSpeechmaticsError] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
   const targetText = block?.targetText || "";
   const speechDebugEnabled = typeof window !== "undefined" && !["zodis.app", "www.zodis.app"].includes(window.location.hostname);
   const debugHeard = capturedText ? normaliseSpeechForMatch(capturedText) : "";
+  const debugSpeechmatics = speechmaticsText ? normaliseSpeechForMatch(speechmaticsText) : "";
   const debugTarget = targetText ? normaliseSpeechForMatch(targetText) : "";
+  const speechmaticsMatches = speechmaticsText ? phraseMatchesSpeech(speechmaticsText, targetText) : false;
   const pointerIdRef = React.useRef(null);
   const buttonRef = React.useRef(null);
   const recordingToneActiveRef = React.useRef(false);
@@ -494,7 +498,12 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     },
     autoTranslate: false,
     onTranslateText: async () => {},
-    onSpeechCaptured: () => { setCapturedText(""); setAttemptState("idle"); },
+    onSpeechCaptured: () => {
+      setCapturedText("");
+      setSpeechmaticsText("");
+      setSpeechmaticsError("");
+      setAttemptState("idle");
+    },
     onNoSpeech: () => {
       setCapturedText("");
       setAttemptState("not_caught");
@@ -511,6 +520,11 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     // supplied to transcription.
     transcriptionPrompt: null,
     transcriptionKeywords: [],
+    comparisonTranscriptionUrl: speechDebugEnabled ? "/api/stt-speechmatics" : null,
+    onComparisonTranscript: ({ text, error }) => {
+      setSpeechmaticsText(String(text || "").trim());
+      setSpeechmaticsError(String(error || "").trim());
+    },
     minRecordingMs: 250,
     showCapturedToast: false,
     showNoSpeechToast: false,
@@ -621,10 +635,19 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
         </div>
         {speechDebugEnabled && capturedText ? (
           <div className="mt-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-zinc-400">
-            <div><span className="font-semibold text-zinc-300">STT heard:</span> {capturedText}</div>
-            <div><span className="font-semibold text-zinc-300">Normalised:</span> {debugHeard}</div>
-            <div><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
-            <div><span className="font-semibold text-zinc-300">Matcher:</span> accepted</div>
+            <div><span className="font-semibold text-zinc-300">OpenAI heard:</span> {capturedText}</div>
+            <div><span className="font-semibold text-zinc-300">OpenAI normalised:</span> {debugHeard}</div>
+            <div><span className="font-semibold text-zinc-300">OpenAI matcher:</span> accepted</div>
+            {speechmaticsText ? (
+              <>
+                <div className="mt-1"><span className="font-semibold text-zinc-300">Speechmatics heard:</span> {speechmaticsText}</div>
+                <div><span className="font-semibold text-zinc-300">Speechmatics normalised:</span> {debugSpeechmatics}</div>
+                <div><span className="font-semibold text-zinc-300">Speechmatics matcher:</span> {speechmaticsMatches ? "accepted" : "rejected"}</div>
+              </>
+            ) : speechmaticsError ? (
+              <div className="mt-1"><span className="font-semibold text-zinc-300">Speechmatics:</span> {speechmaticsError}</div>
+            ) : null}
+            <div className="mt-1"><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
           </div>
         ) : null}
         <ActionButton onClick={onAdvance} className="mt-3 w-full">Continue</ActionButton>
@@ -694,10 +717,19 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
               </button>
               {speechDebugEnabled && capturedText ? (
                 <div className="w-full rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-zinc-400">
-                  <div><span className="font-semibold text-zinc-300">STT heard:</span> {capturedText}</div>
-                  <div><span className="font-semibold text-zinc-300">Normalised:</span> {debugHeard}</div>
-                  <div><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
-                  <div><span className="font-semibold text-zinc-300">Matcher:</span> rejected</div>
+                  <div><span className="font-semibold text-zinc-300">OpenAI heard:</span> {capturedText}</div>
+                  <div><span className="font-semibold text-zinc-300">OpenAI normalised:</span> {debugHeard}</div>
+                  <div><span className="font-semibold text-zinc-300">OpenAI matcher:</span> rejected</div>
+                  {speechmaticsText ? (
+                    <>
+                      <div className="mt-1"><span className="font-semibold text-zinc-300">Speechmatics heard:</span> {speechmaticsText}</div>
+                      <div><span className="font-semibold text-zinc-300">Speechmatics normalised:</span> {debugSpeechmatics}</div>
+                      <div><span className="font-semibold text-zinc-300">Speechmatics matcher:</span> {speechmaticsMatches ? "accepted" : "rejected"}</div>
+                    </>
+                  ) : speechmaticsError ? (
+                    <div className="mt-1"><span className="font-semibold text-zinc-300">Speechmatics:</span> {speechmaticsError}</div>
+                  ) : null}
+                  <div className="mt-1"><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
                 </div>
               ) : null}
               {failedAttempts >= 2 ? (
