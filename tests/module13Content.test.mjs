@@ -34,8 +34,9 @@ test("1.3.1 introduces escalating Nesuprantu help with English audio suppressed 
 });
 
 test("1.3.4 English fallback ends by continuing in English and reuses translation reveal", () => {
-  const module = section.modules.find((item) => item.id === "section_1_module_3_lesson_4");
-  const scenario = module.blocks.find((block) => block.id === "s1m3l4_b7_v2");
+  const module = createModule_1_3();
+  const lesson = getLesson(module, "1.3.4");
+  const scenario = getBlock(lesson, "s1m3l4_b7_v2");
   const finalLine = scenario.steps.at(-1).finalSystemLine;
 
   assert.equal(finalLine.sceneDirection, "She switches to English and the conversation continues there.");
