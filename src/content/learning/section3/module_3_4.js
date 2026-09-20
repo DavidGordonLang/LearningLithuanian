@@ -227,7 +227,6 @@ export default function createModule_3_4(profile = {}) {
               { id: "q3", lt: "Dviejų bilietų, prašau", en: "Two tickets, please",     audioText: "Dviejų bilietų, prašau", saveable: true, core: true },
               { id: "q4", lt: "Kiek kavų?",           en: "How many coffees?",         audioText: "Kiek kavų",           saveable: true, core: true },
               { id: "q5", lt: "Trys kavos",           en: "Three coffees",             audioText: "Trys kavos",          saveable: true, core: true },
-              { id: "noun_ping", lt: "pinigai", en: "money", audioText: "pinigai", core: false, saveable: true },
             ],
           },
           {
@@ -734,7 +733,6 @@ export default function createModule_3_4(profile = {}) {
             type: "learn",
             title: "Quantity in real situations",
             items: [
-              { id: "qa1", lt: "Mes esame dviese",            en: "There are two of us",          audioText: "Mes esame dviese",            saveable: true, core: true },
               { id: "qa2", lt: "Vieną kavą ir dvi arbatas, prašau", en: "One coffee and two teas, please", audioText: "Vieną kavą ir dvi arbatas, prašau", saveable: true, core: true },
               { id: "qa3", lt: "Kiek jūsų?",                  en: "How many of you are there?",   audioText: "Kiek jūsų",                   saveable: true, core: true },
             ],
