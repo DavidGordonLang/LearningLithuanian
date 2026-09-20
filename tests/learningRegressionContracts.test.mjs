@@ -288,3 +288,27 @@ test("conversation turn speaker labels remain readable on mobile", () => {
   assert.doesNotMatch(src, /w-14 pt-\[3px\]/);
 });
 
+test("Build Phrase gives token-level guided repair after a wrong check", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /const getBuiltTokenStatus = \(tokenId, index\)/);
+  assert.match(src, /token\.correctIndex === index \? "correct" : "wrong"/);
+  assert.match(src, /const repairDiagnosis = \(\(\) =>/);
+  assert.match(src, /token\.repairHint/);
+  assert.match(src, /right word, right place/);
+  assert.match(src, /change or move/);
+  assert.match(src, /diagnosticStatus === "correct"/);
+  assert.match(src, /diagnosticStatus === "wrong"/);
+});
+
+test("Build Phrase repair mode stays active while the learner edits the phrase", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+  const buildPhrase = src.slice(
+    src.indexOf("function BuildPhraseBlock"),
+    src.indexOf("function ConversationBubble")
+  );
+
+  assert.doesNotMatch(buildPhrase, /setBuilt\(\(prev\) => \[\.\.\.prev, token\.id\]\);\s*if \(checkState !== "idle"\) setCheckState\("idle"\)/);
+  assert.doesNotMatch(buildPhrase, /setBuilt\(\(prev\) => prev\.filter\(\(x\) => x !== id\)\);\s*setCheckState\("idle"\)/);
+});
+
