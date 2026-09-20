@@ -666,10 +666,6 @@ export default function createModule_2_1(profile = {}) {
             prompt: "Ask if they have water",
             targetText: "Ar turite vandens?",
             audioText: "Ar turite vandens",
-            // Neutral STT context for the physical pronunciation experiment.
-            // Includes confusable/wrong controls too, so transcription is not
-            // simply being handed the expected answer.
-            transcriptionKeywords: ["Ar", "turite", "turi", "vandens", "kavos", "meniu", "turime", "neturime"],
           },
           {
   id: "s2m1l4_b7_v2",
