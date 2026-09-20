@@ -261,7 +261,7 @@ export const useGameStore = create((set, get) => ({
 
   // ── Lesson completion ────────────────────────────────────────────────────────
 
-  completeLesson: (lessonId, userId) => {
+  completeLesson: (lessonId, userId, metrics = null) => {
     if (!userId || get()._loadedForUserId !== userId) return { wasAlreadyComplete: false };
     if (!lessonId) return { wasAlreadyComplete: false };
 
@@ -272,15 +272,42 @@ export const useGameStore = create((set, get) => ({
     const hadProgress = Object.prototype.hasOwnProperty.call(nextLessonProgress, lessonId);
     if (hadProgress) delete nextLessonProgress[lessonId];
 
+    const currentMetrics = get().lessonMetrics || {};
+    let nextLessonMetrics = currentMetrics;
+    let addedMetrics = false;
+
+    if (!currentMetrics[lessonId] && metrics) {
+      const scoreableBlocks = Math.max(0, Number(metrics?.scoreableBlocks) || 0);
+      const wrongBlocks = Math.max(0, Math.min(Number(metrics?.wrongBlocks) || 0, scoreableBlocks));
+      const accuracyPct = scoreableBlocks > 0
+        ? Math.round(((scoreableBlocks - wrongBlocks) / scoreableBlocks) * 100)
+        : null;
+
+      nextLessonMetrics = {
+        ...currentMetrics,
+        [lessonId]: {
+          wrongBlocks,
+          scoreableBlocks,
+          accuracyPct,
+          completedAt: Date.now(),
+        },
+      };
+      addedMetrics = true;
+    }
+
     if (!wasAlreadyComplete) {
       set({
         completedLessonIds: [...current, lessonId],
+        lessonMetrics: nextLessonMetrics,
         lessonProgress: nextLessonProgress,
       });
       get().recordActivity(userId);
       get()._save(userId);
-    } else if (hadProgress) {
-      set({ lessonProgress: nextLessonProgress });
+    } else if (hadProgress || addedMetrics) {
+      set({
+        lessonMetrics: nextLessonMetrics,
+        lessonProgress: nextLessonProgress,
+      });
       get()._save(userId);
     }
 
@@ -318,42 +345,7 @@ export const useGameStore = create((set, get) => ({
     return get().lessonProgress?.[lessonId] || null;
   },
 
-  // ── Lesson scoring metrics ───────────────────────────────────────────────────
-  //
-  // Preserve the first completed attempt for section-wide accuracy. Replays can
-  // improve XP separately, but they should not erase mistakes from the journey
-  // that completed the section.
-
-  recordLessonMetrics: (lessonId, metrics, userId) => {
-    if (!userId || get()._loadedForUserId !== userId || !lessonId) return false;
-    const current = get().lessonMetrics || {};
-    if (current[lessonId]) return false;
-
-    const scoreableBlocks = Math.max(0, Number(metrics?.scoreableBlocks) || 0);
-    const wrongBlocks = Math.max(0, Math.min(Number(metrics?.wrongBlocks) || 0, scoreableBlocks));
-    const accuracyPct = scoreableBlocks > 0
-      ? Math.round(((scoreableBlocks - wrongBlocks) / scoreableBlocks) * 100)
-      : null;
-
-    set({
-      lessonMetrics: {
-        ...current,
-        [lessonId]: {
-          wrongBlocks,
-          scoreableBlocks,
-          accuracyPct,
-          completedAt: Date.now(),
-        },
-      },
-    });
-    get()._save(userId);
-    return true;
-  },
-
-  getLessonMetrics: (lessonId) => {
-    if (!lessonId) return null;
-    return get().lessonMetrics?.[lessonId] || null;
-  },
+  // Lesson scoring metrics are written atomically by completeLesson().
 
   // ── Lesson XP (best-score) ──────────────────────────────────────────────────
   //
