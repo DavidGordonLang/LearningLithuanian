@@ -204,8 +204,8 @@ test("lesson speech checks use the high-accuracy Lithuanian transcription path a
   const sttSrc = source("src/hooks/useSpeechToTextHold.js");
 
   assert.match(lessonSrc, /transcriptionModel:\s*"gpt-transcribe"/);
-  assert.match(lessonSrc, /transcriptionKeywords:\s*Array\.isArray\(block\?\.transcriptionKeywords\) \? block\.transcriptionKeywords : \[\]/);
-  assert.match(lessonSrc, /Do not infer, complete, or guess an expected practice phrase/);
+  assert.match(lessonSrc, /transcriptionPrompt:\s*null/);
+  assert.match(lessonSrc, /transcriptionKeywords:\s*\[\]/);
   assert.match(lessonSrc, /minRecordingMs:\s*250/);
   assert.match(sttSrc, /fd\.append\("languages\[\]", language\)/);
   assert.match(sttSrc, /fd\.append\("keywords\[\]", keyword\)/);
@@ -345,12 +345,13 @@ test("lesson scoring counts objective blocks once and Section Complete uses pers
   assert.match(gameSrc, /!currentMetrics\[lessonId\] && metrics/);
 });
 
-test("Say It Out Loud can use authored neutral STT hints without handing transcription the target answer", () => {
+test("Say It Out Loud keeps transcription unbiased by prompts and expected-phrase vocabulary", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
 
   assert.match(src, /phraseMatchesSpeech\(captured, targetText\)/);
-  assert.match(src, /transcriptionKeywords:\s*Array\.isArray\(block\?\.transcriptionKeywords\) \? block\.transcriptionKeywords : \[\]/);
-  assert.match(src, /Do not infer, complete, or guess an expected practice phrase/);
+  assert.match(src, /transcriptionPrompt:\s*null/);
+  assert.match(src, /transcriptionKeywords:\s*\[\]/);
+  assert.doesNotMatch(src, /Do not infer, complete, or guess an expected practice phrase/);
   assert.doesNotMatch(src, /transcriptionKeywords:\s*targetText \? \[targetText\] : \[\]/);
 });
 
