@@ -234,22 +234,10 @@ export default function createModule_5_4(profile = {}) {
         id: "section_5_module_4_lesson_2",
         code: "5.4.2",
         title: "Is It Far?",
-        purpose: "Add route distance checking.",
+        purpose: "Reuse familiar near/far language while following and checking a route.",
         supportLevel: "high",
-        newLanguageLoad: "low",
+        newLanguageLoad: "none",
         blocks: [
-          {
-            id: "s5m4l2_b1",
-            type: "learn",
-            title: "Distance checking",
-            items: [
-              { id: "i1", lt: "Ar toli?",   en: "Is it far?",    audioText: "Ar tai toli",   saveable: true, core: true },
-              { id: "i2", lt: "Ar netoli?", en: "Is it near?",   audioText: "Ar tai netoli", saveable: true, core: true },
-              { id: "i3", lt: "Netoli.",        en: "Not far / near.",audioText: "Netoli",        saveable: true, core: true },
-              { id: "i4", lt: "Toli.",          en: "Far.",          audioText: "Toli",          saveable: true, core: true },
-              { id: "i5", lt: "Labai toli.",    en: "Very far.",     audioText: "Labai toli",    saveable: true, core: false },
-            ],
-          },
           {
             id: "s5m4l2_b2",
             type: "listen_mcq",
@@ -399,10 +387,10 @@ export default function createModule_5_4(profile = {}) {
       {
         id: "section_5_module_4_lesson_3",
         code: "5.4.3",
-        title: "Go Left / Go Right / Go Straight",
-        purpose: "Turn direction words into action instructions.",
+        title: "Chaining Directions",
+        purpose: "Add paskui and chain familiar direction instructions into short routes.",
         supportLevel: "medium",
-        newLanguageLoad: "low",
+        newLanguageLoad: "very_low",
         notes: {
           pattern: "You already know kairėn, dešinėn, and tiesiai. Now they appear as instructions — Eikite tiesiai, Pasukite kairėn, Pasukite dešinėn. Paskui means then and lets you chain two directions together.",
           usage: [
@@ -416,13 +404,11 @@ export default function createModule_5_4(profile = {}) {
           {
             id: "s5m4l3_b1",
             type: "learn",
-            title: "Direction instructions",
+            title: "Chaining known directions",
             items: [
-              { id: "i1", lt: "Eikite tiesiai.",           en: "Go straight ahead.",        audioText: "Eikite tiesiai",           saveable: true, core: true },
-              { id: "i2", lt: "Pasukite kairėn.",          en: "Turn left.",                audioText: "Pasukite kairėn",          saveable: true, core: true },
-              { id: "i3", lt: "Pasukite dešinėn.",         en: "Turn right.",               audioText: "Pasukite dešinėn",         saveable: true, core: true },
-              { id: "i4", lt: "Tiesiai, paskui kairėn.",  en: "Straight, then left.",      audioText: "Tiesiai, paskui kairėn",   saveable: true, core: true },
-              { id: "i5", lt: "Tiesiai, paskui dešinėn.", en: "Straight, then right.",     audioText: "Tiesiai, paskui dešinėn",  saveable: true, core: true },
+              { id: "i0", lt: "paskui",                    en: "then / afterwards",      audioText: "paskui",                    saveable: true, core: true },
+              { id: "i4", lt: "Tiesiai, paskui kairėn.",  en: "Straight, then left.",   audioText: "Tiesiai, paskui kairėn",   saveable: true, core: true },
+              { id: "i5", lt: "Tiesiai, paskui dešinėn.", en: "Straight, then right.",  audioText: "Tiesiai, paskui dešinėn",  saveable: true, core: true },
             ],
           },
           {
