@@ -224,6 +224,20 @@ html[data-theme="light"] .build-phrase-wrong-token {
   color: #881337;
 }
 
+html[data-theme="light"] .build-phrase-right-token {
+  border-color: rgba(45, 94, 51, 0.38);
+  background-color: rgba(74, 125, 80, 0.13);
+  color: #2d5e33;
+}
+html[data-theme="light"] .build-phrase-repair-feedback {
+  border-color: rgba(159, 18, 57, 0.24);
+  background-color: rgba(190, 24, 93, 0.055);
+}
+.build-phrase-legend-correct { color: rgb(110 231 183); }
+.build-phrase-legend-wrong { color: rgb(253 164 175); }
+html[data-theme="light"] .build-phrase-legend-correct { color: #2d5e33; }
+html[data-theme="light"] .build-phrase-legend-wrong { color: #881337; }
+
 /* Zinc backgrounds */
 html[data-theme="light"] .bg-zinc-950  { background-color: #EDE0C8; }
 html[data-theme="light"] .bg-zinc-900  { background-color: #F0E8D6; }
