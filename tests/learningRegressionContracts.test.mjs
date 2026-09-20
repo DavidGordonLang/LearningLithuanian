@@ -342,3 +342,12 @@ test("lesson scoring counts objective blocks once and Section Complete uses pers
   assert.match(gameSrc, /!currentMetrics\[lessonId\] && metrics/);
 });
 
+test("Say It Out Loud does not bias transcription toward the expected answer", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /phraseMatchesSpeech\(captured, targetText\)/);
+  assert.match(src, /transcriptionKeywords:\s*\[\]/);
+  assert.match(src, /Do not infer, complete, or guess an expected practice phrase/);
+  assert.doesNotMatch(src, /transcriptionKeywords:\s*targetText \? \[targetText\] : \[\]/);
+});
+
