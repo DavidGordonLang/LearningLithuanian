@@ -89,15 +89,25 @@ test("Module 2.3 scenarios never author Nesuprantu as a normal answer", () => {
   }
 });
 
-test("2.3 checkpoint vocabulary contains only singular near/far and selection forms", () => {
+test("2.3 checkpoint ends with a 20-pair recap including spaced retrieval", () => {
   const module = createModule_2_3();
-  const pairs = getBlock(getLesson(module, "2.3.C"), "s2m3c_b7").pairs;
+  const checkpoint = getLesson(module, "2.3.C");
+  const pairs = getBlock(checkpoint, "s2m3c_b7").pairs;
   const texts = pairs.map((pair) => pair.lt);
 
-  assert.equal(pairs.length, 16);
+  assert.equal(checkpoint.blocks.at(-1).type, "word_match");
+  assert.equal(pairs.length, 20);
   assert.ok(texts.includes("Šitas"));
   assert.ok(texts.includes("Šita"));
   assert.ok(texts.includes("Noriu šito."));
   assert.ok(texts.includes("Noriu šitos."));
+  for (const retained of [
+    "Man reikia bilieto.",
+    "Ar galite parodyti?",
+    "Negaliu eiti.",
+    "Ar galima mokėti kortele?",
+  ]) {
+    assert.ok(texts.includes(retained), `2.3 recap should retrieve ${retained}`);
+  }
   assert.equal(new Set(texts).size, texts.length);
 });
