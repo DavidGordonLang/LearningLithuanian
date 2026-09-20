@@ -118,12 +118,14 @@ test("lesson audio preloading covers Word Match pairs before they are matched", 
   assert.match(src, /preloadText\(text\)/);
 });
 
-test("Speak Self Check remains hold-to-speak with a visible recording state and no transcript display", () => {
+test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics off production", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
   assert.match(src, /onPointerDown=\{handleMicPointerDown\}/);
   assert.match(src, /onPointerUp=\{finishMicHold\}/);
   assert.match(src, /isRecording \? "bg-emerald-500\/25/);
-  assert.equal((src.match(/capturedText/g) || []).length, 1);
+  assert.match(src, /speechDebugEnabled/);
+  assert.match(src, /!\["zodis\.app", "www\.zodis\.app"\]\.includes\(window\.location\.hostname\)/);
+  assert.match(src, /STT heard:/);
 });
 
 
