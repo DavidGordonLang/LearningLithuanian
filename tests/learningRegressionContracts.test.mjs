@@ -360,3 +360,16 @@ test("Say It Out Loud failure status stays readable in light mode", () => {
   assert.match(cssSrc, /html\[data-theme="light"\] \.say-it-fail-status[\s\S]*?color: #78350f/);
 });
 
+
+
+test("Say It Out Loud exposes STT diagnostics off production without changing acceptance", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /speechDebugEnabled/);
+  assert.match(src, /zodis\.app/);
+  assert.match(src, /www\.zodis\.app/);
+  assert.match(src, /STT heard:/);
+  assert.match(src, /Normalised:/);
+  assert.match(src, /Matcher:<\/span> \{?"accepted"|Matcher:<\/span> rejected|Matcher:/);
+  assert.match(src, /phraseMatchesSpeech\(captured, targetText\)/);
+});
