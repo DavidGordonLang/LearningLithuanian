@@ -98,7 +98,7 @@ export default function createCheckpoint2(profile = {}) {
           { id: "t2", text: "galima", correctIndex: 1 },
           { id: "t3", text: "mokėti", correctIndex: 2 },
           { id: "t4", text: "kortele?", correctIndex: 3 },
-          { id: "t5", text: "galite", isDistractor: true, repairHint: "galite is the polite “you can” form, used when asking what another person can do. Here the question is “Is it possible to pay by card?”, so the phrase uses galima." },
+          { id: "t5", text: "galite", isDistractor: true, repairHint: "galite means “you can” (polite/plural), used when asking what another person can do. Here the question asks whether something is possible, so a personal “you can” form doesn’t fit." },
         ],
         answerText: "Ar galima mokėti kortele?",
       },
