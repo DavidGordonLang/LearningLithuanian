@@ -213,6 +213,17 @@ html[data-theme="light"] .text-emerald-300 { color: #4a7d50; }
 html[data-theme="light"] .text-emerald-400 { color: #6B8F6E; }
 html[data-theme="light"] .text-emerald-500 { color: #5d8060; }
 
+/* Build Phrase error state: keep wrong answers clearly readable on the warm light palette. */
+html[data-theme="light"] .build-phrase-wrong-area {
+  border-color: rgba(190, 24, 93, 0.30);
+  background-color: rgba(190, 24, 93, 0.07);
+}
+html[data-theme="light"] .build-phrase-wrong-token {
+  border-color: rgba(159, 18, 57, 0.34);
+  background-color: rgba(190, 24, 93, 0.12);
+  color: #881337;
+}
+
 /* Zinc backgrounds */
 html[data-theme="light"] .bg-zinc-950  { background-color: #EDE0C8; }
 html[data-theme="light"] .bg-zinc-900  { background-color: #F0E8D6; }
