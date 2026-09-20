@@ -279,3 +279,12 @@ test("Scenario V2 can reveal accumulated meaning as a text-only help endpoint", 
   assert.match(src, /translationReveal: helpTurn\.translationReveal \|\| null/);
   assert.match(src, /showTranslationReveal = phase === "speaker"/);
 });
+
+test("conversation turn speaker labels remain readable on mobile", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /w-\[82px\][^\n]*break-words/);
+  assert.match(src, /text-\[15px\] leading-snug flex-1 min-w-0 break-words/);
+  assert.doesNotMatch(src, /w-14 pt-\[3px\]/);
+});
+
