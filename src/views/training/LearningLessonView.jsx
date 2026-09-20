@@ -507,7 +507,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     language: "lt",
     transcriptionModel: "gpt-transcribe",
     transcriptionPrompt: "Transcribe only clearly audible Lithuanian speech. Do not infer, complete, or guess an expected practice phrase. If no clear speech is audible, return an empty transcript.",
-    transcriptionKeywords: [],
+    transcriptionKeywords: Array.isArray(block?.transcriptionKeywords) ? block.transcriptionKeywords : [],
     minRecordingMs: 250,
     showCapturedToast: false,
     showNoSpeechToast: false,
