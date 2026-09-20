@@ -659,7 +659,7 @@ export default function createModule_1_4(profile = {}) {
               { id: "t1", text: "Ar", correctIndex: 0 },
               { id: "t2", text: "galime", correctIndex: 1 },
               { id: "t3", text: "pradėti?", correctIndex: 2 },
-              { id: "t4", text: "galiu", isDistractor: true },
+              { id: "t4", text: "galiu", isDistractor: true, repairHint: "galiu is “I can”; galime is “we can”. The prompt asks “Can we start?”, so use galime." },
             ],
             answerText: "Ar galime pradėti?",
           },
