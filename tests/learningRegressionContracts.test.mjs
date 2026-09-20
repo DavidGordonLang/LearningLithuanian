@@ -351,3 +351,11 @@ test("Say It Out Loud does not bias transcription toward the expected answer", (
   assert.doesNotMatch(src, /transcriptionKeywords:\s*targetText \? \[targetText\] : \[\]/);
 });
 
+test("Say It Out Loud failure status stays readable in light mode", () => {
+  const lessonSrc = source("src/views/training/LearningLessonView.jsx");
+  const cssSrc = source("src/index.css");
+
+  assert.match(lessonSrc, /say-it-fail-status/);
+  assert.match(cssSrc, /html\[data-theme="light"\] \.say-it-fail-status[\s\S]*?color: #78350f/);
+});
+
