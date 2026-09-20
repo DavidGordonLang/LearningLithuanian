@@ -26,7 +26,10 @@ export default function createModule_5_2(profile = {}) {
             type: "learn",
             title: "Transport places",
             items: [
+              { id: "i1", lt: "autobusų stotis",     en: "bus station",       audioText: "autobusų stotis",    saveable: true, core: true },
               { id: "i2", lt: "traukinių stotis", en: "train station",     audioText: "traukinių stotis",saveable: true, core: true },
+              { id: "i3", lt: "stotelė",             en: "stop / bus stop",   audioText: "stotelė",            saveable: true, core: true },
+              { id: "i4", lt: "oro uostas",          en: "airport",           audioText: "oro uostas",         saveable: true, core: false },
             ],
           },
           {
@@ -358,21 +361,10 @@ export default function createModule_5_2(profile = {}) {
         id: "section_5_module_2_lesson_3",
         code: "5.2.3",
         title: "Everyday Places in Context",
-        purpose: "Introduce kavinė and reuse familiar service-place vocabulary in location tasks.",
+        purpose: "Retrieve and apply familiar everyday place vocabulary in location tasks.",
         supportLevel: "high",
-        newLanguageLoad: "very_low",
+        newLanguageLoad: "none",
         blocks: [
-          {
-            id: "s5m2l3_b1",
-            type: "learn",
-            title: "One new place word",
-            items: [
-              { id: "i1", lt: "parduotuvė", en: "shop / store", audioText: "parduotuvė", saveable: true, core: true },
-              { id: "i2", lt: "kavinė",     en: "café",         audioText: "kavinė",     saveable: true, core: true },
-              { id: "i3", lt: "viešbutis",  en: "hotel",        audioText: "viešbutis",  saveable: true, core: true },
-              { id: "i4", lt: "bankas",     en: "bank",         audioText: "bankas",     saveable: true, core: true },
-            ],
-          },
           {
             id: "s5m2l3_b2",
             type: "listen_mcq",
