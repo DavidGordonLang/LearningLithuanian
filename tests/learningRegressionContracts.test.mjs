@@ -125,8 +125,8 @@ test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics of
   assert.match(src, /isRecording \? "bg-emerald-500\/25/);
   assert.match(src, /speechDebugEnabled/);
   assert.match(src, /!\["zodis\.app", "www\.zodis\.app"\]\.includes\(window\.location\.hostname\)/);
-  assert.match(src, /OpenAI heard:/);
-  assert.match(src, /Speechmatics heard:/);
+  assert.match(src, /STT heard:/);
+  assert.match(src, /Matcher:/);
 });
 
 
@@ -380,7 +380,7 @@ test("Say It Out Loud keeps dev-only transcript diagnostics while Speechmatics o
   assert.match(src, /Matcher:<\/span> accepted|Matcher:<\/span> rejected|Matcher:/);
   assert.match(src, /phraseMatchesSpeech\(captured, targetText\)/);
   assert.doesNotMatch(src, /OpenAI heard:/);
-  assert.doesNotMatch(src, /transcriptionUrl/);
+  assert.match(src, /transcriptionUrl:\s*"\/api\/stt-speechmatics"/);
 });
 
 
