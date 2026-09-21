@@ -85,6 +85,35 @@ test("2.1.4 teaches raktas in a hotel context instead of as orphan vocabulary", 
   assert.match(hotelScenario.steps[0].sceneDirection, /room key/i);
 });
 
+test("2.1.4 hotel scenario turns the room-key handover into a substantive four-beat exchange", () => {
+  const module = createModule_2_1();
+  const scenario = getBlock(getLesson(module, "2.1.4"), "s2m1l4_b9_v2");
+
+  assert.equal(scenario.steps.length, 4);
+  assert.match(scenario.description, /water/i);
+  assert.ok(scenario.objects.some((object) => object.id === "room_key"));
+  assert.ok(scenario.objects.some((object) => object.id === "water"));
+
+  assert.equal(scenario.steps[1].learnerPrompt, "Ask whether they have water.");
+  assert.ok(scenario.steps[1].options.some((option) =>
+    option.text === "Ar turite vandens?" && option.result === "best"
+  ));
+  assert.ok(scenario.steps[2].options.some((option) =>
+    option.text === "Ar turite vandens?" &&
+    option.result === "awkward" &&
+    option.progresses === true &&
+    /just told you/i.test(option.feedback)
+  ));
+  assert.ok(scenario.steps[3].options.some((option) =>
+    option.text === "Ačiū! Viso gero!" && option.result === "best"
+  ));
+
+  const resultTypes = new Set(
+    scenario.steps.flatMap((step) => step.options.map((option) => option.result))
+  );
+  assert.deepEqual([...resultTypes].sort(), ["acceptable", "awkward", "best", "wrong"]);
+});
+
 test("Module 2.1 scenarios no longer author Nesuprantu as a wrong answer", () => {
   const module = createModule_2_1();
 
