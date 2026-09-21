@@ -381,17 +381,27 @@ test("Say It Out Loud compares OpenAI and Speechmatics off production without ch
 });
 
 
-test("Speechmatics diagnostic STT keeps the API key server-side and uses Lithuanian enhanced batch transcription", () => {
+test("Speechmatics diagnostic keeps the API key server-side and uses low-latency Lithuanian realtime transcription", () => {
   const apiSrc = source("api/stt-speechmatics.js");
   const hookSrc = source("src/hooks/useSpeechToTextHold.js");
+  const packageSrc = source("package.json");
 
   assert.match(apiSrc, /process\.env\.SPEECHMATICS_API_KEY/);
-  assert.match(apiSrc, /eu1\.asr\.api\.speechmatics\.com\/v2\/jobs\/\?wait=20&format=txt/);
-  assert.match(apiSrc, /language,/);
+  assert.match(apiSrc, /createSpeechmaticsJWT/);
+  assert.match(apiSrc, /new RealtimeClient/);
   assert.match(apiSrc, /model: "enhanced"/);
-  assert.match(apiSrc, /Authorization:/);
-  assert.match(apiSrc, /Bearer \$\{apiKey\}/);
+  assert.match(apiSrc, /max_delay: 0\.7/);
+  assert.match(apiSrc, /audio_format:\s*\{\s*type: "file"/);
+  assert.match(apiSrc, /client\.sendAudio/);
+  assert.match(apiSrc, /client\.stopRecognition\(\{ noTimeout: true \}\)/);
+  assert.doesNotMatch(apiSrc, /asr\.api\.speechmatics\.com\/v2\/jobs/);
+
   assert.doesNotMatch(hookSrc, /SPEECHMATICS_API_KEY/);
-  assert.match(hookSrc, /comparisonTranscriptionUrl/);
-  assert.match(hookSrc, /body: blob/);
+  assert.match(hookSrc, /speechBlobToMonoWav/);
+  assert.match(hookSrc, /new Blob\(\[wav\], \{ type: "audio\/wav" \}\)/);
+  assert.match(hookSrc, /"Content-Type": "audio\/wav"/);
+  assert.match(hookSrc, /body: comparisonBlob/);
+
+  assert.match(packageSrc, /"@speechmatics\/auth"/);
+  assert.match(packageSrc, /"@speechmatics\/real-time-client"/);
 });

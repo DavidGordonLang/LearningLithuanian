@@ -13,6 +13,73 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+
+async function speechBlobToMonoWav(blob) {
+  if (typeof window === "undefined") {
+    throw new Error("Audio conversion unavailable");
+  }
+
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) {
+    throw new Error("Audio conversion unavailable");
+  }
+
+  const audioContext = new AudioContextCtor();
+  try {
+    const encoded = await blob.arrayBuffer();
+    const decoded = await audioContext.decodeAudioData(encoded.slice(0));
+    const frameCount = decoded.length;
+    const channelCount = Math.max(1, decoded.numberOfChannels || 1);
+    const mono = new Float32Array(frameCount);
+
+    for (let channel = 0; channel < channelCount; channel += 1) {
+      const samples = decoded.getChannelData(channel);
+      for (let i = 0; i < frameCount; i += 1) {
+        mono[i] += samples[i] / channelCount;
+      }
+    }
+
+    const bytesPerSample = 2;
+    const dataBytes = frameCount * bytesPerSample;
+    const wav = new ArrayBuffer(44 + dataBytes);
+    const view = new DataView(wav);
+
+    const writeAscii = (offset, value) => {
+      for (let i = 0; i < value.length; i += 1) {
+        view.setUint8(offset + i, value.charCodeAt(i));
+      }
+    };
+
+    writeAscii(0, "RIFF");
+    view.setUint32(4, 36 + dataBytes, true);
+    writeAscii(8, "WAVE");
+    writeAscii(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, decoded.sampleRate, true);
+    view.setUint32(28, decoded.sampleRate * bytesPerSample, true);
+    view.setUint16(32, bytesPerSample, true);
+    view.setUint16(34, 16, true);
+    writeAscii(36, "data");
+    view.setUint32(40, dataBytes, true);
+
+    let offset = 44;
+    for (let i = 0; i < frameCount; i += 1) {
+      const sample = Math.max(-1, Math.min(1, mono[i]));
+      const pcm = sample < 0 ? Math.round(sample * 0x8000) : Math.round(sample * 0x7fff);
+      view.setInt16(offset, pcm, true);
+      offset += bytesPerSample;
+    }
+
+    return new Blob([wav], { type: "audio/wav" });
+  } finally {
+    try {
+      await audioContext.close();
+    } catch {}
+  }
+}
+
 export default function useSpeechToTextHold({
   showToast,
   blurTextarea,
@@ -331,14 +398,17 @@ export default function useSpeechToTextHold({
               ? `${comparisonTranscriptionUrl}${separator}lang=${encodeURIComponent(language)}`
               : comparisonTranscriptionUrl;
 
-            comparisonPromise = fetch(comparisonUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": blob.type || "audio/webm",
-              },
-              body: blob,
-              signal: controller.signal,
-            })
+            comparisonPromise = speechBlobToMonoWav(blob)
+              .then((comparisonBlob) =>
+                fetch(comparisonUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "audio/wav",
+                  },
+                  body: comparisonBlob,
+                  signal: controller.signal,
+                })
+              )
               .then(async (comparisonResp) => {
                 let comparisonData = {};
                 try {

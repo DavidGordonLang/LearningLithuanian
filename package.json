@@ -13,7 +13,9 @@
     "@supabase/supabase-js": "^2.43.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "@speechmatics/auth": "^0.1.0",
+    "@speechmatics/real-time-client": "^8.5.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
