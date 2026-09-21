@@ -24,7 +24,7 @@ function ensureStyles() {
       100% { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
     }
     .z-word-glow {
-      animation: zWordGlow 0.6s ease-out forwards;
+      animation: zWordGlow 0.9s ease-out forwards;
     }
     .z-word-glow-slow {
       animation: zWordGlowSlow 2s ease-in-out infinite;

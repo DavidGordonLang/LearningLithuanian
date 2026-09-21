@@ -22,6 +22,8 @@ export default function useWordAudio({
   });
 
   const timerRef = useRef(0);
+  const visualGenerationRef = useRef(0);
+  const NORMAL_GLOW_MIN_MS = 900;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -52,13 +54,26 @@ export default function useWordAudio({
       const text = String(word || "").trim();
       if (!text || disabled || typeof playText !== "function") return;
 
+      const visualGeneration = visualGenerationRef.current + 1;
+      visualGenerationRef.current = visualGeneration;
+      const startedAt = Date.now();
+
       setPlaying(slow ? "slow" : "normal");
       try {
         await playText(text, slow ? { slow: true } : undefined);
       } catch {
         // playback errors are already handled by the shared TTS layer
       } finally {
-        setPlaying(null);
+        if (!slow) {
+          const elapsed = Date.now() - startedAt;
+          const remaining = Math.max(0, NORMAL_GLOW_MIN_MS - elapsed);
+          if (remaining > 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, remaining));
+          }
+        }
+        if (visualGenerationRef.current === visualGeneration) {
+          setPlaying(null);
+        }
       }
     },
     [disabled, playText, word]
