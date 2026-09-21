@@ -29,6 +29,15 @@ function ensureStyles() {
     .z-word-glow-slow {
       animation: zWordGlowSlow 2s ease-in-out infinite;
     }
+
+    /* Touch browsers can leave CSS :hover stuck on the last tapped word.
+       The glow animation is the intended touch feedback, so suppress desktop
+       hover colour on coarse/non-hover pointers after the gesture ends. */
+    @media (hover: none), (pointer: coarse) {
+      .z-word-audio-token:hover {
+        color: inherit !important;
+      }
+    }
   `;
   document.head.appendChild(el);
 }
@@ -67,7 +76,7 @@ function WordToken({
       tabIndex={disabled ? -1 : 0}
       aria-label={`Play word: ${token.text}`}
       className={cn(
-        "inline rounded-[0.2em] select-none transition-colors duration-150",
+        "z-word-audio-token inline rounded-[0.2em] select-none transition-colors duration-150",
         !disabled ? "cursor-pointer" : "",
         wordClassName,
         pressing ? activeWordClassName : null,
@@ -85,10 +94,17 @@ function WordToken({
       onPointerUp={(e) => {
         e.stopPropagation();
         handlers.onPointerUp?.(e);
+        if (e.pointerType !== "mouse") e.currentTarget?.blur?.();
       }}
       onPointerCancel={(e) => {
         e.stopPropagation();
         handlers.onPointerCancel?.(e);
+        if (e.pointerType !== "mouse") e.currentTarget?.blur?.();
+      }}
+      onLostPointerCapture={(e) => {
+        e.stopPropagation();
+        handlers.onLostPointerCapture?.(e);
+        if (e.pointerType !== "mouse") e.currentTarget?.blur?.();
       }}
       onContextMenu={(e) => {
         e.stopPropagation();

@@ -118,6 +118,22 @@ test("lesson audio preloading covers Word Match pairs before they are matched", 
   assert.match(src, /preloadText\(text\)/);
 });
 
+test("tap-word audio clears sticky mobile hover/focus and lost pointer capture globally", () => {
+  const phraseSrc = source("src/components/audio/InteractivePhraseText.jsx");
+  const wordAudioSrc = source("src/hooks/useWordAudio.js");
+
+  assert.match(phraseSrc, /z-word-audio-token/);
+  assert.match(phraseSrc, /@media \(hover: none\), \(pointer: coarse\)/);
+  assert.match(phraseSrc, /\.z-word-audio-token:hover[\s\S]*?color: inherit !important/);
+  assert.match(phraseSrc, /onPointerUp=\{\(e\) => \{[\s\S]*?e\.pointerType !== "mouse"[\s\S]*?blur/);
+  assert.match(phraseSrc, /onPointerCancel=\{\(e\) => \{[\s\S]*?e\.pointerType !== "mouse"[\s\S]*?blur/);
+  assert.match(phraseSrc, /onLostPointerCapture/);
+
+  assert.match(wordAudioSrc, /const handleLostPointerCapture = useCallback/);
+  assert.match(wordAudioSrc, /if \(!stateRef\.current\.active\) return;[\s\S]*?resetState\(\)/);
+  assert.match(wordAudioSrc, /onLostPointerCapture: handleLostPointerCapture/);
+});
+
 test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics off production", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
   assert.match(src, /onPointerDown=\{handleMicPointerDown\}/);

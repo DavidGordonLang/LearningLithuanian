@@ -161,6 +161,11 @@ export default function useWordAudio({
     [resetState]
   );
 
+  const handleLostPointerCapture = useCallback(() => {
+    if (!stateRef.current.active) return;
+    resetState();
+  }, [resetState]);
+
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
   }, []);
@@ -173,6 +178,7 @@ export default function useWordAudio({
       onPointerMove: handlePointerMove,
       onPointerUp: handlePointerUp,
       onPointerCancel: handlePointerCancel,
+      onLostPointerCapture: handleLostPointerCapture,
       onContextMenu: handleContextMenu,
     },
   };
