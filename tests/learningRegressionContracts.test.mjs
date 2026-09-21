@@ -137,9 +137,10 @@ test("tap-word audio clears sticky mobile hover/focus and lost pointer capture g
 test("normal tap-word glow remains visibly present for roughly 0.9 seconds", () => {
   const phraseSrc = source("src/components/audio/InteractivePhraseText.jsx");
   const wordAudioSrc = source("src/hooks/useWordAudio.js");
+  const cssSrc = source("src/index.css");
 
   assert.match(phraseSrc, /\.z-word-glow \{\s*animation: zWordGlow 0\.9s ease-out forwards;/);
-  assert.match(phraseSrc, /zWordGlowLight 0\.9s ease-out forwards/);
+  assert.match(cssSrc, /zWordGlowLight 0\.9s ease-out forwards/);
   assert.match(wordAudioSrc, /NORMAL_GLOW_MIN_MS = 900/);
   assert.match(wordAudioSrc, /Math\.max\(0, NORMAL_GLOW_MIN_MS - elapsed\)/);
   assert.match(wordAudioSrc, /visualGenerationRef\.current === visualGeneration/);
