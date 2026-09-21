@@ -200,18 +200,22 @@ test("Scenario V2 reply cards submit directly without a separate Choose button",
 });
 
 
-test("lesson speech checks use the high-accuracy Lithuanian transcription path and short-word threshold", () => {
+test("Say It Out Loud uses Speechmatics Realtime while other STT callers retain the OpenAI default", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
   const sttSrc = source("src/hooks/useSpeechToTextHold.js");
 
-  assert.match(lessonSrc, /transcriptionModel:\s*"gpt-transcribe"/);
+  assert.match(lessonSrc, /transcriptionUrl:\s*"\/api\/stt-speechmatics"/);
+  assert.match(lessonSrc, /transcriptionPayload:\s*"wav"/);
   assert.match(lessonSrc, /transcriptionPrompt:\s*null/);
   assert.match(lessonSrc, /transcriptionKeywords:\s*\[\]/);
   assert.match(lessonSrc, /minRecordingMs:\s*250/);
+
+  assert.match(sttSrc, /transcriptionUrl = "\/api\/stt"/);
+  assert.match(sttSrc, /transcriptionPayload = "multipart"/);
+  assert.match(sttSrc, /if \(transcriptionPayload === "wav"\)/);
+  assert.match(sttSrc, /speechBlobToMonoWav\(blob\)/);
   assert.match(sttSrc, /fd\.append\("languages\[\]", language\)/);
   assert.match(sttSrc, /fd\.append\("keywords\[\]", keyword\)/);
-  assert.match(sttSrc, /recordedMimeType\.includes\("mp4"\)/);
-  assert.doesNotMatch(sttSrc, /fd\.append\("max_seconds"/);
 });
 
 test("lesson mic does not abort an active hold when pointer capture is lost during mic acquisition", () => {
@@ -366,22 +370,21 @@ test("Say It Out Loud failure status stays readable in light mode", () => {
 
 
 
-test("Say It Out Loud compares OpenAI and Speechmatics off production without changing acceptance", () => {
+test("Say It Out Loud keeps dev-only transcript diagnostics while Speechmatics owns acceptance", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
 
   assert.match(src, /speechDebugEnabled/);
   assert.match(src, /zodis\.app/);
   assert.match(src, /www\.zodis\.app/);
-  assert.match(src, /comparisonTranscriptionUrl: speechDebugEnabled \? "\/api\/stt-speechmatics" : null/);
-  assert.match(src, /OpenAI heard:/);
-  assert.match(src, /Speechmatics heard:/);
-  assert.match(src, /Speechmatics matcher:/);
+  assert.match(src, /STT heard:/);
+  assert.match(src, /Matcher:<\/span> accepted|Matcher:<\/span> rejected|Matcher:/);
   assert.match(src, /phraseMatchesSpeech\(captured, targetText\)/);
-  assert.doesNotMatch(src, /if \(speechmaticsMatches\)[\s\S]*?onComplete/);
+  assert.doesNotMatch(src, /OpenAI heard:/);
+  assert.doesNotMatch(src, /transcriptionUrl/);
 });
 
 
-test("Speechmatics diagnostic keeps the API key server-side and uses low-latency Lithuanian realtime transcription", () => {
+test("Speechmatics primary lesson STT keeps the API key server-side and uses low-latency Lithuanian realtime transcription", () => {
   const apiSrc = source("api/stt-speechmatics.js");
   const hookSrc = source("src/hooks/useSpeechToTextHold.js");
   const packageSrc = source("package.json");
@@ -400,7 +403,8 @@ test("Speechmatics diagnostic keeps the API key server-side and uses low-latency
   assert.match(hookSrc, /speechBlobToMonoWav/);
   assert.match(hookSrc, /new Blob\(\[wav\], \{ type: "audio\/wav" \}\)/);
   assert.match(hookSrc, /"Content-Type": "audio\/wav"/);
-  assert.match(hookSrc, /body: comparisonBlob/);
+  assert.match(hookSrc, /requestBody = await speechBlobToMonoWav\(blob\)/);
+  assert.match(hookSrc, /body: requestBody/);
 
   assert.match(packageSrc, /"@speechmatics\/auth"/);
   assert.match(packageSrc, /"@speechmatics\/real-time-client"/);

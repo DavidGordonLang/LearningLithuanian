@@ -95,8 +95,8 @@ export default function useSpeechToTextHold({
   transcriptionModel = "gpt-4o-mini-transcribe",
   transcriptionPrompt = null,
   transcriptionKeywords = [],
-  comparisonTranscriptionUrl = null,
-  onComparisonTranscript,
+  transcriptionUrl = "/api/stt",
+  transcriptionPayload = "multipart",
   minRecordingMs = 650,
   showCapturedToast = true,
   showNoSpeechToast = true,
@@ -362,89 +362,53 @@ export default function useSpeechToTextHold({
         const t = setTimeout(() => controller.abort(), STT_FETCH_TIMEOUT_MS);
 
         try {
-          const fd = new FormData();
-          const recordedMimeType = String(blob.type || mr.mimeType || "").toLowerCase();
-          const filename = recordedMimeType.includes("mp4")
-            ? "speech.mp4"
-            : recordedMimeType.includes("ogg")
-            ? "speech.ogg"
-            : recordedMimeType.includes("wav")
-            ? "speech.wav"
-            : "speech.webm";
-          fd.append("file", blob, filename);
-          fd.append("model", transcriptionModel);
+          let requestUrl = transcriptionUrl || "/api/stt";
+          let requestBody;
+          let requestHeaders;
 
-          if (transcriptionPrompt) {
-            fd.append("prompt", String(transcriptionPrompt));
-          }
-
-          const safeKeywords = Array.isArray(transcriptionKeywords)
-            ? transcriptionKeywords.map((value) => String(value || "").trim()).filter(Boolean)
-            : [];
-          safeKeywords.forEach((keyword) => fd.append("keywords[]", keyword));
-
-          if (language) {
-            if (transcriptionModel === "gpt-transcribe") {
-              fd.append("languages[]", language);
-            } else {
-              fd.append("language", language);
+          if (transcriptionPayload === "wav") {
+            const separator = requestUrl.includes("?") ? "&" : "?";
+            if (language) {
+              requestUrl = `${requestUrl}${separator}lang=${encodeURIComponent(language)}`;
             }
+            requestBody = await speechBlobToMonoWav(blob);
+            requestHeaders = { "Content-Type": "audio/wav" };
+          } else {
+            const fd = new FormData();
+            const recordedMimeType = String(blob.type || mr.mimeType || "").toLowerCase();
+            const filename = recordedMimeType.includes("mp4")
+              ? "speech.mp4"
+              : recordedMimeType.includes("ogg")
+              ? "speech.ogg"
+              : recordedMimeType.includes("wav")
+              ? "speech.wav"
+              : "speech.webm";
+            fd.append("file", blob, filename);
+            fd.append("model", transcriptionModel);
+
+            if (transcriptionPrompt) {
+              fd.append("prompt", String(transcriptionPrompt));
+            }
+
+            const safeKeywords = Array.isArray(transcriptionKeywords)
+              ? transcriptionKeywords.map((value) => String(value || "").trim()).filter(Boolean)
+              : [];
+            safeKeywords.forEach((keyword) => fd.append("keywords[]", keyword));
+
+            if (language) {
+              if (transcriptionModel === "gpt-transcribe") {
+                fd.append("languages[]", language);
+              } else {
+                fd.append("language", language);
+              }
+            }
+            requestBody = fd;
           }
 
-          let comparisonPromise = null;
-          if (comparisonTranscriptionUrl) {
-            const separator = comparisonTranscriptionUrl.includes("?") ? "&" : "?";
-            const comparisonUrl = language
-              ? `${comparisonTranscriptionUrl}${separator}lang=${encodeURIComponent(language)}`
-              : comparisonTranscriptionUrl;
-
-            comparisonPromise = speechBlobToMonoWav(blob)
-              .then((comparisonBlob) =>
-                fetch(comparisonUrl, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "audio/wav",
-                  },
-                  body: comparisonBlob,
-                  signal: controller.signal,
-                })
-              )
-              .then(async (comparisonResp) => {
-                let comparisonData = {};
-                try {
-                  comparisonData = await comparisonResp.json();
-                } catch {
-                  comparisonData = {};
-                }
-                if (!comparisonResp.ok) {
-                  throw new Error(comparisonData?.error || "Comparison transcription failed");
-                }
-                return String(comparisonData?.text || "").trim();
-              })
-              .then((comparisonText) => {
-                onComparisonTranscript?.({ text: comparisonText, error: null });
-                return comparisonText;
-              })
-              .catch((comparisonError) => {
-                if (comparisonError?.name !== "AbortError") {
-                  console.error("Comparison STT failed:", comparisonError);
-                }
-                onComparisonTranscript?.({
-                  text: "",
-                  error:
-                    comparisonError?.name === "AbortError"
-                      ? "Comparison transcription timed out"
-                      : String(comparisonError?.message || "Comparison transcription failed"),
-                });
-                return "";
-              });
-          }
-
-          const sttUrl = "/api/stt";
-
-          const resp = await fetch(sttUrl, {
+          const resp = await fetch(requestUrl, {
             method: "POST",
-            body: fd,
+            headers: requestHeaders,
+            body: requestBody,
             signal: controller.signal,
           });
 
@@ -462,10 +426,6 @@ export default function useSpeechToTextHold({
           }
 
           if (activeSessionRef.current !== sessionId) return;
-
-          if (comparisonPromise) {
-            await comparisonPromise;
-          }
 
           const text = String(data?.text || "").trim();
           if (!text) {
@@ -539,8 +499,8 @@ export default function useSpeechToTextHold({
     transcriptionKeywords,
     transcriptionModel,
     transcriptionPrompt,
-    comparisonTranscriptionUrl,
-    onComparisonTranscript,
+    transcriptionUrl,
+    transcriptionPayload,
     shortRecordingMessage,
     stopRecording,
     sttSupported,
