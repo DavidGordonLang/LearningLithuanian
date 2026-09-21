@@ -29,6 +29,12 @@ test("speech matching tolerates modest STT variation without becoming loose", ()
   assert.equal(phraseMatchesSpeech("noriu kavos", "Noriu vandens."), false);
 });
 
+test("speech matching rejects close grammatical substitutions in multi-word phrases", () => {
+  assert.equal(phraseMatchesSpeech("Ar turite vandens", "Ar turite vandens?"), true);
+  assert.equal(phraseMatchesSpeech("Ar turi vandens", "Ar turite vandens?"), false);
+  assert.equal(phraseMatchesSpeech("Ar turite vandenss", "Ar turite vandens?"), true);
+});
+
 test("speech matching allows one harmless extra token only when the target remains intact and ordered", () => {
   assert.equal(phraseMatchesSpeech("na noriu vandens", "Noriu vandens."), true);
   assert.equal(phraseMatchesSpeech("noriu vandens na", "Noriu vandens."), true);

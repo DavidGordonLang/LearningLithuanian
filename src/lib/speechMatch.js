@@ -72,7 +72,11 @@ export function phraseMatchesSpeech(captured, target) {
     );
     const average = similarities.reduce((sum, value) => sum + value, 0) / similarities.length;
     const minimum = Math.min(...similarities);
-    return average >= 0.80 && minimum >= 0.65;
+    // Speechmatics produces cleaner Lithuanian word boundaries than the original
+    // OpenAI path, so require each aligned word to stay close to the target.
+    // 0.80 still tolerates a small STT spelling error while rejecting meaningful
+    // grammatical substitutions such as "turi" for "turite".
+    return average >= 0.80 && minimum >= 0.80;
   }
 
   return false;
