@@ -1,3 +1,42 @@
+const LITHUANIAN_CARDINAL_VALUES = new Map([
+  ["nulis", 0],
+  ["vienas", 1],
+  ["du", 2],
+  ["trys", 3],
+  ["keturi", 4],
+  ["penki", 5],
+  ["sesi", 6],
+  ["septyni", 7],
+  ["astuoni", 8],
+  ["devyni", 9],
+  ["desimt", 10],
+  ["vienuolika", 11],
+  ["dvylika", 12],
+  ["trylika", 13],
+  ["keturiolika", 14],
+  ["penkiolika", 15],
+  ["sesiolika", 16],
+  ["septyniolika", 17],
+  ["astuoniolika", 18],
+  ["devyniolika", 19],
+  ["dvidesimt", 20],
+  ["trisdesimt", 30],
+  ["keturiasdesimt", 40],
+  ["penkiasdesimt", 50],
+  ["sesiasdesimt", 60],
+  ["septyniasdesimt", 70],
+  ["astuoniasdesimt", 80],
+  ["devyniasdesimt", 90],
+  ["simtas", 100],
+]);
+
+function singleCardinalMatchesNumericTranscript(heard, expected) {
+  if (!/^\d+$/.test(heard) || expected.includes(" ")) return false;
+  const expectedValue = LITHUANIAN_CARDINAL_VALUES.get(expected);
+  if (expectedValue == null) return false;
+  return Number(heard) === expectedValue;
+}
+
 export function normaliseSpeechForMatch(value) {
   const stripped = String(value || "")
     .normalize("NFD")
@@ -38,6 +77,11 @@ export function phraseMatchesSpeech(captured, target) {
   const expected = normaliseSpeechForMatch(target);
   if (!heard || !expected) return false;
   if (heard === expected) return true;
+
+  // Speechmatics can render a clearly spoken cardinal as written digits
+  // (for example trisdešimt -> "30"). For a single taught number target,
+  // treat that formatting change as equivalent without loosening phrase matching.
+  if (singleCardinalMatchesNumericTranscript(heard, expected)) return true;
 
   const targetWords = expected.split(" ").filter(Boolean);
   const heardWords = heard.split(" ").filter(Boolean);

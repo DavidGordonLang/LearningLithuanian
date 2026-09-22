@@ -41,3 +41,16 @@ test("speech matching allows one harmless extra token only when the target remai
   assert.equal(phraseMatchesSpeech("noriu na vandens", "Noriu vandens."), true);
   assert.equal(phraseMatchesSpeech("noriu na visai vandens", "Noriu vandens."), false);
 });
+
+
+test("speech matching accepts Speechmatics digit formatting for single Lithuanian number targets", () => {
+  assert.equal(phraseMatchesSpeech("30.", "trisdešimt"), true);
+  assert.equal(phraseMatchesSpeech("18", "aštuoniolika"), true);
+  assert.equal(phraseMatchesSpeech("100", "šimtas"), true);
+  assert.equal(phraseMatchesSpeech("13", "trisdešimt"), false);
+});
+
+test("numeric transcript equivalence does not loosen ordinary phrase matching", () => {
+  assert.equal(phraseMatchesSpeech("30", "Tai kainuoja trisdešimt eurų"), false);
+  assert.equal(phraseMatchesSpeech("30 vandens", "Noriu vandens"), false);
+});
