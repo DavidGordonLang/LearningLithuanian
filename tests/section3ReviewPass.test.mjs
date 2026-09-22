@@ -133,3 +133,16 @@ test("Section 3 does not ask learners to produce forms before they are surfaced"
   assert.ok(s333.includes("Kada išvyksta autobusas?"));
   assert.ok(s333.includes("penktą valandą"));
 });
+
+
+test("3.1.4 coffee scenario establishes why the learner needs two coffees",()=>{
+  const m=createModule31();
+  const lesson=m.lessons.find(l=>l.code==="3.1.4");
+  const scenario=lesson.blocks.find(b=>b.id==="s3m1l4_b6_v2");
+
+  assert.match(scenario.description,/ordering two coffees/i);
+  assert.match(scenario.sceneIntro,/one for you and one for a friend/i);
+  assert.match(scenario.steps[0].sceneDirection,/one coffee for yourself and one for your friend/i);
+  assert.equal(scenario.steps[0].learnerPrompt,"Tell the server you want two coffees.");
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Dvi kavas, prašau");
+});

@@ -379,12 +379,12 @@ export default function createModule_3_1(profile = {}) {
   id: "s3m1l4_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're at a café counter. The server asks how many coffees.",
-  sceneIntro: "You're at a café counter. The server asks how many coffees.",
+  description: "You're at a café counter ordering two coffees — one for you and one for a friend. The server asks how many coffees.",
+  sceneIntro: "You're at a café counter ordering two coffees — one for you and one for a friend. The server asks how many coffees.",
   location: "café",
   userRole: "customer",
   register: "polite_service",
-  goal: "You're at a café counter. The server asks how many coffees.",
+  goal: "Order two coffees after the server asks how many you want.",
   focus: ["ordering","numbers"],
   participants: [
     {
@@ -412,8 +412,8 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Laba diena! Kiek kavų?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You are ordering one coffee for yourself and one for your friend.",
+      learnerPrompt: "Tell the server you want two coffees.",
       options: [
         {
           id: "a",
