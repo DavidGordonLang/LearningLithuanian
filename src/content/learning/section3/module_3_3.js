@@ -111,8 +111,9 @@ export default function createModule_3_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Dabar (now), vėliau (later), šiandien (today), rytoj (tomorrow) — these four words will answer most basic timing questions. You already know Kada? (when?) from Section 2.",
+          pattern: "Kada? means 'when?'. Dabar (now), vėliau (later), šiandien (today), and rytoj (tomorrow) are the core words you can use to answer basic timing questions.",
           usage: [
+            "Kada? — when?",
             "dabar — now",
             "vėliau — later",
             "šiandien — today",
@@ -125,6 +126,8 @@ export default function createModule_3_3(profile = {}) {
             type: "learn",
             title: "Time reference words",
             items: [
+              { id: "tr0", lt: "Kada?",    en: "When?",    audioText: "Kada?",    saveable: true, core: true },
+              { id: "tr1", lt: "dabar",    en: "now",      audioText: "dabar",    saveable: true, core: true },
               { id: "tr2", lt: "vėliau",   en: "later",    audioText: "vėliau",   saveable: true, core: true },
               { id: "tr3", lt: "šiandien", en: "today",    audioText: "šiandien", saveable: true, core: true },
               { id: "tr4", lt: "rytoj",    en: "tomorrow", audioText: "rytoj",    saveable: true, core: true },

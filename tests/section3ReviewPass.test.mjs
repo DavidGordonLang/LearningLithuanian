@@ -292,3 +292,18 @@ test("3.2 checkpoint grounds preference before best-response choices",()=>{
   assert.equal(payment.learnerPrompt,"Tell Rasa you want to pay by card.");
   assert.equal(payment.options.find(o=>o.result==="best").text,"Kortele, prašau");
 });
+
+
+test("3.3.2 explicitly teaches Kada and dabar before testing them",()=>{
+  const m=createModule33();
+  const lesson=m.lessons.find(l=>l.code==="3.3.2");
+  const learn=lesson.blocks.find(b=>b.id==="s3m3l2_b1");
+  const build=lesson.blocks.find(b=>b.id==="s3m3l2_b5");
+
+  assert.ok(learn.items.some(item=>item.lt==="Kada?" && item.en==="When?"));
+  assert.ok(learn.items.some(item=>item.lt==="dabar" && item.en==="now"));
+  assert.ok(lesson.blocks.indexOf(learn) < lesson.blocks.indexOf(build));
+  assert.ok(build.tokens.some(token=>token.text==="Kada?" && token.correctIndex===0));
+  assert.ok(build.tokens.some(token=>token.text==="Dabar." && token.isDistractor===true));
+  assert.doesNotMatch(lesson.notes.pattern,/already know Kada|Section 2/i);
+});
