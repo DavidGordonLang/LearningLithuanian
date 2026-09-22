@@ -254,3 +254,19 @@ test("3.2.4 market scenario treats price objection as a valid negotiation branch
   assert.match(offer.finalSystemLine.sceneDirection,/not to buy the book/i);
   assert.equal(scenario.steps.some(s=>s.id==="step_decline"),false);
 });
+
+
+test("3.2.5 teaches Ar viskas gerai before using it in the scenario",()=>{
+  const m=createModule32();
+  const lesson=m.lessons.find(l=>l.code==="3.2.5");
+  const learn=lesson.blocks.find(b=>b.id==="s3m2l5_b1");
+  const speak=lesson.blocks.find(b=>b.id==="s3m2l5_b1b");
+  const scenario=lesson.blocks.find(b=>b.id==="s3m2l5_b6_v2");
+
+  assert.ok(learn.items.some(item=>item.lt==="Ar viskas gerai?" && item.en==="Is everything okay?"));
+  assert.equal(speak.type,"speak_self_check");
+  assert.equal(speak.targetText,"Ar viskas gerai?");
+  assert.ok(lesson.blocks.indexOf(speak) < lesson.blocks.indexOf(scenario));
+  assert.equal(scenario.steps[0].speakerText,"Ar viskas gerai?");
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Taip, ačiū. Ar galėčiau gauti sąskaitą, prašau?");
+});

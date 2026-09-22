@@ -866,10 +866,11 @@ export default function createModule_3_2(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Noriu sumokėti — I want to pay. Ar galėčiau gauti sąskaitą, prašau? — the bill, please. These close a transaction naturally. You already know ačiū and viso gero — they do the rest.",
+          pattern: "Noriu sumokėti — I want to pay. Ar galėčiau gauti sąskaitą, prašau? — the bill, please. Ar viskas gerai? — is everything okay? — is a very common question from café and restaurant staff. You already know ačiū and viso gero — they do the rest.",
           usage: [
             "Noriu sumokėti — I want to pay",
             "Ar galėčiau gauti sąskaitą, prašau? — the bill, please",
+            "Ar viskas gerai? — is everything okay?",
             "Žinoma — of course",
           ],
         },
@@ -882,7 +883,16 @@ export default function createModule_3_2(profile = {}) {
               { id: "cl1", lt: "Noriu sumokėti",  en: "I want to pay",     audioText: "Noriu sumokėti",  saveable: true, core: true },
               { id: "cl2", lt: "Ar galėčiau gauti sąskaitą, prašau?", en: "Could I get the bill, please?", audioText: "Ar galėčiau gauti sąskaitą, prašau?", saveable: true, core: true },
               { id: "cl3", lt: "Žinoma",           en: "Of course",        audioText: "Žinoma",           saveable: true, core: true },
+              { id: "cl4", lt: "Ar viskas gerai?", en: "Is everything okay?", audioText: "Ar viskas gerai?", saveable: true, core: true },
             ],
+          },
+          {
+            id: "s3m2l5_b1b",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: Is everything okay?",
+            targetText: "Ar viskas gerai?",
+            audioText: "Ar viskas gerai?",
           },
           {
             id: "s3m2l5_b2",
@@ -972,7 +982,7 @@ export default function createModule_3_2(profile = {}) {
       options: [
         {
                   id: "b",
-                  text: "Taip, ačiū. Ar galėčiau gauti sąskaitą, prašau?.",
+                  text: "Taip, ačiū. Ar galėčiau gauti sąskaitą, prašau?",
                   result: "best",
                   progresses: true,
                 },
