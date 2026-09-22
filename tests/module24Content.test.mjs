@@ -32,6 +32,22 @@ test("2.4.1 removes Ko jums reikia from the service teaching and uses Kuo galė�
   assert.equal(scenario.steps[0].help.levels.at(-1).audio, false);
 });
 
+test("2.4.1 help-desk scenario gives the learner a concrete need before asking for a response", () => {
+  const module = createModule_2_4();
+  const lesson = getLesson(module, "2.4.1");
+  const scenario = getBlock(lesson, "s2m4l1_b5_v2");
+
+  assert.match(scenario.description, /need a ticket/i);
+  assert.match(scenario.sceneIntro, /need a ticket/i);
+  assert.match(scenario.steps[0].sceneDirection, /need a ticket/i);
+  assert.equal(scenario.steps[0].learnerPrompt, "You need a ticket. Tell her what you need.");
+  assert.doesNotMatch(scenario.steps[0].learnerPrompt, /Nesuprantu/);
+  assert.ok(scenario.steps[0].options.some((option) =>
+    option.text === "Man reikia bilieto." && option.result === "best"
+  ));
+});
+
+
 test("2.4.2 foregrounds natural Kur gyvenate while keeping explicit jūs as valid", () => {
   const module = createModule_2_4();
   const lesson = getLesson(module, "2.4.2");

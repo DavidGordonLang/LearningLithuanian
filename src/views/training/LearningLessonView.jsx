@@ -1670,7 +1670,7 @@ function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvanc
           !revealed ? "border-zinc-400 text-transparent select-none" :
           isCorrect ? "border-emerald-400 text-emerald-200" : "border-rose-400 text-rose-300"
         )}>
-          {revealed ? (correctOption?.text || GAP) : "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0"}
+          {revealed ? (selected?.text || GAP) : "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0"}
         </span>
         {parts[1]}
       </>
@@ -1775,7 +1775,7 @@ function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvan
     if (!sentence) return null;
     const parts = String(sentence).split(GAP);
     if (parts.length < 2) return <span>{sentence}</span>;
-    const filledForm = revealed ? (correctOption?.text || GAP) : null;
+    const filledForm = revealed ? (selected?.text || GAP) : null;
     return (
       <>
         {parts[0]}
@@ -1905,12 +1905,20 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
         </>
       );
     }
-    // After reveal, show the filled version
-    const filled = String(line.text).replace("___", correctOption?.text || "___");
+    // After reveal, preserve what the learner actually chose in the phrase.
+    // The correct answer and explanation are shown separately below.
+    const parts = String(line.text).split("___");
     return (
-      <span className={isCorrect ? "text-emerald-200" : "text-rose-200"}>
-        {filled}
-      </span>
+      <>
+        {parts[0]}
+        <span className={cn(
+          "font-semibold",
+          isCorrect ? "text-emerald-200" : "text-rose-300"
+        )}>
+          {selected?.text || "___"}
+        </span>
+        {parts[1] || ""}
+      </>
     );
   }
 

@@ -82,8 +82,8 @@ export default function createModule_2_4(profile = {}) {
             id: "s2m4l1_b5_v2",
             type: "scenario_v2",
             title: "At the help desk",
-            description: "At a help desk, the assistant offers help using a natural service phrase.",
-            sceneIntro: "At a help desk, the assistant offers help using a natural service phrase.",
+            description: "You go to a help desk because you need a ticket. The assistant offers to help.",
+            sceneIntro: "You go to a help desk because you need a ticket. The assistant offers to help.",
             location: "help desk",
             userRole: "traveller",
             register: "polite_service",
@@ -106,8 +106,8 @@ export default function createModule_2_4(profile = {}) {
                 speakerId: "assistant",
                 speakerLabel: "Assistant",
                 speakerText: "Laba diena! Kuo galėčiau padėti?",
-                sceneDirection: "The assistant looks up from the desk and opens her hands to offer help.",
-                learnerPrompt: "Say what you need. If the service phrase is not clear, use Nesuprantu.",
+                sceneDirection: "You need a ticket. The assistant looks up from the desk and opens her hands to offer help.",
+                learnerPrompt: "You need a ticket. Tell her what you need.",
                 help: {
                   levels: [
                     {

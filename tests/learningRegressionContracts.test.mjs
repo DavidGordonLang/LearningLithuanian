@@ -167,6 +167,22 @@ test("Match the Pairs can preserve authored teaching pages while shuffling withi
   assert.match(src, /shuffleArr\(chunk\.map/);
 });
 
+test("phrase-completion blocks preserve the learner's selected word and correct separately below", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /revealed \? \(selected\?\.text \|\| GAP\)/);
+  assert.match(src, /const filledForm = revealed \? \(selected\?\.text \|\| GAP\) : null/);
+  assert.match(src, /preserve what the learner actually chose in the phrase/);
+  assert.match(src, /selected\?\.text \|\| "___"/);
+  assert.match(src, /isCorrect \? "text-emerald-200" : "text-rose-300"/);
+  assert.match(src, /Correct answer: \$\{correctText\}/);
+
+  assert.doesNotMatch(src, /revealed \? \(correctOption\?\.text \|\| GAP\)/);
+  assert.doesNotMatch(src, /const filledForm = revealed \? \(correctOption\?\.text \|\| GAP\) : null/);
+  assert.doesNotMatch(src, /replace\("___", correctOption\?\.text/);
+});
+
+
 
 
 
