@@ -90,6 +90,24 @@ test("2.4.3 uses Kas jis and Kas ji for people, not Kas čia", () => {
   assert.ok(items.includes("Ji mano kaimynė."));
 });
 
+test("2.4.3 Who is she scenario reuses the learner's earlier introduction language", () => {
+  const module = createModule_2_4({ userNameSafe: "Davidas" });
+  const scenario = getBlock(getLesson(module, "2.4.3"), "s2m4l3_b6_v2");
+
+  assert.match(scenario.goal, /reuse your earlier self-introduction/i);
+  assert.equal(scenario.steps[1].speakerText, "Labas! Mano vardas Ieva.");
+  assert.equal(
+    scenario.steps[1].options.find((option) => option.result === "best").text,
+    "Labas! Mano vardas Davidas. Malonu susipažinti!"
+  );
+  assert.ok(scenario.steps[1].options.some((option) =>
+    option.text === "Malonu susipažinti!" &&
+    option.result === "awkward" &&
+    option.progresses === true
+  ));
+  assert.equal(scenario.steps[1].finalSystemLine.speakerText, "Man irgi!");
+});
+
 test("Module 2.4 defers When and How Much to Section 3", () => {
   const module = createModule_2_4();
   const serialized = JSON.stringify(module);
