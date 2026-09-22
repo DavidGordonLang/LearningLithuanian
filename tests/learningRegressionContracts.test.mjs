@@ -155,6 +155,19 @@ test("daily recall slow playback uses a reduced-speed play icon rather than rewi
   assert.doesNotMatch(src, /M11 5L6 9l5 4V5Z/);
 });
 
+test("Match the Pairs can preserve authored teaching pages while shuffling within each page", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /authoredPages = null/);
+  assert.match(src, /Array\.isArray\(authoredPages\) && authoredPages\.length > 0/);
+  assert.match(src, /page\?\.pairIds/);
+  assert.match(src, /label: page\?\.label \|\| ""/);
+  assert.match(src, /authoredPages: block\?\.pairPages/);
+  assert.match(src, /s\.progress\.pageLabel/);
+  assert.match(src, /shuffleArr\(chunk\.map/);
+});
+
+
 
 
 test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics off production", () => {

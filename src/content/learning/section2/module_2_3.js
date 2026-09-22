@@ -451,6 +451,13 @@ export default function createModule_2_3(profile = {}) {
             id: "s2m3c_b7",
             type: "word_match",
             title: "Match the pairs",
+            pairPages: [
+              { id: "masc_1", label: "Masculine forms", pairIds: ["m1", "m2", "m5", "m6"] },
+              { id: "masc_2", label: "Masculine forms", pairIds: ["m9", "m10", "m13", "m14"] },
+              { id: "fem_1", label: "Feminine forms", pairIds: ["m3", "m4", "m7", "m8"] },
+              { id: "fem_2", label: "Feminine forms", pairIds: ["m11", "m12", "m15", "m16"] },
+              { id: "review", label: "Earlier review", pairIds: ["m17", "m18", "m19", "m20"] },
+            ],
             pairs: [
               { id: "m1",  lt: "Šitas",             en: "This (masculine)",                    audioText: "Šitas" },
               { id: "m2",  lt: "Tas",                en: "That (masculine)",                    audioText: "Tas" },

@@ -154,4 +154,22 @@ test("2.3 checkpoint ends with a 20-pair recap including spaced retrieval", () =
     assert.ok(texts.includes(retained), `2.3 recap should retrieve ${retained}`);
   }
   assert.equal(new Set(texts).size, texts.length);
+
+  const pages = getBlock(checkpoint, "s2m3c_b7").pairPages;
+  assert.deepEqual(pages.map((page) => page.label), [
+    "Masculine forms",
+    "Masculine forms",
+    "Feminine forms",
+    "Feminine forms",
+    "Earlier review",
+  ]);
+  assert.deepEqual(pages[0].pairIds, ["m1", "m2", "m5", "m6"]);
+  assert.deepEqual(pages[1].pairIds, ["m9", "m10", "m13", "m14"]);
+  assert.deepEqual(pages[2].pairIds, ["m3", "m4", "m7", "m8"]);
+  assert.deepEqual(pages[3].pairIds, ["m11", "m12", "m15", "m16"]);
+  assert.deepEqual(pages[4].pairIds, ["m17", "m18", "m19", "m20"]);
+  assert.deepEqual(
+    [...new Set(pages.flatMap((page) => page.pairIds))].sort(),
+    pairs.map((pair) => pair.id).sort()
+  );
 });

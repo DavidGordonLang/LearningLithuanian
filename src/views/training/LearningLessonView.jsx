@@ -1385,7 +1385,7 @@ function tileTextClass(text) {
   return "text-base";
 }
 
-function useWordMatchSession({ rawPairs, pagePairs, rightSelectAmberMs, correctPulseMs, wrongPulseMs, pageFadeOutMs, pageFadeInMs }) {
+function useWordMatchSession({ rawPairs, pagePairs, authoredPages = null, rightSelectAmberMs, correctPulseMs, wrongPulseMs, pageFadeOutMs, pageFadeInMs }) {
   function shuffleArr(arr) {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -1396,7 +1396,8 @@ function useWordMatchSession({ rawPairs, pagePairs, rightSelectAmberMs, correctP
   }
 
   const totalPairs = rawPairs.length;
-  const requiredPages = Math.ceil(totalPairs / pagePairs);
+  const hasAuthoredPages = Array.isArray(authoredPages) && authoredPages.length > 0;
+  const requiredPages = hasAuthoredPages ? authoredPages.length : Math.ceil(totalPairs / pagePairs);
 
   const [pages, setPages] = React.useState([]);
   const [pageIndex, setPageIndex] = React.useState(0);
@@ -1418,16 +1419,29 @@ function useWordMatchSession({ rawPairs, pagePairs, rightSelectAmberMs, correctP
 
   React.useEffect(() => {
     if (!rawPairs || rawPairs.length === 0) return;
-    const shuffled = shuffleArr(rawPairs);
+    const pairById = new Map(rawPairs.map((pair) => [pair.id, pair]));
     const builtPages = [];
-    let idx = 0;
-    for (let p = 0; p < requiredPages; p++) {
-      const chunk = shuffled.slice(idx, idx + pagePairs);
-      idx += pagePairs;
-      if (!chunk.length) break;
-      const left = shuffleArr(chunk.map((x) => ({ id: `t_lt_${x.id}_${p}`, pairId: x.id, side: "lt", text: x.lt, audioText: x.audioText || x.lt })));
-      const right = shuffleArr(chunk.map((x) => ({ id: `t_en_${x.id}_${p}`, pairId: x.id, side: "en", text: x.en })));
-      builtPages.push({ pageIndex: p, left, right });
+
+    if (hasAuthoredPages) {
+      authoredPages.forEach((page, p) => {
+        const ids = Array.isArray(page?.pairIds) ? page.pairIds : [];
+        const chunk = ids.map((id) => pairById.get(id)).filter(Boolean);
+        if (!chunk.length) return;
+        const left = shuffleArr(chunk.map((x) => ({ id: `t_lt_${x.id}_${p}`, pairId: x.id, side: "lt", text: x.lt, audioText: x.audioText || x.lt })));
+        const right = shuffleArr(chunk.map((x) => ({ id: `t_en_${x.id}_${p}`, pairId: x.id, side: "en", text: x.en })));
+        builtPages.push({ pageIndex: p, label: page?.label || "", left, right });
+      });
+    } else {
+      const shuffled = shuffleArr(rawPairs);
+      let idx = 0;
+      for (let p = 0; p < requiredPages; p++) {
+        const chunk = shuffled.slice(idx, idx + pagePairs);
+        idx += pagePairs;
+        if (!chunk.length) break;
+        const left = shuffleArr(chunk.map((x) => ({ id: `t_lt_${x.id}_${p}`, pairId: x.id, side: "lt", text: x.lt, audioText: x.audioText || x.lt })));
+        const right = shuffleArr(chunk.map((x) => ({ id: `t_en_${x.id}_${p}`, pairId: x.id, side: "en", text: x.en })));
+        builtPages.push({ pageIndex: p, label: "", left, right });
+      }
     }
     setPages(builtPages);
     setPageIndex(0); setSelected(null); setMatchedPairIds(new Set());
@@ -1446,8 +1460,12 @@ function useWordMatchSession({ rawPairs, pagePairs, rightSelectAmberMs, correctP
   }, [currentPage]);
 
   const progress = React.useMemo(() => ({
-    matched: overallMatched, total: totalPairs, page: pageIndex + 1, pages: requiredPages,
-  }), [overallMatched, totalPairs, pageIndex, requiredPages]);
+    matched: overallMatched,
+    total: totalPairs,
+    page: pageIndex + 1,
+    pages: pages.length || requiredPages,
+    pageLabel: currentPage?.label || "",
+  }), [overallMatched, totalPairs, pageIndex, requiredPages, pages.length, currentPage]);
 
   function startPageFadeTo(nextIndex) {
     setPhase("pageFadeOut"); setBusy(true); setPulse(null);
@@ -1514,6 +1532,7 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
   const s = useWordMatchSession({
     rawPairs,
     pagePairs: 5,
+    authoredPages: block?.pairPages,
     rightSelectAmberMs: 140,
     correctPulseMs: 520,
     wrongPulseMs: 420,
@@ -1581,6 +1600,11 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
           <div>{s.progress.matched}/{s.progress.total} matched · Page {s.progress.page}/{s.progress.pages}</div>
           <div>{s.mistakes} mistake{s.mistakes === 1 ? "" : "s"}</div>
         </div>
+        {s.progress.pageLabel ? (
+          <div className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+            {s.progress.pageLabel}
+          </div>
+        ) : null}
       </div>
 
       <div className={cn("mp-grid-wrap", gridPhaseClass)}>
