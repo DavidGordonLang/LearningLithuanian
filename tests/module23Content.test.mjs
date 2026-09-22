@@ -88,6 +88,21 @@ test("2.3 selection scenario uses explicit feminine context and authored Nesupra
   assert.equal(scenario.steps[1].help.levels.at(-1).audio, false);
 });
 
+test("2.3 confirmation prompts state the physical choice directly without blaming the learner", () => {
+  const module = createModule_2_3();
+  const loaf = getBlock(getLesson(module, "2.3.2"), "s2m3l2_b7_v2");
+  const apple = getBlock(getLesson(module, "2.3.C"), "s2m3c_b6_v2");
+
+  assert.match(loaf.steps[1].learnerPrompt, /nearby loaf/);
+  assert.match(loaf.steps[1].learnerPrompt, /farther away/);
+  assert.match(loaf.steps[1].learnerPrompt, /Say no/);
+  assert.doesNotMatch(loaf.steps[1].learnerPrompt, /Correct the choice|Nesuprantu/);
+
+  assert.match(apple.steps[1].learnerPrompt, /nearby apple/);
+  assert.match(apple.steps[1].learnerPrompt, /confirm it/i);
+  assert.doesNotMatch(apple.steps[1].learnerPrompt, /Nesuprantu/);
+});
+
 test("2.3 checkpoint retrieves the masculine counterpart and current result semantics", () => {
   const module = createModule_2_3();
   const checkpoint = getLesson(module, "2.3.C");

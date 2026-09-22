@@ -243,8 +243,8 @@ export default function createModule_2_3(profile = {}) {
                 speakerId: "seller",
                 speakerLabel: "Seller",
                 speakerText: "Šitos?",
-                sceneDirection: "She points to the nearby loaf to check which one you mean.",
-                learnerPrompt: "Correct the choice. If the question is unclear, use Nesuprantu.",
+                sceneDirection: "She points to the nearby loaf to check whether that is the one you meant.",
+                learnerPrompt: "She is pointing to the nearby loaf, but you want the one farther away. Say no and choose the farther loaf.",
                 help: {
                   levels: [
                     {
@@ -263,7 +263,7 @@ export default function createModule_2_3(profile = {}) {
                 },
                 options: [
                   { id: "a", text: "Ne šitos. Tos, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Taip, šitos.", result: "wrong", feedback: "That accepts the nearby loaf, but you chose the farther one.", progresses: false },
+                  { id: "b", text: "Taip, šitos.", result: "wrong", feedback: "That confirms the nearby loaf, but you want the one farther away.", progresses: false },
                   { id: "c", text: "Ne šito. To, prašau.", result: "wrong", feedback: "Those are the masculine selection forms; duona is feminine here.", progresses: false },
                 ],
               },
@@ -407,8 +407,8 @@ export default function createModule_2_3(profile = {}) {
                 speakerId: "seller",
                 speakerLabel: "Seller",
                 speakerText: "Šito?",
-                sceneDirection: "He points to the nearby apple to confirm your choice.",
-                learnerPrompt: "Confirm the nearby apple. If the question is unclear, use Nesuprantu.",
+                sceneDirection: "He points to the nearby apple to check whether that is the one you meant.",
+                learnerPrompt: "He is pointing to the nearby apple. That is the one you want, so confirm it.",
                 help: {
                   levels: [
                     {
