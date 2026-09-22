@@ -90,7 +90,6 @@ export default function createCheckpoint5(profile = {}) {
         type: "best_response",
         title: "Choose the best response",
         prompt: { text: "You ask if the airport is far. The answer is: Taip, labai toli. What is the most useful follow-up?", audioText: "" },
-        noOptionAudio: true,
         options: [
           { id: "a", text: "Eikite tiesiai.",               isCorrect: false },
           { id: "b", text: "Galite važiuoti autobusu.",      isCorrect: true  },

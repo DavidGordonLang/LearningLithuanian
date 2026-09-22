@@ -1103,7 +1103,6 @@ export default function createModule_3_2(profile = {}) {
             id: "s3m2c_b4",
             type: "best_response",
             title: "Choose the best response",
-            noOptionAudio: true,
             prompt: { text: "The price is keturiasdešimt eurų. That's fine for you. What do you say?" },
             options: [
               { id: "a", text: "Per brangu!", isCorrect: false },

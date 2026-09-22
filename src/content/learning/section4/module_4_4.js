@@ -740,7 +740,6 @@ export default function createModule_4_4(profile = {}) {
           {
             id: "s4m4l5_b4",
             type: "best_response",
-            noOptionAudio: true,
             title: "Choose the best response",
             prompt: { text: "Your friend asks: Ar skanu? The food is excellent." },
             options: [
@@ -874,7 +873,6 @@ export default function createModule_4_4(profile = {}) {
           {
             id: "s4m4c_b4",
             type: "best_response",
-            noOptionAudio: true,
             title: "Choose the best response",
             prompt: { text: "Your friend asks: Ar skanu? You really enjoyed the food." },
             options: [

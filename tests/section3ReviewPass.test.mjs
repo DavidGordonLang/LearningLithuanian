@@ -174,3 +174,16 @@ test("3.1 checkpoint deliberately tests the different 'two' forms in context",()
   assert.match(block.feedback.correct,/different jobs/i);
   assert.equal(JSON.stringify(block).includes("aštuoni"),false);
 });
+
+
+test("Lithuanian best-response answers in Section 3 keep option audio enabled",()=>{
+  const blocks=[
+    createModule31().lessons.find(l=>l.code==="3.1.C").blocks.find(b=>b.id==="s3m1c_b4"),
+    createModule32().lessons.find(l=>l.code==="3.2.C").blocks.find(b=>b.id==="s3m2c_b4"),
+    createModule34().lessons.find(l=>l.code==="3.4.C").blocks.find(b=>b.id==="s3m4c_b4"),
+  ];
+  for(const block of blocks){
+    assert.equal(block.noOptionAudio,undefined,block.id);
+    assert.ok(block.options.every(o=>/[A-Za-zĄČĘĖĮŠŲŪŽąčęėįšųūž]/.test(o.text)),block.id);
+  }
+});

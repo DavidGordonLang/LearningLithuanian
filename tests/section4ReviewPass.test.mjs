@@ -81,3 +81,12 @@ test("4.4.1 does not test Eikime before the dedicated let's lesson",()=>{
   assert.ok(JSON.stringify(l1).includes("Taip! Noriu kavos."));
   assert.ok(JSON.stringify(l3).includes("Eikime į kavinę."));
 });
+
+
+test("Lithuanian best-response answers in Section 4 keep option audio enabled",()=>{
+  const m=createModule44({speakerGender:"male"});
+  for(const id of ["s4m4l5_b4","s4m4c_b4"]){
+    const block=m.lessons.flatMap(l=>l.blocks).find(b=>b.id===id);
+    assert.equal(block.noOptionAudio,undefined,id);
+  }
+});

@@ -995,7 +995,6 @@ export default function createModule_3_4(profile = {}) {
             id: "s3m4c_b4",
             type: "best_response",
             title: "Choose the best response",
-            noOptionAudio: true,
             prompt: { text: "You've had enough. The server asks 'Ar dar ko nors?' What do you say?" },
             options: [
               { id: "a", text: "Dar vieną, prašau", isCorrect: false },

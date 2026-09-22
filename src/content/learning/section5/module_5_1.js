@@ -182,7 +182,6 @@ export default function createModule_5_1(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             prompt: { text: "You ask where the station is. A local points and says one word. What are they most likely saying?", audioText: "" },
-            noOptionAudio: true,
             options: [
               { id: "a", text: "Ačiū.",  isCorrect: false },
               { id: "b", text: "Ten.",   isCorrect: true  },
@@ -892,7 +891,6 @@ export default function createModule_5_1(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             prompt: { text: "You want to know if the hotel is far. What do you ask?", audioText: "" },
-            noOptionAudio: true,
             options: [
               { id: "a", text: "Kur yra viešbutis?", isCorrect: false },
               { id: "b", text: "Ar toli?",        isCorrect: true  },

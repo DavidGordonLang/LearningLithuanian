@@ -603,7 +603,6 @@ export default function createModule_5_4(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             prompt: { text: "Someone asks: Kaip man nusigauti į stotį? It's a 20 minute walk but there's a bus. What do you suggest?", audioText: "" },
-            noOptionAudio: true,
             options: [
               { id: "a", text: "Tai labai toli.",              isCorrect: false },
               { id: "b", text: "Galite važiuoti autobusu.",    isCorrect: true  },
@@ -773,7 +772,6 @@ export default function createModule_5_4(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             prompt: { text: "You've asked for directions. The person says: Eikite tiesiai, paskui pasukite dešinėn. What do you say to confirm you understood?", audioText: "" },
-            noOptionAudio: true,
             options: [
               { id: "a", text: "Ar toli?",                         isCorrect: false },
               { id: "b", text: "Suprantu — tiesiai, paskui dešinėn.",  isCorrect: true  },

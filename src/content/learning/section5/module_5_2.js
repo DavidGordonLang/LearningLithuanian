@@ -231,7 +231,6 @@ export default function createModule_5_2(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             prompt: { text: "Someone feels unwell. They need urgent medical help. Which place do they need?", audioText: "" },
-            noOptionAudio: true,
             options: [
               { id: "a", text: "vaistinė",  isCorrect: false },
               { id: "b", text: "ligoninė",  isCorrect: true  },
@@ -392,7 +391,6 @@ export default function createModule_5_2(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             prompt: { text: "You want a coffee. Which place do you look for?", audioText: "" },
-            noOptionAudio: true,
             options: [
               { id: "a", text: "bankas",     isCorrect: false },
               { id: "b", text: "kavinė",     isCorrect: true  },

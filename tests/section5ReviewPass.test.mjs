@@ -94,3 +94,18 @@ test("5.3.5 does not require the untaught word Savaitę",()=>{
   assert.ok(s.includes("Dabar viešbutyje?"));
   assert.ok(s.includes("Taip. Ačiū!"));
 });
+
+
+test("Lithuanian best-response answers in Section 5 keep option audio enabled",()=>{
+  const all=[
+    ...createModule51().lessons.flatMap(l=>l.blocks),
+    ...createModule52().lessons.flatMap(l=>l.blocks),
+    ...createModule54().lessons.flatMap(l=>l.blocks),
+    ...createCheckpoint5().blocks,
+  ];
+  for(const id of ["s5m1l2_b5","s5m1c_b3","s5m2l2_b4","s5m2l3_b4","s5m4l4_b3","s5m4l5_b2","s5cp_b6"]){
+    const block=all.find(b=>b.id===id);
+    assert.ok(block,id);
+    assert.equal(block.noOptionAudio,undefined,id);
+  }
+});

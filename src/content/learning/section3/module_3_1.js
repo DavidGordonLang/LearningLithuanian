@@ -556,7 +556,6 @@ export default function createModule_3_1(profile = {}) {
             id: "s3m1c_b4",
             type: "best_response",
             title: "Choose the best response",
-            noOptionAudio: true,
             prompt: { text: "You're travelling with one other person. Which phrase means: There are two of us?" },
             options: [
               { id: "a", text: "Man reikia dviejų bilietų.", isCorrect: false },
