@@ -320,6 +320,7 @@ test("3.3.3 pattern note explains the action words before practice",()=>{
   const m=createModule33();
   const lesson=m.lessons.find(l=>l.code==="3.3.3");
   const learn=lesson.blocks.find(b=>b.id==="s3m3l3_b1");
+  const speak=lesson.blocks.find(b=>b.id==="s3m3l3_b1b");
   const scenario=lesson.blocks.find(b=>b.id==="s3m3l3_b6_v2");
 
   assert.match(lesson.notes.pattern,/išvyksta means leaves\/departs/i);
@@ -328,5 +329,10 @@ test("3.3.3 pattern note explains the action words before practice",()=>{
   assert.match(lesson.notes.pattern,/prasideda means starts\/begins/i);
   assert.ok(lesson.notes.usage.includes("išvyksta — leaves / departs"));
   assert.equal(learn.items.some(item=>item.lt==="išvyksta"),false);
+  assert.equal(speak.type,"speak_self_check");
+  assert.equal(speak.targetText,"Kada išvyksta autobusas?");
+  assert.equal(speak.prompt,"Say: When does the bus leave?");
+  assert.ok(lesson.blocks.indexOf(speak) < lesson.blocks.indexOf(scenario));
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Laba diena. Kada išvyksta autobusas?");
   assert.equal(scenario.goal,"You're at a bus station and need to know departure time.");
 });

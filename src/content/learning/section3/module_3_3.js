@@ -334,6 +334,14 @@ export default function createModule_3_3(profile = {}) {
             ],
           },
           {
+            id: "s3m3l3_b1b",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: When does the bus leave?",
+            targetText: "Kada išvyksta autobusas?",
+            audioText: "Kada išvyksta autobusas?",
+          },
+          {
             id: "s3m3l3_b2",
             type: "listen_mcq",
             title: "Listen and choose",
