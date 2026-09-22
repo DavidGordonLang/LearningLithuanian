@@ -1074,7 +1074,7 @@ export default function createModule_5_1(profile = {}) {
               { id: "m2",  lt: "Kur yra stotis?",     en: "Where is the station?", audioText: "Kur yra stotis" },
               { id: "m3",  lt: "Kur yra tualetas?",   en: "Where is the toilet?",  audioText: "Kur yra tualetas" },
               { id: "m4",  lt: "Kur yra viešbutis?",  en: "Where is the hotel?",   audioText: "Kur yra viešbutis" },
-              { id: "m5",  lt: "Kur yra vaistinė?",   en: "Where is the pharmacy?",audioText: "Kur yra bankas" },
+              { id: "m5",  lt: "Kur yra bankas?",      en: "Where is the bank?",     audioText: "Kur yra bankas" },
               { id: "m6",  lt: "čia",                 en: "here",                  audioText: "čia" },
               { id: "m7",  lt: "ten",                 en: "there",                 audioText: "ten" },
               { id: "m8",  lt: "Tai čia.",            en: "It's here.",            audioText: "Tai čia" },
