@@ -314,3 +314,19 @@ test("3.3.2 explicitly teaches Kada and susitikimas before testing or scenario u
   assert.match(lesson.notes.pattern,/Dabar \(now\) is already familiar/);
   assert.doesNotMatch(lesson.notes.pattern,/already know Kada|Section 2/i);
 });
+
+
+test("3.3.3 pattern note explains the action words before practice",()=>{
+  const m=createModule33();
+  const lesson=m.lessons.find(l=>l.code==="3.3.3");
+  const learn=lesson.blocks.find(b=>b.id==="s3m3l3_b1");
+  const scenario=lesson.blocks.find(b=>b.id==="s3m3l3_b6_v2");
+
+  assert.match(lesson.notes.pattern,/išvyksta means leaves\/departs/i);
+  assert.match(lesson.notes.pattern,/pradedame means we start/i);
+  assert.match(lesson.notes.pattern,/einame means we go\/are going/i);
+  assert.match(lesson.notes.pattern,/prasideda means starts\/begins/i);
+  assert.ok(lesson.notes.usage.includes("išvyksta — leaves / departs"));
+  assert.equal(learn.items.some(item=>item.lt==="išvyksta"),false);
+  assert.equal(scenario.goal,"You're at a bus station and need to know departure time.");
+});

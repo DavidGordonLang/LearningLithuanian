@@ -311,12 +311,13 @@ export default function createModule_3_3(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Kada? questions apply everywhere — meetings, transport, start times. Kada išvyksta autobusas? — when does the bus leave? — is one of the most practically useful things you can ask at a transport stop.",
+          pattern: "Kada? questions apply everywhere — meetings, transport and start times. The action word tells you what is happening: išvyksta means leaves/departs, pradedame means we start, einame means we go/are going, and prasideda means starts/begins.",
           usage: [
-            "Kada pradedame? — when do we start?",
-            "Kada einame? — when are we going?",
+            "išvyksta — leaves / departs",
+            "pradedame — we start",
+            "einame — we go / are going",
+            "prasideda — starts / begins",
             "Kada išvyksta autobusas? — when does the bus leave?",
-            "Kada tai prasideda? — when does it start?",
           ],
         },
         blocks: [
@@ -386,7 +387,7 @@ export default function createModule_3_3(profile = {}) {
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
-  goal: "You're at a train station and need to know departure time.",
+  goal: "You're at a bus station and need to know departure time.",
   focus: ["directions","time"],
   participants: [
     {
