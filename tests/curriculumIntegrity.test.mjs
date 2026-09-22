@@ -325,7 +325,7 @@ test("Scenario V2 branch steps may use finalSystemLine only when explicit branch
   assert.ok(offer.options.some((option)=>option.progresses===true && !option.nextStepId));
 });
 
-test("Scenario V2 finalSystemLine appears only on the final step", () => {
+test("Scenario V2 finalSystemLine is terminal unless an option explicitly branches onward", () => {
   const owners = [
     ...modules.flatMap((module) => module.lessons || []),
     ...checkpoints,
@@ -336,11 +336,20 @@ test("Scenario V2 finalSystemLine appears only on the final step", () => {
       if (block.type !== "scenario_v2") continue;
       const steps = Array.isArray(block.steps) ? block.steps : [];
       steps.forEach((step, index) => {
-        if (!step.finalSystemLine) return;
-        assert.equal(
-          index,
-          steps.length - 1,
-          `${block.id} uses finalSystemLine before the last step; use followUp for an intermediate reply`
+        if (!step.finalSystemLine || index === steps.length - 1) return;
+        const progressing = (step.options || []).filter((option) =>
+          option?.result === "best" ||
+          option?.result === "acceptable" ||
+          option?.result === "awkward" ||
+          (option?.result === "repair" && option?.progresses === true)
+        );
+        assert.ok(
+          progressing.some((option) => option.nextStepId),
+          `${block.id} uses finalSystemLine before the last step without an explicit onward branch`
+        );
+        assert.ok(
+          progressing.some((option) => !option.nextStepId),
+          `${block.id} has an unreachable intermediate finalSystemLine because every progressing answer branches onward`
         );
       });
     }
