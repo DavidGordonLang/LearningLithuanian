@@ -188,7 +188,7 @@ export default function createModule_1_3(profile = {}) {
         notes: {
           pattern: "These three phrases should feel automatic. Any time you don't catch something — reach for one of these immediately.",
           usage: [
-            "Pakartokite, prašau — Please repeat (polite imperative form)",
+            "Pakartokite, prašau — Please repeat (polite)",
             "Prašau kalbėkite lėčiau — Please speak more slowly",
             "Dar kartą, prašau — One more time, please",
             "Lėčiau, prašau — More slowly, please (shorter version)",

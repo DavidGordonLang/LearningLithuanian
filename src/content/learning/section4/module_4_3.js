@@ -846,7 +846,7 @@ export default function createModule_4_3(profile = {}) {
         supportLevel: "low",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Per… (too) works with any adjective: per karšta (too hot), per šalta (too cold), per brangu (too expensive — you already know this one from Section 3). Nelabai gerai is softer than 'not good' and sounds more natural.",
+          pattern: "Per… means 'too…' and goes before describing words: per karšta (too hot), per šalta (too cold), per brangu (too expensive — you already know this one from Section 3). Nelabai gerai is softer than 'not good' and sounds more natural.",
           usage: [
             "Per karšta — too hot",
             "Per šalta — too cold",

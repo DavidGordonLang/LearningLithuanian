@@ -182,7 +182,7 @@ export default function createModule_3_2(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Price phrases use a predictable number pattern. For 1–9 euros, the number can change shape: penki (five) becomes penkis in penkis eurus. For the amounts used here from ten upward — dešimt, the teens, and exact tens such as dvidešimt or trisdešimt — the number itself stays recognisable and 'euros' becomes eurų. You do not need grammar-case names to use this; learn the price pattern.",
+          pattern: "Price phrases use a predictable number pattern. For 1–9 euros, the number can change shape: penki (five) becomes penkis in penkis eurus. For the amounts used here from ten upward — dešimt, the teens, and exact tens such as dvidešimt or trisdešimt — the number itself stays recognisable and 'euros' becomes eurų. Focus on the price pattern rather than trying to name the change.",
           usage: [
             "penki → penkis eurus — five euros",
             "šeši → šešis eurus — six euros",
@@ -383,7 +383,7 @@ export default function createModule_3_2(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Grynaisiais means 'with cash' (instrumental case — it changes from grynieji). Kortele means 'with a card' (same pattern). Ar galima mokėti kortele? is the most useful question — is it possible to pay by card?",
+          pattern: "Grynaisiais means 'with cash' — grynieji changes to grynaisiais when you mean 'with/by cash'. Kortelė changes to kortele when you mean 'with/by card'. Ar galima mokėti kortele? is the most useful question — is it possible to pay by card?",
           usage: [
             "grynieji — cash",
             "kortelė — card",

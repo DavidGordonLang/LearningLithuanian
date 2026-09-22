@@ -752,7 +752,7 @@ const module_1_1 =     {
                 { id: "b", text: "Atsiprašau", isCorrect: false },
                 { id: "c", text: "Puikiai, ačiū", isCorrect: true },
               ],
-              feedback: { correct: "Puikiai, ačiū — great, thank you. Puiku can mean great, but Puikiai is the natural adverbial reply to „Kaip sekasi?“." },
+              feedback: { correct: "Puikiai, ačiū — great, thank you. Puiku can also mean great, but when answering „Kaip sekasi?“ the natural reply is Puikiai." },
             },
             {
               id: "s1m1l4_b1",

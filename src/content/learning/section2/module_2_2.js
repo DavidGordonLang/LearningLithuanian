@@ -23,7 +23,7 @@ export default function createModule_2_2(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Ar galiu…? is for what I can do. Ar galime…? is for what we can do. Lithuanian often leaves the subject unstated because the verb form already tells you who is acting.",
+          pattern: "Ar galiu…? is for what I can do. Ar galime…? is for what we can do. Lithuanian often leaves out I or we because the verb itself already tells you who is acting.",
           usage: [
             "Ar galiu pažiūrėti? — Can I have a look?",
             "Ar galiu įeiti? — Can I come in?",
@@ -259,7 +259,7 @@ export default function createModule_2_2(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Galiu = I can. Negaliu = I can't. As with noriu, the subject is often unnecessary when the verb already makes the speaker clear.",
+          pattern: "Galiu = I can. Negaliu = I can't. As with noriu, you often do not need to say I because the verb already makes the speaker clear.",
           usage: [
             "Galiu palaukti. — I can wait.",
             "Negaliu eiti. — I can't go.",

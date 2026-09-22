@@ -21,7 +21,7 @@ export default function createModule_4_1(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Noriu + genitive — the same frame you've used since Section 2. In food and drink contexts it becomes instantly useful.",
+          pattern: "After Noriu, food and drink words often use the changed forms you met in Section 2: kava → kavos, arbata → arbatos, vanduo → vandens. In ordering, this pattern becomes instantly useful.",
           usage: [
             "Noriu kavos — I want coffee",
             "Noriu arbatos — I want tea",
@@ -327,11 +327,11 @@ export default function createModule_4_1(profile = {}) {
         id: "section_4_module_1_lesson_3",
         code: "4.1.3",
         title: "This / That, Please",
-        purpose: "Apply demonstratives directly to ordering — pointing and choosing at a counter or menu.",
+        purpose: "Apply this/that forms directly to ordering — pointing and choosing at a counter or menu.",
         supportLevel: "high",
         newLanguageLoad: "low_to_medium",
         notes: {
-          pattern: "Šito/To work after Noriu/Norėčiau (genitive). Šitą/Tą work as a standalone 'give me this one' (accusative). For ordering at a counter, both patterns work naturally — use whichever comes to mind.",
+          pattern: "After Noriu/Norėčiau, use Šito/To. When you're simply pointing and saying 'this one/that one, please', use Šitą/Tą. Both patterns work naturally at a counter — learn them as two useful chunks.",
           usage: [
             "Šito, prašau — This one, please",
             "To, prašau — That one, please",
@@ -783,7 +783,7 @@ export default function createModule_4_1(profile = {}) {
               { id: "b", text: "Norėčiau arbatos.", isCorrect: true },
               { id: "c", text: "Noriu kavos.", isCorrect: false },
             ],
-            feedback: { correct: "Norėčiau arbatos — polite, with the correct genitive ending. The go-to ordering frame." },
+            feedback: { correct: "Norėčiau arbatos — polite, and arbata changes to arbatos after Norėčiau. The go-to ordering frame." },
           },
           {
             id: "s4m1c_b6",

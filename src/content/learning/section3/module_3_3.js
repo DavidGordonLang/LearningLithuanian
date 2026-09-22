@@ -97,7 +97,7 @@ export default function createModule_3_3(profile = {}) {
               { id: "b", text: "Dešimta valanda", isCorrect: true },
               { id: "c", text: "Dešimt valandų", isCorrect: false },
             ],
-            feedback: { correct: "Dešimta valanda — ten o'clock. The ordinal form is used for stating the time." },
+            feedback: { correct: "Dešimta valanda — ten o'clock. When you state the hour, dešimt changes to dešimta." },
           },
         ],
       },

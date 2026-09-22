@@ -255,7 +255,7 @@ export default function createModule_5_3(profile = {}) {
               { id: "b", text: "stotis",  isCorrect: false },
               { id: "c", text: "stoties", isCorrect: true  },
             ],
-            explanation: "After iš (from), the ending changes again — stotis becomes stoties. After į (to), it was stotį. Different prepositions, different forms.",
+            explanation: "After iš (from), the ending changes again — stotis becomes stoties. After į (to), it was stotį. The small word before stotis tells you which form to use.",
           },
           {
             id: "s5m3l2_b4",

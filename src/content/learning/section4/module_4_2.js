@@ -21,7 +21,7 @@ export default function createModule_4_2(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Kava, arbata, vanduo are the base forms. In orders you use the genitive: kavos, arbatos, vandens — the same endings you have already been using since Module 2.1.",
+          pattern: "Kava, arbata, vanduo are the base forms. When ordering, they commonly change to kavos, arbatos, vandens — the same forms you have already been using since Module 2.1.",
           usage: [
             "kava — coffee",
             "arbata — tea",

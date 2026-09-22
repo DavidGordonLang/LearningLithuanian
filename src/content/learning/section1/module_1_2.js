@@ -102,7 +102,7 @@ export default function createModule_1_2(profile = {}) {
               { id: "t1", text: "Koks", correctIndex: 0 },
               { id: "t2", text: "tavo", correctIndex: 1 },
               { id: "t3", text: "vardas?", correctIndex: 2 },
-              { id: "t4", text: "jūsų", isDistractor: true, repairHint: "jūsų is the polite/plural form of “your”. This prompt is informal, so that polite possessive form doesn’t fit." },
+              { id: "t4", text: "jūsų", isDistractor: true, repairHint: "jūsų means “your” when speaking politely or to more than one person. This prompt is informal, so tavo fits instead." },
             ],
             answerText: "Koks tavo vardas?",
           },

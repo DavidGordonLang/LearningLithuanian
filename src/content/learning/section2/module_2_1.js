@@ -24,7 +24,7 @@ export default function createModule_2_1(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Aš noriu… / Noriu… — 'I want…'. The noun after noriu takes the genitive case — you'll see word endings shift slightly. Treat it as a pattern to get used to, not a rule to memorise.",
+          pattern: "Aš noriu… / Noriu… — 'I want…'. After noriu, the next word often changes its ending: kava becomes kavos, vanduo becomes vandens. Learn the useful pattern rather than a grammar label.",
           usage: [
             "Noriu kavos — [I] want coffee (in a café; Aš is usually implied)",
             "Noriu vandens — [I] want water",

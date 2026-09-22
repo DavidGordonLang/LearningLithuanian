@@ -113,7 +113,7 @@ export default function createModule_2_3(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "When you select an item after noriu, the pointing form changes. In these chunks: šitas → šito and tas → to for a masculine item; šita → šitos and ta → tos for a feminine item. Notice the shift and learn the useful chunks rather than memorising case labels.",
+          pattern: "When you select an item after noriu, the pointing form changes. In these chunks: šitas → šito and tas → to for a masculine item; šita → šitos and ta → tos for a feminine item. Notice the shift and learn these useful chunks.",
           usage: [
             "Noriu šito — I want this one (masculine item)",
             "Noriu to — I want that one (masculine item)",

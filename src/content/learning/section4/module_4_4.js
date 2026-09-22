@@ -508,7 +508,7 @@ export default function createModule_4_4(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Man, tau, mums — these are dative forms meaning to me / for me, to you / for you, to us / for us. You have seen man before in Man reikia… and Man irgi. Now it appears in ordering context.",
+          pattern: "Man, tau, mums mean to/for me, to/for you, and to/for us. You have seen man before in Man reikia… and Man irgi. Now the same word appears in ordering context.",
           usage: [
             "man — for me / to me",
             "tau / jums — for you / to you",

@@ -26,7 +26,7 @@ export default function createModule_3_4(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Man [number] metų — I am [number] years old. Metų is the genitive plural of metai (years). Kiek jums metų? is the polite form; Kiek tau metų? is informal. Learn these as fixed chunks.",
+          pattern: "Man [number] metų — I am [number] years old. In this age pattern, metai (years) appears as metų. Kiek jums metų? is the polite form; Kiek tau metų? is informal. Learn these as useful fixed chunks.",
           usage: [
             "Kiek jums metų? — how old are you? (formal)",
             "Kiek tau metų? — how old are you? (informal)",

@@ -205,6 +205,13 @@ test("Learn blocks introduce each Lithuanian item only once", () => {
   assert.deepEqual(duplicates, []);
 });
 
+test("learner-facing curriculum avoids unexplained grammar jargon", () => {
+  const curriculumText = JSON.stringify([...modules, ...checkpoints]);
+  const jargon = /\b(genitive|accusative|instrumental|dative|nominative|locative|vocative|imperative|ordinal|declension|conjugation|possessive|preposition|adverbial|adjective|demonstrative|subject)\b/i;
+  const match = curriculumText.match(jargon);
+  assert.equal(match, null, `learner-facing grammar label should be explained in plain language: ${match?.[0] || ""}`);
+});
+
 test("pattern and consolidation lessons use retrieval/application instead of Learn cards", () => {
   const applicationOnlyCodes = new Set([
     "1.4.5",
