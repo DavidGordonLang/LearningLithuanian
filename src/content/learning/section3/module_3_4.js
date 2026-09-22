@@ -207,13 +207,14 @@ export default function createModule_3_4(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Kiek? — how many? / how much? One word, very versatile. After small numbers, Lithuanian nouns often change form. Dviejų bilietų, prašau (two tickets, please) and trys kavos (three coffees) are useful chunks.",
+          pattern: "Quantity phrases depend on the job the number is doing. The easiest pattern to remember is two: du goes with masculine things, while dvi goes with feminine things — du bilietai but dvi kavos. When you mean 'I need two/three…' or use the short service-request pattern, you will often hear dviejų / trijų and the noun ending in -ų: dviejų bilietų, trijų bilietų. Same numbers, different job.",
           usage: [
-            "Kiek? — how many? / how much?",
-            "Kiek bilietų? — how many tickets?",
+            "du bilietai — two tickets (bilietas is masculine)",
+            "dvi kavos — two coffees (kava is feminine)",
+            "Man reikia dviejų bilietų — I need two tickets",
+            "Man reikia trijų bilietų — I need three tickets",
             "Dviejų bilietų, prašau — two tickets, please",
-            "Trys kavos — three coffees",
-            "Kiek kavų? — how many coffees?",
+            "Kiek bilietų? / Kiek kavų? — how many tickets? / coffees?",
           ],
         },
         blocks: [
@@ -718,10 +719,11 @@ export default function createModule_3_4(profile = {}) {
         supportLevel: "low",
         newLanguageLoad: "low",
         notes: {
-          pattern: "This lesson pulls all the quantity language together — ordering, adjusting, confirming. Mes esame dviese (there are two of us) is the most natural way to tell a host or server how many people you are.",
+          pattern: "This lesson combines the number patterns you have already seen. Do not try to force every number back to its dictionary form. Read the whole chunk: viena becomes vieną in a direct order, dvi stays dvi with a feminine plural, and dviese is the useful fixed phrase for 'two of us'. The goal is to recognise which familiar number family fits the situation.",
           usage: [
+            "viena → vieną kavą — one coffee in an order",
+            "dvi + feminine plural → dvi arbatas — two teas",
             "Mes esame dviese — there are two of us",
-            "Vieną kavą ir dvi arbatas, prašau — one coffee and two teas, please",
             "Dar vieną, prašau — one more, please",
             "Užtenka — that's enough",
             "Kiek jūsų? — how many of you are there?",

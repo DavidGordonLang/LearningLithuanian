@@ -65,3 +65,41 @@ test("Ar užtenka stays a sufficiency check and customer order quantities use re
   const quantities=m.lessons.find(l=>l.code==="3.4.5");
   assert.ok(JSON.stringify(quantities).includes("Vieną kavą ir dvi arbatas, prašau"));
 });
+
+
+test("Section 3 explains changing number forms in plain-language layers",()=>{
+  const m31=createModule31();
+  const m32=createModule32();
+  const m33=createModule33();
+  const m34=createModule34();
+
+  const context=m31.lessons.find(l=>l.code==="3.1.4").notes;
+  assert.match(context.pattern,/same number, different job/i);
+  assert.ok(context.usage.some(line=>/trys.*trijų/.test(line)));
+  assert.ok(context.usage.some(line=>/du.*dvi kavas/.test(line)));
+  assert.ok(context.usage.some(line=>/penki.*penktą valandą/.test(line)));
+
+  const prices=m32.lessons.find(l=>l.code==="3.2.2").notes;
+  assert.match(prices.pattern,/1–9 euros/);
+  assert.ok(prices.usage.some(line=>/penki.*penkis eurus/.test(line)));
+  assert.ok(prices.usage.some(line=>/dvidešimt.*dvidešimt eurų/.test(line)));
+
+  const clock=m33.lessons.find(l=>l.code==="3.3.1");
+  assert.match(clock.notes.pattern,/different number family/);
+  assert.ok(clock.blocks[0].items.some(item=>item.lt==="Pirma valanda" && item.en==="One o'clock"));
+
+  const quantities=m34.lessons.find(l=>l.code==="3.4.2").notes;
+  assert.match(quantities.pattern,/du goes with masculine things/);
+  assert.match(quantities.pattern,/dvi goes with feminine things/);
+  assert.ok(quantities.usage.some(line=>/dviejų bilietų/.test(line)));
+  assert.ok(quantities.usage.some(line=>/trijų bilietų/.test(line)));
+
+  const numberNotes=[
+    context.pattern,
+    prices.pattern,
+    clock.notes.pattern,
+    m33.lessons.find(l=>l.code==="3.3.4").notes.pattern,
+    quantities.pattern,
+  ].join(" ");
+  assert.doesNotMatch(numberNotes,/genitive|accusative|ordinal declension/i);
+});

@@ -21,14 +21,14 @@ export default function createModule_3_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Kiek valandų? and Kelinta valanda? both ask the time. Trečia valanda means it is three o'clock; trečią valandą means at three o'clock in a schedule. Learn those as separate useful chunks rather than treating the endings as interchangeable.",
+          pattern: "Clock time uses a different number family from simple counting. Think 'which hour?' rather than 'how many?': trys (three) becomes trečia valanda (three o'clock), and penki (five) becomes penkta valanda (five o'clock). You do not need to memorise a grammar label — learn the clock-time forms as a family.",
           usage: [
-            "Kiek valandų? — what time is it?",
-            "Kelinta valanda? — what time is it? (which hour?)",
-            "Viena valanda — one o'clock",
-            "Trečia valanda — three o'clock",
-            "Penkta valanda — five o'clock",
-            "Dešimta valanda — ten o'clock",
+            "Kelinta valanda? — what time is it? / which hour is it?",
+            "pirma valanda — one o'clock",
+            "trys → trečia valanda — three o'clock",
+            "penki → penkta valanda — five o'clock",
+            "dešimt → dešimta valanda — ten o'clock",
+            "Later: penkta valanda → penktą valandą when you mean at five o'clock",
           ],
         },
         blocks: [
@@ -39,7 +39,7 @@ export default function createModule_3_3(profile = {}) {
             items: [
               { id: "t1", lt: "Kiek valandų?",    en: "What time is it?",   audioText: "Kiek valandų",    saveable: true, core: true },
               { id: "t2", lt: "Kelinta valanda?",  en: "What time is it?",   audioText: "Kelinta valanda", saveable: true, core: true },
-              { id: "t3", lt: "Viena valanda",     en: "One o'clock",        audioText: "Viena valanda",   saveable: true, core: true },
+              { id: "t3", lt: "Pirma valanda",     en: "One o'clock",        audioText: "Pirma valanda",   saveable: true, core: true },
               { id: "t4", lt: "Trečia valanda",    en: "Three o'clock",      audioText: "Trečia valanda",  saveable: true, core: true },
               { id: "t5", lt: "Penkta valanda",    en: "Five o'clock",       audioText: "Penkta valanda",  saveable: true, core: true },
               { id: "t6", lt: "Dešimta valanda",   en: "Ten o'clock",        audioText: "Dešimta valanda", saveable: true, core: true },
@@ -520,11 +520,11 @@ export default function createModule_3_3(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "In Lithuanian, 'at a time' uses a different word form than simply stating the time. Penkta valanda (it's five o'clock) becomes penktą valandą (at five o'clock). You'll see this pattern in real sentences — learn them as set phrases for now.",
+          pattern: "Once you know the clock-time form, 'at' is a small extra change: penkta valanda means five o'clock, while penktą valandą means at five o'clock. The same change happens across the clock-time family. Focus on the before → after pattern rather than a grammar table.",
           usage: [
-            "penktą valandą — at five o'clock",
-            "šeštą valandą — at six o'clock",
-            "dešimtą valandą — at ten o'clock",
+            "penkta valanda → penktą valandą — five o'clock → at five o'clock",
+            "šešta valanda → šeštą valandą — six o'clock → at six o'clock",
+            "dešimta valanda → dešimtą valandą — ten o'clock → at ten o'clock",
             "Pradedame penktą valandą — we start at five o'clock",
             "Susitinkame šeštą valandą — we meet at six o'clock",
           ],

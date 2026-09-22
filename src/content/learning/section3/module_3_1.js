@@ -303,12 +303,13 @@ export default function createModule_3_1(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Numbers in Lithuanian sit inside real phrases. Hearing 'dešimt' in isolation is different from hearing it inside 'Tai kainuoja dešimt eurų'. This lesson is about making that connection.",
+          pattern: "The number you learned on its own is its base form, but Lithuanian often changes that word to fit the job it is doing in the sentence. Think: same number, different job — not a new number. You are not expected to build every form from a grammar table yet. For now, notice the family resemblance and learn the practical pattern when it appears.",
           usage: [
-            "Tai kainuoja dešimt eurų — it costs ten euros",
-            "Mes esame dviese — there are two of us",
-            "Man reikia trijų bilietų — I need three tickets",
-            "Pradedame penktą valandą — we start at five o'clock",
+            "trys = three → trijų bilietų in Man reikia trijų bilietų (I need three tickets)",
+            "du = two → dvi kavas when ordering two coffees, because kava is feminine",
+            "penki = five → penktą valandą when you mean at five o'clock",
+            "dešimt stays easy to recognise in dešimt eurų — ten euros",
+            "dviese means 'two of us' — treat this as a useful fixed chunk for now",
           ],
         },
         blocks: [

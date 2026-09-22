@@ -182,12 +182,14 @@ export default function createModule_3_2(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Tai kainuoja… — it costs… You'll notice numbers change slightly depending on what follows. Penkis eurus (five euros), dešimt eurų (ten euros). Don't worry about the rule — just get used to hearing the amounts.",
+          pattern: "Price phrases use a predictable number pattern. For 1–9 euros, the number can change shape: penki (five) becomes penkis in penkis eurus. For the amounts used here from ten upward — dešimt, the teens, and exact tens such as dvidešimt or trisdešimt — the number itself stays recognisable and 'euros' becomes eurų. You do not need grammar-case names to use this; learn the price pattern.",
           usage: [
-            "Tai kainuoja penkis eurus — it costs five euros",
-            "Tai kainuoja dešimt eurų — it costs ten euros",
-            "Tai kainuoja dvidešimt eurų — it costs twenty euros",
-            "Tai kainuoja trisdešimt eurų — it costs thirty euros",
+            "penki → penkis eurus — five euros",
+            "šeši → šešis eurus — six euros",
+            "dešimt → dešimt eurų — ten euros",
+            "penkiolika → penkiolika eurų — fifteen euros",
+            "dvidešimt → dvidešimt eurų — twenty euros",
+            "trisdešimt → trisdešimt eurų — thirty euros",
           ],
         },
         blocks: [
