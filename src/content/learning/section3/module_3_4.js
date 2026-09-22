@@ -793,12 +793,12 @@ export default function createModule_3_4(profile = {}) {
   id: "s3m4l5_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You and a friend arrive at a café. The server asks your party size before seating you, then takes your order.",
-  sceneIntro: "You and a friend arrive at a café. The server asks your party size before seating you, then takes your order.",
+  description: "You and a friend arrive at a café. After giving your party size, you decide to order one coffee and two teas for the table.",
+  sceneIntro: "You and a friend arrive at a café. After giving your party size, you decide to order one coffee and two teas for the table.",
   location: "café",
   userRole: "customer",
   register: "polite_service",
-  goal: "You and a friend arrive at a café. The server asks your party size before seating you, then takes your order.",
+  goal: "Give your party size, then place the stated one-coffee-and-two-teas order.",
   focus: ["ordering"],
   participants: [
     {
@@ -852,8 +852,8 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "server",
       speakerLabel: "Server",
       speakerText: "Prašom. Ką norėtumėte?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You have decided on one coffee and two teas for the table.",
+      learnerPrompt: "Place that order.",
       help: {
         levels: [
           {
@@ -1020,12 +1020,12 @@ export default function createModule_3_4(profile = {}) {
   id: "s3m4c_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You and two friends arrive at a restaurant to book a table.",
-  sceneIntro: "You and two friends arrive at a restaurant to book a table.",
+  description: "You and two friends arrive at a restaurant. There are three of you; two want coffee and one wants a glass of water.",
+  sceneIntro: "You and two friends arrive at a restaurant. There are three of you; two want coffee and one wants a glass of water.",
   location: "restaurant",
   userRole: "customer",
   register: "polite_service",
-  goal: "You and two friends arrive at a restaurant to book a table.",
+  goal: "Give your party size, then order the drinks your group has chosen.",
   focus: ["conversation practice"],
   participants: [
     {
@@ -1074,8 +1074,8 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "server",
       speakerLabel: "Server",
       speakerText: "Gerai. Ką norėtumėte gerti?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Two of you want coffee; the third person wants a glass of water.",
+      learnerPrompt: "Order the drinks for your group.",
       help: {
         levels: [
           {

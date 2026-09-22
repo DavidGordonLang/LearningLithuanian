@@ -187,3 +187,22 @@ test("Lithuanian best-response answers in Section 3 keep option audio enabled",(
     assert.ok(block.options.every(o=>/[A-Za-zĄČĘĖĮŠŲŪŽąčęėįšųūž]/.test(o.text)),block.id);
   }
 });
+
+
+test("Section 3 quantity scenarios establish the exact quantity before asking for it",()=>{
+  const m31=createModule31();
+  const ticket=m31.lessons.find(l=>l.code==="3.1.C").blocks.find(b=>b.id==="s3m1c_b6_v2");
+  assert.match(ticket.description,/buying two tickets/i);
+  assert.match(ticket.sceneIntro,/one for you and one for a friend/i);
+  assert.match(ticket.steps[0].sceneDirection,/two tickets/i);
+  assert.equal(ticket.steps[0].learnerPrompt,"Tell Rasa that you need two tickets.");
+
+  const m34=createModule34();
+  const cafe=m34.lessons.find(l=>l.code==="3.4.5").blocks.find(b=>b.id==="s3m4l5_b6_v2");
+  assert.match(cafe.description,/one coffee and two teas/i);
+  assert.match(cafe.steps[1].sceneDirection,/one coffee and two teas/i);
+
+  const checkpoint=m34.lessons.find(l=>l.code==="3.4.C").blocks.find(b=>b.id==="s3m4c_b6_v2");
+  assert.match(checkpoint.description,/two want coffee and one wants a glass of water/i);
+  assert.match(checkpoint.steps[1].sceneDirection,/Two of you want coffee/i);
+});

@@ -584,12 +584,12 @@ export default function createModule_3_1(profile = {}) {
   id: "s3m1c_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're at a train station ticket window. A quick number exchange.",
-  sceneIntro: "You're at a train station ticket window. A quick number exchange.",
+  description: "You're at a train station ticket window buying two tickets — one for you and one for a friend.",
+  sceneIntro: "You're at a train station ticket window buying two tickets — one for you and one for a friend.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
-  goal: "You're at a train station ticket window. A quick number exchange.",
+  goal: "Ask for two tickets and handle the short price exchange.",
   focus: ["directions","numbers"],
   participants: [
     {
@@ -624,8 +624,8 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Laba diena! Kiek bilietų?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You need two tickets: one for yourself and one for your friend.",
+      learnerPrompt: "Tell Rasa that you need two tickets.",
       options: [
         {
           id: "a",
