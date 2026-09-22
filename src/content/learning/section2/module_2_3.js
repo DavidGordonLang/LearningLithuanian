@@ -21,6 +21,7 @@ export default function createModule_2_3(profile = {}) {
         notes: {
           pattern: "Before choosing šitas / šita or tas / ta, you need a clue to the noun's gender. For everyday nouns in their base form, endings often help: -as, -ys and -us are commonly masculine; -a is commonly feminine, and -ė is often feminine too. This is a shortcut, not a perfect rule — some endings can belong to either gender and a few common nouns are irregular. In this lesson, obuolys ends in -ys, so treat it as masculine; duona ends in -a, so treat it as feminine.",
           usage: [
+            "Memory hook: Barbora ends in -a → feminine; Rokas ends in -as → masculine.",
             "Gender shortcut: raktas, bilietas, obuolys → masculine clues (-as / -ys)",
             "Gender shortcut: kava, arbata, duona → feminine clue (-a)",
             "If the ending is unclear, learn the noun with its gender. Vanduo, for example, is masculine.",

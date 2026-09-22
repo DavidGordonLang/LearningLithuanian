@@ -40,6 +40,8 @@ test("2.3.1 teaches a usable noun-gender clue before the first scored form choic
   assert.match(lesson.notes.pattern, /-as, -ys and -us are commonly masculine/);
   assert.match(lesson.notes.pattern, /-a is commonly feminine/);
   assert.match(lesson.notes.pattern, /shortcut, not a perfect rule/);
+  assert.ok(lesson.notes.usage.some((line) => /Barbora.*-a.*feminine/.test(line)));
+  assert.ok(lesson.notes.usage.some((line) => /Rokas.*-as.*masculine/.test(line)));
   assert.ok(lesson.notes.usage.some((line) => /Vanduo.*masculine/.test(line)));
 
   assert.ok(learn.items.some((item) =>
