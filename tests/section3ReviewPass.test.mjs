@@ -108,3 +108,28 @@ test("Section 3 explains changing number forms in plain-language layers",()=>{
   ].join(" ");
   assert.doesNotMatch(numberNotes,/genitive|accusative|ordinal declension/i);
 });
+
+
+test("Section 3 does not ask learners to produce forms before they are surfaced",()=>{
+  const m31=createModule31();
+  const l314=m31.lessons.find(l=>l.code==="3.1.4");
+  const learn314=l314.blocks.find(b=>b.type==="learn").items.map(i=>i.lt);
+  assert.ok(learn314.includes("Mes esame"));
+  assert.ok(learn314.includes("Man reikia dviejų bilietų"));
+  assert.ok(learn314.includes("Dvi kavas, prašau"));
+  assert.match(l314.notes.usage.join(" "),/Mes = we, esame = are/);
+
+  const m32=createModule32();
+  const l322=m32.lessons.find(l=>l.code==="3.2.2");
+  const l324=m32.lessons.find(l=>l.code==="3.2.4");
+  assert.equal(JSON.stringify(l322).includes('"Gerai, imu!"'),false);
+  assert.ok(JSON.stringify(l324).includes('"Imu"'));
+
+  const m33=createModule33();
+  const l333=m33.lessons.find(l=>l.code==="3.3.3");
+  const s333=JSON.stringify(l333);
+  assert.equal(s333.includes("traukinys"),false);
+  assert.equal(s333.includes("šeštą valandą"),false);
+  assert.ok(s333.includes("Kada išvyksta autobusas?"));
+  assert.ok(s333.includes("penktą valandą"));
+});

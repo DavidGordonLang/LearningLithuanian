@@ -305,11 +305,13 @@ export default function createModule_3_1(profile = {}) {
         notes: {
           pattern: "The number you learned on its own is its base form, but Lithuanian often changes that word to fit the job it is doing in the sentence. Think: same number, different job — not a new number. You are not expected to build every form from a grammar table yet. For now, notice the family resemblance and learn the practical pattern when it appears.",
           usage: [
+            "You already know aš esu = I am. Mes = we, esame = are, so mes esame = we are.",
+            "Mes esame dviese = there are two of us. Think of dviese as the useful 'two of us' chunk.",
             "trys = three → trijų bilietų in Man reikia trijų bilietų (I need three tickets)",
-            "du = two → dvi kavas when ordering two coffees, because kava is feminine",
+            "du = two → dviejų after reikia: Man reikia dviejų bilietų (I need two tickets)",
+            "du = two → dvi with a feminine thing: Dvi kavas, prašau (Two coffees, please)",
             "penki = five → penktą valandą when you mean at five o'clock",
             "dešimt stays easy to recognise in dešimt eurų — ten euros",
-            "dviese means 'two of us' — treat this as a useful fixed chunk for now",
           ],
         },
         blocks: [
@@ -319,8 +321,11 @@ export default function createModule_3_1(profile = {}) {
             title: "Numbers in real phrases",
             items: [
               { id: "ctx1", lt: "Tai kainuoja dešimt eurų",    en: "It costs ten euros",         audioText: "Tai kainuoja dešimt eurų",    saveable: true, core: true },
+              { id: "ctx2a", lt: "Mes esame",                    en: "We are",                      audioText: "Mes esame",                    saveable: true, core: false },
               { id: "ctx2", lt: "Mes esame dviese",             en: "There are two of us",        audioText: "Mes esame dviese",             saveable: true, core: true },
               { id: "ctx3", lt: "Man reikia trijų bilietų",    en: "I need three tickets",       audioText: "Man reikia trijų bilietų",    saveable: true, core: true },
+              { id: "ctx3b", lt: "Man reikia dviejų bilietų",   en: "I need two tickets",         audioText: "Man reikia dviejų bilietų",   saveable: true, core: false },
+              { id: "ctx3c", lt: "Dvi kavas, prašau",           en: "Two coffees, please",        audioText: "Dvi kavas, prašau",           saveable: true, core: false },
               { id: "ctx4", lt: "Pradedame penktą valandą",    en: "We start at five o'clock",   audioText: "Pradedame penktą valandą",    saveable: true, core: true },
               { id: "noun_val", lt: "valanda", en: "hour / o'clock", audioText: "valanda", core: false, saveable: true },
             ],

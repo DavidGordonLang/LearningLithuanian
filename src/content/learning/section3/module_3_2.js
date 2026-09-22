@@ -325,8 +325,8 @@ export default function createModule_3_2(profile = {}) {
       options: [
         {
                   id: "b",
-                  text: "Gerai, imu!",
-                  textEn: "OK, I'll take it!",
+                  text: "Gerai, ačiū!",
+                  textEn: "Okay, thank you!",
                   result: "best",
                   progresses: true,
                 },

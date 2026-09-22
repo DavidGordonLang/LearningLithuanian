@@ -930,21 +930,21 @@ export default function createModule_5_3(profile = {}) {
       id: "step_3",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Suprantu. Ar esate viešbutyje ilgai?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      speakerText: "Suprantu. Dabar viešbutyje?",
+      sceneDirection: "She checks that you are at the hotel now.",
+      learnerPrompt: "Confirm and close the exchange.",
       options: [
         {
           id: "a",
-          text: "Atsiprašau.",
+          text: "Iš viešbučio.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That means from the hotel. She is checking where you are now.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Savaitę. Ačiū!",
-          textEn: "A week. Thank you!",
+          text: "Taip. Ačiū!",
+          textEn: "Yes. Thank you!",
           result: "best",
           progresses: true,
         }

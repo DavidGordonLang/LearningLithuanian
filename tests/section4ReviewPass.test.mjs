@@ -71,3 +71,13 @@ test("Key Section 4 comprehension turns use escalating help with silent English 
   const final=cp.blocks.find(b=>b.id==="s4c_b12_v2");
   assert.equal(final.steps[6].help.levels.at(-1).audio,false);
 });
+
+
+test("4.4.1 does not test Eikime before the dedicated let's lesson",()=>{
+  const m=createModule44({speakerGender:"male"});
+  const l1=m.lessons.find(l=>l.code==="4.4.1");
+  const l3=m.lessons.find(l=>l.code==="4.4.3");
+  assert.equal(JSON.stringify(l1).includes("Eikime į kavinę!"),false);
+  assert.ok(JSON.stringify(l1).includes("Taip! Noriu kavos."));
+  assert.ok(JSON.stringify(l3).includes("Eikime į kavinę."));
+});

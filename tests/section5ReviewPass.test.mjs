@@ -68,3 +68,29 @@ test("Section 5 final checkpoint is a coherent street route and uses Ar toli",()
  assert.equal(s.steps[1].options.find(o=>o.result==="best").text,"Suprantu. Ar toli?");
  assert.match(s.steps[2].speakerText,/penkios minutės/);
 });
+
+
+test("Section 5 keeps future place vocabulary out of 5.1 production",()=>{
+  const m1=createModule51();
+  const s=txt(m1);
+  assert.equal(s.includes("autobusų stotis"),false);
+  assert.equal(s.includes("traukinių stotis"),false);
+  assert.equal(s.includes("Kur yra vaistinė"),false);
+  assert.ok(s.includes("autobusų stotelė"));
+  assert.ok(s.includes("Kur yra bankas"));
+
+  const m2=createModule52();
+  const later=txt(m2);
+  assert.ok(later.includes("autobusų stotis"));
+  assert.ok(later.includes("traukinių stotis"));
+  assert.ok(later.includes("vaistinė"));
+});
+
+test("5.3.5 does not require the untaught word Savaitę",()=>{
+  const m=createModule53();
+  const lesson=m.lessons.find(l=>l.code==="5.3.5");
+  const s=txt(lesson);
+  assert.equal(s.includes("Savaitę"),false);
+  assert.ok(s.includes("Dabar viešbutyje?"));
+  assert.ok(s.includes("Taip. Ačiū!"));
+});

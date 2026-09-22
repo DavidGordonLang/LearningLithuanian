@@ -378,8 +378,8 @@ export default function createModule_3_3(profile = {}) {
   id: "s3m3l3_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're at a train station and need to know departure time.",
-  sceneIntro: "You're at a train station and need to know departure time.",
+  description: "You're at a bus station and need to know departure time.",
+  sceneIntro: "You're at a bus station and need to know departure time.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
@@ -428,7 +428,7 @@ export default function createModule_3_3(profile = {}) {
       options: [
         {
                   id: "b",
-                  text: "Laba diena. Kada išvyksta traukinys?",
+                  text: "Laba diena. Kada išvyksta autobusas?",
                   result: "best",
                   progresses: true,
                 },
@@ -445,7 +445,7 @@ export default function createModule_3_3(profile = {}) {
       id: "step_2",
       speakerId: "assistant",
       speakerLabel: "Assistant",
-      speakerText: "Traukinys išvyksta šeštą valandą.",
+      speakerText: "Autobusas išvyksta penktą valandą.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       help: {
@@ -454,7 +454,7 @@ export default function createModule_3_3(profile = {}) {
             sceneDirection: "The speaker slows down and points to the key detail in the scene.",
           },
           {
-            speakerText: "The train leaves at six o'clock.",
+            speakerText: "The bus leaves at five o'clock.",
             spokenLanguage: "en",
             audio: false,
           },
@@ -463,7 +463,7 @@ export default function createModule_3_3(profile = {}) {
       options: [
         {
                   id: "b",
-                  text: "Šeštą valandą. Gerai, ačiū!",
+                  text: "Penktą valandą. Gerai, ačiū!",
                   result: "best",
                   progresses: true,
                 },

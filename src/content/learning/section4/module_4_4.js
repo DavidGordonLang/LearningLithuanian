@@ -152,8 +152,8 @@ export default function createModule_4_4(profile = {}) {
         },
         {
           id: "b",
-          text: "Eikime į kavinę!",
-          textEn: "Let's go to the café!",
+          text: "Taip! Noriu kavos.",
+          textEn: "Yes! I want coffee.",
           result: "best",
           progresses: true,
         }
