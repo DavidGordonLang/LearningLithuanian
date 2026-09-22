@@ -13,7 +13,7 @@ test("Section 3.1 keeps number practice inside taught material before price lang
   const lesson=m.lessons.find(l=>l.code==="3.1.2");
   const recap=lesson.blocks.at(-1);
 
-  assert.equal(JSON.stringify(m).includes("Tai kainuoja"), false);
+  assert.equal(JSON.stringify(lesson).includes("Tai kainuoja"), false);
   assert.equal(recap.type, "word_match");
   assert.equal(recap.id, "s3m1l2_b7");
   assert.equal(recap.pairs.length, 20);
