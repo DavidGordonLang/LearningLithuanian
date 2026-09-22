@@ -41,7 +41,12 @@ test("Section 3 uses the polite bill request as the production target",()=>{
 
 test("Section 3 distinguishes clock time from scheduled at-time forms",()=>{
   const m=createModule33();
-  assert.match(m.lessons.find(l=>l.code==="3.3.1").notes.pattern,/trečią valandą means at three o'clock/);
+  const clock=m.lessons.find(l=>l.code==="3.3.1");
+  const scheduled=m.lessons.find(l=>l.code==="3.3.4");
+
+  assert.match(clock.notes.pattern,/trečia valanda \(three o'clock\)/);
+  assert.match(scheduled.notes.pattern,/penktą valandą means at five o'clock/);
+  assert.ok(scheduled.notes.usage.some(line=>/penkta valanda.*penktą valandą/.test(line)));
 });
 
 test("Section 3 quantity examples keep service context coherent",()=>{
