@@ -146,6 +146,16 @@ test("normal tap-word glow remains visibly present for roughly 0.9 seconds", () 
   assert.match(wordAudioSrc, /visualGenerationRef\.current === visualGeneration/);
 });
 
+test("daily recall slow playback uses a reduced-speed play icon rather than rewind", () => {
+  const src = source("src/components/DailyRecallModal.jsx");
+
+  assert.match(src, /½×/);
+  assert.match(src, /Play daily recall phrase slowly/);
+  assert.match(src, /M3\.25 2\.25L12\.25 7\.5L3\.25 12\.75V2\.25Z/);
+  assert.doesNotMatch(src, /M11 5L6 9l5 4V5Z/);
+});
+
+
 
 test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics off production", () => {
   const src = source("src/views/training/LearningLessonView.jsx");

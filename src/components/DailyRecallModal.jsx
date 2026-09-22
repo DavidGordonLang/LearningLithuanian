@@ -102,21 +102,19 @@ export default function DailyRecallModal({
             aria-label="Play daily recall phrase slowly"
           >
             <span className="inline-flex items-center gap-2">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M11 5L6 9l5 4V5Z" />
-                <path d="M18 5l-5 4 5 4V5Z" />
-                <path d="M6 19h12" />
-              </svg>
+              <span className="relative inline-flex h-[16px] w-[25px] items-center" aria-hidden="true">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 15 15"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="shrink-0"
+                >
+                  <path d="M3.25 2.25L12.25 7.5L3.25 12.75V2.25Z" fill="currentColor" />
+                </svg>
+                <span className="ml-0.5 text-[9px] font-bold leading-none tracking-[-0.04em]">½×</span>
+              </span>
               Slow
             </span>
           </button>
