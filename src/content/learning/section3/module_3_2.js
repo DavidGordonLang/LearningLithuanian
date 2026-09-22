@@ -1131,13 +1131,13 @@ export default function createModule_3_2(profile = {}) {
             id: "s3m2c_b3",
             type: "best_response",
             title: "Choose the best response",
-            prompt: { text: "The server asks: 'Grynaisiais ar kortele?'" },
+            prompt: { text: "You want to pay in cash. The server asks: 'Grynaisiais ar kortele?'" },
             options: [
               { id: "a", text: "Noriu sumokėti", isCorrect: false },
               { id: "b", text: "Grynaisiais, prašau", isCorrect: true },
               { id: "c", text: "Kiek tai kainuoja?", isCorrect: false },
             ],
-            feedback: { correct: "Grynaisiais, prašau — cash, please. Direct answer to cash or card." },
+            feedback: { correct: "Grynaisiais, prašau — cash, please. You want to pay in cash, so this directly answers the server's question." },
           },
           {
             id: "s3m2c_b4",
@@ -1253,8 +1253,8 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Kava kainuoja tris eurus.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Three euros is fine for you, and you want one coffee.",
+      learnerPrompt: "Order one coffee.",
       options: [
         {
           id: "a",
@@ -1283,8 +1283,8 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Žinoma. Grynaisiais ar kortele?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You want to pay by card.",
+      learnerPrompt: "Tell Rasa you want to pay by card.",
       options: [
         {
           id: "a",

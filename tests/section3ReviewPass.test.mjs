@@ -270,3 +270,25 @@ test("3.2.5 teaches Ar viskas gerai before using it in the scenario",()=>{
   assert.equal(scenario.steps[0].speakerText,"Ar viskas gerai?");
   assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Taip, ačiū. Ar galėčiau gauti sąskaitą, prašau?");
 });
+
+
+test("3.2 checkpoint grounds preference before best-response choices",()=>{
+  const m=createModule32();
+  const checkpoint=m.lessons.find(l=>l.code==="3.2.C");
+
+  const cash=checkpoint.blocks.find(b=>b.id==="s3m2c_b3");
+  assert.match(cash.prompt.text,/want to pay in cash/i);
+  assert.equal(cash.options.find(o=>o.isCorrect).text,"Grynaisiais, prašau");
+
+  const scenario=checkpoint.blocks.find(b=>b.id==="s3m2c_b6_v2");
+  const price=scenario.steps.find(s=>s.id==="step_2");
+  const payment=scenario.steps.find(s=>s.id==="step_3");
+
+  assert.match(price.sceneDirection,/Three euros is fine for you/i);
+  assert.equal(price.learnerPrompt,"Order one coffee.");
+  assert.equal(price.options.find(o=>o.result==="best").text,"Gerai. Vieną kavą, prašau.");
+
+  assert.match(payment.sceneDirection,/pay by card/i);
+  assert.equal(payment.learnerPrompt,"Tell Rasa you want to pay by card.");
+  assert.equal(payment.options.find(o=>o.result==="best").text,"Kortele, prašau");
+});

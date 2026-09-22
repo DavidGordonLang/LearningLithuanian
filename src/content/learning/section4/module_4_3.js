@@ -865,7 +865,6 @@ export default function createModule_4_3(profile = {}) {
               { id: "rx2", lt: "Per šalta.", en: "Too cold.", audioText: "Per šalta", saveable: true, core: true },
               { id: "rx3", lt: "Nelabai gerai.", en: "Not very good.", audioText: "Nelabai gerai", saveable: true, core: true },
               { id: "rx4", lt: "Labai gerai.", en: "Very good.", audioText: "Labai gerai", saveable: true, core: true },
-              { id: "rx5", lt: "Ar viskas gerai?", en: "Is everything OK?", audioText: "Ar viskas gerai", saveable: false, core: false },
             ],
           },
           {
