@@ -697,8 +697,8 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Laba diena!",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You hold up the book you are considering buying.",
+      learnerPrompt: "Ask how much the book costs.",
       help: {
         levels: [
           {
