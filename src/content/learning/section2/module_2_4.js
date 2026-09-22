@@ -5,7 +5,13 @@ export default function createModule_2_4(profile = {}) {
   const {
     userFromPhrase = "Aš esu iš Škotijos",
     userFromCountryLabelEn = "Scotland",
+    userLivesInCountryLtLocative = "Lietuvoje",
+    userLivesInCountryLabelEn = "Lithuania",
   } = profile;
+
+  const userLivesInPhrase = `Gyvenu ${userLivesInCountryLtLocative}.`;
+  const userLivesInPhraseAudio = `Gyvenu ${userLivesInCountryLtLocative}`;
+  const userLivesInPhraseEn = `I live in ${userLivesInCountryLabelEn}.`;
 
   return {
     id: "module_2_4",
@@ -175,7 +181,7 @@ export default function createModule_2_4(profile = {}) {
               { id: "wh3", lt: "Kur gyvenate?", en: "Where do you live?", audioText: "Kur gyvenate", saveable: true, core: true },
               { id: "wh4", lt: "Kur jūs gyvenate?", en: "Where do you live? (jūs explicit)", audioText: "Kur jūs gyvenate", saveable: false, core: false },
               { id: "wh5", lt: "Kur einame?", en: "Where are we going?", audioText: "Kur einame", saveable: true, core: true },
-              { id: "wh6", lt: "Gyvenu Vilniuje.", en: "I live in Vilnius.", audioText: "Gyvenu Vilniuje", saveable: false, core: false },
+              { id: "wh6", lt: userLivesInPhrase, en: userLivesInPhraseEn, audioText: userLivesInPhraseAudio, saveable: false, core: false },
             ],
           },
           {

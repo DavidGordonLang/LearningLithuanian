@@ -60,6 +60,23 @@ test("2.4.2 foregrounds natural Kur gyvenate while keeping explicit jūs as vali
   assert.ok(scenario.steps[0].options.some((o) => o.text.includes("Kur jūs gyvenate?") && o.result === "acceptable"));
 });
 
+test("2.4.2 personalises the learner's 'I live in' phrase from the profile country", () => {
+  const module = createModule_2_4({
+    userLivesInCountryLtLocative: "Škotijoje",
+    userLivesInCountryLabelEn: "Scotland",
+  });
+  const lesson = getLesson(module, "2.4.2");
+  const liveItem = getBlock(lesson, "s2m4l2_b1").items.find((item) => item.id === "wh6");
+
+  assert.equal(liveItem.lt, "Gyvenu Škotijoje.");
+  assert.equal(liveItem.en, "I live in Scotland.");
+  assert.equal(liveItem.audioText, "Gyvenu Škotijoje");
+
+  // Rasa's authored answer remains hers rather than being overwritten by the learner profile.
+  const scenario = getBlock(lesson, "s2m4l2_b6_v2");
+  assert.equal(scenario.steps[0].finalSystemLine.speakerText, "Gyvenu Vilniuje.");
+});
+
 test("2.4.3 uses Kas jis and Kas ji for people, not Kas čia", () => {
   const module = createModule_2_4();
   const lesson = getLesson(module, "2.4.3");
