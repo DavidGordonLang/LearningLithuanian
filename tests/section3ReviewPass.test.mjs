@@ -146,3 +146,17 @@ test("3.1.4 coffee scenario establishes why the learner needs two coffees",()=>{
   assert.equal(scenario.steps[0].learnerPrompt,"Tell the server you want two coffees.");
   assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Dvi kavas, prašau");
 });
+
+
+test("3.1.4 price helper deliberately isolates the six-euro amount",()=>{
+  const m=createModule31();
+  const lesson=m.lessons.find(l=>l.code==="3.1.4");
+  const scenario=lesson.blocks.find(b=>b.id==="s3m1l4_b6_v2");
+  const help=scenario.steps[1].help.levels;
+
+  assert.match(help[0].sceneDirection,/holds up six fingers/i);
+  assert.equal(help[0].speakerText,"Šešis eurus.");
+  assert.equal(help[1].speakerText,"It costs six euros.");
+  assert.equal(help[1].spokenLanguage,"en");
+  assert.equal(help[1].audio,false);
+});

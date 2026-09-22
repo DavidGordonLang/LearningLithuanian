@@ -447,9 +447,11 @@ export default function createModule_3_1(profile = {}) {
       help: {
         levels: [
           {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+            sceneDirection: "Ieva holds up six fingers to show the amount, then repeats only the price.",
+            speakerText: "Šešis eurus.",
           },
           {
+            sceneDirection: "The amount is six euros.",
             speakerText: "It costs six euros.",
             spokenLanguage: "en",
             audio: false,
