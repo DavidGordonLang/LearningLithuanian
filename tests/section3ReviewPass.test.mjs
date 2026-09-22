@@ -213,3 +213,19 @@ test("Section 3 quantity scenarios establish the exact quantity before asking fo
   assert.match(checkpoint.description,/two want coffee and one wants a glass of water/i);
   assert.match(checkpoint.steps[1].sceneDirection,/Two of you want coffee/i);
 });
+
+
+test("3.2.2 hat scenario grounds the general price question in a physical action",()=>{
+  const m=createModule32();
+  const lesson=m.lessons.find(l=>l.code==="3.2.2");
+  const scenario=lesson.blocks.find(b=>b.id==="s3m2l2_b6_v2");
+  const first=scenario.steps[0];
+
+  assert.match(scenario.description,/hat at a market/i);
+  assert.match(first.sceneDirection,/pick up the hat/i);
+  assert.equal(first.learnerPrompt,"Ask how much it costs.");
+  assert.equal(first.options.find(o=>o.result==="best").text,"Laba diena! Kiek tai kainuoja?");
+  const book=first.options.find(o=>o.text.includes("knyga"));
+  assert.equal(book.result,"wrong");
+  assert.match(book.feedback,/Knyga means book/);
+});
