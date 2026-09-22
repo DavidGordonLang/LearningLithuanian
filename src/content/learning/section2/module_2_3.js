@@ -232,7 +232,7 @@ export default function createModule_2_3(profile = {}) {
                 speakerLabel: "Seller",
                 speakerText: "Ko norėtumėte?",
                 sceneDirection: "One loaf is directly beside you; another loaf is further along the counter. You want the farther loaf.",
-                learnerPrompt: "Choose the loaf you want.",
+                learnerPrompt: "Bread = duona. Choose the loaf you want.",
                 options: [
                   { id: "a", text: "Noriu tos, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Noriu šitos, prašau.", result: "wrong", feedback: "Šitos points to the nearby loaf. The scene says you want the one further away.", progresses: false },
@@ -245,7 +245,7 @@ export default function createModule_2_3(profile = {}) {
                 speakerLabel: "Seller",
                 speakerText: "Šitos?",
                 sceneDirection: "She points to the nearby loaf to check whether that is the one you meant.",
-                learnerPrompt: "She is pointing to the nearby loaf, but you want the one farther away. Bread = duona. Say no and choose the farther loaf.",
+                learnerPrompt: "She is pointing to the nearby loaf, but you want the one farther away. Say no and choose the farther loaf.",
                 help: {
                   levels: [
                     {
@@ -396,7 +396,7 @@ export default function createModule_2_3(profile = {}) {
                 speakerLabel: "Seller",
                 speakerText: "Ko norėtumėte?",
                 sceneDirection: "One apple is directly in front of you; another is further back. You want the nearby apple.",
-                learnerPrompt: "Choose the apple you want.",
+                learnerPrompt: "Apple = obuolys. Choose the apple you want.",
                 options: [
                   { id: "a", text: "Noriu šito, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Noriu to, prašau.", result: "wrong", feedback: "To points to the farther apple. You want the nearby one.", progresses: false },
@@ -409,7 +409,7 @@ export default function createModule_2_3(profile = {}) {
                 speakerLabel: "Seller",
                 speakerText: "Šito?",
                 sceneDirection: "He points to the nearby apple to check whether that is the one you meant.",
-                learnerPrompt: "He is pointing to the nearby apple. Apple = obuolys. That is the one you want, so confirm it.",
+                learnerPrompt: "He is pointing to the nearby apple. That is the one you want, so confirm it.",
                 help: {
                   levels: [
                     {

@@ -90,21 +90,24 @@ test("2.3 selection scenario uses explicit feminine context and authored Nesupra
   assert.equal(scenario.steps[1].help.levels.at(-1).audio, false);
 });
 
-test("2.3 confirmation prompts state the physical choice directly without blaming the learner", () => {
+test("2.3 gives the noun reference before the first gender-dependent scenario choice", () => {
   const module = createModule_2_3();
   const loaf = getBlock(getLesson(module, "2.3.2"), "s2m3l2_b7_v2");
   const apple = getBlock(getLesson(module, "2.3.C"), "s2m3c_b6_v2");
 
+  assert.match(loaf.steps[0].learnerPrompt, /Bread = duona/);
+  assert.match(apple.steps[0].learnerPrompt, /Apple = obuolys/);
+  assert.doesNotMatch(loaf.steps[0].learnerPrompt, /feminine/);
+  assert.doesNotMatch(apple.steps[0].learnerPrompt, /masculine/);
+
   assert.match(loaf.steps[1].learnerPrompt, /nearby loaf/);
-  assert.match(loaf.steps[1].learnerPrompt, /Bread = duona/);
   assert.match(loaf.steps[1].learnerPrompt, /farther away/);
   assert.match(loaf.steps[1].learnerPrompt, /Say no/);
-  assert.doesNotMatch(loaf.steps[1].learnerPrompt, /Correct the choice|Nesuprantu|feminine/);
+  assert.doesNotMatch(loaf.steps[1].learnerPrompt, /Correct the choice|Nesuprantu|Bread = duona|feminine/);
 
   assert.match(apple.steps[1].learnerPrompt, /nearby apple/);
-  assert.match(apple.steps[1].learnerPrompt, /Apple = obuolys/);
   assert.match(apple.steps[1].learnerPrompt, /confirm it/i);
-  assert.doesNotMatch(apple.steps[1].learnerPrompt, /Nesuprantu|masculine/);
+  assert.doesNotMatch(apple.steps[1].learnerPrompt, /Nesuprantu|Apple = obuolys|masculine/);
 });
 
 test("2.3 checkpoint retrieves the masculine counterpart and current result semantics", () => {
