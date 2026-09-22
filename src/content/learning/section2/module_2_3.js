@@ -244,7 +244,7 @@ export default function createModule_2_3(profile = {}) {
                 speakerLabel: "Seller",
                 speakerText: "Šitos?",
                 sceneDirection: "She points to the nearby loaf to check whether that is the one you meant.",
-                learnerPrompt: "She is pointing to the nearby loaf, but you want the one farther away. Say no and choose the farther loaf.",
+                learnerPrompt: "She is pointing to the nearby loaf, but you want the one farther away. Bread = duona. Say no and choose the farther loaf.",
                 help: {
                   levels: [
                     {
@@ -408,7 +408,7 @@ export default function createModule_2_3(profile = {}) {
                 speakerLabel: "Seller",
                 speakerText: "Šito?",
                 sceneDirection: "He points to the nearby apple to check whether that is the one you meant.",
-                learnerPrompt: "He is pointing to the nearby apple. That is the one you want, so confirm it.",
+                learnerPrompt: "He is pointing to the nearby apple. Apple = obuolys. That is the one you want, so confirm it.",
                 help: {
                   levels: [
                     {

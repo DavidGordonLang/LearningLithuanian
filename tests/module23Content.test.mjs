@@ -94,13 +94,15 @@ test("2.3 confirmation prompts state the physical choice directly without blamin
   const apple = getBlock(getLesson(module, "2.3.C"), "s2m3c_b6_v2");
 
   assert.match(loaf.steps[1].learnerPrompt, /nearby loaf/);
+  assert.match(loaf.steps[1].learnerPrompt, /Bread = duona/);
   assert.match(loaf.steps[1].learnerPrompt, /farther away/);
   assert.match(loaf.steps[1].learnerPrompt, /Say no/);
-  assert.doesNotMatch(loaf.steps[1].learnerPrompt, /Correct the choice|Nesuprantu/);
+  assert.doesNotMatch(loaf.steps[1].learnerPrompt, /Correct the choice|Nesuprantu|feminine/);
 
   assert.match(apple.steps[1].learnerPrompt, /nearby apple/);
+  assert.match(apple.steps[1].learnerPrompt, /Apple = obuolys/);
   assert.match(apple.steps[1].learnerPrompt, /confirm it/i);
-  assert.doesNotMatch(apple.steps[1].learnerPrompt, /Nesuprantu/);
+  assert.doesNotMatch(apple.steps[1].learnerPrompt, /Nesuprantu|masculine/);
 });
 
 test("2.3 checkpoint retrieves the masculine counterpart and current result semantics", () => {
