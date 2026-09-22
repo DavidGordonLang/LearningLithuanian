@@ -32,6 +32,27 @@ test("2.3.1 grounds this/that in physical distance and noun gender", () => {
   assert.equal(getBlock(lesson, "s2m3l1_b3").options.find((o) => o.isCorrect).text, "Ta");
 });
 
+test("2.3.1 teaches a usable noun-gender clue before the first scored form choice", () => {
+  const module = createModule_2_3();
+  const lesson = getLesson(module, "2.3.1");
+  const learn = getBlock(lesson, "s2m3l1_b1");
+
+  assert.match(lesson.notes.pattern, /-as, -ys and -us are commonly masculine/);
+  assert.match(lesson.notes.pattern, /-a is commonly feminine/);
+  assert.match(lesson.notes.pattern, /shortcut, not a perfect rule/);
+  assert.ok(lesson.notes.usage.some((line) => /Vanduo.*masculine/.test(line)));
+
+  assert.ok(learn.items.some((item) =>
+    item.lt === "Obuolys" && /masculine \(-ys ending\)/.test(item.en)
+  ));
+  assert.ok(learn.items.some((item) =>
+    item.lt === "Duona" && /feminine \(-a ending\)/.test(item.en)
+  ));
+
+  assert.equal(lesson.blocks[0].id, "s2m3l1_b1");
+  assert.equal(lesson.blocks[1].id, "s2m3l1_b2");
+});
+
 test("2.3.2 adds feminine selection forms and retrieves the already-taught masculine forms", () => {
   const module = createModule_2_3();
   const lesson = getLesson(module, "2.3.2");
