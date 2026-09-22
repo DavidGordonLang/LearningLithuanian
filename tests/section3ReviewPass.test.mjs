@@ -229,3 +229,28 @@ test("3.2.2 hat scenario grounds the general price question in a physical action
   assert.equal(book.result,"wrong");
   assert.match(book.feedback,/Knyga means book/);
 });
+
+
+test("3.2.4 market scenario treats price objection as a valid negotiation branch",()=>{
+  const m=createModule32();
+  const lesson=m.lessons.find(l=>l.code==="3.2.4");
+  const scenario=lesson.blocks.find(b=>b.id==="s3m2l4_b6_v2");
+  const price=scenario.steps.find(s=>s.id==="step_2");
+  const offer=scenario.steps.find(s=>s.id==="step_2_offer");
+  const decline=scenario.steps.find(s=>s.id==="step_decline");
+
+  assert.match(scenario.description,/book in your hand/i);
+  assert.match(scenario.steps[0].sceneDirection,/hold up the book/i);
+
+  const objection=price.options.find(o=>o.text==="Per brangu");
+  assert.equal(objection.result,"acceptable");
+  assert.equal(objection.progresses,true);
+  assert.equal(objection.nextStepId,"step_2_offer");
+  assert.equal(price.options.find(o=>o.text==="Gerai, imu!").nextStepId,"step_3");
+
+  assert.equal(offer.speakerText,"Gerai, aštuoniolika eurų.");
+  assert.match(offer.sceneDirection,/two euros off/i);
+  assert.equal(offer.options.find(o=>o.text==="Gerai, imu!").nextStepId,"step_3");
+  assert.equal(offer.options.find(o=>o.text==="Ne, ačiū").nextStepId,"step_decline");
+  assert.match(decline.sceneDirection,/not to buy the book/i);
+});

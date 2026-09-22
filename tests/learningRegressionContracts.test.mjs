@@ -90,6 +90,14 @@ test("Scenario V2 progression semantics remain explicit", () => {
 });
 
 
+test("Scenario V2 can branch to an authored next step", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /const nextStepId = option\?\.nextStepId \|\| null/);
+  assert.match(src, /steps\.findIndex\(\(candidate\) => candidate\?\.id === nextStepId\)/);
+  assert.match(src, /advanceAfterProgressingAnswer\(nextStepId\)/);
+});
+
 test("Scenario V2 escalating help stays separate from wrong-answer and progression paths", () => {
   const src = source("src/views/training/ScenarioV2Block.jsx");
 

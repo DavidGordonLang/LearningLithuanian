@@ -113,8 +113,8 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Laba diena!",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You hold up the book you are considering buying.",
+      learnerPrompt: "Ask how much the book costs.",
       help: {
         levels: [
           {
@@ -657,12 +657,12 @@ export default function createModule_3_2(profile = {}) {
   id: "s3m2l4_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're at a market. You ask the price and decide whether to buy.",
-  sceneIntro: "You're at a market. You ask the price and decide whether to buy.",
+  description: "You're at a market with a book in your hand. You ask the price and decide whether to buy.",
+  sceneIntro: "You're at a market with a book in your hand. You ask the price and decide whether to buy.",
   location: "shop counter",
   userRole: "customer",
   register: "polite_service",
-  goal: "You're at a market. You ask the price and decide whether to buy.",
+  goal: "You're at a market with a book in your hand. You ask the price and decide whether to buy.",
   focus: ["payment"],
   participants: [
     {
@@ -727,8 +727,8 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "seller",
       speakerLabel: "Seller",
       speakerText: "Tai kainuoja dvidešimt eurų.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Tomas tells you the book costs twenty euros.",
+      learnerPrompt: "React to the price.",
       help: {
         levels: [
           {
@@ -743,18 +743,43 @@ export default function createModule_3_2(profile = {}) {
       },
       options: [
         {
-                  id: "a",
-                  text: "Per brangu",
-                  result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-                  progresses: false,
-                },
+          id: "a",
+          text: "Per brangu",
+          result: "acceptable",
+          progresses: true,
+          nextStepId: "step_2_offer",
+        },
         {
-                  id: "b",
-                  text: "Gerai, imu!",
-                  result: "best",
-                  progresses: true,
-                }
+          id: "b",
+          text: "Gerai, imu!",
+          result: "best",
+          progresses: true,
+          nextStepId: "step_3",
+        }
+      ],
+    },
+    {
+      id: "step_2_offer",
+      speakerId: "seller",
+      speakerLabel: "Seller",
+      speakerText: "Gerai, aštuoniolika eurų.",
+      sceneDirection: "Tomas knocks two euros off the price.",
+      learnerPrompt: "Decide whether to take it at the new price.",
+      options: [
+        {
+          id: "a",
+          text: "Gerai, imu!",
+          result: "best",
+          progresses: true,
+          nextStepId: "step_3",
+        },
+        {
+          id: "b",
+          text: "Ne, ačiū",
+          result: "acceptable",
+          progresses: true,
+          nextStepId: "step_decline",
+        }
       ],
     },
     {
@@ -808,18 +833,41 @@ export default function createModule_3_2(profile = {}) {
       },
       options: [
         {
-                  id: "a",
-                  text: "Atsiprašau",
-                  result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-                  progresses: false,
-                },
+          id: "a",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          progresses: false,
+        },
         {
-                  id: "b",
-                  text: "Ačiū labai! Viso gero!",
-                  result: "best",
-                  progresses: true,
-                }
+          id: "b",
+          text: "Ačiū labai! Viso gero!",
+          result: "best",
+          progresses: true,
+        }
+      ],
+    },
+    {
+      id: "step_decline",
+      speakerId: "seller",
+      speakerLabel: "Seller",
+      speakerText: "Gerai. Viso gero!",
+      sceneDirection: "You decide not to buy the book.",
+      learnerPrompt: "Close the conversation politely.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Gerai, imu!",
+          result: "wrong",
+          feedback: "You just decided not to buy it. Say goodbye instead.",
+          progresses: false,
+        }
       ],
     }
   ],

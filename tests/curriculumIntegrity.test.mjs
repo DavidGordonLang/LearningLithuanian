@@ -291,6 +291,29 @@ test("every Build Phrase supports deterministic token diagnostics", () => {
   }
 });
 
+test("Scenario V2 nextStepId branches always target an authored step", () => {
+  const owners = [
+    ...modules.flatMap((module) => module.lessons || []),
+    ...checkpoints,
+  ];
+
+  for (const owner of owners) {
+    for (const block of owner.blocks || []) {
+      if (block.type !== "scenario_v2") continue;
+      const stepIds = new Set((block.steps || []).map((step) => step.id));
+      for (const step of block.steps || []) {
+        for (const option of step.options || []) {
+          if (!option.nextStepId) continue;
+          assert.ok(
+            stepIds.has(option.nextStepId),
+            `${block.id}:${step.id} points to missing nextStepId ${option.nextStepId}`
+          );
+        }
+      }
+    }
+  }
+});
+
 test("Scenario V2 finalSystemLine appears only on the final step", () => {
   const owners = [
     ...modules.flatMap((module) => module.lessons || []),

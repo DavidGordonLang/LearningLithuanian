@@ -551,8 +551,9 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           spokenLanguage: followUpTurn.spokenLanguage || followUpTurn.language || null,
         },
       ]);
+      const nextStepId = followUpTurn?.nextStepId || null;
       setFollowUpTurn(null);
-      advanceAfterProgressingAnswer();
+      advanceAfterProgressingAnswer(nextStepId);
     }, advanceDelay);
   }, [followUpTurnKey, followUpTurn?.sceneDirection, followUpTurn?.speakerText]);
 
@@ -667,15 +668,24 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
 
   function processProgressingOption(option) {
     addCurrentExchange(option);
+    const nextStepId = option?.nextStepId || null;
     if (option?.followUp?.speakerText) {
-      setFollowUpTurn(option.followUp);
+      setFollowUpTurn({ ...option.followUp, nextStepId });
       return;
     }
 
-    advanceAfterProgressingAnswer();
+    advanceAfterProgressingAnswer(nextStepId);
   }
 
-  function advanceAfterProgressingAnswer() {
+  function advanceAfterProgressingAnswer(nextStepId = null) {
+    if (nextStepId) {
+      const nextIndex = steps.findIndex((candidate) => candidate?.id === nextStepId);
+      if (nextIndex >= 0) {
+        setStepIndex(nextIndex);
+        return;
+      }
+    }
+
     if (step?.finalSystemLine) {
       setFinalTurn(step.finalSystemLine);
       return;
