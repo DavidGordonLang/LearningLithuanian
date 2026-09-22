@@ -1,11 +1,26 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import createModule31 from "../src/content/learning/section3/module_3_1.js";
 import createModule32 from "../src/content/learning/section3/module_3_2.js";
 import createModule33 from "../src/content/learning/section3/module_3_3.js";
 import createModule34 from "../src/content/learning/section3/module_3_4.js";
 import createCheckpoint3 from "../src/content/learning/section3/checkpoint_3.js";
 
 const allText=(x)=>JSON.stringify(x);
+
+test("Section 3.1 keeps number practice inside taught material before price language",()=>{
+  const m=createModule31();
+  const lesson=m.lessons.find(l=>l.code==="3.1.2");
+  const recap=lesson.blocks.at(-1);
+
+  assert.equal(JSON.stringify(m).includes("Tai kainuoja"), false);
+  assert.equal(recap.type, "word_match");
+  assert.equal(recap.id, "s3m1l2_b7");
+  assert.equal(recap.pairs.length, 20);
+  assert.equal(recap.pairs[0].lt, "vienas");
+  assert.equal(recap.pairs.at(-1).lt, "dvidešimt");
+  assert.equal(new Set(recap.pairs.map(pair=>pair.lt)).size, 20);
+});
 
 test("Section 3 price language avoids the reviewed gender mismatch and uses pigu",()=>{
   const m=createModule32();
