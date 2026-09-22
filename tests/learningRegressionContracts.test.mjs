@@ -176,11 +176,18 @@ test("phrase-completion blocks preserve the learner's selected word and correct 
   assert.match(src, /selected\?\.text \|\| "___"/);
   assert.match(src, /isCorrect \? "text-emerald-200" : "text-rose-300"/);
   assert.match(src, /Correct answer: \$\{correctText\}/);
+  assert.match(src, /isCorrect \? "text-emerald-200" : "z-correct-answer"/);
 
   assert.doesNotMatch(src, /revealed \? \(correctOption\?\.text \|\| GAP\)/);
   assert.doesNotMatch(src, /const filledForm = revealed \? \(correctOption\?\.text \|\| GAP\) : null/);
   assert.doesNotMatch(src, /replace\("___", correctOption\?\.text/);
 });
+
+test("wrong-answer correction text uses the Žodis accent colour in both themes", () => {
+  const css = source("src/index.css");
+  assert.match(css, /\.z-correct-answer\s*\{\s*color:\s*var\(--z-accent-bright\);/);
+});
+
 
 
 

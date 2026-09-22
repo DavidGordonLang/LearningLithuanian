@@ -181,7 +181,7 @@ function FeedbackPanel({ isCorrect, correctText, correctTranslation, feedbackNot
           {isCorrect ? "✓" : "→"}
         </div>
         <div className="flex-1 min-w-0">
-          <div className={cn("text-[14px] font-semibold", isCorrect ? "text-emerald-200" : "text-zinc-200")}>
+          <div className={cn("text-[14px] font-semibold", isCorrect ? "text-emerald-200" : "z-correct-answer")}>
             {isCorrect ? "Correct!" : `Correct answer: ${correctText}`}
           </div>
           {/* On wrong answer: show English meaning of the correct answer to aid retention */}
@@ -299,7 +299,7 @@ function ChoiceFeedbackAction({ isCorrect, correctText, correctTranslation, feed
           {isCorrect ? "\u2713" : "\u2192"}
         </div>
         <div className="min-w-0 flex-1">
-          <div className={cn("text-[13px] font-semibold leading-snug", isCorrect ? "text-emerald-200" : "text-zinc-200")}>
+          <div className={cn("text-[13px] font-semibold leading-snug", isCorrect ? "text-emerald-200" : "z-correct-answer")}>
             {isCorrect ? "Correct!" : `Correct answer: ${correctText}`}
           </div>
           {!isCorrect && correctTranslation ? (

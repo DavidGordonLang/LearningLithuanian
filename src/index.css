@@ -441,6 +441,11 @@ button,
    Shared UI primitives (Tailwind)
    ------------------------------ */
 @layer components {
+  .z-correct-answer {
+    color: var(--z-accent-bright);
+  }
+
+
   /* Layout rhythm */
   .z-page {
     @apply w-full max-w-[760px] mx-auto px-4 sm:px-5;
