@@ -258,6 +258,23 @@ test("every Build Phrase supports deterministic token diagnostics", () => {
       `${owner}:${block.id} needs contiguous correctIndex metadata for token diagnostics`
     );
 
+    const normalizePhrase = (value) =>
+      String(value || "")
+        .toLocaleLowerCase("lt")
+        .replace(/[„“”"'’?!.,;:()[\\]…]/g, "")
+        .replace(/\\s+/g, " ")
+        .trim();
+    const rebuiltAnswer = [...answerTokens]
+      .sort((a, b) => a.correctIndex - b.correctIndex)
+      .map((token) => token.text)
+      .join(" ");
+
+    assert.equal(
+      normalizePhrase(rebuiltAnswer),
+      normalizePhrase(block.answerText),
+      `${owner}:${block.id} correct tokens must rebuild answerText`
+    );
+
     for (const token of tokens) {
       if (token.repairHint !== undefined) {
         assert.equal(typeof token.repairHint, "string", `${owner}:${block.id} repairHint must be text`);
