@@ -43,7 +43,6 @@ export default function createModule_3_3(profile = {}) {
               { id: "t4", lt: "Trečia valanda",    en: "Three o'clock",      audioText: "Trečia valanda",  saveable: true, core: true },
               { id: "t5", lt: "Penkta valanda",    en: "Five o'clock",       audioText: "Penkta valanda",  saveable: true, core: true },
               { id: "t6", lt: "Dešimta valanda",   en: "Ten o'clock",        audioText: "Dešimta valanda", saveable: true, core: true },
-              { id: "noun_sus", lt: "susitikimas", en: "meeting", audioText: "susitikimas", core: false, saveable: true },
             ],
           },
           {
@@ -111,9 +110,10 @@ export default function createModule_3_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Kada? means 'when?'. Dabar (now) is already familiar; add vėliau (later), šiandien (today), and rytoj (tomorrow) to answer basic timing questions.",
+          pattern: "Kada? means 'when?'. Susitikimas means 'meeting'. Dabar (now) is already familiar; add vėliau (later), šiandien (today), and rytoj (tomorrow) to answer basic timing questions.",
           usage: [
             "Kada? — when?",
+            "susitikimas — meeting",
             "dabar — now",
             "vėliau — later",
             "šiandien — today",
@@ -124,10 +124,11 @@ export default function createModule_3_3(profile = {}) {
           {
             id: "s3m3l2_b1",
             type: "learn",
-            title: "Time reference words",
+            title: "When and time reference words",
             items: [
-              { id: "tr0", lt: "Kada?",    en: "When?",    audioText: "Kada?",    saveable: true, core: true },
-              { id: "tr2", lt: "vėliau",   en: "later",    audioText: "vėliau",   saveable: true, core: true },
+              { id: "tr0", lt: "Kada?",       en: "When?",   audioText: "Kada?",       saveable: true, core: true },
+              { id: "tr1", lt: "susitikimas", en: "meeting", audioText: "susitikimas", saveable: true, core: true },
+              { id: "tr2", lt: "vėliau",      en: "later",   audioText: "vėliau",      saveable: true, core: true },
               { id: "tr3", lt: "šiandien", en: "today",    audioText: "šiandien", saveable: true, core: true },
               { id: "tr4", lt: "rytoj",    en: "tomorrow", audioText: "rytoj",    saveable: true, core: true },
             ],

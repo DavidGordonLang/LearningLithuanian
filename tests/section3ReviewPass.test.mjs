@@ -294,17 +294,23 @@ test("3.2 checkpoint grounds preference before best-response choices",()=>{
 });
 
 
-test("3.3.2 explicitly teaches Kada before testing it and reviews known dabar",()=>{
+test("3.3.2 explicitly teaches Kada and susitikimas before testing or scenario use",()=>{
   const m=createModule33();
+  const lesson1=m.lessons.find(l=>l.code==="3.3.1");
   const lesson=m.lessons.find(l=>l.code==="3.3.2");
   const learn=lesson.blocks.find(b=>b.id==="s3m3l2_b1");
   const build=lesson.blocks.find(b=>b.id==="s3m3l2_b5");
+  const scenario=lesson.blocks.find(b=>b.id==="s3m3l2_b6_v2");
 
+  assert.equal(lesson1.blocks.find(b=>b.id==="s3m3l1_b1").items.some(item=>item.lt==="susitikimas"),false);
   assert.ok(learn.items.some(item=>item.lt==="Kada?" && item.en==="When?"));
+  assert.ok(learn.items.some(item=>item.lt==="susitikimas" && item.en==="meeting"));
   assert.equal(learn.items.some(item=>item.lt==="dabar"),false);
   assert.ok(lesson.blocks.indexOf(learn) < lesson.blocks.indexOf(build));
+  assert.ok(lesson.blocks.indexOf(learn) < lesson.blocks.indexOf(scenario));
   assert.ok(build.tokens.some(token=>token.text==="Kada?" && token.correctIndex===0));
   assert.ok(build.tokens.some(token=>token.text==="Dabar." && token.isDistractor===true));
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Labas! Kada susitikimas?");
   assert.match(lesson.notes.pattern,/Dabar \(now\) is already familiar/);
   assert.doesNotMatch(lesson.notes.pattern,/already know Kada|Section 2/i);
 });
