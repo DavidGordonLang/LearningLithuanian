@@ -26,7 +26,7 @@ export default function createModule_5_1(profile = {}) {
             "Kur yra stotis? — Where is the station?",
             "Kur yra tualetas? — Where is the toilet?",
             "Kur yra viešbutis? — Where is the hotel?",
-            "Kur yra vaistinė? — Where is the pharmacy?",
+            "Kur yra bankas? — Where is the bank?",
           ],
         },
         blocks: [
@@ -217,7 +217,7 @@ export default function createModule_5_1(profile = {}) {
       learnerPrompt: "Ask where the hotel is.",
       options: [
         { id: "a", text: "Laba diena! Kur yra viešbutis?", result: "best", progresses: true },
-        { id: "b", text: "Kur yra vaistinė?", result: "wrong", feedback: "You are trying to find your hotel.", progresses: false },
+        { id: "b", text: "Kur yra bankas?", result: "wrong", feedback: "You are trying to find your hotel.", progresses: false },
       ],
     },
     {

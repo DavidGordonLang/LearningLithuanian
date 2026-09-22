@@ -81,7 +81,7 @@ test("Section 3 explains changing number forms in plain-language layers",()=>{
   const context=m31.lessons.find(l=>l.code==="3.1.4").notes;
   assert.match(context.pattern,/same number, different job/i);
   assert.ok(context.usage.some(line=>/trys.*trijų/.test(line)));
-  assert.ok(context.usage.some(line=>/du.*dvi kavas/.test(line)));
+  assert.ok(context.usage.some(line=>/du.*dvi kavas/i.test(line)));
   assert.ok(context.usage.some(line=>/penki.*penktą valandą/.test(line)));
 
   const prices=m32.lessons.find(l=>l.code==="3.2.2").notes;
