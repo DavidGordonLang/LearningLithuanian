@@ -160,3 +160,17 @@ test("3.1.4 price helper deliberately isolates the six-euro amount",()=>{
   assert.equal(help[1].spokenLanguage,"en");
   assert.equal(help[1].audio,false);
 });
+
+
+test("3.1 checkpoint deliberately tests the different 'two' forms in context",()=>{
+  const m=createModule31();
+  const checkpoint=m.lessons.find(l=>l.code==="3.1.C");
+  const block=checkpoint.blocks.find(b=>b.id==="s3m1c_b4");
+
+  assert.match(block.prompt.text,/There are two of us/);
+  assert.equal(block.options.find(o=>o.isCorrect).text,"Mes esame dviese.");
+  assert.ok(block.options.some(o=>o.text==="Man reikia dviejų bilietų."));
+  assert.ok(block.options.some(o=>o.text==="Dvi kavas, prašau."));
+  assert.match(block.feedback.correct,/different jobs/i);
+  assert.equal(JSON.stringify(block).includes("aštuoni"),false);
+});

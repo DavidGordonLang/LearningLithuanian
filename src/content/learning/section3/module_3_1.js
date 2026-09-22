@@ -557,13 +557,15 @@ export default function createModule_3_1(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             noOptionAudio: true,
-            prompt: { text: "Someone at a ticket desk holds up eight fingers and says 'aštuoni'. What are they telling you?" },
+            prompt: { text: "You're travelling with one other person. Which phrase means: There are two of us?" },
             options: [
-              { id: "a", text: "The price is eighty euros", isCorrect: false },
-              { id: "b", text: "There are eight tickets available", isCorrect: false },
-              { id: "c", text: "The number eight — probably eight euros or eight tickets", isCorrect: true },
+              { id: "a", text: "Man reikia dviejų bilietų.", isCorrect: false },
+              { id: "b", text: "Mes esame dviese.", isCorrect: true },
+              { id: "c", text: "Dvi kavas, prašau.", isCorrect: false },
             ],
-            feedback: { correct: "Aštuoni — eight. Context tells you whether it's a price, a count, or something else." },
+            feedback: {
+              correct: "Mes esame dviese — there are two of us. The other answers also use forms connected to 'two', but for different jobs: dviejų for needing two tickets, dvi for two feminine items.",
+            },
           },
           {
             id: "s3m1c_b5",
