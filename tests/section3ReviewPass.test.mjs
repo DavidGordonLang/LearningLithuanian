@@ -237,8 +237,6 @@ test("3.2.4 market scenario treats price objection as a valid negotiation branch
   const scenario=lesson.blocks.find(b=>b.id==="s3m2l4_b6_v2");
   const price=scenario.steps.find(s=>s.id==="step_2");
   const offer=scenario.steps.find(s=>s.id==="step_2_offer");
-  const decline=scenario.steps.find(s=>s.id==="step_decline");
-
   assert.match(scenario.description,/book in your hand/i);
   assert.match(scenario.steps[0].sceneDirection,/hold up the book/i);
 
@@ -251,6 +249,8 @@ test("3.2.4 market scenario treats price objection as a valid negotiation branch
   assert.equal(offer.speakerText,"Gerai, aštuoniolika eurų.");
   assert.match(offer.sceneDirection,/two euros off/i);
   assert.equal(offer.options.find(o=>o.text==="Gerai, imu!").nextStepId,"step_3");
-  assert.equal(offer.options.find(o=>o.text==="Ne, ačiū").nextStepId,"step_decline");
-  assert.match(decline.sceneDirection,/not to buy the book/i);
+  assert.equal(offer.options.find(o=>o.text==="Ne, ačiū").nextStepId,undefined);
+  assert.equal(offer.finalSystemLine.speakerText,"Gerai. Viso gero!");
+  assert.match(offer.finalSystemLine.sceneDirection,/not to buy the book/i);
+  assert.equal(scenario.steps.some(s=>s.id==="step_decline"),false);
 });

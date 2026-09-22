@@ -314,6 +314,17 @@ test("Scenario V2 nextStepId branches always target an authored step", () => {
   }
 });
 
+test("Scenario V2 branch steps may use finalSystemLine only when explicit branches bypass it", () => {
+  const m=createModule32();
+  const lesson=m.lessons.find((l)=>l.code==="3.2.4");
+  const scenario=lesson.blocks.find((b)=>b.id==="s3m2l4_b6_v2");
+  const offer=scenario.steps.find((s)=>s.id==="step_2_offer");
+
+  assert.ok(offer.finalSystemLine);
+  assert.ok(offer.options.some((option)=>option.nextStepId==="step_3"));
+  assert.ok(offer.options.some((option)=>option.progresses===true && !option.nextStepId));
+});
+
 test("Scenario V2 finalSystemLine appears only on the final step", () => {
   const owners = [
     ...modules.flatMap((module) => module.lessons || []),

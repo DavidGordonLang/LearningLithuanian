@@ -778,9 +778,14 @@ export default function createModule_3_2(profile = {}) {
           text: "Ne, ačiū",
           result: "acceptable",
           progresses: true,
-          nextStepId: "step_decline",
         }
       ],
+      finalSystemLine: {
+        speakerId: "seller",
+        speakerLabel: "Seller",
+        speakerText: "Gerai. Viso gero!",
+        sceneDirection: "You decide not to buy the book.",
+      },
     },
     {
       id: "step_3",
@@ -844,29 +849,6 @@ export default function createModule_3_2(profile = {}) {
           text: "Ačiū labai! Viso gero!",
           result: "best",
           progresses: true,
-        }
-      ],
-    },
-    {
-      id: "step_decline",
-      speakerId: "seller",
-      speakerLabel: "Seller",
-      speakerText: "Gerai. Viso gero!",
-      sceneDirection: "You decide not to buy the book.",
-      learnerPrompt: "Close the conversation politely.",
-      options: [
-        {
-          id: "a",
-          text: "Viso gero!",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "b",
-          text: "Gerai, imu!",
-          result: "wrong",
-          feedback: "You just decided not to buy it. Say goodbye instead.",
-          progresses: false,
         }
       ],
     }
