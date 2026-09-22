@@ -55,7 +55,14 @@ test("Section 3 quantity examples keep service context coherent",()=>{
   assert.ok(s.includes("one more coffee"));
   assert.ok(s.includes("Taip, dar ir vandens, prašau."));
   assert.ok(s.includes("Ar dar ko nors norėtumėte?"));
-  assert.ok(s.includes("asks your party size before seating you"));
+
+  const cafe=m.lessons.find(l=>l.code==="3.4.5").blocks.find(b=>b.id==="s3m4l5_b6_v2");
+  assert.match(cafe.description,/You and a friend/);
+  assert.match(cafe.description,/one coffee and two teas/i);
+
+  const checkpoint=m.lessons.find(l=>l.code==="3.4.C").blocks.find(b=>b.id==="s3m4c_b6_v2");
+  assert.match(checkpoint.description,/You and two friends/);
+  assert.match(checkpoint.description,/two want coffee and one wants a glass of water/i);
 });
 
 
