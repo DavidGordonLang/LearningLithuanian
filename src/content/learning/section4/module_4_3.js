@@ -41,9 +41,6 @@ export default function createModule_4_3(profile = {}) {
               { id: "rf1", lt: "Nenoriu…", en: "I don't want…", audioText: "Nenoriu", saveable: true, core: true },
               { id: "rf2", lt: "Nenoriu šito.", en: "I don't want this.", audioText: "Nenoriu šito", saveable: true, core: true },
               { id: "rf3", lt: "Nenoriu to.", en: "I don't want that.", audioText: "Nenoriu to", saveable: true, core: true },
-              { id: "rf4", lt: "Be cukraus, prašau.", en: "Without sugar, please.", audioText: "Be cukraus, prašau", saveable: true, core: true },
-              { id: "rf5", lt: "Be pieno, prašau.", en: "Without milk, please.", audioText: "Be pieno, prašau", saveable: true, core: true },
-              { id: "rf6", lt: "Ar su cukrumi?", en: "With sugar?", audioText: "Ar su cukrumi", saveable: false, core: false },
             ],
           },
           {

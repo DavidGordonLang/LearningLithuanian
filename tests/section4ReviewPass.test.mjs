@@ -160,6 +160,18 @@ test("Section 4.2 scenarios reuse prior ordering and payment language without fo
   assert.match(l25.steps[3].sceneDirection,/after finishing your coffee/i);
 });
 
+test("4.3.1 does not re-present already reviewed sugar and milk phrases as new vocabulary",()=>{
+  const m=createModule43({speakerGender:"male"});
+  const lesson=m.lessons.find(l=>l.code==="4.3.1");
+  const learn=lesson.blocks.find(b=>b.id==="s4m3l1_b1");
+  assert.deepEqual(learn.items.map(i=>i.lt),["Nenoriu…","Nenoriu šito.","Nenoriu to."]);
+
+  const lessonText=JSON.stringify(lesson);
+  assert.ok(lessonText.includes("Be cukraus"));
+  assert.ok(lessonText.includes("Be pieno"));
+  assert.ok(lessonText.includes("Ar su cukrumi?"));
+});
+
 test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
   const m=createModule43({speakerGender:"male"});
   const l31=m.lessons.find(l=>l.code==="4.3.1").blocks.find(b=>b.id==="s4m3l1_b5_v2");
