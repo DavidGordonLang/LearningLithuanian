@@ -99,6 +99,29 @@ test("Section 4 final checkpoint orders for the pair without addressing tau to t
   assert.ok(JSON.stringify(order).includes("Mums vieną kavą su pienu ir vieną arbatą"));
 });
 
+test("payment-choice prompts are actually introduced by a cash-or-card question",()=>{
+  const units=[createModule41(),createModule42(),createModule43({speakerGender:"male"}),createModule44({speakerGender:"male"}),createCheckpoint4({speakerGender:"male"})];
+
+  for(const unit of units){
+    const lessons=unit.lessons||[{code:unit.code,blocks:unit.blocks||[]}];
+    for(const lesson of lessons){
+      for(const scenario of (lesson.blocks||[]).filter(b=>b.type==="scenario_v2")){
+        for(const step of scenario.steps||[]){
+          if(/Choose (cash|card|how you want to pay)/i.test(step.learnerPrompt||"")){
+            assert.match(step.speakerText||"",/Grynaisiais ar kortele\?/i,`${lesson.code} ${scenario.id}/${step.id}`);
+          }
+        }
+      }
+    }
+  }
+
+  const m=createModule43({speakerGender:"male"});
+  const payment=m.lessons.find(l=>l.code==="4.3.2").blocks.find(b=>b.id==="s4m3l2_b5_v2").steps.find(s=>s.id==="step_4");
+  assert.equal(payment.speakerText,"Šeši eurai. Grynaisiais ar kortele?");
+  assert.equal(payment.options.find(o=>o.text==="Grynaisiais, prašau.").result,"best");
+  assert.equal(payment.options.find(o=>o.text==="Kortele, prašau.").result,"wrong");
+});
+
 test("future Section 4 scenarios avoid two-button giveaways and vary payment method",()=>{
   const units=[createModule42(),createModule43({speakerGender:"male"}),createModule44({speakerGender:"male"}),createCheckpoint4({speakerGender:"male"})];
   for(const unit of units){

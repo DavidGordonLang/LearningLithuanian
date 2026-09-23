@@ -392,7 +392,7 @@ export default function createModule_4_3(profile = {}) {
       id: "step_4",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Šeši eurai.",
+      speakerText: "Šeši eurai. Grynaisiais ar kortele?",
       sceneDirection: "You want to pay in cash.",
       learnerPrompt: "Choose cash.",
       options: [
@@ -405,10 +405,11 @@ export default function createModule_4_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Gerai. Kortele, prašau.",
-          textEn: "OK. By card, please.",
-          result: "best",
-          progresses: true,
+          text: "Kortele, prašau.",
+          textEn: "By card, please.",
+          result: "wrong",
+          feedback: "The scene says you want to pay in cash.",
+          progresses: false,
         },
         {
           id: "c",
