@@ -232,6 +232,8 @@ export default function createCheckpoint4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
       ],
     },
     {
@@ -263,6 +265,8 @@ export default function createCheckpoint4(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Man kavos su pienu ir tau arbatos, prašau.","result":"acceptable","feedback":"The greeting is optional once the context is clear.","progresses":true},
       ],
     },
     {
@@ -294,6 +298,8 @@ export default function createCheckpoint4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Čia.","result":"acceptable","feedback":"Shorter, but still clear.","progresses":true},
       ],
     },
     {
@@ -394,8 +400,8 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Žinoma. Dešimt eurų. Grynaisiais ar kortele?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You have both cash and a card, so either payment method is fine.",
+      learnerPrompt: "Choose how you want to pay.",
       help: {
         levels: [
           { sceneDirection: "The server points to the cash tray and then to the card terminal.", speakerText: "Kortele?" },
@@ -411,13 +417,9 @@ export default function createCheckpoint4(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Kortele, prašau.",
-          textEn: "By card, please.",
-          result: "best",
-          progresses: true,
-        }
+        {"id":"b","text":"Kortele, prašau.","textEn":"By card, please.","result":"best","progresses":true}
+      ,
+        {"id":"cash","text":"Grynaisiais, prašau.","result":"best","progresses":true},
       ],
     },
     {

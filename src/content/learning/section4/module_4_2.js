@@ -226,8 +226,8 @@ export default function createModule_4_2(profile = {}) {
             id: "s4m2l2_b5_v2",
             type: "scenario_v2",
             title: "Coffee to go",
-            description: "You are in a hurry, so you order a coffee to take away, check the price and pay by card.",
-            sceneIntro: "You are in a hurry, so you order a coffee to take away, check the price and pay by card.",
+            description: "You are in a hurry, so you order a coffee to take away, check the price and pay in cash.",
+            sceneIntro: "You are in a hurry, so you order a coffee to take away, check the price and pay in cash.",
             location: "takeaway counter",
             userRole: "customer",
             register: "polite_service",
@@ -245,7 +245,9 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Norėčiau kavos, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Viso gero.", result: "wrong", feedback: "You have just arrived.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Norėčiau kavos, prašau.","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
+      ],
               },
               {
                 id: "step_2",
@@ -261,7 +263,9 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Išsinešti, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Čia, prašau.", result: "wrong", feedback: "The scene says you are taking it with you.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Išsinešti.","result":"acceptable","feedback":"Shorter, but still clear.","progresses":true},
+      ],
               },
               {
                 id: "step_3",
@@ -273,19 +277,23 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Kiek tai kainuoja?", result: "best", progresses: true },
                   { id: "b", text: "Ar toli?", result: "wrong", feedback: "You need the price, not the distance.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kur yra bankas?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_4",
                 speakerId: "barista",
                 speakerLabel: "Barista",
                 speakerText: "Keturi eurai. Grynaisiais ar kortele?",
-                sceneDirection: "You want to pay by card.",
-                learnerPrompt: "Choose card.",
+                sceneDirection: "You want to pay in cash.",
+                learnerPrompt: "Choose cash.",
                 options: [
-                  { id: "a", text: "Kortele, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Grynaisiais, prašau.", result: "wrong", feedback: "The scene says card.", progresses: false },
-                ],
+                  {"id":"a","text":"Kortele, prašau.","result":"wrong","feedback":"The scene says you want to use cash.","progresses":false},
+                  {"id":"b","text":"Grynaisiais, prašau.","result":"best","progresses":true},
+                
+        {"id":"z","text":"Grynaisiais.","result":"acceptable","feedback":"A shorter but clear payment answer.","progresses":true},
+      ],
               },
               {
                 id: "step_5",
@@ -297,7 +305,9 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Ačiū! Viso gero!", result: "best", progresses: true },
                   { id: "b", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
+      ],
               },
             ],
           },
@@ -412,7 +422,9 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Norėčiau kavos, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Viso gero.", result: "wrong", feedback: "You have just arrived.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Norėčiau kavos, prašau.","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
+      ],
               },
               {
                 id: "step_2",
@@ -424,7 +436,9 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Su pienu, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Be pieno, prašau.", result: "wrong", feedback: "The scene says you want milk.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Su pienu.","result":"acceptable","feedback":"Short and natural after the direct question.","progresses":true},
+      ],
               },
               {
                 id: "step_3",
@@ -437,7 +451,9 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Ne, be cukraus, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Taip, su cukrumi.", result: "wrong", feedback: "The scene says no sugar.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Be cukraus, prašau.","result":"acceptable","feedback":"The shorter answer is still natural.","progresses":true},
+      ],
               },
               {
                 id: "step_4",
@@ -449,19 +465,23 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Kiek tai kainuoja?", result: "best", progresses: true },
                   { id: "b", text: "Kur yra tualetas?", result: "wrong", feedback: "You are checking the price before paying.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kur yra bankas?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_5",
                 speakerId: "barista",
                 speakerLabel: "Barista",
                 speakerText: "Penki eurai. Grynaisiais ar kortele?",
-                sceneDirection: "You want to pay by card.",
-                learnerPrompt: "Choose card.",
+                sceneDirection: "You have both cash and a card, so either payment method is fine.",
+                learnerPrompt: "Choose how you want to pay.",
                 options: [
-                  { id: "a", text: "Kortele, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Grynaisiais, prašau.", result: "wrong", feedback: "The scene says card.", progresses: false },
-                ],
+                  {"id":"a","text":"Kortele, prašau.","result":"best","progresses":true},
+                  {"id":"b","text":"Grynaisiais, prašau.","result":"best","progresses":true},
+                
+        {"id":"z","text":"Kortele.","result":"acceptable","feedback":"A shorter but clear payment answer.","progresses":true},
+      ],
               },
               {
                 id: "step_6",
@@ -473,7 +493,9 @@ export default function createModule_4_2(profile = {}) {
                 options: [
                   { id: "a", text: "Ačiū labai! Viso gero.", result: "best", progresses: true },
                   { id: "b", text: "Dar vieną, prašau.", result: "wrong", feedback: "The transaction is finished.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
+      ],
               },
             ],
           },
@@ -596,6 +618,8 @@ export default function createModule_4_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Sąskaitą, prašau.","result":"acceptable","feedback":"A concise natural alternative.","progresses":true},
       ],
     },
     {
@@ -603,8 +627,8 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Žinoma. Grynaisiais ar kortele?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You want to pay in cash.",
+      learnerPrompt: "Choose cash.",
       help: {
         levels: [
           { sceneDirection: "The barista points to the cash tray and then the card terminal.", speakerText: "Kortele?" },
@@ -620,13 +644,9 @@ export default function createModule_4_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Kortele, prašau.",
-          textEn: "By card, please.",
-          result: "best",
-          progresses: true,
-        }
+        {"id":"b","text":"Kortele, prašau.","textEn":"By card, please.","result":"wrong","feedback":"The scene says you want to use cash.","progresses":false}
+      ,
+        {"id":"cash","text":"Grynaisiais, prašau.","result":"best","progresses":true},
       ],
     },
     {
@@ -780,6 +800,8 @@ export default function createModule_4_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Norėčiau kavos.","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
       ],
     },
     {
@@ -804,6 +826,8 @@ export default function createModule_4_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Čia.","result":"acceptable","feedback":"Shorter, but still clear.","progresses":true},
       ],
     },
     {
@@ -873,8 +897,8 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Grynaisiais ar kortele?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You have both cash and a card, so either payment method is fine.",
+      learnerPrompt: "Choose how you want to pay.",
       options: [
         {
           id: "a",
@@ -883,13 +907,9 @@ export default function createModule_4_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         },
-        {
-          id: "b",
-          text: "Kortele, prašau.",
-          textEn: "By card, please.",
-          result: "best",
-          progresses: true,
-        }
+        {"id":"b","text":"Kortele, prašau.","textEn":"By card, please.","result":"best","progresses":true}
+      ,
+        {"id":"cash","text":"Grynaisiais, prašau.","result":"best","progresses":true},
       ],
     },
     {
@@ -914,6 +934,8 @@ export default function createModule_4_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -1050,6 +1072,8 @@ export default function createModule_4_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Norėčiau arbatos, prašau.","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
       ],
     },
     {
@@ -1074,6 +1098,8 @@ export default function createModule_4_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Išsinešti.","result":"acceptable","feedback":"Shorter, but still clear.","progresses":true},
       ],
     },
     {
@@ -1129,6 +1155,8 @@ export default function createModule_4_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Grynaisiais.","result":"acceptable","feedback":"A shorter but clear payment answer.","progresses":true},
       ],
     },
     {

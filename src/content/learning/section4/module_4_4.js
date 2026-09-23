@@ -108,7 +108,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Taip, aš alkanas. O tu?", result: "best", progresses: true },
                   { id: "b", text: "Ne, ačiū.", result: "wrong", feedback: "The scene says you are hungry.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_2",
@@ -120,7 +122,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Aš ištroškęs. Noriu vandens.", result: "best", progresses: true },
                   { id: "b", text: "Užtenka.", result: "wrong", feedback: "You are describing what you need, not stopping a pour.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_3",
@@ -132,7 +136,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Puiku! Ačiū.", result: "best", progresses: true },
                   { id: "b", text: "Kur yra bankas?", result: "wrong", feedback: "He has already shown you the café.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is natural.","progresses":true},
+      ],
               },
             ],
           },
@@ -243,6 +249,8 @@ export default function createModule_4_4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
       ],
     },
     {
@@ -267,6 +275,8 @@ export default function createModule_4_4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
       ],
     },
     {
@@ -419,6 +429,8 @@ export default function createModule_4_4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
       ],
     },
     {
@@ -443,6 +455,8 @@ export default function createModule_4_4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
       ],
     },
     {
@@ -467,6 +481,8 @@ export default function createModule_4_4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -568,7 +584,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Mums dvi arbatas, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Man kavos ir tau arbatos, prašau.", result: "wrong", feedback: "Speaking to the server, tau would mean 'for you' to the server. The scene says both of you want tea.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Mums dvi arbatas, prašau.","result":"acceptable","feedback":"The greeting is optional once the context is clear.","progresses":true},
+      ],
               },
               {
                 id: "step_2",
@@ -580,19 +598,23 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Taip, prašau. Man vandens.", result: "best", progresses: true },
                   { id: "b", text: "Ne, ačiū.", result: "wrong", feedback: "You want water for yourself.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_3",
                 speakerId: "server",
                 speakerLabel: "Server",
                 speakerText: "Gerai. Dešimt eurų. Grynaisiais ar kortele?",
-                sceneDirection: "You want to pay by card.",
-                learnerPrompt: "Choose card.",
+                sceneDirection: "You want to pay in cash.",
+                learnerPrompt: "Choose cash.",
                 options: [
-                  { id: "a", text: "Kortele, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Grynaisiais, prašau.", result: "wrong", feedback: "The scene says card.", progresses: false },
-                ],
+                  {"id":"a","text":"Kortele, prašau.","result":"wrong","feedback":"The scene says you want to use cash.","progresses":false},
+                  {"id":"b","text":"Grynaisiais, prašau.","result":"best","progresses":true},
+                
+        {"id":"z","text":"Grynaisiais.","result":"acceptable","feedback":"A shorter but clear payment answer.","progresses":true},
+      ],
               },
               {
                 id: "step_4",
@@ -604,7 +626,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Ačiū labai! Viso gero.", result: "best", progresses: true },
                   { id: "b", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
+      ],
               },
             ],
           },
@@ -719,6 +743,8 @@ export default function createModule_4_4(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
       ],
     },
     {
@@ -743,6 +769,8 @@ export default function createModule_4_4(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -838,7 +866,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Taip! Eikime į kavinę.", result: "best", progresses: true },
                   { id: "b", text: "Viso gero.", result: "wrong", feedback: "You have just started making a plan.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_2",
@@ -850,7 +880,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Taip, prašau. Man kavos su pienu.", result: "best", progresses: true },
                   { id: "b", text: "Ne, ačiū.", result: "wrong", feedback: "The scene says you want coffee.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_3",
@@ -862,7 +894,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Taip! Pavalgykime.", result: "best", progresses: true },
                   { id: "b", text: "Gal vėliau?", result: "wrong", feedback: "The scene says you want to eat now.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_4",
@@ -874,7 +908,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Taip, labai skanu! Man patinka.", result: "best", progresses: true },
                   { id: "b", text: "Nelabai gerai.", result: "wrong", feedback: "The scene says you like it.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+      ],
               },
               {
                 id: "step_5",
@@ -886,7 +922,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Ne, ačiū. Užtenka.", result: "best", progresses: true },
                   { id: "b", text: "Dar vieną, prašau.", result: "wrong", feedback: "The scene says you have had enough.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Užtenka, ačiū.","result":"acceptable","feedback":"A natural equivalent.","progresses":true},
+      ],
               },
               {
                 id: "step_6",
@@ -898,7 +936,9 @@ export default function createModule_4_4(profile = {}) {
                 options: [
                   { id: "a", text: "Viso gero! Ačiū!", result: "best", progresses: true },
                   { id: "b", text: "Laba diena.", result: "wrong", feedback: "You are leaving, not greeting.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
+      ],
               },
             ],
           },

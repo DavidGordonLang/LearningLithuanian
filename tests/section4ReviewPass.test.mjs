@@ -91,6 +91,32 @@ test("4.2.1 café scenario offers multiple genuinely valid learner responses",()
   assert.equal(close.options.filter(o=>o.progresses!==false).length,3);
 });
 
+test("future Section 4 scenarios avoid two-button giveaways and vary payment method",()=>{
+  const units=[createModule42(),createModule43({speakerGender:"male"}),createModule44({speakerGender:"male"}),createCheckpoint4({speakerGender:"male"})];
+  for(const unit of units){
+    const lessons=unit.lessons||[{code:unit.code,blocks:unit.blocks||[]}];
+    for(const lesson of lessons){
+      if(lesson.code==="4.2.1") continue;
+      for(const scenario of (lesson.blocks||[]).filter(b=>b.type==="scenario_v2")){
+        for(const step of scenario.steps||[]) assert.ok(step.options.length>=3,`${lesson.code} ${scenario.id}/${step.id}`);
+      }
+    }
+  }
+  const m42=createModule42();
+  const cash=m42.lessons.find(l=>l.code==="4.2.2").blocks.find(b=>b.id==="s4m2l2_b5_v2").steps.find(s=>s.id==="step_4");
+  assert.equal(cash.options.find(o=>o.text==="Grynaisiais, prašau.").result,"best");
+  assert.equal(cash.options.find(o=>o.text==="Kortele, prašau.").result,"wrong");
+  const flex=m42.lessons.find(l=>l.code==="4.2.3").blocks.find(b=>b.id==="s4m2l3_b6_v2").steps.find(s=>s.id==="step_5");
+  assert.equal(flex.options.find(o=>o.text==="Grynaisiais, prašau.").result,"best");
+  assert.equal(flex.options.find(o=>o.text==="Kortele, prašau.").result,"best");
+});
+
+test("4.2.2 opening has more than one legitimate coffee-order response",()=>{
+  const m=createModule42();
+  const step=m.lessons.find(l=>l.code==="4.2.2").blocks.find(b=>b.id==="s4m2l2_b5_v2").steps[0];
+  assert.equal(step.options.find(o=>o.text==="Norėčiau kavos, prašau.").result,"acceptable");
+});
+
 test("Section 4 lesson 5 gives Norėčiau užsisakyti explicit pronunciation practice",()=>{
   const m=createModule42();
   const lesson=m.lessons.find(l=>l.code==="4.2.1");
