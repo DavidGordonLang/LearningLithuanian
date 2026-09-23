@@ -68,6 +68,16 @@ test("remaining Section 4 scenarios are cumulative and grounded",()=>{
   assert.ok(JSON.stringify(cp).includes("Ne, ačiū. Užtenka."));
 });
 
+test("Section 4 lesson 5 gives Norėčiau užsisakyti explicit pronunciation practice",()=>{
+  const m=createModule42();
+  const lesson=m.lessons.find(l=>l.code==="4.2.1");
+  const block=lesson.blocks.find(b=>b.id==="s4m2l1_b4b");
+  assert.ok(block);
+  assert.equal(block.type,"speak_self_check");
+  assert.equal(block.targetText,"Norėčiau užsisakyti");
+  assert.equal(block.audioText,"Norėčiau užsisakyti");
+});
+
 test("Section 4.2 scenarios reuse prior ordering and payment language without forward references",()=>{
   const m=createModule42();
   const l21=m.lessons.find(l=>l.code==="4.2.1").blocks.find(b=>b.id==="s4m2l1_b5_v2");

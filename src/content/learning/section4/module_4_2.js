@@ -72,6 +72,14 @@ export default function createModule_4_2(profile = {}) {
             audioText: "Norėčiau kavos",
           },
           {
+            id: "s4m2l1_b4b",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: I would like to order",
+            targetText: "Norėčiau užsisakyti",
+            audioText: "Norėčiau užsisakyti",
+          },
+          {
             id: "s4m2l1_b5_v2",
             type: "scenario_v2",
             title: "Drinks at a café",
