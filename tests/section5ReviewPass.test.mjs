@@ -36,6 +36,9 @@ test("Section 5 scenarios reinforce taught place and movement language without a
   const m1=createModule51();
   const l12=m1.lessons.find(l=>l.code==="5.1.2").blocks.find(b=>b.id==="s5m1l2_b6_v2");
   assert.equal(l12.steps.length,3);
+  const l11=m1.lessons.find(l=>l.code==="5.1.1").blocks.find(b=>b.id==="s5m1l1_b6_v2");
+  assert.equal(l11.steps[1].speakerText,"Bankas yra ten.");
+  assert.equal(l11.steps[1].supportText,"ten — there");
   assert.equal(l12.steps[1].speakerText,"Viešbutis yra ten.");
   assert.equal(l12.steps[2].speakerText,"Kavinė yra čia.");
   assert.equal(txt(m1).includes("Autobusų stotis yra ten."),false);
@@ -47,6 +50,8 @@ test("Section 5 scenarios reinforce taught place and movement language without a
   assert.equal(txt(m2).includes("Geležinkelio stotis"),false);
   assert.ok(txt(m2).includes("Traukinių stotis yra ten. Eikite tiesiai."));
   assert.equal(txt(m2).includes("čia pat"),false);
+  assert.equal(txt(m2).includes("netoli viešbučio"),false);
+  assert.ok(txt(m2).includes("Kavinė yra ten. Viešbutis yra netoli."));
   const recognition=m2.lessons.find(l=>l.code==="5.2.5").blocks.find(b=>b.id==="s5m2l5_b5_v2");
   assert.equal(recognition.steps[0].speakerText,"Laba diena!");
   assert.match(recognition.steps[0].sceneDirection,/hotel address/i);
@@ -94,6 +99,7 @@ test("Section 5 uses authored help and only narrow visible support for weakly in
    }
  }
  assert.deepEqual(visible,[
+   "ten — there",
    "geros kelionės — have a good journey",
    "geros kelionės — have a good journey",
  ]);
@@ -126,6 +132,27 @@ test("Section 5 keeps future place vocabulary out of 5.1 production",()=>{
   assert.ok(later.includes("autobusų stotis"));
   assert.ok(later.includes("traukinių stotis"));
   assert.ok(later.includes("vaistinė"));
+});
+
+test("5.3.3 practises only the in-forms taught in that lesson",()=>{
+  const m=createModule53();
+  const scenario=m.lessons.find(l=>l.code==="5.3.3").blocks.find(b=>b.id==="s5m3l3_b6_v2");
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Labas! Esu viešbutyje.");
+  assert.equal(scenario.steps[1].speakerText,"Aš esu kavinėje.");
+  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Gerai! Einu į kavinę.");
+  assert.equal(JSON.stringify(scenario).includes("stotyje"),false);
+});
+
+test("5.3 checkpoint match pairs contain taught or deliberately reviewed language",()=>{
+  const m=createModule53();
+  const cp=m.lessons.find(l=>l.code==="5.3.C");
+  const pairs=cp.blocks.find(b=>b.id==="s5m3c_b7").pairs.map(p=>p.lt);
+  for(const removed of ["Geros kelionės!","Iki pasimatymo.","prie stoties","Savaitę."]){
+    assert.equal(pairs.includes(removed),false,removed);
+  }
+  for(const expected of ["Aš išeinu iš viešbučio.","Kur mes einame?","Aš einu į vaistinę.","Ar toli?"]){
+    assert.ok(pairs.includes(expected),expected);
+  }
 });
 
 test("5.3.5 retrieves the in-form after an explicit time jump",()=>{

@@ -473,7 +473,7 @@ export default function createModule_5_2(profile = {}) {
       id: "step_2",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Kavinė yra ten, netoli viešbučio.",
+      speakerText: "Kavinė yra ten. Viešbutis yra netoli.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [

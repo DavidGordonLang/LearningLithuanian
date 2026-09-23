@@ -107,7 +107,8 @@ export default function createModule_5_1(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Bankas — va ten.",
+      speakerText: "Bankas yra ten.",
+      supportText: "ten — there",
       sceneDirection: "She points across the street at the bank.",
       learnerPrompt: "Acknowledge the answer.",
       options: [
