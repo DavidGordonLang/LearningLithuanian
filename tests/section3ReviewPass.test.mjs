@@ -102,6 +102,22 @@ test("3.4 gives enough and not-enough separate retrieval paths before consolidat
   assert.equal(JSON.stringify(m).includes("Dabar užteks"),false);
 });
 
+test("3.4 checkpoint grounds the extra-water choice before asking the learner to choose it",()=>{
+  const m=createModule34();
+  const cp=m.lessons.find(l=>l.code==="3.4.C");
+  const scenario=cp.blocks.find(b=>b.id==="s3m4c_b6_v2");
+  const extra=scenario.steps.find(s=>s.id==="step_3");
+  const close=scenario.steps.find(s=>s.id==="step_4");
+
+  assert.match(scenario.description,/one friend decides they would like some more water/i);
+  assert.match(extra.sceneDirection,/more water/i);
+  assert.equal(extra.learnerPrompt,"Ask for more water.");
+  assert.equal(extra.options.find(o=>o.result==="best").text,"Daugiau vandens, prašau.");
+  assert.match(close.sceneDirection,/everything your group wants/i);
+  assert.equal(close.learnerPrompt,"Say no thanks and that you have enough.");
+  assert.equal(close.options.find(o=>o.result==="best").text,"Ne, ačiū. Užtenka.");
+});
+
 test("3.4 checkpoint previews the untaught stiklinę word without translating the whole answer",()=>{
   const m=createModule34();
   const cp=m.lessons.find(l=>l.code==="3.4.C");

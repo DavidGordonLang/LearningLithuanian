@@ -1278,8 +1278,8 @@ export default function createModule_3_4(profile = {}) {
   id: "s3m4c_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You and two friends arrive at a restaurant. There are three of you; two want coffee and one wants a glass of water.",
-  sceneIntro: "You and two friends arrive at a restaurant. There are three of you; two want coffee and one wants a glass of water.",
+  description: "You and two friends arrive at a restaurant. There are three of you; two want coffee and one wants a glass of water. After the first order, one friend decides they would like some more water.",
+  sceneIntro: "You and two friends arrive at a restaurant. There are three of you; two want coffee and one wants a glass of water. After the first order, one friend decides they would like some more water.",
   location: "restaurant",
   userRole: "customer",
   register: "polite_service",
@@ -1368,8 +1368,8 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "server",
       speakerLabel: "Server",
       speakerText: "Prašom. Ar dar ko nors norėtumėte?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "One of your friends decides they would like some more water.",
+      learnerPrompt: "Ask for more water.",
       options: [
         {
           id: "a",
@@ -1398,8 +1398,8 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "server",
       speakerLabel: "Server",
       speakerText: "Žinoma. Ar dar ko nors norėtumėte?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      sceneDirection: "That is everything your group wants now.",
+      learnerPrompt: "Say no thanks and that you have enough.",
       options: [
         {
           id: "a",
