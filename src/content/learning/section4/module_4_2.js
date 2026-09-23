@@ -445,7 +445,6 @@ export default function createModule_4_2(profile = {}) {
                 speakerId: "barista",
                 speakerLabel: "Barista",
                 speakerText: "Ar su cukrumi?",
-                supportText: "cukrumi — with sugar",
                 sceneDirection: "You do not want sugar.",
                 learnerPrompt: "Say without sugar.",
                 options: [

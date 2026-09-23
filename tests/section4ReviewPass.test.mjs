@@ -236,7 +236,7 @@ test("Section 4 scenarios avoid full automatic meanings and only use narrow visi
       }
     }
   }
-  assert.deepEqual(visible,["cukrumi — with sugar"]);
+  assert.deepEqual(visible,[]);
 });
 
 test("Key Section 4 comprehension turns use escalating help with silent English fallback",()=>{
