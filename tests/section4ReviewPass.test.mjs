@@ -21,6 +21,28 @@ test("Section 4 applies reviewed service and restaurant wording",()=>{
   assert.ok(s.includes("Kuo galėčiau") || true);
 });
 
+test("4.1.1 uses new food vocabulary inside a cumulative café scenario",()=>{
+  const m=createModule41();
+  const lesson=m.lessons.find(l=>l.code==="4.1.1");
+  const learn=lesson.blocks.find(b=>b.id==="s4m1l1_b1");
+  const scenario=lesson.blocks.find(b=>b.id==="s4m1l1_b5_v2");
+
+  for(const phrase of ["Noriu sriubos.","Noriu torto.","Noriu ledų."]){
+    assert.ok(learn.items.some(item=>item.lt===phrase),phrase);
+  }
+  assert.equal(scenario.steps.length,5);
+  assert.equal(scenario.steps[0].speakerText,"Laba diena! Ko norėtumėte?");
+  assert.equal(scenario.steps[0].options.filter(o=>o.result==="best").length,3);
+  assert.ok(scenario.steps[0].options.some(o=>o.text.includes("Noriu sriubos")));
+  assert.ok(scenario.steps[0].options.some(o=>o.text.includes("Noriu torto")));
+  assert.ok(scenario.steps[0].options.some(o=>o.text.includes("Noriu ledų")));
+  assert.equal(scenario.steps[1].speakerText,"Žinoma. Ar dar ko nors?");
+  assert.ok(JSON.stringify(scenario).includes("Noriu vandens"));
+  assert.ok(JSON.stringify(scenario).includes("Kiek tai kainuoja?"));
+  assert.ok(JSON.stringify(scenario).includes("Ar galima mokėti kortele?"));
+  assert.ok(JSON.stringify(scenario).includes("Ačiū labai! Viso gero."));
+});
+
 test("Restaurant problem language uses užsisakyti and full service checks",()=>{
   const m=createModule43();
   const s=text(m);
