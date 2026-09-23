@@ -698,7 +698,7 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Kavinėje. Iki!",
-      speakerTextEn: "In the café. See you!",
+      supportText: "In the café. See you!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
