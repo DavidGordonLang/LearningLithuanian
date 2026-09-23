@@ -217,6 +217,29 @@ test("4.3.4 tests replacement language with a problem in the served item, not a 
   assert.equal(scenario.steps.length,4);
 });
 
+test("4.3.5 teaches too cold through a realistic replacement scenario",()=>{
+  const m=createModule43({speakerGender:"male"});
+  const lesson=m.lessons.find(l=>l.code==="4.3.5");
+  const learn=lesson.blocks.find(b=>b.id==="s4m3l5_b1");
+  const listen=lesson.blocks.find(b=>b.id==="s4m3l5_b2");
+  const speak=lesson.blocks.find(b=>b.id==="s4m3l5_b4");
+  const scenario=lesson.blocks.find(b=>b.id==="s4m3l5_b5_v2");
+
+  assert.equal(learn.items[0].lt,"Per šalta.");
+  assert.equal(listen.prompt.text,"Per šalta.");
+  assert.equal(speak.targetText,"Per šalta");
+  assert.match(scenario.description,/too cold/i);
+  assert.equal(scenario.description.includes("too hot"),false);
+  assert.match(scenario.steps[1].sceneDirection,/too cold/i);
+  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Nelabai — per šalta. Ar galite pakeisti?");
+  assert.equal(scenario.steps[1].options.find(o=>o.text==="Nelabai — per šalta.").result,"acceptable");
+
+  const checkpoint=m.lessons.find(l=>l.code==="4.3.C");
+  const cold=checkpoint.blocks.find(b=>b.id==="s4m3c_b5");
+  assert.match(cold.prompt.text,/too cold/i);
+  assert.equal(cold.options.find(o=>o.isCorrect).text,"Per šalta.");
+});
+
 test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
   const m=createModule43({speakerGender:"male"});
   const l31=m.lessons.find(l=>l.code==="4.3.1").blocks.find(b=>b.id==="s4m3l1_b5_v2");

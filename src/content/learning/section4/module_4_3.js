@@ -100,8 +100,8 @@ export default function createModule_4_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena! Ko norėtumėte?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "The coffee is noticeably cold when it arrives.",
+      learnerPrompt: "Accept the coffee for now.",
       options: [
         {
           id: "a",
@@ -815,19 +815,19 @@ export default function createModule_4_3(profile = {}) {
         ],
       },
 
-      // ── Lesson 5 — Too Hot / Too Cold / Not Good ──────────────────────────────
+      // ── Lesson 5 — Too Cold / Too Hot / Not Good ──────────────────────────────
       {
         id: "section_4_module_3_lesson_5",
         code: "4.3.5",
-        title: "Too Hot / Too Cold / Not Good",
+        title: "Too Cold / Too Hot / Not Good",
         purpose: "Give the learner simple reaction language — practical complaints without escalation.",
         supportLevel: "low",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Per… means 'too…' and goes before describing words: per karšta (too hot), per šalta (too cold), per brangu (too expensive — you already know this one from Section 3). Nelabai gerai is softer than 'not good' and sounds more natural.",
+          pattern: "Per… means 'too…' and goes before describing words: per šalta (too cold), per karšta (too hot), per brangu (too expensive — you already know this one from Section 3). Nelabai gerai is softer than 'not good' and sounds more natural.",
           usage: [
-            "Per karšta — too hot",
             "Per šalta — too cold",
+            "Per karšta — too hot",
             "Nelabai gerai — not very good",
             "Labai gerai — very good",
             "Gerai — OK / fine (already known)",
@@ -839,8 +839,8 @@ export default function createModule_4_3(profile = {}) {
             type: "learn",
             title: "Reactions to food and drink",
             items: [
-              { id: "rx1", lt: "Per karšta.", en: "Too hot.", audioText: "Per karšta", saveable: true, core: true },
               { id: "rx2", lt: "Per šalta.", en: "Too cold.", audioText: "Per šalta", saveable: true, core: true },
+              { id: "rx1", lt: "Per karšta.", en: "Too hot.", audioText: "Per karšta", saveable: true, core: true },
               { id: "rx3", lt: "Nelabai gerai.", en: "Not very good.", audioText: "Nelabai gerai", saveable: true, core: true },
               { id: "rx4", lt: "Labai gerai.", en: "Very good.", audioText: "Labai gerai", saveable: true, core: true },
             ],
@@ -849,11 +849,11 @@ export default function createModule_4_3(profile = {}) {
             id: "s4m3l5_b2",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Per karšta.", audioText: "Per karšta" },
+            prompt: { text: "Per šalta.", audioText: "Per šalta" },
             options: [
-              { id: "a", text: "Too cold.", isCorrect: false },
+              { id: "a", text: "Too cold.", isCorrect: true },
               { id: "b", text: "Not very good.", isCorrect: false },
-              { id: "c", text: "Too hot.", isCorrect: true },
+              { id: "c", text: "Too hot.", isCorrect: false },
             ],
           },
           {
@@ -872,20 +872,20 @@ export default function createModule_4_3(profile = {}) {
             id: "s4m3l5_b4",
             type: "speak_self_check",
             title: "Say it out loud",
-            prompt: "Describe: too hot",
-            targetText: "Per karšta",
-            audioText: "Per karšta",
+            prompt: "Describe: too cold",
+            targetText: "Per šalta",
+            audioText: "Per šalta",
           },
                     {
   id: "s4m3l5_b5_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "Your drink arrives and it's too hot. Staff replace it. Then you pay.",
-  sceneIntro: "Your drink arrives and it's too hot. Staff replace it. Then you pay.",
+  description: "Your coffee arrives too cold. Staff replace it. Then you pay.",
+  sceneIntro: "Your coffee arrives too cold. Staff replace it. Then you pay.",
   location: "real-life exchange",
   userRole: "learner",
   register: "polite_neutral",
-  goal: "Your drink arrives and it's too hot. Staff replace it. Then you pay.",
+  goal: "Your coffee arrives too cold. Staff replace it. Then you pay.",
   focus: ["ordering","payment"],
   participants: [
     {
@@ -939,29 +939,37 @@ export default function createModule_4_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Ar viskas gerai?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "The coffee is too cold to enjoy.",
+      learnerPrompt: "Explain that it is too cold and ask if it can be changed.",
       options: [
         {
           id: "a",
           text: "Taip, labai gerai!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The coffee is too cold, so saying everything is very good does not fit.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Nelabai — per karšta.",
-          textEn: "Not really — too hot.",
+          text: "Nelabai — per šalta. Ar galite pakeisti?",
+          textEn: "Not really — too cold. Can you change it?",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
+          text: "Nelabai — per šalta.",
+          textEn: "Not really — too cold.",
+          result: "acceptable",
+          feedback: "This explains the problem clearly. Asking Ar galite pakeisti? makes the replacement request explicit.",
+          progresses: true,
+        },
+        {
+          id: "d",
           text: "Ar galite pakeisti?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          result: "acceptable",
+          feedback: "A natural replacement request, though saying per šalta explains why.",
+          progresses: true,
         }
       ],
     },
@@ -970,8 +978,8 @@ export default function createModule_4_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Atsiprašau. Minutėlę.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rasa takes the cold coffee away to replace it.",
+      learnerPrompt: "Acknowledge politely.",
       options: [
         {
           id: "a",
@@ -996,12 +1004,12 @@ export default function createModule_4_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Prašom. Ar dabar gerai?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "The replacement coffee is now at a normal temperature.",
+      learnerPrompt: "Confirm that it is fine now.",
       options: [
         {
           id: "a",
-          text: "Ne, per šalta.",
+          text: "Ne, per karšta.",
           result: "wrong",
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
@@ -1112,13 +1120,13 @@ export default function createModule_4_3(profile = {}) {
             id: "s4m3c_b5",
             type: "best_response",
             title: "Choose the best response",
-            prompt: { text: "Your coffee is too hot. What do you say?" },
+            prompt: { text: "Your coffee is too cold. What do you say?" },
             options: [
               { id: "a", text: "Nelabai gerai.", isCorrect: false },
-              { id: "b", text: "Per karšta.", isCorrect: true },
-              { id: "c", text: "Nenoriu šito.", isCorrect: false },
+              { id: "b", text: "Per šalta.", isCorrect: true },
+              { id: "c", text: "Per karšta.", isCorrect: false },
             ],
-            feedback: { correct: "Per karšta — Too hot. Direct and clear." },
+            feedback: { correct: "Per šalta — Too cold. Direct and clear." },
           },
           {
             id: "s4m3c_b6",
