@@ -197,6 +197,23 @@ test("4.3.1 does not re-present already reviewed sugar and milk phrases as new v
   assert.ok(lessonText.includes("Ar su cukrumi?"));
 });
 
+test("4.3.4 wrong-drink practice explicitly states what the learner ordered",()=>{
+  const m=createModule43({speakerGender:"male"});
+  const lesson=m.lessons.find(l=>l.code==="4.3.4");
+  const response=lesson.blocks.find(b=>b.id==="s4m3l4_b4");
+  const scenario=lesson.blocks.find(b=>b.id==="s4m3l4_b5_v2");
+
+  assert.match(response.prompt.text,/ordered coffee with milk/i);
+  assert.match(response.prompt.text,/brought tea with lemon/i);
+  assert.equal(response.options.find(o=>o.isCorrect).text,"Ar galite atnešti kitą?");
+  assert.equal(response.options.some(o=>o.text==="Norėčiau kavos."),false);
+
+  assert.match(scenario.description,/ordered coffee with milk/i);
+  assert.match(scenario.description,/tea with lemon/i);
+  assert.match(scenario.steps[0].sceneDirection,/ordered coffee with milk/i);
+  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Norėčiau kavos su pienu.");
+});
+
 test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
   const m=createModule43({speakerGender:"male"});
   const l31=m.lessons.find(l=>l.code==="4.3.1").blocks.find(b=>b.id==="s4m3l1_b5_v2");
