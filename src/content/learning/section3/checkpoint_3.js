@@ -303,6 +303,7 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Prašom. Viso gero ir geros kelionės!",
+      supportText: "geros kelionės — have a good journey",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       help: {

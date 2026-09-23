@@ -49,6 +49,15 @@ test("Section 3 distinguishes clock time from scheduled at-time forms",()=>{
   assert.ok(scheduled.notes.usage.some(line=>/penkta valanda.*penktą valandą/.test(line)));
 });
 
+test("Section 3 travel checkpoint scaffolds the untaught geros kelionės phrase",()=>{
+  const cp=createCheckpoint3();
+  const scenario=cp.blocks.find(b=>b.id==="s3c_b9_v2");
+  const closing=scenario.steps.find(s=>s.id==="step_5");
+
+  assert.equal(closing.speakerText,"Prašom. Viso gero ir geros kelionės!");
+  assert.equal(closing.supportText,"geros kelionės — have a good journey");
+});
+
 test("Section 3 quantity examples keep service context coherent",()=>{
   const m=createModule34();
   const s=allText(m);
