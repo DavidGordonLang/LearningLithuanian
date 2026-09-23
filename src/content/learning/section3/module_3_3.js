@@ -698,20 +698,9 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Kavinėje. Iki!",
+      speakerTextEn: "In the café. See you!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
-      help: {
-        levels: [
-          {
-            sceneDirection: "Kavinėje means ‘in the café’ — kavinė is the café word you already know.",
-          },
-          {
-            speakerText: "In the café. See you!",
-            spokenLanguage: "en",
-            audio: false,
-          },
-        ],
-      },
       options: [
         {
           id: "a",
