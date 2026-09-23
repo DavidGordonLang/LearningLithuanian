@@ -68,6 +68,29 @@ test("remaining Section 4 scenarios are cumulative and grounded",()=>{
   assert.ok(JSON.stringify(cp).includes("Ne, ačiū. Užtenka."));
 });
 
+test("4.2.1 café scenario offers multiple genuinely valid learner responses",()=>{
+  const m=createModule42();
+  const scenario=m.lessons.find(l=>l.code==="4.2.1").blocks.find(b=>b.id==="s4m2l1_b5_v2");
+
+  const order=scenario.steps.find(s=>s.id==="step_1");
+  assert.equal(order.options.length,4);
+  assert.equal(order.options.find(o=>o.text==="Kavos, prašau.").result,"acceptable");
+  assert.equal(order.options.find(o=>o.text==="Laba diena! Noriu kavos.").result,"awkward");
+  assert.equal(order.options.filter(o=>o.progresses!==false).length,3);
+
+  const water=scenario.steps.find(s=>s.id==="step_2");
+  assert.equal(water.options.length,4);
+  assert.equal(water.options.filter(o=>o.result==="best").length,2);
+  assert.equal(water.options.find(o=>o.text==="Noriu vandens.").result,"awkward");
+
+  const payment=scenario.steps.find(s=>s.id==="step_4");
+  assert.equal(payment.options.find(o=>o.text==="Ar galima mokėti kortele?").result,"acceptable");
+
+  const close=scenario.steps.find(s=>s.id==="step_5");
+  assert.equal(close.options.length,4);
+  assert.equal(close.options.filter(o=>o.progresses!==false).length,3);
+});
+
 test("Section 4 lesson 5 gives Norėčiau užsisakyti explicit pronunciation practice",()=>{
   const m=createModule42();
   const lesson=m.lessons.find(l=>l.code==="4.2.1");

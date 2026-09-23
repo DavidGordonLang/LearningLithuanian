@@ -101,7 +101,9 @@ export default function createModule_4_2(profile = {}) {
                 learnerPrompt: "Order coffee politely.",
                 options: [
                   { id: "a", text: "Laba diena! Norėčiau kavos, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Viso gero.", result: "wrong", feedback: "You are ordering, not leaving.", progresses: false },
+                  { id: "b", text: "Kavos, prašau.", result: "acceptable", feedback: "This is short but natural and polite. Norėčiau kavos, prašau is the fuller polite form.", progresses: true },
+                  { id: "c", text: "Laba diena! Noriu kavos.", result: "awkward", feedback: "Understandable, but Noriu is more direct in a service setting. Norėčiau is the more natural polite choice here.", betterAnswer: "Laba diena! Norėčiau kavos, prašau.", progresses: true },
+                  { id: "d", text: "Viso gero.", result: "wrong", feedback: "You are ordering, not leaving.", progresses: false },
                 ],
               },
               {
@@ -113,7 +115,9 @@ export default function createModule_4_2(profile = {}) {
                 learnerPrompt: "Ask for water.",
                 options: [
                   { id: "a", text: "Vandens, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Ne, ačiū.", result: "wrong", feedback: "The scene says you also want water.", progresses: false },
+                  { id: "b", text: "Taip, norėčiau vandens, prašau.", result: "best", progresses: true },
+                  { id: "c", text: "Noriu vandens.", result: "awkward", feedback: "Understandable, but it is more direct than the polite forms you have learned for service situations.", betterAnswer: "Vandens, prašau.", progresses: true },
+                  { id: "d", text: "Ne, ačiū.", result: "wrong", feedback: "The scene says you also want water.", progresses: false },
                 ],
               },
               {
@@ -137,7 +141,8 @@ export default function createModule_4_2(profile = {}) {
                 learnerPrompt: "Choose card.",
                 options: [
                   { id: "a", text: "Kortele, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Grynaisiais, prašau.", result: "wrong", feedback: "The scene says you want to use your card.", progresses: false },
+                  { id: "b", text: "Ar galima mokėti kortele?", result: "acceptable", feedback: "This is a little more explicit than necessary because Ieva already asked cash or card, but it is still natural and polite.", progresses: true },
+                  { id: "c", text: "Grynaisiais, prašau.", result: "wrong", feedback: "The scene says you want to use your card.", progresses: false },
                 ],
               },
               {
@@ -149,7 +154,9 @@ export default function createModule_4_2(profile = {}) {
                 learnerPrompt: "Close naturally.",
                 options: [
                   { id: "a", text: "Ačiū labai! Viso gero.", result: "best", progresses: true },
-                  { id: "b", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology.", progresses: false },
+                  { id: "b", text: "Ačiū!", result: "acceptable", feedback: "A simple thank-you works naturally here, though adding Viso gero gives the exchange a clearer close.", progresses: true },
+                  { id: "c", text: "Viso gero!", result: "acceptable", feedback: "This closes the exchange naturally. Adding Ačiū is a little warmer.", progresses: true },
+                  { id: "d", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology.", progresses: false },
                 ],
               },
             ],
