@@ -699,7 +699,7 @@ export default function createModule_4_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Ne, ačiū. Dabar užteks.",
+          text: "Ne, ačiū. Užtenka.",
           textEn: "No, thank you. That's enough.",
           result: "best",
           progresses: true,
@@ -934,7 +934,7 @@ export default function createModule_4_1(profile = {}) {
         },
         {
           id: "b",
-          text: "Ne, ačiū. Dabar užteks.",
+          text: "Ne, ačiū. Užtenka.",
           textEn: "No, thank you. That's enough.",
           result: "best",
           progresses: true,

@@ -56,7 +56,7 @@ test("Section 3 quantity examples keep service context coherent",()=>{
   assert.ok(s.includes("Taip, dar ir vandens, prašau."));
   assert.ok(s.includes("Ar dar ko nors norėtumėte?"));
 
-  const cafe=m.lessons.find(l=>l.code==="3.4.5").blocks.find(b=>b.id==="s3m4l5_b6_v2");
+  const cafe=m.lessons.find(l=>l.code==="3.4.6").blocks.find(b=>b.id==="s3m4l6_b6_v2");
   assert.match(cafe.description,/You and a friend/);
   assert.match(cafe.description,/one coffee and two teas/i);
 
@@ -66,18 +66,50 @@ test("Section 3 quantity examples keep service context coherent",()=>{
 });
 
 
-test("Ar užtenka stays a sufficiency check and customer order quantities use request forms",()=>{
+test("3.4 gives enough and not-enough separate retrieval paths before consolidation",()=>{
   const m=createModule34();
-  const enough=m.lessons.find(l=>l.code==="3.4.4");
-  assert.match(enough.notes.pattern,/should not be treated as the general service question 'Is that all\?'/);
-  const enoughScenario=enough.blocks.find(b=>b.id==="s3m4l4_b6_v2");
-  assert.match(enoughScenario.steps[0].sceneDirection,/pouring water/);
-  assert.equal(enoughScenario.steps[0].help.levels.at(-1).audio,false);
+  assert.equal(m.lessonCount,6);
 
-  const quantities=m.lessons.find(l=>l.code==="3.4.5");
-  assert.ok(JSON.stringify(quantities).includes("Vieną kavą ir dvi arbatas, prašau"));
+  const enough=m.lessons.find(l=>l.code==="3.4.4");
+  const enoughLearn=enough.blocks.find(b=>b.id==="s3m4l4_b1");
+  const enoughScenario=enough.blocks.find(b=>b.id==="s3m4l4_b7_v2");
+  assert.equal(enough.title,"Enough? / That's Enough");
+  assert.ok(enoughLearn.items.some(item=>item.lt==="Ar užtenka?"));
+  assert.ok(enoughLearn.items.some(item=>item.lt==="Užtenka"));
+  assert.equal(enoughLearn.items.some(item=>item.lt==="Nepakanka"),false);
+  assert.equal(enoughScenario.steps.length,3);
+  assert.match(enoughScenario.steps[0].sceneDirection,/want more water/i);
+  assert.equal(enoughScenario.steps[0].options.find(o=>o.result==="best").text,"Daugiau vandens, prašau.");
+  assert.match(enoughScenario.steps[1].sceneDirection,/full enough/i);
+  assert.equal(enoughScenario.steps[1].options.find(o=>o.result==="best").text,"Taip, užtenka. Ačiū!");
+
+  const shortage=m.lessons.find(l=>l.code==="3.4.5");
+  const shortageLearn=shortage.blocks.find(b=>b.id==="s3m4l5_b1");
+  assert.equal(shortage.title,"Not Enough");
+  assert.ok(shortageLearn.items.some(item=>item.lt==="Nepakanka"));
+  assert.ok(shortageLearn.items.some(item=>item.lt==="Nepakanka laiko"));
+  assert.ok(shortageLearn.items.some(item=>item.lt==="Nepakanka pinigų"));
+  assert.equal(shortageLearn.items.find(item=>item.lt==="Pakanka").core,false);
+  assert.ok(shortage.blocks.some(b=>b.id==="s3m4l5_b10_v2"));
+  assert.ok(shortage.blocks.some(b=>b.id==="s3m4l5_b11_v2"));
+  assert.ok(JSON.stringify(shortage).includes("Ne, nepakanka laiko."));
+  assert.ok(JSON.stringify(shortage).includes("Ne, nepakanka pinigų."));
+
+  const consolidation=m.lessons.find(l=>l.code==="3.4.6");
+  assert.equal(consolidation.title,"Quantity in Action");
+  assert.ok(JSON.stringify(consolidation).includes("Vieną kavą ir dvi arbatas, prašau"));
+  assert.ok(JSON.stringify(consolidation).includes("Ne, ačiū. Užtenka."));
+  assert.equal(JSON.stringify(m).includes("Dabar užteks"),false);
 });
 
+test("3.4 checkpoint explicitly retrieves both shortage contexts",()=>{
+  const m=createModule34();
+  const cp=m.lessons.find(l=>l.code==="3.4.C");
+  const time=cp.blocks.find(b=>b.id==="s3m4c_b5a");
+  const money=cp.blocks.find(b=>b.id==="s3m4c_b5b");
+  assert.equal(time.options.find(o=>o.isCorrect).text,"Nepakanka laiko");
+  assert.equal(money.options.find(o=>o.isCorrect).text,"Nepakanka pinigų");
+});
 
 test("Section 3 explains changing number forms in plain-language layers",()=>{
   const m31=createModule31();
@@ -205,7 +237,7 @@ test("Section 3 quantity scenarios establish the exact quantity before asking fo
   assert.equal(ticket.steps[0].learnerPrompt,"Tell Rasa that you need two tickets.");
 
   const m34=createModule34();
-  const cafe=m34.lessons.find(l=>l.code==="3.4.5").blocks.find(b=>b.id==="s3m4l5_b6_v2");
+  const cafe=m34.lessons.find(l=>l.code==="3.4.6").blocks.find(b=>b.id==="s3m4l6_b6_v2");
   assert.match(cafe.description,/one coffee and two teas/i);
   assert.match(cafe.steps[1].sceneDirection,/one coffee and two teas/i);
 
