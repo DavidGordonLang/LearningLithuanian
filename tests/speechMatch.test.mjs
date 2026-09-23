@@ -43,14 +43,47 @@ test("speech matching allows one harmless extra token only when the target remai
 });
 
 
-test("speech matching accepts Speechmatics digit formatting for single Lithuanian number targets", () => {
+const LT_TEST_ONES = ["nulis", "vienas", "du", "trys", "keturi", "penki", "šeši", "septyni", "aštuoni", "devyni"];
+const LT_TEST_TEENS = ["dešimt", "vienuolika", "dvylika", "trylika", "keturiolika", "penkiolika", "šešiolika", "septyniolika", "aštuoniolika", "devyniolika"];
+const LT_TEST_TENS = ["", "", "dvidešimt", "trisdešimt", "keturiasdešimt", "penkiasdešimt", "šešiasdešimt", "septyniasdešimt", "aštuoniasdešimt", "devyniasdešimt"];
+
+function ltCardinalForTest(value) {
+  if (value < 10) return LT_TEST_ONES[value];
+  if (value < 20) return LT_TEST_TEENS[value - 10];
+  if (value === 100) return "šimtas";
+  const tens = Math.floor(value / 10);
+  const ones = value % 10;
+  return ones ? `${LT_TEST_TENS[tens]} ${LT_TEST_ONES[ones]}` : LT_TEST_TENS[tens];
+}
+
+test("speech matching accepts digit formatting for every taught cardinal from 0 to 100", () => {
+  for (let value = 0; value <= 100; value += 1) {
+    assert.equal(
+      phraseMatchesSpeech(String(value), ltCardinalForTest(value)),
+      true,
+      `numeric STT formatting should match Lithuanian cardinal ${value}`
+    );
+  }
+});
+
+test("speech matching accepts Speechmatics digit formatting for Lithuanian numbers", () => {
   assert.equal(phraseMatchesSpeech("30.", "trisdešimt"), true);
   assert.equal(phraseMatchesSpeech("18", "aštuoniolika"), true);
   assert.equal(phraseMatchesSpeech("100", "šimtas"), true);
   assert.equal(phraseMatchesSpeech("13", "trisdešimt"), false);
 });
 
-test("numeric transcript equivalence does not loosen ordinary phrase matching", () => {
-  assert.equal(phraseMatchesSpeech("30", "Tai kainuoja trisdešimt eurų"), false);
+test("speech matching accepts digit formatting for numbers embedded in full phrases", () => {
+  assert.equal(phraseMatchesSpeech("Man 45 metų.", "Man keturiasdešimt penki metų"), true);
+  assert.equal(phraseMatchesSpeech("Tai kainuoja 30 eurų.", "Tai kainuoja trisdešimt eurų"), true);
+  assert.equal(phraseMatchesSpeech("Susitinkame 6 valandą.", "Susitinkame šeštą valandą"), true);
+  assert.equal(phraseMatchesSpeech("Man reikia 2 bilietų.", "Man reikia dviejų bilietų"), true);
+  assert.equal(phraseMatchesSpeech("2 kavas, prašau.", "Dvi kavas, prašau"), true);
+});
+
+test("numeric transcript equivalence rejects the wrong number and does not loosen word-form grammar", () => {
+  assert.equal(phraseMatchesSpeech("Man 44 metų.", "Man keturiasdešimt penki metų"), false);
+  assert.equal(phraseMatchesSpeech("Tai kainuoja 13 eurų.", "Tai kainuoja trisdešimt eurų"), false);
   assert.equal(phraseMatchesSpeech("30 vandens", "Noriu vandens"), false);
+  assert.equal(phraseMatchesSpeech("du kavas", "Dvi kavas"), false);
 });

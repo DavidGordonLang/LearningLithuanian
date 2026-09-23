@@ -1,14 +1,17 @@
-const LITHUANIAN_CARDINAL_VALUES = new Map([
+const LITHUANIAN_CARDINAL_UNIT_VALUES = new Map([
   ["nulis", 0],
-  ["vienas", 1],
-  ["du", 2],
-  ["trys", 3],
-  ["keturi", 4],
-  ["penki", 5],
-  ["sesi", 6],
-  ["septyni", 7],
-  ["astuoni", 8],
-  ["devyni", 9],
+  ["vienas", 1], ["viena", 1], ["vieno", 1], ["vienos", 1],
+  ["du", 2], ["dvi", 2], ["dvieju", 2], ["dviese", 2],
+  ["trys", 3], ["tris", 3], ["triju", 3],
+  ["keturi", 4], ["keturias", 4], ["keturis", 4], ["keturiu", 4],
+  ["penki", 5], ["penkias", 5], ["penkis", 5], ["penkiu", 5],
+  ["sesi", 6], ["sesias", 6], ["sesis", 6], ["sesiu", 6],
+  ["septyni", 7], ["septynias", 7], ["septynis", 7], ["septyniu", 7],
+  ["astuoni", 8], ["astuonias", 8], ["astuonis", 8], ["astuoniu", 8],
+  ["devyni", 9], ["devynias", 9], ["devynis", 9], ["devyniu", 9],
+]);
+
+const LITHUANIAN_CARDINAL_FIXED_VALUES = new Map([
   ["desimt", 10],
   ["vienuolika", 11],
   ["dvylika", 12],
@@ -30,11 +33,59 @@ const LITHUANIAN_CARDINAL_VALUES = new Map([
   ["simtas", 100],
 ]);
 
-function singleCardinalMatchesNumericTranscript(heard, expected) {
-  if (!/^\d+$/.test(heard) || expected.includes(" ")) return false;
-  const expectedValue = LITHUANIAN_CARDINAL_VALUES.get(expected);
-  if (expectedValue == null) return false;
-  return Number(heard) === expectedValue;
+const LITHUANIAN_CLOCK_NUMBER_VALUES = new Map([
+  ["pirma", 1],
+  ["antra", 2],
+  ["trecia", 3],
+  ["ketvirta", 4],
+  ["penkta", 5],
+  ["sesta", 6],
+  ["septinta", 7],
+  ["astunta", 8],
+  ["devinta", 9],
+  ["desimta", 10],
+]);
+
+function parseLithuanianNumberAt(words, index) {
+  const word = words[index];
+  if (!word) return null;
+
+  const clockValue = LITHUANIAN_CLOCK_NUMBER_VALUES.get(word);
+  if (clockValue != null) return { value: clockValue, length: 1 };
+
+  const fixedValue = LITHUANIAN_CARDINAL_FIXED_VALUES.get(word);
+  if (fixedValue != null) {
+    if (fixedValue >= 20 && fixedValue < 100 && fixedValue % 10 === 0) {
+      const nextUnit = LITHUANIAN_CARDINAL_UNIT_VALUES.get(words[index + 1]);
+      if (nextUnit != null && nextUnit > 0) {
+        return { value: fixedValue + nextUnit, length: 2 };
+      }
+    }
+    return { value: fixedValue, length: 1 };
+  }
+
+  const unitValue = LITHUANIAN_CARDINAL_UNIT_VALUES.get(word);
+  if (unitValue != null) return { value: unitValue, length: 1 };
+
+  return null;
+}
+
+function normaliseExpectedNumbersForNumericTranscript(expected) {
+  const words = expected.split(" ").filter(Boolean);
+  const out = [];
+
+  for (let index = 0; index < words.length;) {
+    const parsed = parseLithuanianNumberAt(words, index);
+    if (!parsed) {
+      out.push(words[index]);
+      index += 1;
+      continue;
+    }
+    out.push(String(parsed.value));
+    index += parsed.length;
+  }
+
+  return out.join(" ");
 }
 
 export function normaliseSpeechForMatch(value) {
@@ -78,12 +129,16 @@ export function phraseMatchesSpeech(captured, target) {
   if (!heard || !expected) return false;
   if (heard === expected) return true;
 
-  // Speechmatics can render a clearly spoken cardinal as written digits
-  // (for example trisdešimt -> "30"). For a single taught number target,
-  // treat that formatting change as equivalent without loosening phrase matching.
-  if (singleCardinalMatchesNumericTranscript(heard, expected)) return true;
+  // Speechmatics can render spoken Lithuanian numbers as written digits, including
+  // inside a longer phrase (for example "Man keturiasdešimt penki metų" -> "Man 45 metų").
+  // Only canonicalise the expected side when the transcript actually contains digits.
+  // This preserves grammatical distinctions such as du vs dvi when Speechmatics returns words.
+  const expectedForMatch = /(?:^|\s)\d+(?:\s|$)/.test(heard)
+    ? normaliseExpectedNumbersForNumericTranscript(expected)
+    : expected;
+  if (heard === expectedForMatch) return true;
 
-  const targetWords = expected.split(" ").filter(Boolean);
+  const targetWords = expectedForMatch.split(" ").filter(Boolean);
   const heardWords = heard.split(" ").filter(Boolean);
   if (!targetWords.length || !heardWords.length) return false;
 
