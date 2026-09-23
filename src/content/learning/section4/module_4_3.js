@@ -159,9 +159,9 @@ export default function createModule_4_3(profile = {}) {
       id: "step_3",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Prašom. Ar norite šio pyrago?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Ar norėtumėte šito?",
+      sceneDirection: "The server points to a slice of cake beside your tea.",
+      learnerPrompt: "Decline it politely.",
       options: [
         {
           id: "a",
@@ -557,9 +557,9 @@ export default function createModule_4_3(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Labai atsiprašau. Ar užsisakėte kavos?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Labai atsiprašau. Kavos?",
+      sceneDirection: "The server checks that coffee is what you wanted.",
+      learnerPrompt: "Confirm the coffee and milk.",
       options: [
         {
           id: "a",
@@ -764,9 +764,9 @@ export default function createModule_4_3(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Labai atsiprašau. Ką užsisakėte?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Labai atsiprašau. Ko norėtumėte?",
+      sceneDirection: "The server asks again what you would like instead.",
+      learnerPrompt: "Restate the drink you want.",
       options: [
                 {
           id: "b",

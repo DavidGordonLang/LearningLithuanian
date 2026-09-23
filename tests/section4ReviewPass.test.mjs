@@ -43,6 +43,90 @@ test("4.1.1 uses new food vocabulary inside a cumulative café scenario",()=>{
   assert.ok(JSON.stringify(scenario).includes("Ačiū labai! Viso gero."));
 });
 
+test("remaining Section 4 scenarios are cumulative and grounded",()=>{
+  const m1=createModule41();
+  const l12=m1.lessons.find(l=>l.code==="4.1.2").blocks.find(b=>b.id==="s4m1l2_b5_v2");
+  assert.equal(l12.steps.length,5);
+  assert.ok(JSON.stringify(l12).includes("Norėčiau vandens"));
+  assert.ok(JSON.stringify(l12).includes("Kiek tai kainuoja?"));
+  assert.ok(JSON.stringify(l12).includes("Ar galima mokėti kortele?"));
+
+  const l13=m1.lessons.find(l=>l.code==="4.1.3").blocks.find(b=>b.id==="s4m1l3_b5_v2");
+  assert.match(l13.steps[0].sceneDirection,/nearest/i);
+  assert.match(l13.steps[1].sceneDirection,/other item/i);
+  assert.ok(JSON.stringify(l13).includes("To, prašau."));
+  assert.ok(JSON.stringify(l13).includes("Kiek tai kainuoja?"));
+
+  const l14=m1.lessons.find(l=>l.code==="4.1.4").blocks.find(b=>b.id==="s4m1l4_b6_v2");
+  assert.ok(JSON.stringify(l14).includes("Dvi arbatas, prašau."));
+  assert.ok(JSON.stringify(l14).includes("Vieną stiklinę vandens, prašau."));
+  assert.ok(JSON.stringify(l14).includes("Kortele, prašau."));
+
+  const cp=m1.lessons.find(l=>l.code==="4.1.C").blocks.find(b=>b.id==="s4m1c_b9_v2");
+  assert.equal(cp.steps.length,6);
+  assert.match(cp.steps[1].sceneDirection,/farther away/i);
+  assert.ok(JSON.stringify(cp).includes("Ne, ačiū. Užtenka."));
+});
+
+test("Section 4.2 scenarios reuse prior ordering and payment language without forward references",()=>{
+  const m=createModule42();
+  const l21=m.lessons.find(l=>l.code==="4.2.1").blocks.find(b=>b.id==="s4m2l1_b5_v2");
+  assert.equal(l21.steps.length,5);
+  assert.ok(JSON.stringify(l21).includes("Vandens, prašau."));
+  assert.ok(JSON.stringify(l21).includes("Kortele, prašau."));
+
+  const l22=m.lessons.find(l=>l.code==="4.2.2").blocks.find(b=>b.id==="s4m2l2_b5_v2");
+  assert.match(l22.sceneIntro,/in a hurry/i);
+  assert.equal(l22.steps.find(s=>s.id==="step_2").options.find(o=>o.result==="best").text,"Išsinešti, prašau.");
+
+  const l23=m.lessons.find(l=>l.code==="4.2.3").blocks.find(b=>b.id==="s4m2l3_b6_v2");
+  assert.equal(l23.steps.length,6);
+  assert.ok(JSON.stringify(l23).includes("Su pienu, prašau."));
+  assert.ok(JSON.stringify(l23).includes("Ne, be cukraus, prašau."));
+  assert.ok(JSON.stringify(l23).includes("Kiek tai kainuoja?"));
+
+  const l24=m.lessons.find(l=>l.code==="4.2.4").blocks.find(b=>b.id==="s4m2l4_b5_v2");
+  assert.equal(l24.steps[0].speakerText,"Ar dar ko nors?");
+  assert.match(l24.steps[0].sceneDirection,/finished your coffee/i);
+  const l25=m.lessons.find(l=>l.code==="4.2.5").blocks.find(b=>b.id==="s4m2l5_b5_v2");
+  assert.match(l25.steps[3].sceneDirection,/after finishing your coffee/i);
+});
+
+test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
+  const m=createModule43({speakerGender:"male"});
+  const l31=m.lessons.find(l=>l.code==="4.3.1").blocks.find(b=>b.id==="s4m3l1_b5_v2");
+  assert.equal(l31.steps[2].speakerText,"Ar norėtumėte šito?");
+  assert.match(l31.steps[2].sceneDirection,/slice of cake/i);
+
+  const l33=m.lessons.find(l=>l.code==="4.3.3").blocks.find(b=>b.id==="s4m3l3_b5_v2");
+  assert.equal(l33.steps[1].speakerText,"Labai atsiprašau. Kavos?");
+  const l34=m.lessons.find(l=>l.code==="4.3.4").blocks.find(b=>b.id==="s4m3l4_b5_v2");
+  assert.equal(l34.steps[1].speakerText,"Labai atsiprašau. Ko norėtumėte?");
+});
+
+test("Section 4.4 social scenarios reuse prior language coherently",()=>{
+  const m=createModule44({speakerGender:"male"});
+  const l41=m.lessons.find(l=>l.code==="4.4.1").blocks.find(b=>b.id==="s4m4l1_b5_v2");
+  assert.equal(l41.steps.length,3);
+  assert.ok(JSON.stringify(l41).includes("Aš ištroškęs. Noriu vandens."));
+  assert.ok(JSON.stringify(l41).includes("Kavinė yra ten."));
+
+  const l44=m.lessons.find(l=>l.code==="4.4.4").blocks.find(b=>b.id==="s4m4l4_b6_v2");
+  assert.equal(l44.steps[0].options.find(o=>o.result==="best").text,"Laba diena! Mums dvi arbatas, prašau.");
+  assert.equal(JSON.stringify(l44).includes("Man kavos ir tau arbatos, prašau."),true);
+  assert.equal(l44.steps[0].options.find(o=>o.text==="Man kavos ir tau arbatos, prašau.").result,"wrong");
+
+  const l45=m.lessons.find(l=>l.code==="4.4.5").blocks.find(b=>b.id==="s4m4l5_b5_v2");
+  assert.ok(JSON.stringify(l45).includes("Ne, ačiū. Užtenka."));
+  assert.equal(JSON.stringify(l45).includes("Ne, ačiū. Pakanka."),false);
+
+  const cp=m.lessons.find(l=>l.code==="4.4.C").blocks.find(b=>b.id==="s4m4c_b6_v2");
+  assert.equal(cp.steps.length,6);
+  assert.ok(JSON.stringify(cp).includes("Taip! Pavalgykime."));
+  assert.ok(JSON.stringify(cp).includes("Ne, ačiū. Užtenka."));
+  assert.equal(JSON.stringify(cp).includes("gera idėja"),false);
+});
+
 test("Restaurant problem language uses užsisakyti and full service checks",()=>{
   const m=createModule43();
   const s=text(m);

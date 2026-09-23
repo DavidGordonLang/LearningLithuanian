@@ -301,8 +301,8 @@ export default function createCheckpoint4(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Prašom. Dvi arbatos.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You ordered coffee with milk for yourself, so one of these drinks is wrong.",
+      learnerPrompt: "Explain the mistake and ask for it to be changed.",
       options: [
         {
           id: "a",
