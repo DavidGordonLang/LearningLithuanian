@@ -86,6 +86,17 @@ test("Section 5 uses išeinu for explicitly leaving the hotel",()=>{
  assert.equal(txt(m).includes("Aš einu iš viešbučio."),false);
 });
 
+test("Section 5 scenario turns do not collapse to two-button choices",()=>{
+  for(const unit of [createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()]){
+    const lessons=unit.lessons||[{code:unit.code,blocks:unit.blocks||[]}];
+    for(const lesson of lessons){
+      for(const scenario of (lesson.blocks||[]).filter(b=>b.type==="scenario_v2")){
+        for(const step of scenario.steps||[]) assert.ok(step.options.length>=3,`${lesson.code} ${scenario.id}/${step.id}`);
+      }
+    }
+  }
+});
+
 test("Section 5 uses authored help and only narrow visible support for weakly introduced vocabulary",()=>{
  const visible=[];
  for(const unit of [createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()]){

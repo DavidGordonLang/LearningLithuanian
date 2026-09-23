@@ -137,6 +137,8 @@ export default function createCheckpoint5(profile = {}) {
       options: [
         { id: "a", text: "Laba diena! Atsiprašau, kaip man nusigauti į viešbutį?", result: "best", progresses: true },
         { id: "b", text: "Kur yra kavinė?", result: "wrong", feedback: "You are trying to reach your hotel.", progresses: false },
+      
+        {"id":"z","text":"Atsiprašau, kaip man nusigauti į viešbutį?","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
       ],
     },
     {
@@ -156,6 +158,8 @@ export default function createCheckpoint5(profile = {}) {
       options: [
         { id: "a", text: "Suprantu. Ar toli?", result: "best", progresses: true },
         { id: "b", text: "Kur yra autobusų stotis?", result: "wrong", feedback: "You have already left the bus station and are asking about the hotel.", progresses: false },
+      
+        {"id":"z","text":"Ar toli?","result":"acceptable","feedback":"The shorter distance question is natural once the destination is clear.","progresses":true},
       ],
     },
     {
@@ -168,6 +172,8 @@ export default function createCheckpoint5(profile = {}) {
       options: [
         { id: "a", text: "Puiku! Ačiū labai.", result: "best", progresses: true },
         { id: "b", text: "Galite važiuoti autobusu?", result: "wrong", feedback: "She has just said it is only a five-minute walk.", progresses: false },
+      
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
       finalSystemLine: { speakerId: "local", speakerLabel: "Local", speakerText: "Prašom. Geros kelionės!", sceneDirection: "She smiles and continues on her way." },
     },

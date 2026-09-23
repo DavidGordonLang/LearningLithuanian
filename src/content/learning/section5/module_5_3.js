@@ -110,7 +110,9 @@ export default function createModule_5_3(profile = {}) {
                 options: [
                   { id: "a", text: "Labas! Aš einu į viešbutį.", result: "best", progresses: true },
                   { id: "b", text: "Viso gero.", result: "wrong", feedback: "He asked where you are going.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Aš einu į viešbutį.","result":"acceptable","feedback":"The greeting is optional once the conversation is underway.","progresses":true},
+      ],
               },
               {
                 id: "step_2",
@@ -122,7 +124,9 @@ export default function createModule_5_3(profile = {}) {
                 options: [
                   { id: "a", text: "Ačiū! Ar toli?", result: "best", progresses: true },
                   { id: "b", text: "Kur yra bankas?", result: "wrong", feedback: "You are asking about the hotel route.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ar toli?","result":"acceptable","feedback":"The shorter distance question is natural once the destination is clear.","progresses":true},
+      ],
               },
               {
                 id: "step_3",
@@ -134,7 +138,9 @@ export default function createModule_5_3(profile = {}) {
                 options: [
                   { id: "a", text: "Puiku! Ačiū labai.", result: "best", progresses: true },
                   { id: "b", text: "Per toli.", result: "wrong", feedback: "He just said it is near.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
+      ],
               },
             ],
           },
@@ -262,6 +268,8 @@ export default function createModule_5_3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Iš viešbučio. Einu į stotį.","result":"acceptable","feedback":"The greeting is optional once the conversation is underway.","progresses":true},
       ],
     },
     {
@@ -431,7 +439,9 @@ export default function createModule_5_3(profile = {}) {
                 options: [
                   { id: "a", text: "Labas! Esu viešbutyje.", result: "best", progresses: true },
                   { id: "b", text: "Einu į viešbutį.", result: "wrong", feedback: "The scene says you are already at the hotel.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Esu viešbutyje.","result":"acceptable","feedback":"The greeting is optional once the conversation is underway.","progresses":true},
+      ],
               },
               {
                 id: "step_2",
@@ -443,7 +453,9 @@ export default function createModule_5_3(profile = {}) {
                 options: [
                   { id: "a", text: "Gerai! Einu į kavinę.", result: "best", progresses: true },
                   { id: "b", text: "Esu kavinėje.", result: "wrong", feedback: "Mantas is at the café; you are still going there.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer what the speaker is asking here.","progresses":false},
+      ],
               },
               {
                 id: "step_3",
@@ -455,7 +467,9 @@ export default function createModule_5_3(profile = {}) {
                 options: [
                   { id: "a", text: "Puiku! Iki!", result: "best", progresses: true },
                   { id: "b", text: "Per toli.", result: "wrong", feedback: "He just said the café is near.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer what the speaker is asking here.","progresses":false},
+      ],
               },
             ],
           },
@@ -584,6 +598,8 @@ export default function createModule_5_3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Į stotį. Einu namo.","result":"acceptable","feedback":"The greeting is optional once the conversation is underway.","progresses":true},
       ],
     },
     {
@@ -608,6 +624,8 @@ export default function createModule_5_3(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ne, netoli. Dešimt minučių.","result":"acceptable","feedback":"A slightly shorter but natural answer.","progresses":true},
       ],
     },
     {
@@ -763,6 +781,8 @@ export default function createModule_5_3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"einu į viešbutį.","result":"acceptable","feedback":"Lithuanian naturally allows the pronoun to be dropped here.","progresses":true},
       ],
     },
     {
@@ -818,6 +838,8 @@ export default function createModule_5_3(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Taip.","result":"acceptable","feedback":"This confirms the question, though the fuller answer practises the location form.","progresses":true},
       ],
     }
   ],
@@ -943,6 +965,8 @@ export default function createModule_5_3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Einu į kavinę.","result":"acceptable","feedback":"The greeting is optional once the conversation is underway.","progresses":true},
       ],
     },
     {
@@ -998,6 +1022,8 @@ export default function createModule_5_3(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Ne, netoli. Dešimt minučių.","result":"acceptable","feedback":"A slightly shorter but natural answer.","progresses":true},
       ],
     },
     {

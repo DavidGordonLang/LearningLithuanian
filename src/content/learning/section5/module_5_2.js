@@ -129,6 +129,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kur yra traukinių stotis?","result":"acceptable","feedback":"The shorter question is natural because the context is already clear.","progresses":true},
       ],
     },
     {
@@ -153,6 +155,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū. Ar toli?","result":"acceptable","feedback":"A quick thank-you before the distance question is natural.","progresses":true},
       ],
     },
     {
@@ -177,6 +181,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -300,6 +306,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Atsiprašau, kur yra vaistinė?","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
       ],
     },
     {
@@ -324,6 +332,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ar toli?","result":"acceptable","feedback":"The shorter distance question is natural once the destination is clear.","progresses":true},
       ],
     },
     {
@@ -348,6 +358,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -467,6 +479,8 @@ export default function createModule_5_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Atsiprašau, Kur yra kavinė?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {
@@ -522,6 +536,8 @@ export default function createModule_5_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -653,6 +669,8 @@ export default function createModule_5_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Kur yra bankas?","result":"acceptable","feedback":"The shorter question is natural because the context is already clear.","progresses":true},
       ],
     },
     {
@@ -708,6 +726,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -822,6 +842,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Atsiprašau, Kur yra viešbutis?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {
@@ -877,6 +899,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     }
   ],
@@ -1014,6 +1038,8 @@ export default function createModule_5_2(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kur yra vaistinė?","result":"acceptable","feedback":"The shorter question is natural because the context is already clear.","progresses":true},
       ],
     },
     {
@@ -1076,6 +1102,8 @@ export default function createModule_5_2(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     }
   ],

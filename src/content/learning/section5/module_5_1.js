@@ -101,6 +101,8 @@ export default function createModule_5_1(profile = {}) {
       options: [
         { id: "a", text: "Laba diena! Atsiprašau, kur yra bankas?", result: "best", progresses: true },
         { id: "b", text: "Viso gero.", result: "wrong", feedback: "You still need to find the bank.", progresses: false },
+      
+        {"id":"z","text":"Atsiprašau, kur yra bankas?","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
       ],
     },
     {
@@ -113,6 +115,8 @@ export default function createModule_5_1(profile = {}) {
       options: [
         { id: "a", text: "Ačiū labai!", result: "best", progresses: true },
         { id: "b", text: "Kur yra viešbutis?", result: "wrong", feedback: "You asked for the bank and she has just shown it to you.", progresses: false },
+      
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
       finalSystemLine: { speakerId: "local", speakerLabel: "Local", speakerText: "Prašom. Viso gero!", sceneDirection: "She smiles and continues on her way." },
     },
@@ -216,7 +220,9 @@ export default function createModule_5_1(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Kur yra viešbutis?", result: "best", progresses: true },
                   { id: "b", text: "Viso gero.", result: "wrong", feedback: "You still need to find the hotel.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Atsiprašau, Kur yra viešbutis?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+      ],
               },
               {
                 id: "step_2",
@@ -228,7 +234,9 @@ export default function createModule_5_1(profile = {}) {
                 options: [
                   { id: "a", text: "Ačiū! Ir kur yra kavinė?", result: "best", progresses: true },
                   { id: "b", text: "Ar toli?", result: "wrong", feedback: "This lesson is practising here/there; ask for the café too.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer what the speaker is asking here.","progresses":false},
+      ],
               },
               {
                 id: "step_3",
@@ -240,7 +248,9 @@ export default function createModule_5_1(profile = {}) {
                 options: [
                   { id: "a", text: "Puiku! Ačiū labai.", result: "best", progresses: true },
                   { id: "b", text: "Kur yra viešbutis?", result: "wrong", feedback: "She already showed you the hotel.", progresses: false },
-                ],
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
+      ],
               },
             ],
           },
@@ -373,6 +383,8 @@ export default function createModule_5_1(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kur yra autobusų stotelė?","result":"acceptable","feedback":"The shorter question is natural because the context is already clear.","progresses":true},
       ],
     },
     {
@@ -428,6 +440,8 @@ export default function createModule_5_1(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     },
     {
@@ -597,6 +611,8 @@ export default function createModule_5_1(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Atsiprašau, Kur yra bankas?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {
@@ -621,6 +637,8 @@ export default function createModule_5_1(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer what the speaker is asking here.","progresses":false},
       ],
     },
     {
@@ -772,6 +790,8 @@ export default function createModule_5_1(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kur yra tualetas?","result":"acceptable","feedback":"The shorter question is natural because the context is already clear.","progresses":true},
       ],
     },
     {
@@ -827,6 +847,8 @@ export default function createModule_5_1(profile = {}) {
           feedback: "This does not fit the situation. Choose the response that matches the speaker.",
           progresses: false,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     },
     {
@@ -984,6 +1006,8 @@ export default function createModule_5_1(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Kur yra stotis?","result":"acceptable","feedback":"The shorter question is natural because the context is already clear.","progresses":true},
       ],
     },
     {
@@ -1046,6 +1070,8 @@ export default function createModule_5_1(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     },
     {
@@ -1071,6 +1097,8 @@ export default function createModule_5_1(profile = {}) {
           result: "best",
           progresses: true,
         }
+      ,
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
     }
   ],
