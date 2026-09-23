@@ -12,7 +12,7 @@ const scenarios=x=>x.lessons?x.lessons.flatMap(l=>l.blocks).filter(b=>b.type==="
 test("Section 5 removes corrupted text and reviewed terminology issues",()=>{
  const all=[createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()];
  const s=all.map(txt).join("\n");
- for(const bad of ["Aust?ja","vie?butis","vaistin?","geležinkelio stotis","taksiu","Ar tai toli?","Ar tai netoli?"]){
+ for(const bad of ["Aust?ja","vie?butis","vaistin?","geležinkelio stotis","Geležinkelio stotis","taksiu","Ar tai toli?","Ar tai netoli?"]){
    assert.equal(s.includes(bad),false,bad);
  }
  assert.ok(s.includes("traukinių stotis"));
@@ -28,7 +28,42 @@ test("Section 5 location scenarios match their physical setting",()=>{
  assert.equal(bank.participants[0].role,"passer-by");
  assert.equal(bank.objects[0].lt,"bankas");
  assert.equal(hotel.location,"street");
- assert.equal(hotel.steps[1].speakerText,"Viešbutis — va ten.");
+ assert.equal(hotel.steps[1].speakerText,"Viešbutis yra ten.");
+ assert.equal(hotel.steps[2].speakerText,"Kavinė yra čia.");
+});
+
+test("Section 5 scenarios reinforce taught place and movement language without avoidable vocabulary leaks",()=>{
+  const m1=createModule51();
+  const l12=m1.lessons.find(l=>l.code==="5.1.2").blocks.find(b=>b.id==="s5m1l2_b6_v2");
+  assert.equal(l12.steps.length,3);
+  assert.equal(l12.steps[1].speakerText,"Viešbutis yra ten.");
+  assert.equal(l12.steps[2].speakerText,"Kavinė yra čia.");
+  assert.equal(txt(m1).includes("Autobusų stotis yra ten."),false);
+  assert.ok(txt(m1).includes("Autobusų stotelė yra ten."));
+  assert.equal(txt(m1).includes("teisingai"),false);
+  assert.equal(txt(m1).includes("Apie penkias minutes"),false);
+
+  const m2=createModule52();
+  assert.equal(txt(m2).includes("Geležinkelio stotis"),false);
+  assert.ok(txt(m2).includes("Traukinių stotis yra ten. Eikite tiesiai."));
+  assert.equal(txt(m2).includes("čia pat"),false);
+  const recognition=m2.lessons.find(l=>l.code==="5.2.5").blocks.find(b=>b.id==="s5m2l5_b5_v2");
+  assert.equal(recognition.steps[0].speakerText,"Laba diena!");
+  assert.match(recognition.steps[0].sceneDirection,/hotel address/i);
+
+  const m3=createModule53();
+  const going=m3.lessons.find(l=>l.code==="5.3.1").blocks.find(b=>b.id==="s5m3l1_b6_v2");
+  assert.ok(JSON.stringify(going).includes("Ačiū! Ar toli?"));
+  assert.equal(JSON.stringify(going).includes("Ar žinai"),false);
+  assert.equal(JSON.stringify(going).includes("Manau"),false);
+  const cp=m3.lessons.find(l=>l.code==="5.3.C").blocks.find(b=>b.id==="s5m3c_b6_v2");
+  assert.equal(cp.steps[0].options.find(o=>o.result==="best").text,"Labas! Einu į kavinę.");
+  assert.equal(cp.steps[1].speakerText,"Iš kur eini?");
+
+  const m4=createModule54();
+  assert.equal(txt(m4).includes("Ko ieškote?"),false);
+  assert.equal(txt(m4).includes("Geriau važiuokite autobusu"),false);
+  assert.ok(txt(m4).includes("Galite važiuoti autobusu."));
 });
 
 test("Section 5 clarifies police context and uses the common train-station term",()=>{
@@ -46,15 +81,22 @@ test("Section 5 uses išeinu for explicitly leaving the hotel",()=>{
  assert.equal(txt(m).includes("Aš einu iš viešbučio."),false);
 });
 
-test("Section 5 direction scenarios use authored help rather than wrong Nesuprantu answers or automatic meanings",()=>{
+test("Section 5 uses authored help and only narrow visible support for weakly introduced vocabulary",()=>{
+ const visible=[];
  for(const unit of [createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()]){
    for(const s of scenarios(unit)){
-     assert.equal(txt(s).includes("supportText"),false,s.id);
-     for(const step of s.steps||[]) for(const o of step.options||[]){
-       assert.equal(/nesuprantu/i.test(o.text||""),false,s.id);
+     for(const step of s.steps||[]){
+       if(step.supportText) visible.push(step.supportText);
+       for(const o of step.options||[]){
+         assert.equal(/nesuprantu/i.test(o.text||""),false,s.id);
+       }
      }
    }
  }
+ assert.deepEqual(visible,[
+   "geros kelionės — have a good journey",
+   "geros kelionės — have a good journey",
+ ]);
  const final=createCheckpoint5().blocks.find(b=>b.id==="s5cp_b8_v2");
  assert.equal(final.steps[1].help.levels.at(-1).spokenLanguage,"en");
  assert.equal(final.steps[1].help.levels.at(-1).audio,false);
@@ -86,13 +128,14 @@ test("Section 5 keeps future place vocabulary out of 5.1 production",()=>{
   assert.ok(later.includes("vaistinė"));
 });
 
-test("5.3.5 does not require the untaught word Savaitę",()=>{
+test("5.3.5 retrieves the in-form after an explicit time jump",()=>{
   const m=createModule53();
   const lesson=m.lessons.find(l=>l.code==="5.3.5");
-  const s=txt(lesson);
-  assert.equal(s.includes("Savaitę"),false);
-  assert.ok(s.includes("Dabar viešbutyje?"));
-  assert.ok(s.includes("Taip. Ačiū!"));
+  const scenario=lesson.blocks.find(b=>b.id==="s5m3l5_b5_v2");
+  assert.equal(txt(lesson).includes("Savaitę"),false);
+  assert.equal(scenario.steps[2].speakerText,"Dabar viešbutyje?");
+  assert.match(scenario.steps[2].sceneDirection,/Later, after you arrive/i);
+  assert.equal(scenario.steps[2].options.find(o=>o.result==="best").text,"Taip, viešbutyje.");
 });
 
 

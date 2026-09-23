@@ -575,7 +575,7 @@ export default function createModule_4_2(profile = {}) {
         },
         {
           id: "b",
-          text: "Taip, ačiū! Sąskaitą, prašau.",
+          text: "Ne, ačiū. Sąskaitą, prašau.",
           textEn: "Yes, thank you! The bill, please.",
           result: "best",
           progresses: true,

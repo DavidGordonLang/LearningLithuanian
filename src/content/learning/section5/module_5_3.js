@@ -88,118 +88,56 @@ export default function createModule_5_3(profile = {}) {
             audioText: "Aš einu į viešbutį",
           },
           {
-  id: "s5m3l1_b6_v2",
-  type: "scenario_v2",
-  title: "Conversation",
-  description: "A colleague asks where you're heading. You tell them and get directions.",
-  sceneIntro: "A colleague asks where you're heading. You tell them and get directions.",
-  location: "work conversation",
-  userRole: "colleague",
-  register: "polite_friendly",
-  goal: "A colleague asks where you're heading. You tell them and get directions.",
-  focus: ["directions"],
-  participants: [
-    {
-      "id": "colleague",
-      "label": "Colleague",
-      "name": "Rokas",
-      "role": "colleague",
-      "gender": "male",
-      "relationshipToUser": "colleague",
-      "register": "polite_friendly"
-    },
-  ],
-  objects: [
-    {
-      "id": "coffee",
-      "lt": "kava",
-      "en": "coffee",
-      "gender": "feminine",
-      "number": "singular"
-    },
-  ],
-  steps: [
-    {
-      id: "step_1",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
-      speakerText: `Labas, ${userNameSafe}! Kur eini?`,
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-                {
-          id: "b",
-          text: "Aš einu į viešbutį. O tu?",
-          textEn: "I'm going to the hotel. And you?",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Viso gero.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    },
-    {
-      id: "step_2",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
-      speakerText: "Aš einu į kavinę. Ar žinai, kur yra viešbutis?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Taip, žinau.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Ne, nežinau. Ar netoli?",
-          textEn: "No, I don't know. Is it near?",
-          result: "best",
-          progresses: true,
-        },
-        {
-          id: "c",
-          text: "Atsiprašau.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        }
-      ],
-    },
-    {
-      id: "step_3",
-      speakerId: "colleague",
-      speakerLabel: "Colleague",
-      speakerText: "Manau, viešbutis yra ten, tiesiai.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
-      options: [
-        {
-          id: "a",
-          text: "Atsiprašau.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Ačiū! Viso gero.",
-          textEn: "Thank you! Goodbye.",
-          result: "best",
-          progresses: true,
-        }
-      ],
-    }
-  ],
-},
+            id: "s5m3l1_b6_v2",
+            type: "scenario_v2",
+            title: "Going to the hotel",
+            description: "A colleague asks where you are going, then points out the hotel and tells you how far it is.",
+            sceneIntro: "A colleague asks where you are going, then points out the hotel and tells you how far it is.",
+            location: "street",
+            userRole: "traveller",
+            register: "informal",
+            goal: "Use Einu į… while retrieving earlier location and distance language.",
+            focus: ["Einu į"],
+            participants: [{ id: "friend", label: "Colleague", name: "Mantas", role: "colleague", gender: "male", relationshipToUser: "colleague", register: "informal" }],
+            steps: [
+              {
+                id: "step_1",
+                speakerId: "friend",
+                speakerLabel: "Colleague",
+                speakerText: "Labas, Davidas! Kur eini?",
+                sceneDirection: "You are going to the hotel.",
+                learnerPrompt: "Tell Mantas where you are going.",
+                options: [
+                  { id: "a", text: "Labas! Aš einu į viešbutį.", result: "best", progresses: true },
+                  { id: "b", text: "Viso gero.", result: "wrong", feedback: "He asked where you are going.", progresses: false },
+                ],
+              },
+              {
+                id: "step_2",
+                speakerId: "friend",
+                speakerLabel: "Colleague",
+                speakerText: "Viešbutis yra ten, tiesiai.",
+                sceneDirection: "Mantas points straight ahead.",
+                learnerPrompt: "Thank him and ask if it is far.",
+                options: [
+                  { id: "a", text: "Ačiū! Ar toli?", result: "best", progresses: true },
+                  { id: "b", text: "Kur yra bankas?", result: "wrong", feedback: "You are asking about the hotel route.", progresses: false },
+                ],
+              },
+              {
+                id: "step_3",
+                speakerId: "friend",
+                speakerLabel: "Colleague",
+                speakerText: "Ne, tai netoli. Penkios minutės.",
+                sceneDirection: "The hotel is only a short walk away.",
+                learnerPrompt: "Acknowledge and thank him.",
+                options: [
+                  { id: "a", text: "Puiku! Ačiū labai.", result: "best", progresses: true },
+                  { id: "b", text: "Per toli.", result: "wrong", feedback: "He just said it is near.", progresses: false },
+                ],
+              },
+            ],
+          },
         ],
       },
 
@@ -362,6 +300,7 @@ export default function createModule_5_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Prašom. Geros kelionės!",
+      supportText: "geros kelionės — have a good journey",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -536,9 +475,9 @@ export default function createModule_5_3(profile = {}) {
       id: "step_2",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Puiku! Aš irgi esu mieste. Gal einame kartu?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Puiku! Aš irgi esu mieste. Einame į kavinę?",
+      sceneDirection: "Your friend suggests going to the café.",
+      learnerPrompt: "Agree and ask where they are now.",
       options: [
         {
           id: "a",
@@ -560,7 +499,7 @@ export default function createModule_5_3(profile = {}) {
       id: "step_3",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Aš esu prie stoties. Netoli.",
+      speakerText: "Aš esu stotyje. Netoli.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -573,7 +512,7 @@ export default function createModule_5_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Gerai! Einame į kavinę kartu.",
+          text: "Gerai! Einame į kavinę.",
           textEn: "Good! Let's go to the café together.",
           result: "best",
           progresses: true,
@@ -744,7 +683,7 @@ export default function createModule_5_3(profile = {}) {
       id: "step_3",
       speakerId: "colleague",
       speakerLabel: "Colleague",
-      speakerText: "Gerai. Iki pasimatymo!",
+      speakerText: "Gerai. Iki!",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -757,7 +696,7 @@ export default function createModule_5_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Iki! Viso gero.",
+          text: "Iki!",
           textEn: "Bye! Goodbye.",
           result: "best",
           progresses: true,
@@ -843,8 +782,8 @@ export default function createModule_5_3(profile = {}) {
   id: "s5m3l5_b5_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "Notice how the hotel form changes across the conversation.",
-  sceneIntro: "Notice how the hotel form changes across the conversation.",
+  description: "You say where you are going and where you are coming from. Later, after you arrive, the same person checks where you are.",
+  sceneIntro: "You say where you are going and where you are coming from. Later, after you arrive, the same person checks where you are.",
   location: "hotel reception",
   userRole: "guest",
   register: "polite_service",
@@ -930,9 +869,9 @@ export default function createModule_5_3(profile = {}) {
       id: "step_3",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Suprantu. Dabar viešbutyje?",
-      sceneDirection: "She checks that you are at the hotel now.",
-      learnerPrompt: "Confirm and close the exchange.",
+      speakerText: "Dabar viešbutyje?",
+      sceneDirection: "Later, after you arrive, she checks whether you are at the hotel now.",
+      learnerPrompt: "Confirm that you are now at the hotel.",
       options: [
         {
           id: "a",
@@ -943,7 +882,7 @@ export default function createModule_5_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Taip. Ačiū!",
+          text: "Taip, viešbutyje.",
           textEn: "Yes. Thank you!",
           result: "best",
           progresses: true,
@@ -1061,7 +1000,7 @@ export default function createModule_5_3(profile = {}) {
       options: [
                 {
           id: "b",
-          text: "Labas! Einu į kavinę. Esu mieste valandą.",
+          text: "Labas! Einu į kavinę.",
           textEn: "Hi! I'm going to the café. I'm in the city for an hour.",
           result: "best",
           progresses: true,
@@ -1079,7 +1018,7 @@ export default function createModule_5_3(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Iš kur atėjai?",
+      speakerText: "Iš kur eini?",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1147,7 +1086,7 @@ export default function createModule_5_3(profile = {}) {
         },
         {
           id: "b",
-          text: "Iki! Viso gero.",
+          text: "Iki!",
           textEn: "Bye! Goodbye.",
           result: "best",
           progresses: true,

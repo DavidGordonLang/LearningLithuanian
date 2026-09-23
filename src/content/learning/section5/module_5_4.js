@@ -173,7 +173,7 @@ export default function createModule_5_4(profile = {}) {
       id: "step_3",
       speakerId: "assistant",
       speakerLabel: "Assistant",
-      speakerText: "Ne, tai netoli. Apie penkias minutes.",
+      speakerText: "Ne, tai netoli. Penkios minutės.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -524,7 +524,7 @@ export default function createModule_5_4(profile = {}) {
         },
         {
           id: "b",
-          text: "Taip, teisingai!",
+          text: "Taip!",
           textEn: "Yes, that's right!",
           result: "best",
           progresses: true,
@@ -674,7 +674,7 @@ export default function createModule_5_4(profile = {}) {
       id: "step_1",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Laba diena! Ko ieškote?",
+      speakerText: "Laba diena! Ar galiu padėti?",
       sceneDirection: "The exchange begins.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -1123,7 +1123,7 @@ export default function createModule_5_4(profile = {}) {
       id: "step_3",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Taip, šiek tiek toli. Geriau važiuokite autobusu.",
+      speakerText: "Taip, šiek tiek toli. Galite važiuoti autobusu.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [

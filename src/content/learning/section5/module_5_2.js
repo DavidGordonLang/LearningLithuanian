@@ -135,7 +135,7 @@ export default function createModule_5_2(profile = {}) {
       id: "step_2",
       speakerId: "assistant",
       speakerLabel: "Assistant",
-      speakerText: "Geležinkelio stotis yra ten. Eikite tiesiai.",
+      speakerText: "Traukinių stotis yra ten. Eikite tiesiai.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -330,7 +330,7 @@ export default function createModule_5_2(profile = {}) {
       id: "step_3",
       speakerId: "pharmacist",
       speakerLabel: "Pharmacist",
-      speakerText: "Ne, tai čia pat.",
+      speakerText: "Ne, tai netoli.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -804,9 +804,9 @@ export default function createModule_5_2(profile = {}) {
       id: "step_1",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Laba diena! Ar ieškote viešbučio?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Laba diena!",
+      sceneDirection: "The passer-by notices you checking a hotel address on your phone.",
+      learnerPrompt: "Ask where the hotel is.",
       options: [
         {
           id: "a",
@@ -817,7 +817,7 @@ export default function createModule_5_2(profile = {}) {
         },
         {
           id: "b",
-          text: "Taip! Kur yra viešbutis?",
+          text: "Laba diena! Kur yra viešbutis?",
           textEn: "Yes! Where is the hotel?",
           result: "best",
           progresses: true,

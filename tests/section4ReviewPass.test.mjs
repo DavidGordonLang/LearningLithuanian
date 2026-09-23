@@ -88,6 +88,7 @@ test("Section 4.2 scenarios reuse prior ordering and payment language without fo
   const l24=m.lessons.find(l=>l.code==="4.2.4").blocks.find(b=>b.id==="s4m2l4_b5_v2");
   assert.equal(l24.steps[0].speakerText,"Ar dar ko nors?");
   assert.match(l24.steps[0].sceneDirection,/finished your coffee/i);
+  assert.equal(l24.steps[0].options.find(o=>o.result==="best").text,"Ne, ačiū. Sąskaitą, prašau.");
   const l25=m.lessons.find(l=>l.code==="4.2.5").blocks.find(b=>b.id==="s4m2l5_b5_v2");
   assert.match(l25.steps[3].sceneDirection,/after finishing your coffee/i);
 });
