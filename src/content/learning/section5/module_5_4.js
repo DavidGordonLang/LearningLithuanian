@@ -137,7 +137,7 @@ export default function createModule_5_4(profile = {}) {
           progresses: true,
         }
       ,
-        {"id":"z","text":"Atsiprašau, Kaip man nusigauti į traukinių stotį?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+        {"id":"z","text":"Atsiprašau, kaip man nusigauti į traukinių stotį?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {
@@ -333,7 +333,7 @@ export default function createModule_5_4(profile = {}) {
           progresses: true,
         }
       ,
-        {"id":"z","text":"Atsiprašau, Kaip man nusigauti į vaistinę?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+        {"id":"z","text":"Atsiprašau, kaip man nusigauti į vaistinę?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {
@@ -516,7 +516,7 @@ export default function createModule_5_4(profile = {}) {
           progresses: false,
         }
       ,
-        {"id":"z","text":"Tiesiai, prašau?","result":"awkward","feedback":"Understandable as a check, but the fuller direction sentence is clearer.","progresses":true},
+        {"id":"z","text":"Kur yra bankas?","result":"wrong","feedback":"That asks for a different place instead of giving the requested directions.","progresses":false},
       ],
     },
     {
@@ -707,7 +707,7 @@ export default function createModule_5_4(profile = {}) {
           progresses: false,
         }
       ,
-        {"id":"z","text":"Atsiprašau, Kaip nuvykti į oro uostą?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+        {"id":"z","text":"Atsiprašau, kaip nuvykti į oro uostą?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {

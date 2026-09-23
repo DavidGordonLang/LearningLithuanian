@@ -480,7 +480,7 @@ export default function createModule_5_2(profile = {}) {
           progresses: false,
         }
       ,
-        {"id":"z","text":"Atsiprašau, Kur yra kavinė?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+        {"id":"z","text":"Atsiprašau, kur yra kavinė?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {
@@ -843,7 +843,7 @@ export default function createModule_5_2(profile = {}) {
           progresses: true,
         }
       ,
-        {"id":"z","text":"Atsiprašau, Kur yra viešbutis?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+        {"id":"z","text":"Atsiprašau, kur yra viešbutis?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {

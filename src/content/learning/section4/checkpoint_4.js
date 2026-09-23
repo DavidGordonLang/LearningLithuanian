@@ -253,8 +253,8 @@ export default function createCheckpoint4(profile = {}) {
       options: [
                 {
           id: "b",
-          text: "Laba diena! Man kavos su pienu ir tau arbatos, prašau.",
-          textEn: "Good day! Coffee with milk for me and tea for you, please.",
+          text: "Laba diena! Mums vieną kavą su pienu ir vieną arbatą, prašau.",
+          textEn: "Good day! One coffee with milk and one tea for us, please.",
           result: "best",
           progresses: true,
         },
@@ -266,7 +266,7 @@ export default function createCheckpoint4(profile = {}) {
           progresses: false,
         }
       ,
-        {"id":"z","text":"Man kavos su pienu ir tau arbatos, prašau.","result":"acceptable","feedback":"The greeting is optional once the context is clear.","progresses":true},
+        {"id":"z","text":"Mums vieną kavą su pienu ir vieną arbatą, prašau.","result":"acceptable","feedback":"The greeting is optional once the context is clear.","progresses":true},
       ],
     },
     {

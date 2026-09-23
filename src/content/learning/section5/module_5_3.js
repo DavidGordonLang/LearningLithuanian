@@ -782,7 +782,7 @@ export default function createModule_5_3(profile = {}) {
           progresses: false,
         }
       ,
-        {"id":"z","text":"einu į viešbutį.","result":"acceptable","feedback":"Lithuanian naturally allows the pronoun to be dropped here.","progresses":true},
+        {"id":"z","text":"Einu į viešbutį.","result":"acceptable","feedback":"Lithuanian naturally allows the pronoun to be dropped here.","progresses":true},
       ],
     },
     {

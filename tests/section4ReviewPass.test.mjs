@@ -91,6 +91,14 @@ test("4.2.1 café scenario offers multiple genuinely valid learner responses",()
   assert.equal(close.options.filter(o=>o.progresses!==false).length,3);
 });
 
+test("Section 4 final checkpoint orders for the pair without addressing tau to the server",()=>{
+  const cp=createCheckpoint4({speakerGender:"male"});
+  const scenario=cp.blocks.find(b=>b.id==="s4c_b12_v2");
+  const order=scenario.steps.find(s=>s.id==="step_2");
+  assert.equal(JSON.stringify(order).includes("tau arbatos"),false);
+  assert.ok(JSON.stringify(order).includes("Mums vieną kavą su pienu ir vieną arbatą"));
+});
+
 test("future Section 4 scenarios avoid two-button giveaways and vary payment method",()=>{
   const units=[createModule42(),createModule43({speakerGender:"male"}),createModule44({speakerGender:"male"}),createCheckpoint4({speakerGender:"male"})];
   for(const unit of units){

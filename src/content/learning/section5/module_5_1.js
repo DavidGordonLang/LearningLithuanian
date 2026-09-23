@@ -221,7 +221,7 @@ export default function createModule_5_1(profile = {}) {
                   { id: "a", text: "Laba diena! Kur yra viešbutis?", result: "best", progresses: true },
                   { id: "b", text: "Viso gero.", result: "wrong", feedback: "You still need to find the hotel.", progresses: false },
                 
-        {"id":"z","text":"Atsiprašau, Kur yra viešbutis?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+        {"id":"z","text":"Atsiprašau, kur yra viešbutis?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
               },
               {
@@ -612,7 +612,7 @@ export default function createModule_5_1(profile = {}) {
           progresses: false,
         }
       ,
-        {"id":"z","text":"Atsiprašau, Kur yra bankas?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
+        {"id":"z","text":"Atsiprašau, kur yra bankas?","result":"acceptable","feedback":"A natural polite alternative using language you already know.","progresses":true},
       ],
     },
     {

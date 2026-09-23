@@ -86,6 +86,14 @@ test("Section 5 uses išeinu for explicitly leaving the hotel",()=>{
  assert.equal(txt(m).includes("Aš einu iš viešbučio."),false);
 });
 
+test("Section 5 added response alternatives remain natural and correctly cased",()=>{
+  const all=JSON.stringify([createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()]);
+  assert.equal(all.includes("Atsiprašau, Kur"),false);
+  assert.equal(all.includes("Atsiprašau, Kaip"),false);
+  assert.equal(all.includes("Tiesiai, prašau?"),false);
+  assert.equal(all.includes('"einu į viešbutį."'),false);
+});
+
 test("Section 5 scenario turns do not collapse to two-button choices",()=>{
   for(const unit of [createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()]){
     const lessons=unit.lessons||[{code:unit.code,blocks:unit.blocks||[]}];
