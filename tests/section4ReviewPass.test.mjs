@@ -165,6 +165,8 @@ test("4.3.1 does not re-present already reviewed sugar and milk phrases as new v
   const lesson=m.lessons.find(l=>l.code==="4.3.1");
   const learn=lesson.blocks.find(b=>b.id==="s4m3l1_b1");
   assert.deepEqual(learn.items.map(i=>i.lt),["Nenoriu…","Nenoriu šito.","Nenoriu to."]);
+  assert.deepEqual(lesson.notes.usage,["Nenoriu šito — I don't want this","Nenoriu to — I don't want that"]);
+  assert.equal(lesson.notes.pattern.includes("be + noun"),false);
 
   const lessonText=JSON.stringify(lesson);
   assert.ok(lessonText.includes("Be cukraus"));

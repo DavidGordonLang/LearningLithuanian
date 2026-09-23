@@ -24,12 +24,10 @@ export default function createModule_4_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Nenoriu… is the negative of Noriu… — just add ne- to the front. Nenoriu šito — I don't want this. You can also use be + noun (without) to state a preference more softly.",
+          pattern: "Nenoriu… is the negative of Noriu… — just add ne- to the front. Nenoriu šito — I don't want this.",
           usage: [
             "Nenoriu šito — I don't want this",
             "Nenoriu to — I don't want that",
-            "Be cukraus, prašau — without sugar, please",
-            "Be pieno, prašau — without milk, please",
           ],
         },
         blocks: [
