@@ -1357,6 +1357,7 @@ export default function createModule_3_4(profile = {}) {
         {
                   id: "b",
                   text: "Dvi kavas ir stiklinę vandens, prašau.",
+                  supportText: "stiklinę — glass",
                   result: "best",
                   progresses: true,
                 }

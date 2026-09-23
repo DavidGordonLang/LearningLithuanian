@@ -102,6 +102,21 @@ test("3.4 gives enough and not-enough separate retrieval paths before consolidat
   assert.equal(JSON.stringify(m).includes("Dabar užteks"),false);
 });
 
+test("3.4 checkpoint previews the untaught stiklinę word without translating the whole answer",()=>{
+  const m=createModule34();
+  const cp=m.lessons.find(l=>l.code==="3.4.C");
+  const scenario=cp.blocks.find(b=>b.id==="s3m4c_b6_v2");
+  const drink=scenario.steps.find(s=>s.id==="step_2").options.find(o=>o.result==="best");
+
+  assert.equal(drink.text,"Dvi kavas ir stiklinę vandens, prašau.");
+  assert.equal(drink.supportText,"stiklinę — glass");
+  const learnedBeforeSection4=m.lessons.flatMap(l=>l.blocks||[])
+    .filter(b=>b.type==="learn")
+    .flatMap(b=>b.items||[])
+    .some(item=>/stiklin/i.test(item.lt||""));
+  assert.equal(learnedBeforeSection4,false);
+});
+
 test("3.4 checkpoint explicitly retrieves both shortage contexts",()=>{
   const m=createModule34();
   const cp=m.lessons.find(l=>l.code==="3.4.C");

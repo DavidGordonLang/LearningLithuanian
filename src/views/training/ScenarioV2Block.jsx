@@ -115,6 +115,7 @@ function ScenarioV2Styles() {
       .scenario-v2-user-bubble { --scenario-v2-bubble-bg: rgba(22,163,74,0.88); --scenario-v2-bubble-border: rgba(134,239,172,0.18); }
       .scenario-v2-user-label { color: rgba(240,253,244,0.78); }
       .scenario-v2-user-text { color: #ffffff; }
+      .scenario-v2-user-support { color: rgba(240,253,244,0.78); }
       .scenario-v2-support-panel { background: rgba(14,165,233,0.08); border-color: rgba(56,189,248,0.22); color: #e0f2fe; }
       .scenario-v2-support-label { color: rgba(125,211,252,0.92); }
       .scenario-v2-translation-reveal { background: rgba(139,92,246,0.08); border-color: rgba(167,139,250,0.24); }
@@ -399,6 +400,7 @@ function ScenarioV2UserBubble({ item, playText }) {
       <div className="scenario-v2-bubble scenario-v2-bubble-right scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
         <div className="scenario-v2-user-label text-[11px] font-semibold">You</div>
         <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug"><InteractivePhraseText text={item.text} playText={playText} /></div>
+        {item.supportText ? <div className="scenario-v2-user-support mt-1 text-[11px] leading-snug">{item.supportText}</div> : null}
       </div>
     </div>
   );
@@ -632,6 +634,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         role: "learner",
         speakerLabel: "You",
         text: option?.text || "",
+        supportText: option?.supportText || option?.meaningText || "",
       });
       return [...prev, ...additions];
     });
@@ -796,6 +799,9 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
                     <div className="text-[15px] font-semibold">
                       {option.text}
                     </div>
+                    {option.supportText ? (
+                      <div className="mt-1 text-[11px] leading-snug text-zinc-500">{option.supportText}</div>
+                    ) : null}
                   </div>
                 );
               })}

@@ -110,6 +110,15 @@ test("Scenario V2 escalating help stays separate from wrong-answer and progressi
 });
 
 
+test("Scenario V2 can show a short unknown-word helper under learner options and keep it under the chosen bubble", () => {
+  const src = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(src, /option\.supportText \? \(/);
+  assert.match(src, /\{option\.supportText\}/);
+  assert.match(src, /supportText: option\?\.supportText \|\| option\?\.meaningText \|\| ""/);
+  assert.match(src, /item\.supportText \? <div className="scenario-v2-user-support/);
+});
+
 test("Scenario V2 can suppress all audio for English or mixed helper turns", () => {
   const src = source("src/views/training/ScenarioV2Block.jsx");
 
