@@ -217,7 +217,7 @@ test("4.3.4 tests replacement language with a problem in the served item, not a 
   assert.equal(scenario.steps.length,4);
 });
 
-test("4.3.5 teaches too cold through a realistic replacement scenario",()=>{
+test("4.3.5 separates the cold complaint from the later replacement request",()=>{
   const m=createModule43({speakerGender:"male"});
   const lesson=m.lessons.find(l=>l.code==="4.3.5");
   const learn=lesson.blocks.find(b=>b.id==="s4m3l5_b1");
@@ -230,9 +230,17 @@ test("4.3.5 teaches too cold through a realistic replacement scenario",()=>{
   assert.equal(speak.targetText,"Per šalta");
   assert.match(scenario.description,/too cold/i);
   assert.equal(scenario.description.includes("too hot"),false);
-  assert.match(scenario.steps[1].sceneDirection,/too cold/i);
-  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Nelabai — per šalta. Ar galite pakeisti?");
-  assert.equal(scenario.steps[1].options.find(o=>o.text==="Nelabai — per šalta.").result,"acceptable");
+
+  const complaint=scenario.steps.find(s=>s.id==="step_2");
+  assert.equal(complaint.speakerText,"Ar viskas gerai?");
+  assert.equal(complaint.options.find(o=>o.result==="best").text,"Nelabai — per šalta.");
+  assert.equal(JSON.stringify(complaint).includes("Ar galite atnešti kitą?"),false);
+
+  const request=scenario.steps.find(s=>s.id==="step_3");
+  assert.equal(request.speakerText,"Labai atsiprašau.");
+  assert.equal(request.options.find(o=>o.result==="best").text,"Ar galite atnešti kitą?");
+  assert.equal(request.options.find(o=>o.text==="Ar galite pakeisti?").result,"acceptable");
+  assert.equal(scenario.steps.length,7);
 
   const checkpoint=m.lessons.find(l=>l.code==="4.3.C");
   const cold=checkpoint.blocks.find(b=>b.id==="s4m3c_b5");
