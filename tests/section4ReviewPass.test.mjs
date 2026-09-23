@@ -197,21 +197,24 @@ test("4.3.1 does not re-present already reviewed sugar and milk phrases as new v
   assert.ok(lessonText.includes("Ar su cukrumi?"));
 });
 
-test("4.3.4 wrong-drink practice explicitly states what the learner ordered",()=>{
+test("4.3.4 tests replacement language with a problem in the served item, not a wrong order",()=>{
   const m=createModule43({speakerGender:"male"});
   const lesson=m.lessons.find(l=>l.code==="4.3.4");
   const response=lesson.blocks.find(b=>b.id==="s4m3l4_b4");
   const scenario=lesson.blocks.find(b=>b.id==="s4m3l4_b5_v2");
 
-  assert.match(response.prompt.text,/ordered coffee with milk/i);
-  assert.match(response.prompt.text,/brought tea with lemon/i);
+  assert.match(response.prompt.text,/ordered soup/i);
+  assert.match(response.prompt.text,/hair/i);
+  assert.equal(response.prompt.text.includes("čia ne tai, ką užsisakiau"),false);
   assert.equal(response.options.find(o=>o.isCorrect).text,"Ar galite atnešti kitą?");
-  assert.equal(response.options.some(o=>o.text==="Norėčiau kavos."),false);
 
-  assert.match(scenario.description,/ordered coffee with milk/i);
-  assert.match(scenario.description,/tea with lemon/i);
-  assert.match(scenario.steps[0].sceneDirection,/ordered coffee with milk/i);
-  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Norėčiau kavos su pienu.");
+  assert.match(scenario.description,/ordered soup/i);
+  assert.match(scenario.description,/hair/i);
+  assert.equal(JSON.stringify(scenario).includes("čia ne tai, ką užsisakiau"),false);
+  assert.equal(scenario.steps[0].speakerText,"Prašom. Sriuba.");
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Atsiprašau. Ar galite atnešti kitą?");
+  assert.equal(scenario.steps[0].options.find(o=>o.text==="Ar galite pakeisti?").result,"acceptable");
+  assert.equal(scenario.steps.length,4);
 });
 
 test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
@@ -223,7 +226,8 @@ test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
   const l33=m.lessons.find(l=>l.code==="4.3.3").blocks.find(b=>b.id==="s4m3l3_b5_v2");
   assert.equal(l33.steps[1].speakerText,"Labai atsiprašau. Kavos?");
   const l34=m.lessons.find(l=>l.code==="4.3.4").blocks.find(b=>b.id==="s4m3l4_b5_v2");
-  assert.equal(l34.steps[1].speakerText,"Labai atsiprašau. Ko norėtumėte?");
+  assert.equal(l34.steps[0].speakerText,"Prašom. Sriuba.");
+  assert.equal(l34.steps[1].speakerText,"Labai atsiprašau. Žinoma. Prašom.");
 });
 
 test("Section 4.4 social scenarios reuse prior language coherently",()=>{
