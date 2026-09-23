@@ -157,16 +157,19 @@ test("Section 4 checkpoint is gender-aware",()=>{
   assert.ok(text(female).includes("Aš alkana."));
 });
 
-test("Section 4 scenarios no longer reveal full English meaning by default or mark Nesuprantu wrong",()=>{
+test("Section 4 scenarios avoid full automatic meanings and only use narrow visible support for genuinely new language",()=>{
+  const visible=[];
   for(const unit of [createModule41(),createModule42(),createModule43(),createModule44(),createCheckpoint4()]){
     for(const s of scenarios(unit)){
-      const ss=text(s);
-      assert.equal(ss.includes("supportText"),false,s.id);
-      for(const step of s.steps||[]) for(const o of step.options||[]){
-        assert.equal(/nesuprantu/i.test(o.text||""),false,s.id);
+      for(const step of s.steps||[]){
+        if(step.supportText) visible.push(step.supportText);
+        for(const o of step.options||[]){
+          assert.equal(/nesuprantu/i.test(o.text||""),false,s.id);
+        }
       }
     }
   }
+  assert.deepEqual(visible,["cukrumi — with sugar"]);
 });
 
 test("Key Section 4 comprehension turns use escalating help with silent English fallback",()=>{

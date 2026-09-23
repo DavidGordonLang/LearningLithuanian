@@ -38,7 +38,7 @@ test("Section 5 scenarios reinforce taught place and movement language without a
   assert.equal(l12.steps.length,3);
   const l11=m1.lessons.find(l=>l.code==="5.1.1").blocks.find(b=>b.id==="s5m1l1_b6_v2");
   assert.equal(l11.steps[1].speakerText,"Bankas yra ten.");
-  assert.equal(l11.steps[1].supportText,"ten — there");
+  assert.equal(l11.steps[1].supportText,undefined);
   assert.equal(l12.steps[1].speakerText,"Viešbutis yra ten.");
   assert.equal(l12.steps[2].speakerText,"Kavinė yra čia.");
   assert.equal(txt(m1).includes("Autobusų stotis yra ten."),false);
@@ -99,7 +99,6 @@ test("Section 5 uses authored help and only narrow visible support for weakly in
    }
  }
  assert.deepEqual(visible,[
-   "ten — there",
    "geros kelionės — have a good journey",
    "geros kelionės — have a good journey",
  ]);
