@@ -21,6 +21,10 @@ export function isScoreableBlock(block) {
   return !!block?.type && SCOREABLE_BLOCK_TYPES.has(block.type);
 }
 
+export function isSoftPassChoiceOption(option) {
+  return ["acceptable", "awkward"].includes(option?.result);
+}
+
 export function countScoreableBlocks(lesson) {
   return (lesson?.blocks || []).filter(isScoreableBlock).length;
 }

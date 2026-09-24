@@ -194,7 +194,7 @@ export default function createModule_4_4(profile = {}) {
             prompt: { text: "You're speaking to one friend. Ask if they want a biscuit / cookie." },
             options: [
               { id: "a", text: "Ar nori sausainio?", isCorrect: true },
-              { id: "b", text: "Ar norite sausainio?", isCorrect: false },
+              { id: "b", text: "Ar norite sausainio?", isCorrect: false, result: "awkward", feedback: "This is grammatically correct, but norite is formal/plural. With one friend, nori is the more natural register.", betterAnswer: "Ar nori sausainio?" },
               { id: "c", text: "Ar nori sausainis?", isCorrect: false },
             ],
             feedback: {

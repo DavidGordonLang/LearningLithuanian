@@ -421,6 +421,17 @@ test("Build Phrase repair mode stays active while the learner edits the phrase",
   assert.doesNotMatch(buildPhrase, /setBuilt\(\(prev\) => prev\.filter\(\(x\) => x !== id\)\);\s*setCheckState\("idle"\)/);
 });
 
+test("generic choice blocks can give non-failing correction notes for acceptable or awkward answers", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /const softPass = isSoftPassChoiceOption\(option\)/);
+  assert.match(src, /if \(!option\.isCorrect && !softPass\) onWrongAnswer\?\.\(\)/);
+  assert.match(src, /isSoftPass=\{selectedIsSoftPass\}/);
+  assert.match(src, /feedbackNote=\{selectedIsSoftPass \? \(selected\?\.feedback/);
+  assert.match(src, /Better here:/);
+  assert.match(src, /This works — one note:/);
+});
+
 test("lesson scoring counts objective blocks once and Section Complete uses persisted section metrics", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
   const trainingSrc = source("src/views/TrainingView.jsx");

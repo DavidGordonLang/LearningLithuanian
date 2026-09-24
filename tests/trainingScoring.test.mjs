@@ -6,6 +6,7 @@ import {
   aggregateSectionMetrics,
   calculateAccuracyPct,
   countScoreableBlocks,
+  isSoftPassChoiceOption,
 } from "../src/lib/trainingScoring.js";
 
 test("objective training blocks are scoreable, including the newer exercise types", () => {
@@ -25,6 +26,13 @@ test("objective training blocks are scoreable, including the newer exercise type
   }
   assert.equal(SCOREABLE_BLOCK_TYPES.has("learn"), false);
   assert.equal(SCOREABLE_BLOCK_TYPES.has("speak_self_check"), false);
+});
+
+test("acceptable and awkward authored choice outcomes are soft passes rather than misses", () => {
+  assert.equal(isSoftPassChoiceOption({ result: "acceptable" }), true);
+  assert.equal(isSoftPassChoiceOption({ result: "awkward" }), true);
+  assert.equal(isSoftPassChoiceOption({ result: "wrong" }), false);
+  assert.equal(isSoftPassChoiceOption({ isCorrect: false }), false);
 });
 
 test("lesson accuracy counts a block with mistakes once, not once per wrong tap", () => {

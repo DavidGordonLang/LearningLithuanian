@@ -7,7 +7,7 @@ import { matchPairsCss } from "./matchPairs/matchPairsStyles";
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
 import TrainingBackButton from "./TrainingBackButton";
 import ScenarioV2Block from "./ScenarioV2Block";
-import { calculateAccuracyPct, countScoreableBlocks } from "../../lib/trainingScoring";
+import { calculateAccuracyPct, countScoreableBlocks, isSoftPassChoiceOption } from "../../lib/trainingScoring";
 import { getBuildPhraseDistractorMeaning } from "../../lib/buildPhraseFeedback";
 import { normaliseSpeechForMatch, phraseMatchesSpeech } from "../../lib/speechMatch";
 
@@ -256,10 +256,12 @@ function LearnBlock({ block, playText, onComplete, completed, navBarRef }) {
 }
 
 function ChoiceOption({ option, selected, revealState, onClick, playText, playAudio, isLithuanian }) {
+  const softPass = isSoftPassChoiceOption(option);
   const stateClass = revealState === "idle"
     ? selected ? "border-white/25 bg-white/[0.09] text-zinc-100"
       : "border-white/15 bg-white/[0.06] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"
     : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
+    : selected && softPass ? "border-white/20 bg-white/[0.07] text-zinc-100"
     : selected ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
 
@@ -282,7 +284,7 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
   );
 }
 
-function ChoiceFeedbackAction({ isCorrect, correctText, correctTranslation, feedbackNote, onContinue }) {
+function ChoiceFeedbackAction({ isCorrect, isSoftPass = false, correctText, correctTranslation, feedbackNote, betterAnswer, onContinue }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
@@ -299,16 +301,19 @@ function ChoiceFeedbackAction({ isCorrect, correctText, correctTranslation, feed
           {isCorrect ? "\u2713" : "\u2192"}
         </div>
         <div className="min-w-0 flex-1">
-          <div className={cn("text-[13px] font-semibold leading-snug", isCorrect ? "text-emerald-200" : "z-correct-answer")}>
-            {isCorrect ? "Correct!" : `Correct answer: ${correctText}`}
+          <div className={cn("text-[13px] font-semibold leading-snug", isCorrect ? "text-emerald-200" : isSoftPass ? "text-zinc-200" : "z-correct-answer")}>
+            {isCorrect ? "Correct!" : isSoftPass ? "This works — one note:" : `Correct answer: ${correctText}`}
           </div>
-          {!isCorrect && correctTranslation ? (
+          {!isCorrect && !isSoftPass && correctTranslation ? (
             <div className="mt-0.5 text-[12px] text-zinc-400 leading-snug">{correctTranslation}</div>
           ) : null}
           {feedbackNote ? <div className="mt-0.5 text-[12px] text-zinc-400 leading-snug">{feedbackNote}</div> : null}
+          {isSoftPass && betterAnswer ? (
+            <div className="mt-1 text-[12px] text-zinc-400 leading-snug">Better here: <span className="font-medium text-zinc-200">{betterAnswer}</span></div>
+          ) : null}
         </div>
       </div>
-      <ActionButton onClick={onContinue} variant={isCorrect ? "primary" : "secondary"} className="mt-2.5 w-full">
+      <ActionButton onClick={onContinue} variant={isCorrect || isSoftPass ? "primary" : "secondary"} className="mt-2.5 w-full">
         Continue
       </ActionButton>
     </div>
@@ -321,6 +326,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
   const correctOption = options.find((o) => o.isCorrect) || null;
+  const selectedIsSoftPass = isSoftPassChoiceOption(selected);
   const feedbackRef = useRef(null);
 
   const isListen = block?.type === "listen_mcq";
@@ -342,12 +348,13 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
-    if (!option.isCorrect) onWrongAnswer?.();
+    const softPass = isSoftPassChoiceOption(option);
+    if (!option.isCorrect && !softPass) onWrongAnswer?.();
     if (isBestResponse && !block?.noOptionAudio) {
       // best_response: options are Lithuanian — play selected option if correct,
       // or play correct option after delay if wrong.
       // Skipped when noOptionAudio is set (English-only option blocks).
-      if (option.isCorrect) {
+      if (option.isCorrect || softPass) {
         try { playText?.(option.text); } catch {}
       } else {
         const correct = options.find((o) => o.isCorrect);
@@ -358,7 +365,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
     } else if (block?.type === "recognise_mcq" && !audioText) {
       // Form B only: English prompt, Lithuanian options — play correct option text
       // Form A (Lithuanian prompt + English options) stays completely silent
-      if (option.isCorrect) {
+      if (option.isCorrect || softPass) {
         try { playText?.(option.text); } catch {}
       } else {
         const correct = options.find((o) => o.isCorrect);
@@ -450,13 +457,15 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
         <div ref={feedbackRef}>
           <ChoiceFeedbackAction
             isCorrect={!!selected?.isCorrect}
+            isSoftPass={selectedIsSoftPass}
             correctText={correctOption?.text || ""}
             correctTranslation={
-              (!selected?.isCorrect && block?.type === "recognise_mcq" && !audioText)
+              (!selected?.isCorrect && !selectedIsSoftPass && block?.type === "recognise_mcq" && !audioText)
                 ? (block?.prompt?.text || null)
                 : null
             }
-            feedbackNote={block?.feedback?.correct || null}
+            feedbackNote={selectedIsSoftPass ? (selected?.feedback || null) : (block?.feedback?.correct || null)}
+            betterAnswer={selectedIsSoftPass ? (selected?.betterAnswer || correctOption?.text || null) : null}
             onContinue={onAdvance}
           />
         </div>
