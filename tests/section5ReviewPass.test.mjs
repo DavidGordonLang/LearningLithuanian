@@ -334,3 +334,22 @@ test("5.2.3 cafe scenario asks distance only after distance is still unknown",()
   assert.equal(step3.speakerText,"Ne, tai netoli. Eikite tiesiai.");
   assert.equal(JSON.stringify(scenario).includes("Viešbutis yra netoli."),false);
 });
+
+
+test("5.2.4 hotel question requires phrase construction rather than copying the shown base word",()=>{
+  const m=createModule52();
+  const lesson=m.lessons.find(l=>l.code==="5.2.4");
+  const block=lesson.blocks.find(b=>b.id==="s5m2l4_b2");
+
+  assert.equal(block.type,"build_phrase");
+  assert.match(block.prompt.text,/Politely ask: Where is the hotel\?/i);
+  assert.equal(block.answerText,"Atsiprašau, kur yra viešbutis?");
+  assert.deepEqual(
+    block.tokens.filter(t=>Number.isInteger(t.correctIndex)).map(t=>t.text),
+    ["Atsiprašau,","kur","yra","viešbutis?"]
+  );
+  assert.ok(block.tokens.some(t=>t.text==="bankas?" && t.isDistractor));
+  assert.ok(block.tokens.some(t=>t.text==="toli?" && t.isDistractor));
+  assert.equal(JSON.stringify(block).includes("viešbučio"),false);
+  assert.equal(JSON.stringify(block).includes("viešbutyje"),false);
+});
