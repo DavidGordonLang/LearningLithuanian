@@ -91,12 +91,58 @@ test("4.2.1 café scenario offers multiple genuinely valid learner responses",()
   assert.equal(close.options.filter(o=>o.progresses!==false).length,3);
 });
 
-test("Section 4 final checkpoint orders for the pair without addressing tau to the server",()=>{
-  const cp=createCheckpoint4({speakerGender:"male"});
+test("Section 4 final scenario is a clear two-person café interaction with meaningful retrieval",()=>{
+  const cp=createCheckpoint4({speakerGender:"male",userNameSafe:"Davidas"});
   const scenario=cp.blocks.find(b=>b.id==="s4c_b12_v2");
+
+  assert.equal(scenario.location,"café");
+  assert.equal(scenario.participants.length,2);
+  assert.equal(scenario.participants.find(p=>p.id==="friend").name,"Mantas");
+  assert.equal(scenario.participants.find(p=>p.id==="server").name,"Rasa");
+  assert.match(scenario.description,/both want a sandwich/i);
+  assert.match(scenario.description,/you want juice/i);
+  assert.match(scenario.description,/pay in cash/i);
+  assert.equal(scenario.steps.length,9);
+
+  const social=scenario.steps.find(s=>s.id==="step_1");
+  assert.equal(social.speakerId,"friend");
+  assert.equal(social.options.find(o=>o.result==="best").text,"Taip! Aš alkanas. Eikime į kavinę.");
+
   const order=scenario.steps.find(s=>s.id==="step_2");
-  assert.equal(JSON.stringify(order).includes("tau arbatos"),false);
-  assert.ok(JSON.stringify(order).includes("Mums vieną kavą su pienu ir vieną arbatą"));
+  assert.equal(order.speakerId,"server");
+  assert.match(order.sceneDirection,/each want a sandwich/i);
+  assert.match(order.sceneDirection,/ordering for both/i);
+  assert.equal(order.options.find(o=>o.result==="best").text,"Laba diena! Mums du sumuštinius, prašau. Man sulčių, prašau.");
+  assert.equal(order.options.find(o=>o.text==="Man du sumuštinius, prašau. Mums sulčių.").result,"wrong");
+
+  const mistake=scenario.steps.find(s=>s.id==="step_4");
+  assert.equal(mistake.speakerText,"Prašom. Vienas sumuštinis ir sriuba.");
+  assert.match(mistake.sceneDirection,/ordered two sandwiches/i);
+  assert.equal(mistake.options.find(o=>o.result==="best").text.includes("čia ne tai, ką užsisakiau"),true);
+  assert.equal(mistake.options.find(o=>o.result==="awkward").text.includes("Sriubos nenoriu"),true);
+
+  const taste=scenario.steps.find(s=>s.id==="step_5");
+  assert.equal(taste.options.find(o=>o.result==="awkward").text,"Taip, labai gerai.");
+
+  const enough=scenario.steps.find(s=>s.id==="step_6");
+  assert.equal(enough.speakerId,"friend");
+  assert.equal(enough.options.find(o=>o.result==="best").text,"Ne, ačiū. Užtenka.");
+  assert.equal(enough.options.find(o=>o.text==="Ne, ačiū.").result,"awkward");
+
+  const bill=scenario.steps.find(s=>s.id==="step_7");
+  assert.equal(bill.options.find(o=>o.result==="best").text,"Ne, ačiū. Ar galėčiau gauti sąskaitą, prašau?");
+  assert.equal(bill.options.find(o=>o.text==="Ne, ačiū. Užtenka.").result,"awkward");
+
+  const payment=scenario.steps.find(s=>s.id==="step_8");
+  assert.match(payment.speakerText,/Grynaisiais ar kortele\?/);
+  assert.equal(payment.options.find(o=>o.text==="Grynaisiais, prašau.").result,"best");
+  assert.equal(payment.options.find(o=>o.text==="Turiu grynųjų.").result,"acceptable");
+  assert.equal(payment.options.find(o=>o.text==="Kortele, prašau.").result,"wrong");
+
+  // The final checkpoint should avoid cartoonishly irrelevant distractors in its substantive turns.
+  for(const step of scenario.steps.slice(1,8)){
+    assert.equal((step.options||[]).some(o=>/Laba diena\.|Viso gero\.|Kur yra tualetas\?/.test(o.text||"")),false,step.id);
+  }
 });
 
 test("payment-choice prompts are actually introduced by a cash-or-card question",()=>{
@@ -460,7 +506,8 @@ test("Key Section 4 comprehension turns use escalating help with silent English 
   assert.equal(cafe.steps[1].help.levels.at(-1).audio,false);
   const cp=createCheckpoint4({speakerGender:"female"});
   const final=cp.blocks.find(b=>b.id==="s4c_b12_v2");
-  assert.equal(final.steps[6].help.levels.at(-1).audio,false);
+  const payment=final.steps.find(s=>s.id==="step_8");
+  assert.equal(payment.help.levels.at(-1).audio,false);
 });
 
 
