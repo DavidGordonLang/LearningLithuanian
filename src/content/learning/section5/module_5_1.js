@@ -989,9 +989,9 @@ export default function createModule_5_1(profile = {}) {
             id: "s5m1c_b5",
             type: "speak_self_check",
             title: "Say it out loud",
-            prompt: "Ask: Where is the bank?",
-            targetText: "Kur yra bankas",
-            audioText: "Kur yra bankas",
+            prompt: "You need the station. Politely ask where it is, then ask if it's far.",
+            targetText: "Atsiprašau, kur yra stotis? Ar toli?",
+            audioText: "Atsiprašau, kur yra stotis? Ar toli?",
           },
           {
   id: "s5m1c_b6_v2",

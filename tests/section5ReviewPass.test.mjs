@@ -282,3 +282,20 @@ test("5.1.5 location gap gives enough context to choose ten",()=>{
   assert.match(block.explanation,/toli would mean far/i);
   assert.match(block.explanation,/only across the street/i);
 });
+
+
+test("5.1 checkpoint speaking block synthesises location and distance instead of repeating the earlier bank prompt",()=>{
+  const m=createModule51();
+  const checkpoint=m.lessons.find(l=>l.code==="5.1.C");
+  const speak=checkpoint.blocks.find(b=>b.id==="s5m1c_b5");
+
+  assert.match(speak.prompt,/need the station/i);
+  assert.match(speak.prompt,/ask where it is/i);
+  assert.match(speak.prompt,/if it's far/i);
+  assert.equal(speak.targetText,"Atsiprašau, kur yra stotis? Ar toli?");
+  assert.equal(speak.audioText,"Atsiprašau, kur yra stotis? Ar toli?");
+  assert.notEqual(speak.targetText,"Kur yra bankas");
+
+  const lesson5=m.lessons.find(l=>l.code==="5.1.5");
+  assert.equal(lesson5.blocks.find(b=>b.id==="s5m1l5_b5").targetText,"Kur yra bankas");
+});
