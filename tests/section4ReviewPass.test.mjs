@@ -323,6 +323,9 @@ test("4.4.2 broadens food vocabulary through spaced retrieval plus one new noun"
   assert.ok(JSON.stringify(scenario).includes("Ar nori sumuštinio?"));
   assert.ok(JSON.stringify(scenario).includes("Ar nori sulčių?"));
   assert.equal(JSON.stringify(scenario).includes("Ar nori kavos?"),false);
+  assert.equal(scenario.steps[0].options.find(o=>o.text==="Labas! Ar norite sumuštinio?").result,"awkward");
+  assert.equal(scenario.steps[0].options.find(o=>o.text==="Labas! Ar nori sumuštinis?").result,"wrong");
+  assert.equal(scenario.steps[1].options.find(o=>o.text==="Ar nori sultys?").result,"wrong");
 });
 
 test("4.4 downstream practice carries the broadened nouns into invitations group orders and checkpoints",()=>{
@@ -331,6 +334,10 @@ test("4.4 downstream practice carries the broadened nouns into invitations group
   const l3=m.lessons.find(l=>l.code==="4.4.3");
   assert.ok(JSON.stringify(l3).includes("Išgerkime sulčių."));
   assert.equal(JSON.stringify(l3).includes("Išgerkime kavos."),false);
+  const invite=l3.blocks.find(b=>b.id==="s4m4l3_b5_v2");
+  assert.equal(invite.participants[0].role,"friend");
+  assert.equal(invite.objects[0].number,"plural");
+  assert.equal(invite.steps[2].options.find(o=>o.result==="best").text,"Taip! Ir išgerkime sulčių.");
 
   const l4=m.lessons.find(l=>l.code==="4.4.4");
   assert.ok(JSON.stringify(l4).includes("Mums du sumuštinius"));

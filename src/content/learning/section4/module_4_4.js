@@ -214,11 +214,11 @@ export default function createModule_4_4(profile = {}) {
             sceneIntro: "You brought a sandwich and juice to share with a colleague.",
             location: "work conversation",
             userRole: "colleague",
-            register: "polite_friendly",
-            goal: "Offer familiar food and drink using nori while retrieving older nouns.",
+            register: "informal",
+            goal: "Offer familiar food and drink using nori while retrieving older nouns and their changed forms.",
             focus: ["Ar nori…?", "sumuštinio", "sulčių"],
             participants: [
-              { id: "colleague", label: "Colleague", name: "Rokas", role: "colleague", gender: "male", relationshipToUser: "colleague", register: "polite_friendly" },
+              { id: "colleague", label: "Colleague", name: "Rokas", role: "colleague", gender: "male", relationshipToUser: "colleague", register: "informal" },
             ],
             steps: [
               {
@@ -230,8 +230,8 @@ export default function createModule_4_4(profile = {}) {
                 learnerPrompt: "Greet Rokas and offer him a sandwich.",
                 options: [
                   { id: "a", text: "Labas! Ar nori sumuštinio?", result: "best", progresses: true },
-                  { id: "b", text: "Labas! Ar nori sulčių?", result: "acceptable", feedback: "Also natural, but the scene first asks you to offer the sandwich.", progresses: true },
-                  { id: "c", text: "Viso gero.", result: "wrong", feedback: "You have just started the conversation.", progresses: false },
+                  { id: "b", text: "Labas! Ar norite sumuštinio?", result: "awkward", feedback: "Grammatically fine, but norite is formal/plural. With a colleague you know, nori fits this informal exchange better.", betterAnswer: "Labas! Ar nori sumuštinio?", progresses: true },
+                  { id: "c", text: "Labas! Ar nori sumuštinis?", result: "wrong", feedback: "After nori, use sumuštinio here: Ar nori sumuštinio?", progresses: false },
                 ],
               },
               {
@@ -243,8 +243,8 @@ export default function createModule_4_4(profile = {}) {
                 learnerPrompt: "Offer him juice too.",
                 options: [
                   { id: "a", text: "Ar nori sulčių?", result: "best", progresses: true },
-                  { id: "b", text: "Ar nori obuolio?", result: "acceptable", feedback: "That is a valid offer, but the scene says you have juice to share.", progresses: true },
-                  { id: "c", text: "Kiek tai kainuoja?", result: "wrong", feedback: "You are sharing lunch with a colleague, not buying something.", progresses: false },
+                  { id: "b", text: "Ar norite sulčių?", result: "awkward", feedback: "This is grammatical, but formal/plural. Ar nori sulčių? matches the informal conversation.", betterAnswer: "Ar nori sulčių?", progresses: true },
+                  { id: "c", text: "Ar nori sultys?", result: "wrong", feedback: "After nori, use sulčių here: Ar nori sulčių?", progresses: false },
                 ],
               },
               {
@@ -326,117 +326,64 @@ export default function createModule_4_4(profile = {}) {
             audioText: "Eikime į kavinę",
           },
           {
-  id: "s4m4l3_b5_v2",
-  type: "scenario_v2",
-  title: "Conversation",
-  description: "You suggest going to a café with a friend and having something to eat and drink.",
-  sceneIntro: "You suggest going to a café with a friend and having something to eat and drink.",
-  location: "café",
-  userRole: "customer",
-  register: "polite_service",
-  goal: "Use social invitation language while retrieving sulčių from earlier lessons.",
-  focus: ["ordering"],
-  participants: [
-    {
-      "id": "barista",
-      "label": "Barista",
-      "name": "Ieva",
-      "role": "barista",
-      "gender": "female",
-      "relationshipToUser": "stranger",
-      "register": "polite_service"
-    },
-  ],
-  objects: [
-    {
-      "id": "juice",
-      "lt": "sultys",
-      "en": "juice",
-      "gender": "feminine",
-      "number": "singular"
-    },
-  ],
-  steps: [
-    {
-      id: "step_1",
-      speakerId: "barista",
-      speakerLabel: "Barista",
-      speakerText: `Labas, ${userNameSafe}!`,
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Viso gero.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Labas! Eikime į kavinę!",
-          textEn: "Hi! Let's go to the café!",
-          result: "best",
-          progresses: true,
-        }
-      ,
-        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
-      ],
-    },
-    {
-      id: "step_2",
-      speakerId: "barista",
-      speakerLabel: "Barista",
-      speakerText: "Gerai! Dabar?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
-      options: [
-        {
-          id: "a",
-          text: "Ne, ačiū.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Taip, dabar!",
-          textEn: "Yes, now!",
-          result: "best",
-          progresses: true,
-        }
-      ,
-        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
-      ],
-    },
-    {
-      id: "step_3",
-      speakerId: "barista",
-      speakerLabel: "Barista",
-      speakerText: "Puiku! Išgerkime sulčių.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
-      options: [
-        {
-          id: "a",
-          text: "Ne, ačiū.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Taip! Ir gal pavalgykime.",
-          textEn: "Yes! And maybe let's eat too.",
-          result: "best",
-          progresses: true,
-        }
-      ,
-        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
-      ],
-    }
-  ],
-},
+            id: "s4m4l3_b5_v2",
+            type: "scenario_v2",
+            title: "Make a plan",
+            description: "You suggest going to a café with a friend, then suggest having something to eat and drink.",
+            sceneIntro: "You suggest going to a café with a friend, then suggest having something to eat and drink.",
+            location: "casual conversation",
+            userRole: "friend",
+            register: "informal",
+            goal: "Use Eikime, Pavalgykime and Išgerkime while retrieving sulčių.",
+            focus: ["Eikime", "Pavalgykime", "Išgerkime sulčių"],
+            participants: [
+              { id: "friend", label: "Friend", name: "Mantas", role: "friend", gender: "male", relationshipToUser: "friend", register: "informal" },
+            ],
+            objects: [
+              { id: "juice", lt: "sultys", en: "juice", gender: "feminine", number: "plural" },
+            ],
+            steps: [
+              {
+                id: "step_1",
+                speakerId: "friend",
+                speakerLabel: "Friend",
+                speakerText: `Labas, ${userNameSafe}!`,
+                sceneDirection: "You would like to go to a café together.",
+                learnerPrompt: "Greet Mantas and suggest going to the café.",
+                options: [
+                  { id: "a", text: "Labas! Eikime į kavinę!", result: "best", progresses: true },
+                  { id: "b", text: "Labas! Pavalgykime!", result: "acceptable", feedback: "A natural invitation, but Eikime į kavinę expresses the destination the scene asks for.", progresses: true },
+                  { id: "c", text: "Viso gero.", result: "wrong", feedback: "You are making a plan, not leaving.", progresses: false },
+                ],
+              },
+              {
+                id: "step_2",
+                speakerId: "friend",
+                speakerLabel: "Friend",
+                speakerText: "Gerai! Dabar?",
+                sceneDirection: "You are happy to go now.",
+                learnerPrompt: "Agree to go now.",
+                options: [
+                  { id: "a", text: "Taip, dabar!", result: "best", progresses: true },
+                  { id: "b", text: "Taip!", result: "acceptable", feedback: "Natural, though dabar makes the timing explicit.", progresses: true },
+                  { id: "c", text: "Gal vėliau?", result: "wrong", feedback: "The scene says you want to go now.", progresses: false },
+                ],
+              },
+              {
+                id: "step_3",
+                speakerId: "friend",
+                speakerLabel: "Friend",
+                speakerText: "Puiku! Pavalgykime.",
+                sceneDirection: "You also want something to drink.",
+                learnerPrompt: "Agree and suggest drinking juice too.",
+                options: [
+                  { id: "a", text: "Taip! Ir išgerkime sulčių.", result: "best", progresses: true },
+                  { id: "b", text: "Išgerkime sulčių.", result: "acceptable", feedback: "A concise and natural suggestion.", progresses: true },
+                  { id: "c", text: "Ne, ačiū.", result: "wrong", feedback: "The scene says you want something to drink too.", progresses: false },
+                ],
+              },
+            ],
+          },
         ],
       },
 
