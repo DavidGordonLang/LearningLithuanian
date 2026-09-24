@@ -94,6 +94,22 @@ test("Section 5 added response alternatives remain natural and correctly cased",
   assert.equal(all.includes('"einu į viešbutį."'),false);
 });
 
+test("Section 5 scenario options do not contain punctuation-only duplicates",()=>{
+  const units=[createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()];
+  const norm=s=>(s||"").toLowerCase().replace(/[.!?…,:;—–-]/g,"").replace(/\s+/g," ").trim();
+  for(const unit of units){
+    const lessons=unit.lessons||[{code:unit.code,blocks:unit.blocks||[]}];
+    for(const lesson of lessons){
+      for(const scenario of (lesson.blocks||[]).filter(b=>b.type==="scenario_v2")){
+        for(const step of scenario.steps||[]){
+          const values=(step.options||[]).map(o=>norm(o.text));
+          assert.equal(new Set(values).size,values.length,`${lesson.code} ${scenario.id}/${step.id}`);
+        }
+      }
+    }
+  }
+});
+
 test("Section 5 scenario turns do not collapse to two-button choices",()=>{
   for(const unit of [createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()]){
     const lessons=unit.lessons||[{code:unit.code,blocks:unit.blocks||[]}];

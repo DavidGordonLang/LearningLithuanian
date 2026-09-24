@@ -542,7 +542,7 @@ export default function createModule_5_4(profile = {}) {
           progresses: true,
         }
       ,
-        {"id":"z","text":"Taip.","result":"acceptable","feedback":"The same answer with less emphasis.","progresses":true},
+        {"id":"z","text":"Taip, tiesiai, paskui kairėn.","result":"acceptable","feedback":"A natural confirmation that repeats the directions clearly.","progresses":true},
       ],
     },
     {

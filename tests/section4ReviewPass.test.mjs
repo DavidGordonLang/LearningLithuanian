@@ -217,35 +217,60 @@ test("4.3.4 tests replacement language with a problem in the served item, not a 
   assert.equal(scenario.steps.length,4);
 });
 
-test("4.3.5 separates the cold complaint from the later replacement request",()=>{
+test("4.3.5 follows the natural receive-complain-replace-pay sequence",()=>{
   const m=createModule43({speakerGender:"male"});
   const lesson=m.lessons.find(l=>l.code==="4.3.5");
-  const learn=lesson.blocks.find(b=>b.id==="s4m3l5_b1");
-  const listen=lesson.blocks.find(b=>b.id==="s4m3l5_b2");
-  const speak=lesson.blocks.find(b=>b.id==="s4m3l5_b4");
   const scenario=lesson.blocks.find(b=>b.id==="s4m3l5_b5_v2");
 
-  assert.equal(learn.items[0].lt,"Per šalta.");
-  assert.equal(listen.prompt.text,"Per šalta.");
-  assert.equal(speak.targetText,"Per šalta");
-  assert.match(scenario.description,/too cold/i);
-  assert.equal(scenario.description.includes("too hot"),false);
+  assert.equal(scenario.steps.length,6);
 
-  const complaint=scenario.steps.find(s=>s.id==="step_2");
-  assert.equal(complaint.speakerText,"Ar viskas gerai?");
+  const receive=scenario.steps[0];
+  assert.equal(receive.speakerText,"Prašom. Kava su pienu.");
+  assert.equal(receive.sceneDirection,"Rasa brings the coffee you ordered.");
+  assert.equal(receive.options.find(o=>o.result==="best").text,"Ačiū!");
+  assert.equal(JSON.stringify(receive).includes("Čia ne tai, ką užsisakiau"),false);
+
+  const complaint=scenario.steps[1];
+  assert.match(complaint.sceneDirection,/take a sip.*too cold/i);
   assert.equal(complaint.options.find(o=>o.result==="best").text,"Nelabai — per šalta.");
   assert.equal(JSON.stringify(complaint).includes("Ar galite atnešti kitą?"),false);
 
-  const request=scenario.steps.find(s=>s.id==="step_3");
+  const request=scenario.steps[2];
   assert.equal(request.speakerText,"Labai atsiprašau.");
   assert.equal(request.options.find(o=>o.result==="best").text,"Ar galite atnešti kitą?");
-  assert.equal(request.options.find(o=>o.text==="Ar galite pakeisti?").result,"acceptable");
-  assert.equal(scenario.steps.length,7);
+
+  const replacement=scenario.steps[3];
+  assert.equal(replacement.speakerText,"Žinoma. Prašom.");
+  assert.match(replacement.sceneDirection,/hot replacement/i);
+  assert.equal(replacement.options.find(o=>o.result==="best").text,"Ačiū labai!");
+
+  const bill=scenario.steps[4];
+  assert.equal(bill.speakerText,"Ar dar ko nors norėtumėte?");
+  assert.equal(bill.options.find(o=>o.result==="best").text,"Ne, ačiū. Sąskaitą, prašau.");
+
+  const payment=scenario.steps[5];
+  assert.match(payment.speakerText,/Grynaisiais ar kortele\?/);
 
   const checkpoint=m.lessons.find(l=>l.code==="4.3.C");
   const cold=checkpoint.blocks.find(b=>b.id==="s4m3c_b5");
   assert.match(cold.prompt.text,/too cold/i);
   assert.equal(cold.options.find(o=>o.isCorrect).text,"Per šalta.");
+});
+
+test("Section 4 scenario options do not contain punctuation-only duplicates",()=>{
+  const units=[createModule41(),createModule42(),createModule43({speakerGender:"male"}),createModule44({speakerGender:"male"}),createCheckpoint4({speakerGender:"male"})];
+  const norm=s=>(s||"").toLowerCase().replace(/[.!?…,:;—–-]/g,"").replace(/\s+/g," ").trim();
+  for(const unit of units){
+    const lessons=unit.lessons||[{code:unit.code,blocks:unit.blocks||[]}];
+    for(const lesson of lessons){
+      for(const scenario of (lesson.blocks||[]).filter(b=>b.type==="scenario_v2")){
+        for(const step of scenario.steps||[]){
+          const values=(step.options||[]).map(o=>norm(o.text));
+          assert.equal(new Set(values).size,values.length,`${lesson.code} ${scenario.id}/${step.id}`);
+        }
+      }
+    }
+  }
 });
 
 test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
