@@ -68,23 +68,34 @@ export default function VocabSaveView({
     return Array.isArray(wordMatch?.pairs) ? wordMatch.pairs : [];
   }, [module]);
 
-  // Check each pair against library
+  // Check each pair against library. Selection identity is the normalised
+  // Lithuanian content key, not the local word-match id: checkpoint pairs reuse
+  // ids such as m1/m2 across modules, especially in section-level aggregation.
   const pairsWithStatus = useMemo(() => {
     const existingKeys = new Set(
       (Array.isArray(rows) ? rows : [])
         .filter((r) => !r._deleted)
         .map((r) => String(r.contentKey || buildContentKey(r.Lithuanian || "")))
     );
-    return pairs.map((pair) => ({
-      ...pair,
-      contentKey: buildContentKey(pair.lt),
-      isDuplicate: existingKeys.has(buildContentKey(pair.lt)),
-    }));
+    const seenPairKeys = new Set();
+
+    return pairs.reduce((out, pair) => {
+      const contentKey = buildContentKey(pair.lt);
+      if (!contentKey || seenPairKeys.has(contentKey)) return out;
+      seenPairKeys.add(contentKey);
+      out.push({
+        ...pair,
+        selectionKey: contentKey,
+        contentKey,
+        isDuplicate: existingKeys.has(contentKey),
+      });
+      return out;
+    }, []);
   }, [pairs, rows]);
 
   const selectablePairs = pairsWithStatus.filter((p) => !p.isDuplicate);
   const allSelected = selectablePairs.length > 0 &&
-    selectablePairs.every((p) => selected.has(p.id));
+    selectablePairs.every((p) => selected.has(p.selectionKey));
 
   const togglePair = (id) => {
     setSelected((prev) => {
@@ -99,13 +110,13 @@ export default function VocabSaveView({
     if (allSelected) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(selectablePairs.map((p) => p.id)));
+      setSelected(new Set(selectablePairs.map((p) => p.selectionKey)));
     }
   };
 
   const handleSave = () => {
     if (saving || saved) return;
-    const toSave = pairsWithStatus.filter((p) => selected.has(p.id) && !p.isDuplicate);
+    const toSave = pairsWithStatus.filter((p) => selected.has(p.selectionKey) && !p.isDuplicate);
     if (toSave.length === 0) { onDone?.(); return; }
 
     setSaving(true);
@@ -165,8 +176,8 @@ export default function VocabSaveView({
     }
   };
 
-  const selectedCount = [...selected].filter(
-    (id) => !pairsWithStatus.find((p) => p.id === id)?.isDuplicate
+  const selectedCount = pairsWithStatus.filter(
+    (p) => selected.has(p.selectionKey) && !p.isDuplicate
   ).length;
 
   return (
@@ -217,15 +228,15 @@ export default function VocabSaveView({
       {/* Pair list */}
       <div className="flex flex-col gap-2 mb-6">
         {pairsWithStatus.map((pair) => {
-          const isSelected = selected.has(pair.id);
+          const isSelected = selected.has(pair.selectionKey);
           const isDupe = pair.isDuplicate;
 
           return (
             <button
-              key={pair.id}
+              key={pair.selectionKey}
               type="button"
               data-press
-              onClick={() => !isDupe && togglePair(pair.id)}
+              onClick={() => !isDupe && togglePair(pair.selectionKey)}
               disabled={isDupe}
               className={cn(
                 "w-full text-left rounded-2xl border px-4 py-3 transition flex items-center gap-3",

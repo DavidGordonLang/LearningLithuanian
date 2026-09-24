@@ -28,10 +28,23 @@ test("end-of-module vocabulary save excludes already-saved Lithuanian at every U
   assert.match(src, /filter\(\(r\) => !r\._deleted\)/);
   assert.match(src, /isDuplicate:\s*existingKeys\.has\(buildContentKey\(pair\.lt\)\)/);
   assert.match(src, /const selectablePairs = pairsWithStatus\.filter\(\(p\) => !p\.isDuplicate\)/);
-  assert.match(src, /selected\.has\(p\.id\) && !p\.isDuplicate/);
+  assert.match(src, /selectionKey:\s*contentKey/);
+  assert.match(src, /selected\.has\(p\.selectionKey\) && !p\.isDuplicate/);
   assert.match(src, /disabled=\{isDupe\}/);
-  assert.match(src, /!isDupe && togglePair\(pair\.id\)/);
+  assert.match(src, /!isDupe && togglePair\(pair\.selectionKey\)/);
   assert.match(src, /In library/);
+});
+
+test("vocabulary save selection is keyed by Lithuanian content rather than reused word-match ids", () => {
+  const src = source("src/views/training/VocabSaveView.jsx");
+
+  assert.match(src, /const seenPairKeys = new Set\(\)/);
+  assert.match(src, /if \(!contentKey \|\| seenPairKeys\.has\(contentKey\)\) return out/);
+  assert.match(src, /selectionKey:\s*contentKey/);
+  assert.match(src, /selectablePairs\.every\(\(p\) => selected\.has\(p\.selectionKey\)\)/);
+  assert.match(src, /new Set\(selectablePairs\.map\(\(p\) => p\.selectionKey\)\)/);
+  assert.match(src, /selectedCount = pairsWithStatus\.filter\([\s\S]*?selected\.has\(p\.selectionKey\)/);
+  assert.doesNotMatch(src, /selected\.has\(p\.id\)/);
 });
 
 test("module and section completion still route through the vocabulary retention step", () => {
