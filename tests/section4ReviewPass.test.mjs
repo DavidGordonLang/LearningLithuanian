@@ -301,6 +301,58 @@ test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
   assert.equal(l34.steps[1].speakerText,"Labai atsiprašau. Žinoma. Prašom.");
 });
 
+test("4.4.2 broadens food vocabulary through spaced retrieval plus one new noun",()=>{
+  const m=createModule44({speakerGender:"male"});
+  const lesson=m.lessons.find(l=>l.code==="4.4.2");
+  const learn=lesson.blocks.find(b=>b.id==="s4m4l2_b1");
+  const items=learn.items.map(i=>i.lt);
+
+  for(const expected of ["Ar nori sulčių?","Ar norite sumuštinio?","Ar nori obuolio?","sausainis","Ar nori sausainio?"]){
+    assert.ok(items.includes(expected),expected);
+  }
+  assert.equal(items.some(x=>/kavos|arbatos/i.test(x)),false);
+  assert.match(lesson.notes.pattern,/sultys → sulčių/);
+  assert.match(lesson.notes.pattern,/sumuštinis → sumuštinio/);
+  assert.match(lesson.notes.pattern,/obuolys → obuolio/);
+  assert.match(lesson.notes.pattern,/sausainis → sausainio/);
+
+  assert.equal(lesson.blocks.find(b=>b.id==="s4m4l2_b2").prompt.text,"Ar norite sumuštinio?");
+  assert.equal(lesson.blocks.find(b=>b.id==="s4m4l2_b4").targetText,"Ar nori sulčių");
+
+  const scenario=lesson.blocks.find(b=>b.id==="s4m4l2_b5_v2");
+  assert.ok(JSON.stringify(scenario).includes("Ar nori sumuštinio?"));
+  assert.ok(JSON.stringify(scenario).includes("Ar nori sulčių?"));
+  assert.equal(JSON.stringify(scenario).includes("Ar nori kavos?"),false);
+});
+
+test("4.4 downstream practice carries the broadened nouns into invitations group orders and checkpoints",()=>{
+  const m=createModule44({speakerGender:"male"});
+
+  const l3=m.lessons.find(l=>l.code==="4.4.3");
+  assert.ok(JSON.stringify(l3).includes("Išgerkime sulčių."));
+  assert.equal(JSON.stringify(l3).includes("Išgerkime kavos."),false);
+
+  const l4=m.lessons.find(l=>l.code==="4.4.4");
+  assert.ok(JSON.stringify(l4).includes("Mums du sumuštinius"));
+  assert.ok(JSON.stringify(l4).includes("Man sulčių"));
+  assert.equal(JSON.stringify(l4).includes("Mums dvi arbatas"),false);
+
+  const checkpoint=m.lessons.find(l=>l.code==="4.4.C");
+  assert.equal(checkpoint.blocks.find(b=>b.id==="s4m4c_b1").prompt.text.includes("Ar nori sausainio?"),true);
+  assert.equal(checkpoint.blocks.find(b=>b.id==="s4m4c_b2").prompt.text,"Išgerkime sulčių.");
+  assert.equal(checkpoint.blocks.find(b=>b.id==="s4m4c_b3").prompt.text,"Mums du sumuštinius.");
+  const social=checkpoint.blocks.find(b=>b.id==="s4m4c_b6_v2");
+  assert.equal(social.steps[1].speakerText,"Gerai! Ar nori sulčių?");
+  assert.equal(social.steps[2].speakerText,"Aš noriu sumuštinio. Pavalgykime!");
+
+  const final=createCheckpoint4({speakerGender:"male"});
+  const offer=final.blocks.find(b=>b.id==="s4c_b10");
+  assert.equal(offer.targetText,"Ar nori sausainio");
+  const pairs=final.blocks.find(b=>b.type==="word_match").pairs.map(p=>p.lt);
+  assert.ok(pairs.includes("Ar nori sausainio?"));
+  assert.ok(pairs.includes("Man sulčių, prašau."));
+});
+
 test("Section 4.4 social scenarios reuse prior language coherently",()=>{
   const m=createModule44({speakerGender:"male"});
   const l41=m.lessons.find(l=>l.code==="4.4.1").blocks.find(b=>b.id==="s4m4l1_b5_v2");
@@ -309,9 +361,9 @@ test("Section 4.4 social scenarios reuse prior language coherently",()=>{
   assert.ok(JSON.stringify(l41).includes("Kavinė yra ten."));
 
   const l44=m.lessons.find(l=>l.code==="4.4.4").blocks.find(b=>b.id==="s4m4l4_b6_v2");
-  assert.equal(l44.steps[0].options.find(o=>o.result==="best").text,"Laba diena! Mums dvi arbatas, prašau.");
-  assert.equal(JSON.stringify(l44).includes("Man kavos ir tau arbatos, prašau."),true);
-  assert.equal(l44.steps[0].options.find(o=>o.text==="Man kavos ir tau arbatos, prašau.").result,"wrong");
+  assert.equal(l44.steps[0].options.find(o=>o.result==="best").text,"Laba diena! Mums du sumuštinius, prašau.");
+  assert.equal(JSON.stringify(l44).includes("Man vieną sumuštinį, prašau."),true);
+  assert.equal(l44.steps[0].options.find(o=>o.text==="Man vieną sumuštinį, prašau.").result,"wrong");
 
   const l45=m.lessons.find(l=>l.code==="4.4.5").blocks.find(b=>b.id==="s4m4l5_b5_v2");
   assert.ok(JSON.stringify(l45).includes("Ne, ačiū. Užtenka."));
