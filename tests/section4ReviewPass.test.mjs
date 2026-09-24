@@ -112,8 +112,12 @@ test("Section 4 final scenario is a clear two-person café interaction with mean
   assert.equal(order.speakerId,"server");
   assert.match(order.sceneDirection,/each want a sandwich/i);
   assert.match(order.sceneDirection,/ordering for both/i);
-  assert.equal(order.options.find(o=>o.result==="best").text,"Laba diena! Mums du sumuštinius, prašau. Man sulčių, prašau.");
+  assert.equal(order.options.find(o=>o.result==="best").text,"Laba diena! Mums du sumuštinius ir man sulčių, prašau.");
   assert.equal(order.options.find(o=>o.text==="Man du sumuštinius, prašau. Mums sulčių.").result,"wrong");
+  const shorterOrder=order.options.find(o=>o.text==="Mums du sumuštinius, prašau. Man sulčių.");
+  assert.equal(shorterOrder.result,"acceptable");
+  assert.match(shorterOrder.feedback,/single prašau makes the whole order polite/i);
+  assert.equal(shorterOrder.feedback.includes("second prašau"),false);
 
   const mistake=scenario.steps.find(s=>s.id==="step_4");
   assert.equal(mistake.speakerText,"Prašom. Vienas sumuštinis ir sriuba.");

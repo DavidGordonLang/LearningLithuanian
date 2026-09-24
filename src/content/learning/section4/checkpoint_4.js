@@ -245,8 +245,8 @@ export default function createCheckpoint4(profile = {}) {
             options: [
               {
                 id: "a",
-                text: "Laba diena! Mums du sumuštinius, prašau. Man sulčių, prašau.",
-                textEn: "Good day! Two sandwiches for us, please. Juice for me, please.",
+                text: "Laba diena! Mums du sumuštinius ir man sulčių, prašau.",
+                textEn: "Good day! Two sandwiches for us and juice for me, please.",
                 result: "best",
                 progresses: true,
               },
@@ -255,7 +255,7 @@ export default function createCheckpoint4(profile = {}) {
                 text: "Mums du sumuštinius, prašau. Man sulčių.",
                 textEn: "Two sandwiches for us, please. Juice for me.",
                 result: "acceptable",
-                feedback: "Clear and natural. The greeting and second prašau are optional once the exchange is underway.",
+                feedback: "Also natural. You've already been greeted, and the single prašau makes the whole order polite.",
                 progresses: true,
               },
               {
