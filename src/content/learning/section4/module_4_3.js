@@ -1141,25 +1141,31 @@ export default function createModule_4_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena! Ko norėtumėte?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You want tea with lemon.",
+      learnerPrompt: "Order tea with lemon.",
       options: [
-                {
-          id: "b",
+        {
+          id: "a",
           text: "Laba diena! Norėčiau arbatos su citrina, prašau.",
           textEn: "Good day! I would like tea with lemon, please.",
           result: "best",
           progresses: true,
         },
         {
+          id: "b",
+          text: "Laba diena! Norėčiau arbatos be citrinos, prašau.",
+          textEn: "Good day! I would like tea without lemon, please.",
+          result: "wrong",
+          feedback: "You want tea with lemon. Su means with; be means without.",
+          progresses: false,
+        },
+        {
           id: "c",
           text: "Viso gero.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You are ordering, not leaving.",
           progresses: false,
-        }
-      ,
-        {"id":"z","text":"Norėčiau arbatos su citrina, prašau.","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
+        },
       ],
     },
     {

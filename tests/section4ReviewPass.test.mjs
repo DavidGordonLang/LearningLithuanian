@@ -273,6 +273,21 @@ test("Section 4 scenario options do not contain punctuation-only duplicates",()=
   }
 });
 
+test("4.3 checkpoint tests retention of su versus be in the opening order",()=>{
+  const m=createModule43({speakerGender:"male"});
+  const checkpoint=m.lessons.find(l=>l.code==="4.3.C");
+  const scenario=checkpoint.blocks.find(b=>b.id==="s4m3c_b9_v2");
+  const order=scenario.steps.find(s=>s.id==="step_1");
+
+  assert.equal(order.sceneDirection,"You want tea with lemon.");
+  assert.equal(order.learnerPrompt,"Order tea with lemon.");
+  assert.equal(order.options.find(o=>o.result==="best").text,"Laba diena! Norėčiau arbatos su citrina, prašau.");
+  const without=order.options.find(o=>o.text==="Laba diena! Norėčiau arbatos be citrinos, prašau.");
+  assert.equal(without.result,"wrong");
+  assert.match(without.feedback,/Su means with; be means without/i);
+  assert.equal(order.options.some(o=>o.text==="Norėčiau arbatos su citrina, prašau."),false);
+});
+
 test("Section 4.3 scenarios avoid unnecessary untaught service wording",()=>{
   const m=createModule43({speakerGender:"male"});
   const l31=m.lessons.find(l=>l.code==="4.3.1").blocks.find(b=>b.id==="s4m3l1_b5_v2");
