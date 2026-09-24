@@ -28,19 +28,21 @@ test("Section 5 location scenarios match their physical setting",()=>{
  assert.equal(bank.participants[0].role,"passer-by");
  assert.equal(bank.objects[0].lt,"bankas");
  assert.equal(hotel.location,"street");
- assert.equal(hotel.steps[1].speakerText,"Viešbutis yra ten.");
- assert.equal(hotel.steps[2].speakerText,"Kavinė yra čia.");
+ assert.equal(hotel.steps[0].speakerText,"Kur yra viešbutis?");
+ assert.equal(hotel.steps[1].speakerText,"Kur yra kavinė?");
+ assert.equal(hotel.steps[3].speakerText,"Tualetas yra ten.");
 });
 
 test("Section 5 scenarios reinforce taught place and movement language without avoidable vocabulary leaks",()=>{
   const m1=createModule51();
   const l12=m1.lessons.find(l=>l.code==="5.1.2").blocks.find(b=>b.id==="s5m1l2_b6_v2");
-  assert.equal(l12.steps.length,3);
+  assert.equal(l12.steps.length,4);
   const l11=m1.lessons.find(l=>l.code==="5.1.1").blocks.find(b=>b.id==="s5m1l1_b6_v2");
   assert.equal(l11.steps[1].speakerText,"Bankas yra ten.");
   assert.equal(l11.steps[1].supportText,undefined);
-  assert.equal(l12.steps[1].speakerText,"Viešbutis yra ten.");
-  assert.equal(l12.steps[2].speakerText,"Kavinė yra čia.");
+  assert.equal(l12.steps[0].options.find(o=>o.result==="best").text,"Viešbutis yra ten.");
+  assert.equal(l12.steps[1].options.find(o=>o.result==="best").text,"Kavinė yra čia.");
+  assert.equal(l12.steps[3].speakerText,"Tualetas yra ten.");
   assert.equal(txt(m1).includes("Autobusų stotis yra ten."),false);
   assert.ok(txt(m1).includes("Autobusų stotelė yra ten."));
   assert.equal(txt(m1).includes("teisingai"),false);
@@ -212,4 +214,31 @@ test("Lithuanian best-response answers in Section 5 keep option audio enabled",(
     assert.ok(block,id);
     assert.equal(block.noOptionAudio,undefined,id);
   }
+});
+
+
+test("5.1.2 tests here/there through place plus position rather than trivial one-word elimination",()=>{
+  const m=createModule51();
+  const lesson=m.lessons.find(l=>l.code==="5.1.2");
+  const b3=lesson.blocks.find(b=>b.id==="s5m1l2_b3");
+  const b4=lesson.blocks.find(b=>b.id==="s5m1l2_b4");
+  const b5=lesson.blocks.find(b=>b.id==="s5m1l2_b5");
+  const scenario=lesson.blocks.find(b=>b.id==="s5m1l2_b6_v2");
+
+  assert.equal(b3.options.find(o=>o.isCorrect).text,"Viešbutis yra ten.");
+  assert.equal(b4.options.find(o=>o.isCorrect).text,"Tualetas yra čia.");
+  assert.match(b4.prompt.text,/door immediately beside you/i);
+  assert.equal(b5.options.find(o=>o.isCorrect).text,"The hotel is across the street.");
+  assert.match(b5.prompt.audioText,/Viešbutis yra ten/);
+
+  assert.equal(scenario.participants.length,2);
+  assert.equal(scenario.steps.length,4);
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Viešbutis yra ten.");
+  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Kavinė yra čia.");
+  assert.equal(scenario.steps[2].options.filter(o=>o.progresses!==false).length,2);
+  assert.equal(scenario.steps[3].options.find(o=>o.result==="best").text,"Ten. Ačiū labai!");
+
+  const serialized=JSON.stringify(lesson);
+  assert.equal(serialized.includes('"text":"Ten.","isCorrect":true'),false);
+  assert.equal(serialized.includes('"text":"Ačiū.","isCorrect":false'),false);
 });
