@@ -1114,33 +1114,13 @@ export default function createModule_5_1(profile = {}) {
       ,
         {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
       ],
-    },
-    {
-      id: "step_4",
-      speakerId: "assistant",
-      speakerLabel: "Assistant",
-      speakerText: "Prašom. Geros kelionės!",
-      supportText: "geros kelionės — have a good journey",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
-      options: [
-        {
-          id: "a",
-          text: "Atsiprašau.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Ačiū! Viso gero!",
-          textEn: "Thank you! Goodbye!",
-          result: "best",
-          progresses: true,
-        }
-      ,
-        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
-      ],
+      finalSystemLine: {
+        speakerId: "assistant",
+        speakerLabel: "Assistant",
+        speakerText: "Prašom. Geros kelionės!",
+        supportText: "geros kelionės — have a good journey",
+        sceneDirection: "Rasa wishes you a good journey and the exchange ends.",
+      },
     }
   ],
 },

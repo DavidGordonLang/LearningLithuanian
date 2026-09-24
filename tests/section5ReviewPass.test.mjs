@@ -299,3 +299,20 @@ test("5.1 checkpoint speaking block synthesises location and distance instead of
   const lesson5=m.lessons.find(l=>l.code==="5.1.5");
   assert.equal(lesson5.blocks.find(b=>b.id==="s5m1l5_b5").targetText,"Kur yra bankas");
 });
+
+
+test("5.1 checkpoint ends after the server's final goodbye without forcing another learner response",()=>{
+  const m=createModule51();
+  const checkpoint=m.lessons.find(l=>l.code==="5.1.C");
+  const scenario=checkpoint.blocks.find(b=>b.id==="s5m1c_b6_v2");
+
+  assert.equal(scenario.steps.length,3);
+  const finalStep=scenario.steps.at(-1);
+  assert.equal(finalStep.speakerText,"Ne, tai netoli. Penkios minutės.");
+  assert.equal(finalStep.options.find(o=>o.result==="best").text,"Ačiū labai! Viso gero.");
+  assert.ok(finalStep.finalSystemLine);
+  assert.equal(finalStep.finalSystemLine.speakerText,"Prašom. Geros kelionės!");
+  assert.equal(finalStep.finalSystemLine.supportText,"geros kelionės — have a good journey");
+  assert.match(finalStep.finalSystemLine.sceneDirection,/exchange ends/i);
+  assert.equal(scenario.steps.some(s=>s.speakerText==="Prašom. Geros kelionės!"),false);
+});
