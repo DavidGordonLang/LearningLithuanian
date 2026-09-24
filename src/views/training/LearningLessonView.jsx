@@ -261,7 +261,7 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
     ? selected ? "border-white/25 bg-white/[0.09] text-zinc-100"
       : "border-white/15 bg-white/[0.06] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"
     : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
-    : selected && softPass ? "border-white/20 bg-white/[0.07] text-zinc-100"
+    : selected && softPass ? "border-amber-400/35 bg-amber-500/[0.10] text-amber-200"
     : selected ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
 

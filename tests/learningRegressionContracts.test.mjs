@@ -421,6 +421,13 @@ test("Build Phrase repair mode stays active while the learner edits the phrase",
   assert.doesNotMatch(buildPhrase, /setBuilt\(\(prev\) => prev\.filter\(\(x\) => x !== id\)\);\s*setCheckState\("idle"\)/);
 });
 
+test("generic choice soft passes highlight the selected option amber while the authored best answer stays green", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+
+  assert.match(src, /selected && softPass \? "border-amber-400\/35 bg-amber-500\/\[0\.10\] text-amber-200"/);
+  assert.match(src, /option\.isCorrect \? "border-emerald-400\/20 bg-emerald-500\/\[0\.10\] text-emerald-100"/);
+});
+
 test("generic choice blocks can give non-failing correction notes for acceptable or awkward answers", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
 
