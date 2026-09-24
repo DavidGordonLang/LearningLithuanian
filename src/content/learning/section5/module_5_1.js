@@ -531,14 +531,15 @@ export default function createModule_5_1(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Lithuanian direction words have a built-in sense of movement. Kairėn means to the left, dešinėn means to the right. You will hear these as one-word replies or paired with Eikite (go) and Pasukite (turn).",
+          pattern: "Start with the base direction words: kairė means left / the left side, and dešinė means right / the right side. When you are talking about movement, they become kairėn — to the left — and dešinėn — to the right. That is why turn left is Pasukite kairėn and turn right is Pasukite dešinėn. You do not need to memorise the grammar rule yet; recognise the base word inside the direction.",
           usage: [
+            "kairė → kairėn — left → to the left",
+            "dešinė → dešinėn — right → to the right",
             "tiesiai — straight ahead",
-            "kairėn — to the left",
-            "dešinėn — to the right",
-            "Eikite tiesiai — go straight ahead",
             "Pasukite kairėn — turn left",
             "Pasukite dešinėn — turn right",
+            "Eikite tiesiai — go straight ahead",
+            "paskui — then",
           ],
         },
         blocks: [
@@ -547,13 +548,10 @@ export default function createModule_5_1(profile = {}) {
             type: "learn",
             title: "Directions",
             items: [
-              { id: "i1", lt: "tiesiai",           en: "straight ahead",  audioText: "tiesiai",           saveable: true, core: true },
-              { id: "i2", lt: "kairėn",            en: "to the left",     audioText: "kairėn",            saveable: true, core: true },
-              { id: "i3", lt: "dešinėn",           en: "to the right",    audioText: "dešinėn",           saveable: true, core: true },
-              { id: "i4", lt: "Eikite tiesiai.",   en: "Go straight ahead.", audioText: "Eikite tiesiai",  saveable: true, core: true },
-              { id: "i5", lt: "Pasukite kairėn.",  en: "Turn left.",       audioText: "Pasukite kairėn",   saveable: true, core: true },
-              { id: "i6", lt: "Pasukite dešinėn.", en: "Turn right.",      audioText: "Pasukite dešinėn",  saveable: true, core: true },
-              { id: "i7", lt: "paskui",            en: "then",             audioText: "paskui",            saveable: true, core: false },
+              { id: "i1", lt: "kairė",   en: "left / the left side",   audioText: "kairė",   saveable: true, core: true },
+              { id: "i2", lt: "dešinė",  en: "right / the right side", audioText: "dešinė",  saveable: true, core: true },
+              { id: "i3", lt: "tiesiai", en: "straight ahead",         audioText: "tiesiai", saveable: true, core: true },
+              { id: "i4", lt: "paskui",  en: "then",                   audioText: "paskui",  saveable: true, core: false },
             ],
           },
           {
@@ -589,7 +587,7 @@ export default function createModule_5_1(profile = {}) {
               { id: "b", text: "kairėn",   isCorrect: false },
               { id: "c", text: "dešinėn",  isCorrect: true  },
             ],
-            explanation: "Dešinėn means to the right. Kairėn is left. Tiesiai is straight ahead.",
+            explanation: "Dešinė means right; in a movement direction it becomes dešinėn — to the right. Kairė becomes kairėn — to the left. Tiesiai is straight ahead.",
           },
           {
             id: "s5m1l4_b5",

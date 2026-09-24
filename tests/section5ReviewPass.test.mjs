@@ -242,3 +242,29 @@ test("5.1.2 tests here/there through place plus position rather than trivial one
   assert.equal(serialized.includes('"text":"Ten.","isCorrect":true'),false);
   assert.equal(serialized.includes('"text":"Ačiū.","isCorrect":false'),false);
 });
+
+
+test("5.1.4 teaches left/right bases before directional forms",()=>{
+  const m=createModule51();
+  const lesson=m.lessons.find(l=>l.code==="5.1.4");
+  const learn=lesson.blocks.find(b=>b.id==="s5m1l4_b1");
+  const items=learn.items.map(i=>i.lt);
+
+  assert.deepEqual(items,["kairė","dešinė","tiesiai","paskui"]);
+  assert.equal(items.includes("kairėn"),false);
+  assert.equal(items.includes("dešinėn"),false);
+  assert.equal(items.includes("Pasukite kairėn."),false);
+  assert.equal(items.includes("Pasukite dešinėn."),false);
+
+  assert.match(lesson.notes.pattern,/kairė means left \/ the left side/i);
+  assert.match(lesson.notes.pattern,/dešinė means right \/ the right side/i);
+  assert.match(lesson.notes.pattern,/kairėn — to the left/i);
+  assert.match(lesson.notes.pattern,/dešinėn — to the right/i);
+  assert.ok(lesson.notes.usage.includes("kairė → kairėn — left → to the left"));
+  assert.ok(lesson.notes.usage.includes("dešinė → dešinėn — right → to the right"));
+
+  // Later blocks continue to test the full movement phrases.
+  assert.equal(lesson.blocks.find(b=>b.id==="s5m1l4_b2").prompt.text,"Pasukite kairėn.");
+  assert.equal(lesson.blocks.find(b=>b.id==="s5m1l4_b4").options.find(o=>o.isCorrect).text,"dešinėn");
+  assert.equal(lesson.blocks.find(b=>b.id==="s5m1l4_b5").targetText,"Eikite tiesiai");
+});
