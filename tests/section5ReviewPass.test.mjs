@@ -353,3 +353,26 @@ test("5.2.4 hotel question requires phrase construction rather than copying the 
   assert.equal(JSON.stringify(block).includes("viešbučio"),false);
   assert.equal(JSON.stringify(block).includes("viešbutyje"),false);
 });
+
+
+test("5.2.5 explicitly bridges vaistai to vaistų before testing pharmacy context",()=>{
+  const m=createModule52();
+  const lesson=m.lessons.find(l=>l.code==="5.2.5");
+  const teach=lesson.blocks.find(b=>b.id==="s5m2l5_b2");
+  const apply=lesson.blocks.find(b=>b.id==="s5m2l5_b4");
+
+  assert.equal(teach.type,"learn");
+  assert.deepEqual(
+    teach.items.map(i=>i.lt),
+    ["vaistai","vaistų","Man reikia vaistų.","Kur yra vaistinė?"]
+  );
+  assert.match(lesson.notes.pattern,/already know vaistai/i);
+  assert.match(lesson.notes.pattern,/After reikia.*vaistų/i);
+  assert.match(lesson.notes.pattern,/useful chunk rather than a grammar table/i);
+
+  assert.equal(apply.type,"best_response");
+  assert.match(apply.prompt.text,/man reikia vaistų/i);
+  assert.equal(apply.options.find(o=>o.isCorrect).text,"Kur yra vaistinė?");
+  assert.ok(apply.options.some(o=>o.text==="Kur yra ligoninė?"));
+  assert.equal(JSON.stringify(lesson).includes('"type":"conversation_turn_fill","scene_label":"In the street"'),false);
+});

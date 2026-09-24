@@ -745,6 +745,15 @@ export default function createModule_5_2(profile = {}) {
         purpose: "Stop place words existing only as isolated vocabulary.",
         supportLevel: "medium",
         newLanguageLoad: "very_low",
+        notes: {
+          pattern: "You already know vaistai — medicine / medication. After reikia, you will hear vaistų: Man reikia vaistų — I need medicine. For now, learn that as a useful chunk rather than a grammar table.",
+          usage: [
+            "vaistai — medicine / medication",
+            "vaistai → vaistų — the form used after reikia",
+            "Man reikia vaistų. — I need medicine.",
+            "Kur yra vaistinė? — Where is the pharmacy?",
+          ],
+        },
         blocks: [
           {
             id: "s5m2l5_b1",
@@ -759,19 +768,14 @@ export default function createModule_5_2(profile = {}) {
           },
           {
             id: "s5m2l5_b2",
-            type: "conversation_turn_fill",
-            scene_label: "In the street",
-            lines: [
-              { speaker: "You",   text: "Atsiprašau, man reikia vaistų.", audioText: "Atsiprašau, man reikia vaistų", hasGap: false },
-              { speaker: "Local", text: "___ yra ten, kairėn.",           hasGap: true },
+            type: "learn",
+            title: "From medicine to pharmacy",
+            items: [
+              { id: "v1", lt: "vaistai", en: "medicine / medication — base word", audioText: "vaistai", saveable: false, core: false },
+              { id: "v2", lt: "vaistų", en: "medicine / medication — used after reikia", audioText: "vaistų", saveable: false, core: true },
+              { id: "v3", lt: "Man reikia vaistų.", en: "I need medicine / medication.", audioText: "Man reikia vaistų", saveable: true, core: true },
+              { id: "v4", lt: "Kur yra vaistinė?", en: "Where is the pharmacy?", audioText: "Kur yra vaistinė", saveable: true, core: true },
             ],
-            options: [
-              { id: "a", text: "Kavinė",    isCorrect: false },
-              { id: "b", text: "Vaistinė",  isCorrect: true  },
-              { id: "c", text: "Ligoninė",  isCorrect: false },
-            ],
-            explanation: "Vaistų means medicine or medication — so the person needs a vaistinė (pharmacy), not a café or hospital.",
-            translation_en: "Excuse me, I need medication. — The pharmacy is there, on the left.",
           },
           {
             id: "s5m2l5_b3",
@@ -788,16 +792,18 @@ export default function createModule_5_2(profile = {}) {
           },
           {
             id: "s5m2l5_b4",
-            type: "context_gap_select",
-            prompt: "Choose the correct place",
-            sentence: "Aš noriu kavos. Kur yra ___?",
-            translation_en: "I want a coffee. Where is the café?",
+            type: "best_response",
+            title: "Use the new chunk",
+            prompt: { text: "You tell a local: Atsiprašau, man reikia vaistų. What is the most useful question to ask next?" },
+            noOptionAudio: true,
             options: [
-              { id: "a", text: "bankas",    isCorrect: false },
-              { id: "b", text: "kavinė",    isCorrect: true  },
-              { id: "c", text: "ligoninė",  isCorrect: false },
+              { id: "a", text: "Kur yra vaistinė?", isCorrect: true },
+              { id: "b", text: "Kur yra ligoninė?", isCorrect: false },
+              { id: "c", text: "Kur yra kavinė?", isCorrect: false },
             ],
-            explanation: "If you want coffee, you need a kavinė (café). A bankas is a bank, ligoninė is a hospital.",
+            feedback: {
+              correct: "Kur yra vaistinė? — if you need medicine, the useful place to ask for is the pharmacy.",
+            },
           },
           {
   id: "s5m2l5_b5_v2",
