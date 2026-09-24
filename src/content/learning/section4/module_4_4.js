@@ -188,15 +188,18 @@ export default function createModule_4_4(profile = {}) {
           },
           {
             id: "s4m4l2_b3",
-            type: "best_response",
-            title: "Choose the best response",
-            prompt: { text: "Your friend asks: Ar nori sausainio? You'd like one." },
+            type: "recognise_mcq",
+            noOptionAudio: true,
+            title: "Choose the natural offer",
+            prompt: { text: "You're speaking to one friend. Ask if they want a biscuit / cookie." },
             options: [
-              { id: "a", text: "Ne, ačiū.", isCorrect: false },
-              { id: "b", text: "Taip, prašau!", isCorrect: true },
-              { id: "c", text: "Viso gero.", isCorrect: false },
+              { id: "a", text: "Ar nori sausainio?", isCorrect: true },
+              { id: "b", text: "Ar norite sausainio?", isCorrect: false },
+              { id: "c", text: "Ar nori sausainis?", isCorrect: false },
             ],
-            feedback: { correct: "Taip, prašau — Yes, please. A natural acceptance." },
+            feedback: {
+              correct: "Ar nori sausainio? — use nori with one friend, and sausainio after nori."
+            },
           },
           {
             id: "s4m4l2_b4",

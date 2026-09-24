@@ -317,6 +317,11 @@ test("4.4.2 broadens food vocabulary through spaced retrieval plus one new noun"
   assert.match(lesson.notes.pattern,/sausainis → sausainio/);
 
   assert.equal(lesson.blocks.find(b=>b.id==="s4m4l2_b2").prompt.text,"Ar norite sumuštinio?");
+  const register=lesson.blocks.find(b=>b.id==="s4m4l2_b3");
+  assert.equal(register.type,"recognise_mcq");
+  assert.equal(register.options.find(o=>o.isCorrect).text,"Ar nori sausainio?");
+  assert.ok(register.options.some(o=>o.text==="Ar norite sausainio?"));
+  assert.ok(register.options.some(o=>o.text==="Ar nori sausainis?"));
   assert.equal(lesson.blocks.find(b=>b.id==="s4m4l2_b4").targetText,"Ar nori sulčių");
 
   const scenario=lesson.blocks.find(b=>b.id==="s4m4l2_b5_v2");
