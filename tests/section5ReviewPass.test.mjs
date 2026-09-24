@@ -268,3 +268,17 @@ test("5.1.4 teaches left/right bases before directional forms",()=>{
   assert.equal(lesson.blocks.find(b=>b.id==="s5m1l4_b4").options.find(o=>o.isCorrect).text,"dešinėn");
   assert.equal(lesson.blocks.find(b=>b.id==="s5m1l4_b5").targetText,"Eikite tiesiai");
 });
+
+
+test("5.1.5 location gap gives enough context to choose ten",()=>{
+  const m=createModule51();
+  const lesson=m.lessons.find(l=>l.code==="5.1.5");
+  const block=lesson.blocks.find(b=>b.id==="s5m1l5_b3");
+
+  assert.match(block.prompt,/hotel is just across the street/i);
+  assert.match(block.prompt,/points directly at it/i);
+  assert.equal(block.options.find(o=>o.isCorrect).text,"ten");
+  assert.match(block.explanation,/čia would mean here/i);
+  assert.match(block.explanation,/toli would mean far/i);
+  assert.match(block.explanation,/only across the street/i);
+});

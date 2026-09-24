@@ -752,6 +752,7 @@ export default function createModule_5_1(profile = {}) {
             id: "s5m1l5_b3",
             type: "conversation_turn_fill",
             scene_label: "On the street",
+            prompt: "The hotel is just across the street. The local points directly at it. Complete the reply.",
             lines: [
               { speaker: "You",   text: "Atsiprašau, kur yra viešbutis?", audioText: "Atsiprašau, kur yra viešbutis", hasGap: false },
               { speaker: "Local", text: "Tai ___.",                        hasGap: true },
@@ -761,7 +762,7 @@ export default function createModule_5_1(profile = {}) {
               { id: "b", text: "čia",   isCorrect: false },
               { id: "c", text: "ten",   isCorrect: true  },
             ],
-            explanation: "Ten — there. A short pointing reply. You would say čia only if the hotel were right where you are standing.",
+            explanation: "Ten — there. The pointing cue tells you the hotel is away from where you are standing. Čia would mean here; toli would mean far, but the hotel is only across the street.",
             translation_en: "Excuse me, where is the hotel? — It's there.",
           },
           {
