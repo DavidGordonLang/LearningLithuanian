@@ -688,13 +688,28 @@ export default function createModule_4_4(profile = {}) {
             id: "s4m4c_b1",
             type: "best_response",
             title: "Choose the best response",
-            prompt: { text: "A colleague asks: Ar nori sausainio? You would like one." },
+            prompt: { text: "A colleague you know well offers you a biscuit. You'd like one, and you want to offer them juice in return. What do you say?" },
             options: [
-              { id: "a", text: "Ne, ačiū.", isCorrect: false },
-              { id: "b", text: "Taip, prašau!", isCorrect: true },
-              { id: "c", text: "Viso gero.", isCorrect: false },
+              {
+                id: "a",
+                text: "Taip, prašau. Ar nori sulčių?",
+                isCorrect: true,
+              },
+              {
+                id: "b",
+                text: "Taip, prašau. Ar norite sulčių?",
+                isCorrect: false,
+                result: "awkward",
+                feedback: "This is grammatically correct, but norite is formal/plural. With a colleague you know well, nori is the more natural register.",
+                betterAnswer: "Taip, prašau. Ar nori sulčių?",
+              },
+              {
+                id: "c",
+                text: "Ne, ačiū. Ar nori sulčių?",
+                isCorrect: false,
+              },
             ],
-            feedback: { correct: "Taip, prašau — Yes, please. Natural and immediate." },
+            feedback: { correct: "Taip, prašau. Ar nori sulčių? — accept the biscuit, then make the reciprocal offer naturally." },
           },
           {
             id: "s4m4c_b2",

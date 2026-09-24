@@ -353,7 +353,13 @@ test("4.4 downstream practice carries the broadened nouns into invitations group
   assert.equal(JSON.stringify(l4).includes("Mums dvi arbatas"),false);
 
   const checkpoint=m.lessons.find(l=>l.code==="4.4.C");
-  assert.equal(checkpoint.blocks.find(b=>b.id==="s4m4c_b1").prompt.text.includes("Ar nori sausainio?"),true);
+  const socialResponse=checkpoint.blocks.find(b=>b.id==="s4m4c_b1");
+  assert.match(socialResponse.prompt.text,/offers you a biscuit/i);
+  assert.match(socialResponse.prompt.text,/offer them juice in return/i);
+  assert.equal(socialResponse.options.find(o=>o.isCorrect).text,"Taip, prašau. Ar nori sulčių?");
+  const formalSocial=socialResponse.options.find(o=>o.text==="Taip, prašau. Ar norite sulčių?");
+  assert.equal(formalSocial.result,"awkward");
+  assert.equal(formalSocial.betterAnswer,"Taip, prašau. Ar nori sulčių?");
   assert.equal(checkpoint.blocks.find(b=>b.id==="s4m4c_b2").prompt.text,"Išgerkime sulčių.");
   assert.equal(checkpoint.blocks.find(b=>b.id==="s4m4c_b3").prompt.text,"Mums du sumuštinius.");
   const social=checkpoint.blocks.find(b=>b.id==="s4m4c_b6_v2");
@@ -366,6 +372,18 @@ test("4.4 downstream practice carries the broadened nouns into invitations group
   const pairs=final.blocks.find(b=>b.type==="word_match").pairs.map(p=>p.lt);
   assert.ok(pairs.includes("Ar nori sausainio?"));
   assert.ok(pairs.includes("Man sulčių, prašau."));
+});
+
+test("4.4 checkpoint social response requires more than a basic yes/no",()=>{
+  const m=createModule44({speakerGender:"male"});
+  const checkpoint=m.lessons.find(l=>l.code==="4.4.C");
+  const block=checkpoint.blocks.find(b=>b.id==="s4m4c_b1");
+
+  assert.equal(block.type,"best_response");
+  assert.match(block.prompt.text,/offer them juice in return/i);
+  assert.equal(block.options.find(o=>o.isCorrect).text,"Taip, prašau. Ar nori sulčių?");
+  assert.equal(block.options.some(o=>o.text==="Taip, prašau!"),false);
+  assert.equal(block.options.find(o=>o.text==="Taip, prašau. Ar norite sulčių?").result,"awkward");
 });
 
 test("Section 4.4 social scenarios reuse prior language coherently",()=>{
