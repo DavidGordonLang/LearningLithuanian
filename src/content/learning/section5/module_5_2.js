@@ -487,29 +487,31 @@ export default function createModule_5_2(profile = {}) {
       id: "step_2",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Kavinė yra ten. Viešbutis yra netoli.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      speakerText: "Kavinė yra ten.",
+      sceneDirection: "Austėja points down the street towards the café, but she has not said how far away it is.",
+      learnerPrompt: "You know where to go, but not the distance. Ask if it is far.",
       options: [
         {
           id: "a",
-          text: "Atsiprašau.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
           text: "Ačiū! Ar toli?",
           textEn: "Thank you! Is it far?",
           result: "best",
           progresses: true,
         },
         {
+          id: "b",
+          text: "Ačiū!",
+          textEn: "Thank you!",
+          result: "awkward",
+          feedback: "Natural, but the task is to check the distance as well.",
+          betterAnswer: "Ačiū! Ar toli?",
+          progresses: true,
+        },
+        {
           id: "c",
           text: "Kur yra parduotuvė?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You are looking for the café, not a shop.",
           progresses: false,
         }
       ],
@@ -518,8 +520,8 @@ export default function createModule_5_2(profile = {}) {
       id: "step_3",
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
-      speakerText: "Ne, tai netoli. Tiesiai.",
-      sceneDirection: "The conversation continues.",
+      speakerText: "Ne, tai netoli. Eikite tiesiai.",
+      sceneDirection: "Austėja confirms that the café is nearby and gives one final direction.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
                 {

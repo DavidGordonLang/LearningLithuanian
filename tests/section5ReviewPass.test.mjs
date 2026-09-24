@@ -53,7 +53,8 @@ test("Section 5 scenarios reinforce taught place and movement language without a
   assert.ok(txt(m2).includes("Traukinių stotis yra ten. Eikite tiesiai."));
   assert.equal(txt(m2).includes("čia pat"),false);
   assert.equal(txt(m2).includes("netoli viešbučio"),false);
-  assert.ok(txt(m2).includes("Kavinė yra ten. Viešbutis yra netoli."));
+  assert.ok(txt(m2).includes("Kavinė yra ten."));
+  assert.equal(txt(m2).includes("Kavinė yra ten. Viešbutis yra netoli."),false);
   const recognition=m2.lessons.find(l=>l.code==="5.2.5").blocks.find(b=>b.id==="s5m2l5_b5_v2");
   assert.equal(recognition.steps[0].speakerText,"Laba diena!");
   assert.match(recognition.steps[0].sceneDirection,/hotel address/i);
@@ -315,4 +316,21 @@ test("5.1 checkpoint ends after the server's final goodbye without forcing anoth
   assert.equal(finalStep.finalSystemLine.supportText,"geros kelionės — have a good journey");
   assert.match(finalStep.finalSystemLine.sceneDirection,/exchange ends/i);
   assert.equal(scenario.steps.some(s=>s.speakerText==="Prašom. Geros kelionės!"),false);
+});
+
+
+test("5.2.3 cafe scenario asks distance only after distance is still unknown",()=>{
+  const m=createModule52();
+  const lesson=m.lessons.find(l=>l.code==="5.2.3");
+  const scenario=lesson.blocks.find(b=>b.id==="s5m2l3_b6_v2");
+  const step2=scenario.steps.find(s=>s.id==="step_2");
+  const step3=scenario.steps.find(s=>s.id==="step_3");
+
+  assert.equal(step2.speakerText,"Kavinė yra ten.");
+  assert.match(step2.sceneDirection,/has not said how far/i);
+  assert.match(step2.learnerPrompt,/Ask if it is far/i);
+  assert.equal(step2.options.find(o=>o.result==="best").text,"Ačiū! Ar toli?");
+  assert.equal(step2.options.find(o=>o.text==="Ačiū!").result,"awkward");
+  assert.equal(step3.speakerText,"Ne, tai netoli. Eikite tiesiai.");
+  assert.equal(JSON.stringify(scenario).includes("Viešbutis yra netoli."),false);
 });
