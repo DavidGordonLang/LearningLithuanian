@@ -311,9 +311,9 @@ export default function createCheckpoint4(profile = {}) {
             id: "step_4",
             speakerId: "server",
             speakerLabel: "Server",
-            speakerText: "Prašom. Vienas sumuštinis ir sriuba.",
-            sceneDirection: "You ordered two sandwiches. Rasa has brought one sandwich and a bowl of soup, so one item is wrong.",
-            learnerPrompt: "Explain the mistake and ask for the correct item.",
+            speakerText: "Prašom. Vienas sumuštinis, sriuba ir sultys.",
+            sceneDirection: "You ordered two sandwiches and juice. Rasa has brought one sandwich, a bowl of soup, and your juice. The juice is correct, but the soup has replaced the second sandwich.",
+            learnerPrompt: "Explain that the soup is wrong and ask for the second sandwich instead.",
             options: [
               {
                 id: "a",
