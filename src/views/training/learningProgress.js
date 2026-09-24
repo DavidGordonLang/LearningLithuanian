@@ -128,3 +128,36 @@ export function getCourseBrowseState(sections, completedLessonIds) {
       : "locked",
   }));
 }
+
+
+export function findLatestInProgressLesson(sections, completedLessonIds, lessonProgress) {
+  const list = Array.isArray(sections) ? sections : [];
+  const completed = completedSet(completedLessonIds);
+  const progressMap = lessonProgress && typeof lessonProgress === "object" ? lessonProgress : {};
+
+  const candidates = Object.entries(progressMap)
+    .filter(([lessonId, saved]) => (
+      !!lessonId &&
+      !completed.has(lessonId) &&
+      saved &&
+      typeof saved === "object" &&
+      Number.isFinite(Number(saved.updatedAt))
+    ))
+    .sort((a, b) => Number(b[1].updatedAt) - Number(a[1].updatedAt));
+
+  for (const [lessonId] of candidates) {
+    for (const section of list) {
+      for (const module of (section?.modules || [])) {
+        if (module?.isSectionCheckpoint && module?.id === lessonId) {
+          return { section, module, lesson: module, lessonIndex: 0 };
+        }
+        const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
+        const lessonIndex = lessons.findIndex((lesson) => lesson?.id === lessonId);
+        if (lessonIndex >= 0) {
+          return { section, module, lesson: lessons[lessonIndex], lessonIndex };
+        }
+      }
+    }
+  }
+  return null;
+}

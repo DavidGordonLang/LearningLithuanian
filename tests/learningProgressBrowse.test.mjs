@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  findLatestInProgressLesson,
   getCourseBrowseState,
   getSectionBrowseState,
 } from "../src/views/training/learningProgress.js";
@@ -61,4 +62,35 @@ test("course browse state locks later sections until the current section is comp
     "s1_l1", "s1_l2", "s1_m1c", "s1_l3", "s1_m2c", "s1_section_c",
   ]);
   assert.deepEqual(state.map((item) => item.status), ["completed", "current"]);
+});
+
+
+test("latest unfinished lesson progress wins over the first incomplete lesson", () => {
+  const s1 = section("s1", "s1");
+  const s2 = section("s2", "s2");
+  const target = findLatestInProgressLesson(
+    [s1, s2],
+    ["s1_l1"],
+    {
+      s1_l2: { blockId: "older", blockIndex: 2, updatedAt: 100 },
+      s2_l3: { blockId: "newer", blockIndex: 3, updatedAt: 200 },
+    }
+  );
+  assert.equal(target.section.id, "s2");
+  assert.equal(target.module.id, "s2_m2");
+  assert.equal(target.lesson.id, "s2_l3");
+});
+
+test("resume helper ignores completed and stale lesson ids", () => {
+  const s1 = section("s1", "s1");
+  const target = findLatestInProgressLesson(
+    [s1],
+    ["s1_l2"],
+    {
+      missing_lesson: { blockId: "x", blockIndex: 1, updatedAt: 300 },
+      s1_l2: { blockId: "y", blockIndex: 2, updatedAt: 200 },
+      s1_l1: { blockId: "z", blockIndex: 1, updatedAt: 100 },
+    }
+  );
+  assert.equal(target.lesson.id, "s1_l1");
 });

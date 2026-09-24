@@ -260,6 +260,21 @@ test("learner-facing lesson prompts are not forced into uppercase", () => {
   assert.match(src, /text-\[12px\] text-zinc-500 leading-snug mb-2">\{block\.prompt\}/);
 });
 
+test("game progress writes are serialized so stale whole-row snapshots cannot overwrite newer lesson state", () => {
+  const src = source("src/stores/gameStore.js");
+  assert.match(src, /const gameSaveQueues = new Map\(\)/);
+  assert.match(src, /const previous = gameSaveQueues\.get\(userId\) \|\| Promise\.resolve\(\)/);
+  assert.match(src, /return enqueueGameSave\(userId, payload\)/);
+  assert.match(src, /if \(error\) console\.error\("gameStore _save failed:", error\)/);
+});
+
+test("training resume prefers the most recently active unfinished lesson", () => {
+  const trainingSrc = source("src/views/TrainingView.jsx");
+  const homeSrc = source("src/views/training/LearningHome.jsx");
+  assert.match(trainingSrc, /findLatestInProgressLesson\(allSections, completedLessonIds, lessonProgress\) \|\| findNextLesson/);
+  assert.match(homeSrc, /const resumeTarget = findLatestInProgressLesson\(allSections, completedLessonIds, lessonProgress\)/);
+});
+
 test("in-progress lesson position is persisted per account and restored by block identity", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
   const gameSrc = source("src/stores/gameStore.js");

@@ -7,6 +7,33 @@
 import { create } from "zustand";
 import { supabase } from "../supabaseClient";
 
+const gameSaveQueues = new Map();
+
+function enqueueGameSave(userId, payload) {
+  const previous = gameSaveQueues.get(userId) || Promise.resolve();
+  const task = previous
+    .catch(() => {})
+    .then(async () => {
+      try {
+        const { error } = await supabase
+          .from("user_game")
+          .upsert(
+            { user_id: userId, data: payload, updated_at: new Date().toISOString() },
+            { onConflict: "user_id" }
+          );
+        if (error) console.error("gameStore _save failed:", error);
+      } catch (err) {
+        console.error("gameStore _save failed:", err);
+      }
+    });
+
+  gameSaveQueues.set(userId, task);
+  task.then(() => {
+    if (gameSaveQueues.get(userId) === task) gameSaveQueues.delete(userId);
+  });
+  return task;
+}
+
 // ─── XP rewards ───────────────────────────────────────────────────────────────
 
 const XP_REWARDS = {
@@ -180,15 +207,7 @@ export const useGameStore = create((set, get) => ({
     if (!userId || get()._loadedForUserId !== userId) return;
     const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonMetrics, lessonProgress } = get();
     const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonMetrics, lessonProgress };
-
-    try {
-      await supabase
-        .from("user_game")
-        .upsert({ user_id: userId, data: payload, updated_at: new Date().toISOString() },
-          { onConflict: "user_id" });
-    } catch (err) {
-      console.error("gameStore _save failed:", err);
-    }
+    return enqueueGameSave(userId, payload);
   },
 
   // ── XP ──────────────────────────────────────────────────────────────────────

@@ -28,6 +28,7 @@ import createSection4 from "../content/learning/section4";
 import createSection5 from "../content/learning/section5";
 import SequenceDebugView from "./training/SequenceDebugView";
 import { aggregateSectionMetrics } from "../lib/trainingScoring";
+import { findLatestInProgressLesson } from "./training/learningProgress";
 
 const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me", "barbora.gaulyte@gmail.com"];
 
@@ -163,6 +164,7 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
   const lessonMetrics = useGameStore((s) => s.lessonMetrics);
   const lessonXP = useGameStore((s) => s.lessonXP);
+  const lessonProgress = useGameStore((s) => s.lessonProgress);
   const hasSeenModuleComplete = useGameStore((s) => s.hasSeenModuleComplete);
   const markModuleCompleteSeen = useGameStore((s) => s.markModuleCompleteSeen);
   const hasSeenSectionComplete = useGameStore((s) => s.hasSeenSectionComplete);
@@ -208,8 +210,8 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
   );
 
   const nextLesson = useMemo(
-    () => findNextLesson(allSections, completedLessonIds),
-    [allSections, completedLessonIds]
+    () => findLatestInProgressLesson(allSections, completedLessonIds, lessonProgress) || findNextLesson(allSections, completedLessonIds),
+    [allSections, completedLessonIds, lessonProgress]
   );
 
   const allComplete = !nextLesson;

@@ -2,7 +2,7 @@
 import React from "react";
 import { useGameStore } from "../../stores/gameStore";
 import TrainingBackButton from "./TrainingBackButton";
-import { getCourseBrowseState } from "./learningProgress";
+import { findLatestInProgressLesson, getCourseBrowseState } from "./learningProgress";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -29,16 +29,17 @@ function SmallMetaPill({ children, accent = "default" }) {
 
 export default function LearningHome({ onBack, allSections = [], onOpenSection }) {
   const completedLessonIds = useGameStore((s) => s.completedLessonIds);
+  const lessonProgress = useGameStore((s) => s.lessonProgress);
   const completed = new Set(Array.isArray(completedLessonIds) ? completedLessonIds : []);
   const sectionStates = getCourseBrowseState(allSections, completedLessonIds);
 
-  // Find the next uncompleted lesson across all sections
-  let currentLesson = null;
-  let currentSection = null;
-  let currentLessonIndex = 0;
-  let currentIsSectionCheckpoint = false;
+  const resumeTarget = findLatestInProgressLesson(allSections, completedLessonIds, lessonProgress);
+  let currentLesson = resumeTarget?.lesson || null;
+  let currentSection = resumeTarget?.section || null;
+  let currentLessonIndex = resumeTarget?.lessonIndex || 0;
+  let currentIsSectionCheckpoint = !!resumeTarget?.module?.isSectionCheckpoint;
 
-  outer: for (const sec of allSections) {
+  if (!resumeTarget) outer: for (const sec of allSections) {
     for (const mod of (sec.modules || [])) {
       if (mod.status !== "active" && !mod.isSectionCheckpoint) continue;
 
