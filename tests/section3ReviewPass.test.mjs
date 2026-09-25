@@ -51,7 +51,7 @@ test("Section 3 distinguishes clock time from scheduled at-time forms",()=>{
 
 test("Section 3 travel checkpoint scaffolds the untaught geros kelionės phrase",()=>{
   const cp=createCheckpoint3();
-  const scenario=cp.blocks.find(b=>b.id==="s3c_b9_v2");
+  const scenario=cp.blocks.find(b=>b.type==="scenario_v2" && b.steps.some(s=>s.speakerText.includes("geros kelionės")));
   const closing=scenario.steps.find(s=>s.id==="step_5");
 
   assert.equal(closing.speakerText,"Prašom. Viso gero ir geros kelionės!");

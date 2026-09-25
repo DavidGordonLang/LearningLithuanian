@@ -32,16 +32,12 @@ import createModule54 from "../src/content/learning/section5/module_5_4.js";
 import createCheckpoint5 from "../src/content/learning/section5/checkpoint_5.js";
 import { getBuildPhraseDistractorMeaning } from "../src/lib/buildPhraseFeedback.js";
 
-const profile = {
-  userNameSafe: "Davidas",
-  speakerGender: "male",
-  userFromPhrase: "Aš esu iš Škotijos",
-  userFromCountryLtGenitive: "Škotijos",
-  userFromCountryLabelEn: "Scotland",
-  userAgeYears: 45,
-  userAgePhraseLt: "Man keturiasdešimt penkeri metai",
-  userAgePhraseEn: "I am 45 years old",
-};
+import { buildSection1Profile } from "../src/content/learning/section1/profile.js";
+
+const profile = buildSection1Profile({
+  userName: "Davidas", speakerGender: "male", dateOfBirth: "1981-09-25",
+  fromCountryCode: "scotland",
+}, new Date(2026, 8, 25));
 
 const modules = [
   module11,
@@ -129,9 +125,17 @@ test("Match Pairs is always the final recap block and stays recap-sized", () => 
     for (const { block, index } of matches) {
       assert.equal(index, blocks.length - 1, `${unit.code || unit.id} word_match must be final`);
       assert.ok(
-        Array.isArray(block.pairs) && block.pairs.length >= 18 && block.pairs.length <= 22,
-        `${unit.code || unit.id} word_match should contain about 20 pairs`
+        Array.isArray(block.pairs) && block.pairs.length >= 18 && block.pairs.length <= (block.pairPages ? 24 : 22),
+        `${unit.code || unit.id} word_match should contain about 20 pairs (up to 24 with authored groups)`
       );
+      if (block.pairPages) {
+        const groupedIds = block.pairPages.flatMap(page => page.pairIds);
+        assert.deepEqual([...groupedIds].sort(), block.pairs.map(pair => pair.id).sort(), `${block.id} groups cover each pair exactly once`);
+        for (const page of block.pairPages) {
+          assert.ok(page.label?.trim(), `${block.id} group has a meaningful label`);
+          assert.ok(page.pairIds.length >= 1 && page.pairIds.length <= 5, `${block.id} group fits one page without filler`);
+        }
+      }
     }
   }
 });
@@ -218,7 +222,6 @@ test("pattern and consolidation lessons use retrieval/application instead of Lea
     "4.2.4",
     "5.1.1",
     "5.2.3",
-    "5.3.5",
     "5.4.2",
     "5.4.3",
   ]);

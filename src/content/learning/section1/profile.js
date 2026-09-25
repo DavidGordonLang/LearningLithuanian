@@ -3,7 +3,7 @@
 import {
   getCountryLabel,
   getCountryLithuanianForms,
-} from "../../../constants/countries";
+} from "../../../constants/countries.js";
 
 const FALLBACK_NAME = "Davidas";
 
@@ -17,37 +17,38 @@ const FALLBACK_LIVES_IN_LABEL_EN = "Lithuania";
 const FALLBACK_LIVES_IN_LOCATIVE = "Lietuvoje";
 
 const FALLBACK_AGE = 30;
-const FALLBACK_AGE_PHRASE_LT = "Man trisdešimt metų";
-const FALLBACK_AGE_PHRASE_EN = "I am 30 years old";
 
 // ─── Lithuanian number → age phrase ──────────────────────────────────────────
-// Covers ages 1–99 using vocabulary taught in Section 3.1.
-// Ages are expressed as "Man [number] metų" — a fixed chunk taught in 3.4.
-// Note: Lithuanian grammar varies metų/metai by number, but for pedagogical
-// consistency with the "learn as chunks" approach we use metų throughout.
-// Native speakers understand all forms — learners say their age as a chunk.
-
-const LT_ONES  = ["", "vienas", "du", "trys", "keturi", "penki", "šeši", "septyni", "aštuoni", "devyni"];
+// Bounded age model, 1–99. Metai is plural: use vieni/dveji/.../devyneri
+// for units (including compound ages), but metų after 10–19 and exact tens.
+// The forms agree with years, not the speaker's gender.
+// Source: R. Jezukevičienė, Lithuanian Grammar: Paradigms, pp. 14, 21, 25.
+// https://portalcris.lsmuni.lt/server/api/core/bitstreams/3fc7cc3b-76bd-49a2-85f0-511838d6e210/content
+const LT_AGE_UNITS = ["", "vieni", "dveji", "treji", "ketveri", "penkeri", "šešeri", "septyneri", "aštuoneri", "devyneri"];
 const LT_TEENS = ["dešimt", "vienuolika", "dvylika", "trylika", "keturiolika", "penkiolika", "šešiolika", "septyniolika", "aštuoniolika", "devyniolika"];
 const LT_TENS  = ["", "", "dvidešimt", "trisdešimt", "keturiasdešimt", "penkiasdešimt", "šešiasdešimt", "septyniasdešimt", "aštuoniasdešimt", "devyniasdešimt"];
 
 function ltAgeNumber(n) {
-  if (!n || n < 1 || n > 99) return null;
-  if (n < 10) return LT_ONES[n];
+  if (!Number.isInteger(n) || n < 1 || n > 99) return null;
+  if (n < 10) return LT_AGE_UNITS[n];
   if (n < 20) return LT_TEENS[n - 10];
   const tens = Math.floor(n / 10);
   const ones = n % 10;
-  return ones === 0 ? LT_TENS[tens] : `${LT_TENS[tens]} ${LT_ONES[ones]}`;
+  return ones === 0 ? LT_TENS[tens] : `${LT_TENS[tens]} ${LT_AGE_UNITS[ones]}`;
 }
 
-function ageFromDob(dob) {
-  if (!dob || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) return null;
-  const today = new Date();
-  const birth = new Date(dob);
-  if (isNaN(birth.getTime())) return null;
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+function ageFromDob(dob, today) {
+  if (typeof dob !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dob) || !Number.isFinite(today.getTime())) return null;
+  const [year, month, day] = dob.split("-").map(Number);
+  // A DOB is a calendar date, not a UTC instant. Validate without timezone
+  // conversion or Date's rollover (e.g. 2023-02-29 must not become March 1).
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) return null;
+  let age = today.getFullYear() - year;
+  const currentMonth = today.getMonth() + 1;
+  // February 29 birthdays advance on March 1 in non-leap years, as before.
+  if (currentMonth < month || (currentMonth === month && today.getDate() < day)) age--;
   return age >= 1 && age <= 99 ? age : null;
 }
 
@@ -63,7 +64,7 @@ export function buildSection1Profile({
   fromCountryCode,
   livesInCountryCode,
   dateOfBirth,
-} = {}) {
+} = {}, today = new Date()) {
   const userNameSafe = cleanName(userName) || FALLBACK_NAME;
   const safeSpeakerGender = speakerGender === "female" ? "female" : "male";
 
@@ -84,10 +85,12 @@ export function buildSection1Profile({
     getCountryLabel(userLivesInCountryCode, "en") || FALLBACK_LIVES_IN_LABEL_EN;
 
   // Age
-  const userAgeYears = ageFromDob(dateOfBirth) || FALLBACK_AGE;
+  const userAgeYears = ageFromDob(dateOfBirth, today) || FALLBACK_AGE;
   const ltNum = ltAgeNumber(userAgeYears);
-  const userAgePhraseLt = ltNum ? `Man ${ltNum} metų` : FALLBACK_AGE_PHRASE_LT;
-  const userAgePhraseEn = `I am ${userAgeYears} years old`;
+  const usesMetu = (userAgeYears >= 10 && userAgeYears < 20) || userAgeYears % 10 === 0;
+  const yearsWord = usesMetu ? "metų" : "metai";
+  const userAgePhraseLt = `Man ${ltNum} ${yearsWord}`;
+  const userAgePhraseEn = `I am ${userAgeYears} ${userAgeYears === 1 ? "year" : "years"} old`;
 
   return {
     userNameSafe,

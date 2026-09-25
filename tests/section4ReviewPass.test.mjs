@@ -17,8 +17,9 @@ test("Section 4 applies reviewed service and restaurant wording",()=>{
   assert.equal(s.includes("Ar dar ko norite?"),false);
   assert.equal(s.includes("kortel?"),false);
   assert.equal(s.includes('"caf?"'),false);
-  assert.ok(s.includes("Žinoma. Minutėlę."));
-  assert.ok(s.includes("Kuo galėčiau") || true);
+  const order=createModule41().lessons.find(l=>l.code==="4.1.1").blocks.find(b=>b.type==="scenario_v2");
+  assert.equal(order.steps[0].speakerText,"Laba diena! Ko norėtumėte?");
+  assert.equal(order.steps[1].speakerText,"Žinoma. Ar dar ko nors?");
 });
 
 test("4.1.1 uses new food vocabulary inside a cumulative café scenario",()=>{
@@ -37,7 +38,9 @@ test("4.1.1 uses new food vocabulary inside a cumulative café scenario",()=>{
   assert.ok(scenario.steps[0].options.some(o=>o.text.includes("Noriu torto")));
   assert.ok(scenario.steps[0].options.some(o=>o.text.includes("Noriu ledų")));
   assert.equal(scenario.steps[1].speakerText,"Žinoma. Ar dar ko nors?");
-  assert.ok(JSON.stringify(scenario).includes("Noriu vandens"));
+  const water=scenario.steps.find(s=>s.id==="step_2_water");
+  assert.match(water.sceneDirection,/want water/i);
+  assert.match(water.options.find(o=>o.result==="best").text,/noriu vandens/i);
   assert.ok(JSON.stringify(scenario).includes("Kiek tai kainuoja?"));
   assert.ok(JSON.stringify(scenario).includes("Ar galima mokėti kortele?"));
   assert.ok(JSON.stringify(scenario).includes("Ačiū labai! Viso gero."));
@@ -243,10 +246,11 @@ test("4.3.1 does not re-present already reviewed sugar and milk phrases as new v
   assert.deepEqual(lesson.notes.usage,["Nenoriu šito — I don't want this","Nenoriu to — I don't want that"]);
   assert.equal(lesson.notes.pattern.includes("be + noun"),false);
 
-  const lessonText=JSON.stringify(lesson);
-  assert.ok(lessonText.includes("Be cukraus"));
-  assert.ok(lessonText.includes("Be pieno"));
-  assert.ok(lessonText.includes("Ar su cukrumi?"));
+  const scenario=lesson.blocks.find(b=>b.type==="scenario_v2");
+  const sugar=scenario.steps.find(s=>/su cukrumi/i.test(s.speakerText));
+  assert.ok(sugar, "retrieve the known sugar preference");
+  assert.match(sugar.options.find(o=>o.result==="best").text,/be cukraus/i);
+  assert.ok(scenario.steps.some(s=>s.options.some(o=>o.result==="best" && /Nenoriu šito/.test(o.text))), "apply the new refusal phrase");
 });
 
 test("4.3.4 tests replacement language with a problem in the served item, not a wrong order",()=>{
@@ -522,7 +526,9 @@ test("4.4.1 does not test Eikime before the dedicated let's lesson",()=>{
   const l1=m.lessons.find(l=>l.code==="4.4.1");
   const l3=m.lessons.find(l=>l.code==="4.4.3");
   assert.equal(JSON.stringify(l1).includes("Eikime į kavinę!"),false);
-  assert.ok(JSON.stringify(l1).includes("Taip! Noriu kavos."));
+  assert.doesNotMatch(JSON.stringify(l1),/\bEikime\b/i);
+  const scenario=l1.blocks.find(b=>b.type==="scenario_v2");
+  assert.ok(scenario.steps.some(s=>s.options.some(o=>o.result==="best" && o.text.includes("Noriu vandens."))));
   assert.ok(JSON.stringify(l3).includes("Eikime į kavinę."));
 });
 

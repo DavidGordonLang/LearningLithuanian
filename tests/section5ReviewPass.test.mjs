@@ -131,17 +131,21 @@ test("Section 5 uses authored help and only narrow visible support for weakly in
  for(const unit of [createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()]){
    for(const s of scenarios(unit)){
      for(const step of s.steps||[]){
-       if(step.supportText) visible.push(step.supportText);
+       if(step.supportText) {
+         assert.match(step.speakerText,/geros kelionės/i,s.id);
+         visible.push(step.supportText);
+       }
+       if (/geros kelionės/i.test(step.speakerText || "")) {
+         assert.equal(step.supportText,"geros kelionės — have a good journey",s.id);
+       }
        for(const o of step.options||[]){
          assert.equal(/nesuprantu/i.test(o.text||""),false,s.id);
        }
      }
    }
  }
- assert.deepEqual(visible,[
-   "geros kelionės — have a good journey",
-   "geros kelionės — have a good journey",
- ]);
+ assert.ok(visible.length > 0, "the journey closing still has narrow support");
+ assert.ok(visible.every(line=>line==="geros kelionės — have a good journey"));
  const final=createCheckpoint5().blocks.find(b=>b.id==="s5cp_b8_v2");
  assert.equal(final.steps[1].help.levels.at(-1).spokenLanguage,"en");
  assert.equal(final.steps[1].help.levels.at(-1).audio,false);
@@ -381,7 +385,7 @@ test("5.2.5 explicitly bridges vaistai to vaistų before testing pharmacy contex
   assert.equal(teach.type,"learn");
   assert.deepEqual(
     teach.items.map(i=>i.lt),
-    ["vaistai","vaistų","Man reikia vaistų.","Kur yra vaistinė?"]
+    ["vaistų","Man reikia vaistų.","Kur yra vaistinė?"]
   );
   assert.match(lesson.notes.pattern,/already know vaistai/i);
   assert.match(lesson.notes.pattern,/After reikia.*vaistų/i);

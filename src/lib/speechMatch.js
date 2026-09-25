@@ -1,5 +1,9 @@
 const LITHUANIAN_CARDINAL_UNIT_VALUES = new Map([
   ["nulis", 0],
+  // Number forms used with plural years (metai).
+  ["vieni", 1], ["vieneri", 1], ["dveji", 2], ["treji", 3],
+  ["ketveri", 4], ["penkeri", 5], ["seseri", 6],
+  ["septyneri", 7], ["astuoneri", 8], ["devyneri", 9],
   ["vienas", 1], ["viena", 1], ["vieno", 1], ["vienos", 1],
   ["du", 2], ["dvi", 2], ["dvieju", 2], ["dviese", 2],
   ["trys", 3], ["tris", 3], ["triju", 3],
@@ -49,6 +53,7 @@ const LITHUANIAN_CLOCK_NUMBER_VALUES = new Map([
 function parseLithuanianNumberAt(words, index) {
   const word = words[index];
   if (!word) return null;
+  if (/^\d+$/.test(word)) return { value: Number(word), length: 1 };
 
   const clockValue = LITHUANIAN_CLOCK_NUMBER_VALUES.get(word);
   if (clockValue != null) return { value: clockValue, length: 1 };
@@ -86,6 +91,17 @@ function normaliseExpectedNumbersForNumericTranscript(expected) {
   }
 
   return out.join(" ");
+}
+
+function recognisedNumberValues(text) {
+  const words = text.split(" ").filter(Boolean);
+  const values = [];
+  for (let index = 0; index < words.length;) {
+    const parsed = parseLithuanianNumberAt(words, index);
+    if (parsed) values.push(parsed.value);
+    index += parsed?.length || 1;
+  }
+  return values;
 }
 
 export function normaliseSpeechForMatch(value) {
@@ -129,8 +145,17 @@ export function phraseMatchesSpeech(captured, target) {
   if (!heard || !expected) return false;
   if (heard === expected) return true;
 
+  // A different recognised number is a meaning error, not a fuzzy spelling
+  // variation or harmless filler. Check values before either fuzzy-match path.
+  const expectedNumbers = recognisedNumberValues(expected);
+  const heardNumbers = recognisedNumberValues(heard);
+  if (heardNumbers.length && (
+    heardNumbers.length !== expectedNumbers.length ||
+    heardNumbers.some((value, index) => value !== expectedNumbers[index])
+  )) return false;
+
   // Speechmatics can render spoken Lithuanian numbers as written digits, including
-  // inside a longer phrase (for example "Man keturiasdešimt penki metų" -> "Man 45 metų").
+  // inside a longer phrase (for example "Man keturiasdešimt penkeri metai" -> "Man 45 metai").
   // Only canonicalise the expected side when the transcript actually contains digits.
   // This preserves grammatical distinctions such as du vs dvi when Speechmatics returns words.
   const expectedForMatch = /(?:^|\s)\d+(?:\s|$)/.test(heard)

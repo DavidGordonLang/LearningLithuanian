@@ -10,11 +10,25 @@ const scenarios=(unit)=>unit.lessons
   ? unit.lessons.flatMap((lesson)=>lesson.blocks).filter((block)=>block.type==="scenario_v2")
   : unit.blocks.filter((block)=>block.type==="scenario_v2");
 
-test("Section 3 Scenario V2 does not reveal English meaning by default or mark Nesuprantu wrong",()=>{
+test("Section 3 Scenario V2 limits visible support to the reviewed support lines and keeps help out of wrong answers",()=>{
+  const supported = new Map([
+    ["s3m3l4_b6_v2:step_3", ["Kavinėje. Iki!", "In the café. See you!"]],
+    ["s3m3c_b6_v2:step_3", ["Dabar antra valanda — turite laiko.", "It's two o'clock now — you have time."]],
+    ["s3m4l5_b10_v2:step_1", ["Ar užtenka laiko?", "Do we have enough time?"]],
+    ["s3m4l5_b10_v2:step_2", ["Einame dabar?", "Shall we go now?"]],
+    ["s3m4l5_b11_v2:step_1", ["Ar užtenka pinigų?", "Do you have enough money?"]],
+    ["s3m4l5_b11_v2:step_2", ["Kiek turite?", "How much do you have?"]],
+    ["s3c_b10_v2:step_5", ["Prašom. Viso gero ir geros kelionės!", "geros kelionės — have a good journey"]],
+  ]);
+  const seen = [];
   for(const unit of [createModule31(),createModule32(),createModule33(),createModule34(),createCheckpoint3()]){
     for(const scenario of scenarios(unit)){
       for(const step of scenario.steps||[]){
-        assert.equal(Object.prototype.hasOwnProperty.call(step,"supportText"),false,scenario.id);
+        const key = `${scenario.id}:${step.id}`;
+        if (step.supportText) {
+          assert.deepEqual([step.speakerText, step.supportText], supported.get(key), key);
+          seen.push(key);
+        }
         if(step.options?.length){
           assert.ok(step.options.some((option)=>["best","acceptable","awkward"].includes(option.result)), `${scenario.id}:${step.id} must retain a progressing answer`);
         }
@@ -25,6 +39,7 @@ test("Section 3 Scenario V2 does not reveal English meaning by default or mark N
       }
     }
   }
+  assert.deepEqual(seen.sort(), [...supported.keys()].sort());
 });
 
 test("Section 3 English helper speech is always silent Lithuanian-TTS-wise",()=>{

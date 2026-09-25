@@ -74,7 +74,7 @@ test("speech matching accepts Speechmatics digit formatting for Lithuanian numbe
 });
 
 test("speech matching accepts digit formatting for numbers embedded in full phrases", () => {
-  assert.equal(phraseMatchesSpeech("Man 45 metų.", "Man keturiasdešimt penki metų"), true);
+  assert.equal(phraseMatchesSpeech("Man 45 metai.", "Man keturiasdešimt penkeri metai"), true);
   assert.equal(phraseMatchesSpeech("Tai kainuoja 30 eurų.", "Tai kainuoja trisdešimt eurų"), true);
   assert.equal(phraseMatchesSpeech("Susitinkame 6 valandą.", "Susitinkame šeštą valandą"), true);
   assert.equal(phraseMatchesSpeech("Man reikia 2 bilietų.", "Man reikia dviejų bilietų"), true);
@@ -82,7 +82,7 @@ test("speech matching accepts digit formatting for numbers embedded in full phra
 });
 
 test("numeric transcript equivalence rejects the wrong number and does not loosen word-form grammar", () => {
-  assert.equal(phraseMatchesSpeech("Man 44 metų.", "Man keturiasdešimt penki metų"), false);
+  assert.equal(phraseMatchesSpeech("Man 44 metai.", "Man keturiasdešimt penkeri metai"), false);
   assert.equal(phraseMatchesSpeech("Tai kainuoja 13 eurų.", "Tai kainuoja trisdešimt eurų"), false);
   assert.equal(phraseMatchesSpeech("30 vandens", "Noriu vandens"), false);
   assert.equal(phraseMatchesSpeech("du kavas", "Dvi kavas"), false);

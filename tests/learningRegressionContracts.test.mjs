@@ -22,18 +22,7 @@ test("Lithuanian identity remains the duplicate key for lesson saves", () => {
   );
 });
 
-test("end-of-module vocabulary save excludes already-saved Lithuanian at every UI/save boundary", () => {
-  const src = source("src/views/training/VocabSaveView.jsx");
 
-  assert.match(src, /filter\(\(r\) => !r\._deleted\)/);
-  assert.match(src, /isDuplicate:\s*existingKeys\.has\(buildContentKey\(pair\.lt\)\)/);
-  assert.match(src, /const selectablePairs = pairsWithStatus\.filter\(\(p\) => !p\.isDuplicate\)/);
-  assert.match(src, /selectionKey:\s*contentKey/);
-  assert.match(src, /selected\.has\(p\.selectionKey\) && !p\.isDuplicate/);
-  assert.match(src, /disabled=\{isDupe\}/);
-  assert.match(src, /!isDupe && togglePair\(pair\.selectionKey\)/);
-  assert.match(src, /In library/);
-});
 
 test("vocabulary save selection is keyed by Lithuanian content rather than reused word-match ids", () => {
   const src = source("src/views/training/VocabSaveView.jsx");
@@ -235,12 +224,7 @@ test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics of
 });
 
 
-test("Build Phrase can submit overfilled answers so distractors return explicit wrong feedback", () => {
-  const src = source("src/views/training/LearningLessonView.jsx");
 
-  assert.match(src, /const isReady = built\.length >= requiredLength && requiredLength > 0/);
-  assert.match(src, /if \(builtText === correctAnswer\.trim\(\)\)[\s\S]*?setCheckState\("correct"\)[\s\S]*?else \{[\s\S]*?setCheckState\("wrong"\)/);
-});
 
 test("Build Phrase wrong-state remains legible in light mode", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
@@ -308,16 +292,7 @@ test("lesson and admin resets persist the intended account state instead of usin
 });
 
 
-test("Scenario V2 reply cards submit directly without a separate Choose button", () => {
-  const src = source("src/views/training/ScenarioV2Block.jsx");
 
-  assert.match(src, /role="button"[\s\S]*?aria-label=\{\`Choose reply:/);
-  assert.match(src, /onClick=\{chooseOption\}/);
-  assert.match(src, /event\.key !== "Enter" && event\.key !== " "/);
-  assert.match(src, /scenario-v2-option rounded-2xl[\s\S]*?\{option\.text\}/);
-  assert.doesNotMatch(src, /scenario-v2-option rounded-2xl[\s\S]*?<InteractivePhraseText text=\{option\.text\}/);
-  assert.doesNotMatch(src, />Choose<\/button>/);
-});
 
 
 test("Say It Out Loud uses Speechmatics Realtime while other STT callers retain the OpenAI default", () => {

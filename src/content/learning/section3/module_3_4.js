@@ -26,12 +26,15 @@ export default function createModule_3_4(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Man [number] metų — I am [number] years old. In this age pattern, metai (years) appears as metų. Kiek jums metų? is the polite form; Kiek tau metų? is informal. Learn these as useful fixed chunks.",
+          pattern: "Start with Man to say your age. The words for the number and years change together: dvidešimt metų (20), but dvidešimt penkeri metai (25). Use metų for 10–19 and exact tens; other ages use metai with a special number form. Practise your own age as one useful phrase. Kiek jums metų? is polite; Kiek tau metų? is informal.",
           usage: [
             "Kiek jums metų? — how old are you? (formal)",
             "Kiek tau metų? — how old are you? (informal)",
             "Man dvidešimt metų — I am twenty years old",
             "Man trisdešimt metų — I am thirty years old",
+            "Man dvidešimt penkeri metai — I am twenty-five years old",
+            "Man dvidešimt aštuoneri metai — I am twenty-eight years old",
+            `Your age: ${userAgePhraseLt} — ${userAgePhraseEn}. Practise this before saying your age.`,
           ],
         },
         blocks: [
@@ -42,7 +45,7 @@ export default function createModule_3_4(profile = {}) {
             items: [
               { id: "age1", lt: "Kiek jums metų?",    en: "How old are you? (formal)",   audioText: "Kiek jums metų",    saveable: true, core: true },
               { id: "age2", lt: "Kiek tau metų?",     en: "How old are you? (informal)", audioText: "Kiek tau metų",     saveable: true, core: true },
-              { id: "age3", lt: "Man dvidešimt metų", en: "I am twenty years old",        audioText: "Man dvidešimt metų", saveable: false, core: false },
+              ...(userAgeYears === 20 ? [] : [{ id: "age3", lt: "Man dvidešimt metų", en: "I am twenty years old", audioText: "Man dvidešimt metų", saveable: false, core: false }]),
               { id: "age4", lt: userAgePhraseLt,      en: userAgePhraseEn,                audioText: userAgePhraseLt,     saveable: true,  core: true },
               { id: "noun_zmones", lt: "žmonės", en: "people", audioText: "žmonės", core: false, saveable: true },
             ],
@@ -161,7 +164,7 @@ export default function createModule_3_4(profile = {}) {
       id: "step_2",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Man dvidešimt aštuoni metai.",
+      speakerText: "Man dvidešimt aštuoneri metai.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       help: {

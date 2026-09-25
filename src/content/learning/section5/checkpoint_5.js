@@ -94,7 +94,7 @@ export default function createCheckpoint5(profile = {}) {
         options: [
           { id: "a", text: "Eikite tiesiai.",               isCorrect: false },
           { id: "b", text: "Galite važiuoti autobusu.",      isCorrect: true  },
-          { id: "c", text: "Tai čia pat.",                  isCorrect: false },
+          { id: "c", text: "Tai netoli.",                  isCorrect: false },
         ],
         feedback: { correct: "If it's very far, the practical suggestion is Galite važiuoti autobusu — you can go by bus. Walking is not the answer here." },
       },
