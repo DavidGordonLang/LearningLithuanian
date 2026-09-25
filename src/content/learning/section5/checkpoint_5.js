@@ -146,8 +146,9 @@ export default function createCheckpoint5(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Eikite tiesiai, paskui pasukite dešinėn.",
-      sceneDirection: "Rasa points straight ahead, then gestures to the right at the next junction.",
-      learnerPrompt: "Confirm the route you heard, then ask whether it is far.",
+      sceneDirection: "Rasa gives you a two-part route.",
+      learnerPrompt: "What route did Rasa give you?",
+      interactionMode: "comprehension",
       help: {
         levels: [
           { sceneDirection: "She repeats the route more slowly while pointing.", speakerText: "Tiesiai. Paskui dešinėn." },
@@ -156,17 +157,17 @@ export default function createCheckpoint5(profile = {}) {
         ],
       },
       options: [
-        { id: "a", text: "Tiesiai, paskui dešinėn? Ar toli?", result: "best", progresses: true },
-        { id: "b", text: "Tiesiai, paskui kairėn? Ar toli?", result: "wrong", feedback: "She said right — dešinėn — not left.", progresses: false },
-        { id: "c", text: "Dešinėn, paskui tiesiai? Ar toli?", result: "wrong", feedback: "The order is reversed. She said straight first, then right.", progresses: false },
+        { id: "a", text: "Go straight, then turn right.", result: "best", progresses: true },
+        { id: "b", text: "Go straight, then turn left.", result: "wrong", feedback: "Kairėn is left; Rasa said dešinėn — right.", progresses: false },
+        { id: "c", text: "Turn right, then go straight.", result: "wrong", feedback: "The order is reversed. Rasa said straight first, then right.", progresses: false },
       ],
     },
     {
       id: "step_3",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Ne, netoli. Galite eiti pėsčiomis — penkios minutės.",
-      sceneDirection: "The hotel is only a five-minute walk away, and you are happy to walk.",
+      speakerText: "Netoli. Galite eiti pėsčiomis — penkios minutės.",
+      sceneDirection: "Rasa adds that the hotel is nearby and only a five-minute walk away; you are happy to walk.",
       learnerPrompt: "Respond consistently with the short walking distance.",
       options: [
         { id: "a", text: "Puiku! Ačiū labai.", result: "best", progresses: true },

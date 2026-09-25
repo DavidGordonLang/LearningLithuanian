@@ -277,7 +277,7 @@ function resultMeta(option) {
   return { label: "Try again", tone: "border-rose-400/25 bg-rose-500/[0.07] text-rose-200" };
 }
 
-function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText }) {
+function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText, plainText = false }) {
   if (!option) return null;
   const meta = resultMeta(option);
   const progresses = optionCanProgress(option);
@@ -293,13 +293,13 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText }) {
               <div className="text-[13px] font-semibold">{meta.label}</div>
               <div className="scenario-v2-feedback-inset mt-1 rounded-2xl border px-3 py-2">
                 <div className="text-[10px] uppercase tracking-widest text-zinc-500">Your answer</div>
-                <div className="mt-0.5 text-[14px] font-semibold text-zinc-100"><InteractivePhraseText text={option.text} playText={playText} /></div>
+                <div className="mt-0.5 text-[14px] font-semibold text-zinc-100">{plainText ? option.text : <InteractivePhraseText text={option.text} playText={playText} />}</div>
               </div>
               {option.feedback ? <div className="mt-2 text-[13px] leading-snug text-zinc-200">{option.feedback}</div> : null}
               {option.betterAnswer ? (
                 <div className="scenario-v2-feedback-inset mt-2 rounded-xl border px-3 py-2">
                   <div className="text-[10px] uppercase tracking-widest text-zinc-500">Better answer</div>
-                  <div className="mt-0.5 text-[13px] font-semibold text-zinc-100"><InteractivePhraseText text={option.betterAnswer} playText={playText} /></div>
+                  <div className="mt-0.5 text-[13px] font-semibold text-zinc-100">{plainText ? option.betterAnswer : <InteractivePhraseText text={option.betterAnswer} playText={playText} />}</div>
                 </div>
               ) : null}
             </div>
@@ -408,6 +408,16 @@ function ScenarioV2UserBubble({ item, playText }) {
 
 function ScenarioV2HistoryItem({ block, item, playText }) {
   if (item.role === "learner") return <ScenarioV2UserBubble item={item} playText={playText} />;
+  if (item.role === "comprehension") {
+    return (
+      <div className="flex justify-end">
+        <div className="scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
+          <div className="scenario-v2-user-label text-[10px] uppercase tracking-widest font-semibold">Meaning selected</div>
+          <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug">{item.text}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <ScenarioV2SystemTurn
       block={block}
@@ -467,6 +477,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   const helpTurnKey = helpTurn ? `help:${step?.id || "step"}:${helpTurn.helpLevel || 0}:${helpTurn.speakerText || helpTurn.sceneDirection || "context"}` : null;
   const finalTurnKey = finalTurn?.speakerText ? `final:${step?.id || "step"}:${finalTurn.speakerText}` : null;
   const selectedOptionForStep = selectedOption?.stepId === step?.id ? selectedOption.option : null;
+  const isComprehensionStep = step?.interactionMode === "comprehension";
   const stepSpeakerHistoryId = step?.id ? `${step.id}_speaker` : null;
   const stepSpeakerCommitted = !!stepSpeakerHistoryId && history.some((item) => item.id === stepSpeakerHistoryId);
 
@@ -611,6 +622,33 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     queueTimeout(() => setComplete(true), delay + 950);
   }, [finalTurnKey, finalTurn?.sceneDirection, finalTurn?.speakerText]);
 
+  function addComprehensionExchange(option) {
+    setHistory((prev) => {
+      const speakerHistoryId = `${step?.id || "step"}_speaker`;
+      const additions = [];
+      if (!prev.some((item) => item.id === speakerHistoryId)) {
+        additions.push({
+          id: speakerHistoryId,
+          role: "speaker",
+          speakerId: step?.speakerId,
+          speakerLabel,
+          text: step?.speakerText || "",
+          speakerText: step?.speakerText || "",
+          sceneDirection: null,
+          supportText: step?.supportText || step?.meaningText || "",
+          audio: step?.audio,
+          spokenLanguage: step?.spokenLanguage || step?.language || null,
+        });
+      }
+      additions.push({
+        id: `${step?.id || "step"}_${option?.id || "option"}_meaning`,
+        role: "comprehension",
+        text: option?.text || "",
+      });
+      return [...prev, ...additions];
+    });
+  }
+
   function addCurrentExchange(option, learnerHistoryId = null) {
     setHistory((prev) => {
       const speakerHistoryId = `${step?.id || "step"}_speaker`;
@@ -670,7 +708,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   }
 
   function processProgressingOption(option) {
-    addCurrentExchange(option);
+    if (isComprehensionStep) addComprehensionExchange(option);
+    else addCurrentExchange(option);
     const nextStepId = option?.nextStepId || null;
     if (option?.followUp?.speakerText) {
       setFollowUpTurn({ ...option.followUp, nextStepId });
@@ -770,6 +809,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
                 {step.helperText}
               </div>
             ) : null}
+            {isComprehensionStep ? <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-500">Comprehension check</div> : null}
             {step.learnerPrompt ? <div className="mb-3 text-[14px] font-semibold leading-snug text-zinc-100">{step.learnerPrompt}</div> : null}
             <div className="grid gap-2">
               {options.map((option) => {
@@ -784,7 +824,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
                     role="button"
                     tabIndex={optionDisabled ? -1 : 0}
                     aria-disabled={optionDisabled}
-                    aria-label={`Choose reply: ${option.text}`}
+                    aria-label={`${isComprehensionStep ? "Choose meaning" : "Choose reply"}: ${option.text}`}
                     onClick={chooseOption}
                     onKeyDown={(event) => {
                       if (optionDisabled || (event.key !== "Enter" && event.key !== " ")) return;
@@ -818,6 +858,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         <ScenarioV2FeedbackSheet
           playText={playText}
           option={selectedOptionForStep}
+          plainText={isComprehensionStep}
           onRetry={() => setSelectedOption(null)}
           onContinue={handleFeedbackContinue}
         />

@@ -147,12 +147,14 @@ test("Section 5 uses authored help and only narrow visible support for weakly in
  assert.equal(final.steps[1].help.levels.at(-1).audio,false);
 });
 
-test("Section 5 final checkpoint is a coherent street route and uses Ar toli",()=>{
+test("Section 5 final checkpoint tests route comprehension in English",()=>{
  const cp=createCheckpoint5();
  const s=cp.blocks.find(b=>b.id==="s5cp_b8_v2");
  assert.equal(s.location,"street outside the bus station");
  assert.equal(s.participants[0].role,"passer-by");
- assert.equal(s.steps[1].options.find(o=>o.result==="best").text,"Tiesiai, paskui dešinėn? Ar toli?");
+ assert.equal(s.steps[1].interactionMode,"comprehension");
+ assert.equal(s.steps[1].options.find(o=>o.result==="best").text,"Go straight, then turn right.");
+ assert.ok(s.steps[1].options.some(o=>o.text==="Go straight, then turn left." && o.result==="wrong"));
  assert.match(s.steps[2].speakerText,/penkios minutės/);
 });
 
@@ -225,7 +227,7 @@ test("Lithuanian best-response answers in Section 5 keep option audio enabled",(
     ...createModule54().lessons.flatMap(l=>l.blocks),
     ...createCheckpoint5().blocks,
   ];
-  for(const id of ["s5m1l2_b5","s5m1c_b3","s5m2l2_b4","s5m2l3_b4","s5m4l4_b3","s5m4l5_b2","s5cp_b6"]){
+  for(const id of ["s5m1l2_b5","s5m1c_b3","s5m2l2_b4","s5m2l3_b4","s5m4l4_b3","s5cp_b6"]){
     const block=all.find(b=>b.id===id);
     assert.ok(block,id);
     assert.equal(block.noOptionAudio,undefined,id);
@@ -568,8 +570,9 @@ test("Future Section 5 scenarios are grounded and use plausible near-miss choice
   assert.equal(giveRoute.steps[0].options.find(o=>o.result==="best").text,"Eikite tiesiai, paskui pasukite kairėn.");
 
   const finalScenario=final.blocks.find(b=>b.id==="s5cp_b8_v2");
-  assert.equal(finalScenario.steps[1].options.find(o=>o.result==="best").text,"Tiesiai, paskui dešinėn? Ar toli?");
-  assert.ok(finalScenario.steps[1].options.some(o=>o.text==="Tiesiai, paskui kairėn? Ar toli?" && o.result==="wrong"));
+  assert.equal(finalScenario.steps[1].interactionMode,"comprehension");
+  assert.equal(finalScenario.steps[1].options.find(o=>o.result==="best").text,"Go straight, then turn right.");
+  assert.ok(finalScenario.steps[1].options.some(o=>o.text==="Go straight, then turn left." && o.result==="wrong"));
 });
 
 
@@ -767,4 +770,32 @@ test("5.4.4 explains eiti versus važiuoti before testing transport choices",()=
   assert.ok(lesson.notes.usage.includes("važiuoti — to go / travel by vehicle"));
   assert.ok(lesson.notes.usage.includes("Galite eiti pėsčiomis. — You can go on foot."));
   assert.ok(lesson.notes.usage.includes("Galite važiuoti autobusu. — You can go by bus."));
+});
+
+
+test("5.4.5 and later route checks translate Lithuanian directions into English",()=>{
+  const m=createModule54();
+  const lesson=m.lessons.find(l=>l.code==="5.4.5");
+  const direct=lesson.blocks.find(b=>b.id==="s5m4l5_b2");
+  assert.equal(direct.type,"listen_mcq");
+  assert.equal(direct.prompt.text,"Eikite tiesiai, paskui pasukite dešinėn.");
+  assert.equal(direct.options.find(o=>o.isCorrect).text,"Go straight, then turn right.");
+  assert.equal(direct.options.some(o=>/Suprantu|Ar toli|Kur yra/.test(o.text)),false);
+
+  const lessonScenario=lesson.blocks.find(b=>b.id==="s5m4l5_b5_v2");
+  const lessonRoute=lessonScenario.steps.find(s=>s.id==="step_2");
+  assert.equal(lessonRoute.interactionMode,"comprehension");
+  assert.equal(lessonRoute.options.find(o=>o.result==="best").text,"Go straight, then turn left.");
+  assert.equal(/go straight|turn left/i.test(lessonRoute.sceneDirection),false);
+
+  const checkpoint=m.lessons.find(l=>l.code==="5.4.C");
+  const cpScenario=checkpoint.blocks.find(b=>b.id==="s5m4c_b6_v2");
+  assert.equal(cpScenario.steps[1].interactionMode,"comprehension");
+  assert.equal(cpScenario.steps[1].options.find(o=>o.result==="best").text,"Go straight, then turn left.");
+  assert.equal(cpScenario.steps[3].interactionMode,"comprehension");
+  assert.equal(cpScenario.steps[3].options.find(o=>o.result==="best").text,"Over there, to the right.");
+
+  const final=createCheckpoint5().blocks.find(b=>b.id==="s5cp_b8_v2");
+  assert.equal(final.steps[1].interactionMode,"comprehension");
+  assert.equal(final.steps[1].options.find(o=>o.result==="best").text,"Go straight, then turn right.");
 });
