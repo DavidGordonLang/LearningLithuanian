@@ -750,20 +750,17 @@ export default function createModule_5_1(profile = {}) {
           },
           {
             id: "s5m1l5_b3",
-            type: "conversation_turn_fill",
-            scene_label: "On the street",
-            prompt: "The hotel is just across the street. The local points directly at it. Complete the reply.",
-            lines: [
-              { speaker: "You",   text: "Atsiprašau, kur yra viešbutis?", audioText: "Atsiprašau, kur yra viešbutis", hasGap: false },
-              { speaker: "Local", text: "Tai ___.",                        hasGap: true },
-            ],
+            type: "best_response",
+            title: "Match the location",
+            prompt: { text: "The hotel is just across the street. A local points directly at it. Which reply matches the scene?" },
             options: [
-              { id: "a", text: "toli",  isCorrect: false },
-              { id: "b", text: "čia",   isCorrect: false },
-              { id: "c", text: "ten",   isCorrect: true  },
+              { id: "a", text: "Viešbutis yra ten.", isCorrect: true },
+              { id: "b", text: "Viešbutis yra čia.", isCorrect: false },
+              { id: "c", text: "Viešbutis yra toli.", isCorrect: false },
             ],
-            explanation: "Ten — there. The pointing cue tells you the hotel is away from where you are standing. Čia would mean here; toli would mean far, but the hotel is only across the street.",
-            translation_en: "Excuse me, where is the hotel? — It's there.",
+            feedback: {
+              correct: "Viešbutis yra ten — the hotel is there. It is away from where you are standing, but only across the street, so neither čia nor toli fits.",
+            },
           },
           {
             id: "s5m1l5_b4",

@@ -255,20 +255,24 @@ export default function createModule_5_4(profile = {}) {
           },
           {
             id: "s5m4l2_b3",
-            type: "conversation_turn_fill",
-            scene_label: "In the street",
-            lines: [
-              { speaker: "You",   text: "Kaip man nusigauti į viešbutį?", audioText: "Kaip man nusigauti į viešbutį", hasGap: false },
-              { speaker: "Local", text: "Eikite tiesiai.",                 audioText: "Eikite tiesiai",                hasGap: false },
-              { speaker: "You",   text: "___?",                            hasGap: true },
-            ],
+            type: "best_response",
+            title: "Choose the useful follow-up",
+            prompt: { text: "A local tells you: Eikite tiesiai. You still need to know whether the hotel is far. What do you ask?" },
             options: [
-              { id: "a", text: "Kur yra stotis?", isCorrect: false },
-              { id: "b", text: "Ar toli?",    isCorrect: true  },
-              { id: "c", text: "Ačiū labai.",     isCorrect: false },
+              { id: "a", text: "Ar toli?", isCorrect: true },
+              {
+                id: "b",
+                text: "Ačiū labai.",
+                isCorrect: false,
+                result: "awkward",
+                feedback: "A thank-you is natural, but it does not get the distance information you still need.",
+                betterAnswer: "Ar toli?",
+              },
+              { id: "c", text: "Kur yra stotis?", isCorrect: false },
             ],
-            explanation: "After getting directions the natural next question is Ar toli? — Is it far? It completes the exchange.",
-            translation_en: "How do I get to the hotel? — Go straight. — Is it far?",
+            feedback: {
+              correct: "Ar toli? — Is it far? That is the useful follow-up once you already have the direction.",
+            },
           },
           {
             id: "s5m4l2_b4",
@@ -801,20 +805,17 @@ export default function createModule_5_4(profile = {}) {
           },
           {
             id: "s5m4l5_b3",
-            type: "conversation_turn_fill",
-            scene_label: "In the street",
-            lines: [
-              { speaker: "You",   text: "Atsiprašau, kaip man nusigauti į vaistinę?", audioText: "Atsiprašau, kaip man nusigauti į vaistinę", hasGap: false },
-              { speaker: "Local", text: "Eikite tiesiai, paskui pasukite kairėn.",     audioText: "Eikite tiesiai, paskui pasukite kairėn",     hasGap: false },
-              { speaker: "You",   text: "___?",                                        hasGap: true },
-            ],
+            type: "listen_mcq",
+            title: "Listen to the route",
+            prompt: {
+              text: "Eikite tiesiai, paskui pasukite kairėn.",
+              audioText: "Eikite tiesiai, paskui pasukite kairėn",
+            },
             options: [
-              { id: "a", text: "Kur yra bankas?", isCorrect: false },
-              { id: "b", text: "Ar toli?",    isCorrect: true  },
-              { id: "c", text: "Viso gero.",      isCorrect: false },
+              { id: "a", text: "Go straight, then turn left.", isCorrect: true },
+              { id: "b", text: "Turn left, then go straight.", isCorrect: false },
+              { id: "c", text: "Go straight, then turn right.", isCorrect: false },
             ],
-            explanation: "After getting the route, Ar toli? is the natural follow-up — you want to know whether to walk or take transport.",
-            translation_en: "Excuse me, how do I get to the pharmacy? — Go straight, then turn left. — Is it far?",
           },
           {
             id: "s5m4l5_b4",
@@ -1028,19 +1029,19 @@ export default function createModule_5_4(profile = {}) {
           },
           {
             id: "s5m4c_b5",
-            type: "conversation_turn_fill",
-            scene_label: "In the street",
-            lines: [
-              { speaker: "You",   text: "Kaip man nusigauti į autobusų stotį?", audioText: "Kaip man nusigauti į autobusų stotį", hasGap: false },
-              { speaker: "Local", text: "___, paskui pasukite dešinėn.",         hasGap: true },
+            type: "build_phrase",
+            title: "Build the route",
+            prompt: { text: "Build: Go straight, then turn right." },
+            tokens: [
+              { id: "t1", text: "Eikite", correctIndex: 0 },
+              { id: "t2", text: "tiesiai,", correctIndex: 1 },
+              { id: "t3", text: "paskui", correctIndex: 2 },
+              { id: "t4", text: "pasukite", correctIndex: 3 },
+              { id: "t5", text: "dešinėn.", correctIndex: 4 },
+              { id: "t6", text: "kairėn.", isDistractor: true, repairHint: "Kairėn is to the left. The route turns right." },
+              { id: "t7", text: "toli.", isDistractor: true, repairHint: "Toli describes distance, not the next route action." },
             ],
-            options: [
-              { id: "a", text: "Pasukite kairėn", isCorrect: false },
-              { id: "b", text: "Eikite tiesiai",  isCorrect: true  },
-              { id: "c", text: "Tai netoli",       isCorrect: false },
-            ],
-            explanation: "Eikite tiesiai, paskui pasukite dešinėn — go straight, then turn right. Directions typically start with the first action.",
-            translation_en: "How do I get to the bus station? — Go straight, then turn right.",
+            answerText: "Eikite tiesiai, paskui pasukite dešinėn.",
           },
           {
   id: "s5m4c_b6_v2",

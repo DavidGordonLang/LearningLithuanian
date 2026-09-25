@@ -971,19 +971,19 @@ export default function createModule_5_2(profile = {}) {
           },
           {
             id: "s5m2c_b5",
-            type: "conversation_turn_fill",
-            scene_label: "A local points straight ahead",
-            lines: [
-              { speaker: "You", text: "Atsiprašau, kur yra parduotuvė?", audioText: "Atsiprašau, kur yra parduotuvė", hasGap: false },
-              { speaker: "Local", text: "Parduotuvė ___, tiesiai.", hasGap: true },
+            type: "build_phrase",
+            title: "Build the direction",
+            prompt: { text: "A local points straight ahead. Build: The shop is there. Go straight ahead." },
+            tokens: [
+              { id: "t1", text: "Parduotuvė", correctIndex: 0 },
+              { id: "t2", text: "yra", correctIndex: 1 },
+              { id: "t3", text: "ten.", correctIndex: 2 },
+              { id: "t4", text: "Eikite", correctIndex: 3 },
+              { id: "t5", text: "tiesiai.", correctIndex: 4 },
+              { id: "t6", text: "čia.", isDistractor: true, repairHint: "Čia means here. The local is pointing away from where you are standing." },
+              { id: "t7", text: "kairėn.", isDistractor: true, repairHint: "Kairėn means to the left. The local points straight ahead." },
             ],
-            options: [
-              { id: "a", text: "toli", isCorrect: false },
-              { id: "b", text: "ten", isCorrect: true },
-              { id: "c", text: "kairėn", isCorrect: false },
-            ],
-            explanation: "Parduotuvė ten, tiesiai — the shop is there, straight ahead. The noun makes the short location reply clear.",
-            translation_en: "Excuse me, where is the shop? — The shop is there, straight ahead.",
+            answerText: "Parduotuvė yra ten. Eikite tiesiai.",
           },
           {
   id: "s5m2c_b6_v2",

@@ -509,19 +509,17 @@ export default function createModule_5_3(profile = {}) {
           },
           {
             id: "s5m3l4_b3",
-            type: "conversation_turn_fill",
-            scene_label: "In the street",
-            lines: [
-              { speaker: "Local", text: "Kur einate?", audioText: "Kur einate", hasGap: false },
-              { speaker: "You",   text: "___ stotį.",  hasGap: true },
-            ],
+            type: "best_response",
+            title: "Answer the question",
+            prompt: { text: "A colleague asks politely: Kur einate? You are going to the station. What do you say?" },
             options: [
-              { id: "a", text: "Iš",  isCorrect: false },
-              { id: "b", text: "Į",   isCorrect: true  },
-              { id: "c", text: "Prie",isCorrect: false },
+              { id: "a", text: "Einu į stotį.", isCorrect: true },
+              { id: "b", text: "Einu iš stoties.", isCorrect: false },
+              { id: "c", text: "Einu į viešbutį.", isCorrect: false },
             ],
-            explanation: "Į stotį — to the station. Į shows movement toward a destination. Iš would mean coming from.",
-            translation_en: "Where are you going? — To the station.",
+            feedback: {
+              correct: "Einu į stotį — I'm going to the station. Į marks the destination; iš would mean from the station.",
+            },
           },
           {
             id: "s5m3l4_b4",
@@ -906,19 +904,17 @@ export default function createModule_5_3(profile = {}) {
           },
           {
             id: "s5m3c_b5",
-            type: "conversation_turn_fill",
-            scene_label: "In the street",
-            lines: [
-              { speaker: "Local", text: "Kur einate?",  audioText: "Kur einate", hasGap: false },
-              { speaker: "You",   text: "___ kavinę.",  hasGap: true },
+            type: "build_phrase",
+            title: "Build the destination",
+            prompt: { text: "Build: I'm going to the café." },
+            tokens: [
+              { id: "t1", text: "Einu", correctIndex: 0 },
+              { id: "t2", text: "į", correctIndex: 1 },
+              { id: "t3", text: "kavinę.", correctIndex: 2 },
+              { id: "t4", text: "iš", isDistractor: true, repairHint: "Iš means from. You are moving towards the café." },
+              { id: "t5", text: "stotį.", isDistractor: true, repairHint: "Stotį means the station as a destination. The prompt asks for the café." },
             ],
-            options: [
-              { id: "a", text: "Iš",  isCorrect: false },
-              { id: "b", text: "Į",   isCorrect: true  },
-              { id: "c", text: "Prie",isCorrect: false },
-            ],
-            explanation: "Į kavinę — to the café. Movement toward a destination uses į.",
-            translation_en: "Where are you going? — To the café.",
+            answerText: "Einu į kavinę.",
           },
           {
   id: "s5m3c_b6_v2",

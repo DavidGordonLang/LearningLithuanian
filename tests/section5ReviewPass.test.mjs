@@ -271,17 +271,17 @@ test("5.1.4 teaches left/right bases before directional forms",()=>{
 });
 
 
-test("5.1.5 location gap gives enough context to choose ten",()=>{
+test("5.1.5 location task uses a full meaningful response instead of a one-word dialogue gap",()=>{
   const m=createModule51();
   const lesson=m.lessons.find(l=>l.code==="5.1.5");
   const block=lesson.blocks.find(b=>b.id==="s5m1l5_b3");
 
-  assert.match(block.prompt,/hotel is just across the street/i);
-  assert.match(block.prompt,/points directly at it/i);
-  assert.equal(block.options.find(o=>o.isCorrect).text,"ten");
-  assert.match(block.explanation,/čia would mean here/i);
-  assert.match(block.explanation,/toli would mean far/i);
-  assert.match(block.explanation,/only across the street/i);
+  assert.equal(block.type,"best_response");
+  assert.match(block.prompt.text,/hotel is just across the street/i);
+  assert.match(block.prompt.text,/points directly at it/i);
+  assert.equal(block.options.find(o=>o.isCorrect).text,"Viešbutis yra ten.");
+  assert.ok(block.options.some(o=>o.text==="Viešbutis yra čia."));
+  assert.ok(block.options.some(o=>o.text==="Viešbutis yra toli."));
 });
 
 
@@ -391,4 +391,27 @@ test("5.2 checkpoint speaking task synthesises place and distance instead of rep
   const firstLesson=m.lessons.find(l=>l.code==="5.2.1");
   assert.equal(firstLesson.blocks.find(b=>b.id==="s5m2l1_b5").targetText,"Kur yra autobusų stotis");
   assert.notEqual(speak.targetText,firstLesson.blocks.find(b=>b.id==="s5m2l1_b5").targetText);
+});
+
+
+test("Section 5 avoids conversation-turn blank filling in favour of fuller recognition or production",()=>{
+  const modules=[createModule51(),createModule52(),createModule53(),createModule54()];
+  const allBlocks=modules.flatMap(m=>m.lessons.flatMap(l=>l.blocks));
+
+  assert.equal(allBlocks.some(b=>b.type==="conversation_turn_fill"),false);
+
+  const m2=createModule52();
+  const cp2=m2.lessons.find(l=>l.code==="5.2.C");
+  const routeBuild=cp2.blocks.find(b=>b.id==="s5m2c_b5");
+  assert.equal(routeBuild.type,"build_phrase");
+  assert.equal(routeBuild.answerText,"Parduotuvė yra ten. Eikite tiesiai.");
+
+  const m3=createModule53();
+  assert.equal(m3.lessons.find(l=>l.code==="5.3.4").blocks.find(b=>b.id==="s5m3l4_b3").type,"best_response");
+  assert.equal(m3.lessons.find(l=>l.code==="5.3.C").blocks.find(b=>b.id==="s5m3c_b5").type,"build_phrase");
+
+  const m4=createModule54();
+  assert.equal(m4.lessons.find(l=>l.code==="5.4.2").blocks.find(b=>b.id==="s5m4l2_b3").type,"best_response");
+  assert.equal(m4.lessons.find(l=>l.code==="5.4.5").blocks.find(b=>b.id==="s5m4l5_b3").type,"listen_mcq");
+  assert.equal(m4.lessons.find(l=>l.code==="5.4.C").blocks.find(b=>b.id==="s5m4c_b5").type,"build_phrase");
 });
