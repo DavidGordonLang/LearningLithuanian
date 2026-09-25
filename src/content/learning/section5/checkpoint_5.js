@@ -157,7 +157,7 @@ export default function createCheckpoint5(profile = {}) {
         ],
       },
       options: [
-        { id: "a", text: "Go straight, then turn right.", result: "best", progresses: true },
+        { id: "a", text: "Go straight, then turn right.", learnerText: "Suprantu. Ar toli?", result: "best", progresses: true },
         { id: "b", text: "Go straight, then turn left.", result: "wrong", feedback: "Kairėn is left; Rasa said dešinėn — right.", progresses: false },
         { id: "c", text: "Turn right, then go straight.", result: "wrong", feedback: "The order is reversed. Rasa said straight first, then right.", progresses: false },
       ],

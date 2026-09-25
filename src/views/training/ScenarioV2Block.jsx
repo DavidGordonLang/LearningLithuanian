@@ -408,16 +408,6 @@ function ScenarioV2UserBubble({ item, playText }) {
 
 function ScenarioV2HistoryItem({ block, item, playText }) {
   if (item.role === "learner") return <ScenarioV2UserBubble item={item} playText={playText} />;
-  if (item.role === "comprehension") {
-    return (
-      <div className="flex justify-end">
-        <div className="scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
-          <div className="scenario-v2-user-label text-[10px] uppercase tracking-widest font-semibold">Meaning selected</div>
-          <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug">{item.text}</div>
-        </div>
-      </div>
-    );
-  }
   return (
     <ScenarioV2SystemTurn
       block={block}
@@ -640,11 +630,18 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           spokenLanguage: step?.spokenLanguage || step?.language || null,
         });
       }
-      additions.push({
-        id: `${step?.id || "step"}_${option?.id || "option"}_meaning`,
-        role: "comprehension",
-        text: option?.text || "",
-      });
+
+      const learnerText = String(option?.learnerText || "").trim();
+      if (learnerText) {
+        additions.push({
+          id: `${step?.id || "step"}_${option?.id || "option"}_learner`,
+          role: "learner",
+          speakerLabel: "You",
+          text: learnerText,
+          supportText: option?.learnerSupportText || "",
+        });
+      }
+
       return [...prev, ...additions];
     });
   }

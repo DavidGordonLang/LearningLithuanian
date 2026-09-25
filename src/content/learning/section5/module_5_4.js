@@ -598,7 +598,7 @@ export default function createModule_5_4(profile = {}) {
         ],
       },
       options: [
-        { id: "a", text: "Go straight, then turn left.", result: "best", progresses: true },
+        { id: "a", text: "Go straight, then turn left.", learnerText: "Suprantu. Ar toli?", result: "best", progresses: true },
         { id: "b", text: "Go straight, then turn right.", result: "wrong", feedback: "Dešinėn is right; Rasa said kairėn — left.", progresses: false },
         { id: "c", text: "Turn left, then go straight.", result: "wrong", feedback: "The order is reversed. Rasa said straight first, then left.", progresses: false },
       ],
@@ -739,7 +739,7 @@ export default function createModule_5_4(profile = {}) {
         ],
       },
       options: [
-        { id: "a", text: "Go straight, then turn left.", result: "best", progresses: true },
+        { id: "a", text: "Go straight, then turn left.", learnerText: "Suprantu. Ar toli?", result: "best", progresses: true },
         { id: "b", text: "Go straight, then turn right.", result: "wrong", feedback: "Dešinėn is right; Rasa said kairėn — left.", progresses: false },
         { id: "c", text: "Turn left, then go straight.", result: "wrong", feedback: "The order is reversed. Rasa said straight first, then left.", progresses: false },
       ],
@@ -766,7 +766,7 @@ export default function createModule_5_4(profile = {}) {
       learnerPrompt: "Where did Rasa say the bus stop is?",
       interactionMode: "comprehension",
       options: [
-        { id: "a", text: "Over there, to the right.", result: "best", progresses: true },
+        { id: "a", text: "Over there, to the right.", learnerText: "Suprantu. Ačiū labai.", result: "best", progresses: true },
         { id: "b", text: "Over there, to the left.", result: "wrong", feedback: "Kairėn is left; Rasa said dešinėn — right.", progresses: false },
         { id: "c", text: "Straight ahead.", result: "wrong", feedback: "Rasa said the stop is over there, to the right.", progresses: false },
       ],

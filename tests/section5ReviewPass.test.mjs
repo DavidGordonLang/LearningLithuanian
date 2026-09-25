@@ -786,16 +786,50 @@ test("5.4.5 and later route checks translate Lithuanian directions into English"
   const lessonRoute=lessonScenario.steps.find(s=>s.id==="step_2");
   assert.equal(lessonRoute.interactionMode,"comprehension");
   assert.equal(lessonRoute.options.find(o=>o.result==="best").text,"Go straight, then turn left.");
+  assert.equal(lessonRoute.options.find(o=>o.result==="best").learnerText,"Suprantu. Ar toli?");
   assert.equal(/go straight|turn left/i.test(lessonRoute.sceneDirection),false);
 
   const checkpoint=m.lessons.find(l=>l.code==="5.4.C");
   const cpScenario=checkpoint.blocks.find(b=>b.id==="s5m4c_b6_v2");
   assert.equal(cpScenario.steps[1].interactionMode,"comprehension");
   assert.equal(cpScenario.steps[1].options.find(o=>o.result==="best").text,"Go straight, then turn left.");
+  assert.equal(cpScenario.steps[1].options.find(o=>o.result==="best").learnerText,"Suprantu. Ar toli?");
   assert.equal(cpScenario.steps[3].interactionMode,"comprehension");
   assert.equal(cpScenario.steps[3].options.find(o=>o.result==="best").text,"Over there, to the right.");
+  assert.equal(cpScenario.steps[3].options.find(o=>o.result==="best").learnerText,"Suprantu. Ačiū labai.");
 
   const final=createCheckpoint5().blocks.find(b=>b.id==="s5cp_b8_v2");
   assert.equal(final.steps[1].interactionMode,"comprehension");
   assert.equal(final.steps[1].options.find(o=>o.result==="best").text,"Go straight, then turn right.");
+  assert.equal(final.steps[1].options.find(o=>o.result==="best").learnerText,"Suprantu. Ar toli?");
+});
+
+
+test("Scenario comprehension choices keep English in the assessment UI and Lithuanian in dialogue",()=>{
+  const m=createModule54();
+  const lesson=m.lessons.find(l=>l.code==="5.4.5");
+  const route=lesson.blocks.find(b=>b.id==="s5m4l5_b5_v2").steps[1];
+  const best=route.options.find(o=>o.result==="best");
+  assert.equal(best.text,"Go straight, then turn left.");
+  assert.equal(best.learnerText,"Suprantu. Ar toli?");
+
+  const cp=m.lessons.find(l=>l.code==="5.4.C").blocks.find(b=>b.id==="s5m4c_b6_v2");
+  assert.equal(cp.steps[1].options.find(o=>o.result==="best").learnerText,"Suprantu. Ar toli?");
+  assert.equal(cp.steps[3].options.find(o=>o.result==="best").learnerText,"Suprantu. Ačiū labai.");
+
+  const final=createCheckpoint5().blocks.find(b=>b.id==="s5cp_b8_v2");
+  assert.equal(final.steps[1].options.find(o=>o.result==="best").learnerText,"Suprantu. Ar toli?");
+
+  for(const scenario of [
+    lesson.blocks.find(b=>b.id==="s5m4l5_b5_v2"),
+    cp,
+    final,
+  ]){
+    for(const step of scenario.steps||[]){
+      if(step.interactionMode!=="comprehension") continue;
+      for(const option of (step.options||[]).filter(o=>o.result==="best"||o.result==="acceptable"||o.result==="awkward")){
+        assert.ok(option.learnerText,scenario.id+"/"+step.id+"/"+option.id);
+      }
+    }
+  }
 });
