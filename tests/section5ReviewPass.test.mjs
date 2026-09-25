@@ -187,7 +187,7 @@ test("5.3 checkpoint match pairs contain taught or deliberately reviewed languag
   for(const removed of ["Geros kelionės!","Iki pasimatymo.","prie stoties","Savaitę."]){
     assert.equal(pairs.includes(removed),false,removed);
   }
-  for(const expected of ["Aš išeinu iš viešbučio.","Kur mes einame?","Aš einu į vaistinę.","Ar toli?"]){
+  for(const expected of ["Aš išeinu iš viešbučio.","Kur mes einame?","Aš einu į vaistinę.","Ar ieškote viešbučio?"]){
     assert.ok(pairs.includes(expected),expected);
   }
 });
@@ -414,4 +414,38 @@ test("Section 5 avoids conversation-turn blank filling in favour of fuller recog
   assert.equal(m4.lessons.find(l=>l.code==="5.4.2").blocks.find(b=>b.id==="s5m4l2_b3").type,"best_response");
   assert.equal(m4.lessons.find(l=>l.code==="5.4.5").blocks.find(b=>b.id==="s5m4l5_b3").type,"listen_mcq");
   assert.equal(m4.lessons.find(l=>l.code==="5.4.C").blocks.find(b=>b.id==="s5m4c_b5").type,"build_phrase");
+});
+
+
+test("5.2 checkpoint excludes untaught Ar ieškote and keeps only reviewed language",()=>{
+  const m=createModule52();
+  const cp=m.lessons.find(l=>l.code==="5.2.C");
+  const pairs=cp.blocks.find(b=>b.id==="s5m2c_b7").pairs.map(p=>p.lt);
+
+  assert.equal(pairs.includes("Ar ieškote…?"),false);
+  assert.equal(pairs.some(p=>p.startsWith("Ar ieškote")),false);
+  assert.ok(pairs.includes("Man reikia vaistų."));
+  assert.equal(pairs.length,20);
+});
+
+test("5.3.5 introduces Ar ieškote only after viešbučio is already familiar",()=>{
+  const m=createModule53();
+  const lesson=m.lessons.find(l=>l.code==="5.3.5");
+  const teach=lesson.blocks.find(b=>b.id==="s5m3l5_b1");
+  const listen=lesson.blocks.find(b=>b.id==="s5m3l5_b1_listen");
+
+  assert.equal(lesson.newLanguageLoad,"low");
+  assert.deepEqual(teach.items.map(i=>i.lt),["ieškoti","ieškote","Ar ieškote viešbučio?"]);
+  assert.match(lesson.notes.pattern,/already know viešbučio from iš viešbučio/i);
+  assert.match(lesson.notes.pattern,/useful travel pattern rather than another grammar table/i);
+
+  assert.equal(listen.type,"listen_mcq");
+  assert.equal(listen.prompt.text,"Ar ieškote viešbučio?");
+  assert.equal(listen.options.find(o=>o.isCorrect).text,"Are you looking for the hotel?");
+  assert.ok(listen.options.some(o=>o.text==="Are you going to the hotel?"));
+  assert.ok(listen.options.some(o=>o.text==="Are you coming from the hotel?"));
+
+  const cp=m.lessons.find(l=>l.code==="5.3.C");
+  const pairs=cp.blocks.find(b=>b.id==="s5m3c_b7").pairs.map(p=>p.lt);
+  assert.ok(pairs.includes("Ar ieškote viešbučio?"));
 });

@@ -1139,7 +1139,7 @@ export default function createModule_5_2(profile = {}) {
               { id: "m16", lt: "Kur yra kavinė?",     en: "Where is the café?",     audioText: "Kur yra kavinė" },
               { id: "m17", lt: "Kur yra bankas?",     en: "Where is the bank?",     audioText: "Kur yra bankas" },
               { id: "m18", lt: "Tai čia pat.",        en: "It's right here.",        audioText: "Tai čia pat" },
-              { id: "m19", lt: "Ar ieškote…?",        en: "Are you looking for…?",  audioText: "Ar ieškote" },
+              { id: "m19", lt: "Man reikia vaistų.",   en: "I need medicine.",        audioText: "Man reikia vaistų" },
               { id: "m20", lt: "paskui",              en: "then",                    audioText: "paskui" },
             ],
           },
