@@ -753,3 +753,18 @@ test("5.3 checkpoint match pairs are grouped into semantic reinforcement sets",(
   assert.equal(block.pairs.some(p=>p.lt==="stotyje"),false);
   assert.equal(block.pairs.some(p=>p.lt==="į stotį"),false);
 });
+
+
+test("5.4.4 explains eiti versus važiuoti before testing transport choices",()=>{
+  const m=createModule54();
+  const lesson=m.lessons.find(l=>l.code==="5.4.4");
+  assert.ok(lesson.notes);
+  assert.match(lesson.notes.pattern,/Eiti means to go \/ walk on foot/i);
+  assert.match(lesson.notes.pattern,/eikite.*polite command/i);
+  assert.match(lesson.notes.pattern,/Važiuoti means to go \/ travel by a vehicle/i);
+  assert.match(lesson.notes.pattern,/After galite/i);
+  assert.ok(lesson.notes.usage.includes("eiti — to go / walk on foot"));
+  assert.ok(lesson.notes.usage.includes("važiuoti — to go / travel by vehicle"));
+  assert.ok(lesson.notes.usage.includes("Galite eiti pėsčiomis. — You can go on foot."));
+  assert.ok(lesson.notes.usage.includes("Galite važiuoti autobusu. — You can go by bus."));
+});

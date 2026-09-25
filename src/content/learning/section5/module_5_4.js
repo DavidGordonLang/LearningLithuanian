@@ -369,6 +369,16 @@ export default function createModule_5_4(profile = {}) {
         purpose: "Teach very basic route-mode language.",
         supportLevel: "high",
         newLanguageLoad: "low",
+        notes: {
+          pattern: "Lithuanian uses different movement verbs depending on how you travel. Eiti means to go / walk on foot; you already know eikite, the polite command form used in directions. Važiuoti means to go / travel by a vehicle. After galite (you can), use eiti when the person can walk and važiuoti when they can travel by bus, car, train, and similar transport.",
+          usage: [
+            "eiti — to go / walk on foot",
+            "eikite — go / walk (polite command; already familiar from directions)",
+            "važiuoti — to go / travel by vehicle",
+            "Galite eiti pėsčiomis. — You can go on foot.",
+            "Galite važiuoti autobusu. — You can go by bus.",
+          ],
+        },
         blocks: [
           {
             id: "s5m4l4_b1",
