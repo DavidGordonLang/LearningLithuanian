@@ -288,9 +288,10 @@ export default function createModule_5_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Being in a place is expressed by another ending change. Viešbutis becomes viešbutyje, kavinė becomes kavinėje, miestas (city) becomes mieste. Again — just notice the pattern. To, from, and in all change the ending in different ways.",
+          pattern: "Learn the base place word before learning a changed form. Miestas means city; in Aš esu mieste, miestas changes to mieste to mean in the city. You already know the base words viešbutis and kavinė, so this lesson can build on them with viešbutyje and kavinėje. To, from, and in all change place endings in different ways.",
           usage: [
-            "mieste — in the city",
+            "miestas — city",
+            "Aš esu mieste. — I'm in the city.",
             "viešbutyje — in the hotel",
             "kavinėje — in the café",
           ],
@@ -301,7 +302,7 @@ export default function createModule_5_3(profile = {}) {
             type: "learn",
             title: "In…",
             items: [
-              { id: "i1", lt: "mieste",           en: "in the city",   audioText: "mieste",           saveable: true, core: true },
+              { id: "i1", lt: "miestas",          en: "city",          audioText: "miestas",          saveable: true, core: true },
               { id: "i2", lt: "viešbutyje",       en: "in the hotel",  audioText: "viešbutyje",       saveable: true, core: true },
               { id: "i3", lt: "kavinėje",         en: "in the café",   audioText: "kavinėje",         saveable: true, core: true },
               { id: "i4", lt: "Aš esu mieste.",   en: "I'm in the city.",  audioText: "Aš esu mieste",    saveable: true, core: true },

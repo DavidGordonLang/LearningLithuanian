@@ -551,3 +551,28 @@ test("Future Section 5 scenarios are grounded and use plausible near-miss choice
   assert.equal(finalScenario.steps[1].options.find(o=>o.result==="best").text,"Tiesiai, paskui dešinėn? Ar toli?");
   assert.ok(finalScenario.steps[1].options.some(o=>o.text==="Tiesiai, paskui kairėn? Ar toli?" && o.result==="wrong"));
 });
+
+
+test("5.3.3 teaches the base noun miestas before using mieste",()=>{
+  const m=createModule53();
+  const lesson=m.lessons.find(l=>l.code==="5.3.3");
+  const learn=lesson.blocks.find(b=>b.id==="s5m3l3_b1");
+  assert.equal(learn.items[0].lt,"miestas");
+  assert.equal(learn.items[0].en,"city");
+  assert.equal(learn.items.some(i=>i.lt==="mieste"),false);
+  assert.ok(learn.items.some(i=>i.lt==="Aš esu mieste."));
+  assert.match(lesson.notes.pattern,/base place word before learning a changed form/i);
+  assert.match(lesson.notes.pattern,/Miestas means city/i);
+  assert.match(lesson.notes.pattern,/Aš esu mieste/i);
+});
+
+test("Remaining Section 5 transformed place forms have had their base nouns introduced first",()=>{
+  const earlier=createModule52();
+  const earlierText=JSON.stringify(earlier);
+  for(const base of ["viešbutis","kavinė","stotis","vaistinė","stotelė","oro uostas"]){
+    assert.ok(earlierText.includes(base),base);
+  }
+  const m3=createModule53();
+  const cityLesson=m3.lessons.find(l=>l.code==="5.3.3");
+  assert.equal(cityLesson.blocks.find(b=>b.id==="s5m3l3_b1").items[0].lt,"miestas");
+});
