@@ -8,7 +8,7 @@
         setTimeout(go, 3000);
         return;
       }
-      navigator.serviceWorker.register("/sw.js").catch(console.error);
+      navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(console.error);
     };
     if (document.readyState === "complete") {
       setTimeout(go, 1500);
@@ -17,6 +17,83 @@
     }
   }
 })();
+
+/*
+ * Build freshness check
+ *
+ * An installed PWA can stay alive in Android's task switcher for a long time.
+ * A successful deployment does not replace JavaScript that is already running
+ * in that page. When the app becomes visible again, compare the currently
+ * loaded Vite entry bundle with the entry bundle referenced by a fresh copy of
+ * index.html. If they differ, reload once so the learner gets the new build.
+ */
+let buildFreshnessCheckInFlight = false;
+let lastBuildFreshnessCheckAt = 0;
+const BUILD_FRESHNESS_MIN_INTERVAL_MS = 15000;
+
+function currentEntryAssetPath() {
+  const scripts = Array.from(document.querySelectorAll('script[type="module"][src]'));
+  const asset = scripts
+    .map((script) => script.getAttribute("src"))
+    .find((src) => src && /\/assets\/index-[^/]+\.js(?:\?|$)/.test(src));
+
+  if (!asset) return null;
+
+  try {
+    return new URL(asset, window.location.origin).pathname;
+  } catch {
+    return asset.split("?")[0];
+  }
+}
+
+async function checkForNewBuild() {
+  if (buildFreshnessCheckInFlight || document.visibilityState === "hidden") return;
+
+  const now = Date.now();
+  if (now - lastBuildFreshnessCheckAt < BUILD_FRESHNESS_MIN_INTERVAL_MS) return;
+
+  lastBuildFreshnessCheckAt = now;
+  buildFreshnessCheckInFlight = true;
+
+  try {
+    const currentAsset = currentEntryAssetPath();
+    if (!currentAsset) return;
+
+    const response = await fetch(`/?__zodis_build_check=${now}`, {
+      cache: "no-store",
+      headers: { "cache-control": "no-cache" },
+    });
+    if (!response.ok) return;
+
+    const html = await response.text();
+    const freshDocument = new DOMParser().parseFromString(html, "text/html");
+    const freshAsset = Array.from(
+      freshDocument.querySelectorAll('script[type="module"][src]')
+    )
+      .map((script) => script.getAttribute("src"))
+      .find((src) => src && /\/assets\/index-[^/]+\.js(?:\?|$)/.test(src));
+
+    if (!freshAsset) return;
+
+    const freshPath = new URL(freshAsset, window.location.origin).pathname;
+    if (freshPath !== currentAsset) {
+      window.location.reload();
+    }
+  } catch (error) {
+    // Offline or transient network failures should never interrupt the learner.
+    console.debug("Build freshness check skipped", error);
+  } finally {
+    buildFreshnessCheckInFlight = false;
+  }
+}
+
+window.addEventListener("pageshow", () => {
+  setTimeout(checkForNewBuild, 500);
+});
+window.addEventListener("focus", checkForNewBuild);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkForNewBuild();
+});
 
 // Install banner (Chrome). Never display while an input is focused.
 let deferredPrompt = null;

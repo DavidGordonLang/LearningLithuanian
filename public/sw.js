@@ -1,6 +1,6 @@
 /* Simple, versioned Service Worker for Žodis (PWA-safe) */
 
-const CACHE_VERSION = "zodis-3beta-ec1cel;ebration2"; // 🔁 bump this on every UI change
+const CACHE_VERSION = "zodis-3beta-20260925-freshness1";
 const CACHE_NAME = `zodis-static-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -59,24 +59,42 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  // Same-origin assets: serve from cache, fetch and cache if missing
   if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
+    // Vite assets are content-hashed and therefore safe to keep cache-first.
+    if (url.pathname.startsWith("/assets/")) {
+      event.respondWith(
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
 
-        return fetch(request).then((response) => {
-          // Only cache successful basic/cors responses
-          if (!response || response.status !== 200) return response;
+          return fetch(request).then((response) => {
+            if (!response || response.status !== 200) return response;
 
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+
+            return response;
           });
+        })
+      );
+      return;
+    }
 
+    // Non-hashed same-origin files (manifest, JSON data, etc.) should prefer
+    // the network so an installed PWA does not silently keep stale content.
+    event.respondWith(
+      fetch(request, { cache: "no-store" })
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
           return response;
-        });
-      })
+        })
+        .catch(() => caches.match(request))
     );
   }
 });
