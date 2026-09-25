@@ -824,30 +824,51 @@ export default function createModule_5_3(profile = {}) {
           {
             id: "s5m3c_b7",
             type: "word_match",
-            title: "Match the pairs",
+            title: "Match by pattern",
+            pairPages: [
+              { id: "going_to",          label: "Going to a place",      pairIds: ["m1", "m2", "m3", "m12"] },
+              { id: "coming_from",       label: "Coming from a place",   pairIds: ["m4", "m5", "m6", "m22"] },
+              { id: "being_somewhere",   label: "Being somewhere",       pairIds: ["m7", "m8", "m9", "m23"] },
+              { id: "location_sentences",label: "Location sentences",    pairIds: ["m18", "m24", "m25", "m26"] },
+              { id: "useful_questions",  label: "Useful questions",      pairIds: ["m10", "m11", "m16", "m20"] },
+              { id: "home_forms",        label: "Home forms",            pairIds: ["m21", "m15", "m17", "m19"] },
+            ],
             pairs: [
-              { id: "m1",  lt: "Aš einu į stotį.",       en: "I'm going to the station.",      audioText: "Aš einu į stotį" },
-              { id: "m2",  lt: "Aš einu į viešbutį.",    en: "I'm going to the hotel.",        audioText: "Aš einu į viešbutį" },
-              { id: "m3",  lt: "Mes einame į kavinę.",   en: "We're going to the café.",       audioText: "Mes einame į kavinę" },
-              { id: "m4",  lt: "iš čia",                 en: "from here",                      audioText: "iš čia" },
-              { id: "m5",  lt: "iš viešbučio",           en: "from the hotel",                 audioText: "iš viešbučio" },
-              { id: "m6",  lt: "iš stoties",             en: "from the station",               audioText: "iš stoties" },
-              { id: "m7",  lt: "mieste",                 en: "in the city",                    audioText: "mieste" },
-              { id: "m8",  lt: "viešbutyje",             en: "in the hotel",                   audioText: "viešbutyje" },
-              { id: "m9",  lt: "kavinėje",               en: "in the café",                    audioText: "kavinėje" },
-              { id: "m10", lt: "Kur eini?",              en: "Where are you going? (informal)",audioText: "Kur eini" },
-              { id: "m11", lt: "Kur einate?",            en: "Where are you going? (formal)",  audioText: "Kur einate" },
-              { id: "m12", lt: "Ar einate į stotį?",    en: "Are you going to the station?",  audioText: "Ar einate į stotį" },
-              { id: "m13", lt: "į stotį",               en: "to the station",                 audioText: "į stotį" },
-              { id: "m14", lt: "stotyje",               en: "at the station",                 audioText: "stotyje" },
-              { id: "m15", lt: "Aš išeinu iš namų.",       en: "I'm leaving home.",             audioText: "Aš išeinu iš namų" },
-              { id: "m16", lt: "Kur mes einame?",          en: "Where are we going?",             audioText: "Kur mes einame" },
-              { id: "m17", lt: "Einu namo.",                en: "I'm going home.",                  audioText: "Einu namo" },
-              { id: "m18", lt: "Aš esu mieste.",           en: "I'm in the city.",                 audioText: "Aš esu mieste" },
-              { id: "m19", lt: "Aš esu namuose.",          en: "I'm at home.",                     audioText: "Aš esu namuose" },
-              { id: "m20", lt: "Ar ieškote viešbučio?",   en: "Are you looking for the hotel?",  audioText: "Ar ieškote viešbučio" },
-              { id: "m21", lt: "namai",                     en: "home",                              audioText: "namai" },
-              { id: "m22", lt: "iš namų",                   en: "from home",                         audioText: "iš namų" },
+              // Going to a place
+              { id: "m1",  lt: "Aš einu į stotį.",        en: "I'm going to the station.",       audioText: "Aš einu į stotį" },
+              { id: "m2",  lt: "Aš einu į viešbutį.",     en: "I'm going to the hotel.",         audioText: "Aš einu į viešbutį" },
+              { id: "m3",  lt: "Mes einame į kavinę.",    en: "We're going to the café.",        audioText: "Mes einame į kavinę" },
+              { id: "m12", lt: "Ar einate į stotį?",      en: "Are you going to the station?",   audioText: "Ar einate į stotį" },
+
+              // Coming from a place
+              { id: "m4",  lt: "iš čia",                  en: "from here",                        audioText: "iš čia" },
+              { id: "m5",  lt: "iš viešbučio",            en: "from the hotel",                   audioText: "iš viešbučio" },
+              { id: "m6",  lt: "iš stoties",              en: "from the station",                 audioText: "iš stoties" },
+              { id: "m22", lt: "iš namų",                 en: "from home",                        audioText: "iš namų" },
+
+              // Being somewhere — compact location forms
+              { id: "m7",  lt: "mieste",                  en: "in the city",                      audioText: "mieste" },
+              { id: "m8",  lt: "viešbutyje",              en: "in the hotel",                     audioText: "viešbutyje" },
+              { id: "m9",  lt: "kavinėje",                en: "in the café",                      audioText: "kavinėje" },
+              { id: "m23", lt: "namuose",                 en: "at home",                          audioText: "namuose" },
+
+              // Full location sentences
+              { id: "m18", lt: "Aš esu mieste.",          en: "I'm in the city.",                 audioText: "Aš esu mieste" },
+              { id: "m24", lt: "Aš esu viešbutyje.",      en: "I'm in the hotel.",                audioText: "Aš esu viešbutyje" },
+              { id: "m25", lt: "Aš esu kavinėje.",        en: "I'm in the café.",                 audioText: "Aš esu kavinėje" },
+              { id: "m26", lt: "Mes esame kavinėje.",     en: "We're in the café.",               audioText: "Mes esame kavinėje" },
+
+              // Useful questions
+              { id: "m10", lt: "Kur eini?",               en: "Where are you going? (informal)", audioText: "Kur eini" },
+              { id: "m11", lt: "Kur einate?",             en: "Where are you going? (formal)",   audioText: "Kur einate" },
+              { id: "m16", lt: "Kur mes einame?",         en: "Where are we going?",              audioText: "Kur mes einame" },
+              { id: "m20", lt: "Ar ieškote viešbučio?",   en: "Are you looking for the hotel?",   audioText: "Ar ieškote viešbučio" },
+
+              // Home family
+              { id: "m21", lt: "namai",                   en: "home",                              audioText: "namai" },
+              { id: "m15", lt: "Aš išeinu iš namų.",      en: "I'm leaving home.",                 audioText: "Aš išeinu iš namų" },
+              { id: "m17", lt: "Einu namo.",              en: "I'm going home.",                   audioText: "Einu namo" },
+              { id: "m19", lt: "Aš esu namuose.",         en: "I'm at home.",                      audioText: "Aš esu namuose" },
             ],
           },
         ],

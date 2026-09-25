@@ -705,3 +705,51 @@ test("5.3 checkpoint location question cannot be solved by English place matchin
     ["Mes esame kavinėje.","Mes einame į kavinę.","Mes esame viešbutyje."]
   );
 });
+
+
+test("5.3 checkpoint match pairs are grouped into semantic reinforcement sets",()=>{
+  const m=createModule53();
+  const cp=m.lessons.find(l=>l.code==="5.3.C");
+  const block=cp.blocks.find(b=>b.id==="s5m3c_b7");
+
+  assert.equal(block.title,"Match by pattern");
+  assert.equal(block.pairs.length,24);
+  assert.equal(block.pairPages.length,6);
+
+  assert.deepEqual(
+    block.pairPages.map(p=>p.label),
+    [
+      "Going to a place",
+      "Coming from a place",
+      "Being somewhere",
+      "Location sentences",
+      "Useful questions",
+      "Home forms",
+    ]
+  );
+
+  for(const page of block.pairPages){
+    assert.equal(page.pairIds.length,4,page.id);
+  }
+
+  const allPageIds=block.pairPages.flatMap(p=>p.pairIds);
+  assert.equal(new Set(allPageIds).size,24);
+  assert.deepEqual(
+    [...new Set(allPageIds)].sort(),
+    block.pairs.map(p=>p.id).sort()
+  );
+
+  const byPage=Object.fromEntries(block.pairPages.map(p=>[p.id,p.pairIds.map(id=>block.pairs.find(x=>x.id===id).lt)]));
+  assert.deepEqual(byPage.going_to,[
+    "Aš einu į stotį.",
+    "Aš einu į viešbutį.",
+    "Mes einame į kavinę.",
+    "Ar einate į stotį?",
+  ]);
+  assert.deepEqual(byPage.coming_from,["iš čia","iš viešbučio","iš stoties","iš namų"]);
+  assert.deepEqual(byPage.being_somewhere,["mieste","viešbutyje","kavinėje","namuose"]);
+  assert.deepEqual(byPage.home_forms,["namai","Aš išeinu iš namų.","Einu namo.","Aš esu namuose."]);
+
+  assert.equal(block.pairs.some(p=>p.lt==="stotyje"),false);
+  assert.equal(block.pairs.some(p=>p.lt==="į stotį"),false);
+});
