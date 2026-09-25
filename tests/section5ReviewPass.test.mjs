@@ -477,3 +477,33 @@ test("5.3 early form practice avoids unseen-form distractors and uses fuller pro
   assert.equal(cpLocation.options.find(o=>o.isCorrect).text,"Mes esame kavinėje.");
   assert.equal(JSON.stringify(cpLocation).includes("kavinės"),false);
 });
+
+
+test("Section 5 replaces remaining base-word form guessing with useful full-language practice",()=>{
+  const units=[createModule51(),createModule52(),createModule53(),createModule54(),createCheckpoint5()];
+  const allBlocks=units.flatMap(unit=>(unit.lessons||[{blocks:unit.blocks||[]}]).flatMap(l=>l.blocks||[]));
+  assert.equal(allBlocks.some(b=>b.type==="choose_correct_form"),false);
+
+  const m=createModule53();
+  const fromLesson=m.lessons.find(l=>l.code==="5.3.2");
+  const fromTask=fromLesson.blocks.find(b=>b.id==="s5m3l2_b3");
+  assert.equal(fromTask.type,"best_response");
+  assert.equal(fromTask.options.find(o=>o.isCorrect).text,"Iš stoties. Einu į viešbutį.");
+  assert.equal(JSON.stringify(fromTask).includes("base_word"),false);
+
+  const patternLesson=m.lessons.find(l=>l.code==="5.3.5");
+  const speak=patternLesson.blocks.find(b=>b.id==="s5m3l5_b2");
+  const use=patternLesson.blocks.find(b=>b.id==="s5m3l5_b3");
+  assert.equal(speak.type,"speak_self_check");
+  assert.equal(speak.targetText,"Ar ieškote viešbučio");
+  assert.equal(use.type,"best_response");
+  assert.equal(use.options.find(o=>o.isCorrect).text,"Ar ieškote viešbučio?");
+
+  const final=createCheckpoint5().blocks.find(b=>b.id==="s5cp_b3");
+  assert.equal(final.type,"build_phrase");
+  assert.equal(final.answerText,"Kaip man nusigauti į stotį?");
+  assert.deepEqual(
+    final.tokens.filter(t=>Number.isInteger(t.correctIndex)).map(t=>t.text),
+    ["Kaip","man","nusigauti","į","stotį?"]
+  );
+});

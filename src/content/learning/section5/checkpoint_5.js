@@ -39,21 +39,22 @@ export default function createCheckpoint5(profile = {}) {
         ],
       },
 
-      // Block 3 — Where-is exchange with form awareness
+      // Block 3 — Build the full route question
       {
         id: "s5cp_b3",
-        type: "choose_correct_form",
-        base_word: "stotis",
-        word_gloss_en: "station",
-        prompt: "Complete the question",
-        sentence: "Kaip man nusigauti į ___?",
-        translation_en: "How do I get to the station?",
-        options: [
-          { id: "a", text: "stotyje", isCorrect: false },
-          { id: "b", text: "stoties", isCorrect: false },
-          { id: "c", text: "stotį",   isCorrect: true  },
+        type: "build_phrase",
+        title: "Build the route question",
+        prompt: { text: "You need the station. Build the whole question: How do I get to the station?" },
+        tokens: [
+          { id: "t1", text: "Kaip", correctIndex: 0 },
+          { id: "t2", text: "man", correctIndex: 1 },
+          { id: "t3", text: "nusigauti", correctIndex: 2 },
+          { id: "t4", text: "į", correctIndex: 3 },
+          { id: "t5", text: "stotį?", correctIndex: 4 },
+          { id: "t6", text: "viešbutį?", isDistractor: true, repairHint: "Viešbutį means the hotel as a destination. The prompt asks for the station." },
+          { id: "t7", text: "vaistinę?", isDistractor: true, repairHint: "Vaistinę means the pharmacy as a destination. The prompt asks for the station." },
         ],
-        explanation: "After į (to), stotis becomes stotį. The destination form is used when expressing movement toward somewhere.",
+        answerText: "Kaip man nusigauti į stotį?",
       },
 
       // Block 4 — Direction understanding
