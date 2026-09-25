@@ -576,3 +576,42 @@ test("Remaining Section 5 transformed place forms have had their base nouns intr
   const cityLesson=m3.lessons.find(l=>l.code==="5.3.3");
   assert.equal(cityLesson.blocks.find(b=>b.id==="s5m3l3_b1").items[0].lt,"miestas");
 });
+
+
+test("5.3 teaches the useful home forms in semantic order",()=>{
+  const m=createModule53();
+  const from=m.lessons.find(l=>l.code==="5.3.2");
+  const inside=m.lessons.find(l=>l.code==="5.3.3");
+  const going=m.lessons.find(l=>l.code==="5.3.4");
+
+  const fromLearn=from.blocks.find(b=>b.id==="s5m3l2_b1").items;
+  assert.equal(fromLearn[0].lt,"namai");
+  assert.equal(fromLearn[0].en,"home");
+  assert.ok(fromLearn.some(i=>i.lt==="iš namų"));
+  assert.ok(fromLearn.some(i=>i.lt==="Aš išeinu iš namų."));
+
+  const inLearn=inside.blocks.find(b=>b.id==="s5m3l3_b1").items;
+  assert.ok(inLearn.some(i=>i.lt==="namuose" && i.en==="at home"));
+  assert.ok(inLearn.some(i=>i.lt==="Aš esu namuose."));
+
+  const goLearn=going.blocks.find(b=>b.id==="s5m3l4_b1").items;
+  assert.ok(goLearn.some(i=>i.lt==="Einu namo."));
+  const answer=going.blocks.find(b=>b.id==="s5m3l4_b3");
+  assert.equal(answer.options.find(o=>o.isCorrect).text,"Einu namo.");
+  assert.ok(answer.options.some(o=>o.text==="Einu iš namų." && !o.isCorrect));
+  assert.ok(answer.options.some(o=>o.text==="Esu namuose." && !o.isCorrect));
+
+  const scenario=going.blocks.find(b=>b.id==="s5m3l4_b6_v2");
+  assert.match(scenario.sceneIntro,/heading home/i);
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Labas! Einu namo.");
+  assert.ok(scenario.steps[0].options.some(o=>o.text==="Labas! Esu namuose." && o.result==="wrong"));
+  assert.ok(scenario.steps[0].options.some(o=>o.text==="Labas! Einu iš namų." && o.result==="wrong"));
+
+  const checkpoint=m.lessons.find(l=>l.code==="5.3.C");
+  const pairs=checkpoint.blocks.find(b=>b.id==="s5m3c_b7").pairs.map(p=>p.lt);
+  for(const expected of ["namai","iš namų","Aš išeinu iš namų.","Aš esu namuose.","Einu namo."]){
+    assert.ok(pairs.includes(expected),expected);
+  }
+
+  assert.equal(JSON.stringify(m).includes("į namo"),false);
+});
