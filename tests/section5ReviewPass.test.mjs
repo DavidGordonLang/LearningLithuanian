@@ -67,6 +67,8 @@ test("Section 5 scenarios reinforce taught place and movement language without a
   const cp=m3.lessons.find(l=>l.code==="5.3.C").blocks.find(b=>b.id==="s5m3c_b6_v2");
   assert.equal(cp.steps[0].options.find(o=>o.result==="best").text,"Labas! Einu į kavinę.");
   assert.equal(cp.steps[1].speakerText,"Iš kur eini?");
+  assert.equal(cp.steps[2].speakerText,"Kur tu esi?");
+  assert.equal(cp.steps[2].options.find(o=>o.result==="best").text,"Esu kavinėje.");
 
   const m4=createModule54();
   assert.equal(txt(m4).includes("Ko ieškote?"),false);
@@ -83,10 +85,10 @@ test("Section 5 clarifies police context and uses the common train-station term"
  assert.ok(txt(m).includes("traukinių stotis"));
 });
 
-test("Section 5 uses išeinu for explicitly leaving the hotel",()=>{
+test("Section 5 uses išeinu for explicitly leaving home",()=>{
  const m=createModule53();
- assert.ok(txt(m).includes("Aš išeinu iš viešbučio."));
- assert.equal(txt(m).includes("Aš einu iš viešbučio."),false);
+ assert.ok(txt(m).includes("Aš išeinu iš namų."));
+ assert.equal(txt(m).includes("Aš einu iš namų."),false);
 });
 
 test("Section 5 added response alternatives remain natural and correctly cased",()=>{
@@ -606,6 +608,11 @@ test("5.3 teaches the useful home forms in semantic order",()=>{
   assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Labas! Einu namo.");
   assert.ok(scenario.steps[0].options.some(o=>o.text==="Labas! Esu namuose." && o.result==="wrong"));
   assert.ok(scenario.steps[0].options.some(o=>o.text==="Labas! Einu iš namų." && o.result==="wrong"));
+  assert.equal(scenario.steps[1].speakerText,"Kur tu esi?");
+  assert.equal(scenario.steps[1].sceneDirection,"Later, you have arrived home.");
+  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Esu namuose.");
+  assert.ok(scenario.steps[1].options.some(o=>o.text==="Einu namo." && o.result==="wrong"));
+  assert.ok(scenario.steps[1].options.some(o=>o.text==="Einu iš namų." && o.result==="wrong"));
 
   const checkpoint=m.lessons.find(l=>l.code==="5.3.C");
   const pairs=checkpoint.blocks.find(b=>b.id==="s5m3c_b7").pairs.map(p=>p.lt);
@@ -614,4 +621,34 @@ test("5.3 teaches the useful home forms in semantic order",()=>{
   }
 
   assert.equal(JSON.stringify(m).includes("į namo"),false);
+});
+
+
+test("Future Section 5 scenarios do not make learners infer a subjective far/near threshold",()=>{
+  const m3=createModule53();
+  const m4=createModule54();
+  const final=createCheckpoint5();
+  const future=[
+    ...m3.lessons.filter(l=>["5.3.4","5.3.5","5.3.C"].includes(l.code)).flatMap(l=>l.blocks.filter(b=>b.type==="scenario_v2")),
+    ...m4.lessons.flatMap(l=>l.blocks.filter(b=>b.type==="scenario_v2")),
+    ...final.blocks.filter(b=>b.type==="scenario_v2"),
+  ];
+
+  for(const scenario of future){
+    for(const step of scenario.steps||[]){
+      const speaker=step.speakerText||"";
+      if(!/toli\?/i.test(speaker)) continue;
+      const optionText=(step.options||[]).map(o=>o.text||"").join(" ");
+      const asksLearnerToClassify=/netoli/i.test(optionText) && /labai toli|per toli/i.test(optionText);
+      assert.equal(asksLearnerToClassify,false,scenario.id+"/"+step.id);
+    }
+  }
+
+  const home=m3.lessons.find(l=>l.code==="5.3.4").blocks.find(b=>b.id==="s5m3l4_b6_v2");
+  assert.equal(home.steps[1].speakerText,"Kur tu esi?");
+  assert.equal(home.steps[1].options.find(o=>o.result==="best").text,"Esu namuose.");
+
+  const checkpoint=m3.lessons.find(l=>l.code==="5.3.C").blocks.find(b=>b.id==="s5m3c_b6_v2");
+  assert.equal(checkpoint.steps[2].speakerText,"Kur tu esi?");
+  assert.equal(checkpoint.steps[2].options.find(o=>o.result==="best").text,"Esu kavinėje.");
 });
