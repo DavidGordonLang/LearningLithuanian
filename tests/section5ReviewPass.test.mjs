@@ -150,7 +150,7 @@ test("Section 5 final checkpoint is a coherent street route and uses Ar toli",()
  const s=cp.blocks.find(b=>b.id==="s5cp_b8_v2");
  assert.equal(s.location,"street outside the bus station");
  assert.equal(s.participants[0].role,"passer-by");
- assert.equal(s.steps[1].options.find(o=>o.result==="best").text,"Suprantu. Ar toli?");
+ assert.equal(s.steps[1].options.find(o=>o.result==="best").text,"Tiesiai, paskui dešinėn? Ar toli?");
  assert.match(s.steps[2].speakerText,/penkios minutės/);
 });
 
@@ -506,4 +506,48 @@ test("Section 5 replaces remaining base-word form guessing with useful full-lang
     final.tokens.filter(t=>Number.isInteger(t.correctIndex)).map(t=>t.text),
     ["Kaip","man","nusigauti","į","stotį?"]
   );
+});
+
+
+test("Future Section 5 scenarios are grounded and use plausible near-miss choices",()=>{
+  const m3=createModule53();
+  const m4=createModule54();
+  const final=createCheckpoint5();
+  const future=[
+    ...m3.lessons.filter(l=>["5.3.2","5.3.3","5.3.4","5.3.5","5.3.C"].includes(l.code)).flatMap(l=>l.blocks.filter(b=>b.type==="scenario_v2")),
+    ...m4.lessons.flatMap(l=>l.blocks.filter(b=>b.type==="scenario_v2")),
+    ...final.blocks.filter(b=>b.type==="scenario_v2"),
+  ];
+  const fillerWrong=new Set(["Viso gero.","Atsiprašau.","Laba diena.","Ne, ačiū.","Per brangu.","Kiek tai kainuoja?"]);
+  for(const scenario of future){
+    assert.notEqual(scenario.sceneIntro,"The exchange begins.",scenario.id);
+    for(const step of scenario.steps){
+      assert.notEqual(step.sceneDirection,"The exchange begins.",scenario.id+"/"+step.id);
+      assert.notEqual(step.sceneDirection,"The conversation continues.",scenario.id+"/"+step.id);
+      assert.equal(/^Choose the most natural response\.?$/i.test(step.learnerPrompt||""),false,scenario.id+"/"+step.id);
+      for(const option of step.options.filter(o=>o.result==="wrong")){
+        assert.equal(fillerWrong.has(option.text),false,scenario.id+"/"+step.id+" "+option.text);
+      }
+    }
+  }
+
+  const fromHotel=m3.lessons.find(l=>l.code==="5.3.2").blocks.find(b=>b.id==="s5m3l2_b5_v2");
+  assert.match(fromHotel.sceneIntro,/left your hotel/i);
+  assert.match(fromHotel.sceneIntro,/walking to the station/i);
+  assert.deepEqual(
+    fromHotel.steps[0].options.map(o=>o.text),
+    [
+      "Labas! Iš viešbučio. Einu į stotį.",
+      "Labas! Iš stoties. Einu į viešbutį.",
+      "Labas! Viešbutyje. Einu į stotį.",
+    ]
+  );
+
+  const giveRoute=m4.lessons.find(l=>l.code==="5.4.3").blocks.find(b=>b.id==="s5m4l3_b6_v2");
+  assert.match(giveRoute.sceneIntro,/straight ahead, then left/i);
+  assert.equal(giveRoute.steps[0].options.find(o=>o.result==="best").text,"Eikite tiesiai, paskui pasukite kairėn.");
+
+  const finalScenario=final.blocks.find(b=>b.id==="s5cp_b8_v2");
+  assert.equal(finalScenario.steps[1].options.find(o=>o.result==="best").text,"Tiesiai, paskui dešinėn? Ar toli?");
+  assert.ok(finalScenario.steps[1].options.some(o=>o.text==="Tiesiai, paskui kairėn? Ar toli?" && o.result==="wrong"));
 });

@@ -114,13 +114,13 @@ export default function createCheckpoint5(profile = {}) {
   id: "s5cp_b8_v2",
   type: "scenario_v2",
   title: "Finding your hotel",
-  description: "You have just left the bus station and show a local your hotel address. You need to know how to get there.",
-  sceneIntro: "You have just left the bus station and show a local your hotel address. You need to know how to get there.",
+  description: "You have just left the bus station and need to walk to your hotel. You show a local the hotel address on your phone.",
+  sceneIntro: "You have just left the bus station and need to walk to your hotel. You show a local the hotel address on your phone.",
   location: "street outside the bus station",
   userRole: "traveller",
   register: "polite_neutral",
-  goal: "Combine destination forms, route language, distance and walking advice in one coherent exchange.",
-  focus: ["Kaip man nusigauti…?", "directions", "Ar toli?", "Nesuprantu"],
+  goal: "Combine the correct destination, route comprehension, distance and walking advice in one coherent exchange.",
+  focus: ["Kaip man nusigauti…?", "directions", "Ar toli?"],
   participants: [
     { id: "local", label: "Local", name: "Rasa", role: "passer-by", gender: "female", relationshipToUser: "stranger", register: "polite_neutral" },
   ],
@@ -133,13 +133,12 @@ export default function createCheckpoint5(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena!",
-      sceneDirection: "You stop a passer-by and show her the hotel address on your phone.",
-      learnerPrompt: "Ask how to get to the hotel.",
+      sceneDirection: "You need the hotel whose address is open on your phone.",
+      learnerPrompt: "Use the route question for the correct destination.",
       options: [
         { id: "a", text: "Laba diena! Atsiprašau, kaip man nusigauti į viešbutį?", result: "best", progresses: true },
-        { id: "b", text: "Kur yra kavinė?", result: "wrong", feedback: "You are trying to reach your hotel.", progresses: false },
-      
-        {"id":"z","text":"Atsiprašau, kaip man nusigauti į viešbutį?","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
+        { id: "b", text: "Laba diena! Atsiprašau, kaip man nusigauti į traukinių stotį?", result: "wrong", feedback: "You need the hotel, not the train station.", progresses: false },
+        { id: "c", text: "Laba diena! Atsiprašau, kaip man nusigauti į vaistinę?", result: "wrong", feedback: "You need the hotel, not the pharmacy.", progresses: false },
       ],
     },
     {
@@ -147,8 +146,8 @@ export default function createCheckpoint5(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Eikite tiesiai, paskui pasukite dešinėn.",
-      sceneDirection: "She points straight ahead, then gestures to the right at the next junction.",
-      learnerPrompt: "If you understand the route, ask whether it is far. If not, use Nesuprantu.",
+      sceneDirection: "Rasa points straight ahead, then gestures to the right at the next junction.",
+      learnerPrompt: "Confirm the route you heard, then ask whether it is far.",
       help: {
         levels: [
           { sceneDirection: "She repeats the route more slowly while pointing.", speakerText: "Tiesiai. Paskui dešinėn." },
@@ -157,10 +156,9 @@ export default function createCheckpoint5(profile = {}) {
         ],
       },
       options: [
-        { id: "a", text: "Suprantu. Ar toli?", result: "best", progresses: true },
-        { id: "b", text: "Kur yra autobusų stotis?", result: "wrong", feedback: "You have already left the bus station and are asking about the hotel.", progresses: false },
-      
-        {"id":"z","text":"Ar toli?","result":"acceptable","feedback":"The shorter distance question is natural once the destination is clear.","progresses":true},
+        { id: "a", text: "Tiesiai, paskui dešinėn? Ar toli?", result: "best", progresses: true },
+        { id: "b", text: "Tiesiai, paskui kairėn? Ar toli?", result: "wrong", feedback: "She said right — dešinėn — not left.", progresses: false },
+        { id: "c", text: "Dešinėn, paskui tiesiai? Ar toli?", result: "wrong", feedback: "The order is reversed. She said straight first, then right.", progresses: false },
       ],
     },
     {
@@ -168,13 +166,12 @@ export default function createCheckpoint5(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Ne, netoli. Galite eiti pėsčiomis — penkios minutės.",
-      sceneDirection: "She points along the short walking route.",
-      learnerPrompt: "Acknowledge the advice.",
+      sceneDirection: "The hotel is only a five-minute walk away, and you are happy to walk.",
+      learnerPrompt: "Respond consistently with the short walking distance.",
       options: [
         { id: "a", text: "Puiku! Ačiū labai.", result: "best", progresses: true },
-        { id: "b", text: "Galite važiuoti autobusu?", result: "wrong", feedback: "She has just said it is only a five-minute walk.", progresses: false },
-      
-        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
+        { id: "b", text: "Gerai, ačiū.", result: "acceptable", feedback: "That is also a natural response.", progresses: true },
+        { id: "c", text: "Ne, per toli.", result: "wrong", feedback: "The scene says five minutes is fine for you.", progresses: false },
       ],
       finalSystemLine: { speakerId: "local", speakerLabel: "Local", speakerText: "Prašom. Geros kelionės!", sceneDirection: "She smiles and continues on her way." },
     },
