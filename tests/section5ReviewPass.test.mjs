@@ -189,19 +189,32 @@ test("5.3 checkpoint match pairs contain taught or deliberately reviewed languag
   for(const removed of ["Geros kelionės!","Iki pasimatymo.","prie stoties","Savaitę."]){
     assert.equal(pairs.includes(removed),false,removed);
   }
-  for(const expected of ["Aš išeinu iš viešbučio.","Kur mes einame?","Aš einu į vaistinę.","Ar ieškote viešbučio?"]){
+  for(const expected of ["Aš išeinu iš namų.","Kur mes einame?","Einu namo.","Ar ieškote viešbučio?"]){
     assert.ok(pairs.includes(expected),expected);
   }
 });
 
-test("5.3.5 retrieves the in-form after an explicit time jump",()=>{
+test("5.3.5 uses one clear journey to test to, from and in",()=>{
   const m=createModule53();
   const lesson=m.lessons.find(l=>l.code==="5.3.5");
   const scenario=lesson.blocks.find(b=>b.id==="s5m3l5_b5_v2");
-  assert.equal(txt(lesson).includes("Savaitę"),false);
-  assert.equal(scenario.steps[2].speakerText,"Dabar viešbutyje?");
-  assert.match(scenario.steps[2].sceneDirection,/Later, after you arrive/i);
-  assert.equal(scenario.steps[2].options.find(o=>o.result==="best").text,"Taip, viešbutyje.");
+
+  assert.equal(scenario.title,"Finding the hotel");
+  assert.match(scenario.sceneIntro,/outside the station/i);
+  assert.match(scenario.sceneIntro,/leaving the station for the hotel/i);
+
+  assert.equal(scenario.steps[0].speakerText,"Ar ieškote viešbučio?");
+  assert.equal(scenario.steps[0].options.find(o=>o.result==="best").text,"Taip. Aš einu į viešbutį.");
+
+  assert.equal(scenario.steps[1].speakerText,"Iš stoties?");
+  assert.equal(scenario.steps[1].options.find(o=>o.result==="best").text,"Taip, iš stoties.");
+
+  assert.equal(scenario.steps[2].speakerText,"Kur jūs esate?");
+  assert.match(scenario.steps[2].sceneDirection,/arrived at the hotel/i);
+  assert.equal(scenario.steps[2].options.find(o=>o.result==="best").text,"Aš esu viešbutyje.");
+
+  assert.equal(JSON.stringify(scenario).includes("Your starting point is the station."),false);
+  assert.equal(JSON.stringify(scenario).includes("O iš kur jūs einate?"),false);
 });
 
 
