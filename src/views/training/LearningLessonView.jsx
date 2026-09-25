@@ -390,7 +390,9 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
       <div className="flex min-h-[54dvh] flex-col">
         <div className={cn("shrink-0 p-3", choicePanelClass)}>
           {/* Instruction */}
-          <div className="text-[12px] text-zinc-500 tracking-wide mb-3">\n            {instructionLabel}\n          </div>
+          <div className="text-[12px] text-zinc-500 tracking-wide mb-3">
+            {instructionLabel}
+          </div>
 
           {/* For listen_mcq: show the Lithuanian text prominently with audio alongside */}
           {isListen && promptText ? (

@@ -490,6 +490,11 @@ test("5.3 early form practice avoids unseen-form distractors and uses fuller pro
   const cpLocation=cp.blocks.find(b=>b.id==="s5m3c_b2");
   assert.equal(cpLocation.type,"best_response");
   assert.equal(cpLocation.options.find(o=>o.isCorrect).text,"Mes esame kavinėje.");
+  assert.match(cpLocation.prompt.text,/Mes einame į kavinę/);
+  assert.match(cpLocation.prompt.text,/You have arrived/);
+  assert.equal(cpLocation.prompt.text.includes("inside a café"),false);
+  assert.ok(cpLocation.options.some(o=>o.text==="Mes einame į kavinę." && !o.isCorrect));
+  assert.ok(cpLocation.options.some(o=>o.text==="Mes esame viešbutyje." && !o.isCorrect));
   assert.equal(JSON.stringify(cpLocation).includes("kavinės"),false);
 });
 
@@ -684,4 +689,19 @@ test("5.3 keeps location answers on the explicitly taught Aš esu pattern",()=>{
 
   const cp=m.lessons.find(l=>l.code==="5.3.C").blocks.find(b=>b.id==="s5m3c_b6_v2");
   assert.equal(cp.steps[2].options.find(o=>o.result==="best").text,"Aš esu kavinėje.");
+});
+
+
+test("5.3 checkpoint location question cannot be solved by English place matching alone",()=>{
+  const m=createModule53();
+  const cp=m.lessons.find(l=>l.code==="5.3.C");
+  const block=cp.blocks.find(b=>b.id==="s5m3c_b2");
+  assert.equal(block.title,"From movement to location");
+  assert.match(block.prompt.text,/Mes einame į kavinę/);
+  assert.match(block.prompt.text,/Kur jūs esate/);
+  assert.equal(/inside a café|you are in a café/i.test(block.prompt.text),false);
+  assert.deepEqual(
+    block.options.map(o=>o.text),
+    ["Mes esame kavinėje.","Mes einame į kavinę.","Mes esame viešbutyje."]
+  );
 });

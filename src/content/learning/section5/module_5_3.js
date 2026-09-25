@@ -716,15 +716,17 @@ export default function createModule_5_3(profile = {}) {
           {
             id: "s5m3c_b2",
             type: "best_response",
-            title: "Use the location form",
-            prompt: { text: "You and a friend are inside a café. Someone asks: Kur jūs esate? What do you say?" },
+            title: "From movement to location",
+            prompt: {
+              text: "Earlier you said: Mes einame į kavinę. A few minutes later your friend asks: Kur jūs esate? You have arrived. What do you say now?",
+            },
             options: [
               { id: "a", text: "Mes esame kavinėje.", isCorrect: true },
-              { id: "b", text: "Mes esame viešbutyje.", isCorrect: false },
-              { id: "c", text: "Mes esame mieste.", isCorrect: false },
+              { id: "b", text: "Mes einame į kavinę.", isCorrect: false },
+              { id: "c", text: "Mes esame viešbutyje.", isCorrect: false },
             ],
             feedback: {
-              correct: "Mes esame kavinėje. — We are in the café.",
+              correct: "Mes esame kavinėje. — We are in the café. The earlier sentence says you were going to the café; now you have arrived, so use the location form.",
             },
           },
           {
