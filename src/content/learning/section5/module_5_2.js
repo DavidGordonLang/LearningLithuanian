@@ -965,9 +965,9 @@ export default function createModule_5_2(profile = {}) {
             id: "s5m2c_b4",
             type: "speak_self_check",
             title: "Say it out loud",
-            prompt: "Ask: Where is the bus station?",
-            targetText: "Kur yra autobusų stotis",
-            audioText: "Kur yra autobusų stotis",
+            prompt: "Politely ask where the train station is, then ask if it's far.",
+            targetText: "Atsiprašau, kur yra traukinių stotis? Ar toli?",
+            audioText: "Atsiprašau, kur yra traukinių stotis? Ar toli?",
           },
           {
             id: "s5m2c_b5",

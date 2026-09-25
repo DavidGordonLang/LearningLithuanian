@@ -376,3 +376,19 @@ test("5.2.5 explicitly bridges vaistai to vaistų before testing pharmacy contex
   assert.ok(apply.options.some(o=>o.text==="Kur yra ligoninė?"));
   assert.equal(JSON.stringify(lesson).includes('"type":"conversation_turn_fill","scene_label":"In the street"'),false);
 });
+
+
+test("5.2 checkpoint speaking task synthesises place and distance instead of repeating bus station",()=>{
+  const m=createModule52();
+  const checkpoint=m.lessons.find(l=>l.code==="5.2.C");
+  const speak=checkpoint.blocks.find(b=>b.id==="s5m2c_b4");
+
+  assert.match(speak.prompt,/Politely ask where the train station is/i);
+  assert.match(speak.prompt,/ask if it's far/i);
+  assert.equal(speak.targetText,"Atsiprašau, kur yra traukinių stotis? Ar toli?");
+  assert.equal(speak.audioText,"Atsiprašau, kur yra traukinių stotis? Ar toli?");
+
+  const firstLesson=m.lessons.find(l=>l.code==="5.2.1");
+  assert.equal(firstLesson.blocks.find(b=>b.id==="s5m2l1_b5").targetText,"Kur yra autobusų stotis");
+  assert.notEqual(speak.targetText,firstLesson.blocks.find(b=>b.id==="s5m2l1_b5").targetText);
+});
