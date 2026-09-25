@@ -733,12 +733,13 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
 // ─── Build phrase ─────────────────────────────────────────────────────────────
 //
 // All tokens are shown and tappable — including distractors (isDistractor:true).
-// "Check phrase" enables once the user has placed at least as many tokens as
-// the correct answer requires (answerTokens.length). Extra selected distractors
-// remain submit-able so the learner gets explicit incorrect feedback.
+// "Check phrase" enables as soon as the learner has made a non-empty attempt.
+// Incomplete attempts are valid submissions: they should be told how many words
+// are missing instead of being prevented from checking. Extra distractors remain
+// submit-able too, so every attempted phrase can receive explicit repair feedback.
 // On check: compare built text against correctAnswer.
 //   Correct → green, mark complete.
-//   Wrong   → red, show correct answer, allow retry.
+//   Wrong   → guided repair; missing words are called out without revealing them.
 // Tapping a built token removes it back to the source row (ghost stays).
 
 function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, completed }) {
@@ -778,7 +779,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
   });
 
   const placedIds = new Set(built);
-  const isReady = built.length >= requiredLength && requiredLength > 0;
+  const canCheck = built.length > 0 && requiredLength > 0;
   const dragThreshold = 7;
 
   const expectedTokenAt = (index) => answerTokens.find((token) => token.correctIndex === index) || null;
@@ -804,14 +805,39 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
     });
 
     const firstWrong = entries.find((entry) => entry.status === "wrong") || null;
+    const missingCount = Math.max(requiredLength - built.length, 0);
+    const missingLabel = missingCount === 1 ? "word" : "words";
 
-    if (!firstWrong) {
-      if (built.length < requiredLength) {
+    if (missingCount > 0) {
+      if (!firstWrong) {
         return {
-          title: "Good correction — add the missing word.",
-          detail: "Everything currently placed is in the right position.",
+          title: `You're missing ${missingCount} ${missingLabel}.`,
+          detail: "Everything you've placed so far is in the right position. Add the missing word" + (missingCount === 1 ? "" : "s") + " and check again.",
         };
       }
+
+      const { token } = firstWrong;
+      let issueDetail = "One of the words you've placed also needs changing or moving.";
+
+      if (token?.repairHint) {
+        issueDetail = `“${token.text}” needs attention: ${token.repairHint}`;
+      } else if (token?.isDistractor) {
+        const meaning = getBuildPhraseDistractorMeaning(token.text);
+        const displayText = String(token.text || "").replace(/[.,!?;:]+$/g, "");
+        issueDetail = meaning
+          ? `“${displayText}” means “${meaning}” and doesn't fit this phrase.`
+          : `“${displayText}” isn't part of this phrase.`;
+      } else if (token) {
+        issueDetail = `“${token.text}” belongs in the phrase, but it's in the wrong position.`;
+      }
+
+      return {
+        title: `You're missing ${missingCount} ${missingLabel}.`,
+        detail: `${issueDetail} Green words can stay where they are.`,
+      };
+    }
+
+    if (!firstWrong) {
       return {
         title: "That now looks right.",
         detail: "Every word is in the correct position. Check the phrase to confirm it.",
@@ -991,7 +1017,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
   };
 
   const checkPhrase = () => {
-    if (!isReady || revealed) return;
+    if (!canCheck || revealed) return;
     const builtText = built
       .map((id) => tokens.find((t) => t.id === id)?.text || "")
       .join(" ")
@@ -1163,7 +1189,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
       ) : null}
 
       <div className="flex gap-2">
-        <ActionButton onClick={revealed ? onAdvance : checkPhrase} disabled={!isReady && !revealed} className="flex-1">
+        <ActionButton onClick={revealed ? onAdvance : checkPhrase} disabled={!canCheck && !revealed} className="flex-1">
           {revealed ? "Continue" : "Check phrase"}
         </ActionButton>
         {!revealed ? (

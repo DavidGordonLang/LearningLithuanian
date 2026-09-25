@@ -438,6 +438,22 @@ test("Build Phrase gives token-level guided repair after a wrong check", () => {
   assert.match(src, /diagnosticStatus === "wrong"/);
 });
 
+test("Build Phrase accepts incomplete attempts and tells the learner how many words are missing", () => {
+  const src = source("src/views/training/LearningLessonView.jsx");
+  const buildPhrase = src.slice(
+    src.indexOf("function BuildPhraseBlock"),
+    src.indexOf("function ConversationBubble")
+  );
+
+  assert.match(buildPhrase, /const canCheck = built\.length > 0 && requiredLength > 0/);
+  assert.match(buildPhrase, /if \(!canCheck \|\| revealed\) return/);
+  assert.match(buildPhrase, /disabled=\{!canCheck && !revealed\}/);
+  assert.match(buildPhrase, /const missingCount = Math\.max\(requiredLength - built\.length, 0\)/);
+  assert.match(buildPhrase, /You're missing \$\{missingCount\} \$\{missingLabel\}/);
+  assert.match(buildPhrase, /Everything you've placed so far is in the right position/);
+  assert.doesNotMatch(buildPhrase, /built\.length >= requiredLength/);
+});
+
 test("Build Phrase repair mode stays active while the learner edits the phrase", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
   const buildPhrase = src.slice(
