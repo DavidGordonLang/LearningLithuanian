@@ -293,7 +293,7 @@ export default function createModule_5_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Learn the base place word before learning a changed form. Miestas means city; in Aš esu mieste, miestas changes to mieste to mean in the city. You already know the base words viešbutis, kavinė and namai, so this lesson can build on them with viešbutyje, kavinėje and namuose. Home has its own very common set of forms: iš namų means from home, while namuose means at home.",
+          pattern: "Learn the base place word before learning a changed form. Miestas means city; in Aš esu mieste, miestas changes to mieste to mean in the city. You already know Aš esu = I am from Section 1, so keep using that established form here. Lithuanian can often omit the pronoun, but that shorter Esu… pattern has not been taught yet and should not be tested here. You also know the base words viešbutis, kavinė and namai, so this lesson can build on them with viešbutyje, kavinėje and namuose. Home has its own very common set of forms: iš namų means from home, while namuose means at home.",
           usage: [
             "miestas — city",
             "Aš esu mieste. — I'm in the city.",
@@ -385,9 +385,9 @@ export default function createModule_5_3(profile = {}) {
       sceneDirection: "You are still at the hotel.",
       learnerPrompt: "Choose the reply that says where you are now.",
       options: [
-        { id: "a", text: "Labas! Esu viešbutyje.", result: "best", progresses: true },
+        { id: "a", text: "Labas! Aš esu viešbutyje.", result: "best", progresses: true },
         { id: "b", text: "Labas! Einu į viešbutį.", result: "wrong", feedback: "That means you are going to the hotel. You are already there.", progresses: false },
-        { id: "c", text: "Labas! Esu kavinėje.", result: "wrong", feedback: "Mantas is at the café; you are at the hotel.", progresses: false },
+        { id: "c", text: "Labas! Aš esu kavinėje.", result: "wrong", feedback: "Mantas is at the café; you are at the hotel.", progresses: false },
       ],
     },
     {
@@ -399,7 +399,7 @@ export default function createModule_5_3(profile = {}) {
       learnerPrompt: "Choose the reply that says you are going to the café.",
       options: [
         { id: "a", text: "Gerai! Einu į kavinę.", result: "best", progresses: true },
-        { id: "b", text: "Gerai! Esu kavinėje.", result: "wrong", feedback: "That says you are already in the café. You are still on your way.", progresses: false },
+        { id: "b", text: "Gerai! Aš esu kavinėje.", result: "wrong", feedback: "That says you are already in the café. You are still on your way.", progresses: false },
         { id: "c", text: "Gerai! Einu į viešbutį.", result: "wrong", feedback: "That sends you back to the hotel instead of to the café.", progresses: false },
       ],
     },
@@ -470,7 +470,7 @@ export default function createModule_5_3(profile = {}) {
             options: [
               { id: "a", text: "Einu namo.",      isCorrect: true },
               { id: "b", text: "Einu iš namų.",   isCorrect: false },
-              { id: "c", text: "Esu namuose.",    isCorrect: false },
+              { id: "c", text: "Aš esu namuose.",    isCorrect: false },
             ],
             feedback: {
               correct: "Einu namo. — I'm going home. Iš namų means from home; namuose means at home.",
@@ -522,7 +522,7 @@ export default function createModule_5_3(profile = {}) {
       learnerPrompt: "Choose the reply that says you are going home.",
       options: [
         { id: "a", text: "Labas! Einu namo.", result: "best", progresses: true },
-        { id: "b", text: "Labas! Esu namuose.", result: "wrong", feedback: "Namuose means you are already at home. You are still going there.", progresses: false },
+        { id: "b", text: "Labas! Aš esu namuose.", result: "wrong", feedback: "Namuose means you are already at home. You are still going there.", progresses: false },
         { id: "c", text: "Labas! Einu iš namų.", result: "wrong", feedback: "Iš namų means from home. You are heading home, not leaving it.", progresses: false },
       ],
     },
@@ -534,7 +534,7 @@ export default function createModule_5_3(profile = {}) {
       sceneDirection: "Later, you have arrived home.",
       learnerPrompt: "Tell Rokas where you are now.",
       options: [
-        { id: "a", text: "Esu namuose.", result: "best", progresses: true },
+        { id: "a", text: "Aš esu namuose.", result: "best", progresses: true },
         { id: "b", text: "Einu namo.", result: "wrong", feedback: "Einu namo means you are still going home. You have already arrived.", progresses: false },
         { id: "c", text: "Einu iš namų.", result: "wrong", feedback: "Iš namų means from home. The scene says you are now at home.", progresses: false },
       ],
@@ -778,7 +778,7 @@ export default function createModule_5_3(profile = {}) {
       options: [
         { id: "a", text: "Labas! Einu į kavinę.", result: "best", progresses: true },
         { id: "b", text: "Labas! Einu į stotį.", result: "wrong", feedback: "Your destination is the café, not the station.", progresses: false },
-        { id: "c", text: "Labas! Esu kavinėje.", result: "wrong", feedback: "You are still going to the café; you are not there yet.", progresses: false },
+        { id: "c", text: "Labas! Aš esu kavinėje.", result: "wrong", feedback: "You are still going to the café; you are not there yet.", progresses: false },
       ],
     },
     {
@@ -802,9 +802,9 @@ export default function createModule_5_3(profile = {}) {
       sceneDirection: "Later, you have arrived at the café.",
       learnerPrompt: "Choose the reply that says where you are now.",
       options: [
-        { id: "a", text: "Esu kavinėje.", result: "best", progresses: true },
+        { id: "a", text: "Aš esu kavinėje.", result: "best", progresses: true },
         { id: "b", text: "Einu į kavinę.", result: "wrong", feedback: "That means you are still going to the café. You have already arrived.", progresses: false },
-        { id: "c", text: "Esu viešbutyje.", result: "wrong", feedback: "You left the hotel earlier and are now at the café.", progresses: false },
+        { id: "c", text: "Aš esu viešbutyje.", result: "wrong", feedback: "You left the hotel earlier and are now at the café.", progresses: false },
       ],
       finalSystemLine: { speakerId: "local", speakerLabel: "Local", speakerText: "Gerai! Iki!", sceneDirection: "Rasa says goodbye and the exchange ends." },
     },
