@@ -449,3 +449,31 @@ test("5.3.5 introduces Ar ieškote only after viešbučio is already familiar",(
   const pairs=cp.blocks.find(b=>b.id==="s5m3c_b7").pairs.map(p=>p.lt);
   assert.ok(pairs.includes("Ar ieškote viešbučio?"));
 });
+
+
+test("5.3 early form practice avoids unseen-form distractors and uses fuller production",()=>{
+  const m=createModule53();
+
+  const l1=m.lessons.find(l=>l.code==="5.3.1");
+  const toStation=l1.blocks.find(b=>b.id==="s5m3l1_b3");
+  assert.equal(toStation.type,"build_phrase");
+  assert.equal(toStation.answerText,"Aš einu į stotį.");
+  assert.equal(JSON.stringify(toStation).includes("stoties"),false);
+
+  const l3=m.lessons.find(l=>l.code==="5.3.3");
+  const inCafe=l3.blocks.find(b=>b.id==="s5m3l3_b3");
+  const inCity=l3.blocks.find(b=>b.id==="s5m3l3_b4");
+  assert.equal(inCafe.type,"build_phrase");
+  assert.equal(inCafe.answerText,"Ji yra kavinėje.");
+  assert.equal(JSON.stringify(inCafe).includes("kavinės"),false);
+  assert.equal(inCity.type,"best_response");
+  assert.equal(inCity.options.find(o=>o.isCorrect).text,"Aš esu mieste.");
+  assert.equal(JSON.stringify(inCity).includes("miesto"),false);
+  assert.equal(JSON.stringify(inCity).includes("miestą"),false);
+
+  const cp=m.lessons.find(l=>l.code==="5.3.C");
+  const cpLocation=cp.blocks.find(b=>b.id==="s5m3c_b2");
+  assert.equal(cpLocation.type,"best_response");
+  assert.equal(cpLocation.options.find(o=>o.isCorrect).text,"Mes esame kavinėje.");
+  assert.equal(JSON.stringify(cpLocation).includes("kavinės"),false);
+});
