@@ -11,7 +11,7 @@ test("PWA checks for a newly deployed Vite bundle when the app resumes", () => {
   assert.match(pwa, /visibilitychange/);
   assert.match(pwa, /window\.addEventListener\("focus"/);
   assert.match(pwa, /window\.location\.reload\(\)/);
-  assert.match(pwa, /\/assets\\\/index-/);
+  assert.ok(pwa.includes("/\\/assets\\/index-"));
 });
 
 test("service worker update and cache policy avoid stale non-hashed content", () => {
