@@ -9,6 +9,7 @@ const FALLBACK_NAME = "Davidas";
 
 const FALLBACK_FROM_COUNTRY_CODE = "scotland";
 const FALLBACK_FROM_LABEL_EN = "Scotland";
+const FALLBACK_FROM_NOMINATIVE = "Škotija";
 const FALLBACK_FROM_GENITIVE = "Škotijos";
 const FALLBACK_FROM_PHRASE = `Aš esu iš ${FALLBACK_FROM_GENITIVE}`;
 
@@ -71,6 +72,7 @@ export function buildSection1Profile({
   const userFromCountryCode =
     String(fromCountryCode || "").trim() || FALLBACK_FROM_COUNTRY_CODE;
   const fromForms = getCountryLithuanianForms(userFromCountryCode);
+  const userFromCountryLtNominative = fromForms?.nominative || FALLBACK_FROM_NOMINATIVE;
   const userFromCountryLtGenitive = fromForms?.genitive || FALLBACK_FROM_GENITIVE;
   const userFromCountryLabelEn =
     getCountryLabel(userFromCountryCode, "en") || FALLBACK_FROM_LABEL_EN;
@@ -98,6 +100,7 @@ export function buildSection1Profile({
 
     userFromCountryCode,
     userFromCountryLabelEn,
+    userFromCountryLtNominative,
     userFromCountryLtGenitive,
     userFromPhrase,
 

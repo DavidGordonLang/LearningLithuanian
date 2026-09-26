@@ -112,7 +112,7 @@ export default function createModule_1_3(profile = {}) {
   userRole: "guest",
   register: "polite_service",
   goal: "Use Nesuprantu when you genuinely do not understand, then recognise when the help has made the meaning clear.",
-  focus: ["Nesuprantu", "Supratau"],
+  focus: ["Nesuprantu", "Suprantu"],
   participants: [
     {
       id: "receptionist",
@@ -131,7 +131,8 @@ export default function createModule_1_3(profile = {}) {
       speakerLabel: "Receptionist",
       speakerText: "Jūsų kambarys yra trečiame aukšte.",
       sceneDirection: "The receptionist hands you a key card and points towards the lifts.",
-      learnerPrompt: "Respond based on what you understand. If you are lost, use Nesuprantu.",
+      learnerPrompt: "What did the receptionist tell you? If you are lost, use Nesuprantu for help.",
+      interactionMode: "comprehension",
       help: {
         levels: [
           {
@@ -152,22 +153,23 @@ export default function createModule_1_3(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Supratau, ačiū!",
+          text: "Your room is on the third floor.",
+          learnerText: "Suprantu, ačiū!",
           result: "best",
           progresses: true,
         },
         {
           id: "b",
-          text: "Viso gero!",
+          text: "The lift is on the third floor.",
           result: "wrong",
-          feedback: "The receptionist is giving you information, not ending the conversation.",
+          feedback: "She is telling you where your room is, not where the lift is.",
           progresses: false,
         },
         {
           id: "c",
-          text: "Ne, ačiū.",
+          text: "Your room is on the first floor.",
           result: "wrong",
-          feedback: "Nothing is being offered. Respond to the information or ask for help.",
+          feedback: "She indicates the third floor. Use Nesuprantu if you need her to repeat it.",
           progresses: false,
         },
       ],
@@ -284,7 +286,7 @@ export default function createModule_1_3(profile = {}) {
   userRole: "customer",
   register: "polite_service",
   goal: "Use a specific pace repair first, then check whether it actually solved the comprehension problem.",
-  focus: ["Prašau kalbėkite lėčiau", "Nesuprantu", "Supratau"],
+  focus: ["Prašau kalbėkite lėčiau", "Nesuprantu", "Suprantu"],
   participants: [
     {
       id: "pharmacist",
@@ -333,7 +335,8 @@ export default function createModule_1_3(profile = {}) {
       speakerLabel: "Pharmacist",
       speakerText: "Du kartus per dieną.",
       sceneDirection: "She repeats the important part more slowly and holds up two fingers.",
-      learnerPrompt: "Did that solve it? If you understand now, acknowledge her. If you are still lost, use Nesuprantu.",
+      learnerPrompt: "What is the instruction? If you are still lost, use Nesuprantu for help.",
+      interactionMode: "comprehension",
       help: {
         levels: [
           {
@@ -362,22 +365,23 @@ export default function createModule_1_3(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Supratau, ačiū!",
+          text: "Take the medicine twice a day.",
+          learnerText: "Suprantu, ačiū!",
           result: "best",
           progresses: true,
         },
         {
           id: "b",
-          text: "Taip.",
+          text: "Take the medicine once a day.",
           result: "wrong",
-          feedback: "Do not agree if you are not actually sure what the instruction means. Use Nesuprantu if you are still lost.",
+          feedback: "Du kartus means twice. Use Nesuprantu if you still need help.",
           progresses: false,
         },
         {
           id: "c",
-          text: "Viso gero.",
+          text: "Take two tablets at the same time.",
           result: "wrong",
-          feedback: "Make sure you understand the instruction before ending the exchange.",
+          feedback: "Du kartus per dieną means twice a day, not two tablets together.",
           progresses: false,
         },
       ],
@@ -559,7 +563,7 @@ export default function createModule_1_3(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Supratau, ačiū!",
+          text: "Suprantu, ačiū!",
           result: "best",
           progresses: true,
         },

@@ -69,7 +69,7 @@ export default function createCheckpoint1(profile = {}) {
         prompt: { text: "Pakartokite, prašau", audioText: "Pakartokite, prašau" },
         options: [
           { id: "a", text: "Please speak more slowly", isCorrect: false },
-          { id: "b", text: "One more time, please", isCorrect: false },
+          { id: "b", text: "Please say it in English", isCorrect: false },
           { id: "c", text: "Please repeat", isCorrect: true },
         ],
       },
@@ -181,6 +181,7 @@ export default function createCheckpoint1(profile = {}) {
         id: "s1c_b13",
         type: "best_response",
         noOptionAudio: true,
+        answerAudioText: "Ar galiu jums padėti?",
         title: "Choose the best response",
         prompt: { text: "A shop assistant asks: 'Ar galiu jums padėti?' What are they saying?" },
         options: [

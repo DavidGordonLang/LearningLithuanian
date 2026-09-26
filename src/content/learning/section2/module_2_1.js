@@ -40,7 +40,7 @@ export default function createModule_2_1(profile = {}) {
             type: "learn",
             title: "I want…",
             items: [
-              { id: "w1", lt: "Noriu…", en: "I want…", audioText: "Noriu", saveable: true, core: true },
+              { id: "w1", lt: "Noriu…", en: "I want… Coffee is kava; water is vanduo. After noriu, use kavos / vandens.", audioText: "Noriu", saveable: true, core: true },
               { id: "w2", lt: "Noriu kavos.", en: "[I] want coffee.", audioText: "Noriu kavos", saveable: true, core: true },
               { id: "w3", lt: "Noriu vandens.", en: "[I] want water.", audioText: "Noriu vandens", saveable: true, core: true },
               { id: "w4", lt: "Noriu šito.", en: "I want this.", audioText: "Noriu šito", saveable: true, core: true },
@@ -404,7 +404,7 @@ export default function createModule_2_1(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Turiu = I have. Neturiu = I don't have. The negation matters early — it changes what you can do in real situations.",
+          pattern: "Turiu means 'I have'; neturiu means 'I don't have'. Grynieji is cash and laikas is time. After neturiu, say grynųjų / laiko: Neturiu grynųjų ('I don't have cash').",
           usage: [
             "Turiu bilietą — I have a ticket",
             "Neturiu grynųjų — I don't have cash",
@@ -420,11 +420,12 @@ export default function createModule_2_1(profile = {}) {
             type: "learn",
             title: "I have / I don't have",
             items: [
-              { id: "h1", lt: "Turiu…", en: "I have…", audioText: "Turiu", saveable: true, core: true },
+              { id: "h1", lt: "Turiu…", en: "I have… Cash is grynieji; after neturiu, use grynųjų.", audioText: "Turiu", saveable: true, core: true },
               { id: "h2", lt: "Neturiu…", en: "I don't have…", audioText: "Neturiu", saveable: true, core: true },
               { id: "h3", lt: "Turiu bilietą.", en: "I have a ticket.", audioText: "Turiu bilietą", saveable: true, core: true },
               { id: "h4", lt: "Neturiu grynųjų.", en: "I don't have cash.", audioText: "Neturiu grynųjų", saveable: true, core: true },
               { id: "h5", lt: "Turiu kortelę.", en: "I have a card.", audioText: "Turiu kortelę", saveable: true, core: true },
+              { id: "hbase2", lt: "Laikas", en: "Time", audioText: "Laikas", saveable: true, core: false },
               { id: "h6", lt: "Neturiu laiko.", en: "I don't have time.", audioText: "Neturiu laiko", saveable: true, core: true },
               { id: "h7", lt: "Kortelė", en: "Card (payment)", audioText: "Kortelė", saveable: true, core: false },
               { id: "h8", lt: "Pinigai", en: "Money", audioText: "Pinigai", saveable: true, core: false },

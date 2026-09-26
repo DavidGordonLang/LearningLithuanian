@@ -37,12 +37,12 @@ test("2.3.1 teaches a usable noun-gender clue before the first scored form choic
   const lesson = getLesson(module, "2.3.1");
   const learn = getBlock(lesson, "s2m3l1_b1");
 
-  assert.match(lesson.notes.pattern, /-as, -ys and -us are commonly masculine/);
-  assert.match(lesson.notes.pattern, /-a is commonly feminine/);
-  assert.match(lesson.notes.pattern, /shortcut, not a perfect rule/);
-  assert.ok(lesson.notes.usage.some((line) => /Barbora.*-a.*feminine/.test(line)));
-  assert.ok(lesson.notes.usage.some((line) => /Rokas.*-as.*masculine/.test(line)));
-  assert.ok(lesson.notes.usage.some((line) => /Vanduo.*masculine/.test(line)));
+  assert.match(lesson.notes.pattern, /šitas obuolys/);
+  assert.match(lesson.notes.pattern, /šita duona/);
+  assert.match(lesson.notes.pattern, /ending gives you a clue/);
+  assert.ok(lesson.notes.usage.some((line) => /Šitas obuolys.*tas obuolys/.test(line)));
+  assert.ok(lesson.notes.usage.some((line) => /Šita duona.*ta duona/.test(line)));
+  assert.ok(lesson.notes.usage.some((line) => /not rules for every word/.test(line)));
 
   assert.ok(learn.items.some((item) =>
     item.lt === "Obuolys" && /masculine \(-ys ending\)/.test(item.en)

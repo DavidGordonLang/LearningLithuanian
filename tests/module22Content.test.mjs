@@ -24,7 +24,7 @@ test("2.2.1 treats Can I and Can We as applied retrieval rather than two repeate
   assert.equal(lesson.title, "Can I or Can We?");
   assert.deepEqual(
     lesson.blocks.map((block) => block.type),
-    ["learn", "context_gap_select", "context_gap_select", "listen_mcq", "conversation_turn_fill", "speak_self_check"]
+    ["learn", "context_gap_select", "context_gap_select", "listen_mcq", "best_response", "speak_self_check"]
   );
   assert.equal(getBlock(lesson, "s2m2l1_b2").options.find((o) => o.isCorrect).text, "galiu");
   assert.equal(getBlock(lesson, "s2m2l1_b3").options.find((o) => o.isCorrect).text, "galime");

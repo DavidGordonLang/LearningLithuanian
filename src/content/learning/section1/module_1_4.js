@@ -26,7 +26,7 @@ export default function createModule_1_4(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Ar galite…? is the polite plural/formal frame for asking someone to do something. You'll use it constantly.",
+          pattern: "Ar galite…? is a polite way to ask someone for help. Pagalba means help; in Man reikia pagalbos ('I need help'), the ending changes after reikia.",
           usage: [
             "Ar galite man padėti? — Can you help me? (polite, to a stranger or staff)",
             "Padėkite man, prašau — Help me, please (more direct but still polite)",
@@ -40,11 +40,11 @@ export default function createModule_1_4(profile = {}) {
             type: "learn",
             title: "Asking for help",
             items: [
+              { id: "h5", lt: "Pagalba", en: "Help", audioText: "Pagalba", saveable: true, core: false },
               { id: "h1", lt: "Ar galite man padėti?", en: "Can you help me?", audioText: "Ar galite man padėti", saveable: true, core: true },
               { id: "h2", lt: "Padėkite man, prašau", en: "Help me, please", audioText: "Padėkite man, prašau", saveable: true, core: true },
               { id: "h3", lt: "Man reikia pagalbos", en: "I need help", audioText: "Man reikia pagalbos", saveable: true, core: true },
               { id: "h4", lt: "Ar galiu jums padėti?", en: "Can I help you?", audioText: "Ar galiu jums padėti", saveable: true, core: true },
-              { id: "h5", lt: "Pagalba", en: "Help", audioText: "Pagalba", saveable: true, core: false },
             ],
           },
           {
@@ -186,7 +186,7 @@ export default function createModule_1_4(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Čia means here; ten means there. For places, anchoring the question physically is clearer than translating tai/ten as an abstract English this/that pair.",
+          pattern: "Čia means 'here'; ten means 'there'. Point to the place you mean: Ar čia tualetas? asks about the place beside you, while Ar ten restoranas? asks about one further away.",
           usage: [
             "Ar čia…? — Is it here? / Is this…? (the place you are at)",
             "Ar ten…? — Is it there / over there? / Is that…? (a place further away)",
@@ -865,20 +865,15 @@ export default function createModule_1_4(profile = {}) {
           },
           {
             id: "s1m4l5_b6_v2",
-            type: "conversation_turn_fill",
-            scene_label: "Same question, different relationship",
-            prompt: "A close friend uses tavo. At reception, choose the form that fits the unfamiliar receptionist.",
-            lines: [
-              { speaker: "Friend", text: "Labas! Koks tavo vardas?", audioText: "Labas! Koks tavo vardas?", hasGap: false },
-              { speaker: "Receptionist", text: "Laba diena. Koks ___ vardas?", hasGap: true },
-            ],
+            type: "best_response",
+            title: "Choose the full question",
+            prompt: { text: "You are meeting an unfamiliar receptionist. Ask their name politely." },
             options: [
-              { id: "a", text: "tavo", isCorrect: false },
-              { id: "b", text: "jūsų", isCorrect: true },
-              { id: "c", text: "mano", isCorrect: false },
+              { id: "a", text: "Koks tavo vardas?", result: "awkward", feedback: "This asks the right thing, but tavo is casual. With an unfamiliar receptionist, use jūsų." },
+              { id: "b", text: "Koks jūsų vardas?", result: "best" },
+              { id: "c", text: "Koks mano vardas?", result: "wrong", feedback: "Mano means my; this asks for your own name." },
             ],
-            explanation: "A close friend can use tavo. With an unfamiliar receptionist, the polite jūsų form fits.",
-            translation_en: "Friend: Hi! What's your name? — Receptionist: Good day. What's your name?",
+            feedback: { correct: "Jūsų is the polite form for someone you have not met." },
           },
         ],
       },

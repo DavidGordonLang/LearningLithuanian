@@ -83,20 +83,15 @@ export default function createModule_2_2(profile = {}) {
           },
           {
             id: "s2m2l1_b5",
-            type: "conversation_turn_fill",
-            scene_label: "At a café with a friend",
-            prompt: "Complete your question to the server.",
-            lines: [
-              { speaker: "Server", text: "Laba diena!", audioText: "Laba diena", hasGap: false },
-              { speaker: "You", text: "Ar ___ čia atsisėsti?", hasGap: true },
-            ],
+            type: "best_response",
+            title: "Ask for both of you",
+            prompt: { text: "You and a friend are at a café. Ask the server if both of you can sit here." },
             options: [
-              { id: "a", text: "galiu", isCorrect: false },
-              { id: "b", text: "galime", isCorrect: true },
-              { id: "c", text: "galite", isCorrect: false },
+              { id: "a", text: "Ar galiu čia atsisėsti?", result: "awkward", feedback: "Galiu asks only about yourself. Galime includes your friend too." },
+              { id: "b", text: "Ar galime čia atsisėsti?", result: "best" },
+              { id: "c", text: "Ar galite čia atsisėsti?", result: "wrong", feedback: "Galite asks whether the server can sit here; you mean yourself and your friend." },
             ],
-            explanation: "You are asking for yourself and your friend, so use galime.",
-            translation_en: "Server: Good day! — You: Can we sit here?",
+            feedback: { correct: "Galime includes both of you." },
           },
           {
             id: "s2m2l1_b6",

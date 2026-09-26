@@ -19,13 +19,11 @@ export default function createModule_2_3(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Before choosing šitas / šita or tas / ta, you need a clue to the noun's gender. For everyday nouns in their base form, endings often help: -as, -ys and -us are commonly masculine; -a is commonly feminine, and -ė is often feminine too. This is a shortcut, not a perfect rule — some endings can belong to either gender and a few common nouns are irregular. In this lesson, obuolys ends in -ys, so treat it as masculine; duona ends in -a, so treat it as feminine.",
+          pattern: "The word for 'this' or 'that' changes to fit the thing you mean. For an apple, say šitas obuolys ('this apple') or tas obuolys ('that apple'). For bread, say šita duona or ta duona. Learn each pair together; the ending gives you a clue.",
           usage: [
-            "Memory hook: Barbora ends in -a → feminine; Rokas ends in -as → masculine.",
-            "Gender shortcut: raktas, bilietas, obuolys → masculine clues (-as / -ys)",
-            "Gender shortcut: kava, arbata, duona → feminine clue (-a)",
-            "If the ending is unclear, learn the noun with its gender. Vanduo, for example, is masculine.",
-            "So here: šitas / tas obuolys, but šita / ta duona.",
+            "Šitas obuolys / tas obuolys — this apple / that apple",
+            "Šita duona / ta duona — this bread / that bread",
+            "-ys in obuolys and -a in duona are useful clues, but not rules for every word.",
           ],
         },
         blocks: [
@@ -34,12 +32,12 @@ export default function createModule_2_3(profile = {}) {
             type: "learn",
             title: "Near, far, and spotting gender",
             items: [
+              { id: "d5", lt: "Obuolys", en: "Apple — masculine (-ys ending)", audioText: "Obuolys", saveable: true, core: false },
               { id: "d1", lt: "Šitas obuolys", en: "This apple (masculine noun)", audioText: "Šitas obuolys", saveable: true, core: true },
               { id: "d2", lt: "Tas obuolys", en: "That apple (masculine noun)", audioText: "Tas obuolys", saveable: true, core: true },
+              { id: "d6", lt: "Duona", en: "Bread — feminine (-a ending)", audioText: "Duona", saveable: true, core: false },
               { id: "d3", lt: "Šita duona", en: "This bread (feminine noun)", audioText: "Šita duona", saveable: true, core: true },
               { id: "d4", lt: "Ta duona", en: "That bread (feminine noun)", audioText: "Ta duona", saveable: true, core: true },
-              { id: "d5", lt: "Obuolys", en: "Apple — masculine (-ys ending)", audioText: "Obuolys", saveable: true, core: false },
-              { id: "d6", lt: "Duona", en: "Bread — feminine (-a ending)", audioText: "Duona", saveable: true, core: false },
             ],
           },
           {

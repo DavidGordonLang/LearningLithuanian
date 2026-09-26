@@ -70,7 +70,8 @@ test("1.3.2 separates pace repair from genuine comprehension repair", () => {
   assert.equal(comprehensionStep.help.levels.at(-1).spokenLanguage, "en");
   assert.equal(comprehensionStep.help.levels.at(-1).audio, false);
   assert.equal(comprehensionStep.help.levels.at(-1).translationReveal.length, 2);
-  assert.ok(comprehensionStep.options.some((option) => option.text === "Supratau, ačiū!" && option.result === "best"));
+  assert.equal(comprehensionStep.interactionMode, "comprehension");
+  assert.ok(comprehensionStep.options.some((option) => option.text === "Take the medicine twice a day." && option.learnerText === "Suprantu, ačiū!" && option.result === "best"));
 });
 
 test("1.3.3 teaches this versus that through physical context", () => {

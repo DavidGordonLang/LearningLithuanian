@@ -603,8 +603,8 @@ const module_1_1 =     {
               title: "Choose the right phrase",
               prompt: { text: "You want to formally excuse yourself — more polite than usual." },
               options: [
-                { id: "a", text: "Atsiprašau", isCorrect: false },
-                { id: "b", text: "Atleiskite", isCorrect: true },
+                { id: "a", text: "Atsiprašau", result: "awkward", feedback: "Atsiprašau is understandable for an interruption. Atleiskite is more formal, as this task asks." },
+                { id: "b", text: "Atleiskite", result: "best" },
                 { id: "c", text: "Prašau", isCorrect: false },
               ],
               feedback: { correct: "Atleiskite is the more formal version — used when you want to be especially polite or respectful." },
@@ -1060,8 +1060,8 @@ const module_1_1 =     {
               title: "Choose the best response",
               prompt: { text: "You need to interrupt an unknown person politely to ask for directions." },
               options: [
-                { id: "a", text: "Atsiprašau", isCorrect: false },
-                { id: "b", text: "Atleiskite", isCorrect: true },
+                { id: "a", text: "Atsiprašau", result: "acceptable", feedback: "Atsiprašau is a polite way to interrupt. Atleiskite sounds a little more formal here." },
+                { id: "b", text: "Atleiskite", result: "best" },
                 { id: "c", text: "Pakartokite, prašau", isCorrect: false },
               ],
               feedback: { correct: "Atleiskite signals extra politeness — the safer choice with an unknown person or in a formal context." },

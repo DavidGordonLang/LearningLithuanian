@@ -5,6 +5,7 @@ export default function createModule_1_2(profile = {}) {
   const {
     userNameSafe = "Davidas",
     userFromPhrase = "Aš esu iš Škotijos",
+    userFromCountryLtNominative = "Škotija",
     userFromCountryLtGenitive = "Škotijos",
     userFromCountryLabelEn = "Scotland",
   } = profile;
@@ -124,7 +125,7 @@ export default function createModule_1_2(profile = {}) {
   userRole: "learner",
   register: "polite_neutral",
   goal: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
-  focus: ["greetings","numbers"],
+  focus: ["greetings", "introducing yourself"],
   participants: [
     {
       "id": "local",
@@ -142,15 +143,15 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena! Koks jūsų vardas?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rokas has asked for your name.",
+      learnerPrompt: "Greet Rokas and tell him your name.",
       options: [
         {
           id: "a",
-          text: "Viso gero!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          text: `Laba diena! Aš esu ${userNameSafe}.`,
+          result: "acceptable",
+          feedback: "Aš esu with your name works too. Mano vardas is a simple introduction to keep ready.",
+          progresses: true,
         },
         {
           id: "b",
@@ -160,9 +161,9 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Ne, ačiū",
+          text: "Laba diena! Koks jūsų vardas?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rokas asked for your name. Answer him before asking his.",
           progresses: false,
         }
       ],
@@ -172,21 +173,21 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Aš esu Rokas. Kaip sekasi?",
-      sceneDirection: "After a short friendly chat, the local starts to say goodbye.",
-      learnerPrompt: "Choose the natural closing response.",
+      sceneDirection: "Rokas introduces himself and asks how you are.",
+      learnerPrompt: "Answer how you are; he has not said goodbye yet.",
       options: [
         {
           id: "a",
           text: "Labas rytas",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Labas rytas is a morning greeting, not an answer to Kaip sekasi?",
           progresses: false,
         },
         {
           id: "b",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau is an apology; Rokas is asking how you are.",
           progresses: false,
         },
         {
@@ -211,7 +212,7 @@ export default function createModule_1_2(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: `Iš means 'from'. Place names change their ending when used with iš — notice your country becomes ${userFromCountryLtGenitive} here. You don't need to explain this yet, just notice the pattern.`,
+          pattern: `Your country is ${userFromCountryLtNominative} (${userFromCountryLabelEn}). After iš ('from'), use ${userFromCountryLtGenitive}: Aš esu iš ${userFromCountryLtGenitive}.`,
           usage: [
             `${selfFromLineNoPeriod} — ${selfFromEnglish}`,
             "Jis yra iš Anglijos — He is from England",
@@ -226,6 +227,7 @@ export default function createModule_1_2(profile = {}) {
             type: "learn",
             title: "Where you're from",
             items: [
+              { id: "frbase", lt: userFromCountryLtNominative, en: userFromCountryLabelEn, audioText: userFromCountryLtNominative, saveable: false, core: false },
               { id: "fr0", lt: selfFromLineNoPeriod, en: selfFromEnglish, audioText: selfFromLineNoPeriod, saveable: false, core: true },
               { id: "fr1", lt: "Jis yra iš Anglijos", en: "He is from England", audioText: "Jis yra iš Anglijos", saveable: true, core: true },
               { id: "fr2", lt: "Ji yra iš Lietuvos", en: "She is from Lithuania", audioText: "Ji yra iš Lietuvos", saveable: true, core: true },
@@ -321,8 +323,8 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena! Iš kur jūs esate?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rasa has asked where you are from.",
+      learnerPrompt: "Tell Rasa your home country.",
       options: [
         {
           id: "a",
@@ -334,14 +336,14 @@ export default function createModule_1_2(profile = {}) {
           id: "b",
           text: plainNameLine,
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Mano vardas gives your name. Rasa asked where you are from.",
           progresses: false,
         },
         {
           id: "c",
-          text: "Ne, ačiū.",
+          text: `Aš esu iš ${normaliseCountry(userFromCountryLtGenitive) === "lietuvos" ? "Anglijos" : "Lietuvos"}.`,
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That names a different country. Use the from-form for your own home country.",
           progresses: false,
         }
       ],
@@ -521,15 +523,15 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: "Laba diena! Aš esu Ona.",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Ona greets you and tells you her name.",
+      learnerPrompt: "Greet her and introduce yourself.",
       options: [
         {
           id: "a",
-          text: "Iki!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          text: `Laba diena! Aš esu ${userNameSafe}.`,
+          result: "acceptable",
+          feedback: "Aš esu is a natural introduction too. Mano vardas is the direct name phrase practised here.",
+          progresses: true,
         },
         {
           id: "b",
@@ -539,9 +541,9 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Ne, ačiū",
+          text: "Laba diena! Koks jūsų vardas?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Ona has just told you her name. Give her yours instead of asking again.",
           progresses: false,
         }
       ],
@@ -551,14 +553,14 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "colleague",
       speakerLabel: "Colleague",
       speakerText: `Malonu susipažinti, ${userNameSafe}!`,
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      sceneDirection: "Ona says it is nice to meet you.",
+      learnerPrompt: "Return the friendly greeting.",
       options: [
         {
           id: "a",
           text: "Viso gero!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Viso gero is a goodbye. Ona is welcoming you, not leaving.",
           progresses: false,
         },
         {
@@ -569,10 +571,10 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Atsiprašau",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          text: "Malonu susipažinti!",
+          result: "acceptable",
+          feedback: "That is a natural reply. Man irgi ('me too') responds directly to Ona's greeting.",
+          progresses: true,
         }
       ],
     }
@@ -690,8 +692,8 @@ export default function createModule_1_2(profile = {}) {
   id: "s1m2l4_b8_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
-  sceneIntro: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
+  description: "You run into an old colleague, Rokas, and introduce your friend Barbora, who is from Lithuania.",
+  sceneIntro: "You run into an old colleague, Rokas, and introduce your friend Barbora, who is from Lithuania.",
   location: "casual conversation",
   userRole: "friend",
   register: "casual",
@@ -714,8 +716,8 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Colleague",
       speakerText: "Labas! Kaip sekasi?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rokas greets you and asks how you are. Barbora is standing beside you.",
+      learnerPrompt: "Answer him and introduce Barbora.",
       options: [
         {
           id: "a",
@@ -725,9 +727,9 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "b",
-          text: "Ne, ačiū",
+          text: "Gerai, ačiū! Čia Barbora. Jis yra mano draugas.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Barbora is a woman, so say ji yra mano draugė, not jis yra mano draugas.",
           progresses: false,
         },
         {
@@ -744,27 +746,27 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Colleague",
       speakerText: "Malonu susipažinti! Iš kur ji yra?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      sceneDirection: "Rokas asks about Barbora, whose home country is Lithuania.",
+      learnerPrompt: "Tell Rokas where Barbora is from.",
       options: [
         {
           id: "a",
-          text: "Atsiprašau",
+          text: "Ji yra iš Anglijos.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Anglijos means from England. Barbora is from Lithuania.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Ji yra iš Škotijos.",
+          text: "Ji yra iš Lietuvos.",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Viso gero",
+          text: "Jis yra iš Lietuvos.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Jis means he. Rokas asked about Barbora, so say ji.",
           progresses: false,
         }
       ],
@@ -1032,15 +1034,15 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Laba diena! Aš esu Rokas. Koks jūsų vardas?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rokas tells you his name and asks for yours.",
+      learnerPrompt: "Introduce yourself.",
       options: [
         {
           id: "a",
-          text: "Ne, ačiū",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          text: `Laba diena! Aš esu ${userNameSafe}.`,
+          result: "acceptable",
+          feedback: "Aš esu with your name is natural too. Mano vardas is the direct name phrase here.",
+          progresses: true,
         },
         {
           id: "b",
@@ -1062,8 +1064,8 @@ export default function createModule_1_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Iš kur jūs esate?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rokas now asks where you are from.",
+      learnerPrompt: "Tell him your home country.",
       options: [
         {
           id: "a",
@@ -1073,16 +1075,16 @@ export default function createModule_1_2(profile = {}) {
         },
         {
           id: "b",
-          text: "Atsiprašau",
+          text: plainNameLine,
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That repeats your name. Rokas asks where you are from.",
           progresses: false,
         },
         {
           id: "c",
-          text: "Gerai, ačiū",
+          text: `Aš esu iš ${normaliseCountry(userFromCountryLtGenitive) === "lietuvos" ? "Anglijos" : "Lietuvos"}.`,
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That names a different country. Choose your own home country.",
           progresses: false,
         }
       ],

@@ -72,8 +72,9 @@ test("1.4.5 uses a recognition mechanic instead of the contrived introduction sc
   const lesson = getLesson(module, "1.4.5");
   const finalBlock = getBlock(lesson, "s1m4l5_b6_v2");
 
-  assert.equal(finalBlock.type, "conversation_turn_fill");
-  assert.equal(finalBlock.options.find((option) => option.isCorrect).text, "jūsų");
+  assert.equal(finalBlock.type, "best_response");
+  assert.equal(finalBlock.options.find((option) => option.result === "best").text, "Koks jūsų vardas?");
+  assert.equal(finalBlock.options.find((option) => option.result === "awkward").text, "Koks tavo vardas?");
   assert.match(lesson.notes.pattern, /unfamiliar adult/);
   assert.equal(lesson.notes.pattern.includes("older people"), false);
 });

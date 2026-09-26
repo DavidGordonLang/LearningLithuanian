@@ -223,20 +223,15 @@ export default function createModule_2_4(profile = {}) {
           },
           {
             id: "s2m4l2_b5",
-            type: "conversation_turn_fill",
-            scene_label: "First meeting",
-            prompt: "Complete your polite question to Rasa.",
-            lines: [
-              { speaker: "Rasa", text: "Laba diena!", audioText: "Laba diena", hasGap: false },
-              { speaker: "You", text: "Laba diena! Kur ___?", hasGap: true },
-            ],
+            type: "best_response",
+            title: "Ask where she lives",
+            prompt: { text: "You meet Rasa for the first time. Greet her and politely ask where she lives." },
             options: [
-              { id: "a", text: "gyvenate", isCorrect: true },
-              { id: "b", text: "einame", isCorrect: false },
-              { id: "c", text: "yra", isCorrect: false },
+              { id: "a", text: "Laba diena! Kur gyvenate?", result: "best" },
+              { id: "b", text: "Laba diena! Kur jūs gyvenate?", result: "acceptable", feedback: "This is also polite and correct. The shorter Kur gyvenate? works naturally here." },
+              { id: "c", text: "Laba diena! Kur einame?", result: "wrong", feedback: "Einame asks where we are going, not where Rasa lives." },
             ],
-            explanation: "Kur gyvenate? asks politely where the other person lives.",
-            translation_en: "Rasa: Good day! — You: Good day! Where do you live?",
+            feedback: { correct: "Kur gyvenate? politely asks where someone lives." },
           },
           {
             id: "s2m4l2_b6_v2",
