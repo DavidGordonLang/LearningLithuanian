@@ -41,7 +41,7 @@ export default function SequenceDebugView({ allSections, completedLessonIds, onJ
 
         <div className="text-[11px] text-zinc-500 mb-4 leading-relaxed">
           This is the exact order the app will navigate lessons for a new user. ✓ = completed.
-          <br/>Press <strong className="text-zinc-300">Jump Here</strong> to mark all prior lessons complete and load that lesson directly.
+          <br/>Every lesson can be opened here, including completed ones. <strong className="text-zinc-300">Jump here</strong> marks any unfinished prior lessons complete; <strong className="text-zinc-300">Review</strong> reopens a completed lesson without clearing its completion.
         </div>
 
         <div className="flex flex-col gap-1">
@@ -88,24 +88,27 @@ export default function SequenceDebugView({ allSections, completedLessonIds, onJ
                   </div>
                 </div>
 
-                {/* Jump button */}
-                {!done && (
-                  <button
-                    onClick={() => {
-                      // Mark all lessons before this one as complete
+                {/* Admin walker must be able to reopen completed lessons too. */}
+                <button
+                  onClick={() => {
+                    // Preserve the target's completion state. For an unfinished
+                    // target, keep the walker's existing behaviour of priming
+                    // any earlier gaps so the course sequence remains valid.
+                    if (!done) {
                       sequence.slice(0, idx).forEach(s => {
                         if (!completedSet.has(s.lesson.id)) {
                           completeLesson(s.lesson.id, userId);
                         }
                       });
-                      // Small delay to let store update, then navigate
-                      setTimeout(() => onJumpTo(item), 50);
-                    }}
-                    className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-700/70 hover:bg-emerald-600/80 text-emerald-100 transition"
-                  >
-                    Jump here
-                  </button>
-                )}
+                    }
+                    // Small delay lets any priming writes settle before navigate.
+                    setTimeout(() => onJumpTo(item), 50);
+                  }}
+                  className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-700/70 hover:bg-emerald-600/80 text-emerald-100 transition"
+                  aria-label={done ? `Review completed lesson ${item.lesson.title || item.lesson.code || id}` : `Jump to ${item.lesson.title || item.lesson.code || id}`}
+                >
+                  {done ? "Review" : "Jump here"}
+                </button>
               </div>
             );
           })}

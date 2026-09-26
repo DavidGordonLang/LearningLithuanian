@@ -479,3 +479,14 @@ test("Speechmatics primary lesson STT keeps the API key server-side and uses low
   assert.match(packageSrc, /"@speechmatics\/auth"/);
   assert.match(packageSrc, /"@speechmatics\/real-time-client"/);
 });
+
+
+test("admin Sequence Walker can reopen completed lessons without clearing completion", () => {
+  const src = source("src/views/training/SequenceDebugView.jsx");
+
+  assert.doesNotMatch(src, /\{!done && \(\s*<button/);
+  assert.match(src, /\{done \? "Review" : "Jump here"\}/);
+  assert.match(src, /if \(!done\) \{[\s\S]*?sequence\.slice\(0, idx\)/);
+  assert.match(src, /setTimeout\(\(\) => onJumpTo\(item\), 50\)/);
+  assert.match(src, /Review completed lesson/);
+});
