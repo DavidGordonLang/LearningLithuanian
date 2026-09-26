@@ -162,8 +162,11 @@ function ScenarioV2Styles() {
         box-shadow: -1px 1px 0 var(--scenario-v2-bubble-border);
       }
       .scenario-v2-bubble-right::after {
-        right: -4px;
-        border-top-right-radius: 5px;
+        right: -1px;
+        bottom: 13px;
+        width: 12px;
+        height: 12px;
+        border-top-right-radius: 4px;
         box-shadow: 1px 1px 0 var(--scenario-v2-bubble-border);
       }
       .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.075); --scenario-v2-bubble-border: rgba(255,255,255,0.075); }
