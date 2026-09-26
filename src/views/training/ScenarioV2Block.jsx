@@ -143,29 +143,23 @@ function ScenarioV2Styles() {
       .scenario-v2-bubble {
         position: relative;
         border-color: var(--scenario-v2-bubble-border);
+        border-width: 1.35px;
         background: var(--scenario-v2-bubble-bg);
         box-shadow: 0 10px 24px rgba(0,0,0,0.16);
       }
-      .scenario-v2-bubble-left::after {
-        content: "";
-        position: absolute;
-        bottom: 12px;
-        left: -4px;
-        width: 14px;
-        height: 14px;
-        background: var(--scenario-v2-bubble-bg);
-        border-bottom-left-radius: 5px;
-        box-shadow: -1px 1px 0 var(--scenario-v2-bubble-border);
-        transform: rotate(45deg);
-      }
       .scenario-v2-tail {
         position: absolute;
-        right: -11px;
         bottom: 7px;
         width: 20px;
         height: 24px;
         overflow: visible;
         pointer-events: none;
+      }
+      .scenario-v2-tail-right { right: -11px; }
+      .scenario-v2-tail-left {
+        left: -11px;
+        transform: scaleX(-1);
+        transform-origin: center;
       }
       .scenario-v2-tail-fill {
         fill: var(--scenario-v2-bubble-bg);
@@ -173,15 +167,15 @@ function ScenarioV2Styles() {
       .scenario-v2-tail-stroke {
         fill: none;
         stroke: var(--scenario-v2-bubble-border);
-        stroke-width: 1.25;
+        stroke-width: 1.5;
         stroke-linecap: round;
         stroke-linejoin: round;
         vector-effect: non-scaling-stroke;
       }
-      .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.075); --scenario-v2-bubble-border: rgba(255,255,255,0.075); }
-      .scenario-v2-final-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.12); --scenario-v2-bubble-border: rgba(52,211,153,0.12); }
-      .scenario-v2-user-bubble { --scenario-v2-bubble-bg: rgba(22,163,74,0.88); --scenario-v2-bubble-border: rgba(134,239,172,0.18); }
-      .scenario-v2-user-label { color: rgba(240,253,244,0.78); }
+      .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.085); --scenario-v2-bubble-border: rgba(255,255,255,0.18); }
+      .scenario-v2-final-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.14); --scenario-v2-bubble-border: rgba(52,211,153,0.34); }
+      .scenario-v2-user-bubble { --scenario-v2-bubble-bg: rgba(22,163,74,0.92); --scenario-v2-bubble-border: rgba(187,247,208,0.42); }
+      .scenario-v2-user-label { color: rgba(255,255,255,0.88); }
       .scenario-v2-user-text { color: #ffffff; }
       .scenario-v2-user-support { color: rgba(240,253,244,0.78); }
       .scenario-v2-support-panel { background: rgba(14,165,233,0.08); border-color: rgba(56,189,248,0.22); color: #e0f2fe; }
@@ -211,20 +205,20 @@ function ScenarioV2Styles() {
       html[data-theme="light"] .scenario-v2-speaker-bubble,
       html[data-theme="light"] .scenario-v2-feedback-inset,
       html[data-theme="light"] .scenario-v2-option {
-        --scenario-v2-bubble-bg: rgba(247,239,224,0.98);
-        --scenario-v2-bubble-border: rgba(94,75,45,0.11);
+        --scenario-v2-bubble-bg: #f7efe0;
+        --scenario-v2-bubble-border: #d7c9b0;
         background: var(--scenario-v2-bubble-bg);
         border-color: var(--scenario-v2-bubble-border);
       }
       html[data-theme="light"] .scenario-v2-final-bubble {
-        --scenario-v2-bubble-bg: rgba(225,239,224,0.98);
-        --scenario-v2-bubble-border: rgba(107,143,110,0.18);
+        --scenario-v2-bubble-bg: #e1efe0;
+        --scenario-v2-bubble-border: #88a78a;
         background: var(--scenario-v2-bubble-bg);
         border-color: var(--scenario-v2-bubble-border);
       }
       html[data-theme="light"] .scenario-v2-user-bubble {
-        --scenario-v2-bubble-bg: rgba(109,151,113,0.92);
-        --scenario-v2-bubble-border: rgba(67,110,76,0.16);
+        --scenario-v2-bubble-bg: #789e7a;
+        --scenario-v2-bubble-border: #55755b;
         background: var(--scenario-v2-bubble-bg);
         border-color: var(--scenario-v2-bubble-border);
       }
@@ -428,12 +422,16 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
 
       {showSpeaker ? (
         <div className="scenario-v2-fade flex justify-start">
-          <div className={cn("scenario-v2-bubble scenario-v2-bubble-left max-w-[86%] rounded-[22px] border px-4 py-3", final ? "scenario-v2-final-bubble" : "scenario-v2-speaker-bubble")}>
-            <div className="mb-1 flex items-center justify-between gap-3">
+          <div className={cn("scenario-v2-bubble max-w-[86%] rounded-[22px] border px-4 py-3", final ? "scenario-v2-final-bubble" : "scenario-v2-speaker-bubble")}>
+            <svg className="scenario-v2-tail scenario-v2-tail-left" viewBox="0 0 20 24" aria-hidden="true">
+              <path className="scenario-v2-tail-fill" d="M1 1C2.4 8.6 6.8 14.2 18 16.2C13.6 20.4 8.5 22.6 1 22.8Z" />
+              <path className="scenario-v2-tail-stroke" d="M1 1C2.4 8.6 6.8 14.2 18 16.2C13.6 20.4 8.5 22.6 1 22.8" />
+            </svg>
+            <div className="relative z-[1] mb-1 flex items-center justify-between gap-3">
               <div className="min-w-0 text-[11px] font-semibold text-zinc-400">{speakerLabel}</div>
               {audioEnabled ? <AudioIconButton text={turn.speakerText} playText={playText} playOptions={playOptions} label="Replay speaker line" /> : null}
             </div>
-            <div className="text-[17px] font-semibold leading-snug text-zinc-100">
+            <div className="relative z-[1] text-[17px] font-semibold leading-snug text-zinc-100">
               {audioEnabled ? (
                 <InteractivePhraseText text={turn.speakerText} playText={(text, options) => playText?.(text, { ...playOptions, ...options })} />
               ) : (
@@ -462,7 +460,7 @@ function ScenarioV2UserBubble({ item, playText }) {
   return (
     <div className="flex justify-end">
       <div className={cn("scenario-v2-bubble scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3", ["acceptable", "awkward"].includes(item.result) && "scenario-v2-soft-bubble")}>
-        <svg className="scenario-v2-tail" viewBox="0 0 20 24" aria-hidden="true">
+        <svg className="scenario-v2-tail scenario-v2-tail-right" viewBox="0 0 20 24" aria-hidden="true">
           <path className="scenario-v2-tail-fill" d="M1 1C2.4 8.6 6.8 14.2 18 16.2C13.6 20.4 8.5 22.6 1 22.8Z" />
           <path className="scenario-v2-tail-stroke" d="M1 1C2.4 8.6 6.8 14.2 18 16.2C13.6 20.4 8.5 22.6 1 22.8" />
         </svg>
