@@ -69,3 +69,15 @@ Before a curriculum/content batch is considered complete:
 - The batch does not intentionally alter any invariant above unless that behaviour change is separately agreed first.
 
 The automated contract tests live in `tests/learningRegressionContracts.test.mjs`. They are deliberately structural as well as behavioural: if a future refactor changes an implementation path, update the test only after confirming the protected user behaviour still exists.
+
+## C3 learner-state contract
+
+- Progress is scoped to account and `CURRICULUM_ID`. Structural lesson/block identity changes invalidate interpreted progress automatically; bump `CURRICULUM_EPOCH` when existing IDs acquire different meaning without a structural change. Do not renumber IDs to mean different material while retaining the epoch.
+- The current version lives in `user_game.data.learningCurricula[CURRICULUM_ID]`. Unversioned/older data is retained but grants no current completion, score or resume credit. No historical index migration or bulk data reset is implied.
+- Resume requires a valid authored block ID and completed earlier block IDs, never an array-position fallback. Persist completed/wrong block sets at each interaction. Replay the current block on reopen, preserve earlier mistakes, and retain first-completion metrics / best-lesson XP semantics.
+- Course Continue chooses the latest valid unfinished attempt, with a stable lesson-ID tie-break; otherwise use existing next-course selection. Opening completed Review creates no unfinished attempt and clears no completion.
+- Account hydration is a prerequisite for Training. A failed initial cloud read is not an empty account. A trusted, account/version-scoped local cache supports offline reopen; pending edits are journalled synchronously and retried. Anonymous state is not promoted into an account.
+- Serialize writes, re-read/merge and condition on the existing row timestamp. Conflicts retry rather than overwrite. Completion dominates stale partial state; explicit application resets advance a generation. Late account-A tasks cannot apply to B. Preserve unrelated/legacy JSON when writing.
+- Build freshness reload waits for active lesson exit and a safe save boundary. Never interrupt a running scenario or microphone attempt merely because focus detects a new deployment.
+
+`tests/c3ProgressReliability.test.mjs` executes the real store, auth transitions, lesson handlers, Training hydration gate and PWA focus path with isolated storage/network dependencies. It replaces the old queue/cursor source-string assertions with behavioural coverage. See `BETA3_C3_IMPLEMENTATION.md` for offline limits and the small physical PWA check.

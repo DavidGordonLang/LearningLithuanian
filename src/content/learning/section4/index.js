@@ -1,11 +1,11 @@
 // src/content/learning/section4/index.js
 // Section 4 — Food and Drink
 
-import createModule_4_1 from "./module_4_1";
-import createModule_4_2 from "./module_4_2";
-import createModule_4_3 from "./module_4_3";
-import createModule_4_4 from "./module_4_4";
-import createCheckpoint4 from "./checkpoint_4";
+import createModule_4_1 from "./module_4_1.js";
+import createModule_4_2 from "./module_4_2.js";
+import createModule_4_3 from "./module_4_3.js";
+import createModule_4_4 from "./module_4_4.js";
+import createCheckpoint4 from "./checkpoint_4.js";
 
 export default function createSection4(profile = {}) {
   return {

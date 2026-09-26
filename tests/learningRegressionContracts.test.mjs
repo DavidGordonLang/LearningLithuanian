@@ -210,13 +210,7 @@ test("learner-facing lesson prompts are not forced into uppercase", () => {
   assert.match(src, /text-\[12px\] text-zinc-500 leading-snug mb-2">\{block\.prompt\}/);
 });
 
-test("game progress writes are serialized so stale whole-row snapshots cannot overwrite newer lesson state", () => {
-  const src = source("src/stores/gameStore.js");
-  assert.match(src, /const gameSaveQueues = new Map\(\)/);
-  assert.match(src, /const previous = gameSaveQueues\.get\(userId\) \|\| Promise\.resolve\(\)/);
-  assert.match(src, /return enqueueGameSave\(userId, payload\)/);
-  assert.match(src, /if \(error\) console\.error\("gameStore _save failed:", error\)/);
-});
+// C3 replaces the old queue source check with concurrent write/failure behaviour tests.
 
 test("training resume prefers the most recently active unfinished lesson", () => {
   const trainingSrc = source("src/views/TrainingView.jsx");
@@ -225,18 +219,7 @@ test("training resume prefers the most recently active unfinished lesson", () =>
   assert.match(homeSrc, /const resumeTarget = findLatestInProgressLesson\(allSections, completedLessonIds, lessonProgress\)/);
 });
 
-test("in-progress lesson position is persisted per account and restored by block identity", () => {
-  const lessonSrc = source("src/views/training/LearningLessonView.jsx");
-  const gameSrc = source("src/stores/gameStore.js");
-
-  assert.match(gameSrc, /lessonProgress:\s*\{\}/);
-  assert.match(gameSrc, /setLessonProgress:\s*\(lessonId, blockId, blockIndex, userId\)/);
-  assert.match(gameSrc, /delete nextLessonProgress\[lessonId\]/);
-  assert.match(lessonSrc, /lessonProgress\?\.\[lesson\.id\]/);
-  assert.match(lessonSrc, /blocks\.findIndex\(\(candidate\) => candidate\?\.id === saved\.blockId\)/);
-  assert.match(lessonSrc, /setLessonProgress\(lesson\.id, currentBlock\.id, blockIndex, userId\)/);
-});
-
+// C3 tests execute the real lesson/store resume and scoring paths.
 
 test("lesson and admin resets persist the intended account state instead of using logout reset", () => {
   const settingsSrc = source("src/views/SettingsView.jsx");
@@ -410,7 +393,7 @@ test("lesson scoring counts objective blocks once and Section Complete uses pers
   const gameSrc = source("src/stores/gameStore.js");
 
   assert.match(lessonSrc, /countScoreableBlocks\(lesson\)/);
-  assert.match(lessonSrc, /setWrongBlockIds\(\(prev\) => prev\[currentBlock\.id\]/);
+
   assert.match(lessonSrc, /completeLesson\(lesson\.id, userId, \{/);
   assert.match(lessonSrc, /function BuildPhraseBlock\([^)]*onWrongAnswer/);
   assert.match(lessonSrc, /setCheckState\("wrong"\);\s*onWrongAnswer\?\.\(\)/);

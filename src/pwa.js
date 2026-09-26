@@ -1,3 +1,5 @@
+import { learningUpdateGuard } from "./lib/learningUpdateGuard.js";
+
 // Non-intrusive Service Worker registration
 (function registerSW(){
   if ("serviceWorker" in navigator) {
@@ -77,7 +79,7 @@ async function checkForNewBuild() {
 
     const freshPath = new URL(freshAsset, window.location.origin).pathname;
     if (freshPath !== currentAsset) {
-      window.location.reload();
+      learningUpdateGuard.request(() => window.location.reload());
     }
   } catch (error) {
     // Offline or transient network failures should never interrupt the learner.

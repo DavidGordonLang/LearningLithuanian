@@ -1,11 +1,11 @@
 // src/content/learning/section5/index.js
 // Section 5 — Directions and Places
 
-import createModule_5_1 from "./module_5_1";
-import createModule_5_2 from "./module_5_2";
-import createModule_5_3 from "./module_5_3";
-import createModule_5_4 from "./module_5_4";
-import createCheckpoint5 from "./checkpoint_5";
+import createModule_5_1 from "./module_5_1.js";
+import createModule_5_2 from "./module_5_2.js";
+import createModule_5_3 from "./module_5_3.js";
+import createModule_5_4 from "./module_5_4.js";
+import createCheckpoint5 from "./checkpoint_5.js";
 
 export default function createSection5(profile = {}) {
   return {

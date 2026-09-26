@@ -1,3 +1,4 @@
+import { validAttempt } from "../../lib/curriculumProgress.js";
 // src/views/training/learningProgress.js
 // Pure progression helpers shared by learner-facing course browser views.
 
@@ -143,17 +144,17 @@ export function findLatestInProgressLesson(sections, completedLessonIds, lessonP
       typeof saved === "object" &&
       Number.isFinite(Number(saved.updatedAt))
     ))
-    .sort((a, b) => Number(b[1].updatedAt) - Number(a[1].updatedAt));
+    .sort((a, b) => Number(b[1].updatedAt) - Number(a[1].updatedAt) || a[0].localeCompare(b[0]));
 
-  for (const [lessonId] of candidates) {
+  for (const [lessonId, saved] of candidates) {
     for (const section of list) {
       for (const module of (section?.modules || [])) {
-        if (module?.isSectionCheckpoint && module?.id === lessonId) {
+        if (module?.isSectionCheckpoint && module?.id === lessonId && validAttempt(module, saved)) {
           return { section, module, lesson: module, lessonIndex: 0 };
         }
         const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
         const lessonIndex = lessons.findIndex((lesson) => lesson?.id === lessonId);
-        if (lessonIndex >= 0) {
+        if (lessonIndex >= 0 && validAttempt(lessons[lessonIndex], saved)) {
           return { section, module, lesson: lessons[lessonIndex], lessonIndex };
         }
       }

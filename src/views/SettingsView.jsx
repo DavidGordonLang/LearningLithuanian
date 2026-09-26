@@ -535,7 +535,7 @@ export default function SettingsView({
       setProgressResetting(true);
       const saved = await resetLessonProgress(user?.id);
       if (!saved) throw new Error("Progress is not loaded for this account yet.");
-      showToast?.("Lesson progress reset ✅");
+      showToast?.(useGameStore.getState().syncStatus === "saved" ? "Lesson progress reset ✅" : "Lesson progress reset on this device. Cloud sync is pending.");
     } catch (e) {
       showToast?.("Reset failed: " + (e?.message || "Unknown error"));
     } finally {
@@ -557,7 +557,7 @@ export default function SettingsView({
       setProgressResetting(true);
       const saved = await resetAllProgress(user?.id);
       if (!saved) throw new Error("Progress is not loaded for this account yet.");
-      showToast?.("All progress reset ✅");
+      showToast?.(useGameStore.getState().syncStatus === "saved" ? "All progress reset ✅" : "Progress reset on this device. Cloud sync is pending.");
     } catch (e) {
       showToast?.("Reset failed: " + (e?.message || "Unknown error"));
     } finally {

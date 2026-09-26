@@ -1,3 +1,4 @@
+import { CURRICULUM_ID } from "../src/lib/curriculumProgress.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -13,15 +14,15 @@ function section(id, prefix) {
       {
         id: `${prefix}_m1`,
         lessons: [
-          { id: `${prefix}_l1` },
-          { id: `${prefix}_l2` },
+          { id: `${prefix}_l1`, blocks: [{id:"z"}] },
+          { id: `${prefix}_l2`, blocks: [{id:"older"}] },
           { id: `${prefix}_m1c`, isCheckpoint: true },
         ],
       },
       {
         id: `${prefix}_m2`,
         lessons: [
-          { id: `${prefix}_l3` },
+          { id: `${prefix}_l3`, blocks: [{id:"newer"}] },
           { id: `${prefix}_m2c`, isCheckpoint: true },
         ],
       },
@@ -72,8 +73,8 @@ test("latest unfinished lesson progress wins over the first incomplete lesson", 
     [s1, s2],
     ["s1_l1"],
     {
-      s1_l2: { blockId: "older", blockIndex: 2, updatedAt: 100 },
-      s2_l3: { blockId: "newer", blockIndex: 3, updatedAt: 200 },
+      s1_l2: { curriculumId: CURRICULUM_ID, blockId: "older", completedBlockIds: [], wrongBlockIds: [], updatedAt: 100 },
+      s2_l3: { curriculumId: CURRICULUM_ID, blockId: "newer", completedBlockIds: [], wrongBlockIds: [], updatedAt: 200 },
     }
   );
   assert.equal(target.section.id, "s2");
@@ -87,9 +88,9 @@ test("resume helper ignores completed and stale lesson ids", () => {
     [s1],
     ["s1_l2"],
     {
-      missing_lesson: { blockId: "x", blockIndex: 1, updatedAt: 300 },
-      s1_l2: { blockId: "y", blockIndex: 2, updatedAt: 200 },
-      s1_l1: { blockId: "z", blockIndex: 1, updatedAt: 100 },
+      missing_lesson: { curriculumId: CURRICULUM_ID, blockId: "x", completedBlockIds: [], wrongBlockIds: [], updatedAt: 300 },
+      s1_l2: { curriculumId: CURRICULUM_ID, blockId: "y", completedBlockIds: [], wrongBlockIds: [], updatedAt: 200 },
+      s1_l1: { curriculumId: CURRICULUM_ID, blockId: "z", completedBlockIds: [], wrongBlockIds: [], updatedAt: 100 },
     }
   );
   assert.equal(target.lesson.id, "s1_l1");

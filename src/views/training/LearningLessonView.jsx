@@ -1,3 +1,5 @@
+import { resumeAttempt } from "../../lib/curriculumProgress.js";
+import { learningUpdateGuard } from "../../lib/learningUpdateGuard.js";
 // src/views/training/LearningLessonView.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -2051,60 +2053,32 @@ export default function LearningLessonView({
   preloadText,
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
-  const [phase, setPhase] = useState("loading");
-  const [blockIndex, setBlockIndex] = useState(0);
-  const [completedBlockIds, setCompletedBlockIds] = useState({});
-  const [xpEarned, setXpEarned] = useState(null);
-  const [wrongBlockIds, setWrongBlockIds] = useState({});
-  const wrongAnswerCount = Object.keys(wrongBlockIds).length;
-  const [accuracyPct, setAccuracyPct] = useState(null);
-  const [lessonDone, setLessonDone] = useState(false); // true only after user taps Continue/advance on last block
-  const navBarRef = useRef(null);
-  const completionFiredRef = useRef(false);
-  const resumeInitialisedRef = useRef(null);
-
   const completeLesson = useGameStore((s) => s.completeLesson);
   const earnLessonXP = useGameStore((s) => s.earnLessonXP);
-  const lessonProgress = useGameStore((s) => s.lessonProgress);
-  const gameLoadedForUserId = useGameStore((s) => s._loadedForUserId);
   const setLessonProgress = useGameStore((s) => s.setLessonProgress);
-
-  useEffect(() => {
-    setPhase("loading");
-    setBlockIndex(0);
-    setCompletedBlockIds({});
-    setXpEarned(null);
-    setAccuracyPct(null);
-    setWrongBlockIds({});
-    setLessonDone(false);
-    completionFiredRef.current = false;
-    resumeInitialisedRef.current = null;
-  }, [lesson?.id, userId]);
-
-  useEffect(() => {
-    if (!lesson?.id || !userId || gameLoadedForUserId !== userId) return;
-
-    const resumeKey = `${userId}:${lesson.id}`;
-    if (resumeInitialisedRef.current === resumeKey) return;
-
-    const saved = lessonProgress?.[lesson.id];
-    let nextIndex = 0;
-
-    if (saved && blocks.length > 0) {
-      const blockIdIndex = saved.blockId
-        ? blocks.findIndex((candidate) => candidate?.id === saved.blockId)
-        : -1;
-
-      if (blockIdIndex >= 0) {
-        nextIndex = blockIdIndex;
-      } else if (Number.isInteger(saved.blockIndex)) {
-        nextIndex = Math.max(0, Math.min(saved.blockIndex, blocks.length - 1));
-      }
-    }
-
-    setBlockIndex(nextIndex);
-    resumeInitialisedRef.current = resumeKey;
-  }, [blocks, gameLoadedForUserId, lesson?.id, lessonProgress, userId]);
+  const lessonProgress = useGameStore((s) => s.lessonProgress);
+  const completedLessonIds = useGameStore((s) => s.completedLessonIds);
+  const attemptRef = useRef(null);
+  if (!attemptRef.current) attemptRef.current = resumeAttempt(lesson, lessonProgress?.[lesson?.id], completedLessonIds.includes(lesson?.id));
+  const [phase, setPhase] = useState("loading");
+  const [blockIndex, setBlockIndex] = useState(attemptRef.current.blockIndex);
+  const [completedBlockIds, setCompletedBlockIds] = useState(attemptRef.current.completedBlockIds);
+  const [wrongBlockIds, setWrongBlockIds] = useState(attemptRef.current.wrongBlockIds);
+  const wrongAnswerCount = Object.keys(wrongBlockIds).length;
+  const [xpEarned, setXpEarned] = useState(null);
+  const [accuracyPct, setAccuracyPct] = useState(null);
+  const [lessonDone, setLessonDone] = useState(false);
+  const navBarRef = useRef(null);
+  const completionFiredRef = useRef(false);
+  // TrainingView mounts this keyed view only after account hydration is ready.
+  // Save synchronously at each interaction, not in an unload/close callback.
+  const persistAttempt = useCallback((touch = false) => {
+    const attempt = attemptRef.current;
+    const block = blocks[attempt.blockIndex];
+    if (block) setLessonProgress(lesson.id, block.id, attempt.blockIndex, userId, { ...attempt, touch });
+  }, [blocks, lesson?.id, setLessonProgress, userId]);
+  useEffect(() => { persistAttempt(true); }, [persistAttempt]);
+  useEffect(() => learningUpdateGuard.hold(), []);
 
   const handleLoadingReady = useCallback(() => setPhase("running"), []);
 
@@ -2158,19 +2132,6 @@ export default function LearningLessonView({
   const currentBlock = blocks[blockIndex] || null;
   const totalBlocks = blocks.length;
 
-  useEffect(() => {
-    if (!lesson?.id || !currentBlock?.id || !userId || gameLoadedForUserId !== userId) return;
-    const resumeKey = `${userId}:${lesson.id}`;
-    if (resumeInitialisedRef.current !== resumeKey) return;
-    setLessonProgress(lesson.id, currentBlock.id, blockIndex, userId);
-  }, [
-    blockIndex,
-    currentBlock?.id,
-    gameLoadedForUserId,
-    lesson?.id,
-    setLessonProgress,
-    userId,
-  ]);
   const progressPct = totalBlocks ? Math.round(((blockIndex + 1) / totalBlocks) * 100) : 0;
   const isCurrentCompleted = !!currentBlock?.id && !!completedBlockIds[currentBlock.id];
   const isLastBlock = blockIndex === totalBlocks - 1;
@@ -2189,42 +2150,46 @@ export default function LearningLessonView({
     completionFiredRef.current = true;
     if (lesson?.id) {
       const scoreableBlocks = countScoreableBlocks(lesson);
-      const accuracy = calculateAccuracyPct(wrongAnswerCount, scoreableBlocks);
+      const attemptWrongCount = new Set([...Object.keys(wrongBlockIds), ...(lessonProgress?.[lesson.id]?.wrongBlockIds || [])]).size;
+      const accuracy = calculateAccuracyPct(attemptWrongCount, scoreableBlocks);
       setAccuracyPct(accuracy ?? 100);
       completeLesson(lesson.id, userId, {
-        wrongBlocks: wrongAnswerCount,
+        wrongBlocks: attemptWrongCount,
         scoreableBlocks,
       });
       const base = 30;
-      const earned = Math.max(10, base - wrongAnswerCount * 2);
+      const earned = Math.max(10, base - attemptWrongCount * 2);
       const result = earnLessonXP(lesson.id, earned, userId);
       if (result?.xpGained) setXpEarned(result.xpGained);
-      onLessonComplete?.({ wrongAnswers: wrongAnswerCount, scoreableBlocks, xpAwarded: result?.xpGained || 0 });
+      onLessonComplete?.({ wrongAnswers: attemptWrongCount, scoreableBlocks, xpAwarded: result?.xpGained || 0 });
     } else {
       onLessonComplete?.({ wrongAnswers: 0, scoreableBlocks: 0, xpAwarded: 0 });
     }
   }, [lessonComplete, lesson?.id, userId, completeLesson, earnLessonXP, onLessonComplete, wrongAnswerCount]);
 
+  const moveBlock = useCallback((index) => {
+    attemptRef.current.blockIndex = index;
+    setBlockIndex(index);
+    persistAttempt();
+  }, [persistAttempt]);
   const advanceBlock = useCallback(() => {
-    setBlockIndex((prev) => {
-      if (prev >= totalBlocks - 1) {
-        // Last block — trigger lesson done instead of advancing
-        setLessonDone(true);
-        return prev;
-      }
-      return prev + 1;
-    });
-  }, [totalBlocks]);
+    if (attemptRef.current.blockIndex >= totalBlocks - 1) { setLessonDone(true); return; }
+    moveBlock(attemptRef.current.blockIndex + 1);
+  }, [totalBlocks, moveBlock]);
 
   const markCurrentComplete = useCallback(() => {
-    if (!currentBlock?.id) return;
-    setCompletedBlockIds((prev) => prev[currentBlock.id] ? prev : { ...prev, [currentBlock.id]: true });
-  }, [currentBlock?.id]);
+    if (!currentBlock?.id || attemptRef.current.completedBlockIds[currentBlock.id]) return;
+    attemptRef.current.completedBlockIds = { ...attemptRef.current.completedBlockIds, [currentBlock.id]: true };
+    setCompletedBlockIds(attemptRef.current.completedBlockIds);
+    persistAttempt();
+  }, [currentBlock?.id, persistAttempt]);
 
   const markCurrentWrong = useCallback(() => {
-    if (!currentBlock?.id) return;
-    setWrongBlockIds((prev) => prev[currentBlock.id] ? prev : { ...prev, [currentBlock.id]: true });
-  }, [currentBlock?.id]);
+    if (!currentBlock?.id || attemptRef.current.wrongBlockIds[currentBlock.id]) return;
+    attemptRef.current.wrongBlockIds = { ...attemptRef.current.wrongBlockIds, [currentBlock.id]: true };
+    setWrongBlockIds(attemptRef.current.wrongBlockIds);
+    persistAttempt();
+  }, [currentBlock?.id, persistAttempt]);
 
   // "Lesson 3" — clean label without nested numbering codes
   const lessonDisplayLabel = typeof lessonIndex === "number" ? `Lesson ${lessonIndex + 1}` : "Lesson";
@@ -2315,7 +2280,7 @@ export default function LearningLessonView({
 
       {showNavBar ? (
         <div ref={navBarRef} className="mt-4 flex items-center gap-3">
-          <ActionButton variant="ghost" onClick={() => setBlockIndex((prev) => Math.max(0, prev - 1))} disabled={blockIndex === 0} className="flex-1">Back</ActionButton>
+          <ActionButton variant="ghost" onClick={() => moveBlock(Math.max(0, blockIndex - 1))} disabled={blockIndex === 0} className="flex-1">Back</ActionButton>
           <ActionButton onClick={advanceBlock} disabled={!isCurrentCompleted || isLastBlock} className="flex-1">Next</ActionButton>
         </div>
       ) : null}

@@ -128,7 +128,7 @@ function findLessonAfter(sections, lessonId) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TrainingView({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
+function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
   const [screen, setScreen] = useState("home");
   const [showSequenceDebug, setShowSequenceDebug] = useState(false);
   const [showScenarioReview, setShowScenarioReview] = useState(false);
@@ -679,4 +679,30 @@ export default function TrainingView({ T, rows, setRows, playText, preloadText, 
       onStartExamPrep={() => setScreen("examPrepHome")}
     />
   );
+}
+
+
+// Keep course selection and lesson initial state behind the same account boundary.
+export default function TrainingView(props) {
+  const userId = useAuthStore(s => s.user?.id);
+  const loadedFor = useGameStore(s => s._loadedForUserId);
+  const resetEpoch = useGameStore(s => s.resetEpoch);
+  const loading = useGameStore(s => s.loading);
+  const status = useGameStore(s => s.syncStatus);
+  const localFailed = useGameStore(s => s.localSaveFailed);
+  const retry = useGameStore(s => s.retrySync);
+  const settingsLoading = useSettingsStore(s => s.loading);
+  const settingsFor = useSettingsStore(s => s._loadedForUserId);
+  if (!userId || loadedFor !== userId || loading || settingsLoading || settingsFor !== userId) {
+    return <div className="max-w-xl mx-auto p-6 text-zinc-200" role="status">
+      {status === "load-error" ? <><p>Your progress could not be loaded. Please retry before starting a lesson.</p><button type="button" className="mt-3 rounded-xl border px-4 py-2" onClick={retry}>Retry</button></> : "Loading your progress…"}
+    </div>;
+  }
+  return <>
+    {(status === "offline" || localFailed) && <div role="status" className="fixed bottom-20 inset-x-3 z-[13000] mx-auto max-w-xl rounded-xl border border-amber-600 bg-zinc-900 px-3 py-2 text-sm text-zinc-100">
+      {localFailed && status !== "saved" ? "Progress is not safely saved. Keep this page open and retry." : localFailed ? "Saved online. Device storage is unavailable." : "Progress is saved on this device. Cloud sync is pending."}
+      <button type="button" className="ml-3 underline" onClick={retry}>Retry sync</button>
+    </div>}
+    <TrainingContent key={`${userId}:${resetEpoch}`} {...props} />
+  </>;
 }

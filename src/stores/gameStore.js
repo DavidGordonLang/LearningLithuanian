@@ -7,32 +7,9 @@
 import { create } from "zustand";
 import { supabase } from "../supabaseClient";
 
-const gameSaveQueues = new Map();
-
-function enqueueGameSave(userId, payload) {
-  const previous = gameSaveQueues.get(userId) || Promise.resolve();
-  const task = previous
-    .catch(() => {})
-    .then(async () => {
-      try {
-        const { error } = await supabase
-          .from("user_game")
-          .upsert(
-            { user_id: userId, data: payload, updated_at: new Date().toISOString() },
-            { onConflict: "user_id" }
-          );
-        if (error) console.error("gameStore _save failed:", error);
-      } catch (err) {
-        console.error("gameStore _save failed:", err);
-      }
-    });
-
-  gameSaveQueues.set(userId, task);
-  task.then(() => {
-    if (gameSaveQueues.get(userId) === task) gameSaveQueues.delete(userId);
-  });
-  return task;
-}
+import { CURRICULUM_ID, curriculumLessons, emptyGameData, sanitiseGameData, validAttempt } from "../lib/curriculumProgress.js";
+import { learningUpdateGuard } from "../lib/learningUpdateGuard.js";
+import { createGamePersistence } from "../lib/gamePersistence.js";
 
 // ─── XP rewards ───────────────────────────────────────────────────────────────
 
@@ -78,40 +55,23 @@ function daysBetween(dateStr1, dateStr2) {
 
 // ─── Default state ────────────────────────────────────────────────────────────
 
-function defaultData() {
-  return {
-    totalXP: 0,
-    streakDays: 0,
-    lastActivityDate: null,   // "YYYY-MM-DD"
-    graceUsedThisWeek: false,
-    completedLessonIds: [],   // array of lesson id strings
-    seenModuleCompleteIds: [], // module ids where celebration has already shown
-    seenSectionCompleteIds: [], // section ids where section celebration has shown
-    lessonXP: {},              // { lessonId: xpEarned } — tracks best XP per lesson
-    lessonMetrics: {},         // { lessonId: { wrongBlocks, scoreableBlocks, accuracyPct, completedAt } }
-    lessonProgress: {},        // { lessonId: { blockId, blockIndex, updatedAt } }
-  };
+const defaultData = emptyGameData;
+function nextResetEpoch(previous) {
+  const next = Math.max(Date.now(), (Number.parseInt(previous, 10) || 0) + 1);
+  return `${next.toString().padStart(16,"0")}:${crypto.randomUUID()}`;
 }
+function browserStorage() { try { return globalThis.localStorage; } catch { return null; } }
 
-// ─── Store ────────────────────────────────────────────────────────────────────
-
-export const useGameStore = create((set, get) => ({
-  // Persisted data
-  totalXP: 0,
-  streakDays: 0,
-  lastActivityDate: null,
-  graceUsedThisWeek: false,
-  completedLessonIds: [],
-  seenModuleCompleteIds: [],
-  seenSectionCompleteIds: [],
-  lessonXP: {},
-  lessonMetrics: {},
-  lessonProgress: {},
-
-  // Meta
+// Dependency injection keeps real store transitions testable without a remote account.
+export function createGameStore({ client = supabase, storage = browserStorage() } = {}) {
+  let persistence;
+  const store = create((set, get) => ({
+  ...defaultData(),
   loading: false,
+  syncStatus: "idle",
+  localSaveFailed: false,
   _loadedForUserId: null,
-  _loadVersion: 0,
+  _activeUserId: null,
 
   // ── Derived (computed on read) ──────────────────────────────────────────────
 
@@ -119,63 +79,25 @@ export const useGameStore = create((set, get) => ({
 
   // ── Init / reset ────────────────────────────────────────────────────────────
 
-  ensureLoadedForUser: async (userId) => {
+  ensureLoadedForUser: (userId) => {
     if (!userId) return;
-    if (get()._loadedForUserId === userId) return;
-
-    const loadVersion = get()._loadVersion + 1;
-    set({ loading: true, _loadVersion: loadVersion });
-
-    try {
-      const { data, error } = await supabase
-        .from("user_game")
-        .select("data")
-        .eq("user_id", userId)
-        .single();
-      if (get()._loadVersion !== loadVersion) return;
-
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 = no rows — first time user, that's fine
-        console.error("gameStore load error:", error);
-      }
-
-      const saved = data?.data || {};
-      const merged = { ...defaultData(), ...saved };
-
-      set({
-        totalXP: merged.totalXP ?? 0,
-        streakDays: merged.streakDays ?? 0,
-        lastActivityDate: merged.lastActivityDate ?? null,
-        graceUsedThisWeek: merged.graceUsedThisWeek ?? false,
-        completedLessonIds: Array.isArray(merged.completedLessonIds) ? merged.completedLessonIds : [],
-        seenModuleCompleteIds: Array.isArray(merged.seenModuleCompleteIds) ? merged.seenModuleCompleteIds : [],
-        seenSectionCompleteIds: Array.isArray(merged.seenSectionCompleteIds) ? merged.seenSectionCompleteIds : [],
-        lessonXP: (merged.lessonXP && typeof merged.lessonXP === "object") ? merged.lessonXP : {},
-        lessonMetrics: (merged.lessonMetrics && typeof merged.lessonMetrics === "object") ? merged.lessonMetrics : {},
-        lessonProgress: (merged.lessonProgress && typeof merged.lessonProgress === "object") ? merged.lessonProgress : {},
-        loading: false,
-        _loadedForUserId: userId,
-      });
-    } catch (err) {
-      if (get()._loadVersion !== loadVersion) return;
-      console.error("gameStore ensureLoadedForUser failed:", err);
-      set({ loading: false, _loadedForUserId: userId });
+    if (get()._activeUserId !== userId) {
+      persistence.reset();
+      set({ ...defaultData(), _activeUserId: userId, _loadedForUserId: null, loading: true });
     }
+    return persistence.load(userId);
   },
-
+  retrySync: () => persistence.retry(),
   reset: () => {
-    set({
-      _loadVersion: get()._loadVersion + 1,
-      ...defaultData(),
-      loading: false,
-      _loadedForUserId: null,
-    });
+    persistence.reset();
+    set({ ...defaultData(), loading: false, syncStatus: "idle", localSaveFailed: false, _loadedForUserId: null, _activeUserId: null });
   },
 
   resetLessonProgress: async (userId) => {
     if (!userId || get()._loadedForUserId !== userId) return false;
 
     set({
+      resetEpoch: nextResetEpoch(get().resetEpoch),
       completedLessonIds: [],
       seenModuleCompleteIds: [],
       seenSectionCompleteIds: [],
@@ -184,6 +106,7 @@ export const useGameStore = create((set, get) => ({
     });
 
     await get()._save(userId);
+    if (get().localSaveFailed && get().syncStatus !== "saved") throw new Error("Progress is not safely saved. Keep this page open and retry sync.");
     return true;
   },
 
@@ -191,23 +114,22 @@ export const useGameStore = create((set, get) => ({
     if (!userId || get()._loadedForUserId !== userId) return false;
 
     set({
-      _loadVersion: get()._loadVersion + 1,
       ...defaultData(),
+      resetEpoch: nextResetEpoch(get().resetEpoch),
       loading: false,
       _loadedForUserId: userId,
     });
 
     await get()._save(userId);
+    if (get().localSaveFailed && get().syncStatus !== "saved") throw new Error("Progress is not safely saved. Keep this page open and retry sync.");
     return true;
   },
 
   // ── Persistence ─────────────────────────────────────────────────────────────
 
-  _save: async (userId) => {
-    if (!userId || get()._loadedForUserId !== userId) return;
-    const { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonMetrics, lessonProgress } = get();
-    const payload = { totalXP, streakDays, lastActivityDate, graceUsedThisWeek, completedLessonIds, seenModuleCompleteIds, seenSectionCompleteIds, lessonXP, lessonMetrics, lessonProgress };
-    return enqueueGameSave(userId, payload);
+  _save: (userId) => {
+    if (!userId || get()._loadedForUserId !== userId) return Promise.resolve(false);
+    return persistence.save(userId);
   },
 
   // ── XP ──────────────────────────────────────────────────────────────────────
@@ -282,7 +204,7 @@ export const useGameStore = create((set, get) => ({
 
   completeLesson: (lessonId, userId, metrics = null) => {
     if (!userId || get()._loadedForUserId !== userId) return { wasAlreadyComplete: false };
-    if (!lessonId) return { wasAlreadyComplete: false };
+    if (!curriculumLessons[lessonId]) return { wasAlreadyComplete: false };
 
     const current = get().completedLessonIds;
     const wasAlreadyComplete = current.includes(lessonId);
@@ -337,25 +259,18 @@ export const useGameStore = create((set, get) => ({
     return get().completedLessonIds.includes(lessonId);
   },
 
-  setLessonProgress: (lessonId, blockId, blockIndex, userId) => {
+  setLessonProgress: (lessonId, blockId, blockIndex, userId, attempt = {}) => {
     if (!userId || get()._loadedForUserId !== userId || !lessonId) return;
-    const safeIndex = Number.isInteger(blockIndex) && blockIndex >= 0 ? blockIndex : 0;
-    const safeBlockId = typeof blockId === "string" && blockId ? blockId : null;
-    const current = get().lessonProgress || {};
-    const previous = current[lessonId];
-
-    if (previous?.blockId === safeBlockId && previous?.blockIndex === safeIndex) return;
-
-    set({
-      lessonProgress: {
-        ...current,
-        [lessonId]: {
-          blockId: safeBlockId,
-          blockIndex: safeIndex,
-          updatedAt: Date.now(),
-        },
-      },
+    if (get().completedLessonIds.includes(lessonId)) return; // reviews do not become resume candidates
+    const record = validAttempt(curriculumLessons[lessonId], {
+      curriculumId: CURRICULUM_ID, blockId, updatedAt: Date.now(),
+      completedBlockIds: Object.keys(attempt.completedBlockIds || {}),
+      wrongBlockIds: Object.keys(attempt.wrongBlockIds || {}),
     });
+    if (!record) return;
+    const previous = get().lessonProgress[lessonId];
+    if (!attempt.touch && previous?.blockId === record.blockId && JSON.stringify(previous.completedBlockIds) === JSON.stringify(record.completedBlockIds) && JSON.stringify(previous.wrongBlockIds) === JSON.stringify(record.wrongBlockIds)) return;
+    set({ lessonProgress: { ...get().lessonProgress, [lessonId]: record } });
     get()._save(userId);
   },
 
@@ -374,7 +289,7 @@ export const useGameStore = create((set, get) => ({
 
   earnLessonXP: (lessonId, xpThisAttempt, userId) => {
     if (!userId || get()._loadedForUserId !== userId) return { xpGained: 0 };
-    if (!lessonId || !xpThisAttempt) return { xpGained: 0 };
+    if (!curriculumLessons[lessonId] || !xpThisAttempt) return { xpGained: 0 };
 
     const { lessonXP, totalXP } = get();
     const previousBest = lessonXP[lessonId] || 0;
@@ -433,3 +348,18 @@ export const useGameStore = create((set, get) => ({
     return get().seenSectionCompleteIds.includes(sectionId);
   },
 }));
+  persistence = createGamePersistence({ client, storage,
+    getData: () => sanitiseGameData(store.getState()),
+    applyData: (data, userId) => {
+      if (store.getState()._activeUserId === userId) store.setState({ ...data, _loadedForUserId: userId });
+    },
+    onStatus: meta => store.setState({ ...meta, loading: meta.syncStatus === "loading" }),
+  });
+  return store;
+}
+export const useGameStore = createGameStore();
+useGameStore.subscribe(s => learningUpdateGuard.setUnsafe(s.localSaveFailed && !["saved", "idle"].includes(s.syncStatus)));
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => { void useGameStore.getState().retrySync(); });
+  window.addEventListener("focus", () => { if (["offline", "load-error"].includes(useGameStore.getState().syncStatus)) void useGameStore.getState().retrySync(); });
+}
