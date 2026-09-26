@@ -124,7 +124,7 @@ export default function useTTSPlayer({
   );
 
   const playText = useCallback(
-    async (text, { slow = false, voice: requestVoice } = {}) => {
+    async (text, { slow = false, voice: requestVoice, signal } = {}) => {
       const raw = String(text || "");
       if (!raw.trim()) return;
 
@@ -133,7 +133,8 @@ export default function useTTSPlayer({
         (error) => {
           if (typeof onError === "function") onError(error);
           else console.warn("Voice error:", error);
-        }
+        },
+        signal
       );
     },
     [getOrFetchBlob, onError]

@@ -6,9 +6,12 @@ export function createAudioPlayback({ createAudio = (url) => new Audio(url), url
     generation += 1;
     active?.finish();
   };
-  const play = async (load, onError) => {
+  const play = async (load, onError, signal) => {
+    if (signal?.aborted) return;
     stop();
     const request = generation;
+    const cancel = () => { if (request === generation) stop(); };
+    signal?.addEventListener("abort", cancel, { once: true });
     try {
       const blob = await load();
       if (!blob || request !== generation) return;
@@ -35,6 +38,8 @@ export function createAudioPlayback({ createAudio = (url) => new Audio(url), url
       });
     } catch (error) {
       if (request === generation) onError?.(error);
+    } finally {
+      signal?.removeEventListener("abort", cancel);
     }
   };
   return { play, stop };

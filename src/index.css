@@ -213,6 +213,9 @@ html[data-theme="light"] .text-emerald-300 { color: #4a7d50; }
 html[data-theme="light"] .text-emerald-400 { color: #6B8F6E; }
 html[data-theme="light"] .text-emerald-500 { color: #5d8060; }
 
+/* Soft-pass selected answers remain amber and readable in the light theme. */
+html[data-theme="light"] .z-soft-answer { color: #92400e; }
+
 html[data-theme="light"] .say-it-fail-status {
   border-color: rgba(146, 64, 14, 0.34);
   background-color: rgba(180, 83, 9, 0.10);
@@ -321,24 +324,12 @@ html[data-theme="light"] .shadow-\[0_0_32px_rgba\(16\,185\,129\,0\.3\)\] {
 }
 
 /* Word tap glow: light mode — sage not emerald */
-html[data-theme="light"] .z-word-glow {
-  animation: zWordGlowLight 0.9s ease-out forwards;
-}
+html[data-theme="light"] .z-word-glow,
 html[data-theme="light"] .z-word-glow-slow {
-  animation: zWordGlowLightSlow 2s ease-in-out infinite;
+  animation: none;
+  color: #047857 !important;
+  text-shadow: 0 0 6px rgba(5,150,105,0.35);
 }
-@keyframes zWordGlowLight {
-  0%   { text-shadow: none; color: inherit; }
-  30%  { text-shadow: 0 0 8px rgba(107,143,110,0.7); color: #4a7d50; }
-  60%  { text-shadow: 0 0 4px rgba(107,143,110,0.35); color: #6B8F6E; }
-  100% { text-shadow: none; color: inherit; }
-}
-@keyframes zWordGlowLightSlow {
-  0%   { text-shadow: none; color: inherit; }
-  40%  { text-shadow: 0 0 10px rgba(107,143,110,0.55); color: #4a7d50; }
-  100% { text-shadow: none; color: inherit; }
-}
-
 /* Helper text glow: light mode — sage not emerald */
 html[data-theme="light"] .helper-glow-fade {
   animation: helperGlowFadeLight 2s ease-out both;

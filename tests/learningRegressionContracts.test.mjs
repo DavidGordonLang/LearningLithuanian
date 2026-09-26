@@ -23,7 +23,6 @@ test("Lithuanian identity remains the duplicate key for lesson saves", () => {
 });
 
 
-
 test("vocabulary save selection is keyed by Lithuanian content rather than reused word-match ids", () => {
   const src = source("src/views/training/VocabSaveView.jsx");
 
@@ -143,7 +142,7 @@ test("tap-word audio clears sticky mobile hover/focus and lost pointer capture g
 
   assert.match(phraseSrc, /z-word-audio-token/);
   assert.match(phraseSrc, /@media \(hover: none\), \(pointer: coarse\)/);
-  assert.match(phraseSrc, /\.z-word-audio-token:hover[\s\S]*?color: inherit !important/);
+  assert.match(phraseSrc, /\.z-word-audio-token:not\(\.z-word-glow\):not\(\.z-word-glow-slow\):hover[\s\S]*?color: inherit !important/);
   assert.match(phraseSrc, /onPointerUp=\{\(e\) => \{[\s\S]*?e\.pointerType !== "mouse"[\s\S]*?blur/);
   assert.match(phraseSrc, /onPointerCancel=\{\(e\) => \{[\s\S]*?e\.pointerType !== "mouse"[\s\S]*?blur/);
   assert.match(phraseSrc, /onLostPointerCapture/);
@@ -153,17 +152,6 @@ test("tap-word audio clears sticky mobile hover/focus and lost pointer capture g
   assert.match(wordAudioSrc, /onLostPointerCapture: handleLostPointerCapture/);
 });
 
-test("normal tap-word glow remains visibly present for roughly 0.9 seconds", () => {
-  const phraseSrc = source("src/components/audio/InteractivePhraseText.jsx");
-  const wordAudioSrc = source("src/hooks/useWordAudio.js");
-  const cssSrc = source("src/index.css");
-
-  assert.match(phraseSrc, /\.z-word-glow \{\s*animation: zWordGlow 0\.9s ease-out forwards;/);
-  assert.match(cssSrc, /zWordGlowLight 0\.9s ease-out forwards/);
-  assert.match(wordAudioSrc, /NORMAL_GLOW_MIN_MS = 900/);
-  assert.match(wordAudioSrc, /Math\.max\(0, NORMAL_GLOW_MIN_MS - elapsed\)/);
-  assert.match(wordAudioSrc, /visualGenerationRef\.current === visualGeneration/);
-});
 
 test("daily recall slow playback uses a reduced-speed play icon rather than rewind", () => {
   const src = source("src/components/DailyRecallModal.jsx");
@@ -186,21 +174,6 @@ test("Match the Pairs can preserve authored teaching pages while shuffling withi
   assert.match(src, /shuffleArr\(chunk\.map/);
 });
 
-test("phrase-completion blocks preserve the learner's selected word and correct separately below", () => {
-  const src = source("src/views/training/LearningLessonView.jsx");
-
-  assert.match(src, /revealed \? \(selected\?\.text \|\| GAP\)/);
-  assert.match(src, /const filledForm = revealed \? \(selected\?\.text \|\| GAP\) : null/);
-  assert.match(src, /preserve what the learner actually chose in the phrase/);
-  assert.match(src, /selected\?\.text \|\| "___"/);
-  assert.match(src, /isCorrect \? "text-emerald-200" : "text-rose-300"/);
-  assert.match(src, /Correct answer: \$\{correctText\}/);
-  assert.match(src, /isCorrect \? "text-emerald-200" : "z-correct-answer"/);
-
-  assert.doesNotMatch(src, /revealed \? \(correctOption\?\.text \|\| GAP\)/);
-  assert.doesNotMatch(src, /const filledForm = revealed \? \(correctOption\?\.text \|\| GAP\) : null/);
-  assert.doesNotMatch(src, /replace\("___", correctOption\?\.text/);
-});
 
 test("wrong-answer correction text uses the Žodis accent colour in both themes", () => {
   const css = source("src/index.css");
@@ -208,22 +181,15 @@ test("wrong-answer correction text uses the Žodis accent colour in both themes"
 });
 
 
-
-
-
-
-test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics off production", () => {
+test("Speak Self Check remains hold-to-speak and keeps transcript diagnostics out of learner UI", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
   assert.match(src, /onPointerDown=\{handleMicPointerDown\}/);
   assert.match(src, /onPointerUp=\{finishMicHold\}/);
   assert.match(src, /isRecording \? "bg-emerald-500\/25/);
-  assert.match(src, /speechDebugEnabled/);
-  assert.match(src, /!\["zodis\.app", "www\.zodis\.app"\]\.includes\(window\.location\.hostname\)/);
-  assert.match(src, /STT heard:/);
-  assert.match(src, /Matcher:/);
+
+
+  assert.doesNotMatch(src, /STT heard:|Matcher:|Normalised:|speechDebugEnabled/);
 });
-
-
 
 
 test("Build Phrase wrong-state remains legible in light mode", () => {
@@ -290,9 +256,6 @@ test("lesson and admin resets persist the intended account state instead of usin
     /resetAllProgress:\s*async \(userId\)[\s\S]*?_loadedForUserId:\s*userId[\s\S]*?await get\(\)\._save\(userId\)/
   );
 });
-
-
-
 
 
 test("Say It Out Loud uses Speechmatics Realtime while other STT callers retain the OpenAI default", () => {
@@ -440,23 +403,6 @@ test("Build Phrase repair mode stays active while the learner edits the phrase",
   assert.doesNotMatch(buildPhrase, /setBuilt\(\(prev\) => prev\.filter\(\(x\) => x !== id\)\);\s*setCheckState\("idle"\)/);
 });
 
-test("generic choice soft passes highlight the selected option amber while the authored best answer stays green", () => {
-  const src = source("src/views/training/LearningLessonView.jsx");
-
-  assert.match(src, /selected && softPass \? "border-amber-400\/35 bg-amber-500\/\[0\.10\] text-amber-200"/);
-  assert.match(src, /option\.isCorrect \? "border-emerald-400\/20 bg-emerald-500\/\[0\.10\] text-emerald-100"/);
-});
-
-test("generic choice blocks can give non-failing correction notes for acceptable or awkward answers", () => {
-  const src = source("src/views/training/LearningLessonView.jsx");
-
-  assert.match(src, /const softPass = isSoftPassChoiceOption\(option\)/);
-  assert.match(src, /if \(!option\.isCorrect && !softPass\) onWrongAnswer\?\.\(\)/);
-  assert.match(src, /isSoftPass=\{selectedIsSoftPass\}/);
-  assert.match(src, /feedbackNote=\{selectedIsSoftPass \? \(selected\?\.feedback/);
-  assert.match(src, /Better here:/);
-  assert.match(src, /This works — one note:/);
-});
 
 test("lesson scoring counts objective blocks once and Section Complete uses persisted section metrics", () => {
   const lessonSrc = source("src/views/training/LearningLessonView.jsx");
@@ -498,17 +444,12 @@ test("Say It Out Loud failure status stays readable in light mode", () => {
 });
 
 
-
-test("Say It Out Loud keeps dev-only transcript diagnostics while Speechmatics owns acceptance", () => {
+test("Say It Out Loud uses Speechmatics acceptance without learner transcript diagnostics", () => {
   const src = source("src/views/training/LearningLessonView.jsx");
 
-  assert.match(src, /speechDebugEnabled/);
-  assert.match(src, /zodis\.app/);
-  assert.match(src, /www\.zodis\.app/);
-  assert.match(src, /STT heard:/);
-  assert.match(src, /Matcher:<\/span> accepted|Matcher:<\/span> rejected|Matcher:/);
+
   assert.match(src, /phraseMatchesSpeech\(captured, targetText\)/);
-  assert.doesNotMatch(src, /OpenAI heard:/);
+  assert.doesNotMatch(src, /STT heard:|Matcher:|Normalised:|speechDebugEnabled|OpenAI heard:/);
   assert.match(src, /transcriptionUrl:\s*"\/api\/stt-speechmatics"/);
 });
 

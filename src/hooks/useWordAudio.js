@@ -9,7 +9,7 @@ export default function useWordAudio({
   moveThresholdPx = 10,
 }) {
   const [pressing, setPressing] = useState(false);
-  // "normal" | "slow" | null — drives glow animation in WordToken
+  // "normal" | "slow" | null — drives the timed active colour in WordToken
   const [playing, setPlaying] = useState(null);
 
   const stateRef = useRef({
@@ -22,8 +22,8 @@ export default function useWordAudio({
   });
 
   const timerRef = useRef(0);
-  const visualGenerationRef = useRef(0);
-  const NORMAL_GLOW_MIN_MS = 900;
+  const visualTimerRef = useRef(0);
+  const WORD_HIGHLIGHT_MS = 1000;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -46,6 +46,7 @@ export default function useWordAudio({
   useEffect(() => {
     return () => {
       clearTimer();
+      window.clearTimeout(visualTimerRef.current);
     };
   }, [clearTimer]);
 
@@ -54,26 +55,13 @@ export default function useWordAudio({
       const text = String(word || "").trim();
       if (!text || disabled || typeof playText !== "function") return;
 
-      const visualGeneration = visualGenerationRef.current + 1;
-      visualGenerationRef.current = visualGeneration;
-      const startedAt = Date.now();
-
+      window.clearTimeout(visualTimerRef.current);
       setPlaying(slow ? "slow" : "normal");
+      visualTimerRef.current = window.setTimeout(() => setPlaying(null), WORD_HIGHLIGHT_MS);
       try {
         await playText(text, slow ? { slow: true } : undefined);
       } catch {
         // playback errors are already handled by the shared TTS layer
-      } finally {
-        if (!slow) {
-          const elapsed = Date.now() - startedAt;
-          const remaining = Math.max(0, NORMAL_GLOW_MIN_MS - elapsed);
-          if (remaining > 0) {
-            await new Promise((resolve) => window.setTimeout(resolve, remaining));
-          }
-        }
-        if (visualGenerationRef.current === visualGeneration) {
-          setPlaying(null);
-        }
       }
     },
     [disabled, playText, word]
@@ -87,7 +75,7 @@ export default function useWordAudio({
 
   const handlePointerDown = useCallback(
     (e) => {
-      if (disabled) return;
+      if (disabled || stateRef.current.active) return;
       if (typeof playText !== "function") return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
 
@@ -122,7 +110,7 @@ export default function useWordAudio({
 
   const handlePointerMove = useCallback(
     (e) => {
-      if (!stateRef.current.active || stateRef.current.canceled) return;
+      if (!stateRef.current.active || stateRef.current.canceled || e.pointerId !== stateRef.current.pointerId) return;
 
       const dx = (e.clientX ?? 0) - stateRef.current.startX;
       const dy = (e.clientY ?? 0) - stateRef.current.startY;
@@ -137,9 +125,11 @@ export default function useWordAudio({
 
   const handlePointerUp = useCallback(
     async (e) => {
+      if (e.pointerId !== stateRef.current.pointerId) return;
       const wasActive = stateRef.current.active;
       const wasCanceled = stateRef.current.canceled;
       const longFired = stateRef.current.longFired;
+      stateRef.current.active = false;
 
       try {
         if (e.currentTarget?.releasePointerCapture && e.pointerId != null) {
@@ -149,8 +139,6 @@ export default function useWordAudio({
 
       clearTimer();
       setPressing(false);
-
-      stateRef.current.active = false;
 
       if (!wasActive || wasCanceled || longFired) {
         stateRef.current.pointerId = null;
@@ -165,6 +153,7 @@ export default function useWordAudio({
 
   const handlePointerCancel = useCallback(
     (e) => {
+      if (e.pointerId !== stateRef.current.pointerId) return;
       try {
         if (e.currentTarget?.releasePointerCapture && e.pointerId != null) {
           e.currentTarget.releasePointerCapture(e.pointerId);
@@ -188,6 +177,7 @@ export default function useWordAudio({
   return {
     pressing,
     playing,
+    play,
     handlers: {
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,

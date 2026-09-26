@@ -38,3 +38,26 @@ test('current errors are reported once and stale request errors are ignored', as
   player.stop(); reject(new Error('old')); await a;
   assert.deepEqual(errors, ['offline']);
 });
+test('scoped abort stops active playback and prevents pending or pre-aborted audio', async () => {
+  const { player, played, revoked } = setup();
+  const active = new AbortController();
+  const a = player.play(async () => 'learner', undefined, active.signal);
+  await Promise.resolve(); await Promise.resolve(); active.abort(); await a;
+  assert.deepEqual(revoked, ['learner']);
+  const pending = deferred(), scope = new AbortController();
+  const b = player.play(() => pending.promise, undefined, scope.signal);
+  scope.abort(); pending.resolve('late'); await b;
+  await player.play(async () => 'aborted', undefined, scope.signal);
+  assert.deepEqual(played, ['learner']);
+});
+test('aborting an obsolete scenario scope cannot stop a newer audio owner', async () => {
+  const { player, played, revoked, audios } = setup();
+  const scope = new AbortController(), pending = deferred();
+  const old = player.play(() => pending.promise, undefined, scope.signal);
+  const latest = player.play(async () => 'new lesson');
+  await Promise.resolve(); await Promise.resolve(); scope.abort();
+  assert.deepEqual(revoked, []);
+  pending.resolve('old scenario'); await old;
+  assert.deepEqual(played, ['new lesson']);
+  audios[0].onended(); await latest;
+});

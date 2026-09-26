@@ -13,14 +13,38 @@ export async function componentHarness(path, name, imports = {}) {
     const { code } = await transformWithEsbuild(exposed, path, { loader: "jsx", format: "cjs", jsx: "transform" });
     compiled.set(key, code);
   }
+  for (const entry of Object.values(imports)) {
+    if (!entry?.source) continue;
+    const dependencyKey = `${entry.source}:default`;
+    if (!compiled.has(dependencyKey)) {
+      const source = await readFile(new URL(`../../${entry.source}`, import.meta.url), "utf8");
+      const { code } = await transformWithEsbuild(source, entry.source, { loader: "jsx", format: "cjs", jsx: "transform" });
+      compiled.set(dependencyKey, code);
+    }
+  }
   const slots = [];
   let cursor = 0;
   let effects = [];
   const timers = new Map();
   let timerId = 0;
-  const later = (fn) => { timers.set(++timerId, fn); return timerId; };
+  let now = 0;
+  const later = (fn, delay = 0) => { timers.set(++timerId, { fn, at: now + delay }); return timerId; };
+  const clear = id => timers.delete(id);
+  class ClockDate extends Date { static now() { return now; } }
+  const advanceTime = ms => {
+    const end = now + ms;
+    for (;;) {
+      const next = [...timers.entries()].filter(([,t]) => t.at <= end).sort((a,b) => a[1].at-b[1].at)[0];
+      if (!next) break;
+      const [id,timer] = next;
+      timers.delete(id); now = timer.at; timer.fn();
+    }
+    now = end;
+  };
   const sameDeps = (a, b) => a && b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
   const react = {
+    memo: component => component,
+    Fragment: Symbol.for("react.fragment"),
     createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
     useState(initial) {
       const index = cursor++;
@@ -47,23 +71,30 @@ export async function componentHarness(path, name, imports = {}) {
   const dependencies = { react, "react-dom": { createPortal: node => node }, ...imports };
   const require = id => {
     if (!(id in dependencies)) throw new Error(`Undeclared test dependency: ${id}`);
+    if (dependencies[id]?.source) dependencies[id] = evaluate(compiled.get(`${dependencies[id].source}:default`));
     return dependencies[id];
   };
-  const module = { exports: {} };
-  new Function("require", "module", "exports", "setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "document", compiled.get(key))(
-    require, module, module.exports, later, id => timers.delete(id), later, id => timers.delete(id), { body: {} },
-  );
+  function evaluate(code) {
+    const module = { exports: {} };
+    new Function("require", "module", "exports", "setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "document", "window", "Date", code)(
+      require, module, module.exports, later, clear, later, clear, { body: {} }, { setTimeout: later, clearTimeout: clear, addEventListener(){}, removeEventListener(){} }, ClockDate,
+    );
+    return module.exports;
+  }
+  const exports = evaluate(compiled.get(key));
   return {
+    advanceTime,
+    unmount() { slots.forEach(slot => slot?.cleanup?.()); timers.clear(); },
     render(props) {
       cursor = 0;
       effects = [];
-      const tree = module.exports[name](props);
+      const tree = exports[name](props);
       effects.forEach(fn => fn());
       return tree;
     },
     flushTimers() {
       const pending = [...timers.entries()];
-      for (const [id, fn] of pending) if (timers.delete(id)) fn();
+      for (const [id, timer] of pending) if (timers.delete(id)) { now = Math.max(now, timer.at); timer.fn(); }
     },
   };
 }

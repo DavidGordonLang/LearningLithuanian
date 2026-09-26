@@ -25,6 +25,29 @@ export function isSoftPassChoiceOption(option) {
   return ["acceptable", "awkward"].includes(option?.result);
 }
 
+export function isCorrectChoiceOption(option) {
+  return !isSoftPassChoiceOption(option) && (option?.isCorrect === true || option?.result === "best");
+}
+
+export function choiceOptionsAreEnglish(block) {
+  if (block?.optionsLanguage === "lt") return false;
+  // Legacy noOptionAudio is conservative: never assume its text is Lithuanian.
+  return block?.optionsLanguage === "en" || block?.interactionMode === "comprehension" ||
+    block?.noOptionAudio === true || block?.type === "listen_mcq" ||
+    (block?.type === "recognise_mcq" && !!block?.prompt?.audioText);
+}
+
+// Explicit authored Lithuanian wins. Never guess a translation from English.
+export function getChoiceAnswerAudio(block, selected, best) {
+  const passed = isCorrectChoiceOption(selected) || isSoftPassChoiceOption(selected);
+  const answer = passed ? selected : best;
+  if (choiceOptionsAreEnglish(block)) {
+    return answer?.learnerText || answer?.answerAudioText || block?.answerAudioText ||
+      block?.targetText || block?.prompt?.audioText || null;
+  }
+  return answer?.audioText || answer?.text || null;
+}
+
 export function countScoreableBlocks(lesson) {
   return (lesson?.blocks || []).filter(isScoreableBlock).length;
 }

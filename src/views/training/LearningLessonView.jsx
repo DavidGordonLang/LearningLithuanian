@@ -7,9 +7,10 @@ import { matchPairsCss } from "./matchPairs/matchPairsStyles";
 import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
 import TrainingBackButton from "./TrainingBackButton";
 import ScenarioV2Block from "./ScenarioV2Block";
-import { calculateAccuracyPct, countScoreableBlocks, isSoftPassChoiceOption } from "../../lib/trainingScoring";
+import AudioPlayButton from "../../components/audio/AudioPlayButton";
+import { calculateAccuracyPct, countScoreableBlocks, isSoftPassChoiceOption, isCorrectChoiceOption, choiceOptionsAreEnglish, getChoiceAnswerAudio } from "../../lib/trainingScoring";
 import { getBuildPhraseDistractorMeaning } from "../../lib/buildPhraseFeedback";
-import { normaliseSpeechForMatch, phraseMatchesSpeech } from "../../lib/speechMatch";
+import { phraseMatchesSpeech } from "../../lib/speechMatch";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -110,17 +111,7 @@ function ActionButton({ children, onClick, disabled = false, variant = "primary"
 }
 
 function AudioIconButton({ text, playText, label = "Play audio" }) {
-  return (
-    <button type="button" data-press aria-label={label}
-      onClick={() => { try { playText?.(text); } catch {} }}
-      className="h-9 w-9 rounded-full border border-white/10 bg-white/[0.04] text-zinc-200 flex items-center justify-center hover:bg-white/[0.07] transition shrink-0">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M11 5L6.8 9H4v6h2.8L11 19V5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M15 9.5C15.667 10.167 16 11 16 12C16 13 15.667 13.833 15 14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M17.5 7C18.833 8.333 19.5 10 19.5 12C19.5 14 18.833 15.667 17.5 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-      </svg>
-    </button>
-  );
+  return <AudioPlayButton text={text} playText={playText} ariaLabel={label} compact />;
 }
 
 // ─── Loading screen ───────────────────────────────────────────────────────────
@@ -168,7 +159,7 @@ function LessonLoadingScreen({ lesson, module, section, lessonDisplayLabel, onRe
 
 // ─── Feedback panel ───────────────────────────────────────────────────────────
 
-function FeedbackPanel({ isCorrect, correctText, correctTranslation, feedbackNote, onContinue }) {
+function FeedbackPanel({ isCorrect, isSoftPass = false, correctText, correctTranslation, feedbackNote, onContinue }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setVisible(true)); return () => cancelAnimationFrame(raf); }, []);
   return (
@@ -182,8 +173,9 @@ function FeedbackPanel({ isCorrect, correctText, correctTranslation, feedbackNot
         </div>
         <div className="flex-1 min-w-0">
           <div className={cn("text-[14px] font-semibold", isCorrect ? "text-emerald-200" : "z-correct-answer")}>
-            {isCorrect ? "Correct!" : `Correct answer: ${correctText}`}
+            {isCorrect ? "Correct!" : isSoftPass ? "This works — one note:" : `Correct answer: ${correctText}`}
           </div>
+          {isSoftPass && correctText ? <div className="mt-1 text-sm">Better here: <span className="z-correct-answer">{correctText}</span></div> : null}
           {/* On wrong answer: show English meaning of the correct answer to aid retention */}
           {!isCorrect && correctTranslation ? (
             <div className="mt-0.5 text-[12px] text-zinc-400 leading-snug">{correctTranslation}</div>
@@ -192,7 +184,7 @@ function FeedbackPanel({ isCorrect, correctText, correctTranslation, feedbackNot
         </div>
       </div>
       <div className="mt-3">
-        <ActionButton onClick={onContinue} variant={isCorrect ? "primary" : "secondary"} className="w-full">Continue</ActionButton>
+        <ActionButton onClick={onContinue} variant={isCorrect || isSoftPass ? "primary" : "secondary"} className="w-full">Continue</ActionButton>
       </div>
     </div>
   );
@@ -260,8 +252,8 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
   const stateClass = revealState === "idle"
     ? selected ? "border-white/25 bg-white/[0.09] text-zinc-100"
       : "border-white/15 bg-white/[0.06] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"
-    : option.isCorrect ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
-    : selected && softPass ? "border-amber-400/35 bg-amber-500/[0.10] text-amber-200"
+    : isCorrectChoiceOption(option) ? "border-emerald-400/20 bg-emerald-500/[0.10] text-emerald-100"
+    : selected && softPass ? "border-amber-400/35 bg-amber-500/[0.10] text-amber-200 z-soft-answer"
     : selected ? "border-rose-400/20 bg-rose-500/[0.08] text-rose-200 line-through opacity-60"
     : "border-white/[0.06] bg-white/[0.02] text-zinc-500";
 
@@ -309,7 +301,7 @@ function ChoiceFeedbackAction({ isCorrect, isSoftPass = false, correctText, corr
           ) : null}
           {feedbackNote ? <div className="mt-0.5 text-[12px] text-zinc-400 leading-snug">{feedbackNote}</div> : null}
           {isSoftPass && betterAnswer ? (
-            <div className="mt-1 text-[12px] text-zinc-400 leading-snug">Better here: <span className="font-medium text-zinc-200">{betterAnswer}</span></div>
+            <div className="mt-1 text-[12px] text-zinc-400 leading-snug">Better here: <span className="font-medium z-correct-answer">{betterAnswer}</span></div>
           ) : null}
         </div>
       </div>
@@ -325,7 +317,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
   const [revealState, setRevealState] = useState("idle");
   const options = Array.isArray(block?.options) ? block.options : [];
   const selected = options.find((o) => o.id === selectedId) || null;
-  const correctOption = options.find((o) => o.isCorrect) || null;
+  const correctOption = options.find(isCorrectChoiceOption) || null;
   const selectedIsSoftPass = isSoftPassChoiceOption(selected);
   const feedbackRef = useRef(null);
 
@@ -349,32 +341,10 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
     setRevealState("revealed");
     onComplete?.();
     const softPass = isSoftPassChoiceOption(option);
-    if (!option.isCorrect && !softPass) onWrongAnswer?.();
-    if (isBestResponse && !block?.noOptionAudio) {
-      // best_response: options are Lithuanian — play selected option if correct,
-      // or play correct option after delay if wrong.
-      // Skipped when noOptionAudio is set (English-only option blocks).
-      if (option.isCorrect || softPass) {
-        try { playText?.(option.text); } catch {}
-      } else {
-        const correct = options.find((o) => o.isCorrect);
-        if (correct?.text && playText) {
-          setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
-        }
-      }
-    } else if (block?.type === "recognise_mcq" && !audioText) {
-      // Form B only: English prompt, Lithuanian options — play correct option text
-      // Form A (Lithuanian prompt + English options) stays completely silent
-      if (option.isCorrect || softPass) {
-        try { playText?.(option.text); } catch {}
-      } else {
-        const correct = options.find((o) => o.isCorrect);
-        if (correct?.text && playText) {
-          setTimeout(() => { try { playText(correct.text); } catch {} }, 600);
-        }
-      }
-    }
-    // listen_mcq and recognise_mcq Form A: never play audio
+    if (!isCorrectChoiceOption(option) && !softPass) onWrongAnswer?.();
+    const answerAudio = getChoiceAnswerAudio(block, option, correctOption);
+    if (answerAudio) { try { Promise.resolve(playText?.(answerAudio)).catch(() => {}); } catch {} }
+
   };
 
   useEffect(() => {
@@ -398,7 +368,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
           {isListen && promptText ? (
             <div className="flex items-center justify-between gap-3 px-1 py-1">
               <div className="text-[22px] font-semibold text-zinc-100">
-                <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
+                {audioText ? <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" /> : promptText}
               </div>
               {audioText ? <AudioIconButton text={audioText} playText={playText} label="Hear the word" /> : null}
             </div>
@@ -423,7 +393,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
             // recognise_mcq and best_response: text prompt with optional audio
             <div className="flex items-start justify-between gap-3">
               <div className="text-[18px] font-semibold text-zinc-100 leading-snug">
-                <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" />
+                {audioText ? <InteractivePhraseText text={promptText} playText={playText} wordClassName="hover:text-emerald-300" /> : promptText}
               </div>
               {audioText ? <AudioIconButton text={audioText} playText={playText} /> : null}
             </div>
@@ -443,10 +413,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
                   playText={playText}
                   playAudio={block?.type === "best_response"}
                   isLithuanian={
-                    !block?.noOptionAudio && (
-                      block?.type === "best_response" ||
-                      (block?.type === "recognise_mcq" && !audioText)
-                    )
+                    !choiceOptionsAreEnglish(block)
                   }
                 />
               ))}
@@ -458,15 +425,15 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
       {revealState === "revealed" ? (
         <div ref={feedbackRef}>
           <ChoiceFeedbackAction
-            isCorrect={!!selected?.isCorrect}
+            isCorrect={isCorrectChoiceOption(selected)}
             isSoftPass={selectedIsSoftPass}
             correctText={correctOption?.text || ""}
             correctTranslation={
-              (!selected?.isCorrect && !selectedIsSoftPass && block?.type === "recognise_mcq" && !audioText)
+              (!isCorrectChoiceOption(selected) && !selectedIsSoftPass && block?.type === "recognise_mcq" && !audioText)
                 ? (block?.prompt?.text || null)
                 : null
             }
-            feedbackNote={selectedIsSoftPass ? (selected?.feedback || null) : (block?.feedback?.correct || null)}
+            feedbackNote={selected?.feedback || (isCorrectChoiceOption(selected) || selectedIsSoftPass ? block?.feedback?.correct : block?.feedback?.wrong || block?.feedback?.correct) || null}
             betterAnswer={selectedIsSoftPass ? (selected?.betterAnswer || correctOption?.text || null) : null}
             onContinue={onAdvance}
           />
@@ -478,12 +445,8 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
 
 function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance, completed }) {
   const [attemptState, setAttemptState] = useState("idle");
-  const [capturedText, setCapturedText] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
   const targetText = block?.targetText || "";
-  const speechDebugEnabled = typeof window !== "undefined" && !["zodis.app", "www.zodis.app"].includes(window.location.hostname);
-  const debugHeard = capturedText ? normaliseSpeechForMatch(capturedText) : "";
-  const debugTarget = targetText ? normaliseSpeechForMatch(targetText) : "";
   const pointerIdRef = React.useRef(null);
   const buttonRef = React.useRef(null);
   const recordingToneActiveRef = React.useRef(false);
@@ -494,7 +457,6 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     translating: false,
     setInput: (text) => {
       const captured = String(text || "").trim();
-      setCapturedText(captured);
       if (phraseMatchesSpeech(captured, targetText)) {
         setAttemptState("result_pass");
         onComplete?.();
@@ -506,11 +468,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     autoTranslate: false,
     onTranslateText: async () => {},
     onSpeechCaptured: () => {
-      setCapturedText("");
       setAttemptState("idle");
     },
     onNoSpeech: () => {
-      setCapturedText("");
       setAttemptState("not_caught");
     },
     onRecordingStart: () => {
@@ -633,14 +593,6 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
           <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[11px] font-bold text-emerald-300 shrink-0">✓</div>
           <div className="text-[13px] text-emerald-200 font-medium">Spoken</div>
         </div>
-        {speechDebugEnabled && capturedText ? (
-          <div className="mt-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-zinc-400">
-            <div><span className="font-semibold text-zinc-300">STT heard:</span> {capturedText}</div>
-            <div><span className="font-semibold text-zinc-300">Normalised:</span> {debugHeard}</div>
-            <div><span className="font-semibold text-zinc-300">Matcher:</span> accepted</div>
-            <div><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
-          </div>
-        ) : null}
         <ActionButton onClick={onAdvance} className="mt-3 w-full">Continue</ActionButton>
       </div>
     );
@@ -675,7 +627,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
                 statusTone === "recording" ? "border-emerald-400/30 bg-emerald-500/[0.08] text-emerald-200"
                 : statusTone === "pending" ? "border-white/10 bg-white/[0.05] text-zinc-300"
                 : statusTone === "checking" ? "border-white/10 bg-white/[0.05] text-zinc-300"
-                : statusTone === "fail" ? "say-it-fail-status border-amber-400/25 bg-amber-500/[0.06] text-amber-200"
+                : statusTone === "fail" ? "say-it-fail-status border-amber-400/25 bg-amber-500/[0.06] text-amber-200 z-soft-answer"
                 : "border-white/10 bg-white/[0.04] text-zinc-400")}>
                 {statusLabel}
               </div>
@@ -706,14 +658,6 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
                   </svg>
                 )}
               </button>
-              {speechDebugEnabled && capturedText ? (
-                <div className="w-full rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-zinc-400">
-                  <div><span className="font-semibold text-zinc-300">STT heard:</span> {capturedText}</div>
-                  <div><span className="font-semibold text-zinc-300">Normalised:</span> {debugHeard}</div>
-                  <div><span className="font-semibold text-zinc-300">Matcher:</span> rejected</div>
-                  <div className="mt-1"><span className="font-semibold text-zinc-300">Target:</span> {debugTarget}</div>
-                </div>
-              ) : null}
               {failedAttempts >= 2 ? (
                 <button
                   type="button"
@@ -1689,9 +1633,10 @@ function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvanc
   const [revealed, setRevealed] = useState(false);
 
   const options = Array.isArray(block?.options) ? block.options : [];
-  const correctOption = options.find((o) => o.isCorrect) || null;
+  const correctOption = options.find(isCorrectChoiceOption) || null;
   const selected = options.find((o) => o.id === selectedId) || null;
-  const isCorrect = !!selected?.isCorrect;
+  const isCorrect = isCorrectChoiceOption(selected);
+  const isSoftPass = isSoftPassChoiceOption(selected);
 
   const GAP = "___";
 
@@ -1705,7 +1650,7 @@ function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvanc
         <span className={cn(
           "inline-block min-w-[80px] text-center border-b-2 mx-1 font-semibold",
           !revealed ? "border-zinc-400 text-transparent select-none" :
-          isCorrect ? "border-emerald-400 text-emerald-200" : "border-rose-400 text-rose-300"
+          isCorrect ? "border-emerald-400 text-emerald-200" : isSoftPass ? "border-amber-400 text-amber-200 z-soft-answer" : "border-rose-400 text-rose-300"
         )}>
           {revealed ? (selected?.text || GAP) : "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0"}
         </span>
@@ -1719,13 +1664,9 @@ function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvanc
     setSelectedId(option.id);
     setRevealed(true);
     onComplete?.();
-    if (!option.isCorrect) {
-      onWrongAnswer?.();
-    } else {
-      if (playText && correctOption?.text) {
-        try { playText(correctOption.text); } catch {}
-      }
-    }
+    if (!isCorrectChoiceOption(option) && !isSoftPassChoiceOption(option)) onWrongAnswer?.();
+    const audio = getChoiceAnswerAudio(block, option, correctOption);
+    if (audio) { try { Promise.resolve(playText?.(audio)).catch(() => {}); } catch {} }
   }
 
   const lines = block?.context_mode === "dialogue" && Array.isArray(block?.lines)
@@ -1785,8 +1726,9 @@ function ContextGapSelect({ block, playText, onComplete, onWrongAnswer, onAdvanc
       {revealed ? (
         <FeedbackPanel
           isCorrect={isCorrect}
-          correctText={correctOption?.text || ""}
-          feedbackNote={block?.explanation || null}
+          isSoftPass={isSoftPass}
+          correctText={selected?.betterAnswer || correctOption?.text || ""}
+          feedbackNote={selected?.feedback || block?.explanation || null}
           onContinue={onAdvance}
         />
       ) : null}
@@ -1802,9 +1744,10 @@ function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvan
   const [revealed, setRevealed] = useState(false);
 
   const options = Array.isArray(block?.options) ? block.options : [];
-  const correctOption = options.find((o) => o.isCorrect) || null;
+  const correctOption = options.find(isCorrectChoiceOption) || null;
   const selected = options.find((o) => o.id === selectedId) || null;
-  const isCorrect = !!selected?.isCorrect;
+  const isCorrect = isCorrectChoiceOption(selected);
+  const isSoftPass = isSoftPassChoiceOption(selected);
 
   const GAP = "___";
 
@@ -1819,7 +1762,7 @@ function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvan
         <span className={cn(
           "inline-block min-w-[80px] text-center border-b-2 mx-1 font-semibold",
           !revealed ? "border-zinc-400 text-transparent select-none" :
-          isCorrect ? "border-emerald-400 text-emerald-200" : "border-rose-400 text-rose-300"
+          isCorrect ? "border-emerald-400 text-emerald-200" : isSoftPass ? "border-amber-400 text-amber-200 z-soft-answer" : "border-rose-400 text-rose-300"
         )}>
           {filledForm || "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0"}
         </span>
@@ -1833,13 +1776,9 @@ function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvan
     setSelectedId(option.id);
     setRevealed(true);
     onComplete?.();
-    if (!option.isCorrect) {
-      onWrongAnswer?.();
-    } else {
-      if (playText && correctOption?.text) {
-        try { playText(correctOption.text); } catch {}
-      }
-    }
+    if (!isCorrectChoiceOption(option) && !isSoftPassChoiceOption(option)) onWrongAnswer?.();
+    const audio = getChoiceAnswerAudio(block, option, correctOption);
+    if (audio) { try { Promise.resolve(playText?.(audio)).catch(() => {}); } catch {} }
   }
 
   return (
@@ -1894,8 +1833,9 @@ function ChooseCorrectForm({ block, playText, onComplete, onWrongAnswer, onAdvan
       {revealed ? (
         <FeedbackPanel
           isCorrect={isCorrect}
-          correctText={correctOption?.text || ""}
-          feedbackNote={block?.explanation || null}
+          isSoftPass={isSoftPass}
+          correctText={selected?.betterAnswer || correctOption?.text || ""}
+          feedbackNote={selected?.feedback || block?.explanation || null}
           onContinue={onAdvance}
         />
       ) : null}
@@ -1912,22 +1852,19 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
 
   const options = Array.isArray(block?.options) ? block.options : [];
   const lines = Array.isArray(block?.lines) ? block.lines : [];
-  const correctOption = options.find((o) => o.isCorrect) || null;
+  const correctOption = options.find(isCorrectChoiceOption) || null;
   const selected = options.find((o) => o.id === selectedId) || null;
-  const isCorrect = !!selected?.isCorrect;
+  const isCorrect = isCorrectChoiceOption(selected);
+  const isSoftPass = isSoftPassChoiceOption(selected);
 
   function handleSelect(option) {
     if (revealed) return;
     setSelectedId(option.id);
     setRevealed(true);
     onComplete?.();
-    if (!option.isCorrect) {
-      onWrongAnswer?.();
-    } else {
-      if (playText && correctOption?.text) {
-        try { playText(correctOption.text); } catch {}
-      }
-    }
+    if (!isCorrectChoiceOption(option) && !isSoftPassChoiceOption(option)) onWrongAnswer?.();
+    const audio = getChoiceAnswerAudio(block, option, correctOption);
+    if (audio) { try { Promise.resolve(playText?.(audio)).catch(() => {}); } catch {} }
   }
 
   function renderLineText(line) {
@@ -1950,7 +1887,7 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
         {parts[0]}
         <span className={cn(
           "font-semibold",
-          isCorrect ? "text-emerald-200" : "text-rose-300"
+          isCorrect ? "text-emerald-200" : isSoftPass ? "text-amber-200 z-soft-answer" : "text-rose-300"
         )}>
           {selected?.text || "___"}
         </span>
@@ -2021,8 +1958,9 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
       {revealed ? (
         <FeedbackPanel
           isCorrect={isCorrect}
-          correctText={correctOption?.text || ""}
-          feedbackNote={block?.explanation || null}
+          isSoftPass={isSoftPass}
+          correctText={selected?.betterAnswer || correctOption?.text || ""}
+          feedbackNote={selected?.feedback || block?.explanation || null}
           onContinue={onAdvance}
         />
       ) : null}
@@ -2031,7 +1969,7 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
 }
 
 
-function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef }) {
+function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef, onExit }) {
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
     case "recognise_mcq": case "listen_mcq": case "best_response":
@@ -2041,7 +1979,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
-    case "scenario_v2": return <ScenarioV2Block block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
+    case "scenario_v2": return <ScenarioV2Block onExit={onExit} block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "context_gap_select": return <ContextGapSelect block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "choose_correct_form": return <ChooseCorrectForm block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "conversation_turn_fill": return <ConversationTurnFill block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
@@ -2357,6 +2295,7 @@ export default function LearningLessonView({
             {!isScenarioBlock && !isChoiceBlock ? <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">{currentBlock?.title || ""}</div> : null}
             {currentBlock ? (
               <BlockRenderer
+                onExit={onBack}
                 key={currentBlock.id}
                 block={currentBlock}
                 playText={playText}

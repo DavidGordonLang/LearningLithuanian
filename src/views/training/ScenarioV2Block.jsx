@@ -74,6 +74,18 @@ function AudioIconButton({ text, playText, playOptions, label = "Play audio" }) 
 function ScenarioV2Styles() {
   return (
     <style>{`
+      .scenario-v2-frame {
+        padding-top: max(1.25rem, env(safe-area-inset-top));
+        padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+        padding-left: max(1.25rem, env(safe-area-inset-left));
+        padding-right: max(1.25rem, env(safe-area-inset-right));
+      }
+      .scenario-v2-soft-answer { color: #fcd34d; }
+      .scenario-v2-user-bubble.scenario-v2-soft-bubble { --scenario-v2-bubble-bg: #713f12; --scenario-v2-bubble-border: #d97706; }
+      html[data-theme="light"] .scenario-v2-screen { background: #f6eede; color: #1c1917; }
+      html[data-theme="light"] .scenario-v2-soft-answer { color: #92400e; }
+      html[data-theme="light"] .scenario-v2-user-bubble.scenario-v2-soft-bubble { --scenario-v2-bubble-bg: #fef3c7; --scenario-v2-bubble-border: #d97706; }
+      html[data-theme="light"] .scenario-v2-soft-bubble .scenario-v2-user-text { color: #92400e; }
       @keyframes scenarioV2Fade {
         from { opacity: 0; transform: translateY(6px); }
         to { opacity: 1; transform: translateY(0); }
@@ -201,16 +213,11 @@ function ScenarioV2Styles() {
   );
 }
 
-function estimateSpeechDelayMs(text) {
-  const length = String(text || "").trim().length;
-  if (!length) return 1000;
-  return Math.min(5600, Math.max(2200, length * 95 + 900));
-}
-
 function autoplayOnce(startedKeysRef, key, text, playText, playOptions) {
   if (!key || !text || startedKeysRef.current.has(key)) return;
   startedKeysRef.current.add(key);
-  Promise.resolve(playText?.(text, playOptions)).catch(() => {});
+  try { return Promise.resolve(playText?.(text, playOptions)).catch(() => {}); }
+  catch { return Promise.resolve(); }
 }
 
 function formatParticipantName(participant, fallback = "Speaker") {
@@ -262,7 +269,7 @@ function optionCanProgress(option) {
 function optionNeedsFeedback(option) {
   const result = option?.result || "wrong";
   if (result === "best") return false;
-  if (result === "acceptable") return !!(option?.feedback || option?.betterAnswer);
+  if (result === "acceptable") return true;
   return true;
 }
 
@@ -270,7 +277,7 @@ function resultMeta(option) {
   const result = option?.result || "wrong";
   const progresses = optionCanProgress(option);
   if (result === "best") return { label: "Best answer", tone: "border-emerald-400/25 bg-emerald-500/[0.08] text-emerald-200" };
-  if (result === "acceptable") return { label: "Acceptable", tone: "border-sky-400/20 bg-sky-500/[0.07] text-sky-200" };
+  if (result === "acceptable") return { label: "Acceptable", tone: "border-amber-400/25 bg-amber-500/[0.07] text-amber-200" };
   if (result === "awkward") return { label: "Awkward, but understandable", tone: "border-amber-400/25 bg-amber-500/[0.07] text-amber-200" };
   if (result === "repair" && progresses) return { label: "Useful repair", tone: "border-violet-400/25 bg-violet-500/[0.07] text-violet-200" };
   if (result === "repair") return { label: "Repair does not fit here", tone: "border-rose-400/25 bg-rose-500/[0.07] text-rose-200" };
@@ -282,24 +289,25 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText, plainT
   const meta = resultMeta(option);
   const progresses = optionCanProgress(option);
   const canTryInstead = option?.result === "awkward";
+  const softPass = ["acceptable", "awkward"].includes(option.result);
 
   return (
     <div className="fixed inset-0 z-[12020] flex items-center justify-center px-4 py-6">
       <div className="scenario-v2-feedback-backdrop absolute inset-0 backdrop-blur-[2px]" aria-hidden="true" />
       <div className="scenario-v2-pop relative w-full max-w-sm">
-        <div className={cn("scenario-v2-feedback-card rounded-[28px] border px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.48)]", meta.tone)}>
+        <div className={cn("scenario-v2-feedback-card max-h-[calc(100dvh-3rem)] overflow-y-auto rounded-[28px] border px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.48)]", meta.tone)}>
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-semibold">{meta.label}</div>
               <div className="scenario-v2-feedback-inset mt-1 rounded-2xl border px-3 py-2">
                 <div className="text-[10px] uppercase tracking-widest text-zinc-500">Your answer</div>
-                <div className="mt-0.5 text-[14px] font-semibold text-zinc-100">{plainText ? option.text : <InteractivePhraseText text={option.text} playText={playText} />}</div>
+                <div className={cn("mt-0.5 text-[14px] font-semibold", softPass ? "scenario-v2-soft-answer" : option.result === "best" ? "z-correct-answer" : "text-rose-300")}>{plainText ? option.text : <InteractivePhraseText text={option.text} playText={playText} />}</div>
               </div>
               {option.feedback ? <div className="mt-2 text-[13px] leading-snug text-zinc-200">{option.feedback}</div> : null}
               {option.betterAnswer ? (
                 <div className="scenario-v2-feedback-inset mt-2 rounded-xl border px-3 py-2">
-                  <div className="text-[10px] uppercase tracking-widest text-zinc-500">Better answer</div>
-                  <div className="mt-0.5 text-[13px] font-semibold text-zinc-100">{plainText ? option.betterAnswer : <InteractivePhraseText text={option.betterAnswer} playText={playText} />}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-zinc-500">Better here</div>
+                  <div className="mt-0.5 text-[13px] font-semibold z-correct-answer">{plainText ? option.betterAnswer : <InteractivePhraseText text={option.betterAnswer} playText={playText} />}</div>
                 </div>
               ) : null}
             </div>
@@ -397,7 +405,7 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
 function ScenarioV2UserBubble({ item, playText }) {
   return (
     <div className="flex justify-end">
-      <div className="scenario-v2-bubble scenario-v2-bubble-right scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3">
+      <div className={cn("scenario-v2-bubble scenario-v2-bubble-right scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3", ["acceptable", "awkward"].includes(item.result) && "scenario-v2-soft-bubble")}>
         <div className="scenario-v2-user-label text-[11px] font-semibold">You</div>
         <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug"><InteractivePhraseText text={item.text} playText={playText} /></div>
         {item.supportText ? <div className="scenario-v2-user-support mt-1 text-[11px] leading-snug">{item.supportText}</div> : null}
@@ -430,13 +438,27 @@ function ScenarioV2CompleteAction({ onComplete }) {
   );
 }
 
-function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onComplete }) {
+function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswer, onExit, onComplete }) {
+  const lifetimeRef = useRef(null);
+  if (!lifetimeRef.current) lifetimeRef.current = new AbortController();
+  const learnerAudioRef = useRef(false);
+  const [learnerAudioPending, setLearnerAudioPending] = useState(false);
+  useEffect(() => {
+    lifetimeRef.current = new AbortController();
+    return () => lifetimeRef.current.abort();
+  }, []);
+  // Replay/help controls must not interrupt the learner turn while it is being
+  // spoken. The same TTS owner supplies completion and scoped cancellation.
+  const playText = (text, options) => learnerAudioRef.current ? Promise.resolve() :
+    suppliedPlayText?.(text, { ...options, signal: lifetimeRef.current.signal });
   const steps = Array.isArray(block?.steps) ? block.steps : [];
   const timersRef = useRef([]);
   const autoplayStartedKeysRef = useRef(new Set());
   const revealedTurnKeyRef = useRef(null);
   const playTextRef = useRef(playText);
   const feedRef = useRef(null);
+  const headingRef = useRef(null);
+  useEffect(() => { headingRef.current?.focus(); }, []);
   const [stepIndex, setStepIndex] = useState(0);
   const [history, setHistory] = useState([]);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -531,15 +553,14 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     revealedTurnKeyRef.current = null;
     setFollowUpPhase(followUpTurn.sceneDirection ? "scene" : "speaker");
     const delay = followUpTurn.sceneDirection ? 650 : 120;
-    const advanceDelay = delay + estimateSpeechDelayMs(followUpTurn.speakerText);
-    queueTimeout(() => {
+    const signal = lifetimeRef.current.signal;
+    queueTimeout(async () => {
       setFollowUpPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
       if (isScenarioTurnAudioEnabled(followUpTurn)) {
-        autoplayOnce(autoplayStartedKeysRef, turnKey, followUpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, followUpTurn));
+        await autoplayOnce(autoplayStartedKeysRef, turnKey, followUpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, followUpTurn));
       }
-    }, delay);
-    queueTimeout(() => {
+      if (signal.aborted) return;
       setHistory((prev) => [
         ...prev,
         {
@@ -557,7 +578,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
       const nextStepId = followUpTurn?.nextStepId || null;
       setFollowUpTurn(null);
       advanceAfterProgressingAnswer(nextStepId);
-    }, advanceDelay);
+    }, delay);
   }, [followUpTurnKey, followUpTurn?.sceneDirection, followUpTurn?.speakerText]);
 
   useEffect(() => {
@@ -567,15 +588,14 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     revealedTurnKeyRef.current = null;
     setHelpPhase(helpTurn.sceneDirection ? "scene" : "speaker");
     const delay = helpTurn.sceneDirection ? 650 : 120;
-    const settleDelay = delay + estimateSpeechDelayMs(helpTurn.speakerText);
-    queueTimeout(() => {
+    const signal = lifetimeRef.current.signal;
+    queueTimeout(async () => {
       setHelpPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
       if (helpTurn.speakerText && isScenarioTurnAudioEnabled(helpTurn)) {
-        autoplayOnce(autoplayStartedKeysRef, turnKey, helpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, helpTurn));
+        await autoplayOnce(autoplayStartedKeysRef, turnKey, helpTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, helpTurn));
       }
-    }, delay);
-    queueTimeout(() => {
+      if (signal.aborted) return;
       setHistory((prev) => [
         ...prev,
         {
@@ -592,7 +612,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         },
       ]);
       setHelpTurn(null);
-    }, settleDelay);
+    }, delay);
   }, [helpTurnKey, helpTurn?.sceneDirection, helpTurn?.speakerText]);
 
   useEffect(() => {
@@ -602,14 +622,15 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     revealedTurnKeyRef.current = null;
     setFinalPhase(finalTurn.sceneDirection ? "scene" : "speaker");
     const delay = finalTurn.sceneDirection ? 650 : 120;
-    queueTimeout(() => {
+    const signal = lifetimeRef.current.signal;
+    queueTimeout(async () => {
       setFinalPhase("speaker");
       revealedTurnKeyRef.current = turnKey;
       if (isScenarioTurnAudioEnabled(finalTurn)) {
-        autoplayOnce(autoplayStartedKeysRef, turnKey, finalTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, finalTurn));
+        await autoplayOnce(autoplayStartedKeysRef, turnKey, finalTurn.speakerText, playTextRef.current, getTurnVoiceOptions(block, finalTurn));
       }
+      if (!signal.aborted) setComplete(true);
     }, delay);
-    queueTimeout(() => setComplete(true), delay + 950);
   }, [finalTurnKey, finalTurn?.sceneDirection, finalTurn?.speakerText]);
 
   function addComprehensionExchange(option) {
@@ -638,6 +659,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           role: "learner",
           speakerLabel: "You",
           text: learnerText,
+          result: option?.result,
           supportText: option?.learnerSupportText || "",
         });
       }
@@ -669,6 +691,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
         role: "learner",
         speakerLabel: "You",
         text: option?.text || "",
+        result: option?.result,
         supportText: option?.supportText || option?.meaningText || "",
       });
       return [...prev, ...additions];
@@ -684,7 +707,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   }
 
   function handleOption(option) {
-    if (selectedOptionForStep || helpTurn || complete) return;
+    if (selectedOptionForStep || helpTurn || complete || learnerAudioRef.current) return;
     if (option?.isScenarioHelp || option?.result === "help") {
       handleScenarioHelp(option);
       return;
@@ -694,7 +717,11 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
       processProgressingOption(option);
       return;
     }
-    setSelectedOption({ stepId: step?.id || null, option });
+    setSelectedOption({ stepId: step?.id || null, option: {
+      ...option,
+      betterAnswer: option.betterAnswer || (["acceptable", "awkward"].includes(option.result)
+        ? step.options.find(candidate => candidate.result === "best")?.text : null),
+    } });
   }
 
   function handleFeedbackContinue() {
@@ -704,9 +731,21 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     processProgressingOption(option);
   }
 
-  function processProgressingOption(option) {
+  async function processProgressingOption(option) {
+    if (learnerAudioRef.current) return;
+    const signal = lifetimeRef.current.signal;
     if (isComprehensionStep) addComprehensionExchange(option);
     else addCurrentExchange(option);
+    if (isComprehensionStep && option.learnerText) {
+      learnerAudioRef.current = true;
+      setLearnerAudioPending(true);
+      try { await suppliedPlayText?.(option.learnerText, { signal }); } catch {}
+      finally {
+        learnerAudioRef.current = false;
+        if (!signal.aborted) setLearnerAudioPending(false);
+      }
+      if (signal.aborted) return;
+    }
     const nextStepId = option?.nextStepId || null;
     if (option?.followUp?.speakerText) {
       setFollowUpTurn({ ...option.followUp, nextStepId });
@@ -738,7 +777,7 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     setStepIndex((prev) => prev + 1);
   }
 
-  const activeSpeakerReady = (stepSpeakerCommitted || turnPhase === "speaker") && !followUpTurn && !helpTurn && !finalTurn && !complete;
+  const activeSpeakerReady = (stepSpeakerCommitted || turnPhase === "speaker") && !followUpTurn && !helpTurn && !finalTurn && !complete && !learnerAudioPending;
   const activeTurn = step && !stepSpeakerCommitted
     ? {
       speakerId: step.speakerId,
@@ -752,25 +791,25 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
     : null;
 
   const content = (
-    <div className="fixed inset-0 z-[12000] bg-zinc-950 text-zinc-100">
-      <div className="mx-auto flex h-[100dvh] max-w-xl flex-col px-4 py-4">
+    <div className="scenario-v2-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100">
+      <div className="scenario-v2-frame mx-auto flex min-h-[100dvh] max-w-xl flex-col px-4 py-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-[11px] uppercase tracking-widest text-zinc-500">Scenario</div>
-            <div className="truncate text-[18px] font-semibold text-zinc-100">{block?.title || "Scenario"}</div>
+            <h1 ref={headingRef} tabIndex={-1} className="break-words text-[18px] font-semibold text-zinc-100 outline-none">{block?.title || "Scenario"}</h1>
             {(block?.sceneIntro || block?.goal) ? (
               <div className="mt-0.5 text-[12px] leading-snug text-zinc-500">
                 {block.sceneIntro || block.goal}
               </div>
             ) : null}
           </div>
-          <button type="button" data-press onClick={onExit} className="rounded-full border border-white/10 px-3 py-1.5 text-[12px] text-zinc-400 transition hover:bg-white/[0.05] hover:text-zinc-200">
+          <button type="button" data-press onClick={() => { lifetimeRef.current.abort(); onExit?.(); }} className="rounded-full border border-white/10 px-3 py-1.5 text-[12px] text-zinc-400 transition hover:bg-white/[0.05] hover:text-zinc-200">
             Exit
           </button>
         </div>
 
-        <div className="scenario-v2-chat-window min-h-0 flex-1 overflow-hidden rounded-[28px] border shadow-[0_18px_50px_rgba(0,0,0,0.32)]">
-          <div ref={feedRef} className={cn("h-full overflow-y-auto px-4 py-4 space-y-4", selectedOptionForStep ? "pb-44" : "")}>
+        <div className="scenario-v2-chat-window min-h-[12rem] flex-1 overflow-hidden rounded-[28px] border shadow-[0_18px_50px_rgba(0,0,0,0.32)]">
+          <div ref={feedRef} className={cn("max-h-[45dvh] overflow-y-auto px-4 py-4 space-y-4", selectedOptionForStep ? "pb-44" : "")}>
             {history.map((item) => (
               <ScenarioV2HistoryItem key={item.id} block={block} item={item} playText={playText} />
             ))}
@@ -846,6 +885,8 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
           </div>
         ) : null}
 
+        {learnerAudioPending ? <div role="status" className="mt-2 text-sm text-zinc-400">Your reply is playing…</div> : null}
+
         {complete ? (
           <ScenarioV2CompleteAction onComplete={onComplete} />
         ) : null}
@@ -866,53 +907,33 @@ function ScenarioV2FocusedMode({ block, playText, onWrongAnswer, onExit, onCompl
   return typeof document !== "undefined" ? createPortal(content, document.body) : null;
 }
 
-export default function ScenarioV2Block({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
-  const [focused, setFocused] = useState(false);
-  const focusItems = Array.isArray(block?.focus) ? block.focus : [];
-  const participants = Array.isArray(block?.participants) ? block.participants : [];
-
-  function handleFocusedComplete() {
-    setFocused(false);
-    onComplete?.();
-    onAdvance?.();
-  }
-
-  return (
-    <div className="space-y-3">
-      <ScenarioV2Styles />
-      <div className="scenario-v2-intro-card rounded-3xl border px-4 py-4">
-        <div className="text-[11px] uppercase tracking-widest text-zinc-600">Scenario V2</div>
-        <div className="mt-2 text-[20px] font-semibold leading-snug text-zinc-100">{block?.title || "Scenario"}</div>
-        {block?.sceneIntro ? <div className="mt-2 text-[13px] leading-snug text-zinc-400">{block.sceneIntro}</div> : null}
-        {block?.goal ? (
-          <div className="mt-3 rounded-2xl border border-emerald-400/15 bg-emerald-500/[0.06] px-3 py-2 text-[12px] leading-snug text-emerald-100">
-            {block.goal}
-          </div>
-        ) : null}
-        {participants.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {participants.map((participant) => (
-              <ParticipantPill key={participant.id || participant.name || participant.label} participant={participant} />
-            ))}
-          </div>
-        ) : null}
-        {focusItems.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {focusItems.map((item) => <SmallMetaPill key={item}>{item}</SmallMetaPill>)}
-          </div>
-        ) : null}
-        <ActionButton onClick={() => setFocused(true)} className="mt-4 w-full">Start scenario</ActionButton>
+export default function ScenarioV2Block({ block, playText, onComplete, onWrongAnswer, onAdvance, onExit }) {
+  const [started, setStarted] = useState(false);
+  const titleRef = useRef(null);
+  useEffect(() => { if (!started) titleRef.current?.focus(); }, [started]);
+  function finish() { onComplete?.(); onAdvance?.(); }
+  const intro = (
+    <section className="scenario-v2-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100" aria-labelledby="scenario-intro-title">
+      <div className="scenario-v2-frame mx-auto flex min-h-[100dvh] max-w-xl flex-col px-5 py-5">
+        {onExit ? <button type="button" onClick={onExit} className="self-start rounded-full border border-white/15 px-4 py-2 text-sm">Back</button> : null}
+        <div className="flex flex-1 flex-col justify-center py-10">
+          <p className="text-sm text-zinc-400">Scenario</p>
+          <h1 id="scenario-intro-title" ref={titleRef} tabIndex={-1} className="mt-3 break-words text-[2rem] font-semibold leading-tight outline-none">{block?.title || "Scenario"}</h1>
+          <p className="mt-6 whitespace-pre-line break-words text-[1.25rem] leading-relaxed text-zinc-200">{block?.sceneIntro || block?.description || block?.goal}</p>
+          <dl className="mt-8 space-y-3 text-base text-zinc-400">
+            {block?.location ? <div><dt className="font-semibold">Where</dt><dd>{block.location}</dd></div> : null}
+            {block?.userRole ? <div><dt className="font-semibold">Your role</dt><dd>{block.userRole}</dd></div> : null}
+            {block?.participants?.length ? <div><dt className="font-semibold">With</dt><dd>{block.participants.map(p => [p.name || p.label, p.role].filter(Boolean).join(" — ")).join(", ")}</dd></div> : null}
+          </dl>
+        </div>
+        <ActionButton onClick={() => setStarted(true)} className="w-full shrink-0">Start scenario</ActionButton>
       </div>
-
-      {focused ? (
-        <ScenarioV2FocusedMode
-          block={block}
-          playText={playText}
-          onWrongAnswer={onWrongAnswer}
-          onExit={() => setFocused(false)}
-          onComplete={handleFocusedComplete}
-        />
-      ) : null}
-    </div>
+    </section>
   );
+  return <>
+    <ScenarioV2Styles />
+    {started ? <ScenarioV2FocusedMode block={block} playText={playText} onWrongAnswer={onWrongAnswer}
+      onExit={() => setStarted(false)} onComplete={finish} />
+      : typeof document !== "undefined" ? createPortal(intro, document.body) : intro}
+  </>;
 }

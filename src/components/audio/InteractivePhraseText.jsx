@@ -12,29 +12,17 @@ function ensureStyles() {
   const el = document.createElement("style");
   el.id = STYLE_ID;
   el.textContent = `
-    @keyframes zWordGlow {
-      0%   { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
-      30%  { text-shadow: 0 0 8px rgba(52,211,153,0.9); color: rgb(110,231,183); }
-      60%  { text-shadow: 0 0 4px rgba(52,211,153,0.4); color: rgb(167,243,208); }
-      100% { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
-    }
-    @keyframes zWordGlowSlow {
-      0%   { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
-      40%  { text-shadow: 0 0 10px rgba(52,211,153,0.7); color: rgb(110,231,183); }
-      100% { text-shadow: 0 0 0px rgba(52,211,153,0); color: inherit; }
-    }
-    .z-word-glow {
-      animation: zWordGlow 0.9s ease-out forwards;
-    }
-    .z-word-glow-slow {
-      animation: zWordGlowSlow 2s ease-in-out infinite;
+    .z-word-glow, .z-word-glow-slow {
+      color: rgb(110,231,183) !important;
+      text-shadow: 0 0 8px rgba(52,211,153,0.7);
+      transition: none;
     }
 
     /* Touch browsers can leave CSS :hover stuck on the last tapped word.
-       The glow animation is the intended touch feedback, so suppress desktop
+       The timed active colour is the intended touch feedback, so suppress desktop
        hover colour on coarse/non-hover pointers after the gesture ends. */
     @media (hover: none), (pointer: coarse) {
-      .z-word-audio-token:hover {
+      .z-word-audio-token:not(.z-word-glow):not(.z-word-glow-slow):hover {
         color: inherit !important;
       }
     }
@@ -51,7 +39,7 @@ function WordToken({
   wordClassName,
   activeWordClassName,
 }) {
-  const { pressing, playing, handlers } = useWordAudio({
+  const { pressing, playing, handlers, play } = useWordAudio({
     word: token.text,
     playText,
     disabled,
@@ -63,7 +51,7 @@ function WordToken({
     e.stopPropagation();
   }, []);
 
-  // Glow animation: wave pulse on normal play, slow pulse on slow play
+  // Keep the active colour steady for the full timed feedback state.
   const glowClass = playing === "slow"
     ? "z-word-glow-slow"
     : playing === "normal"
@@ -112,13 +100,13 @@ function WordToken({
       }}
       onKeyDown={async (e) => {
         if (disabled) return;
-        if (e.key !== "Enter" && e.key !== " ") return;
+        if (e.repeat || (e.key !== "Enter" && e.key !== " ")) return;
 
         e.preventDefault();
         e.stopPropagation();
 
         try {
-          await playText?.(token.text);
+          await play(e.shiftKey);
         } catch {
           // shared audio layer handles surfaced errors
         }
