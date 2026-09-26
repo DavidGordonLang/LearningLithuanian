@@ -9,6 +9,9 @@ export default function createCheckpoint5(profile = {}) {
     code: "5.C",
     title: "Moving Through Real Space",
     purpose: "Bring the whole section together. Prove the learner can navigate a simple real-world location problem.",
+    isCheckpoint: true,
+    isSectionCheckpoint: true,
+    status: "active",
     supportLevel: "low",
     newLanguageLoad: "none",
     blocks: [
