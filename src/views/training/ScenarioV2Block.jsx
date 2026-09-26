@@ -146,28 +146,37 @@ function ScenarioV2Styles() {
         background: var(--scenario-v2-bubble-bg);
         box-shadow: 0 10px 24px rgba(0,0,0,0.16);
       }
-      .scenario-v2-bubble-left::after,
-      .scenario-v2-bubble-right::after {
+      .scenario-v2-bubble-left::after {
         content: "";
         position: absolute;
         bottom: 12px;
+        left: -4px;
         width: 14px;
         height: 14px;
         background: var(--scenario-v2-bubble-bg);
-        transform: rotate(45deg);
-      }
-      .scenario-v2-bubble-left::after {
-        left: -4px;
         border-bottom-left-radius: 5px;
         box-shadow: -1px 1px 0 var(--scenario-v2-bubble-border);
+        transform: rotate(45deg);
       }
-      .scenario-v2-bubble-right::after {
-        right: -1px;
-        bottom: 13px;
-        width: 12px;
-        height: 12px;
-        border-top-right-radius: 4px;
-        box-shadow: 1px 1px 0 var(--scenario-v2-bubble-border);
+      .scenario-v2-tail {
+        position: absolute;
+        right: -11px;
+        bottom: 7px;
+        width: 20px;
+        height: 24px;
+        overflow: visible;
+        pointer-events: none;
+      }
+      .scenario-v2-tail-fill {
+        fill: var(--scenario-v2-bubble-bg);
+      }
+      .scenario-v2-tail-stroke {
+        fill: none;
+        stroke: var(--scenario-v2-bubble-border);
+        stroke-width: 1.25;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
       }
       .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.075); --scenario-v2-bubble-border: rgba(255,255,255,0.075); }
       .scenario-v2-final-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.12); --scenario-v2-bubble-border: rgba(52,211,153,0.12); }
@@ -452,10 +461,14 @@ function ScenarioV2SystemTurn({ block, turn, phase = "speaker", playText, final 
 function ScenarioV2UserBubble({ item, playText }) {
   return (
     <div className="flex justify-end">
-      <div className={cn("scenario-v2-bubble scenario-v2-bubble-right scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3", ["acceptable", "awkward"].includes(item.result) && "scenario-v2-soft-bubble")}>
-        <div className="scenario-v2-user-label text-[11px] font-semibold">You</div>
-        <div className="scenario-v2-user-text mt-1 text-[15px] font-semibold leading-snug"><InteractivePhraseText text={item.text} playText={playText} /></div>
-        {item.supportText ? <div className="scenario-v2-user-support mt-1 text-[11px] leading-snug">{item.supportText}</div> : null}
+      <div className={cn("scenario-v2-bubble scenario-v2-user-bubble max-w-[84%] rounded-[22px] border px-4 py-3", ["acceptable", "awkward"].includes(item.result) && "scenario-v2-soft-bubble")}>
+        <svg className="scenario-v2-tail" viewBox="0 0 20 24" aria-hidden="true">
+          <path className="scenario-v2-tail-fill" d="M1 1C2.4 8.6 6.8 14.2 18 16.2C13.6 20.4 8.5 22.6 1 22.8Z" />
+          <path className="scenario-v2-tail-stroke" d="M1 1C2.4 8.6 6.8 14.2 18 16.2C13.6 20.4 8.5 22.6 1 22.8" />
+        </svg>
+        <div className="scenario-v2-user-label relative z-[1] text-[11px] font-semibold">You</div>
+        <div className="scenario-v2-user-text relative z-[1] mt-1 text-[15px] font-semibold leading-snug"><InteractivePhraseText text={item.text} playText={playText} /></div>
+        {item.supportText ? <div className="scenario-v2-user-support relative z-[1] mt-1 text-[11px] leading-snug">{item.supportText}</div> : null}
       </div>
     </div>
   );
