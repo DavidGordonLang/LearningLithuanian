@@ -522,6 +522,13 @@ export default function createCheckpoint4(profile = {}) {
       {
         id: "s4c_b13",
         type: "word_match",
+        pairPages: [
+          { id: "group_1", label: "Ordering", pairIds: ["m1", "m2", "m3", "m4"] },
+          { id: "group_2", label: "Here, to go and additions", pairIds: ["m5", "m6", "m7", "m8"] },
+          { id: "group_3", label: "Service and payment", pairIds: ["m9", "m10", "m13", "m14"] },
+          { id: "group_4", label: "Preferences and problems", pairIds: ["m11", "m12", "m15", "m16"] },
+          { id: "group_5", label: "Social food and approval", pairIds: ["m17", "m18", "m19", "m20"] },
+        ],
         title: "Match the pairs",
         pairs: [
           { id: "m1",  lt: "Norėčiau kavos.",            en: "I would like coffee.",             audioText: "Norėčiau kavos" },

@@ -1104,6 +1104,13 @@ export default function createModule_1_4(profile = {}) {
           {
             id: "s1m4c_b8",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Help", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Here and there", pairIds: ["m5", "m6", "m7", "m10"] },
+              { id: "group_3", label: "Places", pairIds: ["m8", "m9", "m13", "m14"] },
+              { id: "group_4", label: "Finding and using places", pairIds: ["m11", "m12", "m17", "m18"] },
+              { id: "group_5", label: "You and can", pairIds: ["m15", "m16", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Ar galite man padėti?",    en: "Can you help me?",         audioText: "Ar galite man padėti" },

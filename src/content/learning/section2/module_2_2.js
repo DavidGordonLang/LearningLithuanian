@@ -678,6 +678,13 @@ export default function createModule_2_2(profile = {}) {
           {
             id: "s2m2c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "I and we can", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Polite requests", pairIds: ["m5", "m6", "m7", "m8"] },
+              { id: "group_3", label: "Can and cannot", pairIds: ["m9", "m10", "m11", "m12", "m13"] },
+              { id: "group_4", label: "Allowed or possible", pairIds: ["m14", "m15", "m16", "m17"] },
+              { id: "group_5", label: "Yes, you can", pairIds: ["m18", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Ar galiu…?",                       en: "Can I…?",                              audioText: "Ar galiu" },

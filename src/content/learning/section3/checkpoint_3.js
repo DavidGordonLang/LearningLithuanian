@@ -341,6 +341,13 @@ export default function createCheckpoint3(profile = {}) {
       {
         id: "s3c_b11",
         type: "word_match",
+        pairPages: [
+          { id: "group_1", label: "Numbers", pairIds: ["m1", "m2", "m3", "m4"] },
+          { id: "group_2", label: "Prices and payment", pairIds: ["m5", "m6", "m7", "m8", "m9"] },
+          { id: "group_3", label: "Time and travel", pairIds: ["m10", "m11", "m12", "m13", "m14"] },
+          { id: "group_4", label: "Quantities", pairIds: ["m15", "m16", "m17"] },
+          { id: "group_5", label: "Enough or not enough", pairIds: ["m18", "m19", "m20"] },
+        ],
         title: "Match the pairs",
         pairs: [
           // Numbers

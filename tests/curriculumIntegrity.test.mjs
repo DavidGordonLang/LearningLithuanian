@@ -116,6 +116,7 @@ test("Match Pairs is always the final recap block and stays recap-sized", () => 
     ...checkpoints,
   ];
 
+  let matchBlocks = 0;
   for (const unit of units) {
     const blocks = unit.blocks || [];
     const matches = blocks
@@ -123,21 +124,28 @@ test("Match Pairs is always the final recap block and stays recap-sized", () => 
       .filter(({ block }) => block.type === "word_match");
 
     for (const { block, index } of matches) {
+      matchBlocks++;
       assert.equal(index, blocks.length - 1, `${unit.code || unit.id} word_match must be final`);
       assert.ok(
-        Array.isArray(block.pairs) && block.pairs.length >= 18 && block.pairs.length <= (block.pairPages ? 24 : 22),
+        Array.isArray(block.pairs) && block.pairs.length >= 18 && block.pairs.length <= 24,
         `${unit.code || unit.id} word_match should contain about 20 pairs (up to 24 with authored groups)`
       );
-      if (block.pairPages) {
-        const groupedIds = block.pairPages.flatMap(page => page.pairIds);
-        assert.deepEqual([...groupedIds].sort(), block.pairs.map(pair => pair.id).sort(), `${block.id} groups cover each pair exactly once`);
-        for (const page of block.pairPages) {
-          assert.ok(page.label?.trim(), `${block.id} group has a meaningful label`);
-          assert.ok(page.pairIds.length >= 1 && page.pairIds.length <= 5, `${block.id} group fits one page without filler`);
+      assert.equal(new Set(block.pairs.map(pair => pair.id)).size, block.pairs.length, `${block.id} has unique pair IDs`);
+      assert.ok(Array.isArray(block.pairPages) && block.pairPages.length, `${block.id} has authored pages`);
+      const groupedIds = block.pairPages.flatMap(page => page.pairIds);
+      assert.deepEqual([...groupedIds].sort(), block.pairs.map(pair => pair.id).sort(), `${block.id} groups cover each pair exactly once`);
+      assert.equal(new Set(block.pairPages.map(page => page.id)).size, block.pairPages.length, `${block.id} has unique page IDs`);
+      for (const page of block.pairPages) {
+        assert.ok(page.label?.trim(), `${block.id} group has a meaningful label`);
+        assert.ok(page.pairIds.length >= 1 && page.pairIds.length <= 5, `${block.id} group fits one page without filler`);
+        for (const side of ["lt", "en"]) {
+          const labels = page.pairIds.map(id => block.pairs.find(p => p.id === id)?.[side]?.trim().toLocaleLowerCase("lt"));
+          assert.equal(new Set(labels).size, labels.length, `${block.id}:${page.id} has no visually identical ${side} tiles`);
         }
       }
     }
   }
+  assert.equal(matchBlocks, 27, "all current lesson Match Pairs blocks audited");
 });
 
 test("learner-facing authored prose is not written as all-caps shouting", () => {
@@ -380,4 +388,3 @@ test("every Build Phrase distractor has a learner-facing meaning", () => {
 
   assert.deepEqual(missing, []);
 });
-

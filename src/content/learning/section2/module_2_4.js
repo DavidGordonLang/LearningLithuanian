@@ -649,6 +649,13 @@ export default function createModule_2_4(profile = {}) {
           {
             id: "s2m4c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "What and who", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Where", pairIds: ["m5", "m6", "m7", "m8"] },
+              { id: "group_3", label: "People", pairIds: ["m9", "m10", "m11", "m12"] },
+              { id: "group_4", label: "Earlier needs", pairIds: ["m13", "m14", "m15", "m16"] },
+              { id: "group_5", label: "Earlier forms", pairIds: ["m17", "m18", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Kas?",                    en: "What? / Who? (context)",     audioText: "Kas" },

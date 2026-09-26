@@ -102,7 +102,6 @@ export default function MatchPairsView({
     eligibleRows: eligible,
     totalPairs: 20,
     pagePairs: 5,
-    rightSelectAmberMs: 140,
     correctPulseMs: 520,
     wrongPulseMs: 420,
   });
@@ -163,7 +162,6 @@ export default function MatchPairsView({
   const COL_GAP = 10;
 
   const tileStyle = {
-    height: TILE_H,
     minHeight: TILE_H,
     padding: "10px 12px",
     margin: 0,
@@ -226,7 +224,7 @@ export default function MatchPairsView({
           style={{
             height: "calc(100vh - 260px)",
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-            overflow: "hidden",
+            overflowY: "auto",
           }}
         >
           <div className="mp-cols" style={{ height: "100%", alignItems: "stretch" }}>
@@ -258,7 +256,7 @@ export default function MatchPairsView({
                       "mp-tile",
                       tileTextClass(t.text),
                       amber ? "mp-tile-amber" : "",
-                      matched ? "mp-tile-cleared" : "",
+                      matched && !pulse ? "mp-tile-cleared" : "",
                       pulse
                     )}
                     onClick={() => s.tap(t.id)}
@@ -299,7 +297,7 @@ export default function MatchPairsView({
                       "mp-tile",
                       tileTextClass(t.text),
                       amber ? "mp-tile-amber" : "",
-                      matched ? "mp-tile-cleared" : "",
+                      matched && !pulse ? "mp-tile-cleared" : "",
                       pulse
                     )}
                     onClick={() => s.tap(t.id)}

@@ -35,9 +35,8 @@ function getLt(row) {
  * - Total 20 pairs per run, delivered as 4 pages x 5 pairs
  * - EN always left, LT always right (layout)
  * - User may select either side first; second tap on opposite side attempts match
- * - Correct: big green takeover pulse on both, then tiles fade to ~0.08
- * - Wrong: softer red takeover pulse on both, then revert
- * - Amber selection persists through the pulse (handoff feels smooth)
+ * - Matches settle immediately; the green/red pulse runs without blocking other tiles
+ * - Matched tiles cannot be selected again, even during their pulse
  * - On mismatch, both involved pairIds are marked "wrong" for end review
  */
 export function useMatchPairsSession({
@@ -46,7 +45,6 @@ export function useMatchPairsSession({
   pagePairs = 5,
 
   // timings
-  rightSelectAmberMs = 140,
   correctPulseMs = 520,
   wrongPulseMs = 420,
   pageFadeOutMs = 280,
@@ -75,6 +73,7 @@ export function useMatchPairsSession({
   const [preloadLtTexts, setPreloadLtTexts] = useState([]);
 
   const timersRef = useRef([]);
+  const interactionRef = useRef({ selected: null, matched: new Set(), phase: "ready", done: false, audioSeq: 0 });
 
   function clearTimers() {
     timersRef.current.forEach((t) => clearTimeout(t));
@@ -98,6 +97,7 @@ export function useMatchPairsSession({
 
   function buildRun() {
     clearTimers();
+    interactionRef.current = { selected: null, matched: new Set(), phase: "ready", done: false, audioSeq: 0 };
 
     const base = pickRandomUnique(eligibleRows, requiredPairs);
 
@@ -210,10 +210,6 @@ export function useMatchPairsSession({
     return map;
   }, [currentPage]);
 
-  function isMatched(pairId) {
-    return matchedPairIds.has(pairId);
-  }
-
   function markWrong(pairId) {
     setWrongPairIds((prev) => {
       if (prev.has(pairId)) return prev;
@@ -225,11 +221,13 @@ export function useMatchPairsSession({
   }
 
   function startPageFadeTo(nextIndex) {
+    interactionRef.current.phase = "pageFadeOut";
     setPhase("pageFadeOut");
     setBusy(true);
     setPulse(null);
 
     const t1 = setTimeout(() => {
+      interactionRef.current = { ...interactionRef.current, selected: null, matched: new Set(), phase: "pageFadeIn" };
       setPageIndex(nextIndex);
       setMatchedPairIds(new Set());
       setSelected(null);
@@ -237,6 +235,7 @@ export function useMatchPairsSession({
       setPhase("pageFadeIn");
 
       const t2 = setTimeout(() => {
+        interactionRef.current.phase = "ready";
         setPhase("ready");
         setBusy(false);
       }, pageFadeInMs);
@@ -248,6 +247,8 @@ export function useMatchPairsSession({
   }
 
   function completeRun() {
+    if (interactionRef.current.done) return;
+    interactionRef.current.done = true;
     setShowDone(true);
     setBusy(false);
     setPhase("ready");
@@ -256,32 +257,33 @@ export function useMatchPairsSession({
   }
 
   function tap(tileId) {
-    if (busy || showDone) return;
+    const state = interactionRef.current;
+    if (state.phase !== "ready" || state.done) return;
     if (!currentPage) return;
 
     const tile = tileById.get(tileId);
     if (!tile) return;
 
-    if (isMatched(tile.pairId)) return;
+    if (state.matched.has(tile.pairId)) return;
 
-    if (!selected) {
+    if (!state.selected) {
+      state.selected = { side: tile.side, id: tile.id };
       setSelected({ side: tile.side, id: tile.id });
-      setPulse(null);
       return;
     }
 
-    if (selected.id === tile.id) {
+    if (state.selected.id === tile.id) {
+      state.selected = null;
       setSelected(null);
-      setPulse(null);
       return;
     }
 
-    const first = tileById.get(selected.id);
+    const first = tileById.get(state.selected.id);
     const second = tile;
 
     if (first && second && first.side === second.side) {
+      state.selected = { side: second.side, id: second.id };
       setSelected({ side: second.side, id: second.id });
-      setPulse(null);
       return;
     }
 
@@ -291,80 +293,35 @@ export function useMatchPairsSession({
       return;
     }
 
-    setBusy(true);
-
+    state.selected = null;
+    setSelected(null);
     const firstId = first.id;
     const secondId = second.id;
-
-    setSelected({ side: second.side, id: secondId });
-
-    const tAmber = setTimeout(() => {
-      const correct = first.pairId === second.pairId;
-
-      if (correct) {
-        setPulse({ kind: "correct", ids: [firstId, secondId] });
-
-        const tPulse = setTimeout(() => {
-          const next = new Set(matchedPairIds);
-          next.add(first.pairId);
-          setMatchedPairIds(next);
-          setOverallMatched((n) => n + 1);
-
-          const matchedLt =
-            first.side === "lt"
-              ? first.text
-              : second.side === "lt"
-              ? second.text
-              : pairBank.get(first.pairId)?.lt || "";
-
-          setLastCorrectMatchAudio({
-            key: `${first.pairId}_${Date.now()}`,
-            pairId: first.pairId,
-            text: matchedLt,
-          });
-
-          setSelected(null);
-          setPulse(null);
-
-          if (next.size >= pagePairs) {
-            const nextPage = pageIndex + 1;
-
-            if (nextPage >= requiredPages) {
-              setPhase("pageFadeOut");
-
-              const tDone = setTimeout(() => {
-                completeRun();
-              }, pageFadeOutMs);
-
-              timersRef.current.push(tDone);
-            } else {
-              startPageFadeTo(nextPage);
-            }
-          } else {
-            setBusy(false);
-          }
-        }, correctPulseMs);
-
-        timersRef.current.push(tPulse);
-        return;
-      }
-
-      setPulse({ kind: "wrong", ids: [firstId, secondId] });
+    const correct = first.pairId === second.pairId;
+    const pulse = { kind: correct ? "correct" : "wrong", ids: [firstId, secondId], token: ++state.audioSeq };
+    setPulse(pulse);
+    const tPulse = setTimeout(() => setPulse(current => current?.token === pulse.token ? null : current), correct ? correctPulseMs : wrongPulseMs);
+    timersRef.current.push(tPulse);
+    if (!correct) {
       setMistakes((m) => m + 1);
-
       markWrong(first.pairId);
       markWrong(second.pairId);
-
-      const tPulse = setTimeout(() => {
-        setPulse(null);
-        setSelected(null);
-        setBusy(false);
-      }, wrongPulseMs);
-
-      timersRef.current.push(tPulse);
-    }, rightSelectAmberMs);
-
-    timersRef.current.push(tAmber);
+      return;
+    }
+    state.matched = new Set(state.matched).add(first.pairId);
+    setMatchedPairIds(state.matched);
+    setOverallMatched((n) => n + 1);
+    const matchedLt = first.side === "lt" ? first.text : second.text;
+    setLastCorrectMatchAudio({ key: `${first.pairId}_${pulse.token}`, pairId: first.pairId, text: matchedLt });
+    if (state.matched.size >= currentPage.left.length) {
+      state.phase = "pageFadeOut"; // Block stale clicks into the next page immediately.
+      setBusy(true);
+      const tTransition = setTimeout(() => {
+        if (pageIndex + 1 >= requiredPages) completeRun();
+        else startPageFadeTo(pageIndex + 1);
+      }, correctPulseMs);
+      timersRef.current.push(tTransition);
+    }
   }
 
   const wrongPairs = useMemo(() => {

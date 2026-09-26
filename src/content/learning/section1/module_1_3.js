@@ -1087,6 +1087,13 @@ export default function createModule_1_3(profile = {}) {
           {
             id: "s1m3c_b10",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Understanding", pairIds: ["wm1", "wm2", "wm3", "wm4", "wm5"] },
+              { id: "group_2", label: "Repeat and slow down", pairIds: ["wm6", "wm7", "wm8", "wm9"] },
+              { id: "group_3", label: "Asking the meaning", pairIds: ["wm10", "wm11", "wm12", "wm13", "wm18"] },
+              { id: "group_4", label: "Language and amount", pairIds: ["wm14", "wm15", "wm16", "wm17", "wm21"] },
+              { id: "group_5", label: "Earlier words", pairIds: ["wm17b", "wm19", "wm20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "wm1",  lt: "Aš nesuprantu",               en: "I don't understand",                    audioText: "Aš nesuprantu" },

@@ -9,7 +9,8 @@ export async function componentHarness(path, name, imports = {}) {
   const key = `${path}:${name}`;
   if (!compiled.has(key)) {
     const source = await readFile(new URL(`../../${path}`, import.meta.url), "utf8");
-    const exposed = name === "default" ? source : `${source}\nexport { ${name} };`;
+    const exposed = name === "default" || new RegExp(`export\\s+(?:default\\s+)?function\\s+${name}\\b`).test(source)
+      ? source : `${source}\nexport { ${name} };`;
     const { code } = await transformWithEsbuild(exposed, path, { loader: "jsx", format: "cjs", jsx: "transform" });
     compiled.set(key, code);
   }

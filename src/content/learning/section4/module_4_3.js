@@ -1312,6 +1312,13 @@ export default function createModule_4_3(profile = {}) {
           {
             id: "s4m3c_b10",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Not this and another", pairIds: ["m1", "m2", "m12", "m15"] },
+              { id: "group_2", label: "Without ingredients", pairIds: ["m3", "m4", "m5", "m8"] },
+              { id: "group_3", label: "Vegetarian food", pairIds: ["m6", "m7", "m20"] },
+              { id: "group_4", label: "Fixing an order", pairIds: ["m9", "m10", "m11", "m13", "m14"] },
+              { id: "group_5", label: "Temperature and feedback", pairIds: ["m16", "m17", "m18", "m19"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Nenoriu šito.",               en: "I don't want this.",            audioText: "Nenoriu šito" },

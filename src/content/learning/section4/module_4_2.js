@@ -1194,6 +1194,13 @@ export default function createModule_4_2(profile = {}) {
           {
             id: "s4m2c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Drinks", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Ordering here or to go", pairIds: ["m5", "m6", "m7", "m8", "m9"] },
+              { id: "group_3", label: "With and without", pairIds: ["m10", "m11", "m12", "m19"] },
+              { id: "group_4", label: "Ingredients and ordering", pairIds: ["m13", "m14", "m15", "m20"] },
+              { id: "group_5", label: "Bill and payment", pairIds: ["m16", "m17", "m18"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "kava",                    en: "coffee",                     audioText: "kava" },

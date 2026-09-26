@@ -1118,6 +1118,13 @@ export default function createModule_5_2(profile = {}) {
           {
             id: "s5m2c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Stations and transport", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Essential help", pairIds: ["m5", "m6", "m7", "m8"] },
+              { id: "group_3", label: "Familiar places", pairIds: ["m9", "m10", "m11", "m12"] },
+              { id: "group_4", label: "Asking where", pairIds: ["m13", "m14", "m15", "m16", "m17"] },
+              { id: "group_5", label: "Earlier review", pairIds: ["m18", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "autobusų stotis",     en: "bus station",      audioText: "autobusų stotis" },

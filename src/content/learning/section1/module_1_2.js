@@ -857,6 +857,13 @@ export default function createModule_1_2(profile = {}) {
           {
             id: "s1m2l5_b2",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "People", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Family and meeting", pairIds: ["m5", "m6", "m11", "m12"] },
+              { id: "group_3", label: "Informal and formal questions", pairIds: ["m7", "m8", "m9", "m10"] },
+              { id: "group_4", label: "Friends and colleagues", pairIds: ["m15", "m16", "m17", "m18"] },
+              { id: "group_5", label: "Introducing someone", pairIds: ["m13", "m14", "m19", "m20"] },
+            ],
             title: "Match what you know",
             pairs: [
               // New people vocabulary
@@ -1121,6 +1128,13 @@ export default function createModule_1_2(profile = {}) {
           {
             id: "s1m2c_b10",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Identity and places", pairIds: ["wm1", "wm2", "wm5", "wm20"] },
+              { id: "group_2", label: "Informal and formal questions", pairIds: ["wm3", "wm4", "wm9", "wm10"] },
+              { id: "group_3", label: "People", pairIds: ["wm6", "wm7", "wm8", "wm17"] },
+              { id: "group_4", label: "Family and connections", pairIds: ["wm18", "wm19", "wm14", "wm15", "wm16"] },
+              { id: "group_5", label: "Meeting someone", pairIds: ["wm11", "wm12", "wm13"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "wm1",  lt: "Aš esu",                    en: "I am",                             audioText: "Aš esu" },

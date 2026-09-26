@@ -1131,6 +1131,12 @@ export default function createModule_3_3(profile = {}) {
           {
             id: "s3m3c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Clock questions and answers", pairIds: ["m1", "m3", "m4", "m16", "m5"] },
+              { id: "group_2", label: "Another clock form and time words", pairIds: ["m2", "m6", "m7", "m8", "m20"] },
+              { id: "group_3", label: "When things happen", pairIds: ["m9", "m10", "m11", "m12", "m19"] },
+              { id: "group_4", label: "Opening, closing and travel", pairIds: ["m13", "m14", "m15", "m17", "m18"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Kiek valandų?",               en: "What time is it?",           audioText: "Kiek valandų" },

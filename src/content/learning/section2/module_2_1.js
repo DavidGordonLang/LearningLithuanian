@@ -1234,6 +1234,12 @@ export default function createModule_2_1(profile = {}) {
           {
             id: "s2m1c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Wanting something", pairIds: ["m1", "m2", "m3", "m4", "m5"] },
+              { id: "group_2", label: "Needing something", pairIds: ["m6", "m7", "m8", "m18", "m20"] },
+              { id: "group_3", label: "Having and not having", pairIds: ["m9", "m10", "m11", "m12", "m19"] },
+              { id: "group_4", label: "Asking what is available", pairIds: ["m13", "m14", "m15", "m16", "m17"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Noriu…",             en: "I want…",                  audioText: "Noriu" },

@@ -777,6 +777,13 @@ export default function createModule_5_4(profile = {}) {
           {
             id: "s5m4c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Asking the way", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Near or far", pairIds: ["m5", "m6", "m7", "m17"] },
+              { id: "group_3", label: "Directions", pairIds: ["m8", "m9", "m10", "m11"] },
+              { id: "group_4", label: "On foot or by bus", pairIds: ["m12", "m13", "m14", "m15"] },
+              { id: "group_5", label: "Conversation and closing", pairIds: ["m16", "m18", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Kaip man nusigauti į stotį?",    en: "How do I get to the station?",   audioText: "Kaip man nusigauti į stotį" },

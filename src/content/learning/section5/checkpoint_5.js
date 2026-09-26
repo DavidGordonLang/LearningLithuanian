@@ -183,6 +183,13 @@ export default function createCheckpoint5(profile = {}) {
       {
         id: "s5cp_b9",
         type: "word_match",
+        pairPages: [
+          { id: "group_1", label: "Asking the way", pairIds: ["m1", "m2", "m3", "m4"] },
+          { id: "group_2", label: "Direction instructions", pairIds: ["m5", "m6", "m7", "m20"] },
+          { id: "group_3", label: "Places", pairIds: ["m8", "m9", "m10", "m11"] },
+          { id: "group_4", label: "To, from and at", pairIds: ["m12", "m13", "m14", "m19"] },
+          { id: "group_5", label: "On foot or by bus", pairIds: ["m15", "m16", "m17", "m18"] },
+        ],
         title: "Match the pairs",
         pairs: [
           { id: "m1",  lt: "Kur yra…?",                      en: "Where is…?",                    audioText: "Kur yra" },

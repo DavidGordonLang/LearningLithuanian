@@ -1343,6 +1343,12 @@ export default function createModule_3_2(profile = {}) {
           {
             id: "s3m2c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Price questions and answers", pairIds: ["m1", "m2", "m3", "m4", "m20"] },
+              { id: "group_2", label: "Cash and card", pairIds: ["m5", "m6", "m7", "m8", "m9"] },
+              { id: "group_3", label: "Price and negotiation", pairIds: ["m10", "m11", "m12", "m13", "m14"] },
+              { id: "group_4", label: "Paying and closing", pairIds: ["m15", "m16", "m17", "m18", "m19"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Kiek tai kainuoja?",         en: "How much does this cost?",       audioText: "Kiek tai kainuoja" },

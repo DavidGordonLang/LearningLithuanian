@@ -81,3 +81,12 @@ The automated contract tests live in `tests/learningRegressionContracts.test.mjs
 - Build freshness reload waits for active lesson exit and a safe save boundary. Never interrupt a running scenario or microphone attempt merely because focus detects a new deployment.
 
 `tests/c3ProgressReliability.test.mjs` executes the real store, auth transitions, lesson handlers, Training hydration gate and PWA focus path with isolated storage/network dependencies. It replaces the old queue/cursor source-string assertions with behavioural coverage. See `BETA3_C3_IMPLEMENTATION.md` for offline limits and the small physical PWA check.
+
+## C4 Match Pairs contract
+
+- Each lesson `word_match` is a recap of earned language, partitioned into authored `pairPages`. Every pair ID appears exactly once, pages refer only to real unique IDs, and no LT or EN label collides visibly on a page. Unequal page lengths are allowed; no filler is required. LT and EN tile orders shuffle independently within each authored page.
+- A correct match becomes unmatchable and counts once immediately while its green pulse remains visible. Other available tiles accept taps during that pulse. Wrong matches count once, preserve red feedback without audio and permit immediate recovery. Same-side reselection and double taps cannot create a match. During page fade, input is gated to the current page; final completion fires once.
+- A wrong attempt still marks the lesson `word_match` block wrong exactly once for C3 persisted accuracy. Correct LT audio plays once per match. Standalone Training remains a Words/Numbers tool and does not add phrase practice.
+- Matching grouping metadata and the removal of one exact duplicate pair do not change lesson/block IDs or types; the C3 structural fingerprint remains stable. Reassess the semantic epoch after C5–C8, before release sign-off.
+
+`tests/c4MatchPairs.test.mjs` runs both actual session paths and their renderers with deterministic interaction/timer checks. The curriculum integrity test checks all 27 current lesson/checkpoint matching blocks.

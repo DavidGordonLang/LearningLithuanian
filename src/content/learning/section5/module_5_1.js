@@ -1124,6 +1124,13 @@ export default function createModule_5_1(profile = {}) {
           {
             id: "s5m1c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Where is it?", pairIds: ["m1", "m2", "m3", "m4", "m5"] },
+              { id: "group_2", label: "Here and there", pairIds: ["m6", "m7", "m8", "m9"] },
+              { id: "group_3", label: "Near and far", pairIds: ["m10", "m11", "m12", "m13"] },
+              { id: "group_4", label: "Direction words", pairIds: ["m14", "m15", "m16", "m20"] },
+              { id: "group_5", label: "Direction instructions", pairIds: ["m17", "m18", "m19"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Kur yra…?",          en: "Where is…?",            audioText: "Kur yra" },

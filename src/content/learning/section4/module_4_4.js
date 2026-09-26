@@ -850,6 +850,13 @@ export default function createModule_4_4(profile = {}) {
           {
             id: "s4m4c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Hunger and appetite", pairIds: ["m1", "m2", "m3", "m16"] },
+              { id: "group_2", label: "Offers and replies", pairIds: ["m4", "m5", "m6", "m7"] },
+              { id: "group_3", label: "Let's and later", pairIds: ["m8", "m9", "m10", "m11"] },
+              { id: "group_4", label: "For me or for us", pairIds: ["m12", "m13", "m14", "m15"] },
+              { id: "group_5", label: "Taste and food", pairIds: ["m17", "m18", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Aš alkanas.",              en: "I'm hungry. (male)",                  audioText: "Aš alkanas" },

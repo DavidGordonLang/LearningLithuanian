@@ -448,6 +448,12 @@ export default function createCheckpoint1(profile = {}) {
       {
         id: "s1c_b17",
         type: "word_match",
+        pairPages: [
+          { id: "group_1", label: "Opening and replying", pairIds: ["m1", "m2", "m3", "m4", "m5"] },
+          { id: "group_2", label: "Names and people", pairIds: ["m6", "m7", "m8", "m9", "m10"] },
+          { id: "group_3", label: "Understanding and clarification", pairIds: ["m11", "m12", "m13", "m14", "m15"] },
+          { id: "group_4", label: "Help and location", pairIds: ["m16", "m17", "m18", "m19", "m20"] },
+        ],
         title: "Match the pairs",
         pairs: [
           // 1.1 — Greeting and politeness

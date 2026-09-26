@@ -181,6 +181,12 @@ export default function createCheckpoint2(profile = {}) {
       {
         id: "s2c_b10",
         type: "word_match",
+        pairPages: [
+          { id: "group_1", label: "Want, need, have and ask", pairIds: ["m1", "m2", "m3", "m4", "m5"] },
+          { id: "group_2", label: "Can, cannot and allowed", pairIds: ["m6", "m7", "m8", "m9", "m14"] },
+          { id: "group_3", label: "This and that", pairIds: ["m10", "m11", "m12", "m13", "m20"] },
+          { id: "group_4", label: "Questions and people", pairIds: ["m15", "m16", "m17", "m18", "m19"] },
+        ],
         title: "Match the pairs",
         pairs: [
           { id: "m1",  lt: "Noriu kavos.",                    en: "I want coffee.",                         audioText: "Noriu kavos" },

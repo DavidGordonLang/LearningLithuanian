@@ -1360,10 +1360,17 @@ const module_1_1 =     {
               ],
             },
             // Final block — match pairs covering all vocabulary from Module 1.1
-            // 17 pairs, 5 per page = 4 pages (last page has 2)
+            // Authored recap families; keep the already-taught 20 pairs together by meaning.
             {
               id: "s1m1c_b10",
               type: "word_match",
+              pairPages: [
+                { id: "group_1", label: "Greetings", pairIds: ["m1", "m2", "m3", "m4"] },
+                { id: "group_2", label: "Goodbyes and apologies", pairIds: ["m5", "m6", "m15", "m17"] },
+                { id: "group_3", label: "Polite words", pairIds: ["m9", "m10", "m11", "m16"] },
+                { id: "group_4", label: "Yes and no", pairIds: ["m7", "m8", "m12", "m13"] },
+                { id: "group_5", label: "Conversation", pairIds: ["m14", "m18", "m19", "m20"] },
+              ],
               title: "Match the pairs",
               pairs: [
                 { id: "m1",  lt: "Labas",                   en: "Hello (casual)",             audioText: "Labas" },

@@ -1357,8 +1357,8 @@ function ScenarioCompletePanel({ onContinue }) {
 
 // ─── Word match block ─────────────────────────────────────────────────────────
 // Uses the same CSS as the practice mode MatchPairsView.
-// Session logic is inlined so no new import is needed.
-// Audio plays on correct match. Wrong match also plays the correct pair's audio.
+// The lesson session uses the same immediate assessment / non-blocking pulse
+// interaction as standalone Training, while preserving lesson scoring callbacks.
 
 
 function tileTextClass(text) {
@@ -1368,7 +1368,7 @@ function tileTextClass(text) {
   return "text-base";
 }
 
-function useWordMatchSession({ rawPairs, pagePairs, authoredPages = null, rightSelectAmberMs, correctPulseMs, wrongPulseMs, pageFadeOutMs, pageFadeInMs }) {
+function useWordMatchSession({ rawPairs, pagePairs, authoredPages = null, correctPulseMs, wrongPulseMs, pageFadeOutMs, pageFadeInMs }) {
   function shuffleArr(arr) {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -1394,6 +1394,7 @@ function useWordMatchSession({ rawPairs, pagePairs, authoredPages = null, rightS
   const [pulse, setPulse] = React.useState(null);
   const [lastCorrectMatchAudio, setLastCorrectMatchAudio] = React.useState(null);
   const timersRef = React.useRef([]);
+  const interactionRef = React.useRef({ selected: null, matched: new Set(), phase: "ready", done: false, audioSeq: 0 });
 
   function clearTimers() {
     timersRef.current.forEach((t) => clearTimeout(t));
@@ -1402,6 +1403,7 @@ function useWordMatchSession({ rawPairs, pagePairs, authoredPages = null, rightS
 
   React.useEffect(() => {
     if (!rawPairs || rawPairs.length === 0) return;
+    interactionRef.current = { selected: null, matched: new Set(), phase: "ready", done: false, audioSeq: 0 };
     const pairById = new Map(rawPairs.map((pair) => [pair.id, pair]));
     const builtPages = [];
 
@@ -1451,59 +1453,52 @@ function useWordMatchSession({ rawPairs, pagePairs, authoredPages = null, rightS
   }), [overallMatched, totalPairs, pageIndex, requiredPages, pages.length, currentPage]);
 
   function startPageFadeTo(nextIndex) {
+    interactionRef.current.phase = "pageFadeOut";
     setPhase("pageFadeOut"); setBusy(true); setPulse(null);
     const t1 = setTimeout(() => {
+      interactionRef.current = { ...interactionRef.current, selected: null, matched: new Set(), phase: "pageFadeIn" };
       setPageIndex(nextIndex); setMatchedPairIds(new Set()); setSelected(null); setPulse(null); setPhase("pageFadeIn");
-      const t2 = setTimeout(() => { setPhase("ready"); setBusy(false); }, pageFadeInMs);
+      const t2 = setTimeout(() => { interactionRef.current.phase = "ready"; setPhase("ready"); setBusy(false); }, pageFadeInMs);
       timersRef.current.push(t2);
     }, pageFadeOutMs);
     timersRef.current.push(t1);
   }
 
   function tap(tileId) {
-    if (busy || showDone || !currentPage) return;
+    const state = interactionRef.current;
+    if (state.phase !== "ready" || state.done || !currentPage) return;
     const tile = tileById.get(tileId);
-    if (!tile || matchedPairIds.has(tile.pairId)) return;
-    if (!selected) { setSelected({ side: tile.side, id: tile.id }); setPulse(null); return; }
-    if (selected.id === tile.id) { setSelected(null); setPulse(null); return; }
-    const first = tileById.get(selected.id);
+    if (!tile || state.matched.has(tile.pairId)) return;
+    if (!state.selected) { state.selected = { side: tile.side, id: tile.id }; setSelected(state.selected); return; }
+    if (state.selected.id === tile.id) { state.selected = null; setSelected(null); return; }
+    const first = tileById.get(state.selected.id);
     const second = tile;
-    if (first?.side === second.side) { setSelected({ side: second.side, id: second.id }); setPulse(null); return; }
-    if (!first || !second) { setSelected(null); setPulse(null); return; }
-    setBusy(true);
+    if (first?.side === second.side) { state.selected = { side: second.side, id: second.id }; setSelected(state.selected); return; }
+    if (!first || !second) { state.selected = null; setSelected(null); return; }
+    state.selected = null; setSelected(null);
     const firstId = first.id; const secondId = second.id;
-    setSelected({ side: second.side, id: secondId });
-    const tAmber = setTimeout(() => {
-      const correct = first.pairId === second.pairId;
-      if (correct) {
-        setPulse({ kind: "correct", ids: [firstId, secondId] });
-        const tPulse = setTimeout(() => {
-          const next = new Set(matchedPairIds);
-          next.add(first.pairId);
-          setMatchedPairIds(next);
-          const newOverall = overallMatched + 1;
-          setOverallMatched(newOverall);
-          const audioText = first.side === "lt" ? (first.audioText || first.text) : (second.side === "lt" ? (second.audioText || second.text) : first.text);
-          setLastCorrectMatchAudio({ key: `${first.pairId}_${Date.now()}`, text: audioText });
-          setSelected(null); setPulse(null);
-          const pageSize = Math.min(pagePairs, (currentPage?.left || []).length);
-          if (next.size >= pageSize) {
-            const nextPage = pageIndex + 1;
-            if (nextPage >= pages.length) {
-              setTimeout(() => { setShowDone(true); setBusy(false); setPhase("ready"); setPulse(null); setSelected(null); }, pageFadeOutMs);
-            } else { startPageFadeTo(nextPage); }
-          } else { setBusy(false); }
-        }, correctPulseMs);
-        timersRef.current.push(tPulse);
-        return;
-      }
-      // Wrong — no audio, just the red flash
-      setPulse({ kind: "wrong", ids: [firstId, secondId] });
-      setMistakes((m) => m + 1);
-      const tPulse = setTimeout(() => { setPulse(null); setSelected(null); setBusy(false); }, wrongPulseMs);
-      timersRef.current.push(tPulse);
-    }, rightSelectAmberMs);
-    timersRef.current.push(tAmber);
+    const correct = first.pairId === second.pairId;
+    const pulse = { kind: correct ? "correct" : "wrong", ids: [firstId, secondId], token: ++state.audioSeq };
+    setPulse(pulse);
+    const tPulse = setTimeout(() => setPulse(current => current?.token === pulse.token ? null : current), correct ? correctPulseMs : wrongPulseMs);
+    timersRef.current.push(tPulse);
+    if (!correct) { setMistakes(m => m + 1); return; } // One wrong block, via WordMatchBlock's effect.
+    state.matched = new Set(state.matched).add(first.pairId);
+    setMatchedPairIds(state.matched);
+    setOverallMatched(n => n + 1);
+    const audioText = first.side === "lt" ? (first.audioText || first.text) : (second.audioText || second.text);
+    setLastCorrectMatchAudio({ key: `${first.pairId}_${pulse.token}`, text: audioText });
+    if (state.matched.size >= currentPage.left.length) {
+      state.phase = "pageFadeOut"; setBusy(true);
+      const tTransition = setTimeout(() => {
+        if (pageIndex + 1 >= pages.length) {
+          if (interactionRef.current.done) return;
+          interactionRef.current.done = true;
+          setShowDone(true); setBusy(false); setPhase("ready");
+        } else startPageFadeTo(pageIndex + 1);
+      }, correctPulseMs);
+      timersRef.current.push(tTransition);
+    }
   }
 
   return { progress, leftTiles: currentPage?.left || [], rightTiles: currentPage?.right || [], selected, matchedPairIds, pulse, busy, phase, mistakes, showDone, tap, lastCorrectMatchAudio };
@@ -1516,7 +1511,6 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
     rawPairs,
     pagePairs: 5,
     authoredPages: block?.pairPages,
-    rightSelectAmberMs: 140,
     correctPulseMs: 520,
     wrongPulseMs: 420,
     pageFadeOutMs: 280,
@@ -1525,6 +1519,7 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
 
   const lastPlayedRef = React.useRef("");
   const reportedMistakeRef = React.useRef(false);
+  const reportedCompleteRef = React.useRef(false);
 
   React.useEffect(() => {
     if (s.mistakes > 0 && !reportedMistakeRef.current) {
@@ -1545,7 +1540,8 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
   }, [playText, s.lastCorrectMatchAudio]);
 
   React.useEffect(() => {
-    if (s.showDone) {
+    if (s.showDone && !reportedCompleteRef.current) {
+      reportedCompleteRef.current = true;
       onComplete?.();
       // Advance to next block (triggers lessonDone if this is the last block)
       onAdvance?.();
@@ -1559,7 +1555,7 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
   const selectedId = s.selected?.id || null;
   const TILE_H = 56;
   const COL_GAP = 8;
-  const tileStyle = { height: TILE_H, minHeight: TILE_H, padding: "10px 12px", margin: 0 };
+  const tileStyle = { minHeight: TILE_H, padding: "10px 12px", margin: 0 };
 
   if (completed && s.showDone) {
     return (
@@ -1599,7 +1595,7 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
               const pulse = pulseIds.includes(t.id) && pulseKind ? (pulseKind === "correct" ? "mp-pulse-correct" : "mp-pulse-wrong") : "";
               return (
                 <button key={t.id} type="button" style={tileStyle}
-                  className={cn("mp-tile", tileTextClass(t.text), amber ? "mp-tile-amber" : "", matched ? "mp-tile-cleared" : "", pulse)}
+                  className={cn("mp-tile", tileTextClass(t.text), amber ? "mp-tile-amber" : "", matched && !pulse ? "mp-tile-cleared" : "", pulse)}
                   onClick={() => s.tap(t.id)} disabled={matched || s.busy} aria-pressed={amber}>
                   {t.text}
                 </button>
@@ -1613,7 +1609,7 @@ function WordMatchBlock({ block, playText, onComplete, onWrongAnswer, onAdvance,
               const pulse = pulseIds.includes(t.id) && pulseKind ? (pulseKind === "correct" ? "mp-pulse-correct" : "mp-pulse-wrong") : "";
               return (
                 <button key={t.id} type="button" style={tileStyle}
-                  className={cn("mp-tile", tileTextClass(t.text), amber ? "mp-tile-amber" : "", matched ? "mp-tile-cleared" : "", pulse)}
+                  className={cn("mp-tile", tileTextClass(t.text), amber ? "mp-tile-amber" : "", matched && !pulse ? "mp-tile-cleared" : "", pulse)}
                   onClick={() => s.tap(t.id)} disabled={matched || s.busy}>
                   {t.text}
                 </button>

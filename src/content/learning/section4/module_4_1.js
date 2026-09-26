@@ -793,6 +793,13 @@ export default function createModule_4_1(profile = {}) {
           {
             id: "s4m1c_b10",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "I want", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "I would like", pairIds: ["m5", "m6", "m7", "m8"] },
+              { id: "group_3", label: "This or that", pairIds: ["m9", "m10", "m11", "m12"] },
+              { id: "group_4", label: "Order quantities", pairIds: ["m13", "m14", "m15", "m16"] },
+              { id: "group_5", label: "Service and dessert", pairIds: ["m17", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Noriu kavos.",          en: "I want coffee.",           audioText: "Noriu kavos" },
@@ -812,7 +819,6 @@ export default function createModule_4_1(profile = {}) {
               { id: "m15", lt: "Vieną stiklinę vandens, prašau.", en: "One glass of water, please.", audioText: "Vieną stiklinę vandens, prašau" },
               { id: "m16", lt: "Dar vieną, prašau.",     en: "One more, please.",        audioText: "Dar vieną, prašau" },
               { id: "m17", lt: "Ko norėtumėte?",         en: "What would you like?",     audioText: "Ko norėtumėte" },
-              { id: "m18", lt: "Ko norėtumėte?",         en: "What would you like?",     audioText: "Ko norėtumėte" },
               { id: "m19", lt: "tortas",                 en: "cake",                     audioText: "tortas" },
               { id: "m20", lt: "ledai",                  en: "ice cream",                audioText: "ledai" },
             ],

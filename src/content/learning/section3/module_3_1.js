@@ -179,6 +179,12 @@ export default function createModule_3_1(profile = {}) {
           {
             id: "s3m1l2_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "One to five", pairIds: ["m1", "m2", "m3", "m4", "m5"] },
+              { id: "group_2", label: "Six to ten", pairIds: ["m6", "m7", "m8", "m9", "m10"] },
+              { id: "group_3", label: "Eleven to fifteen", pairIds: ["m11", "m12", "m13", "m14", "m15"] },
+              { id: "group_4", label: "Sixteen to twenty", pairIds: ["m16", "m17", "m18", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "vienas",       en: "one",       audioText: "vienas" },
@@ -724,6 +730,13 @@ export default function createModule_3_1(profile = {}) {
           {
             id: "s3m1c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "One to four", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Five to eight", pairIds: ["m5", "m6", "m7", "m8"] },
+              { id: "group_3", label: "Nine to twelve", pairIds: ["m9", "m10", "m11", "m12"] },
+              { id: "group_4", label: "Teens and twenty", pairIds: ["m13", "m14", "m15", "m16"] },
+              { id: "group_5", label: "Larger numbers and time", pairIds: ["m17", "m18", "m19", "m20"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "vienas",        en: "one",         audioText: "vienas" },

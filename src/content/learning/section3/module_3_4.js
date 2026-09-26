@@ -1431,6 +1431,12 @@ export default function createModule_3_4(profile = {}) {
           {
             id: "s3m4c_b7",
             type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Age and people", pairIds: ["m1", "m2", "m3", "m17", "m19"] },
+              { id: "group_2", label: "Tickets and drinks", pairIds: ["m4", "m5", "m6", "m9", "m18"] },
+              { id: "group_3", label: "More and less", pairIds: ["m7", "m8", "m10", "m11", "m20"] },
+              { id: "group_4", label: "Enough or not enough", pairIds: ["m12", "m13", "m14", "m15", "m16"] },
+            ],
             title: "Match the pairs",
             pairs: [
               { id: "m1",  lt: "Kiek jums metų?",         en: "How old are you? (formal)",   audioText: "Kiek jums metų" },
