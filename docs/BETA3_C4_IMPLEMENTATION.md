@@ -4,7 +4,7 @@
 
 Starting remote/local `dev`: `440f1e4fbf6d1eb372d33046742909e55ab31e17`; verified before editing. Stage 1 issue register, C1–C3 implementation reports, learning regression contract, all three live Continuity/project documents, both matching implementations, styles, curriculum data and tests were reread. C4 addresses **ZB3-16, ZB3-17 and ZB3-27**. No C5 or later work was started.
 
-Implementation SHA: recorded in the publication handoff. Final handoff SHA, if a documentation-only verification follow-up is needed: recorded in that handoff. No database/schema/user data operations and no production promotion.
+Implementation SHA: **`dbdf1e03ec604da34c57bfcd2400edd8b2de3eaa`**. Final handoff SHA is the documentation-only verification commit containing this updated report and is stated in the handoff; application code is unchanged. No database/schema/user data operations and no production promotion.
 
 ## Mechanics: before and after
 
@@ -36,7 +36,8 @@ No additional untaught-Lithuanian or translation judgment was made while groupin
 
 - Focused behavioural coverage executes both real matching session implementations with deterministic timers: first/second/same-side taps, wrong and correct, immediate recovery, active pulse plus next selection, duplicate/matched tile protection, page fade input gate, final completion, correct-only audio, one wrong lesson block and six-pair defensive completion. The standalone renderer is checked for Words/Numbers-only filtering and correct audio once.
 - Curriculum integrity scans all 27 blocks; representative semantic and shuffle checks span multiple sections. C1–C3 Node tests remain unmodified except the additive matching tests/integrity rule and the component harness's named-export support.
-- Full Node suite: **340 passed, zero failed/skipped/cancelled** (`npm test`), including the existing curriculum integrity checks. Production Vite build: **PASS**, 224 modules (existing bundle-size advisory only). `git diff --check`: **PASS**. GitHub Quality Gate and Vercel preview statuses are recorded after publication. No physical Android C4 test is claimed.
+- Full Node suite: **340 passed, zero failed/skipped/cancelled** (`npm test`), including the existing curriculum integrity checks. Production Vite build: **PASS**, 224 modules (existing bundle-size advisory only). `git diff --check`: **PASS**.
+- GitHub **Quality Gate PASS** for the implementation SHA: [run 36261085533](https://github.com/DavidGordonLang/LearningLithuanian/actions/runs/36261085533), including Node tests and production build. Vercel dev preview **READY**, `dpl_6EU2Y7dfkR9UQD8p5bhopYYKzcEq`, matching that SHA: [open preview](https://learning-lithuanian-bo9i1vubq-davids-projects-25f8617a.vercel.app). Target is preview, not production. This documentation-only status commit's checks/deployment are verified in the final handoff. No physical Android C4 test is claimed.
 
 After the dev preview is READY, a small Android PWA check is enough: (1) in 3.3.C or 4.2.C match one pair and tap the next immediately while green is still visible; (2) deliberately mismatch, then recover immediately while red is visible, and confirm final lesson scoring includes that wrong block; (3) let a grouped page finish and check the next page label/items, then do one standalone Words/Numbers match. Check narrow-screen text wrapping and actual touch responsiveness. There is no need to replay 27 exercises.
 
