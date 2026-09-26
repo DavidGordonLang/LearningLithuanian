@@ -4,7 +4,7 @@
 
 Starting `dev`: **317bad889e8bb1a99a0cfdce5a5756623c1c7ed8**, independently confirmed against remote before edits. The checkout was fast-forwarded from C2's 7029007 through the approved scenario-tail polish (92f480a, 23d9b26, 98860b2, 02b66f7) and completed Sequence Walker Review fix (317bad8). Those changes were inspected and preserved. Starting baseline: **302 passed, zero failed**.
 
-Final SHA: the commit containing this report (reported explicitly in the handoff after publication). Sources reread: START HERE, CURRENT, full PROJECT live document `1E7RxFp-c8jsRMioNPZQIgyU5OB1Q0bpozC-RrNcoTVE`; Stage 1 post-sweep issue register and C3 plan; C1/C2 implementation reports and learning regression contract. This is C3 only. **C4 was not started.**
+Implementation SHA: **157fd5f03d8ac9afd6fdc5804cf2babc002d0c72**. Final handoff SHA: the documentation-only publication commit containing this report (reported explicitly in the handoff); application code is identical to the implementation SHA. Sources reread: START HERE, CURRENT, full PROJECT live document `1E7RxFp-c8jsRMioNPZQIgyU5OB1Q0bpozC-RrNcoTVE`; Stage 1 post-sweep issue register and C3 plan; C1/C2 implementation reports and learning regression contract. This is C3 only. **C4 was not started.**
 
 ## Audit findings and root causes
 
@@ -54,7 +54,7 @@ A pre-C3 tester sees a clean Beta 3 course, with current-version XP, streak, met
 - Existing curriculum integrity/content/progress tests run within the complete suite. Additional manifest test validates unique lesson/block identities and representative personalised structures. `git diff --check` passes.
 - Focused cases cover new account, valid/legacy curriculum, initial failure/retry, wrong/completed evidence, reload/reopen, invalid IDs/positions, deterministic selection, completed review/first metrics, local/cloud hydration races, rapid delayed saves, two-device insert/update conflicts, shared dirty tab journals, explicit reset generations, quota/corrupt storage, request timeout, actual auth A/logout/B, Library account selection, actual Training gate, actual lesson scoring and actual PWA changed-hash focus event.
 - C1/C2 regression suites remain green. No Scenario V2, Speechmatics, shared feedback/audio helper, Library persistence or curriculum prose implementation was changed.
-- GitHub Quality Gate / Vercel preview: publication checks pending at the implementation commit; final verified status is recorded in the publication follow-up and handoff. No production promotion authorised or performed.
+- GitHub **Quality Gate PASS** for implementation SHA 157fd5f03d8ac9afd6fdc5804cf2babc002d0c72: [run 36248577328](https://github.com/DavidGordonLang/LearningLithuanian/actions/runs/36248577328), test-and-build job completed successfully including tests and production build. Vercel dev/preview **READY**, deployment `dpl_2bkGWspnGaJEPGvw5yiZXXg2Zngj`, matching that SHA: [preview](https://learning-lithuanian-aqnxgmf35-davids-projects-25f8617a.vercel.app). Deployment target is preview, not production. This documentation-only follow-up records those observed results; its own automatic checks are verified in the final handoff. No production promotion performed.
 
 No physical C3 PWA verification or browser layout/audio verification is claimed. The environment's C2 browser attempts failed to bind the automation daemon and had no alternate browser executable; C3 uses isolated real component/store event tests, not a simulated claim of Android verification.
 
