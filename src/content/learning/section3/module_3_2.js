@@ -26,7 +26,7 @@ export default function createModule_3_2(profile = {}) {
             "Kiek tai kainuoja? — how much does this cost?",
             "Kiek kainuoja knyga? — how much does the book cost?",
             "Kokia kaina? — what is the price?",
-            "Kiek kainuoja knyga? — how much does this one cost?",
+            "Kiek tai kainuoja? — how much does this one cost? (when pointing to an item)",
             "Kiek kainuoja ta knyga? — how much does that one cost?",
           ],
         },
@@ -133,9 +133,10 @@ export default function createModule_3_2(profile = {}) {
                   id: "b",
                   text: "Viso gero!",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Viso gero closes the conversation before you have asked the book price.",
                   progresses: false,
-                }
+                },
+        { id: "c", text: "Kiek kainuoja knyga?", result: "acceptable", feedback: "Naming the book is clear too; Kiek tai kainuoja? works while you hold it up.", progresses: true },
       ],
     },
     {
@@ -150,7 +151,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; the seller has simply quoted a price.",
           progresses: false,
         },
         {
@@ -163,7 +164,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Ar jūs kalbate angliškai?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Asking about English does not acknowledge the price you just heard.",
           progresses: false,
         }
       ],
@@ -243,6 +244,7 @@ export default function createModule_3_2(profile = {}) {
             title: "Choose the best response",
             prompt: { text: "You ask the price and hear 'trisdešimt eurų'. What does that mean?" },
             noOptionAudio: true,
+            answerAudioText: "trisdešimt eurų",
             options: [
               { id: "a", text: "Thirty euros", isCorrect: true },
               { id: "b", text: "Thirteen euros", isCorrect: false },
@@ -332,9 +334,9 @@ export default function createModule_3_2(profile = {}) {
                 },
         {
                   id: "c",
-                  text: "Iki",
+                  text: "Penkiasdešimt eurų?",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Penkiasdešimt is fifty; Tomas said penkiolika, fifteen.",
                   progresses: false,
                 }
       ],
@@ -351,7 +353,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Taip, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Taip, prašau means yes, please; Tomas has already responded, so thank him.",
           progresses: false,
         },
         {
@@ -364,7 +366,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; nothing here calls for an apology.",
           progresses: false,
         }
       ],
@@ -450,12 +452,12 @@ export default function createModule_3_2(profile = {}) {
   id: "s3m2l3_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're paying for coffee. The server asks how you want to pay.",
-  sceneIntro: "You're paying for coffee. The server asks how you want to pay.",
+  description: "You're paying for coffee and want to use your card. Ask whether card payment is possible.",
+  sceneIntro: "You're paying for coffee and want to use your card. Ask whether card payment is possible.",
   location: "caf?",
   userRole: "customer",
   register: "polite_service",
-  goal: "You're paying for coffee. The server asks how you want to pay.",
+  goal: "Ask to pay for your coffee by card.",
   focus: ["ordering","payment"],
   participants: [
     {
@@ -483,14 +485,14 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Tai kainuoja septynis eurus.",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You want to pay by card and need to check that it is accepted.",
+      learnerPrompt: "Ask whether card payment is possible.",
       options: [
         {
           id: "a",
           text: "Ačiū, viso gero",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That ends the exchange before you check whether you can pay by card.",
           progresses: false,
         },
         {
@@ -503,7 +505,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Kiek tai kainuoja?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Ieva has already told you the price; ask about card payment now.",
           progresses: false,
         }
       ],
@@ -520,7 +522,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Turiu grynųjų",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Turiu grynųjų means I have cash; Ieva has just confirmed she accepts your card.",
           progresses: false,
         },
         {
@@ -533,7 +535,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Prašau kalbėkite lėčiau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Ask for slower speech if you need it; here you understand the card answer.",
           progresses: false,
         }
       ],
@@ -562,7 +564,7 @@ export default function createModule_3_2(profile = {}) {
                   id: "a",
                   text: "Atsiprašau",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Atsiprašau apologises; Ieva has completed the payment exchange.",
                   progresses: false,
                 },
         {
@@ -711,7 +713,7 @@ export default function createModule_3_2(profile = {}) {
                   id: "a",
                   text: "Viso gero",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Viso gero would end the conversation before you ask the book price.",
                   progresses: false,
                 },
         {
@@ -799,7 +801,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Tinka",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Tinka says the price is fine, but Tomas asked cash or card.",
           progresses: false,
         },
         {
@@ -812,7 +814,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Brangu",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Brangu comments on price rather than choosing cash or card.",
           progresses: false,
         }
       ],
@@ -841,7 +843,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; after buying the book, thank Tomas and close.",
           progresses: false,
         },
         {
@@ -941,8 +943,8 @@ export default function createModule_3_2(profile = {}) {
   id: "s3m2l5_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You've finished your meal in a café. You want to settle the bill.",
-  sceneIntro: "You've finished your meal in a café. You want to settle the bill.",
+  description: "You've finished your meal in a café. You want the bill and plan to pay by card. Fourteen euros is fine for you.",
+  sceneIntro: "You've finished your meal in a café. You want the bill and plan to pay by card. Fourteen euros is fine for you.",
   location: "real-life exchange",
   userRole: "learner",
   register: "polite_neutral",
@@ -990,7 +992,7 @@ export default function createModule_3_2(profile = {}) {
                   id: "c",
                   text: "Kiek tai kainuoja?",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "That asks an item price; you have finished eating and want the bill.",
                   progresses: false,
                 }
       ],
@@ -1000,14 +1002,14 @@ export default function createModule_3_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Žinoma. Tai kainuoja keturiolika eurų.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Fourteen euros is fine; you want to pay by card.",
+      learnerPrompt: "Ask whether card payment is possible.",
       options: [
         {
           id: "a",
           text: "Brangu!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Brangu calls the bill expensive, but fourteen euros is fine for you.",
           progresses: false,
         },
         {
@@ -1020,7 +1022,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Ačiū, viso gero",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You still need to pay; ask whether you can use your card.",
           progresses: false,
         }
       ],
@@ -1049,7 +1051,7 @@ export default function createModule_3_2(profile = {}) {
                   id: "a",
                   text: "Per brangu",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Per brangu means too expensive; you accepted the bill and card payment is possible.",
                   progresses: false,
                 },
         {
@@ -1072,7 +1074,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises rather than closing the completed café exchange.",
           progresses: false,
         },
         {
@@ -1085,7 +1087,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Taip, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Taip, prašau means yes, please; Rasa has already said goodbye.",
           progresses: false,
         }
       ],
@@ -1237,7 +1239,7 @@ export default function createModule_3_2(profile = {}) {
                   id: "a",
                   text: "Viso gero",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Viso gero ends the exchange before you ask the coffee price.",
                   progresses: false,
                 },
         {
@@ -1260,7 +1262,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Per brangu",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Three euros is fine for you; Per brangu would say it is too expensive.",
           progresses: false,
         },
         {
@@ -1273,7 +1275,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Noriu sumokėti",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Noriu sumokėti asks to pay; first order the coffee you want.",
           progresses: false,
         }
       ],
@@ -1290,7 +1292,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Tinka",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Tinka accepts a price; Rasa asked whether you will pay cash or by card.",
           progresses: false,
         },
         {
@@ -1303,7 +1305,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Brangu",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Brangu comments on price, not your chosen card payment.",
           progresses: false,
         }
       ],
@@ -1320,7 +1322,7 @@ export default function createModule_3_2(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; the transaction is complete.",
           progresses: false,
         },
         {
@@ -1333,7 +1335,7 @@ export default function createModule_3_2(profile = {}) {
           id: "c",
           text: "Dar kartą, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Dar kartą asks for another time or repetition; Rasa is closing the exchange.",
           progresses: false,
         }
       ],

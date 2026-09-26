@@ -214,7 +214,7 @@ export default function createModule_3_3(profile = {}) {
           id: "a",
           text: "Viso gero",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Viso gero ends the conversation before you ask when the meeting is.",
           progresses: false,
         },
         {
@@ -227,7 +227,7 @@ export default function createModule_3_3(profile = {}) {
           id: "c",
           text: "Kiek valandų?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Kiek valandų? asks for the current clock time; Kada susitikimas? asks when the meeting is.",
           progresses: false,
         }
       ],
@@ -262,7 +262,7 @@ export default function createModule_3_3(profile = {}) {
                   id: "c",
                   text: "Rytoj?",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Rytoj means tomorrow; your colleague said šiandien, today at three.",
                   progresses: false,
                 }
       ],
@@ -279,7 +279,7 @@ export default function createModule_3_3(profile = {}) {
           id: "a",
           text: "Laba diena",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Laba diena is a formal hello; your colleague just said Iki, see you.",
           progresses: false,
         },
         {
@@ -292,7 +292,7 @@ export default function createModule_3_3(profile = {}) {
           id: "c",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau is an apology, not a reply to Iki.",
           progresses: false,
         }
       ],
@@ -448,7 +448,7 @@ export default function createModule_3_3(profile = {}) {
                   id: "c",
                   text: "Kiek valandų?",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Kiek valandų? asks the time now; Kada išvyksta autobusas? asks when the bus leaves.",
                   progresses: false,
                 }
       ],
@@ -458,12 +458,14 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Autobusas išvyksta penktą valandą.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Listen to the departure time before answering.",
+      learnerPrompt: "When does the bus leave?",
+      interactionMode: "comprehension",
       help: {
         levels: [
           {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+            sceneDirection: "The assistant holds up five fingers and repeats the time.",
+            speakerText: "Penktą valandą.",
           },
           {
             speakerText: "The bus leaves at five o'clock.",
@@ -475,17 +477,19 @@ export default function createModule_3_3(profile = {}) {
       options: [
         {
                   id: "b",
-                  text: "Penktą valandą. Gerai, ačiū!",
+                  text: "At five o'clock.",
+                  learnerText: "Gerai, ačiū!",
                   result: "best",
                   progresses: true,
                 },
         {
                   id: "c",
-                  text: "Per brangu",
+                  text: "At three o'clock.",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Trečią is at three; the assistant said penktą, at five.",
                   progresses: false,
-                }
+                },
+        { id: "d", text: "At two o'clock.", result: "wrong", feedback: "The assistant said penktą, at five, not two.", progresses: false },
       ],
     },
     {
@@ -500,7 +504,7 @@ export default function createModule_3_3(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; the assistant has just said goodbye.",
           progresses: false,
         },
         {
@@ -513,7 +517,7 @@ export default function createModule_3_3(profile = {}) {
           id: "c",
           text: "Taip, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Taip, prašau means yes, please; reply to the goodbye instead.",
           progresses: false,
         }
       ],
@@ -539,6 +543,7 @@ export default function createModule_3_3(profile = {}) {
             "dešimta valanda → dešimtą valandą — ten o'clock → at ten o'clock",
             "Pradedame penktą valandą — we start at five o'clock",
             "Susitinkame šeštą valandą — we meet at six o'clock",
+            "kavinė — café → kavinėje — in the café (where we meet)",
           ],
         },
         blocks: [
@@ -599,8 +604,8 @@ export default function createModule_3_3(profile = {}) {
   id: "s3m3l4_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're arranging a meeting time with a contact in Vilnius.",
-  sceneIntro: "You're arranging a meeting time with a contact in Vilnius.",
+  description: "You're arranging a meeting with a contact in Vilnius. You want to suggest today at five o'clock.",
+  sceneIntro: "You're arranging a meeting with a contact in Vilnius. You want to suggest today at five o'clock.",
   location: "real-life exchange",
   userRole: "learner",
   register: "polite_neutral",
@@ -637,9 +642,9 @@ export default function createModule_3_3(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Šiandien",
+          text: "Rytoj, penktą valandą?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rytoj means tomorrow. You want to suggest today: šiandien.",
           progresses: false,
         },
         {
@@ -652,7 +657,7 @@ export default function createModule_3_3(profile = {}) {
           id: "c",
           text: "Kiek valandų?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Kiek valandų? asks the time now; you want to suggest a meeting time.",
           progresses: false,
         }
       ],
@@ -688,7 +693,7 @@ export default function createModule_3_3(profile = {}) {
                   id: "c",
                   text: "Per brangu",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Per brangu concerns price; after agreeing on a time, ask where to meet.",
                   progresses: false,
                 }
       ],
@@ -698,7 +703,7 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Kavinėje. Iki!",
-      supportText: "In the café. See you!",
+      supportText: "kavinėje — in the café (from kavinė — café)",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -706,7 +711,7 @@ export default function createModule_3_3(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; your contact named the café and said goodbye.",
           progresses: false,
         },
         {
@@ -720,7 +725,7 @@ export default function createModule_3_3(profile = {}) {
           id: "c",
           text: "Laba diena",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Laba diena is hello; Iki is the appropriate closing here.",
           progresses: false,
         }
       ],
@@ -828,7 +833,7 @@ export default function createModule_3_3(profile = {}) {
           id: "a",
           text: "Viso gero",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Viso gero closes the conversation before you ask about opening.",
           progresses: false,
         },
         {
@@ -841,7 +846,7 @@ export default function createModule_3_3(profile = {}) {
           id: "c",
           text: "Kiek tai kainuoja?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Kiek tai kainuoja? asks the price, not when the museum opens.",
           progresses: false,
         }
       ],
@@ -876,7 +881,7 @@ export default function createModule_3_3(profile = {}) {
                   id: "c",
                   text: "Per brangu",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Per brangu comments on price; you still need to ask when the museum closes.",
                   progresses: false,
                 }
       ],
@@ -893,7 +898,7 @@ export default function createModule_3_3(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; the local just answered your closing-time question.",
           progresses: false,
         },
         {
@@ -905,9 +910,9 @@ export default function createModule_3_3(profile = {}) {
         },
         {
           id: "c",
-          text: "Rytoj?",
+          text: "Kada užsidaro?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You already asked when it closes; the answer was šiandien šeštą valandą, today at six.",
           progresses: false,
         }
       ],
@@ -990,12 +995,12 @@ export default function createModule_3_3(profile = {}) {
   id: "s3m3c_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're trying to get to a bus on time and checking details at the station desk.",
-  sceneIntro: "You're trying to get to a bus on time and checking details at the station desk.",
+  description: "You're at the station desk for a bus to Kaunas and need to check when it leaves. Kaunas → į Kauną means 'to Kaunas'.",
+  sceneIntro: "You're at the station desk for a bus to Kaunas and need to check when it leaves. Kaunas → į Kauną means 'to Kaunas'.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
-  goal: "You're trying to get to a bus on time and checking details at the station desk.",
+  goal: "Check when the bus to Kaunas leaves.",
   focus: ["directions","time"],
   participants: [
     {
@@ -1055,7 +1060,7 @@ export default function createModule_3_3(profile = {}) {
                   id: "c",
                   text: "Kiek valandų?",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Kiek valandų? asks what time it is now; you need this bus departure time.",
                   progresses: false,
                 }
       ],
@@ -1065,15 +1070,17 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Autobusas išvyksta trečią valandą.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Listen to the departure time before responding.",
+      learnerPrompt: "When does the bus leave?",
+      interactionMode: "comprehension",
       help: {
         levels: [
           {
-            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+            sceneDirection: "Rasa holds up three fingers and repeats the time.",
+            speakerText: "Trečią valandą.",
           },
           {
-            speakerText: "The bus leaves at three o'clock.",
+            speakerText: "At three o'clock.",
             spokenLanguage: "en",
             audio: false,
           },
@@ -1082,17 +1089,19 @@ export default function createModule_3_3(profile = {}) {
       options: [
         {
                   id: "b",
-                  text: "Trečią valandą — gerai, ačiū!",
+                  text: "At three o'clock.",
+                  learnerText: "Gerai, ačiū!",
                   result: "best",
                   progresses: true,
                 },
         {
-                  id: "c",
-                  text: "Rytoj?",
-                  result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-                  progresses: false,
-                }
+          id: "c",
+          text: "At two o'clock.",
+          result: "wrong",
+          feedback: "Rasa said trečią, at three, not two.",
+          progresses: false,
+        },
+        { id: "d", text: "At five o'clock.", result: "wrong", feedback: "Penktą is at five; Rasa said trečią, at three.", progresses: false },
       ],
     },
     {
@@ -1100,7 +1109,7 @@ export default function createModule_3_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Dabar antra valanda — turite laiko.",
-      supportText: "It's two o'clock now — you have time.",
+      supportText: "antra valanda — two o'clock; turite laiko — you have time",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
@@ -1108,7 +1117,7 @@ export default function createModule_3_3(profile = {}) {
           id: "a",
           text: "Brangu",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Brangu means expensive; Rasa is saying you still have time for the bus.",
           progresses: false,
         },
         {
@@ -1121,7 +1130,7 @@ export default function createModule_3_3(profile = {}) {
           id: "c",
           text: "Kiek tai kainuoja?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Kiek tai kainuoja? asks a price, not a response to the time reassurance.",
           progresses: false,
         }
       ],

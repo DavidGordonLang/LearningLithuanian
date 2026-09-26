@@ -12,8 +12,8 @@ const scenarios=(unit)=>unit.lessons
 
 test("Section 3 Scenario V2 limits visible support to the reviewed support lines and keeps help out of wrong answers",()=>{
   const supported = new Map([
-    ["s3m3l4_b6_v2:step_3", ["Kavinėje. Iki!", "In the café. See you!"]],
-    ["s3m3c_b6_v2:step_3", ["Dabar antra valanda — turite laiko.", "It's two o'clock now — you have time."]],
+    ["s3m3l4_b6_v2:step_3", ["Kavinėje. Iki!", "kavinėje — in the café (from kavinė — café)"]],
+    ["s3m3c_b6_v2:step_3", ["Dabar antra valanda — turite laiko.", "antra valanda — two o'clock; turite laiko — you have time"]],
     ["s3m4l5_b10_v2:step_1", ["Ar užtenka laiko?", "Do we have enough time?"]],
     ["s3m4l5_b10_v2:step_2", ["Einame dabar?", "Shall we go now?"]],
     ["s3m4l5_b11_v2:step_1", ["Ar užtenka pinigų?", "Do you have enough money?"]],

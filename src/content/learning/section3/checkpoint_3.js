@@ -22,6 +22,7 @@ export default function createCheckpoint3(profile = {}) {
         type: "best_response",
         title: "Choose the best response",
         noOptionAudio: true,
+        answerAudioText: "penkiolika eurų",
         prompt: { text: "A market seller says 'penkiolika eurų'. How much is it?" },
         options: [
           { id: "a", text: "Fifty", isCorrect: false },
@@ -140,12 +141,12 @@ export default function createCheckpoint3(profile = {}) {
   id: "s3c_b10_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You arrive in Vilnius and need to buy train tickets, check a departure time, and pay. A full practical exchange.",
-  sceneIntro: "You arrive in Vilnius and need to buy train tickets, check a departure time, and pay. A full practical exchange.",
+  description: "At Vilnius station, you need two train tickets to Kaunas, one for you and one for a friend. Twenty euros fits your budget; you want to pay by card and check when the train leaves.",
+  sceneIntro: "At Vilnius station, you need two train tickets to Kaunas, one for you and one for a friend. Twenty euros fits your budget; you want to pay by card and check when the train leaves.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
-  goal: "You arrive in Vilnius and need to buy train tickets, check a departure time, and pay. A full practical exchange.",
+  goal: "Buy two train tickets to Kaunas, pay by card and check the departure time.",
   focus: ["payment","time"],
   participants: [
     {
@@ -173,8 +174,8 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Laba diena! Ar galiu jums padėti?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You need two tickets to Kaunas for yourself and your friend.",
+      learnerPrompt: "Ask for the two tickets to Kaunas.",
       help: {
         levels: [
           {
@@ -190,14 +191,14 @@ export default function createCheckpoint3(profile = {}) {
       options: [
         {
                   id: "a",
-                  text: "Viso gero",
+                  text: "Laba diena. Man reikia trijų bilietų į Kauną, prašau.",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Trijų asks for three tickets; you need two, so use dviejų.",
                   progresses: false,
                 },
         {
                   id: "b",
-                  text: "Laba diena. Man reikėtų dviejų bilietų į Kauną, prašau.",
+                  text: "Laba diena. Man reikia dviejų bilietų į Kauną, prašau.",
                   result: "best",
                   progresses: true,
                 }
@@ -208,14 +209,14 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Tai kainuoja dvidešimt eurų.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Twenty euros is fine for you. You want to pay by card.",
+      learnerPrompt: "Accept the price and ask to pay by card.",
       options: [
         {
           id: "a",
           text: "Per brangu!",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You decided twenty euros is fine; Per brangu says it is too expensive.",
           progresses: false,
         },
         {
@@ -226,9 +227,9 @@ export default function createCheckpoint3(profile = {}) {
         },
         {
           id: "c",
-          text: "Kiek bilietų?",
+          text: "Grynaisiais, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Grynaisiais is cash; you want to pay by card. Ask Ar galima mokėti kortele?",
           progresses: false,
         }
       ],
@@ -238,8 +239,8 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Taip, galima. Prašom.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rasa hands you the tickets. You still need to know when the train leaves.",
+      learnerPrompt: "Ask when the train departs.",
       help: {
         levels: [
           {
@@ -257,7 +258,7 @@ export default function createCheckpoint3(profile = {}) {
                   id: "a",
                   text: "Nepakanka pinigų",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "You can afford the tickets; you still need to ask when the train leaves.",
                   progresses: false,
                 },
         {
@@ -273,27 +274,33 @@ export default function createCheckpoint3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Traukinys išvyksta penktą valandą.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Listen to the departure time before answering.",
+      learnerPrompt: "When does the train leave?",
+      interactionMode: "comprehension",
+      help: { levels: [
+        { sceneDirection: "Rasa holds up five fingers and repeats the time.", speakerText: "Penktą valandą." },
+        { speakerText: "At five o'clock.", spokenLanguage: "en", audio: false },
+      ] },
       options: [
         {
           id: "a",
-          text: "Rytoj?",
+          text: "At three o'clock.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Trečią is at three; Rasa said penktą, at five.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Penktą valandą — ačiū labai!",
+          text: "At five o'clock.",
+          learnerText: "Gerai, ačiū labai!",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Dabar?",
+          text: "At two o'clock.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rasa said penktą, at five, not two.",
           progresses: false,
         }
       ],
@@ -323,7 +330,7 @@ export default function createCheckpoint3(profile = {}) {
                   id: "a",
                   text: "Atsiprašau",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Atsiprašau apologises; Rasa wished you a good journey, so thank her and say goodbye.",
                   progresses: false,
                 },
         {
@@ -331,7 +338,8 @@ export default function createCheckpoint3(profile = {}) {
                   text: "Ačiū labai! Viso gero!",
                   result: "best",
                   progresses: true,
-                }
+                },
+        { id: "c", text: "Ačiū! Iki!", result: "acceptable", feedback: "A friendly closing works; viso gero is the polite service phrase practised here.", progresses: true }
       ],
     }
   ],

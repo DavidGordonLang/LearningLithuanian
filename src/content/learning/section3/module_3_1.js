@@ -168,6 +168,7 @@ export default function createModule_3_1(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             noOptionAudio: true,
+            answerAudioText: "aštuoniolika",
             prompt: { text: "Someone says their son is aštuoniolika years old. How old is he?" },
             options: [
               { id: "a", text: "Fourteen", isCorrect: false },
@@ -289,6 +290,7 @@ export default function createModule_3_1(profile = {}) {
             type: "best_response",
             title: "Choose the best response",
             noOptionAudio: true,
+            answerAudioText: "penkiasdešimt eurų",
             prompt: { text: "A market seller says 'penkiasdešimt eurų'. How much is it?" },
             options: [
               { id: "a", text: "Fifteen euros", isCorrect: false },
@@ -309,15 +311,14 @@ export default function createModule_3_1(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "The number you learned on its own is its base form, but Lithuanian often changes that word to fit the job it is doing in the sentence. Think: same number, different job — not a new number. You are not expected to build every form from a grammar table yet. For now, notice the family resemblance and learn the practical pattern when it appears.",
+          pattern: "Same number, different job: trys is three, while Man reikia trijų bilietų means I need three tickets. Learn each useful phrase as it appears; the number still means three.",
           usage: [
             "You already know aš esu = I am. Mes = we, esame = are, so mes esame = we are.",
-            "Mes esame dviese = there are two of us. Think of dviese as the useful 'two of us' chunk.",
+            "Mes esame dviese = there are two of us. Dviese is the useful 'two of us' chunk.",
             "trys = three → trijų bilietų in Man reikia trijų bilietų (I need three tickets)",
             "du = two → dviejų after reikia: Man reikia dviejų bilietų (I need two tickets)",
             "du = two → dvi with a feminine thing: Dvi kavas, prašau (Two coffees, please)",
-            "penki = five → penktą valandą when you mean at five o'clock",
-            "dešimt stays easy to recognise in dešimt eurų — ten euros",
+            "Later, penki = five becomes penktą valandą when you mean at five o'clock.",
           ],
         },
         blocks: [
@@ -423,9 +424,9 @@ export default function createModule_3_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viso gero",
+          text: "Man reikia dviejų bilietų",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Bilietų are tickets. Here you are ordering coffees, so say dvi kavas.",
           progresses: false,
         },
         {
@@ -436,9 +437,9 @@ export default function createModule_3_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Šimtas kavų",
+          text: "Vieną kavą, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Vieną kavą orders one coffee. You need two: dvi kavas.",
           progresses: false,
         }
       ],
@@ -467,9 +468,9 @@ export default function createModule_3_1(profile = {}) {
       options: [
         {
                   id: "b",
-                  text: "Labas rytas",
+                  text: "Dešimt eurų?",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Ieva said šešis eurus, six euros, not ten.",
                   progresses: false,
                 },
         {
@@ -491,9 +492,9 @@ export default function createModule_3_1(profile = {}) {
         {
           id: "a",
           text: "Viso gero",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          result: "acceptable",
+          feedback: "A goodbye works here; thanking Ieva for the coffees is warmer.",
+          progresses: true,
         },
         {
           id: "b",
@@ -505,7 +506,7 @@ export default function createModule_3_1(profile = {}) {
           id: "c",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; Ieva has just served your coffees, so thank her or say goodbye.",
           progresses: false,
         }
       ],
@@ -590,8 +591,8 @@ export default function createModule_3_1(profile = {}) {
   id: "s3m1c_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're at a train station ticket window buying two tickets — one for you and one for a friend.",
-  sceneIntro: "You're at a train station ticket window buying two tickets — one for you and one for a friend.",
+  description: "You're at a train station ticket window buying two tickets — one for you and one for a friend. Twenty euros is fine for you.",
+  sceneIntro: "You're at a train station ticket window buying two tickets — one for you and one for a friend. Twenty euros is fine for you.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
@@ -635,9 +636,9 @@ export default function createModule_3_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viso gero",
+          text: "Man reikia trijų bilietų, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Trijų asks for three tickets. You need two: dviejų.",
           progresses: false,
         },
         {
@@ -648,9 +649,9 @@ export default function createModule_3_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Šimtas",
+          text: "Dvi kavas, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Dvi kavas orders two coffees; Rasa asked how many tickets.",
           progresses: false,
         }
       ],
@@ -660,7 +661,7 @@ export default function createModule_3_1(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Dvidešimt eurų.",
-      sceneDirection: "The conversation continues.",
+      sceneDirection: "Twenty euros works for you.",
       learnerPrompt: "Choose the most natural response.",
       help: {
         levels: [
@@ -683,9 +684,9 @@ export default function createModule_3_1(profile = {}) {
                 },
         {
                   id: "c",
-                  text: "Iki",
+                  text: "Trisdešimt? Gerai.",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Trisdešimt is thirty; Rasa quoted dvidešimt, twenty.",
                   progresses: false,
                 }
       ],
@@ -714,7 +715,7 @@ export default function createModule_3_1(profile = {}) {
                   id: "a",
                   text: "Atsiprašau",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Atsiprašau is an apology; Rasa has handed you the tickets, so thank her.",
                   progresses: false,
                 },
         {

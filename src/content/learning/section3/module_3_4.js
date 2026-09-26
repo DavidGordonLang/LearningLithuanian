@@ -148,7 +148,7 @@ export default function createModule_3_4(profile = {}) {
                   id: "a",
                   text: "Man reikia pagalbos",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Man reikia pagalbos means I need help; Rasa asked your age.",
                   progresses: false,
                 },
         {
@@ -184,7 +184,7 @@ export default function createModule_3_4(profile = {}) {
                   id: "a",
                   text: "Brangu",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Brangu comments on price; Rasa has just told you her age.",
                   progresses: false,
                 },
         {
@@ -283,12 +283,12 @@ export default function createModule_3_4(profile = {}) {
   id: "s3m4l2_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're at a ticket counter. The assistant asks how many you need.",
-  sceneIntro: "You're at a ticket counter. The assistant asks how many you need.",
+  description: "You're buying two tickets at the counter: one for yourself and one for a friend. Twenty euros is fine, and you want to pay by card.",
+  sceneIntro: "You're buying two tickets at the counter: one for yourself and one for a friend. Twenty euros is fine, and you want to pay by card.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
-  goal: "You're at a ticket counter. The assistant asks how many you need.",
+  goal: "Buy two tickets and pay by card.",
   focus: ["numbers"],
   participants: [
     {
@@ -316,8 +316,8 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Laba diena! Kiek bilietų?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You need two tickets, one for each of you.",
+      learnerPrompt: "Ask for two tickets.",
       help: {
         levels: [
           {
@@ -333,9 +333,9 @@ export default function createModule_3_4(profile = {}) {
       options: [
         {
                   id: "a",
-                  text: "Kiek tai kainuoja?",
+                  text: "Trijų bilietų, prašau.",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Trijų asks for three tickets; you need two, so use dviejų.",
                   progresses: false,
                 },
         {
@@ -351,14 +351,14 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Du bilietai — dvidešimt eurų.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Twenty euros works for you. You want to pay by card.",
+      learnerPrompt: "Ask whether you can pay by card.",
       options: [
         {
           id: "a",
           text: "Per brangu",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You decided twenty euros is fine; Per brangu means it is too expensive.",
           progresses: false,
         },
         {
@@ -371,7 +371,7 @@ export default function createModule_3_4(profile = {}) {
           id: "c",
           text: "Ačiū, viso gero",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You have not finished buying the tickets; you still want to pay by card.",
           progresses: false,
         }
       ],
@@ -400,7 +400,7 @@ export default function createModule_3_4(profile = {}) {
                   id: "a",
                   text: "Atsiprašau",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Atsiprašau apologises; Rasa has just handed you the tickets.",
                   progresses: false,
                 },
         {
@@ -495,8 +495,8 @@ export default function createModule_3_4(profile = {}) {
   id: "s3m4l3_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You're having coffee with a friend. The server comes to check in.",
-  sceneIntro: "You're having coffee with a friend. The server comes to check in.",
+  description: "You're having coffee with a friend and would like one more coffee and some water. The server comes to check in.",
+  sceneIntro: "You're having coffee with a friend and would like one more coffee and some water. The server comes to check in.",
   location: "café",
   userRole: "customer",
   register: "polite_service",
@@ -528,14 +528,14 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "barista",
       speakerLabel: "Barista",
       speakerText: "Ar dar kavos?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You would like one more coffee.",
+      learnerPrompt: "Ask for one more coffee.",
       options: [
         {
           id: "a",
           text: "Mažiau, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Mažiau asks for less; you want one more coffee.",
           progresses: false,
         },
         {
@@ -548,7 +548,7 @@ export default function createModule_3_4(profile = {}) {
           id: "c",
           text: "Kiek valandų?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Kiek valandų? asks the time, not for another coffee.",
           progresses: false,
         }
       ],
@@ -577,7 +577,7 @@ export default function createModule_3_4(profile = {}) {
                   id: "a",
                   text: "Per brangu",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Per brangu concerns price; Ieva has just offered water.",
                   progresses: false,
                 },
         {
@@ -956,11 +956,12 @@ export default function createModule_3_4(profile = {}) {
         supportLevel: "low",
         newLanguageLoad: "low",
         notes: {
-          pattern: "This lesson combines the number patterns you have already seen. Do not try to force every number back to its dictionary form. Read the whole chunk: viena becomes vieną in a direct order, dvi stays dvi with a feminine plural, and dviese is the useful fixed phrase for 'two of us'. The goal is to recognise which familiar number family fits the situation.",
+          pattern: "Choose the phrase for the job: viena kava names one coffee; vieną kavą, prašau orders one. Mes esame dviese says there are two of us. For three people, use Mes esame trise.",
           usage: [
             "viena → vieną kavą — one coffee in an order",
             "dvi + feminine plural → dvi arbatas — two teas",
             "Mes esame dviese — there are two of us",
+            "trys → trise in Mes esame trise — there are three of us",
             "Dar vieną, prašau — one more, please",
             "Užtenka — that's enough",
             "Kiek jūsų? — how many of you are there?",
@@ -974,6 +975,7 @@ export default function createModule_3_4(profile = {}) {
             items: [
               { id: "qa2", lt: "Vieną kavą ir dvi arbatas, prašau", en: "One coffee and two teas, please", audioText: "Vieną kavą ir dvi arbatas, prašau", saveable: true, core: true },
               { id: "qa3", lt: "Kiek jūsų?",                  en: "How many of you are there?",   audioText: "Kiek jūsų",                   saveable: true, core: true },
+              { id: "qa4", lt: "Mes esame trise",             en: "There are three of us",      audioText: "Mes esame trise",             saveable: true, core: false },
             ],
           },
           {
@@ -1071,9 +1073,9 @@ export default function createModule_3_4(profile = {}) {
       options: [
         {
                   id: "a",
-                  text: "Du bilietai",
+                  text: "Mes esame trise",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "Trise says there are three of you. You and your friend are dviese.",
                   progresses: false,
                 },
         {
@@ -1106,9 +1108,9 @@ export default function createModule_3_4(profile = {}) {
       options: [
         {
                   id: "a",
-                  text: "Kiek tai kainuoja?",
+                  text: "Dvi kavas ir vieną arbatą, prašau.",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "That orders two coffees and one tea; your table wants one coffee and two teas.",
                   progresses: false,
                 },
         {
@@ -1124,14 +1126,14 @@ export default function createModule_3_4(profile = {}) {
       speakerId: "server",
       speakerLabel: "Server",
       speakerText: "Žinoma. Ar dar ko nors?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "That completes the order; your table wants nothing else.",
+      learnerPrompt: "Say no thanks and that you have enough.",
       options: [
         {
           id: "a",
           text: "Daugiau kavų",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That asks for more coffee; your table has finished ordering.",
           progresses: false,
         },
         {
@@ -1144,7 +1146,7 @@ export default function createModule_3_4(profile = {}) {
           id: "c",
           text: "Nepakanka laiko",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Nepakanka laiko means there is not enough time; Ieva asks if you want anything else.",
           progresses: false,
         }
       ],
@@ -1161,7 +1163,7 @@ export default function createModule_3_4(profile = {}) {
           id: "a",
           text: "Atsiprašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Atsiprašau apologises; thank Ieva for the drinks.",
           progresses: false,
         },
         {
@@ -1174,7 +1176,7 @@ export default function createModule_3_4(profile = {}) {
           id: "c",
           text: "Dar vieną",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Dar vieną asks for one more; your table has already finished ordering.",
           progresses: false,
         }
       ],
@@ -1310,9 +1312,9 @@ export default function createModule_3_4(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viena kava",
+          text: "Mes esame dviese",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Dviese means two of us. There are three people, so use trise.",
           progresses: false,
         },
         {
@@ -1323,9 +1325,9 @@ export default function createModule_3_4(profile = {}) {
         },
         {
           id: "c",
-          text: "Nepakanka laiko",
+          text: "Dvi kavas, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That orders two coffees; Ieva is asking how many people are here.",
           progresses: false,
         }
       ],
@@ -1352,9 +1354,9 @@ export default function createModule_3_4(profile = {}) {
       options: [
         {
                   id: "a",
-                  text: "Kiek tai kainuoja?",
+                  text: "Vieną kavą ir dvi arbatas, prašau.",
                   result: "wrong",
-                  feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+                  feedback: "That orders one coffee and two teas. Your group wants two coffees and water.",
                   progresses: false,
                 },
         {
@@ -1382,16 +1384,16 @@ export default function createModule_3_4(profile = {}) {
         },
         {
           id: "b",
-          text: "Nepakanka laiko",
+          text: "Ne, ačiū. Užtenka.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That says you have enough; your friend has asked for more water.",
           progresses: false,
         },
         {
           id: "c",
-          text: "Brangu",
+          text: "Dar vieną kavą, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That asks for another coffee. Your friend specifically wants more water.",
           progresses: false,
         }
       ],
@@ -1408,7 +1410,7 @@ export default function createModule_3_4(profile = {}) {
           id: "a",
           text: "Dar vieną, prašau",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Dar vieną requests one more. Your group has enough now.",
           progresses: false,
         },
         {
@@ -1421,7 +1423,7 @@ export default function createModule_3_4(profile = {}) {
           id: "c",
           text: "Kiek bilietų?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Kiek bilietų? asks about tickets; Ieva asked whether you want anything else to drink.",
           progresses: false,
         }
       ],
