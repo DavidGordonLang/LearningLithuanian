@@ -82,9 +82,51 @@ function ScenarioV2Styles() {
       }
       .scenario-v2-soft-answer { color: #fcd34d; }
       .scenario-v2-user-bubble.scenario-v2-soft-bubble { --scenario-v2-bubble-bg: #713f12; --scenario-v2-bubble-border: #d97706; }
+      .scenario-v2-soft-bubble .scenario-v2-user-label { color: #fde68a; }
+      .scenario-v2-intro-screen {
+        background:
+          radial-gradient(700px 360px at 50% 8%, rgba(16,185,129,0.16), transparent 68%),
+          radial-gradient(540px 440px at 90% 82%, rgba(20,184,166,0.08), transparent 72%),
+          #09090b;
+      }
+      .scenario-v2-intro-card {
+        background: linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.035));
+        border-color: rgba(255,255,255,0.12);
+        box-shadow: 0 28px 80px rgba(0,0,0,0.38);
+      }
+      .scenario-v2-intro-badge {
+        border-color: rgba(52,211,153,0.20);
+        background: rgba(16,185,129,0.10);
+        color: #a7f3d0;
+      }
+      .scenario-v2-intro-meta-card {
+        border-color: rgba(255,255,255,0.10);
+        background: rgba(255,255,255,0.04);
+      }
       html[data-theme="light"] .scenario-v2-screen { background: #f6eede; color: #1c1917; }
+      html[data-theme="light"] .scenario-v2-intro-screen {
+        background:
+          radial-gradient(700px 360px at 50% 8%, rgba(107,143,110,0.18), transparent 68%),
+          radial-gradient(520px 420px at 88% 84%, rgba(191,153,92,0.10), transparent 72%),
+          linear-gradient(180deg, #f4ead8 0%, #f6eede 48%, #efe2ca 100%);
+      }
+      html[data-theme="light"] .scenario-v2-intro-card {
+        background: linear-gradient(145deg, rgba(255,250,241,0.90), rgba(247,237,219,0.82));
+        border-color: rgba(94,75,45,0.16);
+        box-shadow: 0 24px 70px rgba(81,64,38,0.14);
+      }
+      html[data-theme="light"] .scenario-v2-intro-badge {
+        border-color: rgba(74,125,80,0.22);
+        background: rgba(107,143,110,0.11);
+        color: #3f6f4e;
+      }
+      html[data-theme="light"] .scenario-v2-intro-meta-card {
+        border-color: rgba(94,75,45,0.12);
+        background: rgba(255,255,255,0.34);
+      }
       html[data-theme="light"] .scenario-v2-soft-answer { color: #92400e; }
       html[data-theme="light"] .scenario-v2-user-bubble.scenario-v2-soft-bubble { --scenario-v2-bubble-bg: #fef3c7; --scenario-v2-bubble-border: #d97706; }
+      html[data-theme="light"] .scenario-v2-soft-bubble .scenario-v2-user-label { color: #78350f; }
       html[data-theme="light"] .scenario-v2-soft-bubble .scenario-v2-user-text { color: #92400e; }
       @keyframes scenarioV2Fade {
         from { opacity: 0; transform: translateY(6px); }
@@ -117,10 +159,12 @@ function ScenarioV2Styles() {
       .scenario-v2-bubble-left::after {
         left: -4px;
         border-bottom-left-radius: 5px;
+        box-shadow: -1px 1px 0 var(--scenario-v2-bubble-border);
       }
       .scenario-v2-bubble-right::after {
         right: -4px;
         border-top-right-radius: 5px;
+        box-shadow: 1px 1px 0 var(--scenario-v2-bubble-border);
       }
       .scenario-v2-speaker-bubble { --scenario-v2-bubble-bg: rgba(255,255,255,0.075); --scenario-v2-bubble-border: rgba(255,255,255,0.075); }
       .scenario-v2-final-bubble { --scenario-v2-bubble-bg: rgba(16,185,129,0.12); --scenario-v2-bubble-border: rgba(52,211,153,0.12); }
@@ -913,20 +957,44 @@ export default function ScenarioV2Block({ block, playText, onComplete, onWrongAn
   useEffect(() => { if (!started) titleRef.current?.focus(); }, [started]);
   function finish() { onComplete?.(); onAdvance?.(); }
   const intro = (
-    <section className="scenario-v2-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100" aria-labelledby="scenario-intro-title">
+    <section className="scenario-v2-screen scenario-v2-intro-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100" aria-labelledby="scenario-intro-title">
       <div className="scenario-v2-frame mx-auto flex min-h-[100dvh] max-w-xl flex-col px-5 py-5">
-        {onExit ? <button type="button" onClick={onExit} className="self-start rounded-full border border-white/15 px-4 py-2 text-sm">Back</button> : null}
-        <div className="flex flex-1 flex-col justify-center py-10">
-          <p className="text-sm text-zinc-400">Scenario</p>
-          <h1 id="scenario-intro-title" ref={titleRef} tabIndex={-1} className="mt-3 break-words text-[2rem] font-semibold leading-tight outline-none">{block?.title || "Scenario"}</h1>
-          <p className="mt-6 whitespace-pre-line break-words text-[1.25rem] leading-relaxed text-zinc-200">{block?.sceneIntro || block?.description || block?.goal}</p>
-          <dl className="mt-8 space-y-3 text-base text-zinc-400">
-            {block?.location ? <div><dt className="font-semibold">Where</dt><dd>{block.location}</dd></div> : null}
-            {block?.userRole ? <div><dt className="font-semibold">Your role</dt><dd>{block.userRole}</dd></div> : null}
-            {block?.participants?.length ? <div><dt className="font-semibold">With</dt><dd>{block.participants.map(p => [p.name || p.label, p.role].filter(Boolean).join(" — ")).join(", ")}</dd></div> : null}
-          </dl>
+        {onExit ? <button type="button" onClick={onExit} className="self-start rounded-full border border-white/15 bg-white/[0.035] px-4 py-2 text-sm text-zinc-400 transition hover:bg-white/[0.07] hover:text-zinc-200">Back</button> : null}
+        <div className="flex flex-1 items-center py-8 sm:py-10">
+          <div className="scenario-v2-intro-card w-full rounded-[32px] border px-5 py-6 sm:px-7 sm:py-8">
+            <div className="scenario-v2-intro-badge inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M7 17.5L4.5 19V7.75A2.75 2.75 0 0 1 7.25 5h9.5a2.75 2.75 0 0 1 2.75 2.75v6.5A2.75 2.75 0 0 1 16.75 17H8.1L7 17.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Scenario practice
+            </div>
+            <h1 id="scenario-intro-title" ref={titleRef} tabIndex={-1} className="mt-5 break-words text-[2.15rem] font-semibold leading-[1.08] tracking-tight outline-none sm:text-[2.5rem]">{block?.title || "Scenario"}</h1>
+            <p className="mt-4 whitespace-pre-line break-words text-[1.08rem] leading-relaxed text-zinc-300 sm:text-[1.15rem]">{block?.sceneIntro || block?.description || block?.goal}</p>
+            {(block?.location || block?.userRole || block?.participants?.length) ? (
+              <dl className="mt-7 grid gap-3 sm:grid-cols-3">
+                {block?.location ? (
+                  <div className="scenario-v2-intro-meta-card rounded-2xl border px-4 py-3">
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Where</dt>
+                    <dd className="mt-1 text-[15px] font-medium leading-snug text-zinc-200">{block.location}</dd>
+                  </div>
+                ) : null}
+                {block?.userRole ? (
+                  <div className="scenario-v2-intro-meta-card rounded-2xl border px-4 py-3">
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Your role</dt>
+                    <dd className="mt-1 text-[15px] font-medium leading-snug text-zinc-200 capitalize">{block.userRole}</dd>
+                  </div>
+                ) : null}
+                {block?.participants?.length ? (
+                  <div className="scenario-v2-intro-meta-card rounded-2xl border px-4 py-3">
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">With</dt>
+                    <dd className="mt-1 text-[15px] font-medium leading-snug text-zinc-200">{block.participants.map(p => [p.name || p.label, p.role].filter(Boolean).join(" — ")).join(", ")}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            ) : null}
+          </div>
         </div>
-        <ActionButton onClick={() => setStarted(true)} className="w-full shrink-0">Start scenario</ActionButton>
+        <ActionButton onClick={() => setStarted(true)} className="w-full shrink-0 py-4 text-[15px]">Start scenario</ActionButton>
       </div>
     </section>
   );
