@@ -128,7 +128,7 @@ function findLessonAfter(sections, lessonId) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, showToast }) {
+function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, showToast, isActive = true }) {
   const [screen, setScreen] = useState("home");
   const [showSequenceDebug, setShowSequenceDebug] = useState(false);
   const [showScenarioReview, setShowScenarioReview] = useState(false);
@@ -497,6 +497,7 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
         playText={playText}
         showToast={showToast}
         userId={user?.id}
+        isActive={isActive}
         onBack={() => {
           if (lessonReturnScreen === "learningModule") {
             setScreen(lessonReturnScreen);

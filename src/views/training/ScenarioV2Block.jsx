@@ -3,6 +3,8 @@ import { isScenarioTurnAudioEnabled } from "../../utils/scenarioAudio.js";
 import { getScenarioHelpOption, getScenarioHelpTurn, withScenarioHelpOption } from "../../utils/scenarioHelp.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { trackProductEvent } from "../../services/analytics";
+import { scenarioSummary } from "../../lib/productTelemetry";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -496,7 +498,7 @@ function ScenarioV2CompleteAction({ onComplete }) {
   );
 }
 
-function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswer, onExit, onComplete }) {
+function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswer, onExit, onComplete, lessonId }) {
   const lifetimeRef = useRef(null);
   if (!lifetimeRef.current) lifetimeRef.current = new AbortController();
   const learnerAudioRef = useRef(false);
@@ -529,6 +531,8 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
   const [finalTurn, setFinalTurn] = useState(null);
   const [finalPhase, setFinalPhase] = useState("scene");
   const [complete, setComplete] = useState(false);
+  const outcomesRef = useRef([]);
+  const totalHelpRef = useRef(0);
 
   const step = steps[stepIndex] || null;
   const authoredOptions = Array.isArray(step?.options) ? step.options : [];
@@ -759,6 +763,8 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
   function handleScenarioHelp(option) {
     const turn = getScenarioHelpTurn(step, helpCount);
     if (!turn) return;
+    totalHelpRef.current += 1;
+    trackProductEvent("scenario_help_used", { scenario_id: block?.id, lesson_id: lessonId, help_level: helpCount + 1 });
     addCurrentExchange(option, `${step?.id || "step"}_help_request_${helpCount + 1}`);
     setHelpCounts((prev) => ({ ...prev, [step.id]: helpCount + 1 }));
     setHelpTurn(turn);
@@ -770,6 +776,7 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
       handleScenarioHelp(option);
       return;
     }
+    outcomesRef.current.push(option?.result || "wrong");
     if (!optionCanProgress(option)) onWrongAnswer?.();
     if (!optionNeedsFeedback(option)) {
       processProgressingOption(option);
@@ -946,7 +953,7 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
         {learnerAudioPending ? <div role="status" className="mt-2 text-sm text-zinc-400">Your reply is playing…</div> : null}
 
         {complete ? (
-          <ScenarioV2CompleteAction onComplete={onComplete} />
+          <ScenarioV2CompleteAction onComplete={() => onComplete?.(scenarioSummary(outcomesRef.current, totalHelpRef.current))} />
         ) : null}
       </div>
 
@@ -965,11 +972,18 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
   return typeof document !== "undefined" ? createPortal(content, document.body) : null;
 }
 
-export default function ScenarioV2Block({ block, playText, onComplete, onWrongAnswer, onAdvance, onExit }) {
+export default function ScenarioV2Block({ block, playText, onComplete, onWrongAnswer, onAdvance, onExit, lessonId }) {
   const [started, setStarted] = useState(false);
+  const startedRef = useRef(false);
+  const finishedRef = useRef(false);
   const titleRef = useRef(null);
   useEffect(() => { if (!started) titleRef.current?.focus(); }, [started]);
-  function finish() { onComplete?.(); onAdvance?.(); }
+  function finish(summary) {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    trackProductEvent("scenario_completed", { scenario_id: block?.id, lesson_id: lessonId, ...summary });
+    onComplete?.(); onAdvance?.();
+  }
   const intro = (
     <section className="scenario-v2-screen scenario-v2-intro-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100" aria-labelledby="scenario-intro-title">
       <div className="scenario-v2-frame mx-auto flex min-h-[100dvh] max-w-xl flex-col px-5 py-5">
@@ -1008,14 +1022,14 @@ export default function ScenarioV2Block({ block, playText, onComplete, onWrongAn
             ) : null}
           </div>
         </div>
-        <ActionButton onClick={() => setStarted(true)} className="w-full shrink-0 py-4 text-[15px]">Start scenario</ActionButton>
+        <ActionButton onClick={() => { if (startedRef.current) return; startedRef.current = true; trackProductEvent("scenario_started", { scenario_id: block?.id, lesson_id: lessonId }); setStarted(true); }} className="w-full shrink-0 py-4 text-[15px]">Start scenario</ActionButton>
       </div>
     </section>
   );
   return <>
     <ScenarioV2Styles />
-    {started ? <ScenarioV2FocusedMode block={block} playText={playText} onWrongAnswer={onWrongAnswer}
-      onExit={() => setStarted(false)} onComplete={finish} />
+    {started ? <ScenarioV2FocusedMode block={block} lessonId={lessonId} playText={playText} onWrongAnswer={onWrongAnswer}
+      onExit={() => { startedRef.current = false; setStarted(false); }} onComplete={finish} />
       : typeof document !== "undefined" ? createPortal(intro, document.body) : intro}
   </>;
 }

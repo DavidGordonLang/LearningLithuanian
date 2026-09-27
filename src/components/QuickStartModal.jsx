@@ -16,7 +16,7 @@ export default function QuickStartModal({ playText, stopText, onClose }) {
   const [phraseActive, setPhraseActive] = useState(false);
   const request = useRef(0);
   const stop = () => { request.current += 1; setPhraseActive(false); stopText?.(); };
-  const finish = () => { stop(); onClose?.(); };
+  const finish = (completed = false) => { stop(); onClose?.(completed); };
   const navigate = (index) => { stop(); setStep(index); };
   const tryWord = (text, options) => {
     stop();
@@ -34,8 +34,8 @@ export default function QuickStartModal({ playText, stopText, onClose }) {
   const card = "z-inset p-4 space-y-2";
   return (
     <ModalShell open title={steps[step].title} subtitle={steps[step].subtitle}
-      onClose={finish} closeOnBackdrop={false} zIndex="z-[11000]"
-      headerAction={<button type="button" className="z-btn z-btn-secondary px-3 py-2" onClick={finish}>Skip</button>}>
+      onClose={() => finish(false)} closeOnBackdrop={false} zIndex="z-[11000]"
+      headerAction={<button type="button" className="z-btn z-btn-secondary px-3 py-2" onClick={() => finish(false)}>Skip</button>}>
       <div className="p-5 space-y-5 overflow-y-auto max-h-[65dvh]">
         <div className="flex gap-2" aria-label={`Introduction step ${step + 1} of 4`}>
           {steps.map((item, i) => <span key={item.title} className={`h-1 flex-1 rounded-full ${i <= step ? "bg-emerald-500" : "bg-zinc-400/25"}`} />)}
@@ -93,7 +93,7 @@ export default function QuickStartModal({ playText, stopText, onClose }) {
         </> : null}
         <div className="flex items-center justify-between gap-3 pt-1">
           {step > 0 ? <button type="button" className="z-btn z-btn-secondary px-4 py-3" onClick={() => navigate(step - 1)}>Back</button> : <span />}
-          <button type="button" className="z-btn px-5 py-3 bg-emerald-500 text-black font-semibold" onClick={() => step < 3 ? navigate(step + 1) : finish()}>{step === 3 ? "Let’s begin" : step === 0 ? "Try the audio" : "Next"}</button>
+          <button type="button" className="z-btn px-5 py-3 bg-emerald-500 text-black font-semibold" onClick={() => step < 3 ? navigate(step + 1) : finish(true)}>{step === 3 ? "Let’s begin" : step === 0 ? "Try the audio" : "Next"}</button>
         </div>
       </div>
     </ModalShell>

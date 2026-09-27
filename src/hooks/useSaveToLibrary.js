@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { trackProductEvent } from "../services/analytics";
 
 // Match phraseStore contentKey logic (diacritics removed + alnum only)
 function normalizeForKey(input = "") {
@@ -143,6 +144,7 @@ export default function useSaveToLibrary({
         const arr = Array.isArray(prev) ? prev : [];
         return [newRow, ...arr];
       });
+      trackProductEvent("phrase_saved", { source: "translation" });
 
       // If notes are missing (user saved before enrichment finished),
       // run enrich in the background and patch the row when it returns.

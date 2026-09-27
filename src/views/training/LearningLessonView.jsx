@@ -13,6 +13,8 @@ import AudioPlayButton from "../../components/audio/AudioPlayButton";
 import { calculateAccuracyPct, countScoreableBlocks, isSoftPassChoiceOption, isCorrectChoiceOption, choiceOptionsAreEnglish, getChoiceAnswerAudio } from "../../lib/trainingScoring";
 import { getBuildPhraseDistractorMeaning } from "../../lib/buildPhraseFeedback";
 import { phraseMatchesSpeech } from "../../lib/speechMatch";
+import { trackProductEvent } from "../../services/analytics";
+import { lessonProgressMarker } from "../../lib/productTelemetry";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -445,9 +447,10 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
   );
 }
 
-function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance, completed }) {
+function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance, completed, lessonId }) {
   const [attemptState, setAttemptState] = useState("idle");
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const attemptCountRef = useRef(0);
   const targetText = block?.targetText || "";
   const pointerIdRef = React.useRef(null);
   const buttonRef = React.useRef(null);
@@ -459,7 +462,11 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
     translating: false,
     setInput: (text) => {
       const captured = String(text || "").trim();
-      if (phraseMatchesSpeech(captured, targetText)) {
+      const passed = phraseMatchesSpeech(captured, targetText);
+      attemptCountRef.current += 1;
+      trackProductEvent("pronunciation_attempt", { lesson_id: lessonId, block_id: block?.id,
+        passed, attempt_number: attemptCountRef.current, recognition_route: "speechmatics" });
+      if (passed) {
         setAttemptState("result_pass");
         onComplete?.();
       } else {
@@ -473,6 +480,9 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
       setAttemptState("idle");
     },
     onNoSpeech: () => {
+      attemptCountRef.current += 1;
+      trackProductEvent("pronunciation_attempt", { lesson_id: lessonId, block_id: block?.id,
+        passed: false, attempt_number: attemptCountRef.current, recognition_route: "speechmatics" });
       setAttemptState("not_caught");
     },
     onRecordingStart: () => {
@@ -1967,17 +1977,17 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
 }
 
 
-function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef, onExit }) {
+function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef, onExit, lessonId }) {
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
     case "recognise_mcq": case "listen_mcq": case "best_response":
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "speak_self_check":
-      return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed}/>;
+      return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed} lessonId={lessonId}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
-    case "scenario_v2": return <ScenarioV2Block onExit={onExit} block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
+    case "scenario_v2": return <ScenarioV2Block onExit={onExit} block={block} lessonId={lessonId} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "context_gap_select": return <ContextGapSelect block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "choose_correct_form": return <ChooseCorrectForm block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "conversation_turn_fill": return <ConversationTurnFill block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
@@ -2044,6 +2054,7 @@ function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLess
 export default function LearningLessonView({
   section, module, lesson, lessonIndex, playText, showToast,
   userId, onBack, onBrowseCourse, onLessonComplete, onNextLesson,
+  isActive = true,
   onNailedItContinue, // called when user taps Continue on NailedItCard
   nextLessonLabel,
   preloadText,
@@ -2066,6 +2077,33 @@ export default function LearningLessonView({
   const [lessonDone, setLessonDone] = useState(false);
   const navBarRef = useRef(null);
   const completionFiredRef = useRef(false);
+  const telemetryStartedRef = useRef(false);
+  const telemetryExitedRef = useRef(false);
+  const telemetryStartedAtRef = useRef(null);
+  useEffect(() => {
+    if (phase !== "running" || telemetryStartedRef.current || !lesson?.id) return;
+    telemetryStartedRef.current = true;
+    telemetryStartedAtRef.current = Date.now();
+    const review = completedLessonIds.includes(lesson.id);
+    const resumed = !review && (attemptRef.current.blockIndex > 0 || Object.keys(attemptRef.current.completedBlockIds).length > 0);
+    const base = { lesson_id: lesson.id, section_id: section?.id, module_id: module?.id, review };
+    trackProductEvent("lesson_started", { ...base, restart: !resumed && !!lessonProgress?.[lesson.id] });
+    if (resumed) trackProductEvent("lesson_resumed", { ...base, ...lessonProgressMarker(blocks, attemptRef.current) });
+  }, [phase, lesson?.id]);
+  const recordExit = useCallback(() => {
+    if (!telemetryStartedRef.current || telemetryExitedRef.current || completionFiredRef.current || lessonDone) return;
+    telemetryExitedRef.current = true;
+    trackProductEvent("lesson_exited", { lesson_id: lesson?.id,
+      ...lessonProgressMarker(blocks, attemptRef.current),
+      duration_ms: telemetryStartedAtRef.current ? Date.now() - telemetryStartedAtRef.current : undefined });
+  }, [blocks, lesson?.id, lessonDone]);
+  const wasActiveRef = useRef(isActive);
+  useEffect(() => {
+    if (wasActiveRef.current && !isActive) recordExit();
+    wasActiveRef.current = isActive;
+  }, [isActive, recordExit]);
+  const leaveLesson = () => { recordExit(); onBack?.(); };
+  const browseAway = () => { recordExit(); onBrowseCourse?.(); };
   // TrainingView mounts this keyed view only after account hydration is ready.
   // Save synchronously at each interaction, not in an unload/close callback.
   const persistAttempt = useCallback((touch = false) => {
@@ -2156,6 +2194,11 @@ export default function LearningLessonView({
       const base = 30;
       const earned = Math.max(10, base - attemptWrongCount * 2);
       const result = earnLessonXP(lesson.id, earned, userId);
+      trackProductEvent("lesson_completed", { lesson_id: lesson.id, section_id: section?.id,
+        module_id: module?.id, accuracy_pct: accuracy, scoreable_blocks: scoreableBlocks,
+        wrong_blocks: attemptWrongCount, xp_awarded: result?.xpGained || 0,
+        duration_ms: telemetryStartedAtRef.current ? Date.now() - telemetryStartedAtRef.current : undefined,
+        review: completedLessonIds.includes(lesson.id) });
       if (result?.xpGained) setXpEarned(result.xpGained);
       onLessonComplete?.({ wrongAnswers: attemptWrongCount, scoreableBlocks, xpAwarded: result?.xpGained || 0 });
     } else {
@@ -2195,7 +2238,7 @@ export default function LearningLessonView({
   if (phase === "loading") {
     return (
       <div className="max-w-xl mx-auto h-full flex flex-col" data-swipe-block="true">
-        <div className="px-4 pt-5"><TrainingBackButton onClick={onBack} /></div>
+        <div className="px-4 pt-5"><TrainingBackButton onClick={leaveLesson} /></div>
         <LessonLoadingScreen
           lesson={lesson}
           module={module}
@@ -2220,20 +2263,20 @@ export default function LearningLessonView({
             ? () => onNailedItContinue(lesson.id)
             : onNextLesson}
           nextLessonLabel={nextLessonLabel}
-          onBack={onBack}
+          onBack={leaveLesson}
         />
       ) : (
         <>
           {/* Header */}
           <div className="grid grid-cols-[44px_1fr_44px] items-center mb-3">
-            <TrainingBackButton onClick={onBack} />
+            <TrainingBackButton onClick={leaveLesson} />
             <div className="text-center">
                 <div className="text-[11px] text-zinc-500 tracking-wide">{section?.title || ""}</div>
                 <div className="text-[15px] font-semibold text-zinc-100 leading-tight">{lessonDisplayLabel}</div>
               </div>
             {typeof onBrowseCourse === "function" ? (
               <div className="flex items-center justify-end">
-                <button type="button" onClick={onBrowseCourse} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition leading-tight text-right" aria-label="Browse course">
+                <button type="button" onClick={browseAway} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition leading-tight text-right" aria-label="Browse course">
                   Browse<br />course
                 </button>
               </div>
@@ -2256,7 +2299,8 @@ export default function LearningLessonView({
             {!isScenarioBlock && !isChoiceBlock ? <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">{currentBlock?.title || ""}</div> : null}
             {currentBlock ? (
               <BlockRenderer
-                onExit={onBack}
+                onExit={leaveLesson}
+                lessonId={lesson?.id}
                 key={currentBlock.id}
                 block={currentBlock}
                 playText={playText}
