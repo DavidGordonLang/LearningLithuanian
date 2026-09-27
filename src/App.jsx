@@ -895,22 +895,22 @@ function AccountApp() {
   }, [lastSeenVersion, setLastSeenVersion, settingsLoading, needsProfileOnboarding, showOnboardingProfile, showUserGuide, user?.id, hasSeenUserGuide]);
 
   useEffect(() => {
-    if (!user?.id || settingsLoading) return;
+    if (!user?.id || settingsLoading || !allowlistChecked || !isAllowlisted) return;
     if (!needsProfileOnboarding) return;
     trackProductEvent("onboarding_started");
     setShowWhatsNew(false);
     setShowUserGuide(false);
     setShowOnboardingProfile(true);
-  }, [needsProfileOnboarding, settingsLoading, user?.id]);
+  }, [needsProfileOnboarding, settingsLoading, user?.id, allowlistChecked, isAllowlisted]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !allowlistChecked || !isAllowlisted) return;
     if (settingsLoading || needsProfileOnboarding || showOnboardingProfile) return;
     if (hasSeenUserGuide) return;
     trackProductEvent("quickstart_opened");
     setUserGuideFirstLaunch(true);
     setShowUserGuide(true);
-  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide]);
+  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide, allowlistChecked, isAllowlisted]);
 
   const saveOnboardingProfile = useCallback(async (values) => {
     await saveProfileOnboarding?.(user?.id, values, PROFILE_ONBOARDING_VERSION);

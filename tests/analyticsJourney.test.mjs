@@ -151,6 +151,13 @@ test("preloading still invokes the player while per-preload telemetry is absent"
   h.unmount();
 });
 
+test("blocked or unresolved beta admission cannot enter the analytics funnel", async () => {
+  const app = await readFile(new URL("../src/App.jsx",import.meta.url),"utf8");
+  assert.match(app,/if \(!user\?\.id \|\| authLoading \|\| !allowlistChecked \|\| !isAllowlisted\) return;\s*trackSessionStart\(\)/);
+  assert.match(app,/if \(!user\?\.id \|\| settingsLoading \|\| !allowlistChecked \|\| !isAllowlisted\) return;\s*if \(!needsProfileOnboarding\) return;\s*trackProductEvent\("onboarding_started"\)/);
+  assert.match(app,/if \(!user\?\.id \|\| !allowlistChecked \|\| !isAllowlisted\) return;\s*if \(settingsLoading \|\| needsProfileOnboarding \|\| showOnboardingProfile\) return;/);
+});
+
 test("admin analytics renders an empty, incomplete cohort without a crash", async () => {
   const query = { select(){return this}, gte(){return this}, order(){return this}, range(){return this}, eq(){return this}, neq(){return this}, then(resolve){resolve({data:[],error:null})} };
   const view = await componentHarness("src/views/AnalyticsView.jsx","default",{
