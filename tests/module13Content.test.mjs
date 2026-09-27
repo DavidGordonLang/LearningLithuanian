@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import module_1_1 from "../src/content/learning/section1/module_1_1.js";
 import createModule_1_3 from "../src/content/learning/section1/module_1_3.js";
 
 function getLesson(module, code) {
@@ -44,9 +45,21 @@ test("1.3.4 English fallback ends by continuing in English and reuses translatio
   assert.equal(finalLine.audio, false);
   assert.equal(finalLine.translationReveal.length, 2);
   assert.equal(finalLine.translationReveal[0].lt, "Laba diena. Kuo galiu padėti?");
-  assert.equal(finalLine.translationReveal[0].en, "Good afternoon. How can I help you?");
+  assert.equal(finalLine.translationReveal[0].en, "Good day. How can I help you?");
   assert.equal(finalLine.translationReveal[1].lt, "Taip, truputį.");
   assert.equal(finalLine.translationReveal[1].en, "Yes, a little.");
+});
+
+test("Laba diena service greetings use Good day in both direct English glosses", () => {
+  const cafe = getBlock(getLesson(module_1_1, "1.1.2"), "scenario_cafe_order_coffee_v2");
+  const greeting = cafe.steps.find((step) => step.id === "step_1_order");
+  assert.equal(greeting.speakerText, "Laba diena. Ko norėtumėte?");
+  assert.equal(greeting.speakerTextEn, "Good day. What would you like?");
+
+  const help = getBlock(getLesson(createModule_1_3(), "1.3.4"), "s1m3l4_b7_v2")
+    .steps.at(-1).finalSystemLine.translationReveal[0];
+  assert.equal(help.lt, "Laba diena. Kuo galiu padėti?");
+  assert.equal(help.en, "Good day. How can I help you?");
 });
 
 test("1.3.2 separates pace repair from genuine comprehension repair", () => {

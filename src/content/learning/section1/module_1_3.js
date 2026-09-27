@@ -791,7 +791,7 @@ export default function createModule_1_3(profile = {}) {
           {
             id: "greeting_help",
             lt: "Laba diena. Kuo galiu padėti?",
-            en: "Good afternoon. How can I help you?",
+            en: "Good day. How can I help you?",
           },
           {
             id: "speaks_a_little",
