@@ -1,13 +1,22 @@
+import { fetchCloudRecovery, captureSyncAccount } from "../stores/supabasePhrases";
+// src/views/SettingsView.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuthStore } from "../stores/authStore";
 import { usePhraseStore } from "../stores/phraseStore";
 import {
-  replaceUserPhrases,
-  fetchUserPhrases,
-  mergeUserPhrases,
-} from "../stores/supabasePhrases";
+  assertLearningSyncAccount,
+  fetchLearningSnapshot,
+  mergeUserLearningSnapshot,
+  replaceUserLearningSnapshot,
+} from "../stores/supabaseLearning";
+import { useScenarioStore } from "../stores/scenarioStore";
 import ConflictReviewModal from "../components/ConflictReviewModal";
+import ModalShell from "../components/ModalShell";
+import LegacyLibraryRecovery from "../components/LegacyLibraryRecovery";
 import applyMergeResolutions from "../utils/applyMergeResolutions";
+import { useSettingsStore } from "../stores/settingsStore";
+import { useGameStore } from "../stores/gameStore";
 
 import {
   getDiagnosticsEnabled,
@@ -16,85 +25,194 @@ import {
   trackError,
 } from "../services/analytics";
 
-const ADMIN_EMAILS = ["davidgordonlang@gmail.com"];
+import {
+  COUNTRY_OPTIONS_EN,
+  getCountryLabel,
+} from "../constants/countries";
 
-/* ------------------------------
-   Small helpers (UI-only)
-   ------------------------------ */
+const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me", "barbora.gaulyte@gmail.com"];
+
 const cn = (...xs) => xs.filter(Boolean).join(" ");
+
+function makeLibraryHash(phrases, scenarios) {
+  const phraseSig = (phrases || []).map((r) => `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`).join("~");
+  const scenarioSig = (scenarios || []).map((s) => `${s?.id || ""}|${s?.updatedAt || 0}|${s?._deleted_ts || 0}|${(s?.phraseIds || []).join(",")}`).join("~");
+  const sig = `${phraseSig}::${scenarioSig}`;
+  let hash = 2166136261;
+  for (let i = 0; i < sig.length; i += 1) {
+    hash ^= sig.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${sig.length}:${hash >>> 0}`;
+}
 
 function SectionHeader({ title, subtitle, accent = false }) {
   return (
     <div className="px-1">
-      <div
-        className={cn(
-          "text-[20px] sm:text-[22px] font-semibold tracking-tight",
-          accent ? "text-emerald-200" : "text-zinc-100"
-        )}
-      >
+      <div className={cn("text-[20px] sm:text-[22px] font-semibold tracking-tight", accent ? "text-emerald-200" : "text-zinc-100")}>
         {title}
       </div>
-      {subtitle ? (
-        <div className="mt-1 text-[13px] sm:text-[14px] text-zinc-400 leading-snug">
-          {subtitle}
-        </div>
-      ) : null}
+      {subtitle ? <div className="mt-1 text-[13px] sm:text-[14px] text-zinc-400 leading-snug">{subtitle}</div> : null}
     </div>
   );
 }
 
-/**
- * Collapsible panel:
- * - Title/subtitle are OUTSIDE (render style)
- * - The content is the soft card
- */
-function CollapsibleSection({
-  id,
-  title,
-  subtitle,
-  open,
-  setOpen,
-  children,
-  accentTitle,
-  defaultOpen = false,
-}) {
-  // if no controlled state passed, fallback to internal
+function CollapsibleSection({ id, title, subtitle, open, setOpen, children, accentTitle, defaultOpen = false }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isOpen = typeof open === "boolean" ? open : internalOpen;
-
   const toggle = () => {
     if (typeof setOpen === "function") setOpen(!isOpen);
     else setInternalOpen((v) => !v);
   };
-
   return (
     <section className="space-y-3">
-      <button
-        type="button"
-        data-press
-        onClick={toggle}
-        className="w-full text-left"
-        aria-expanded={isOpen}
-        aria-controls={id}
-      >
+      <button type="button" data-press onClick={toggle} className="w-full text-left" aria-expanded={isOpen} aria-controls={id}>
         <div className="flex items-start justify-between gap-4">
           <SectionHeader title={title} subtitle={subtitle} accent={!!accentTitle} />
-
-          {/* Arrow only: right when closed, down when open */}
           <div className="shrink-0 mt-[2px] pr-1" aria-hidden="true">
-            <span className="text-zinc-200 text-lg leading-none">
-              {isOpen ? "▾" : "▸"}
-            </span>
+            <span className="text-zinc-200 text-lg leading-none">{isOpen ? "▾" : "▸"}</span>
           </div>
         </div>
       </button>
-
-      {isOpen ? (
-        <div id={id} className={cn("z-card", "p-4 sm:p-5", "space-y-4")}>
-          {children}
-        </div>
-      ) : null}
+      {isOpen ? <div id={id} className={cn("z-card", "p-4 sm:p-5", "space-y-4")}>{children}</div> : null}
     </section>
+  );
+}
+
+function IpaGuideSection({ title, children }) {
+  return (
+    <section className="z-inset p-4 space-y-3">
+      <div className="text-sm font-semibold text-zinc-100">{title}</div>
+      {children}
+    </section>
+  );
+}
+
+function IpaGuideRow({ symbol, children }) {
+  return (
+    <div className="grid grid-cols-[72px_1fr] gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm">
+      <div className="font-semibold text-zinc-100 break-words">{symbol}</div>
+      <div className="text-zinc-300 leading-snug">{children}</div>
+    </div>
+  );
+}
+
+function IpaGuideModal({ open, onClose }) {
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <ModalShell
+      open={open}
+      title="How to read Lithuanian IPA"
+      subtitle="A beginner-friendly reference for the symbols Žodis may show."
+      onClose={onClose}
+      closeOnBackdrop
+      closeOnEscape
+      maxWidth="max-w-lg"
+      zIndex="z-[210]"
+      headerAction={
+        <button
+          type="button"
+          data-press
+          className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm font-semibold"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      }
+    >
+      <div className="p-5 space-y-4 max-h-[72vh] overflow-y-auto">
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          IPA shows pronunciation using one symbol per sound. It is more precise than English-style phonetics, but it takes a little practice. You can always switch back to EN if you prefer the simpler guide.
+        </p>
+
+        <IpaGuideSection title="Quick rules">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="ˈ">Stress mark. The next syllable is stressed.</IpaGuideRow>
+            <IpaGuideRow symbol="ː">Long sound. Hold it a little longer.</IpaGuideRow>
+            <IpaGuideRow symbol="ʲ">Softened consonant. The tongue moves slightly toward a "y" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="sound">IPA is about sound, not spelling.</IpaGuideRow>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Vowels">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="a / ɐ">Short open "ah" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="aː">Long "ah".</IpaGuideRow>
+            <IpaGuideRow symbol="ɛ">"e" as in "bed".</IpaGuideRow>
+            <IpaGuideRow symbol="eː">Longer, closer "ay/eh" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="æː">Broad long "a/e" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="ɪ">Short "i", like "i" in "bit".</IpaGuideRow>
+            <IpaGuideRow symbol="iː">Long "ee".</IpaGuideRow>
+            <IpaGuideRow symbol="ɔ">Short "o".</IpaGuideRow>
+            <IpaGuideRow symbol="oː">Long "o".</IpaGuideRow>
+            <IpaGuideRow symbol="ʊ">Short "u", like "u" in "put".</IpaGuideRow>
+            <IpaGuideRow symbol="uː">Long "oo".</IpaGuideRow>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Common vowel combinations">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="ai">Like "eye".</IpaGuideRow>
+            <IpaGuideRow symbol="au">Like "ow".</IpaGuideRow>
+            <IpaGuideRow symbol="ei">Like "ay".</IpaGuideRow>
+            <IpaGuideRow symbol="ui">"oo-ee" blended together.</IpaGuideRow>
+            <IpaGuideRow symbol="ie / iɛ">Lithuanian "ie". Listen for the glide into an "eh" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="uo / uɔ">Lithuanian "uo". Listen for the glide into an "o" sound.</IpaGuideRow>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Consonants that look familiar">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="p b t d k ɡ">Mostly like their English sound values.</IpaGuideRow>
+            <IpaGuideRow symbol="m n">Like English "m" and "n".</IpaGuideRow>
+            <IpaGuideRow symbol="f v">Like English "f" and "v".</IpaGuideRow>
+            <IpaGuideRow symbol="s z">Like English "s" and "z".</IpaGuideRow>
+            <IpaGuideRow symbol="l">Like "l", but may be softened when marked with ʲ.</IpaGuideRow>
+            <IpaGuideRow symbol="r">A tapped or rolled Lithuanian r.</IpaGuideRow>
+            <IpaGuideRow symbol="j">"y" as in "yes".</IpaGuideRow>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Consonants that may look new">
+          <div className="space-y-2">
+            <IpaGuideRow symbol="ʃ">"sh" as in "ship".</IpaGuideRow>
+            <IpaGuideRow symbol="ʒ">"zh" as in "measure".</IpaGuideRow>
+            <IpaGuideRow symbol="tʃ / t͡ʃ">"ch" as in "church".</IpaGuideRow>
+            <IpaGuideRow symbol="dʒ / d͡ʒ">"j" as in "jam".</IpaGuideRow>
+            <IpaGuideRow symbol="ts / t͡s">"ts" as in "cats".</IpaGuideRow>
+            <IpaGuideRow symbol="dz / d͡z">A joined "d" + "z" sound.</IpaGuideRow>
+            <IpaGuideRow symbol="x">A rough "h", like Scottish "loch" or German "Bach".</IpaGuideRow>
+            <IpaGuideRow symbol="ŋ">"ng" as in "sing", if it appears before k or g.</IpaGuideRow>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="Softened consonants">
+          <div className="space-y-3 text-sm text-zinc-300 leading-relaxed">
+            <p>Lithuanian often softens consonants. IPA marks this with <span className="font-semibold text-zinc-100">ʲ</span>.</p>
+            <div className="space-y-2">
+              <IpaGuideRow symbol="n / nʲ">Plain n vs softened n.</IpaGuideRow>
+              <IpaGuideRow symbol="l / lʲ">Plain l vs softened l.</IpaGuideRow>
+              <IpaGuideRow symbol="t / tʲ">Plain t vs softened t.</IpaGuideRow>
+            </div>
+            <p>Think of it as a slight "y" quality after the consonant, but not a full extra syllable.</p>
+          </div>
+        </IpaGuideSection>
+
+        <IpaGuideSection title="How to use this in Žodis">
+          <div className="space-y-2 text-sm text-zinc-300 leading-relaxed">
+            <p>Listen first, then read the IPA slowly.</p>
+            <p>Notice stress <span className="font-semibold text-zinc-100">ˈ</span> and long sounds <span className="font-semibold text-zinc-100">ː</span>.</p>
+            <p>Use IPA for precision, and EN for quick approximate reading.</p>
+          </div>
+        </IpaGuideSection>
+
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] p-4 text-sm text-zinc-200 leading-relaxed">
+          IPA is a guide, not a replacement for listening. Use the audio buttons whenever you can.
+        </div>
+      </div>
+    </ModalShell>,
+    document.body
   );
 }
 
@@ -111,624 +229,863 @@ export default function SettingsView({
   onOpenDuplicateScanner,
   onOpenChangeLog,
   onOpenUserGuide,
+  onOpenOnboardingProfile,
   onOpenAnalytics,
-
   dailyRecallEnabled,
   setDailyRecallEnabled,
   showDailyRecallNow,
+  showToast,
+  confirmAction,
 }) {
-  const { user, loading, signInWithGoogle, signOut } = useAuthStore();
+  const { user, session, loading, signInWithGoogle, signOut } = useAuthStore();
   const setRows = usePhraseStore((s) => s.setPhrases);
+  const storedPhrases = usePhraseStore((s) => s.phrases);
+  const scenarioRecords = useScenarioStore((s) => s.scenarioRecords);
+  const setScenarioRecords = useScenarioStore((s) => s.setScenarioRecords);
 
   const [syncingUp, setSyncingUp] = useState(false);
   const [syncingDown, setSyncingDown] = useState(false);
   const [merging, setMerging] = useState(false);
-
   const [showAdvanced, setShowAdvanced] = useState(false);
-
   const [syncDirty, setSyncDirty] = useState(false);
   const [lastSyncLabel, setLastSyncLabel] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState(null);
-
-  // Conflict flow
   const [pendingConflicts, setPendingConflicts] = useState([]);
   const [pendingMergedRows, setPendingMergedRows] = useState([]);
+  const [pendingMergedScenarios, setPendingMergedScenarios] = useState([]);
+  const [pendingSync, setPendingSync] = useState(null);
+  const [syncSetupRequired, setSyncSetupRequired] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
-
-  // Diagnostics toggle (local)
   const [diagnosticsOn, setDiagnosticsOn] = useState(() => getDiagnosticsEnabled());
 
-  // Collapsible section state
-  // All collapsed by default.
+  const phoneticsMode = useSettingsStore((s) => s.phoneticsMode);
+  const setPhoneticsMode = useSettingsStore((s) => s.setPhoneticsMode);
+  const speakerGender = useSettingsStore((s) => s.speakerGender);
+  const setSpeakerGender = useSettingsStore((s) => s.setSpeakerGender);
+
+  const userName = useSettingsStore((s) => s.userName);
+  const setUserName = useSettingsStore((s) => s.setUserName);
+  const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
+  const setFromCountryCode = useSettingsStore((s) => s.setFromCountryCode);
+  const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
+  const setLivesInCountryCode = useSettingsStore((s) => s.setLivesInCountryCode);
+  const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
+  const setDateOfBirth = useSettingsStore((s) => s.setDateOfBirth);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
+
+  const [nameDraft, setNameDraft] = useState(userName || "");
+  const [nameSaving, setNameSaving] = useState(false);
+
+  // Game store for progress display + reset
+  const completedLessonIds = useGameStore((s) => s.completedLessonIds);
+  const totalXP = useGameStore((s) => s.totalXP);
+  const streakDays = useGameStore((s) => s.streakDays);
+  const resetLessonProgress = useGameStore((s) => s.resetLessonProgress);
+  const resetAllProgress = useGameStore((s) => s.resetAllProgress);
+  const [progressResetting, setProgressResetting] = useState(false);
+
   const [openLearning, setOpenLearning] = useState(false);
   const [openVoice, setOpenVoice] = useState(false);
   const [openAccount, setOpenAccount] = useState(false);
   const [openData, setOpenData] = useState(false);
   const [openAbout, setOpenAbout] = useState(false);
   const [openDiagnostics, setOpenDiagnostics] = useState(false);
+  const [showIpaGuide, setShowIpaGuide] = useState(false);
 
-  const isAdmin =
-    !!user?.email &&
-    ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(String(user.email).toLowerCase());
+  const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillStats, setBackfillStats] = useState(null);
+  const [phoneticBackfillRunning, setPhoneticBackfillRunning] = useState(false);
+  const [phoneticBackfillStats, setPhoneticBackfillStats] = useState(null);
+
+  const isAdmin = !!user?.email && ADMIN_EMAILS.map((e) => String(e).toLowerCase()).includes(String(user.email).toLowerCase());
 
   const getAllStoredPhrases = () => usePhraseStore.getState().phrases || [];
-
+  const getAllStoredScenarios = () => useScenarioStore.getState().scenarioRecords || [];
+  const assertLocalSnapshot = (account, phraseSnapshot, scenarioSnapshot) => {
+    assertLearningSyncAccount(account);
+    if (
+      getAllStoredPhrases() !== phraseSnapshot ||
+      getAllStoredScenarios() !== scenarioSnapshot
+    ) {
+      setPendingConflicts([]);
+      setPendingMergedRows([]);
+      setPendingMergedScenarios([]);
+      setPendingSync(null);
+      setShowConflictModal(false);
+      throw new Error("Your local Library or Scenarios changed during sync. Your latest changes were kept; please sync again.");
+    }
+  };
   const lastHashRef = useRef("");
 
+  useEffect(() => {
+    setNameDraft(userName || "");
+  }, [userName]);
+
   const localHash = useMemo(() => {
-    try {
-      const all = getAllStoredPhrases();
-      const sig = all
-        .map(
-          (r) =>
-            `${r?._id || ""}|${r?.contentKey || ""}|${r?._ts || 0}|${r?._deleted ? 1 : 0}`
-        )
-        .join("~");
-      return String(sig.length) + ":" + String(sig.slice(0, 200));
-    } catch {
-      return "0:";
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows?.length]);
+    try { return makeLibraryHash(storedPhrases, scenarioRecords); }
+    catch { return "0:"; }
+  }, [storedPhrases, scenarioRecords]);
 
   useEffect(() => {
-    if (!lastHashRef.current) {
-      lastHashRef.current = localHash;
-      return;
-    }
-
-    if (localHash !== lastHashRef.current) {
-      lastHashRef.current = localHash;
-      setSyncDirty(true);
-      setLastSyncLabel("");
-      setLastSyncAt(null);
-    }
+    if (!lastHashRef.current) { lastHashRef.current = localHash; return; }
+    if (localHash !== lastHashRef.current) { lastHashRef.current = localHash; setSyncDirty(true); setLastSyncLabel(""); setLastSyncAt(null); }
   }, [localHash]);
 
   function markSynced(label) {
-    setSyncDirty(false);
-    setLastSyncLabel(label);
-    setLastSyncAt(Date.now());
-    lastHashRef.current = localHash;
+    lastHashRef.current = makeLibraryHash(getAllStoredPhrases(), getAllStoredScenarios());
+    setSyncDirty(false); setLastSyncLabel(label); setLastSyncAt(Date.now());
   }
+  function formatWhen(ts) { if (!ts) return ""; try { return new Date(ts).toLocaleString(); } catch { return ""; } }
 
-  function formatWhen(ts) {
-    if (!ts) return "";
+  async function persistUserName() {
+    if (nameSaving) return;
     try {
-      const d = new Date(ts);
-      return d.toLocaleString();
-    } catch {
-      return "";
+      setNameSaving(true);
+      await setUserName?.(user?.id, nameDraft);
+      showToast?.("Profile updated");
+    } catch (e) {
+      showToast?.(e?.message || "Could not save name");
+    } finally {
+      setNameSaving(false);
     }
   }
 
   function exportJson() {
     const allPhrases = getAllStoredPhrases();
-
-    const blob = new Blob([JSON.stringify(allPhrases, null, 2)], {
-      type: "application/json",
-    });
-
+    const blob = new Blob([JSON.stringify(allPhrases, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "zodis-library.json";
-    a.click();
+    a.href = url; a.download = "zodis-library.json"; a.click();
     URL.revokeObjectURL(url);
-
-    try {
-      trackEvent("export_json", {}, { app_version: appVersion });
-    } catch {}
+    try { trackEvent("export_json", {}, { app_version: appVersion }); } catch {}
   }
 
   async function handleImportFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      await importJsonFile(file);
-      alert("Imported ✅");
-      try {
-        trackEvent("import_json", {}, { app_version: appVersion });
-      } catch {}
+      const result = await importJsonFile(file);
+      const count =
+        typeof result?.count === "number" ? ` (${result.count} rows)` : "";
+      showToast?.(`Imported${count}`);
+      try { trackEvent("import_json", {}, { app_version: appVersion }); } catch {}
     } catch (err) {
-      try {
-        trackError(err, { source: "import_json" }, { app_version: appVersion });
-      } catch {}
-      alert("Import failed: " + (err?.message || "Unknown error"));
-    } finally {
-      e.target.value = "";
-    }
+      try { trackError(err, { source: "import_json" }, { app_version: appVersion }); } catch {}
+      showToast?.("Import failed: " + (err?.message || "Unknown error"));
+    } finally { e.target.value = ""; }
   }
 
   async function uploadLibraryToCloud() {
     if (!user) return;
-
-    const ok = window.confirm(
-      "Upload (overwrite):\n\nThis will REPLACE your cloud library with your local library.\n\nContinue?"
-    );
+    const account = captureSyncAccount();
+    const ok = await confirmAction({
+      title: "Overwrite cloud library?",
+      body: "This will replace your cloud phrases and scenarios with those on this device. Other devices may lose cloud entries that are not present locally.",
+      confirmLabel: "Overwrite cloud",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
-
     try {
       setSyncingUp(true);
-      try {
-        trackEvent("sync_upload_start", {}, { app_version: appVersion });
-      } catch {}
-
+      assertLearningSyncAccount(account);
+      try { trackEvent("sync_upload_start", {}, { app_version: appVersion }); } catch {}
       const allPhrases = getAllStoredPhrases();
-      await replaceUserPhrases(allPhrases);
+      const allScenarios = getAllStoredScenarios();
+      const snapshot = await fetchLearningSnapshot(account);
+      assertLocalSnapshot(account, allPhrases, allScenarios);
+      await replaceUserLearningSnapshot(allPhrases, allScenarios, snapshot.revision, account);
+      assertLocalSnapshot(account, allPhrases, allScenarios);
       markSynced("Uploaded");
-
-      try {
-        trackEvent("sync_upload_complete", { rows: allPhrases.length }, { app_version: appVersion });
-      } catch {}
-
-      alert("Uploaded to cloud ✅");
+      try { trackEvent("sync_upload_complete", { rows: allPhrases.length, scenarios: allScenarios.length }, { app_version: appVersion }); } catch {}
+      showToast?.("Uploaded to cloud ✅");
     } catch (e) {
-      try {
-        trackError(e, { source: "sync_upload" }, { app_version: appVersion });
-      } catch {}
-      alert("Upload failed: " + (e?.message || "Unknown error"));
-    } finally {
-      setSyncingUp(false);
-    }
+      try { trackError(e, { source: "sync_upload" }, { app_version: appVersion }); } catch {}
+      showToast?.("Upload failed: " + (e?.message || "Unknown error"));
+    } finally { setSyncingUp(false); }
   }
 
   async function downloadLibraryFromCloud() {
     if (!user) return;
-
-    const ok = window.confirm(
-      "Download (overwrite):\n\nThis will REPLACE your entire local library with the cloud version.\n\nContinue?"
-    );
+    const account = captureSyncAccount();
+    const ok = await confirmAction({
+      title: "Overwrite local library?",
+      body: "This will replace the phrases and scenarios on this device with the cloud version. Local entries that are not in cloud may be lost.",
+      confirmLabel: "Overwrite local",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
     if (!ok) return;
-
     try {
       setSyncingDown(true);
-      try {
-        trackEvent("sync_download_start", {}, { app_version: appVersion });
-      } catch {}
-
-      const cloudRows = await fetchUserPhrases();
-      setRows(cloudRows);
+      assertLearningSyncAccount(account);
+      try { trackEvent("sync_download_start", {}, { app_version: appVersion }); } catch {}
+      const localPhrasesBefore = getAllStoredPhrases();
+      const localScenariosBefore = getAllStoredScenarios();
+      const snapshot = await fetchLearningSnapshot(account);
+      assertLocalSnapshot(account, localPhrasesBefore, localScenariosBefore);
+      setRows(snapshot.phrases);
+      setScenarioRecords(snapshot.scenarios);
       markSynced("Downloaded");
-
-      try {
-        trackEvent("sync_download_complete", { rows: cloudRows.length }, { app_version: appVersion });
-      } catch {}
-
-      alert(`Downloaded ${cloudRows.length} entries ✅`);
+      try { trackEvent("sync_download_complete", { rows: snapshot.phrases.length, scenarios: snapshot.scenarios.length }, { app_version: appVersion }); } catch {}
+      showToast?.(`Downloaded ${snapshot.phrases.length} entries and ${snapshot.scenarios.filter((s) => !s?._deleted).length} scenarios ✅`);
     } catch (e) {
-      try {
-        trackError(e, { source: "sync_download" }, { app_version: appVersion });
-      } catch {}
-      alert("Download failed: " + (e?.message || "Unknown error"));
-    } finally {
-      setSyncingDown(false);
-    }
+      try { trackError(e, { source: "sync_download" }, { app_version: appVersion }); } catch {}
+      showToast?.("Download failed: " + (e?.message || "Unknown error"));
+    } finally { setSyncingDown(false); }
   }
 
   async function mergeLibraryWithCloud() {
     if (!user) return;
-
+    const account = captureSyncAccount();
     try {
       if (pendingConflicts.length) {
-        try {
-          trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion });
-        } catch {}
-        setShowConflictModal(true);
-        return;
+        try { trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion }); } catch {}
+        setShowConflictModal(true); return;
       }
-
       setMerging(true);
-
-      try {
-        trackEvent("sync_merge_start", {}, { app_version: appVersion });
-      } catch {}
-
-      const localAll = getAllStoredPhrases();
-      const result = await mergeUserPhrases(localAll);
-
+      try { trackEvent("sync_merge_start", {}, { app_version: appVersion }); } catch {}
+      const localPhrases = getAllStoredPhrases();
+      const localScenarios = getAllStoredScenarios();
+      const result = await mergeUserLearningSnapshot(localPhrases, localScenarios, account);
+      assertLocalSnapshot(account, localPhrases, localScenarios);
       if (result.conflicts?.length) {
-        try {
-          trackEvent(
-            "sync_conflicts_found",
-            { count: result.conflicts.length },
-            { app_version: appVersion }
-          );
-        } catch {}
-
+        setPendingSync({ account, revision: result.revision, localPhrases, localScenarios });
+        try { trackEvent("sync_conflicts_found", { count: result.conflicts.length }, { app_version: appVersion }); } catch {}
         setPendingConflicts(result.conflicts);
-        setPendingMergedRows(result.mergedRows || []);
-        setShowConflictModal(true);
-        return;
+        setPendingMergedRows(result.mergedPhrases || []);
+        setPendingMergedScenarios(result.mergedScenarios || []);
+        setShowConflictModal(true); return;
       }
-
-      setRows(result.mergedRows);
+      setRows(result.mergedPhrases);
+      setScenarioRecords(result.mergedScenarios);
       markSynced("Synced");
-
-      try {
-        trackEvent(
-          "sync_merge_complete",
-          { rows: result.mergedRows?.length || 0 },
-          { app_version: appVersion }
-        );
-      } catch {}
-
-      alert("Sync completed ✅");
+      try { trackEvent("sync_merge_complete", { rows: result.mergedPhrases?.length || 0, scenarios: result.mergedScenarios?.length || 0 }, { app_version: appVersion }); } catch {}
+      showToast?.("Sync completed ✅");
     } catch (e) {
-      try {
-        trackError(e, { source: "sync_merge" }, { app_version: appVersion });
-      } catch {}
-      alert("Sync failed: " + (e?.message || "Unknown error"));
-    } finally {
-      setMerging(false);
-    }
+      try { trackError(e, { source: "sync_merge" }, { app_version: appVersion }); } catch {}
+      if (e?.code === "SYNC_SETUP_REQUIRED") setSyncSetupRequired(true);
+      showToast?.("Sync failed: " + (e?.message || "Unknown error"));
+    } finally { setMerging(false); }
+  }
+
+  async function loadCloudCopy() {
+    const account = captureSyncAccount();
+    try {
+      setSyncingDown(true);
+      const localBefore = getAllStoredPhrases();
+      const localScenariosBefore = getAllStoredScenarios();
+      const cloudRows = await fetchCloudRecovery(account);
+      assertLocalSnapshot(account, localBefore, localScenariosBefore);
+      const ids = new Set(localBefore.map((row) => row._id || row.id));
+      const additions = cloudRows.filter((row) => {
+        const id = row._id || row.id;
+        if (ids.has(id)) return false;
+        ids.add(id);
+        return true;
+      });
+      setRows([...localBefore, ...additions]);
+      showToast?.(`Loaded ${additions.filter((r) => !r._deleted).length} cloud phrases. Existing local entries were kept. Cloud has not been changed.`);
+    } catch (error) {
+      showToast?.(error?.message || "Could not load cloud phrases.");
+    } finally { setSyncingDown(false); }
   }
 
   async function finishConflictSync(resolutions) {
     if (!user) return;
-
-    if (!pendingMergedRows.length || !pendingConflicts.length) {
-      setShowConflictModal(false);
-      return;
-    }
-
+    if (!pendingMergedRows.length || !pendingConflicts.length) { setShowConflictModal(false); return; }
     try {
+      if (!pendingSync) throw new Error("Please sync again before reviewing conflicts.");
+      assertLocalSnapshot(pendingSync.account, pendingSync.localPhrases, pendingSync.localScenarios);
       setMerging(true);
-
-      try {
-        trackEvent(
-          "sync_conflicts_finish_start",
-          { count: pendingConflicts.length },
-          { app_version: appVersion }
-        );
-      } catch {}
-
+      try { trackEvent("sync_conflicts_finish_start", { count: pendingConflicts.length }, { app_version: appVersion }); } catch {}
       const finalRows = applyMergeResolutions(pendingMergedRows, pendingConflicts, resolutions);
-
-      await replaceUserPhrases(finalRows);
-
+      await replaceUserLearningSnapshot(finalRows, pendingMergedScenarios, pendingSync.revision, pendingSync.account);
+      assertLocalSnapshot(pendingSync.account, pendingSync.localPhrases, pendingSync.localScenarios);
       setRows(finalRows);
+      setScenarioRecords(pendingMergedScenarios);
       markSynced("Synced");
-
-      setPendingConflicts([]);
-      setPendingMergedRows([]);
-      setShowConflictModal(false);
-
-      try {
-        trackEvent(
-          "sync_conflicts_finish_complete",
-          { rows: finalRows.length },
-          { app_version: appVersion }
-        );
-      } catch {}
-
-      alert("Sync completed ✅");
+      setPendingSync(null);
+      setPendingConflicts([]); setPendingMergedRows([]); setPendingMergedScenarios([]); setShowConflictModal(false);
+      try { trackEvent("sync_conflicts_finish_complete", { rows: finalRows.length }, { app_version: appVersion }); } catch {}
+      showToast?.("Sync completed ✅");
     } catch (e) {
-      try {
-        trackError(e, { source: "sync_conflicts_finish" }, { app_version: appVersion });
-      } catch {}
-      alert("Finish sync failed: " + (e?.message || "Unknown error"));
+      try { trackError(e, { source: "sync_conflicts_finish" }, { app_version: appVersion }); } catch {}
+      // A failed save may have an outdated revision (or an uncertain network result).
+      // Read a fresh snapshot on retry instead of reopening the old comparison.
+      setPendingSync(null);
+      setPendingConflicts([]); setPendingMergedRows([]); setPendingMergedScenarios([]); setShowConflictModal(false);
+      showToast?.("Finish sync failed: " + (e?.message || "Unknown error"));
+    } finally { setMerging(false); }
+  }
+
+  // ─── Progress reset handlers ─────────────────────────────────────────────────
+
+  async function handleResetLessonProgress() {
+    const ok = await confirmAction({
+      title: "Reset lesson progress?",
+      body: "This will mark all lessons as incomplete on this account. Your XP and streak will not be affected.",
+      confirmLabel: "Reset progress",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      setProgressResetting(true);
+      const saved = await resetLessonProgress(user?.id);
+      if (!saved) throw new Error("Progress is not loaded for this account yet.");
+      showToast?.(useGameStore.getState().syncStatus === "saved" ? "Lesson progress reset ✅" : "Lesson progress reset on this device. Cloud sync is pending.");
+    } catch (e) {
+      showToast?.("Reset failed: " + (e?.message || "Unknown error"));
     } finally {
-      setMerging(false);
+      setProgressResetting(false);
+    }
+  }
+
+  async function handleResetEverything() {
+    if (!isAdmin) return;
+    const ok = await confirmAction({
+      title: "Admin reset everything?",
+      body: "This will permanently clear all lesson progress, XP, and streak data for this account.",
+      confirmLabel: "Reset everything",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      setProgressResetting(true);
+      const saved = await resetAllProgress(user?.id);
+      if (!saved) throw new Error("Progress is not loaded for this account yet.");
+      showToast?.(useGameStore.getState().syncStatus === "saved" ? "All progress reset ✅" : "Progress reset on this device. Cloud sync is pending.");
+    } catch (e) {
+      showToast?.("Reset failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setProgressResetting(false);
     }
   }
 
   const syncBanner = (() => {
     if (!user) return null;
-
+    if (syncSetupRequired) return (
+      <div className="z-inset p-4 space-y-3" role="status">
+        <div className="text-sm font-semibold">Cloud sync is awaiting setup</div>
+        <p className="text-sm">Load your cloud phrases onto this device to use them now. Existing local entries are kept; this does not upload changes.</p>
+        <button type="button" className="z-btn z-btn-secondary px-4 py-3" disabled={syncingDown || merging} onClick={loadCloudCopy}>
+          {syncingDown ? "Loading…" : "Load cloud phrases on this device"}
+        </button>
+      </div>
+    );
     if (pendingConflicts.length) {
       return (
         <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">
           <div className="text-sm font-semibold text-amber-300">Sync paused</div>
-          <div className="text-sm text-zinc-300 mt-1">
-            {pendingConflicts.length} conflict(s) found. Review to finish syncing.
-          </div>
+          <div className="text-sm text-zinc-300 mt-1">{pendingConflicts.length} conflict(s) found. Review to finish syncing.</div>
           <div className="mt-3">
-            <button
-              type="button"
-              data-press
-              className="
-                z-btn px-4 py-2 rounded-2xl text-sm
-                bg-amber-500/90 hover:bg-amber-400
-                border border-amber-300/20
-                text-black font-semibold
-              "
-              onClick={() => {
-                try {
-                  trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion });
-                } catch {}
-                setShowConflictModal(true);
-              }}
-            >
+            <button type="button" data-press className="z-btn px-4 py-2 rounded-2xl text-sm bg-amber-500/90 hover:bg-amber-400 border border-amber-300/20 text-black font-semibold"
+              onClick={() => { try { trackEvent("sync_conflicts_review_open", {}, { app_version: appVersion }); } catch {} setShowConflictModal(true); }}>
               Review conflicts
             </button>
           </div>
         </div>
       );
     }
-
     if (syncDirty) {
       return (
         <div className="z-inset p-4 border border-amber-500/25 bg-amber-950/20">
           <div className="text-sm font-semibold text-amber-300">Not synced</div>
-          <div className="text-sm text-zinc-300 mt-1">
-            Changes on this device haven’t been synced to cloud yet. Use{" "}
-            <span className="text-amber-200 font-semibold">Sync (merge)</span> when you’re ready.
-          </div>
+          <div className="text-sm text-zinc-300 mt-1">Changes on this device haven't been synced to cloud yet. Use <span className="text-amber-200 font-semibold">Sync (merge)</span> when you're ready.</div>
         </div>
       );
     }
-
     if (lastSyncLabel) {
       return (
         <div className="z-inset p-4 border border-emerald-500/20 bg-emerald-950/15">
           <div className="text-sm font-semibold text-emerald-300">{lastSyncLabel}</div>
-          {lastSyncAt ? (
-            <div className="text-sm text-zinc-300 mt-1">{formatWhen(lastSyncAt)}</div>
-          ) : null}
+          {lastSyncAt ? <div className="text-sm text-zinc-300 mt-1">{formatWhen(lastSyncAt)}</div> : null}
         </div>
       );
     }
-
     return (
       <div className="z-inset p-4">
         <div className="text-sm font-semibold text-zinc-200">Sync status</div>
-        <div className="text-sm text-zinc-400 mt-1">
-          Use <span className="text-zinc-200 font-semibold">Sync (merge)</span> to keep devices
-          aligned.
-        </div>
+        <div className="text-sm text-zinc-400 mt-1">Use <span className="text-zinc-200 font-semibold">Sync (merge)</span> to keep devices aligned.</div>
       </div>
     );
   })();
 
-  async function handleClearLibrary() {
-    const ok = window.confirm("Clear your entire local library? This cannot be undone.");
-    if (!ok) return;
+  async function runBackfillIpaOnce() {
+    if (!user) return showToast?.("Sign in first.");
+    if (!isAdmin) return showToast?.("Admin only.");
     try {
-      await clearLibrary?.();
-      alert("Cleared ✅");
-      try {
-        trackEvent("library_clear", {}, { app_version: appVersion });
-      } catch {}
+      setBackfillRunning(true);
+      const res = await fetch("/api/backfill-ipa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast?.("Backfill failed: " + (String(data?.error || data?.message || "") || `HTTP ${res.status} ${res.statusText}`)); return; }
+      const counts = data?.counts || {};
+      setBackfillStats({
+        total: typeof counts?.total === "number" ? counts.total : null,
+        pending: typeof counts?.pending === "number" ? counts.pending : null,
+        done: typeof counts?.done === "number" ? counts.done : null,
+        error: typeof counts?.error === "number" ? counts.error : null,
+        processed: typeof data?.processed === "number" ? data.processed : 0,
+        succeeded: typeof data?.succeeded === "number" ? data.succeeded : 0,
+        failed: typeof data?.failed === "number" ? data.failed : 0,
+        message: String(data?.message || "").trim(),
+        updatedAt: Date.now(),
+      });
+    } catch (e) { showToast?.("Backfill failed: " + (e?.message || "Unknown error")); } finally { setBackfillRunning(false); }
+  }
+
+  async function runBackfillPhonetics({ dryRun = false } = {}) {
+    if (!user) return showToast?.("Sign in first.");
+    if (!isAdmin) return showToast?.("Admin only.");
+    const token = session?.access_token;
+    if (!token) return showToast?.("Sign in again to run admin backfill.");
+
+    if (!dryRun && typeof confirmAction === "function") {
+      const ok = await confirmAction({
+        title: "Backfill English phonetics?",
+        body: "This refreshes only bad or missing English-style Phonetic values in cloud library rows. IPA and other fields stay unchanged.",
+        confirmLabel: "Backfill phonetics",
+        cancelLabel: "Cancel",
+        destructive: false,
+      });
+      if (!ok) return;
+    }
+
+    try {
+      setPhoneticBackfillRunning(true);
+      const res = await fetch("/api/backfill-phonetics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          dryRun,
+          limit: 25,
+          target: "bad_or_missing",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast?.("English phonetics backfill failed: " + (String(data?.error || data?.message || "") || `HTTP ${res.status} ${res.statusText}`));
+        return;
+      }
+      setPhoneticBackfillStats({
+        dryRun: !!data?.dryRun,
+        checked: typeof data?.checked === "number" ? data.checked : 0,
+        eligible: typeof data?.eligible === "number" ? data.eligible : 0,
+        processed: typeof data?.processed === "number" ? data.processed : 0,
+        updated: typeof data?.updated === "number" ? data.updated : 0,
+        wouldUpdate: typeof data?.wouldUpdate === "number" ? data.wouldUpdate : 0,
+        skipped: typeof data?.skipped === "number" ? data.skipped : 0,
+        errors: typeof data?.errors === "number" ? data.errors : 0,
+        message: String(data?.message || "").trim(),
+        sampleChangedRows: Array.isArray(data?.sampleChangedRows) ? data.sampleChangedRows : [],
+        updatedAt: Date.now(),
+      });
+      showToast?.(dryRun ? `Preview found ${data?.wouldUpdate ?? 0} phonetic update${data?.wouldUpdate === 1 ? "" : "s"}.` : `Updated ${data?.updated ?? 0} phonetic value${data?.updated === 1 ? "" : "s"}.`);
     } catch (e) {
-      try {
-        trackError(e, { source: "library_clear" }, { app_version: appVersion });
-      } catch {}
-      alert("Could not clear: " + (e?.message || "Unknown error"));
+      showToast?.("English phonetics backfill failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setPhoneticBackfillRunning(false);
     }
   }
 
+  async function handleClearLibrary() {
+    const ok = await confirmAction({
+      title: "Clear library?",
+      body: "This will remove your entire local library from this device. This cannot be undone.",
+      confirmLabel: "Clear library",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await clearLibrary?.();
+      showToast?.("Cleared");
+      try { trackEvent("library_clear", {}, { app_version: appVersion }); } catch {}
+    } catch (e) {
+      try { trackError(e, { source: "library_clear" }, { app_version: appVersion }); } catch {}
+      showToast?.("Could not clear: " + (e?.message || "Unknown error"));
+    }
+  }
+
+  const backfillPercent = backfillStats && typeof backfillStats.total === "number" && backfillStats.total > 0 && typeof backfillStats.done === "number"
+    ? Math.max(0, Math.min(100, Math.round((backfillStats.done / backfillStats.total) * 100)))
+    : null;
+
+  const completedCount = Array.isArray(completedLessonIds) ? completedLessonIds.length : 0;
+
+  const fromCountryLabel = fromCountryCode ? getCountryLabel(fromCountryCode, "en") : "";
+  const livesInCountryLabel = livesInCountryCode ? getCountryLabel(livesInCountryCode, "en") : "";
+
   return (
     <div className="z-page z-page-y pb-28 space-y-8">
-      <ConflictReviewModal
-        open={showConflictModal}
-        conflicts={pendingConflicts}
-        onClose={() => setShowConflictModal(false)}
-        onFinish={finishConflictSync}
-      />
+      <ConflictReviewModal open={showConflictModal} conflicts={pendingConflicts} onClose={() => setShowConflictModal(false)} onFinish={finishConflictSync} />
 
-      {/* PAGE HEADER (no box) */}
       <div className="pt-2">
-        <h2 className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-zinc-100">
-          {T?.navSettings || "Settings"}
-        </h2>
-        <p className="text-[14px] sm:text-[15px] text-zinc-400 mt-1">
-          Account, voice, data, and diagnostics.
-        </p>
+        <h2 className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-zinc-100">{T?.navSettings || "Settings"}</h2>
+        <p className="text-[14px] sm:text-[15px] text-zinc-400 mt-1">Account, voice, data, and diagnostics.</p>
       </div>
 
-      {/* LEARNING (collapsed by default) */}
-      <CollapsibleSection
-        id="sec-learning"
-        title="Learning"
-        subtitle="Light daily recall and learning aids."
-        open={openLearning}
-        setOpen={setOpenLearning}
-        accentTitle
-      >
+      <CollapsibleSection id="sec-learning" title="Learning" subtitle="Daily recall, learning aids, and progress." open={openLearning} setOpen={setOpenLearning} accentTitle>
         <div className="space-y-3">
+
+          {/* Your profile */}
+          <div className="z-inset p-4 space-y-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-200">Your profile</div>
+              <div className="text-xs text-zinc-500 mt-0.5">
+                Used only inside Žodis to tailor Lithuanian translations, examples, forms of address, country phrases, and age-relevant lessons. You can edit this anytime.
+              </div>
+            </div>
+
+            {/* Name */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Your name</div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onBlur={persistUserName}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      persistUserName();
+                    }
+                  }}
+                  placeholder="Your first name"
+                  className="z-input !py-2.5 !px-3 !rounded-2xl flex-1"
+                />
+                <button
+                  type="button"
+                  data-press
+                  disabled={nameSaving}
+                  className={cn(
+                    "z-btn px-4 py-2.5 rounded-2xl text-sm font-semibold",
+                    "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black",
+                    nameSaving ? "z-disabled" : ""
+                  )}
+                  onClick={persistUserName}
+                >
+                  {nameSaving ? "Saving…" : "Save"}
+                </button>
+              </div>
+              <div className="text-[11px] text-zinc-600">
+                Leave blank if you don’t want lessons to use your name yet.
+              </div>
+            </div>
+
+            {/* Date of birth */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Date of birth</div>
+              <div className="text-xs text-zinc-500">
+                Used so lessons teach you to say your actual age in Lithuanian.
+              </div>
+              <input
+                type="date"
+                value={dateOfBirth || ""}
+                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setDateOfBirth?.(user?.id, e.target.value)}
+                className="z-input !py-2.5 !px-3 !rounded-2xl w-full"
+              />
+              {dateOfBirth && (() => {
+                const today = new Date();
+                const birth = new Date(dateOfBirth);
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+                const ones  = ["", "vienas", "du", "trys", "keturi", "penki", "šeši", "septyni", "aštuoni", "devyni"];
+                const teens = ["dešimt", "vienuolika", "dvylika", "trylika", "keturiolika", "penkiolika", "šešiolika", "septyniolika", "aštuoniolika", "devyniolika"];
+                const tens  = ["", "", "dvidešimt", "trisdešimt", "keturiasdešimt", "penkiasdešimt", "šešiasdešimt", "septyniasdešimt", "aštuoniasdešimt", "devyniasdešimt"];
+                let num = null;
+                if (age >= 1 && age <= 99) {
+                  if (age < 10) num = ones[age];
+                  else if (age < 20) num = teens[age - 10];
+                  else { const t = Math.floor(age / 10); const o = age % 10; num = o === 0 ? tens[t] : tens[t] + " " + ones[o]; }
+                }
+                const phrase = num ? "Man " + num + " metų" : null;
+                if (!phrase) return null;
+                return (
+                  <div className="text-[12px] text-emerald-400 mt-1">
+                    Your age phrase: <span className="font-semibold text-emerald-300">{phrase}</span>
+                    <span className="text-zinc-600 ml-1">— {age} years old</span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Your gender</div>
+              <div className="text-xs text-zinc-500">
+                Ensures Lithuanian phrases use the correct forms when you describe yourself.
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  data-press
+                  className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (speakerGender === "male" ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
+                  onClick={() => setSpeakerGender?.(user?.id, "male")}
+                >
+                  Male
+                </button>
+                <button
+                  type="button"
+                  data-press
+                  className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (speakerGender === "female" ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
+                  onClick={() => setSpeakerGender?.(user?.id, "female")}
+                >
+                  Female
+                </button>
+              </div>
+            </div>
+
+            {/* From */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Where you’re from</div>
+              <select
+                className="z-input !py-2.5 !px-3 !rounded-2xl w-full"
+                value={fromCountryCode}
+                onChange={(e) => setFromCountryCode?.(user?.id, e.target.value)}
+              >
+                <option value="">Select country</option>
+                {COUNTRY_OPTIONS_EN.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+              <div className="text-[11px] text-zinc-600">
+                {fromCountryLabel ? `Selected: ${fromCountryLabel}` : "Used for lines like “I am from …”"}
+              </div>
+            </div>
+
+            {/* Living in */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-zinc-200">Where you live now</div>
+              <select
+                className="z-input !py-2.5 !px-3 !rounded-2xl w-full"
+                value={livesInCountryCode}
+                onChange={(e) => setLivesInCountryCode?.(user?.id, e.target.value)}
+              >
+                <option value="">Select country</option>
+                {COUNTRY_OPTIONS_EN.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+              <div className="text-[11px] text-zinc-600">
+                {livesInCountryLabel ? `Selected: ${livesInCountryLabel}` : "Stored now for later lessons like “I live in …”"}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Daily recall */}
           <div className="z-inset p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm font-semibold text-zinc-200">Daily Recall</div>
-                <div className="text-xs text-zinc-500 mt-0.5">
-                  Show one saved phrase when you open the app
-                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">Show one saved phrase when you open the app</div>
               </div>
-
-              <button
-                type="button"
-                data-press
-                className={
-                  "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
-                  (dailyRecallEnabled
-                    ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
-                    : "z-btn-secondary text-zinc-100")
-                }
-                onClick={() => setDailyRecallEnabled?.(!dailyRecallEnabled)}
-              >
+              <button type="button" data-press
+                className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (dailyRecallEnabled ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
+                onClick={() => setDailyRecallEnabled?.(!dailyRecallEnabled)}>
                 {dailyRecallEnabled ? "On" : "Off"}
               </button>
             </div>
-
             <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                data-press
-                className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
-                onClick={showDailyRecallNow}
-              >
-                Show today’s recall
+              <button type="button" data-press className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm" onClick={showDailyRecallNow}>
+                Show today's recall
               </button>
             </div>
           </div>
 
+          {/* Starter pack */}
           <div className="z-inset p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm font-semibold text-zinc-200">Starter Pack</div>
-                <div className="text-xs text-zinc-500 mt-0.5">
-                  Adds the starter library to this device
-                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">Adds the starter library to this device</div>
               </div>
-
-              <button
-                type="button"
-                data-press
-                className="
-                  z-btn px-4 py-2 rounded-2xl
-                  bg-emerald-600/90 hover:bg-emerald-500
-                  border border-emerald-300/20
-                  text-black font-semibold
-                "
-                onClick={() => {
-                  try {
-                    trackEvent("starter_install", {}, { app_version: appVersion });
-                  } catch {}
-                  fetchStarter?.("EN2LT");
-                }}
-              >
+              <button type="button" data-press
+                className="z-btn px-4 py-2 rounded-2xl bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-300/20 text-black font-semibold"
+                onClick={() => { try { trackEvent("starter_install", {}, { app_version: appVersion }); } catch {} fetchStarter?.("EN2LT"); }}>
                 Install
               </button>
             </div>
           </div>
+
+          {/* ── Learning progress ─────────────────────────────────────────── */}
+          <div className="z-inset p-4 space-y-4">
+            <div>
+              <div className="text-sm font-semibold text-zinc-200">Learning progress</div>
+              <div className="text-xs text-zinc-500 mt-0.5">Your current course progress and XP</div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center">
+                <div className="text-[18px] font-semibold text-zinc-100">{completedCount}</div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">Lessons done</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center">
+                <div className="text-[18px] font-semibold text-zinc-100">{totalXP}</div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">XP earned</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center">
+                <div className="text-[18px] font-semibold text-zinc-100">{streakDays}</div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">Day streak</div>
+              </div>
+            </div>
+
+            {/* Reset buttons */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                data-press
+                disabled={progressResetting || completedCount === 0}
+                className={cn(
+                  "w-full z-btn px-4 py-3 rounded-2xl text-sm font-semibold",
+                  "border border-amber-400/20 bg-amber-500/[0.08] text-amber-200",
+                  "hover:bg-amber-500/[0.14] transition",
+                  (progressResetting || completedCount === 0) ? "opacity-40 cursor-not-allowed" : ""
+                )}
+                onClick={handleResetLessonProgress}
+              >
+                {progressResetting ? "Resetting…" : "Reset lesson progress"}
+              </button>
+              <div className="text-[11px] text-zinc-600 text-center">
+                Marks all lessons as incomplete. XP and streak are kept.
+              </div>
+
+              {/* Admin only — full wipe */}
+              {isAdmin ? (
+                <>
+                  <button
+                    type="button"
+                    data-press
+                    disabled={progressResetting}
+                    className={cn(
+                      "w-full z-btn px-4 py-3 rounded-2xl text-sm font-semibold",
+                      "border border-rose-400/20 bg-rose-500/[0.08] text-rose-200",
+                      "hover:bg-rose-500/[0.14] transition",
+                      progressResetting ? "opacity-40 cursor-not-allowed" : ""
+                    )}
+                    onClick={handleResetEverything}
+                  >
+                    Reset everything (admin)
+                  </button>
+                  <div className="text-[11px] text-zinc-600 text-center">
+                    Clears lessons, XP, and streak. Admin only.
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+
         </div>
       </CollapsibleSection>
 
-      {/* VOICE (collapsed by default) */}
-      <CollapsibleSection
-        id="sec-voice"
-        title="Voice"
-        subtitle="Text-to-speech voice for Lithuanian audio."
-        open={openVoice}
-        setOpen={setOpenVoice}
-        accentTitle
-      >
+      <CollapsibleSection id="sec-voice" title="System" subtitle="Text-to-speech voice for Lithuanian audio." open={openVoice} setOpen={setOpenVoice} accentTitle>
         <div className="z-inset p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm text-zinc-300">Voice</div>
-            <select
-              className="z-input !py-2 !px-3 !rounded-2xl w-auto"
-              value={azureVoiceShortName}
-              onChange={(e) => setAzureVoiceShortName(e.target.value)}
-            >
+            <select className="z-input !py-2 !px-3 !rounded-2xl w-auto" value={azureVoiceShortName} onChange={(e) => setAzureVoiceShortName(e.target.value)}>
               <option value="lt-LT-LeonasNeural">Leonas (male)</option>
               <option value="lt-LT-OnaNeural">Ona (female)</option>
             </select>
           </div>
-
+          <div className="z-inset p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-zinc-200">Theme</div>
+                <div className="text-xs text-zinc-500 mt-0.5">Auto follows your device setting</div>
+              </div>
+              <div className="flex gap-2">
+                {[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]].map(([mode, label]) => (
+                  <button key={mode} type="button" data-press
+                    className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + ((themeMode ?? "auto") === mode ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
+                    onClick={() => setThemeMode?.(user?.id, mode)}>{label}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="z-inset p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-zinc-200">Phonetics display</div>
+                <div className="text-xs text-zinc-500 mt-0.5">Choose English-style or IPA</div>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" data-press
+                  className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (phoneticsMode === "en" ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
+                  onClick={() => setPhoneticsMode?.(user?.id, "en")}>EN</button>
+                <button type="button" data-press
+                  className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (phoneticsMode === "ipa" ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
+                  onClick={() => setPhoneticsMode?.(user?.id, "ipa")}>IPA</button>
+                <button type="button" data-press
+                  className="z-btn z-btn-secondary h-10 w-10 rounded-full p-0 text-sm font-semibold"
+                  onClick={() => setShowIpaGuide(true)}
+                  aria-label="Open IPA guide"
+                  title="Open IPA guide">?</button>
+              </div>
+            </div>
+          </div>
           <div className="flex justify-end">
-            <button
-              type="button"
-              data-press
-              className="
-                z-btn px-4 py-2 rounded-2xl
-                bg-emerald-600/90 hover:bg-emerald-500
-                border border-emerald-300/20
-                text-black font-semibold
-              "
-              onClick={() => playText("Sveiki!")}
-            >
+            <button type="button" data-press
+              className="z-btn px-4 py-2 rounded-2xl bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-300/20 text-black font-semibold"
+              onClick={() => playText("Sveiki!")}>
               Play sample
             </button>
           </div>
         </div>
       </CollapsibleSection>
 
-      {/* ACCOUNT & SYNC */}
-      <CollapsibleSection
-        id="sec-account"
-        title="Account"
-        subtitle={user ? String(user.email) : "Sign in to enable cloud sync."}
-        open={openAccount}
-        setOpen={setOpenAccount}
-      >
+      <CollapsibleSection id="sec-account" title="Account" subtitle={user ? String(user.email) : "Sign in to enable cloud sync."} open={openAccount} setOpen={setOpenAccount}>
+        <LegacyLibraryRecovery key={user?.id || "signed-out"} confirmAction={confirmAction} showToast={showToast} />
         {syncBanner}
-
         <div className="flex flex-wrap gap-3">
           {!user ? (
-            <button
-              type="button"
-              data-press
-              className={
-                "z-btn px-5 py-3 rounded-2xl font-semibold " +
-                (loading ? "z-disabled " : "") +
-                "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
-              }
-              onClick={signInWithGoogle}
-              disabled={loading}
-            >
+            <button type="button" data-press disabled={loading}
+              className={"z-btn px-5 py-3 rounded-2xl font-semibold " + (loading ? "z-disabled " : "") + "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"}
+              onClick={signInWithGoogle}>
               {loading ? "Loading…" : "Sign in with Google"}
             </button>
           ) : (
             <>
-              <button
-                type="button"
-                data-press
-                className={
-                  "z-btn px-5 py-3 rounded-2xl font-semibold " +
-                  (merging ? "z-disabled " : "") +
-                  "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
-                }
-                onClick={mergeLibraryWithCloud}
-                disabled={merging}
-              >
+              <button type="button" data-press disabled={merging}
+                className={"z-btn px-5 py-3 rounded-2xl font-semibold " + (merging ? "z-disabled " : "") + "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"}
+                onClick={mergeLibraryWithCloud}>
                 {merging ? "Syncing…" : "Sync (merge)"}
               </button>
-
-              <button
-                type="button"
-                data-press
-                className="z-btn z-btn-secondary px-5 py-3 rounded-2xl"
-                onClick={signOut}
-              >
-                Sign out
-              </button>
+              <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl" onClick={signOut}>Sign out</button>
             </>
           )}
         </div>
-
         {user ? (
-          <button
-            type="button"
-            data-press
-            className="text-xs text-zinc-400 underline underline-offset-4"
-            onClick={() => setShowAdvanced((v) => !v)}
-          >
+          <button type="button" data-press className="text-xs text-zinc-400 underline underline-offset-4" onClick={() => setShowAdvanced((v) => !v)}>
             {showAdvanced ? "Hide advanced sync options" : "Show advanced sync options"}
           </button>
         ) : null}
-
         {user && showAdvanced ? (
           <div className="z-inset p-4 space-y-3">
-            <div className="text-sm text-zinc-300">
-              Advanced options overwrite one side completely. Use carefully.
-            </div>
-
+            <div className="text-sm text-zinc-300">Advanced options overwrite one side completely. Use carefully.</div>
             <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                data-press
-                className={
-                  "z-btn px-5 py-3 rounded-2xl bg-white/[0.06] text-zinc-100 border border-white/10 " +
-                  (syncingUp || syncingDown || merging ? "z-disabled" : "")
-                }
-                onClick={uploadLibraryToCloud}
-                disabled={syncingUp || syncingDown || merging}
-              >
+              <button type="button" data-press disabled={syncingUp || syncingDown || merging}
+                className={"z-btn px-5 py-3 rounded-2xl bg-white/[0.06] text-zinc-100 border border-white/10 " + (syncingUp || syncingDown || merging ? "z-disabled" : "")}
+                onClick={uploadLibraryToCloud}>
                 {syncingUp ? "Uploading…" : "Upload (overwrite)"}
               </button>
-
-              <button
-                type="button"
-                data-press
-                className={
-                  "z-btn px-5 py-3 rounded-2xl bg-white/[0.06] text-zinc-100 border border-white/10 " +
-                  (syncingUp || syncingDown || merging ? "z-disabled" : "")
-                }
-                onClick={downloadLibraryFromCloud}
-                disabled={syncingUp || syncingDown || merging}
-              >
+              <button type="button" data-press disabled={syncingUp || syncingDown || merging}
+                className={"z-btn px-5 py-3 rounded-2xl bg-white/[0.06] text-zinc-100 border border-white/10 " + (syncingUp || syncingDown || merging ? "z-disabled" : "")}
+                onClick={downloadLibraryFromCloud}>
                 {syncingDown ? "Downloading…" : "Download (overwrite)"}
               </button>
             </div>
@@ -736,156 +1093,158 @@ export default function SettingsView({
         ) : null}
       </CollapsibleSection>
 
-      {/* DATA */}
-      <CollapsibleSection
-        id="sec-data"
-        title="Data & Advanced"
-        subtitle="Export/import, duplicates, and destructive actions."
-        open={openData}
-        setOpen={setOpenData}
-      >
+      <CollapsibleSection id="sec-data" title="Data & Advanced" subtitle="Export/import, duplicates, and destructive actions." open={openData} setOpen={setOpenData}>
         <div className="space-y-4">
           <div className="z-inset p-4 space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <input
-                type="file"
-                accept="application/json"
-                onChange={handleImportFile}
-                className="text-sm text-zinc-300"
-              />
-
-              <button
-                type="button"
-                data-press
-                className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
-                onClick={exportJson}
-              >
-                Export JSON (file)
-              </button>
+              <input type="file" accept="application/json" onChange={handleImportFile} className="text-sm text-zinc-300" />
+              <button type="button" data-press className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm" onClick={exportJson}>Export JSON (file)</button>
             </div>
           </div>
-
+          {isAdmin ? (
+            <div className="z-inset p-4 space-y-3">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="text-sm font-semibold text-zinc-200">IPA backfill</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">Processes up to 100 queued entries per run.</div>
+                </div>
+                <button type="button" data-press disabled={backfillRunning}
+                  className={"z-btn px-5 py-3 rounded-2xl bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold " + (backfillRunning ? "z-disabled" : "")}
+                  onClick={runBackfillIpaOnce}>
+                  {backfillRunning ? "Running…" : "Backfill IPA (admin)"}
+                </button>
+              </div>
+              {backfillStats ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <div className="text-zinc-300">{backfillStats.message || "Backfill batch complete."}</div>
+                    <div className="text-zinc-200 font-semibold">{typeof backfillPercent === "number" ? `${backfillPercent}%` : "—"}</div>
+                  </div>
+                  <div className="h-3 rounded-full bg-white/8 overflow-hidden">
+                    <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: typeof backfillPercent === "number" ? `${backfillPercent}%` : "0%" }}/>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-4 text-xs">
+                    {[["Done", backfillStats.done], ["Pending", backfillStats.pending], ["Errors", backfillStats.error], ["Total", backfillStats.total]].map(([label, val]) => (
+                      <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                        <div className="text-zinc-500">{label}</div>
+                        <div className="text-zinc-100 font-semibold">{val ?? "—"}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-xs text-zinc-400">
+                    Last batch: processed {backfillStats.processed ?? 0}, succeeded {backfillStats.succeeded ?? 0}, failed {backfillStats.failed ?? 0}
+                    {backfillStats.updatedAt ? ` • ${formatWhen(backfillStats.updatedAt)}` : ""}
+                  </div>
+                </div>
+              ) : null}
+              <div className="border-t border-white/10 pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <div className="text-sm font-semibold text-zinc-200">English phonetics backfill</div>
+                    <div className="text-xs text-zinc-500 mt-0.5">Refreshes bad or missing Phonetic values only.</div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" data-press disabled={phoneticBackfillRunning}
+                      className={"z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm font-semibold " + (phoneticBackfillRunning ? "z-disabled" : "")}
+                      onClick={() => runBackfillPhonetics({ dryRun: true })}>
+                      Preview
+                    </button>
+                    <button type="button" data-press disabled={phoneticBackfillRunning}
+                      className={"z-btn px-4 py-2 rounded-2xl text-sm bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold " + (phoneticBackfillRunning ? "z-disabled" : "")}
+                      onClick={() => runBackfillPhonetics({ dryRun: false })}>
+                      {phoneticBackfillRunning ? "Running…" : "Backfill English phonetics"}
+                    </button>
+                  </div>
+                </div>
+                {phoneticBackfillStats ? (
+                  <div className="space-y-3">
+                    <div className="text-sm text-zinc-300">
+                      {phoneticBackfillStats.message || "English phonetics backfill complete."}
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-4 text-xs">
+                      {[
+                        [phoneticBackfillStats.dryRun ? "Would update" : "Updated", phoneticBackfillStats.dryRun ? phoneticBackfillStats.wouldUpdate : phoneticBackfillStats.updated],
+                        ["Eligible", phoneticBackfillStats.eligible],
+                        ["Checked", phoneticBackfillStats.checked],
+                        ["Errors", phoneticBackfillStats.errors],
+                      ].map(([label, val]) => (
+                        <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                          <div className="text-zinc-500">{label}</div>
+                          <div className="text-zinc-100 font-semibold">{val ?? "—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {phoneticBackfillStats.sampleChangedRows?.length ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-zinc-400 space-y-2">
+                        {phoneticBackfillStats.sampleChangedRows.slice(0, 3).map((row) => (
+                          <div key={row.phraseId || row.Lithuanian} className="space-y-0.5">
+                            <div className="font-semibold text-zinc-200">{row.Lithuanian}</div>
+                            <div>Before: {row.before || "—"}</div>
+                            <div>After: {row.after || "—"}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="text-xs text-zinc-400">
+                      Last batch: processed {phoneticBackfillStats.processed ?? 0}, skipped {phoneticBackfillStats.skipped ?? 0}
+                      {phoneticBackfillStats.updatedAt ? ` • ${formatWhen(phoneticBackfillStats.updatedAt)}` : ""}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              data-press
-              className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center"
-              onClick={onOpenDuplicateScanner}
-            >
-              Duplicate scanner
-            </button>
-
-            <button
-              type="button"
-              data-press
-              className="z-btn px-5 py-3 rounded-2xl justify-center bg-rose-500/15 border border-rose-400/20 text-rose-100 hover:bg-rose-500/20"
-              onClick={handleClearLibrary}
-            >
-              Clear library
-            </button>
+            <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center" onClick={onOpenDuplicateScanner}>Duplicate scanner</button>
+            <button type="button" data-press className="z-btn px-5 py-3 rounded-2xl justify-center bg-rose-500/15 border border-rose-400/20 text-rose-100 hover:bg-rose-500/20" onClick={handleClearLibrary}>Clear library</button>
           </div>
         </div>
       </CollapsibleSection>
 
-      {/* ABOUT + ADMIN */}
-      <CollapsibleSection
-        id="sec-about"
-        title="About"
-        subtitle={`Version ${appVersion}`}
-        open={openAbout}
-        setOpen={setOpenAbout}
-      >
+      <CollapsibleSection id="sec-about" title="About" subtitle={`Version ${appVersion}`} open={openAbout} setOpen={setOpenAbout}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            data-press
-            className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center"
-            onClick={onOpenUserGuide}
-          >
-            User Guide
-          </button>
-
-          <button
-            type="button"
-            data-press
-            className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center"
-            onClick={onOpenChangeLog}
-          >
-            Change log
-          </button>
-
+          <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center" onClick={onOpenOnboardingProfile}>Reopen profile setup</button>
+          <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center" onClick={onOpenUserGuide}>User Guide</button>
+          <button type="button" data-press className="z-btn z-btn-secondary px-5 py-3 rounded-2xl justify-center" onClick={onOpenChangeLog}>Change log</button>
           {isAdmin ? (
-            <button
-              type="button"
-              data-press
-              className="
-                z-btn px-5 py-3 rounded-2xl
-                bg-emerald-600/90 hover:bg-emerald-500
-                border border-emerald-300/20
-                text-black font-semibold
-                sm:col-span-2
-              "
-              onClick={() => onOpenAnalytics?.()}
-            >
+            <button type="button" data-press
+              className="z-btn px-5 py-3 rounded-2xl bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black font-semibold sm:col-span-2"
+              onClick={() => onOpenAnalytics?.()}>
               Analytics (admin)
             </button>
           ) : null}
         </div>
       </CollapsibleSection>
 
-      {/* DIAGNOSTICS (collapsed by default) */}
-      <CollapsibleSection
-        id="sec-diagnostics"
-        title="Diagnostics"
-        subtitle="Anonymous usage + error reporting during beta."
-        open={openDiagnostics}
-        setOpen={setOpenDiagnostics}
-      >
+      <CollapsibleSection id="sec-diagnostics" title="Diagnostics" subtitle="Anonymous usage + error reporting during beta." open={openDiagnostics} setOpen={setOpenDiagnostics}>
         <p className="text-sm text-zinc-400 leading-relaxed">
-          During beta, we track basic usage (screens and feature clicks) and collect error reports.
-          This helps improve stability and understand what people actually use. We do{" "}
+          During beta, we track basic usage (screens and feature clicks) and collect error reports. This helps improve stability and understand what people actually use. We do{" "}
           <span className="text-zinc-200 font-semibold">not</span> collect your phrase content.
         </p>
-
         <div className="z-inset p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <div className="text-sm font-semibold text-zinc-200">
-                Share anonymous diagnostics
-              </div>
-              <div className="text-xs text-zinc-500 mt-0.5">
-                Usage + errors (no phrase content)
-              </div>
+              <div className="text-sm font-semibold text-zinc-200">Share anonymous diagnostics</div>
+              <div className="text-xs text-zinc-500 mt-0.5">Usage + errors (no phrase content)</div>
             </div>
-
-            <button
-              type="button"
-              data-press
-              className={
-                "z-btn px-4 py-2 rounded-2xl text-sm font-semibold " +
-                (diagnosticsOn
-                  ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black"
-                  : "z-btn-secondary text-zinc-100")
-              }
+            <button type="button" data-press
+              className={"z-btn px-4 py-2 rounded-2xl text-sm font-semibold " + (diagnosticsOn ? "bg-emerald-600/90 hover:bg-emerald-500 border-emerald-300/20 text-black" : "z-btn-secondary text-zinc-100")}
               onClick={() => {
                 const next = !diagnosticsOn;
                 setDiagnosticsOn(next);
                 setDiagnosticsEnabled(next);
-
-                try {
-                  trackEvent(
-                    "diagnostics_toggle",
-                    { enabled: next ? 1 : 0 },
-                    { app_version: appVersion }
-                  );
-                } catch {}
-              }}
-            >
+                try { trackEvent("diagnostics_toggle", { enabled: next ? 1 : 0 }, { app_version: appVersion }); } catch {}
+              }}>
               {diagnosticsOn ? "On" : "Off"}
             </button>
           </div>
         </div>
       </CollapsibleSection>
+
+      <IpaGuideModal
+        open={showIpaGuide}
+        onClose={() => setShowIpaGuide(false)}
+      />
     </div>
   );
 }

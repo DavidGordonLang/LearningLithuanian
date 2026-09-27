@@ -1,4 +1,4 @@
-// src/views/HomeView.jsx
+import { phoneticsDisplay } from "../utils/phoneticsDisplay";
 import React, {
   memo,
   useCallback,
@@ -11,6 +11,8 @@ import useLocalStorageState from "../hooks/useLocalStorageState";
 import useSpeechToTextHold from "../hooks/useSpeechToTextHold";
 import useTranslate from "../hooks/useTranslate";
 import useSaveToLibrary from "../hooks/useSaveToLibrary";
+import { useSettingsStore } from "../stores/settingsStore";
+import InteractivePhraseText from "../components/audio/InteractivePhraseText";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -107,6 +109,7 @@ export default function HomeView({
   nowTs,
   showToast,
   rows,
+  onOpenScenarioPickerForTranslation,
 }) {
   const textareaRef = useRef(null);
 
@@ -121,17 +124,20 @@ export default function HomeView({
   }, []);
 
   const [input, setInput] = useState("");
-  const [gender, setGender] = useState("neutral");
+
+  // addressee — who the user is speaking TO
+  const [gender, setGender] = useState("male");
+  // tone
   const [tone, setTone] = useState("friendly");
 
-  // Auto-Translate toggle (persisted) — KEEP LOGIC, UI REMOVED (per request)
-  const [autoTranslateLS, setAutoTranslateLS] = useLocalStorageState(
-    "zodis_auto_translate",
-    "1"
-  );
+  // speaker gender comes from persisted settings — the user's own gender
+  const speakerGender = useSettingsStore((s) => s.speakerGender);
+
+  const phoneticsMode = useSettingsStore((s) => s.data?.phoneticsMode || "en");
+
+  const [autoTranslateLS] = useLocalStorageState("zodis_auto_translate", "1");
   const autoTranslate = autoTranslateLS === "1";
 
-  // Translation hook
   const {
     translating,
     result,
@@ -143,6 +149,7 @@ export default function HomeView({
     rows,
     tone,
     gender,
+    speakerGender,
     showToast,
   });
 
@@ -151,6 +158,8 @@ export default function HomeView({
     () => !!result.ltOut && !!(result.enNatural || result.enLiteral),
     [result.ltOut, result.enNatural, result.enLiteral]
   );
+
+  const displayedPhonetics = phoneticsDisplay(phoneticsMode, result.phonetics, result.phoneticsIpa);
 
   const handleClear = useCallback(() => {
     blurTextarea();
@@ -205,6 +214,15 @@ export default function HomeView({
     [blurTextarea, playText]
   );
 
+  const handleWordPlay = useCallback(
+    (text, opts) => {
+      blurTextarea();
+      if (!text) return;
+      return playText(text, opts);
+    },
+    [blurTextarea, playText]
+  );
+
   const handleCopy = useCallback(() => {
     blurTextarea();
     if (!result.ltOut) return;
@@ -217,7 +235,16 @@ export default function HomeView({
     onOpenAddForm?.();
   }, [blurTextarea, onOpenAddForm]);
 
-  // STT hook
+  const handleAddToScenario = useCallback(() => {
+    blurTextarea();
+    if (!canSave) return;
+
+    onOpenScenarioPickerForTranslation?.({
+      input,
+      result,
+    });
+  }, [blurTextarea, canSave, input, result, onOpenScenarioPickerForTranslation]);
+
   const { sttState, sttSupported, startRecording, stopRecording, cancelStt } =
     useSpeechToTextHold({
       showToast,
@@ -236,12 +263,8 @@ export default function HomeView({
 
   const micActive = sttState === "recording";
   const micBusy = sttState === "transcribing" || sttState === "translating";
-  const micIdle = sttState === "idle";
-
-  // Render: label is under the button, not inside.
   const micLabel = micBusy ? "Working…" : "Hold to speak";
 
-  // Glow behaviour
   const glowClass = (() => {
     if (!sttSupported()) return "z-mic-glow-off";
     if (micActive) return "z-mic-glow-strong";
@@ -256,18 +279,11 @@ export default function HomeView({
     return "z-mic-ring-soft";
   })();
 
-  /* ------------------------------------------------------------
-     Auto-scroll to focus on either:
-     - the duplicate warning card, or
-     - the translation output card
-     (smooth scroll, once per new "result")
-  ------------------------------------------------------------ */
   const dupCardRef = useRef(null);
   const outCardRef = useRef(null);
   const lastScrollKeyRef = useRef("");
 
   useEffect(() => {
-    // Prefer duplicate card if present, otherwise output card.
     const hasDup = !!duplicateEntry;
     const hasOut = !!result?.ltOut;
 
@@ -289,7 +305,6 @@ export default function HomeView({
     const target = hasDup ? dupCardRef.current : outCardRef.current;
     if (!target) return;
 
-    // Wait for layout to settle (especially on mobile)
     const raf1 = requestAnimationFrame(() => {
       const raf2 = requestAnimationFrame(() => {
         try {
@@ -299,7 +314,6 @@ export default function HomeView({
             inline: "nearest",
           });
         } catch {
-          // fallback
           try {
             target.scrollIntoView(true);
           } catch {}
@@ -312,9 +326,8 @@ export default function HomeView({
   }, [duplicateEntry, result?.ltOut]);
 
   return (
-    <div className="z-page pb-24">
+    <div className="z-page pt-3 pb-24">
       <section className="z-card p-4 sm:p-5">
-        {/* Top controls: labels left, pills right (2 rows total) */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-3">
             <div className="w-24 text-[12px] uppercase tracking-wide text-zinc-400">
@@ -326,9 +339,9 @@ export default function HomeView({
                 value={gender}
                 onChange={handleGenderChange}
                 options={[
-                  { value: "neutral", label: "Neutral" },
                   { value: "male", label: "Male" },
                   { value: "female", label: "Female" },
+                  { value: "group", label: "Group" },
                 ]}
               />
             </div>
@@ -345,7 +358,6 @@ export default function HomeView({
                 onChange={handleToneChange}
                 options={[
                   { value: "friendly", label: "Friendly" },
-                  { value: "neutral", label: "Neutral" },
                   { value: "polite", label: "Polite" },
                 ]}
               />
@@ -353,7 +365,6 @@ export default function HomeView({
           </div>
         </div>
 
-        {/* Prompt + input */}
         <div className="mt-4">
           <div className="text-center text-[16px] sm:text-[17px] font-semibold text-zinc-100">
             What would you like to say?
@@ -370,7 +381,6 @@ export default function HomeView({
           </div>
         </div>
 
-        {/* MIC centrepiece */}
         <div className="mt-5 flex flex-col items-center">
           <button
             type="button"
@@ -410,7 +420,6 @@ export default function HomeView({
             }}
             aria-label="Hold to speak"
           >
-            {/* outer glow */}
             <div
               className={cn(
                 "absolute inset-[-18px] rounded-full z-mic-glow",
@@ -418,15 +427,12 @@ export default function HomeView({
               )}
             />
 
-            {/* rings */}
             <div
               className={cn("absolute inset-0 rounded-full z-mic-ring", ringClass)}
             />
 
-            {/* inner disc */}
             <div className="absolute inset-[10px] rounded-full z-mic-disc" />
 
-            {/* icon bubble */}
             <div
               className={cn(
                 "absolute inset-0 flex items-center justify-center",
@@ -451,7 +457,6 @@ export default function HomeView({
           </div>
         </div>
 
-        {/* Translate / Clear buttons */}
         <div className="mt-4 flex justify-center gap-3">
           <button
             type="button"
@@ -481,7 +486,6 @@ export default function HomeView({
           </button>
         </div>
 
-        {/* Add Entry manually (lighter weight) */}
         {typeof onOpenAddForm === "function" && (
           <div className="mt-4 flex justify-center">
             <button
@@ -496,7 +500,6 @@ export default function HomeView({
         )}
       </section>
 
-      {/* Duplicate warning */}
       {duplicateEntry && (
         <section
           ref={dupCardRef}
@@ -507,7 +510,7 @@ export default function HomeView({
               <div className="text-sm font-semibold text-amber-300">
                 Similar entry already in your library
               </div>
-              <div className="text-xs text-amber-200/80 mt-0.5">
+              <div className="text-xs text-amber-300 mt-0.5">
                 Use this one, or translate anyway for a new version.
               </div>
             </div>
@@ -528,12 +531,12 @@ export default function HomeView({
             {duplicateEntry.English || "—"}
           </div>
           <div className="text-sm text-zinc-200 truncate">
-            {duplicateEntry.Lithuanian || "—"}
+            <InteractivePhraseText text={duplicateEntry.Lithuanian || "—"} playText={playText} />
           </div>
 
-          {duplicateEntry.Phonetic && (
+          {(duplicateEntry.Phonetic || duplicateEntry.PhoneticIPA || phoneticsMode === "ipa") && (
             <div className="text-[11px] text-zinc-400 italic mt-1 truncate">
-              {duplicateEntry.Phonetic}
+              {phoneticsDisplay(phoneticsMode, duplicateEntry.Phonetic, duplicateEntry.PhoneticIPA)}
             </div>
           )}
 
@@ -562,7 +565,6 @@ export default function HomeView({
         </section>
       )}
 
-      {/* Output */}
       {result.ltOut && (
         <section ref={outCardRef} className="z-card mt-4 p-4 sm:p-5 space-y-3">
           <div className="text-xs text-zinc-500">
@@ -577,12 +579,16 @@ export default function HomeView({
               Lithuanian
             </div>
             <div className="mt-1 text-lg font-semibold text-zinc-100 break-words">
-              {result.ltOut}
+              <InteractivePhraseText
+                text={result.ltOut}
+                playText={handleWordPlay}
+                wordClassName="touch-manipulation"
+              />
             </div>
 
-            {result.phonetics && (
+            {displayedPhonetics && (
               <div className="text-sm text-zinc-400 mt-1">
-                {result.phonetics}
+                {displayedPhonetics}
               </div>
             )}
           </div>
@@ -643,6 +649,19 @@ export default function HomeView({
               disabled={!canSave}
             >
               Save to library
+            </button>
+
+            <button
+              type="button"
+              data-press
+              className={cn(
+                "z-btn z-btn-secondary px-5 py-3 rounded-2xl text-sm",
+                !canSave ? "z-disabled" : ""
+              )}
+              onClick={handleAddToScenario}
+              disabled={!canSave}
+            >
+              Add to scenario
             </button>
           </div>
         </section>

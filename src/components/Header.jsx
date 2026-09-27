@@ -13,6 +13,10 @@ function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
+const INDICATOR_TEXT_PAD_X = 18;
+const INDICATOR_MIN_WIDTH = 74;
+const INDICATOR_NUDGE_X = -4;
+
 const Header = forwardRef(function Header(
   { T, page, setPage, onLogoClick, swipeProgress, isSwiping },
   ref
@@ -21,6 +25,7 @@ const Header = forwardRef(function Header(
     () => [
       { id: "home", label: T.navHome },
       { id: "library", label: T.navLibrary },
+      { id: "scenarios", label: T.navScenarios || "Scenarios" },
       { id: "training", label: T.navTraining || "Training" },
       { id: "settings", label: T.navSettings },
     ],
@@ -29,6 +34,7 @@ const Header = forwardRef(function Header(
 
   const containerRef = useRef(null);
   const btnRefs = useRef({});
+  const labelRefs = useRef({});
   const [metrics, setMetrics] = useState(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
@@ -41,30 +47,44 @@ const Header = forwardRef(function Header(
 
     for (const t of tabs) {
       const btn = btnRefs.current?.[t.id];
-      if (!btn) continue;
+      const label = labelRefs.current?.[t.id];
+      if (!btn || !label) continue;
+
       const bRect = btn.getBoundingClientRect();
+      const lRect = label.getBoundingClientRect();
+
+      const btnLeft = bRect.left - wRect.left;
+      const btnWidth = bRect.width;
+      const labelLeft = lRect.left - wRect.left;
+      const labelWidth = lRect.width;
+
+      const desiredWidth = Math.max(
+        INDICATOR_MIN_WIDTH,
+        labelWidth + INDICATOR_TEXT_PAD_X * 2
+      );
+
+      const safeWidth = Math.min(desiredWidth, btnWidth);
+      const labelCenter = labelLeft + labelWidth / 2;
+
+      const anchoredLeft = Math.min(
+        Math.max(labelCenter - safeWidth / 2, btnLeft),
+        btnLeft + btnWidth - safeWidth
+      );
+
       out[t.id] = {
-        left: bRect.left - wRect.left,
-        width: bRect.width,
+        left: anchoredLeft + INDICATOR_NUDGE_X,
+        width: safeWidth,
       };
     }
 
-    if (tabs.every((t) => out[t.id])) setMetrics(out);
+    if (tabs.every((t) => out[t.id])) {
+      setMetrics(out);
+    }
   };
 
   const updateIndicatorForPage = () => {
     if (!metrics) {
-      const wrap = containerRef.current;
-      const btn = btnRefs.current?.[page];
-      if (!wrap || !btn) return;
-
-      const wRect = wrap.getBoundingClientRect();
-      const bRect = btn.getBoundingClientRect();
-
-      setIndicator({
-        left: bRect.left - wRect.left,
-        width: bRect.width,
-      });
+      measureAll();
       return;
     }
 
@@ -89,13 +109,15 @@ const Header = forwardRef(function Header(
     }
 
     const m = metrics[page];
-    if (m) setIndicator({ left: m.left, width: m.width });
+    if (m) {
+      setIndicator({ left: m.left, width: m.width });
+    }
   };
 
   useLayoutEffect(() => {
     measureAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabs.length]);
+  }, [tabs]);
 
   useLayoutEffect(() => {
     updateIndicatorForPage();
@@ -191,7 +213,9 @@ const Header = forwardRef(function Header(
                   type="button"
                   data-press
                   className={cn(
-                    "relative z-10 flex-1 px-4 sm:px-6 py-2 rounded-full font-medium select-none transition",
+                    "relative z-10 flex flex-1 items-center justify-center",
+                    "px-2 sm:px-3 py-2 rounded-full",
+                    "font-medium select-none transition min-w-0",
                     active
                       ? "text-zinc-950"
                       : "text-zinc-300 hover:text-zinc-100"
@@ -200,7 +224,14 @@ const Header = forwardRef(function Header(
                   onMouseDown={(e) => e.preventDefault()}
                   onTouchStart={(e) => e.preventDefault()}
                 >
-                  {tab.label}
+                  <span
+                    ref={(el) => {
+                      if (el) labelRefs.current[tab.id] = el;
+                    }}
+                    className="inline-block text-center whitespace-nowrap"
+                  >
+                    {tab.label}
+                  </span>
                 </button>
               );
             })}

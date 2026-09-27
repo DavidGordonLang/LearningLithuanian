@@ -1,0 +1,769 @@
+// src/content/learning/section3/module_3_1.js
+// Module 3.1 — Essential Numbers
+
+export default function createModule_3_1(profile = {}) {
+  const { userNameSafe = "Davidas" } = profile;
+
+  return {
+    id: "module_3_1",
+    code: "3.1",
+    title: "Essential Numbers",
+    status: "active",
+    lessonCount: 4,
+    lessons: [
+
+      // ── Lesson 1 — 0 to 10 ──────────────────────────────────────────────────
+      {
+        id: "section_3_module_1_lesson_1",
+        code: "3.1.1",
+        title: "Zero to Ten",
+        purpose: "Build fast recognition and production of the core base numbers.",
+        supportLevel: "high",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Lithuanian numbers are the foundation for prices, times, and quantities. Aim to hear them and say them quickly — speed matters more than perfection right now.",
+          usage: [
+            "nulis — zero",
+            "vienas — one",
+            "du — two",
+            "trys — three",
+            "keturi — four",
+            "penki — five",
+            "šeši — six",
+            "septyni — seven",
+            "aštuoni — eight",
+            "devyni — nine",
+            "dešimt — ten",
+          ],
+        },
+        blocks: [
+          {
+            id: "s3m1l1_b1",
+            type: "learn",
+            title: "Zero to ten",
+            items: [
+              { id: "n0",  lt: "nulis",   en: "zero",  audioText: "nulis",   saveable: false },
+              { id: "n1",  lt: "vienas",  en: "one",   audioText: "vienas",  saveable: false },
+              { id: "n2",  lt: "du",      en: "two",   audioText: "du",      saveable: false },
+              { id: "n3",  lt: "trys",    en: "three", audioText: "trys",    saveable: false },
+              { id: "n4",  lt: "keturi",  en: "four",  audioText: "keturi",  saveable: false },
+              { id: "n5",  lt: "penki",   en: "five",  audioText: "penki",   saveable: false },
+              { id: "n6",  lt: "šeši",    en: "six",   audioText: "šeši",    saveable: false },
+              { id: "n7",  lt: "septyni", en: "seven", audioText: "septyni", saveable: false },
+              { id: "n8",  lt: "aštuoni", en: "eight", audioText: "aštuoni", saveable: false },
+              { id: "n9",  lt: "devyni",  en: "nine",  audioText: "devyni",  saveable: false },
+              { id: "n10", lt: "dešimt",  en: "ten",   audioText: "dešimt",  saveable: false },
+              { id: "noun_min", lt: "minutė", en: "minute", audioText: "minutė", core: false, saveable: true },
+            ],
+          },
+          {
+            id: "s3m1l1_b4",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "aštuoni", audioText: "aštuoni" },
+            options: [
+              { id: "a", text: "six", isCorrect: false },
+              { id: "b", text: "eight", isCorrect: true },
+              { id: "c", text: "nine", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1l1_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: six",
+            targetText: "šeši",
+            audioText: "šeši",
+          },
+          {
+            id: "s3m1l1_b6",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "septyni", audioText: "septyni" },
+            options: [
+              { id: "a", text: "six", isCorrect: false },
+              { id: "b", text: "seven", isCorrect: true },
+              { id: "c", text: "nine", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1l1_b7",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "dešimt", audioText: "dešimt" },
+            options: [
+              { id: "a", text: "eight", isCorrect: false },
+              { id: "b", text: "nine", isCorrect: false },
+              { id: "c", text: "ten", isCorrect: true },
+            ],
+          },
+        ],
+      },
+
+      // ── Lesson 2 — 11 to 20 ─────────────────────────────────────────────────
+      {
+        id: "section_3_module_1_lesson_2",
+        code: "3.1.2",
+        title: "Eleven to Twenty",
+        purpose: "Extend the number range into teen numbers and twenty.",
+        supportLevel: "high",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Lithuanian teen numbers mostly end in -lika. You don't need to memorise the rule — just get familiar with hearing them. Twenty is dvidešimt, which you'll use a lot in prices.",
+          usage: [
+            "vienuolika — eleven",
+            "dvylika — twelve",
+            "trylika — thirteen",
+            "keturiolika — fourteen",
+            "penkiolika — fifteen",
+            "šešiolika — sixteen",
+            "septyniolika — seventeen",
+            "aštuoniolika — eighteen",
+            "devyniolika — nineteen",
+            "dvidešimt — twenty",
+          ],
+        },
+        blocks: [
+          {
+            id: "s3m1l2_b1",
+            type: "learn",
+            title: "Eleven to twenty",
+            items: [
+              { id: "n11", lt: "vienuolika",   en: "eleven",    audioText: "vienuolika",   saveable: false },
+              { id: "n12", lt: "dvylika",       en: "twelve",    audioText: "dvylika",       saveable: false },
+              { id: "n13", lt: "trylika",       en: "thirteen",  audioText: "trylika",       saveable: false },
+              { id: "n14", lt: "keturiolika",   en: "fourteen",  audioText: "keturiolika",   saveable: false },
+              { id: "n15", lt: "penkiolika",    en: "fifteen",   audioText: "penkiolika",    saveable: false },
+              { id: "n16", lt: "šešiolika",     en: "sixteen",   audioText: "šešiolika",     saveable: false },
+              { id: "n17", lt: "septyniolika",  en: "seventeen", audioText: "septyniolika",  saveable: false },
+              { id: "n18", lt: "aštuoniolika",  en: "eighteen",  audioText: "aštuoniolika",  saveable: false },
+              { id: "n19", lt: "devyniolika",   en: "nineteen",  audioText: "devyniolika",   saveable: false },
+              { id: "n20", lt: "dvidešimt",     en: "twenty",    audioText: "dvidešimt",     saveable: false },
+            ],
+          },
+          {
+            id: "s3m1l2_b4",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "aštuoniolika", audioText: "aštuoniolika" },
+            options: [
+              { id: "a", text: "seventeen", isCorrect: false },
+              { id: "b", text: "nineteen", isCorrect: false },
+              { id: "c", text: "eighteen", isCorrect: true },
+            ],
+          },
+          {
+            id: "s3m1l2_b5",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "dvidešimt", audioText: "dvidešimt" },
+            options: [
+              { id: "a", text: "twelve", isCorrect: false },
+              { id: "b", text: "twenty", isCorrect: true },
+              { id: "c", text: "nineteen", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1l2_b6",
+            type: "best_response",
+            title: "Choose the best response",
+            noOptionAudio: true,
+            answerAudioText: "aštuoniolika",
+            prompt: { text: "Someone says their son is aštuoniolika years old. How old is he?" },
+            options: [
+              { id: "a", text: "Fourteen", isCorrect: false },
+              { id: "b", text: "Eighteen", isCorrect: true },
+              { id: "c", text: "Eighty", isCorrect: false },
+            ],
+            feedback: { correct: "Aštuoniolika — eighteen. The -lika ending is the clue." },
+          },
+          {
+            id: "s3m1l2_b7",
+            type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "One to five", pairIds: ["m1", "m2", "m3", "m4", "m5"] },
+              { id: "group_2", label: "Six to ten", pairIds: ["m6", "m7", "m8", "m9", "m10"] },
+              { id: "group_3", label: "Eleven to fifteen", pairIds: ["m11", "m12", "m13", "m14", "m15"] },
+              { id: "group_4", label: "Sixteen to twenty", pairIds: ["m16", "m17", "m18", "m19", "m20"] },
+            ],
+            title: "Match the pairs",
+            pairs: [
+              { id: "m1",  lt: "vienas",       en: "one",       audioText: "vienas" },
+              { id: "m2",  lt: "du",           en: "two",       audioText: "du" },
+              { id: "m3",  lt: "trys",         en: "three",     audioText: "trys" },
+              { id: "m4",  lt: "keturi",       en: "four",      audioText: "keturi" },
+              { id: "m5",  lt: "penki",        en: "five",      audioText: "penki" },
+              { id: "m6",  lt: "šeši",         en: "six",       audioText: "šeši" },
+              { id: "m7",  lt: "septyni",      en: "seven",     audioText: "septyni" },
+              { id: "m8",  lt: "aštuoni",      en: "eight",     audioText: "aštuoni" },
+              { id: "m9",  lt: "devyni",       en: "nine",      audioText: "devyni" },
+              { id: "m10", lt: "dešimt",       en: "ten",       audioText: "dešimt" },
+              { id: "m11", lt: "vienuolika",   en: "eleven",    audioText: "vienuolika" },
+              { id: "m12", lt: "dvylika",      en: "twelve",    audioText: "dvylika" },
+              { id: "m13", lt: "trylika",      en: "thirteen",  audioText: "trylika" },
+              { id: "m14", lt: "keturiolika",  en: "fourteen",  audioText: "keturiolika" },
+              { id: "m15", lt: "penkiolika",   en: "fifteen",   audioText: "penkiolika" },
+              { id: "m16", lt: "šešiolika",    en: "sixteen",   audioText: "šešiolika" },
+              { id: "m17", lt: "septyniolika", en: "seventeen", audioText: "septyniolika" },
+              { id: "m18", lt: "aštuoniolika", en: "eighteen",  audioText: "aštuoniolika" },
+              { id: "m19", lt: "devyniolika",  en: "nineteen",  audioText: "devyniolika" },
+              { id: "m20", lt: "dvidešimt",    en: "twenty",    audioText: "dvidešimt" },
+            ],
+          },
+        ],
+      },
+
+      // ── Lesson 3 — Tens That Matter ──────────────────────────────────────────
+      {
+        id: "section_3_module_1_lesson_3",
+        code: "3.1.3",
+        title: "Tens That Matter",
+        purpose: "Recognise and produce the key tens most useful in prices, times, and amounts.",
+        supportLevel: "medium",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Lithuanian tens above twenty follow a pattern — trisdešimt (thirty), keturiasdešimt (forty), penkiasdešimt (fifty). Šimtas is one hundred. These are the amounts you'll hear most often in real situations.",
+          usage: [
+            "dvidešimt — twenty (already known)",
+            "trisdešimt — thirty",
+            "keturiasdešimt — forty",
+            "penkiasdešimt — fifty",
+            "šimtas — one hundred",
+          ],
+        },
+        blocks: [
+          {
+            id: "s3m1l3_b1",
+            type: "learn",
+            title: "The key tens",
+            items: [
+              { id: "t30",  lt: "trisdešimt",      en: "thirty",      audioText: "trisdešimt",      saveable: false },
+              { id: "t40",  lt: "keturiasdešimt",  en: "forty",       audioText: "keturiasdešimt",  saveable: false },
+              { id: "t50",  lt: "penkiasdešimt",   en: "fifty",       audioText: "penkiasdešimt",   saveable: false },
+              { id: "t100", lt: "šimtas",           en: "one hundred", audioText: "šimtas",           saveable: false },
+              { id: "noun_eur", lt: "eurai / eurų", en: "euros", audioText: "eurai", core: false, saveable: true },
+            ],
+          },
+          {
+            id: "s3m1l3_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "trisdešimt", audioText: "trisdešimt" },
+            options: [
+              { id: "a", text: "twenty", isCorrect: false },
+              { id: "b", text: "thirty", isCorrect: true },
+              { id: "c", text: "forty", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1l3_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "šimtas", audioText: "šimtas" },
+            options: [
+              { id: "a", text: "fifty", isCorrect: false },
+              { id: "b", text: "seventy", isCorrect: false },
+              { id: "c", text: "one hundred", isCorrect: true },
+            ],
+          },
+          {
+            id: "s3m1l3_b4",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "keturiasdešimt", audioText: "keturiasdešimt" },
+            options: [
+              { id: "a", text: "thirty", isCorrect: false },
+              { id: "b", text: "forty", isCorrect: true },
+              { id: "c", text: "fifty", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1l3_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: thirty",
+            targetText: "trisdešimt",
+            audioText: "trisdešimt",
+          },
+          {
+            id: "s3m1l3_b6",
+            type: "best_response",
+            title: "Choose the best response",
+            noOptionAudio: true,
+            answerAudioText: "penkiasdešimt eurų",
+            prompt: { text: "A market seller says 'penkiasdešimt eurų'. How much is it?" },
+            options: [
+              { id: "a", text: "Fifteen euros", isCorrect: false },
+              { id: "b", text: "Fifty euros", isCorrect: true },
+              { id: "c", text: "Five hundred euros", isCorrect: false },
+            ],
+            feedback: { correct: "Penkiasdešimt — fifty. Not penkiolika (fifteen) or penkis šimtus (five hundred)." },
+          },
+        ],
+      },
+
+      // ── Lesson 4 — Hearing Numbers in Context ───────────────────────────────
+      {
+        id: "section_3_module_1_lesson_4",
+        code: "3.1.4",
+        title: "Numbers in Context",
+        purpose: "Stop numbers being flashcards — hear and use them inside real phrases.",
+        supportLevel: "medium",
+        newLanguageLoad: "low",
+        notes: {
+          pattern: "Same number, different job: trys is three, while Man reikia trijų bilietų means I need three tickets. Learn each useful phrase as it appears; the number still means three.",
+          usage: [
+            "You already know aš esu = I am. Mes = we, esame = are, so mes esame = we are.",
+            "Mes esame dviese = there are two of us. Dviese is the useful 'two of us' chunk.",
+            "trys = three → trijų bilietų in Man reikia trijų bilietų (I need three tickets)",
+            "du = two → dviejų after reikia: Man reikia dviejų bilietų (I need two tickets)",
+            "du = two → dvi with a feminine thing: Dvi kavas, prašau (Two coffees, please)",
+            "Later, penki = five becomes penktą valandą when you mean at five o'clock.",
+          ],
+        },
+        blocks: [
+          {
+            id: "s3m1l4_b1",
+            type: "learn",
+            title: "Numbers in real phrases",
+            items: [
+              { id: "ctx1", lt: "Tai kainuoja dešimt eurų",    en: "It costs ten euros",         audioText: "Tai kainuoja dešimt eurų",    saveable: true, core: true },
+              { id: "ctx2a", lt: "Mes esame",                    en: "We are",                      audioText: "Mes esame",                    saveable: true, core: false },
+              { id: "ctx2", lt: "Mes esame dviese",             en: "There are two of us",        audioText: "Mes esame dviese",             saveable: true, core: true },
+              { id: "ctx3", lt: "Man reikia trijų bilietų",    en: "I need three tickets",       audioText: "Man reikia trijų bilietų",    saveable: true, core: true },
+              { id: "ctx3b", lt: "Man reikia dviejų bilietų",   en: "I need two tickets",         audioText: "Man reikia dviejų bilietų",   saveable: true, core: false },
+              { id: "ctx3c", lt: "Dvi kavas, prašau",           en: "Two coffees, please",        audioText: "Dvi kavas, prašau",           saveable: true, core: false },
+              { id: "ctx4", lt: "Pradedame penktą valandą",    en: "We start at five o'clock",   audioText: "Pradedame penktą valandą",    saveable: true, core: true },
+              { id: "noun_val", lt: "valanda", en: "hour / o'clock", audioText: "valanda", core: false, saveable: true },
+            ],
+          },
+          {
+            id: "s3m1l4_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Tai kainuoja dešimt eurų", audioText: "Tai kainuoja dešimt eurų" },
+            options: [
+              { id: "a", text: "It costs three euros", isCorrect: false },
+              { id: "b", text: "It costs ten euros", isCorrect: true },
+              { id: "c", text: "It costs twenty euros", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1l4_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Mes esame dviese", audioText: "Mes esame dviese" },
+            options: [
+              { id: "a", text: "We are ten", isCorrect: false },
+              { id: "b", text: "We are five", isCorrect: false },
+              { id: "c", text: "There are two of us", isCorrect: true },
+            ],
+          },
+          {
+            id: "s3m1l4_b4",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Man reikia trijų bilietų", audioText: "Man reikia trijų bilietų" },
+            options: [
+              { id: "a", text: "I want two coffees", isCorrect: false },
+              { id: "b", text: "I need three tickets", isCorrect: true },
+              { id: "c", text: "I have five euros", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1l4_b5",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You're at a ticket desk. You need tickets for yourself and one friend. What do you say?" },
+            options: [
+              { id: "a", text: "Man reikia trijų bilietų", isCorrect: false },
+              { id: "b", text: "Mes esame dviese", isCorrect: false },
+              { id: "c", text: "Man reikia dviejų bilietų", isCorrect: true },
+            ],
+            feedback: { correct: "Two of you — dviejų bilietų. It's the same pattern as trijų bilietų." },
+          },
+          {
+  id: "s3m1l4_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a café counter ordering two coffees — one for you and one for a friend. The server asks how many coffees.",
+  sceneIntro: "You're at a café counter ordering two coffees — one for you and one for a friend. The server asks how many coffees.",
+  location: "café",
+  userRole: "customer",
+  register: "polite_service",
+  goal: "Order two coffees after the server asks how many you want.",
+  focus: ["ordering","numbers"],
+  participants: [
+    {
+      "id": "barista",
+      "label": "Barista",
+      "name": "Ieva",
+      "role": "barista",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "coffee",
+      "lt": "kava",
+      "en": "coffee",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Laba diena! Kiek kavų?",
+      sceneDirection: "You are ordering one coffee for yourself and one for your friend.",
+      learnerPrompt: "Tell the server you want two coffees.",
+      options: [
+        {
+          id: "a",
+          text: "Man reikia dviejų bilietų",
+          result: "wrong",
+          feedback: "Bilietų are tickets. Here you are ordering coffees, so say dvi kavas.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Dvi kavas, prašau",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Vieną kavą, prašau",
+          result: "wrong",
+          feedback: "Vieną kavą orders one coffee. You need two: dvi kavas.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Tai kainuoja šešis eurus.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "Ieva holds up six fingers to show the amount, then repeats only the price.",
+            speakerText: "Šešis eurus.",
+          },
+          {
+            sceneDirection: "The amount is six euros.",
+            speakerText: "It costs six euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
+      options: [
+        {
+                  id: "b",
+                  text: "Dešimt eurų?",
+                  result: "wrong",
+                  feedback: "Ieva said šešis eurus, six euros, not ten.",
+                  progresses: false,
+                },
+        {
+                  id: "c",
+                  text: "Gerai, ačiū",
+                  result: "best",
+                  progresses: true,
+                }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "barista",
+      speakerLabel: "Barista",
+      speakerText: "Prašom!",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero",
+          result: "acceptable",
+          feedback: "A goodbye works here; thanking Ieva for the coffees is warmer.",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Ačiū labai!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "Atsiprašau apologises; Ieva has just served your coffees, so thank her or say goodbye.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
+        ],
+      },
+
+      // ── Module 3.1 Checkpoint ────────────────────────────────────────────────
+      {
+        id: "section_3_module_1_checkpoint",
+        code: "3.1.C",
+        title: "Numbers Check",
+        purpose: "Prove you can recognise and use core numbers quickly in real contexts.",
+        supportLevel: "none",
+        newLanguageLoad: "none",
+        isCheckpoint: true,
+        blocks: [
+          {
+            id: "s3m1c_b1",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "penkiolika", audioText: "penkiolika" },
+            options: [
+              { id: "a", text: "fifty", isCorrect: false },
+              { id: "b", text: "fifteen", isCorrect: true },
+              { id: "c", text: "five", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1c_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "keturiasdešimt", audioText: "keturiasdešimt" },
+            options: [
+              { id: "a", text: "fourteen", isCorrect: false },
+              { id: "b", text: "forty", isCorrect: true },
+              { id: "c", text: "four", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1c_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Tai kainuoja trisdešimt eurų", audioText: "Tai kainuoja trisdešimt eurų" },
+            options: [
+              { id: "a", text: "It costs thirteen euros", isCorrect: false },
+              { id: "b", text: "It costs thirty euros", isCorrect: true },
+              { id: "c", text: "It costs three hundred euros", isCorrect: false },
+            ],
+          },
+          {
+            id: "s3m1c_b4",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You're travelling with one other person. Which phrase means: There are two of us?" },
+            options: [
+              { id: "a", text: "Man reikia dviejų bilietų.", isCorrect: false },
+              { id: "b", text: "Mes esame dviese.", isCorrect: true },
+              { id: "c", text: "Dvi kavas, prašau.", isCorrect: false },
+            ],
+            feedback: {
+              correct: "Mes esame dviese — there are two of us. The other answers also use forms connected to 'two', but for different jobs: dviejų for needing two tickets, dvi for two feminine items.",
+            },
+          },
+          {
+            id: "s3m1c_b5",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "I need three tickets" },
+            tokens: [
+              { id: "t1", text: "Man",     correctIndex: 0 },
+              { id: "t2", text: "reikia",  correctIndex: 1 },
+              { id: "t3", text: "trijų",   correctIndex: 2 },
+              { id: "t4", text: "bilietų", correctIndex: 3 },
+              { id: "t5", text: "dviejų",  isDistractor: true },
+            ],
+            answerText: "Man reikia trijų bilietų",
+          },
+          {
+  id: "s3m1c_b6_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a train station ticket window buying two tickets — one for you and one for a friend. Twenty euros is fine for you.",
+  sceneIntro: "You're at a train station ticket window buying two tickets — one for you and one for a friend. Twenty euros is fine for you.",
+  location: "service desk",
+  userRole: "traveller",
+  register: "polite_service",
+  goal: "Ask for two tickets and handle the short price exchange.",
+  focus: ["directions","numbers"],
+  participants: [
+    {
+      "id": "assistant",
+      "label": "Assistant",
+      "name": "Rasa",
+      "role": "assistant",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_service"
+    },
+  ],
+  objects: [
+    {
+      "id": "ticket",
+      "lt": "bilietas",
+      "en": "ticket",
+      "gender": "masculine",
+      "number": "singular"
+    },
+    {
+      "id": "station",
+      "lt": "stotis",
+      "en": "station",
+      "gender": "feminine",
+      "number": "singular"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Laba diena! Kiek bilietų?",
+      sceneDirection: "You need two tickets: one for yourself and one for your friend.",
+      learnerPrompt: "Tell Rasa that you need two tickets.",
+      options: [
+        {
+          id: "a",
+          text: "Man reikia trijų bilietų, prašau",
+          result: "wrong",
+          feedback: "Trijų asks for three tickets. You need two: dviejų.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Man reikia dviejų bilietų, prašau",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Dvi kavas, prašau",
+          result: "wrong",
+          feedback: "Dvi kavas orders two coffees; Rasa asked how many tickets.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Dvidešimt eurų.",
+      sceneDirection: "Twenty euros works for you.",
+      learnerPrompt: "Choose the most natural response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Twenty euros.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
+      options: [
+        {
+                  id: "b",
+                  text: "Dvidešimt? Gerai.",
+                  result: "best",
+                  progresses: true,
+                },
+        {
+                  id: "c",
+                  text: "Trisdešimt? Gerai.",
+                  result: "wrong",
+                  feedback: "Trisdešimt is thirty; Rasa quoted dvidešimt, twenty.",
+                  progresses: false,
+                }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "assistant",
+      speakerLabel: "Assistant",
+      speakerText: "Prašom, du bilietai.",
+      sceneDirection: "The conversation continues.",
+      learnerPrompt: "Choose the natural closing response.",
+      help: {
+        levels: [
+          {
+            sceneDirection: "The speaker slows down and points to the key detail in the scene.",
+          },
+          {
+            speakerText: "Here you go, two tickets.",
+            spokenLanguage: "en",
+            audio: false,
+          },
+        ],
+      },
+      options: [
+        {
+                  id: "a",
+                  text: "Atsiprašau",
+                  result: "wrong",
+                  feedback: "Atsiprašau is an apology; Rasa has handed you the tickets, so thank her.",
+                  progresses: false,
+                },
+        {
+                  id: "b",
+                  text: "Ačiū labai!",
+                  result: "best",
+                  progresses: true,
+                }
+      ],
+    }
+  ],
+},
+          {
+            id: "s3m1c_b7",
+            type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "One to four", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Five to eight", pairIds: ["m5", "m6", "m7", "m8"] },
+              { id: "group_3", label: "Nine to twelve", pairIds: ["m9", "m10", "m11", "m12"] },
+              { id: "group_4", label: "Teens and twenty", pairIds: ["m13", "m14", "m15", "m16"] },
+              { id: "group_5", label: "Larger numbers and time", pairIds: ["m17", "m18", "m19", "m20"] },
+            ],
+            title: "Match the pairs",
+            pairs: [
+              { id: "m1",  lt: "vienas",        en: "one",         audioText: "vienas" },
+              { id: "m2",  lt: "du",             en: "two",         audioText: "du" },
+              { id: "m3",  lt: "trys",           en: "three",       audioText: "trys" },
+              { id: "m4",  lt: "keturi",         en: "four",        audioText: "keturi" },
+              { id: "m5",  lt: "penki",          en: "five",        audioText: "penki" },
+              { id: "m6",  lt: "šeši",           en: "six",         audioText: "šeši" },
+              { id: "m7",  lt: "septyni",        en: "seven",       audioText: "septyni" },
+              { id: "m8",  lt: "aštuoni",        en: "eight",       audioText: "aštuoni" },
+              { id: "m9",  lt: "devyni",         en: "nine",        audioText: "devyni" },
+              { id: "m10", lt: "dešimt",         en: "ten",         audioText: "dešimt" },
+              { id: "m11", lt: "vienuolika",     en: "eleven",      audioText: "vienuolika" },
+              { id: "m12", lt: "dvylika",        en: "twelve",      audioText: "dvylika" },
+              { id: "m13", lt: "penkiolika",     en: "fifteen",     audioText: "penkiolika" },
+              { id: "m14", lt: "aštuoniolika",   en: "eighteen",    audioText: "aštuoniolika" },
+              { id: "m15", lt: "dvidešimt",      en: "twenty",      audioText: "dvidešimt" },
+              { id: "m16", lt: "trisdešimt",     en: "thirty",      audioText: "trisdešimt" },
+              { id: "m17", lt: "keturiasdešimt", en: "forty",       audioText: "keturiasdešimt" },
+              { id: "m18", lt: "penkiasdešimt",  en: "fifty",       audioText: "penkiasdešimt" },
+              { id: "m19", lt: "šimtas",         en: "one hundred", audioText: "šimtas" },
+              { id: "m20", lt: "minutė",         en: "minute",      audioText: "minutė" },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}

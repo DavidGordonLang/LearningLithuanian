@@ -1,18 +1,61 @@
-// src/hooks/useSaveToLibrary.js
-import { DEFAULT_CATEGORY } from "../constants/categories";
+import { useCallback } from "react";
 
-function mapEnrichCategoryToApp(category) {
-  const c = String(category || "").trim();
+// Match phraseStore contentKey logic (diacritics removed + alnum only)
+function normalizeForKey(input = "") {
+  return String(input)
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
 
-  const map = {
-    Food: "Food & Drink",
-    Emergencies: "Emergency",
-    "Daily life": "General",
-    Emotions: "General",
-    Relationships: "Social",
-  };
+function buildContentKeyFromLt(lt) {
+  return normalizeForKey(lt || "");
+}
 
-  return map[c] || c || DEFAULT_CATEGORY;
+// Background enrich-and-patch — called after save when notes are missing.
+// Fires and forgets: patches the saved row in-place when enrich returns.
+async function enrichAndPatch({ rowId, lt, phoEn, phoIpa, enNat, enLit, setRows }) {
+  try {
+    const res = await fetch("/api/enrich", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        lt,
+        phonetics: phoEn,
+        phonetics_ipa: phoIpa,
+        en_natural: enNat,
+        en_literal: enLit,
+      }),
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json().catch(() => ({}));
+    const notes = String(data?.Notes || "").trim();
+    const usage = String(data?.Usage || "").trim();
+    const category = String(data?.Category || "").trim();
+
+    if (!notes && !usage) return;
+
+    setRows((prev) =>
+      Array.isArray(prev)
+        ? prev.map((r) =>
+            (r._id || r.id) === rowId
+              ? {
+                  ...r,
+                  Notes: notes || r.Notes,
+                  Usage: usage || r.Usage,
+                  Category: category || r.Category,
+                }
+              : r
+          )
+        : prev
+    );
+  } catch {
+    // Silent — enrichment is best-effort, save already succeeded
+  }
 }
 
 export default function useSaveToLibrary({
@@ -26,118 +69,115 @@ export default function useSaveToLibrary({
   nowTs,
   showToast,
 } = {}) {
-  async function enrichSavedRowSilently(row) {
-    try {
-      if (!row?._id) return;
+  const saveToLibrary = useCallback(
+    ({ suppressToast = false } = {}) => {
+      blurTextarea?.();
 
-      if (
-        (row.Usage && String(row.Usage).trim()) ||
-        (row.Notes && String(row.Notes).trim())
-      ) {
-        return;
+      if (!canSave) return { ok: false, error: "Nothing to save." };
+
+      const lt = String(result?.ltOut || "").trim();
+      const enLit = String(result?.enLiteral || "").trim();
+      const enNat = String(result?.enNatural || "").trim();
+      const phoEn = String(result?.phonetics || "").trim();
+      const phoIpa = String(result?.phoneticsIpa || "").trim();
+
+      if (!lt) return { ok: false, error: "Missing Lithuanian output." };
+
+      const contentKey = buildContentKeyFromLt(lt);
+      const existingRows = Array.isArray(rows) ? rows : [];
+      const existing = existingRows.find(
+        (r) => !r?._deleted && String(r?.contentKey || "") === contentKey
+      );
+
+      if (existing) {
+        if (!suppressToast) showToast?.("Saved to library");
+        return { ok: true, row: existing, alreadyExisted: true };
       }
 
-      const res = await fetch("/api/enrich", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lt: row.Lithuanian,
-          phonetics: row.Phonetic,
-          en_natural: row.EnglishNatural || row.English || "",
-          en_literal: row.EnglishLiteral || row.English || "",
-        }),
+      const now = typeof nowTs === "function" ? nowTs() : Date.now();
+      const id =
+        typeof genId === "function"
+          ? genId()
+          : Math.random().toString(36).slice(2);
+
+      const sourceLang = result?.sourceLang === "lt" ? "lt" : "en";
+
+      const newRow = {
+        _id: id,
+        _ts: now,
+
+        Sheet: "Phrases",
+        Category: result?.categoryOut || "General",
+
+        Lithuanian: lt,
+        English: enNat || enLit || String(input || "").trim(),
+
+        SourceLang: sourceLang,
+        EnglishLiteral: enLit || enNat || "",
+        EnglishNatural: enNat || enLit || "",
+        EnglishOriginal: String(input || "").trim(),
+        LithuanianOriginal: lt,
+
+        Phonetic: phoEn,
+        PhoneticIPA: phoIpa,
+
+        Usage: String(result?.usageOut || "").trim(),
+        Notes: String(result?.notesOut || "").trim(),
+
+        "RAG Icon": "🟠",
+        _qstat: {
+          red: { ok: 0, bad: 0 },
+          amb: { ok: 0, bad: 0 },
+          grn: { ok: 0, bad: 0 },
+        },
+
+        Source: "user",
+        Touched: true,
+        _deleted: false,
+        _deleted_ts: null,
+
+        contentKey,
+      };
+
+      setRows?.((prev) => {
+        const arr = Array.isArray(prev) ? prev : [];
+        return [newRow, ...arr];
       });
 
-      if (!res.ok) return;
+      // If notes are missing (user saved before enrichment finished),
+      // run enrich in the background and patch the row when it returns.
+      if (!newRow.Notes && !newRow.Usage) {
+        enrichAndPatch({
+          rowId: id,
+          lt,
+          phoEn,
+          phoIpa,
+          enNat: enNat || enLit,
+          enLit: enLit || enNat,
+          setRows,
+        });
+      }
 
-      const data = await res.json();
-      const CategoryRaw = String(data?.Category || "").trim();
-      const Usage = String(data?.Usage || "").trim();
-      const Notes = String(data?.Notes || "").trim();
+      if (!suppressToast) showToast?.("Saved to library");
 
-      if (!CategoryRaw || !Usage || !Notes) return;
+      return { ok: true, row: newRow, alreadyExisted: false };
+    },
+    [
+      blurTextarea,
+      canSave,
+      genId,
+      input,
+      nowTs,
+      result,
+      rows,
+      setRows,
+      showToast,
+    ]
+  );
 
-      const Category = mapEnrichCategoryToApp(CategoryRaw);
+  const handleSaveToLibrary = useCallback(() => {
+    saveToLibrary();
+  }, [saveToLibrary]);
 
-      setRows?.((prev) =>
-        prev.map((r) =>
-          r._id === row._id
-            ? {
-                ...r,
-                Category: Category || r.Category || DEFAULT_CATEGORY,
-                Usage,
-                Notes,
-              }
-            : r
-        )
-      );
-    } catch (err) {
-      console.error("Enrich failed (silent):", err);
-    }
-  }
-
-  function handleSaveToLibrary() {
-    blurTextarea?.();
-
-    if (!canSave) return;
-
-    const rawInput = String(input || "").trim();
-    if (!rawInput) return;
-
-    const englishToSave = String(result?.enNatural || result?.enLiteral || "").trim();
-    const lithuanianToSave = String(result?.ltOut || "").trim();
-    if (!englishToSave || !lithuanianToSave) return;
-
-    const already = (rows || []).some((r) => {
-      const en = String(r.EnglishNatural || r.EnglishLiteral || r.English || "").trim();
-      const lt = String(r.Lithuanian || "").trim();
-      return (
-        en.toLowerCase() === englishToSave.toLowerCase() &&
-        lt.toLowerCase() === lithuanianToSave.toLowerCase()
-      );
-    });
-
-    if (already) {
-      showToast?.("Already in library");
-      return;
-    }
-
-    const row = {
-      English: englishToSave,
-      EnglishOriginal: result?.sourceLang === "en" ? rawInput : englishToSave,
-      EnglishLiteral: String(result?.enLiteral || "").trim(),
-      EnglishNatural: englishToSave,
-
-      Lithuanian: lithuanianToSave,
-      LithuanianOriginal:
-        result?.sourceLang === "lt" ? rawInput : lithuanianToSave,
-
-      Phonetic: String(result?.phonetics || ""),
-
-      Category: DEFAULT_CATEGORY,
-      Usage: "",
-      Notes: "",
-
-      SourceLang: result?.sourceLang,
-
-      "RAG Icon": "🟠",
-      Sheet: "Phrases",
-
-      _id: genId?.(),
-      _ts: nowTs?.(),
-      _qstat: {
-        red: { ok: 0, bad: 0 },
-        amb: { ok: 0, bad: 0 },
-        grn: { ok: 0, bad: 0 },
-      },
-    };
-
-    setRows?.((prev) => [row, ...prev]);
-    showToast?.("Entry saved to library");
-    enrichSavedRowSilently(row);
-  }
-
-  return {
-    handleSaveToLibrary,
-  };
+  return { handleSaveToLibrary, saveToLibrary };
 }

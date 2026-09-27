@@ -1,20 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color:#0a0a0b;color-scheme:only dark;">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-
     <title>Žodis</title>
-
     <!-- PWA manifest -->
     <link rel="manifest" href="/manifest.json" />
-
     <!-- MUST MATCH manifest.json theme_color -->
     <meta name="theme-color" content="#10b981" />
-
+    <!-- "only dark" prevents Samsung Internet's darkening algorithm from running on an already-dark page -->
+    <meta name="color-scheme" content="only dark" />
     <!-- iOS PWA / Homescreen -->
     <link rel="apple-touch-icon" href="/icons/192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -22,11 +20,10 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-
     <!-- REMOVE TAILWIND CDN — local Tailwind handles all styles -->
-
     <style>
       :root {
+        color-scheme: only dark;
         --sat: env(safe-area-inset-top);
         --sab: env(safe-area-inset-bottom);
       }
@@ -34,19 +31,17 @@
       body,
       #root {
         height: 100%;
+        color-scheme: only dark;
+        background-color: #0a0a0b;
       }
     </style>
   </head>
-
-  <body class="bg-zinc-950 text-zinc-100">
+  <body class="bg-zinc-950 text-zinc-100" style="background-color:#0a0a0b;">
     <div id="root"></div>
-
     <!-- Main app -->
     <script type="module" src="/src/main.jsx"></script>
-
     <!-- PWA bootstrap -->
     <script type="module" src="/src/pwa.js"></script>
-
     <div id="toast-root"></div>
   </body>
 </html>

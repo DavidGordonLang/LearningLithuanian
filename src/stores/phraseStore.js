@@ -1,7 +1,8 @@
 // src/stores/phraseStore.js
 import { create } from "zustand";
+import { createAccountStorage, bindAccountActions } from "./accountStorage.js";
 
-const LS_KEY = "lt_phrasebook_v3";
+const storage = createAccountStorage("lt_phrasebook_v3");
 
 /* --------------------------- Normalisation --------------------------- */
 
@@ -33,23 +34,7 @@ function buildContentKey(row) {
 
 /* --------------------------- Storage --------------------------- */
 
-const loadRows = () => {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveRows = (rows) => {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(rows));
-  } catch (err) {
-    console.error("Failed saving rows", err);
-  }
-};
+const saveRows = (rows) => storage.save(rows);
 
 /* --------------------------- Guards --------------------------- */
 
@@ -123,7 +108,9 @@ const ensureAll = (r) =>
 /* ------------------------ Zustand Store ------------------------ */
 
 export const usePhraseStore = create((set, get) => ({
-  phrases: loadRows(),
+  phrases: [],
+  accountId: null,
+  storageError: null,
 
   /* ---------- Migration ---------- */
 
@@ -178,26 +165,68 @@ export const usePhraseStore = create((set, get) => ({
 
   /* ---------- Edit (CRITICAL: starter → user handoff) ---------- */
 
-  saveEditedPhrase: (index, updated) =>
+  /**
+   * Persist edits to an existing phrase.
+   *
+   * This method supports two call signatures for backwards compatibility:
+   *
+   *   saveEditedPhrase(index: number, updated: object)
+   *     - Where `index` is the numeric index of the row in the canonical
+   *       phrases array and `updated` is a partial set of fields to merge.
+   *
+   *   saveEditedPhrase(updatedRow: object)
+   *     - Where `updatedRow` contains the full row data including its `_id`.
+   *       The existing row is located by `_id` and replaced accordingly.
+   *
+   * The second signature is preferred. Using an `_id`-based lookup avoids
+   * index drift when the list is filtered or sorted in the UI.
+   */
+  saveEditedPhrase: (...args) =>
     set((state) => {
-      const next = state.phrases.map((r, i) => {
-        if (i !== index) return r;
+      let next = state.phrases;
+      // Determine call signature
+      if (args.length === 1 && args[0] && typeof args[0] === "object") {
+        // Signature: saveEditedPhrase(updatedRow)
+        const updatedRow = args[0];
+        const id = updatedRow?._id;
+        if (!id) {
+          // If no _id provided, nothing to do
+          return { phrases: next };
+        }
+        next = state.phrases.map((r) => {
+          // Match by _id; ignore deleted rows
+          if (r._id !== id || r._deleted) return r;
 
-        const wasStarter = r.Source === "starter";
+          const wasStarter = r.Source === "starter";
+          const merged = {
+            ...r,
+            ...updatedRow,
+            _ts: Date.now(),
+            // Any edit makes it user-owned + touched
+            Source: wasStarter ? "user" : (r.Source || "user"),
+            Touched: true,
+          };
+          return ensureAll(merged);
+        });
+      } else if (args.length >= 2) {
+        // Signature: saveEditedPhrase(index, updated)
+        const index = args[0];
+        const updated = args[1] || {};
+        next = state.phrases.map((r, i) => {
+          if (i !== index) return r;
 
-        const merged = {
-          ...r,
-          ...updated,
-          _ts: Date.now(),
-
-          // ✅ Any edit makes it user-owned + touched
-          Source: wasStarter ? "user" : (r.Source || "user"),
-          Touched: true,
-        };
-
-        return ensureAll(merged);
-      });
-
+          const wasStarter = r.Source === "starter";
+          const merged = {
+            ...r,
+            ...updated,
+            _ts: Date.now(),
+            // Any edit makes it user-owned + touched
+            Source: wasStarter ? "user" : (r.Source || "user"),
+            Touched: true,
+          };
+          return ensureAll(merged);
+        });
+      }
       saveRows(next);
       return { phrases: next };
     }),
@@ -234,5 +263,14 @@ export const usePhraseStore = create((set, get) => ({
     }),
 }));
 
-// Run migration immediately
-usePhraseStore.getState()._migrateRows();
+const actions = Object.fromEntries(Object.entries(usePhraseStore.getState()).filter(([, value]) => typeof value === "function"));
+
+export function selectPhraseAccount(userId) {
+  let phrases = [];
+  let storageError = null;
+  try { phrases = storage.select(userId).map(ensureAll); }
+  catch (error) { storageError = error?.message || "Could not read your saved library."; }
+  usePhraseStore.setState({ phrases, accountId: userId || null, storageError, ...bindAccountActions(actions, storage) });
+}
+
+selectPhraseAccount(null);

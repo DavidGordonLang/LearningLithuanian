@@ -1,17 +1,22 @@
 // src/views/training/MatchPairsView.jsx
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMatchPairsSession } from "../../hooks/training/useMatchPairsSession";
 import { matchPairsCss } from "./matchPairs/matchPairsStyles";
+import TrainingBackButton from "./TrainingBackButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
-function filterWordsNumbers(rows) {
+function filterForReinforce(rows, focus) {
   const list = Array.isArray(rows) ? rows : [];
   const sheet = (r) => String(r?.Sheet || "");
+
   return list.filter((r) => {
     const s = sheet(r);
-    return s === "Words" || s === "Numbers";
+
+    if (focus === "numbers") return s === "Numbers";
+    if (focus === "phrases") return false;
+    return s === "Words"; // "all" and "words" both use words only
   });
 }
 
@@ -84,17 +89,59 @@ function DoneModal({ mistakes, elapsedSec, wrongPairs, onAgain, onFinish }) {
   return createPortal(modal, document.body);
 }
 
-export default function MatchPairsView({ rows, onBack }) {
-  const eligible = useMemo(() => filterWordsNumbers(rows), [rows]);
+export default function MatchPairsView({
+  rows,
+  focus,
+  playText,
+  preloadText,
+  onBack,
+}) {
+  const eligible = useMemo(() => filterForReinforce(rows, focus), [rows, focus]);
 
   const s = useMatchPairsSession({
     eligibleRows: eligible,
     totalPairs: 20,
     pagePairs: 5,
-    rightSelectAmberMs: 140,
     correctPulseMs: 520,
     wrongPulseMs: 420,
   });
+
+  const lastPlayedMatchKeyRef = useRef("");
+  const lastPreloadBatchKeyRef = useRef("");
+
+  useEffect(() => {
+    const payload = s.lastCorrectMatchAudio;
+    if (!payload) return;
+
+    const key = String(payload.key || "").trim();
+    const text = String(payload.text || "").trim();
+
+    if (!key || !text) return;
+    if (key === lastPlayedMatchKeyRef.current) return;
+    if (typeof playText !== "function") return;
+
+    lastPlayedMatchKeyRef.current = key;
+
+    try {
+      playText(text);
+    } catch {}
+  }, [playText, s.lastCorrectMatchAudio]);
+
+  useEffect(() => {
+    const texts = Array.isArray(s.preloadLtTexts) ? s.preloadLtTexts : [];
+    if (!texts.length) return;
+    if (typeof preloadText !== "function") return;
+
+    const batchKey = texts.join("¦");
+    if (!batchKey) return;
+    if (batchKey === lastPreloadBatchKeyRef.current) return;
+
+    lastPreloadBatchKeyRef.current = batchKey;
+
+    texts.forEach((text) => {
+      preloadText(text).catch?.(() => {});
+    });
+  }, [preloadText, s.preloadLtTexts]);
 
   const pct = s.progress.total
     ? Math.min(100, Math.round((s.progress.matched / s.progress.total) * 100))
@@ -111,46 +158,19 @@ export default function MatchPairsView({ rows, onBack }) {
   const pulseKind = s.pulse?.kind || null;
   const selectedId = s.selected?.id || null;
 
-  // Tuned: a bit taller than the "collapsed" version, but we CLOSE GAPS hard.
   const TILE_H = 60;
   const COL_GAP = 10;
 
   const tileStyle = {
-    height: TILE_H,
     minHeight: TILE_H,
     padding: "10px 12px",
-    margin: 0, // kills any mp-tile margin spacing unless CSS uses !important
+    margin: 0,
   };
 
-  const BackCircle = (
-    <button
-      type="button"
-      data-press
-      onClick={onBack}
-      className={cn(
-        "h-10 w-10 rounded-full border flex items-center justify-center",
-        "bg-white/[0.06] border-white/10",
-        "shadow-[0_10px_30px_rgba(0,0,0,0.45)]",
-        "hover:bg-white/[0.08] active:scale-[0.99] transition"
-      )}
-      aria-label="Back"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M15 18l-6-6 6-6"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.95"
-        />
-      </svg>
-    </button>
-  );
+  const BackCircle = <TrainingBackButton onClick={onBack} />;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 mp-root">
-      {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <div className="flex items-center justify-start">{BackCircle}</div>
         <div className="text-center">
@@ -159,7 +179,6 @@ export default function MatchPairsView({ rows, onBack }) {
         <div aria-hidden="true" />
       </div>
 
-      {/* Title + progress */}
       <div className="mt-4">
         <div className="text-[15px] font-semibold mp-title">Match either way</div>
         <div className="mt-1 text-[12px] text-zinc-400">
@@ -182,7 +201,19 @@ export default function MatchPairsView({ rows, onBack }) {
         <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
           <div className="text-lg font-semibold">Not enough items</div>
           <div className="text-sm text-zinc-300 mt-2">
-            Reinforce uses <b>Words + Numbers</b> only and needs <b>20</b> entries to run a full session.
+            {focus === "numbers" ? (
+              <>
+                Reinforce is in <b>Numbers</b> mode and needs <b>20</b> entries to run a full session.
+              </>
+            ) : focus === "phrases" ? (
+              <>
+                Reinforce does not use phrases. Switch focus to <b>Words</b>, <b>Numbers</b>, or <b>All</b>.
+              </>
+            ) : (
+              <>
+                Reinforce uses <b>Words</b> only in this mode and needs <b>20</b> entries to run a full session.
+              </>
+            )}
           </div>
         </div>
       )}
@@ -193,11 +224,10 @@ export default function MatchPairsView({ rows, onBack }) {
           style={{
             height: "calc(100vh - 260px)",
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-            overflow: "hidden",
+            overflowY: "auto",
           }}
         >
           <div className="mp-cols" style={{ height: "100%", alignItems: "stretch" }}>
-            {/* LEFT: EN */}
             <div
               className="mp-col"
               style={{
@@ -226,7 +256,7 @@ export default function MatchPairsView({ rows, onBack }) {
                       "mp-tile",
                       tileTextClass(t.text),
                       amber ? "mp-tile-amber" : "",
-                      matched ? "mp-tile-cleared" : "",
+                      matched && !pulse ? "mp-tile-cleared" : "",
                       pulse
                     )}
                     onClick={() => s.tap(t.id)}
@@ -239,7 +269,6 @@ export default function MatchPairsView({ rows, onBack }) {
               })}
             </div>
 
-            {/* RIGHT: LT */}
             <div
               className="mp-col"
               style={{
@@ -268,7 +297,7 @@ export default function MatchPairsView({ rows, onBack }) {
                       "mp-tile",
                       tileTextClass(t.text),
                       amber ? "mp-tile-amber" : "",
-                      matched ? "mp-tile-cleared" : "",
+                      matched && !pulse ? "mp-tile-cleared" : "",
                       pulse
                     )}
                     onClick={() => s.tap(t.id)}

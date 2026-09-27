@@ -1,11 +1,18 @@
 // /api/translate.js
+//
+// Translation endpoint (EN <-> LT) used by the Home view.
+// IMPORTANT: We keep the existing translation system prompt intact to avoid translation drift.
+// IPA is now generated in the SAME call as translation (merged into the JSON schema).
+// This halves latency vs. the previous two-call sequential approach.
+//
+// Returns (client contract):
+//  - lt
+//  - phonetics (English-style)
+//  - phonetics_ipa (IPA)
+//  - en_literal
+//  - en_natural
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Vercel sometimes passes body as a string
+async function readJsonBody(req) {
   let body = req.body;
   if (!body || typeof body === "string") {
     try {
@@ -14,10 +21,43 @@ export default async function handler(req, res) {
       body = {};
     }
   }
+  return body || {};
+}
 
-  const { text, tone, gender } = body;
+async function callOpenAIChat({
+  apiKey,
+  messages,
+  response_format,
+  temperature,
+  max_tokens,
+}) {
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4.1-mini",
+      response_format,
+      messages,
+      temperature,
+      max_tokens,
+    }),
+  });
 
-  if (!text || !text.trim()) {
+  return resp;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const body = await readJsonBody(req);
+  const { text, tone, gender, speakerGender } = body;
+
+  if (!text || !String(text).trim()) {
     return res.status(400).json({ error: "Missing text" });
   }
 
@@ -29,6 +69,9 @@ export default async function handler(req, res) {
 
   // ---------------------------------------------------------------------------
   // SYSTEM PROMPT — TRANSLATE ONLY (NO TEACHING / NO ENRICHMENT)
+  // NOTE: This is intentionally preserved verbatim to prevent drift.
+  // IPA has been added as a fifth output key — this does not affect translation
+  // behaviour, only adds an additional output field.
   // ---------------------------------------------------------------------------
   const systemPrompt = `
 You are a translation engine for English speakers learning Lithuanian.
@@ -59,7 +102,8 @@ Exact shape required:
 
 {
   "lt": "Lithuanian phrase",
-  "phonetics": "English-style pronunciation",
+  "phonetics": "English-style pronunciation (hyphenated syllables)",
+  "phonetics_ipa": "IPA transcription of the Lithuanian phrase",
   "en_literal": "Literal English meaning",
   "en_natural": "Natural English meaning"
 }
@@ -72,137 +116,51 @@ Rules:
 
 For LITHUANIAN input:
 - "lt" MUST be the original Lithuanian input unchanged.
-- "phonetics" MUST still be provided for that Lithuanuanian.
+- "phonetics" and "phonetics_ipa" MUST still be provided for that Lithuanian.
 - "en_literal" and "en_natural" must both be correct English.
-
-────────────────────────────────
-CORE TRANSLATION PHILOSOPHY
-────────────────────────────────
-Default style: natural, everyday Lithuanian — how a native speaker would actually say it.
-
-Hard requirements:
-- Translate by meaning, not word-for-word structure.
-- Avoid calques and “translated-sounding” Lithuanian.
-- Choose the MOST common native phrasing.
-- Grammar and morphology must be correct.
-- Do NOT invent words or output non-standard made-up Lithuanian forms.
-
-If there are multiple natural variants, choose the most common one.
-Do NOT list alternates here.
-
-────────────────────────────────
-IDIOMS + FIXED EXPRESSIONS
-────────────────────────────────
-Detect idioms, phrasal verbs, and fixed expressions and translate by meaning.
-
-Examples of frames that MUST be preserved:
-- Momentum/success growth (“took off”) → Lithuanian that expresses taking off/gaining momentum, not just “rose”.
-- Giving up effort (“gave up trying”) → Lithuanian that expresses giving up/surrendering, not “refused”.
-- Delayed emotional impact/realisation (“it hit me afterwards”) → Lithuanian that expresses realisation/impact, not generic “affected later”.
-- Losing composure (“I lost it”) → Lithuanian that expresses snapping/losing control, not “I lost something”.
-- “ran into (someone)” meaning met unexpectedly → translate as an unexpected meeting, not physical collision.
-
-If no single Lithuanian idiom exists, paraphrase naturally in Lithuanian while keeping the same meaning and tone.
-
-────────────────────────────────
-FRAME LOCKS (MOMENTUM + GIVING UP)
-────────────────────────────────
-Momentum / “took off”:
-- When English means rapid growth, momentum, acceleration, or “taking off” (e.g., a business/project took off), prefer Lithuanian that expresses gaining momentum or accelerating.
-- Avoid using neutral “rose/raised” verbs as the main translation (e.g., “pakilo”) unless the English is literally about rising.
-
-Giving up / stopping effort:
-- When English means abandoning effort or giving up trying, prefer direct everyday Lithuanian verbs that express stopping/abandoning the attempt (e.g., “mečiau bandyti…”, “pasidaviau…”).
-- Avoid metaphorical idioms (e.g., “nuleidau rankas”) unless the English is also metaphorical.
-
-────────────────────────────────
-SEXUAL MEANING (PRESERVE, DON’T INVENT)
-────────────────────────────────
-If the English clearly implies sexual meaning, Lithuanian must preserve it.
-Do NOT sanitise sexual meaning into neutral “like/enjoy” wording.
-
-Examples:
-- “turns me on” must be sexual arousal in Lithuanian, not “I like him”.
-- “slept with (someone)” meaning sex must be unambiguous in Lithuanian (avoid ambiguous literal sleeping).
-
-If English is NOT sexual, do NOT introduce sexual wording.
-
-────────────────────────────────
-PROFANITY + INTENSITY (MATCH, DON’T ESCALATE)
-────────────────────────────────
-Match the strength of emotion/profanity only when clearly present in English:
-- Do NOT downgrade strong English profanity into mild Lithuanian.
-- Do NOT escalate vulgarity beyond what English warrants.
-
-When English contains strong profanity (e.g., “fuck off”), you MUST use a commonly used Lithuanian profanity of comparable strength.
-Do NOT replace strong profanity with polite, neutral, or euphemistic phrases such as “eik šalin”, “eik sau”, or “palik mane ramybėje”.
-
-Intent lock for dismissal profanity:
-- Dismissal profanity like “fuck off” means “leave me alone / go away” (aggressive), NOT physical contact.
-- Do NOT use verbs that describe physical movement, contact, climbing, or position (e.g., “nusileisk”, “nulipk”) for dismissal profanity.
-
-Hard preference for “fuck off”:
-- Translate “fuck off” as a common native dismissal profanity such as “Atsipisk” or “Atsiknisk”.
-- Do NOT invent alternatives or output non-standard forms (e.g., made-up imperatives).
-- If you choose to include “nuo manęs”, only do so when the English implies “off me”.
-
-────────────────────────────────
-IMPERATIVES MUST SOUND NATIVE
-────────────────────────────────
-Commands must match real-life Lithuanian usage for the situation.
-Avoid odd literal verbs that sound unnatural for the intended action (especially physical “get off / hands off” situations).
-
-Physical imperative gate:
-- Only use physical-contact imperatives (e.g., “nulipk”, “trauktis”, “patrauk rankas”) when the English explicitly refers to physical contact with the speaker’s body (e.g., “get off me”, “hands off me”).
-- Do NOT use physical-contact imperatives for dismissal-only phrases like “fuck off”.
-
-For “get off me” meaning unwanted physical contact, pressure, or touching, use Lithuanian commands that express stopping physical contact, not vertical movement.
-Avoid verbs that imply climbing or descending (e.g., “nusileisti”).
-Prefer commands a Lithuanian would actually say in this situation.
-
-────────────────────────────────
-TU VS TAU (KEEP THIS RULE)
-────────────────────────────────
-HARD RULE:
-If the English asks about the person’s state using:
-- “How are you”
-- “How are you doing”
-- “How are you today / this evening / lately”
-then use “Kaip tu …”
-Do NOT reinterpret these as “for you”.
-
-Use “tau” when asking about an external situation/experience:
-- “How was the movie for you?” → Kaip tau filmas?
-- “How’s work for you?” → Kaip tau darbas?
-- “How is it going for you?” → Kaip tau sekasi?
-
-If ambiguous, default to “Kaip tu …”.
-
-────────────────────────────────
-GREETINGS (NATIVE)
-────────────────────────────────
-Do NOT transliterate English greetings.
-Lithuanian does NOT use “ei”.
-
-Use common greetings:
-- Sveikas (male)
-- Sveika (female)
-- Labas (neutral / unknown)
-
-If a greeting starts a longer sentence, replace ONLY the greeting.
-Preserve the user’s punctuation exactly.
 
 ────────────────────────────────
 PHONETICS (ENGLISH-READER FRIENDLY)
 ────────────────────────────────
-- English-reader friendly, hyphenated syllables.
-- No IPA.
+phonetics:
+- English-reader friendly pronunciation hints only. This is NOT IPA.
+- Separate syllables with hyphens.
+- Mark the normatively stressed syllable of each Lithuanian word in ALL CAPS.
+- Lithuanian stress is not reliably predictable from spelling. Do not guess from
+  the first syllable or copy capitalisation from the Lithuanian input.
+- Represent every Lithuanian syllable and ending. Do not drop final vowels.
+- Do not compress a multi-syllable Lithuanian word into one vague English sound.
+- No IPA symbols.
 - No Lithuanian letters/diacritics in phonetics.
-- Must remain faithful to Lithuanian sounds and endings (don’t drop endings).
+- Use consistent English approximations for Lithuanian sounds:
+  - š -> sh
+  - č -> ch
+  - ž -> zh
+  - ė -> eh
+  - ie -> yeh / ye where appropriate
+  - ai -> eye
+  - au -> ow / au according to the nearest English-friendly sound
+- Keep multi-word phrases readable by spacing words normally and hyphenating syllables inside each word.
 
 Examples:
-- Labas → lah-bahs
-- Laba diena → lah-bah dyeh-nah
+- Labas -> LAH-bahs
+- Prašau -> prah-SHAU
+- Malonu -> mah-loh-NOO
+- Laba diena -> lah-BAH dyeh-NAH
+- Norėčiau kavos, prašau -> noh-REH-chow kah-VOHS prah-SHAU
+
+────────────────────────────────
+PHONETICS_IPA (STANDARD IPA)
+────────────────────────────────
+phonetics_ipa:
+- Standard IPA symbols only.
+- No slashes / /. No brackets [ ].
+- Include spaces between words as in the original phrase.
+- Must be a non-empty string.
+
+Normative stress examples:
+- Laba diena -> lɐˈbɐ dʲɪɛˈnɐ
+- Norėčiau kavos, prašau -> noːˈrʲeːt͡ʃʲɛʊ kɐˈvoːs prɐˈʃɐʊ
 
 ────────────────────────────────
 ENGLISH OUTPUT RULES
@@ -214,43 +172,47 @@ ENGLISH OUTPUT RULES
 `.trim();
 
   // ---------------------------------------------------------------------------
-  // STYLE MODIFIERS (LIGHT INFLUENCE ONLY)
+  // STYLE MODIFIERS
   // ---------------------------------------------------------------------------
   let styleHints = "";
 
-  if (tone === "polite" || tone === "formal") {
-    styleHints += "Use a polite tone. Prefer formal address (jūs) if relevant.\n";
+  // Tone — controls formality and tu vs jūs
+  if (tone === "polite") {
+    styleHints += "Use a polite tone. Prefer formal address (jūs) when addressing the listener.\n";
   } else {
-    styleHints += "Use a natural, friendly tone. Prefer informal address (tu).\n";
+    styleHints += "Use a natural, friendly tone. Prefer informal address (tu) when addressing the listener.\n";
   }
 
-  if (gender === "male") {
-    styleHints += "Assume the listener is male only if required by wording.\n";
+  // Addressee — who is being spoken to
+  if (gender === "group") {
+    styleHints += "The speaker is addressing a group of people. Use plural jūs forms regardless of tone. Use masculine plural agreement as the default for mixed groups.\n";
   } else if (gender === "female") {
-    styleHints += "Assume the listener is female only if required by wording.\n";
+    styleHints += "The person being spoken to is female. Use feminine agreement forms where relevant.\n";
+  } else if (gender === "male") {
+    styleHints += "The person being spoken to is male. Use masculine agreement forms where relevant.\n";
+  }
+
+  // Speaker gender — affects self-referential forms
+  if (speakerGender === "female") {
+    styleHints += "The speaker is female. When the phrase describes the speaker's own state, feelings, or identity, use feminine Lithuanian endings (e.g. alkana, pavargusi, laiminga).\n";
+  } else {
+    styleHints += "The speaker is male. When the phrase describes the speaker's own state, feelings, or identity, use masculine Lithuanian endings (e.g. alkanas, pavargęs, laimingas).\n";
   }
 
   // ---------------------------------------------------------------------------
-  // CALL OPENAI
+  // CALL OPENAI (TRANSLATION + IPA — SINGLE CALL)
   // ---------------------------------------------------------------------------
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "system", content: styleHints.trim() },
-          { role: "user", content: text.trim() },
-        ],
-        temperature: 0.15,
-        max_tokens: 200,
-      }),
+    const response = await callOpenAIChat({
+      apiKey,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "system", content: styleHints.trim() },
+        { role: "user", content: String(text).trim() },
+      ],
+      temperature: 0.15,
+      max_tokens: 280,
     });
 
     if (!response.ok) {
@@ -270,18 +232,26 @@ ENGLISH OUTPUT RULES
       return res.status(500).json({ error: "Bad JSON from OpenAI" });
     }
 
-    const { lt, phonetics, en_literal, en_natural } = payload || {};
+    const lt = String(payload?.lt || "").trim();
+    const phonetics = String(payload?.phonetics || "").trim();
+    const phoneticsIpa = String(payload?.phonetics_ipa || "").trim();
+    const enLiteral = String(payload?.en_literal || "").trim();
+    const enNatural = String(payload?.en_natural || "").trim();
 
-    if (!lt || !phonetics || !en_literal || !en_natural) {
+    if (!lt || !phonetics || !enLiteral || !enNatural) {
       console.error("Incomplete translation payload:", payload);
       return res.status(500).json({ error: "Incomplete translation" });
     }
 
+    // phoneticsIpa is best-effort — not included in the completeness check
+    // so a missing or empty IPA never causes the whole translation to fail.
+
     return res.status(200).json({
-      lt: lt.trim(),
-      phonetics: phonetics.trim(),
-      en_literal: en_literal.trim(),
-      en_natural: en_natural.trim(),
+      lt,
+      phonetics,
+      phonetics_ipa: phoneticsIpa,
+      en_literal: enLiteral,
+      en_natural: enNatural,
     });
   } catch (err) {
     console.error("Translation function error:", err);

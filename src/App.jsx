@@ -1,4 +1,6 @@
+import QuickStartModal from "./components/QuickStartModal";
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -13,13 +15,18 @@ import SearchBox from "./components/SearchBox";
 import HomeView from "./views/HomeView";
 import SettingsView from "./views/SettingsView";
 import LibraryView from "./views/LibraryView";
+import ScenariosView from "./views/ScenariosView";
+import ScenarioDetailView from "./views/ScenarioDetailView";
 import TrainingView from "./views/TrainingView";
 import DuplicateScannerView from "./views/DuplicateScannerView";
 import AnalyticsView from "./views/AnalyticsView";
 import ChangeLogModal from "./components/ChangeLogModal";
 import UserGuideModal from "./components/UserGuideModal";
 import WhatsNewModal from "./components/WhatsNewModal";
+import OnboardingProfileModal from "./components/OnboardingProfileModal";
+import ConfirmDialog from "./components/ConfirmDialog";
 import SwipePager from "./components/SwipePager";
+import ModalShell from "./components/ModalShell";
 
 import DailyRecallModal from "./components/DailyRecallModal";
 import useDailyRecall from "./hooks/useDailyRecall";
@@ -29,7 +36,9 @@ import BetaBlocked from "./components/BetaBlocked";
 
 import { searchStore } from "./searchStore";
 import { usePhraseStore } from "./stores/phraseStore";
+import { useScenarioStore } from "./stores/scenarioStore";
 import { initAuthListener, useAuthStore } from "./stores/authStore";
+import { useSettingsStore } from "./stores/settingsStore";
 import { supabase } from "./supabaseClient";
 
 import useLocalStorageState from "./hooks/useLocalStorageState";
@@ -53,11 +62,12 @@ import {
 import { trackEvent, trackError } from "./services/analytics";
 
 /* ============================================================================ */
-const APP_VERSION = "2.0.0-beta";
+const APP_VERSION = "3.0.0-beta";
 
 const LSK_PAGE = "lt_page";
 const LSK_USER_GUIDE = "lt_seen_user_guide";
 const LSK_LAST_SEEN_VERSION = "lt_last_seen_version";
+const PROFILE_ONBOARDING_VERSION = 2;
 
 const STARTERS = {
   EN2LT: "/data/starter_en_to_lt.json",
@@ -69,6 +79,7 @@ const STR = {
   subtitle: "",
   navHome: "Home",
   navLibrary: "Library",
+  navScenarios: "Scenarios",
   navTraining: "Training",
   navSettings: "Settings",
   search: "Search…",
@@ -92,6 +103,7 @@ const STR = {
   azure: "Azure Speech",
   addEntry: "Add Entry",
   edit: "Edit Entry",
+  editEntry: "Edit Entry",
   delete: "Delete",
   showDetails: "Details",
   hideDetails: "Hide",
@@ -187,12 +199,24 @@ function ToastItem({ toast, onDismiss }) {
 
 /* ============================================================================ */
 
-function AppBackground() {
-  // Render-inspired: subtle top glow, centre bloom, vignette, and soft texture feel.
-  // No behaviour changes; pointer-events disabled.
+function AppBackground({ isLight }) {
+  if (isLight) {
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ backgroundColor: "var(--z-bg)" }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(900px 480px at 50% -100px, rgba(107,143,110,0.14), transparent 58%)," +
+              "radial-gradient(700px 400px at 50% 45%, rgba(107,143,110,0.07), transparent 60%)," +
+              "linear-gradient(180deg, #E4D6BC 0%, #EDE0C8 40%, #E8E0CE 100%)",
+          }}
+        />
+      </div>
+    );
+  }
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {/* Base gradient */}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ backgroundColor: "#0a0a0b" }}>
       <div
         className="absolute inset-0"
         style={{
@@ -202,8 +226,6 @@ function AppBackground() {
             "linear-gradient(180deg, rgba(10,10,11,1) 0%, rgba(8,8,10,1) 45%, rgba(6,6,8,1) 100%)",
         }}
       />
-
-      {/* Soft vignette */}
       <div
         className="absolute inset-0"
         style={{
@@ -211,13 +233,10 @@ function AppBackground() {
             "radial-gradient(120% 90% at 50% 30%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.78) 100%)",
         }}
       />
-
-      {/* Very subtle “film” texture (cheap + effective, no assets) */}
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
-          backgroundImage:
-            "radial-gradient(rgba(255,255,255,0.25) 1px, rgba(0,0,0,0) 1px)",
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.25) 1px, rgba(0,0,0,0) 1px)",
           backgroundSize: "3px 3px",
           mixBlendMode: "overlay",
         }}
@@ -226,10 +245,132 @@ function AppBackground() {
   );
 }
 
+function ScenarioPickerModal({
+  open,
+  scenarios,
+  onClose,
+  onPick,
+  onCreateNew,
+}) {
+  const [newTitle, setNewTitle] = useState("");
+
+  useEffect(() => {
+    if (!open) setNewTitle("");
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <ModalShell
+      open={open}
+      title="Add to Scenario"
+      subtitle="Choose an existing scenario or create a new one."
+      onClose={onClose}
+      zIndex="z-[120]"
+    >
+          <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+            {Array.isArray(scenarios) && scenarios.length > 0 ? (
+              <div className="space-y-2">
+                {scenarios.map((scenario) => (
+                  <button
+                    key={scenario.id}
+                    type="button"
+                    data-press
+                    className="w-full text-left z-inset p-4 hover:bg-white/[0.05]"
+                    onClick={() => onPick?.(scenario.id)}
+                  >
+                    <div className="text-sm font-semibold text-zinc-100">
+                      {scenario.title}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="z-inset p-4 text-sm text-zinc-400">
+                No scenarios yet. Create one below.
+              </div>
+            )}
+
+            <div className="border-t border-white/10 pt-4 space-y-3">
+              <div className="text-sm font-semibold text-zinc-200">
+                Create new scenario
+              </div>
+
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="e.g. At a café"
+                className="z-input w-full !rounded-2xl !px-4 !py-3 text-sm"
+              />
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  data-press
+                  className="z-btn z-btn-secondary px-4 py-2 rounded-2xl text-sm"
+                  onClick={onClose}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  data-press
+                  className="
+                    z-btn px-5 py-2.5 rounded-2xl text-sm font-semibold
+                    bg-emerald-600/90 hover:bg-emerald-500
+                    border border-emerald-300/20
+                    text-black
+                  "
+                  onClick={() => onCreateNew?.(newTitle)}
+                >
+                  Create and add
+                </button>
+              </div>
+            </div>
+          </div>
+    </ModalShell>
+  );
+}
+
 export default function App() {
+  const accountId = useAuthStore((s) => s.user?.id);
   useEffect(() => {
     initAuthListener();
   }, []);
+  // Private UI state (translation results, open editors and pending conflicts)
+  // must not survive a change of account.
+  return <AccountApp key={accountId || "signed-out"} />;
+}
+
+function AccountApp() {
+
+  // ── Theme: apply data-theme to <html> whenever themeMode changes ──────────
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const settingsLoading = useSettingsStore((s) => s.loading);
+  const profileOnboardingVersion = useSettingsStore((s) => s.profileOnboardingVersion);
+  const userName = useSettingsStore((s) => s.userName);
+  const speakerGender = useSettingsStore((s) => s.speakerGender);
+  const dateOfBirth = useSettingsStore((s) => s.dateOfBirth);
+  const fromCountryCode = useSettingsStore((s) => s.fromCountryCode);
+  const livesInCountryCode = useSettingsStore((s) => s.livesInCountryCode);
+  const saveProfileOnboarding = useSettingsStore((s) => s.saveProfileOnboarding);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (themeMode === "light") {
+      root.setAttribute("data-theme", "light");
+    } else if (themeMode === "dark") {
+      root.setAttribute("data-theme", "dark");
+    } else {
+      // auto: resolve against system preference
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.setAttribute("data-theme", prefersDark ? "dark" : "light");
+    }
+  }, [themeMode]);
+
+  const isLight = themeMode === "light" ||
+    (themeMode === "auto" && !window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const authLoading = useAuthStore((s) => s.loading);
   const user = useAuthStore((s) => s.user);
@@ -239,11 +380,17 @@ export default function App() {
     supabase,
   });
 
-  /* PAGE */
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
+  const [selectedScenarioId, setSelectedScenarioId] = useState(null);
+  const [libraryFocusPhraseId, setLibraryFocusPhraseId] = useState(null);
 
-  // NOTE: Training tab inserted between Library and Settings.
-  const swipeTabs = ["home", "library", "training", "settings"];
+  const [scenarioPickerOpen, setScenarioPickerOpen] = useState(false);
+  const [scenarioPickerSource, setScenarioPickerSource] = useState(null);
+  const [pendingScenarioPhraseId, setPendingScenarioPhraseId] = useState(null);
+  const [pendingScenarioTranslationPayload, setPendingScenarioTranslationPayload] =
+    useState(null);
+
+  const swipeTabs = ["home", "library", "scenarios", "training", "settings"];
 
   const swipeIndex = swipeTabs.includes(page)
     ? swipeTabs.indexOf(page)
@@ -253,7 +400,7 @@ export default function App() {
   const [isSwiping, setIsSwiping] = useState(false);
 
   useEffect(() => {
-    if (page === "dupes" || page === "analytics") return;
+    if (page === "dupes" || page === "analytics" || page === "scenario-detail") return;
     setSwipeProgress(swipeIndex);
     setIsSwiping(false);
   }, [page, swipeIndex]);
@@ -276,18 +423,26 @@ export default function App() {
     };
   }, []);
 
-  /* ROWS */
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
   const addPhrase = usePhraseStore((s) => s.addPhrase);
   const saveEditedPhrase = usePhraseStore((s) => s.saveEditedPhrase);
 
+  const scenarios = useScenarioStore((s) => s.scenarios);
+  const createScenario = useScenarioStore((s) => s.createScenario);
+  const addPhraseToScenario = useScenarioStore((s) => s.addPhraseToScenario);
+
+  const selectedScenario = useMemo(() => {
+    return (
+      (Array.isArray(scenarios) ? scenarios : []).find((s) => s.id === selectedScenarioId) || null
+    );
+  }, [scenarios, selectedScenarioId]);
+
   const visibleRows = useMemo(() => rows.filter((r) => !r._deleted), [rows]);
 
   const T = STR;
 
-  /* TOAST */
-  const [toasts, setToasts] = useState([]); // [{ id, msg, ms }]
+  const [toasts, setToasts] = useState([]);
   const toastMaxRef = useRef(6);
 
   function showToast(msg, ms = 2200) {
@@ -307,11 +462,12 @@ export default function App() {
     );
   }
 
-  /* VOICE */
   const {
     voice: azureVoiceShortName,
     setVoice: setAzureVoiceShortName,
     playText,
+    preloadText,
+    stop,
   } = useTTSPlayer({
     initialVoice: "lt-LT-LeonasNeural",
     maxIdbEntries: 200,
@@ -319,22 +475,55 @@ export default function App() {
       try {
         trackError(e, { source: "tts_player" }, { app_version: APP_VERSION });
       } catch {}
-      alert("Voice error: " + (e?.message || "Unknown error"));
+      // Show a brief non-blocking toast rather than a blocking alert.
+      // TTS failures are non-fatal — the user can tap the audio button again.
+      showToast("Audio unavailable — check your connection", 3000);
     },
   });
 
-  const playTextTracked = (text, opts) => {
+  useEffect(() => stop, [stop, page, selectedScenarioId]);
+
+  const playTextTracked = useCallback((text, opts) => {
+    const effectiveVoice = opts?.voice || azureVoiceShortName;
     try {
       trackEvent(
         "tts_play",
         {
-          voice: azureVoiceShortName,
+          voice: effectiveVoice,
           text_len: typeof text === "string" ? text.length : null,
         },
         { app_version: APP_VERSION }
       );
     } catch {}
     return playText(text, opts);
+  }, [playText, azureVoiceShortName]);
+
+  const preloadTextTracked = useCallback((text, opts) => {
+    const effectiveVoice = opts?.voice || azureVoiceShortName;
+    try {
+      trackEvent(
+        "tts_preload",
+        {
+          voice: effectiveVoice,
+          text_len: typeof text === "string" ? text.length : null,
+        },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+    return preloadText(text, opts);
+  }, [preloadText, azureVoiceShortName]);
+
+  const stopTextTracked = () => {
+    try {
+      trackEvent(
+        "tts_stop",
+        {
+          voice: azureVoiceShortName,
+        },
+        { app_version: APP_VERSION }
+      );
+    } catch {}
+    return stop();
   };
 
   useSyncExternalStore(
@@ -343,7 +532,6 @@ export default function App() {
     searchStore.getServerSnapshot
   );
 
-  /* LIBRARY IO */
   const mergeRows = (newRows) =>
     mergeRowsIO(newRows, { setRows, normalizeRag, genId, nowTs });
 
@@ -356,8 +544,19 @@ export default function App() {
       nowTs,
     });
 
-  const fetchStarter = (kind) =>
-    fetchStarterIO(kind, { STARTERS, mergeStarterRowsImpl: mergeStarterRows });
+  const fetchStarter = async (kind) => {
+    try {
+      const result = await fetchStarterIO(kind, {
+        STARTERS,
+        mergeStarterRowsImpl: mergeStarterRows,
+      });
+      showToast("Starter pack installed.");
+      return result;
+    } catch (e) {
+      showToast(e?.message || "Failed to install starter pack.");
+      return { ok: false, error: e?.message || "Failed to install starter pack." };
+    }
+  };
 
   const importJsonFile = (file) =>
     importJsonFileIO(file, { mergeRowsImpl: mergeRows });
@@ -374,26 +573,32 @@ export default function App() {
     return rows.find((r) => r.id === editRowId || r._id === editRowId) || null;
   }, [isEditing, rows, editRowId]);
 
-  /* Delete */
-const removePhraseById = (id) => {
-  if (!id) return;
-  if (!confirm(T.confirm)) return;
+  const removePhraseById = async (id) => {
+    if (!id) return false;
+    const ok = await confirmAction({
+      title: "Delete phrase?",
+      body: "This will remove the phrase from your library.",
+      confirmLabel: "Delete phrase",
+      cancelLabel: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return false;
 
-  setRows((prev) =>
-    Array.isArray(prev)
-      ? prev.map((r) => {
-          const rid = r?.id ?? null;
-          const ruid = r?._id ?? null;
+    setRows((prev) =>
+      Array.isArray(prev)
+        ? prev.map((r) => {
+            const rid = r?.id ?? null;
+            const ruid = r?._id ?? null;
 
-          if (rid === id || ruid === id) {
-            return { ...r, _deleted: true, _ts: nowTs() };
-          }
-          return r;
-        })
-      : prev
-  );
-};
-
+            if (rid === id || ruid === id) {
+              return { ...r, _deleted: true, _ts: nowTs() };
+            }
+            return r;
+          })
+        : prev
+    );
+    return true;
+  };
 
   const goToPage = (next) => {
     if (!next) return;
@@ -404,18 +609,279 @@ const removePhraseById = (id) => {
 
   function handleLogoClick() {
     setHomeResetKey((k) => k + 1);
+    setSelectedScenarioId(null);
+    setLibraryFocusPhraseId(null);
     goToPage("home");
   }
 
-  /* Daily recall */
-  const dailyRecall = useDailyRecall({
-    rows: visibleRows,
-    appVersion: APP_VERSION,
-  });
+  function handleOpenScenario(scenarioId) {
+    if (!scenarioId) return;
+    setSelectedScenarioId(scenarioId);
+    setPage("scenario-detail");
+  }
+
+  function handleBackFromScenarioDetail() {
+    setSelectedScenarioId(null);
+    setPage("scenarios");
+  }
+
+  function handleOpenPhraseInLibrary(phraseId) {
+    if (!phraseId) return;
+    setSelectedScenarioId(null);
+    setLibraryFocusPhraseId(phraseId);
+    setPage("library");
+  }
+
+  function handleLibraryFocusConsumed() {
+    setLibraryFocusPhraseId(null);
+  }
+
+  function closeScenarioPicker() {
+    setScenarioPickerOpen(false);
+    setScenarioPickerSource(null);
+    setPendingScenarioPhraseId(null);
+    setPendingScenarioTranslationPayload(null);
+  }
+
+  function openScenarioPickerForTranslation(payload) {
+    setScenarioPickerSource("translation");
+    setPendingScenarioTranslationPayload(payload || null);
+    setPendingScenarioPhraseId(null);
+    setScenarioPickerOpen(true);
+  }
+
+  function openScenarioPickerForPhrase(phraseId) {
+    setScenarioPickerSource("phrase");
+    setPendingScenarioPhraseId(phraseId || null);
+    setPendingScenarioTranslationPayload(null);
+    setScenarioPickerOpen(true);
+  }
+
+  function getRowId(row) {
+    return row?._id || row?.id || null;
+  }
+
+  function buildPhraseContentKeyFromLithuanian(lt) {
+    return makeLtKey({ Lithuanian: String(lt || "").trim() });
+  }
+
+  function findActiveRowById(phraseId) {
+    if (!phraseId) return null;
+
+    return (
+      (Array.isArray(rows) ? rows : []).find(
+        (r) => !r?._deleted && getRowId(r) === phraseId
+      ) || null
+    );
+  }
+
+  function findActiveRowByLithuanian(lt) {
+    const key = String(buildPhraseContentKeyFromLithuanian(lt)).trim();
+    if (!key) return null;
+
+    return (
+      (Array.isArray(rows) ? rows : []).find((r) => {
+        if (r?._deleted) return false;
+
+        const rowKey = String(
+          r?.contentKey ||
+            buildPhraseContentKeyFromLithuanian(r?.Lithuanian || "")
+        ).trim();
+
+        return !!rowKey && rowKey === key;
+      }) || null
+    );
+  }
+
+  function findScenarioDuplicateByContent(scenarioId, candidateRow) {
+    if (!scenarioId || !candidateRow) return null;
+
+    const targetScenario =
+      (Array.isArray(scenarios) ? scenarios : []).find(
+        (s) => s.id === scenarioId
+      ) || null;
+
+    if (!targetScenario) return null;
+
+    const candidateKey = String(
+      candidateRow?.contentKey ||
+        buildPhraseContentKeyFromLithuanian(candidateRow?.Lithuanian || "")
+    ).trim();
+
+    if (!candidateKey) return null;
+
+    const linkedIds = Array.isArray(targetScenario.phraseIds)
+      ? targetScenario.phraseIds
+      : [];
+
+    for (const linkedId of linkedIds) {
+      const linkedRow = findActiveRowById(linkedId);
+      if (!linkedRow) continue;
+
+      const linkedKey = String(
+        linkedRow?.contentKey ||
+          buildPhraseContentKeyFromLithuanian(linkedRow?.Lithuanian || "")
+      ).trim();
+
+      if (linkedKey && linkedKey === candidateKey) {
+        return linkedRow;
+      }
+    }
+
+    return null;
+  }
+
+  function buildSavedRowFromTranslation(payload) {
+    const lt = String(payload?.result?.ltOut || "").trim();
+    const enLit = String(payload?.result?.enLiteral || "").trim();
+    const enNat = String(payload?.result?.enNatural || "").trim();
+    const phoEn = String(payload?.result?.phonetics || "").trim();
+    const phoIpa = String(payload?.result?.phoneticsIpa || "").trim();
+
+    if (!lt) {
+      return { ok: false, error: "Could not save phrase." };
+    }
+
+    const existing = findActiveRowByLithuanian(lt);
+    if (existing) {
+      return { ok: true, row: existing, alreadyExisted: true };
+    }
+
+    const now = typeof nowTs === "function" ? nowTs() : Date.now();
+    const id =
+      typeof genId === "function"
+        ? genId()
+        : Math.random().toString(36).slice(2);
+    const sourceLang = payload?.result?.sourceLang === "lt" ? "lt" : "en";
+
+    const newRow = {
+      _id: id,
+      _ts: now,
+      Sheet: "Phrases",
+      Category: payload?.result?.categoryOut || "General",
+      Lithuanian: lt,
+      English: enNat || enLit || String(payload?.input || "").trim(),
+      SourceLang: sourceLang,
+      EnglishLiteral: enLit || enNat || "",
+      EnglishNatural: enNat || enLit || "",
+      EnglishOriginal: String(payload?.input || "").trim(),
+      LithuanianOriginal: lt,
+      Phonetic: phoEn,
+      PhoneticIPA: phoIpa,
+      Usage: String(payload?.result?.usageOut || "").trim(),
+      Notes: String(payload?.result?.notesOut || "").trim(),
+      "RAG Icon": "🟠",
+      _qstat: {
+        red: { ok: 0, bad: 0 },
+        amb: { ok: 0, bad: 0 },
+        grn: { ok: 0, bad: 0 },
+      },
+      Source: "user",
+      Touched: true,
+      _deleted: false,
+      _deleted_ts: null,
+      contentKey: buildPhraseContentKeyFromLithuanian(lt),
+    };
+
+    setRows((prev) => {
+      const arr = Array.isArray(prev) ? prev : [];
+      return [newRow, ...arr];
+    });
+
+    return { ok: true, row: newRow, alreadyExisted: false };
+  }
+
+  function handleScenarioPick(scenarioId) {
+    if (!scenarioId) return;
+
+    if (scenarioPickerSource === "phrase") {
+      const sourceRow = findActiveRowById(pendingScenarioPhraseId);
+
+      if (!sourceRow) {
+        showToast("Phrase not found.");
+        return;
+      }
+
+      const duplicateInScenario = findScenarioDuplicateByContent(
+        scenarioId,
+        sourceRow
+      );
+
+      if (duplicateInScenario) {
+        showToast("This phrase is already in that scenario.");
+        return;
+      }
+
+      const linked = addPhraseToScenario(scenarioId, pendingScenarioPhraseId);
+
+      if (!linked?.ok) {
+        showToast(linked?.error || "Could not add phrase to scenario.");
+        return;
+      }
+
+      closeScenarioPicker();
+      showToast("Added to scenario");
+      return;
+    }
+
+    if (scenarioPickerSource === "translation") {
+      const candidateLt = String(
+        pendingScenarioTranslationPayload?.result?.ltOut || ""
+      ).trim();
+
+      if (!candidateLt) {
+        showToast("Could not save phrase.");
+        return;
+      }
+
+      const duplicateInScenario = findScenarioDuplicateByContent(scenarioId, {
+        Lithuanian: candidateLt,
+        contentKey: buildPhraseContentKeyFromLithuanian(candidateLt),
+      });
+
+      if (duplicateInScenario) {
+        showToast("This phrase is already in that scenario.");
+        return;
+      }
+
+      const saved = buildSavedRowFromTranslation(pendingScenarioTranslationPayload);
+
+      if (!saved?.ok || !saved?.row) {
+        showToast(saved?.error || "Could not save phrase.");
+        return;
+      }
+
+      const phraseId = getRowId(saved.row);
+      const linked = addPhraseToScenario(scenarioId, phraseId);
+
+      if (!linked?.ok) {
+        showToast(linked?.error || "Could not add phrase to scenario.");
+        return;
+      }
+
+      closeScenarioPicker();
+      showToast("Saved to library and added to scenario");
+    }
+  }
+
+  function handleScenarioCreateAndPick(title) {
+    const created = createScenario(title);
+
+    if (!created?.ok || !created?.scenario?.id) {
+      showToast(created?.error || "Could not create scenario.");
+      return;
+    }
+
+    handleScenarioPick(created.scenario.id);
+  }
 
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
+  const [userGuideFirstLaunch, setUserGuideFirstLaunch] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [showOnboardingProfile, setShowOnboardingProfile] = useState(false);
+  const [confirmRequest, setConfirmRequest] = useState(null);
+  const confirmResolveRef = useRef(null);
 
   const [seenUserGuide, setSeenUserGuide] = useLocalStorageState(
     LSK_USER_GUIDE,
@@ -426,8 +892,17 @@ const removePhraseById = (id) => {
     ""
   );
 
+  const hasSeenUserGuide = seenUserGuide === true || seenUserGuide === "true" || seenUserGuide === "1";
+  const needsProfileOnboarding =
+    !!user?.id &&
+    !settingsLoading &&
+    Number(profileOnboardingVersion || 0) < PROFILE_ONBOARDING_VERSION;
+
   useEffect(() => {
+    if (settingsLoading || needsProfileOnboarding || showOnboardingProfile || showUserGuide) return;
+    if (user?.id && !hasSeenUserGuide) return;
     if (!lastSeenVersion) {
+      setShowWhatsNew(true);
       setLastSeenVersion(APP_VERSION);
       return;
     }
@@ -435,19 +910,93 @@ const removePhraseById = (id) => {
       setShowWhatsNew(true);
       setLastSeenVersion(APP_VERSION);
     }
-  }, [lastSeenVersion, setLastSeenVersion]);
+  }, [lastSeenVersion, setLastSeenVersion, settingsLoading, needsProfileOnboarding, showOnboardingProfile, showUserGuide, user?.id, hasSeenUserGuide]);
+
+  useEffect(() => {
+    if (!user?.id || settingsLoading) return;
+    if (!needsProfileOnboarding) return;
+    setShowWhatsNew(false);
+    setShowUserGuide(false);
+    setShowOnboardingProfile(true);
+  }, [needsProfileOnboarding, settingsLoading, user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
-    if (seenUserGuide) return;
+    if (settingsLoading || needsProfileOnboarding || showOnboardingProfile) return;
+    if (hasSeenUserGuide) return;
+    setUserGuideFirstLaunch(true);
     setShowUserGuide(true);
-    setSeenUserGuide(true);
-  }, [user?.id, seenUserGuide, setSeenUserGuide]);
+  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide]);
 
-  useModalScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
-  useAppBodyScrollLock(showChangeLog || showUserGuide || showWhatsNew || addOpen);
+  const saveOnboardingProfile = useCallback(async (values) => {
+    await saveProfileOnboarding?.(user?.id, values, PROFILE_ONBOARDING_VERSION);
+    setShowOnboardingProfile(false);
+    showToast("Profile setup saved");
+  }, [
+    saveProfileOnboarding,
+    user?.id,
+  ]);
 
-  const headerPage = swipeTabs.includes(page) ? page : "settings";
+  const closeUserGuide = useCallback(() => {
+    if (userGuideFirstLaunch) {
+      setSeenUserGuide(true);
+      setLastSeenVersion(APP_VERSION);
+      setShowWhatsNew(false);
+      setUserGuideFirstLaunch(false);
+    }
+    setShowUserGuide(false);
+  }, [setSeenUserGuide, setLastSeenVersion, userGuideFirstLaunch]);
+
+  const closeConfirm = useCallback((result) => {
+    const resolve = confirmResolveRef.current;
+    confirmResolveRef.current = null;
+    setConfirmRequest(null);
+    resolve?.(result);
+  }, []);
+
+  const confirmAction = useCallback((options = {}) => {
+    if (confirmResolveRef.current) {
+      confirmResolveRef.current(false);
+    }
+
+    setConfirmRequest(options || {});
+
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve;
+    });
+  }, []);
+
+  const hasConfirmOpen = !!confirmRequest;
+  const dailyRecallBlocked =
+    showChangeLog ||
+    showUserGuide ||
+    showWhatsNew ||
+    showOnboardingProfile ||
+    addOpen ||
+    scenarioPickerOpen ||
+    hasConfirmOpen;
+
+  const dailyRecall = useDailyRecall({
+    rows: visibleRows,
+    appVersion: APP_VERSION,
+    blocked: dailyRecallBlocked,
+  });
+
+  useModalScrollLock(
+    showChangeLog || showUserGuide || showWhatsNew || showOnboardingProfile || addOpen || scenarioPickerOpen || hasConfirmOpen
+  );
+  useAppBodyScrollLock(
+    showChangeLog || showUserGuide || showWhatsNew || showOnboardingProfile || addOpen || scenarioPickerOpen || hasConfirmOpen
+  );
+
+  const headerPage =
+    page === "dupes" || page === "analytics"
+      ? "settings"
+      : page === "scenario-detail"
+      ? "scenarios"
+      : swipeTabs.includes(page)
+      ? page
+      : "scenarios";
 
   if (authLoading || !allowlistChecked) {
     return (
@@ -466,14 +1015,18 @@ const removePhraseById = (id) => {
   }
 
   return (
-    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden">
-      <AppBackground />
+    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden" style={{ backgroundColor: "var(--z-bg)" }}>
+      <AppBackground isLight={isLight} />
 
       <Header
         ref={headerRef}
         T={T}
         page={headerPage}
-        setPage={goToPage}
+        setPage={(next) => {
+          setSelectedScenarioId(null);
+          setLibraryFocusPhraseId(null);
+          goToPage(next);
+        }}
         onLogoClick={handleLogoClick}
         swipeProgress={swipeProgress}
         isSwiping={isSwiping}
@@ -503,17 +1056,30 @@ const removePhraseById = (id) => {
               />
             </div>
           </div>
+        ) : page === "scenario-detail" ? (
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <div className="z-page z-page-y">
+              <ScenarioDetailView
+                T={T}
+                scenario={selectedScenario}
+                rows={visibleRows}
+                playText={playTextTracked}
+                onBack={handleBackFromScenarioDetail}
+                onOpenPhraseInLibrary={handleOpenPhraseInLibrary}
+                showToast={showToast}
+              />
+            </div>
+          </div>
         ) : (
           <SwipePager
             index={swipeIndex}
             onIndexChange={(i) => goToPage(swipeTabs[i])}
             onProgress={(p, dragging) => {
-              const clamped = Math.max(-0.25, Math.min(3.25, p));
+              const clamped = Math.max(-0.25, Math.min(4.25, p));
               setSwipeProgress(clamped);
               setIsSwiping(!!dragging);
             }}
           >
-            {/* HOME */}
             <div className="h-full">
               <HomeView
                 key={homeResetKey}
@@ -527,10 +1093,10 @@ const removePhraseById = (id) => {
                   setEditRowId(null);
                   setAddOpen(true);
                 }}
+                onOpenScenarioPickerForTranslation={openScenarioPickerForTranslation}
               />
             </div>
 
-            {/* LIBRARY */}
             <div className="h-full">
               <LibraryView
                 T={T}
@@ -549,39 +1115,58 @@ const removePhraseById = (id) => {
                   setEditRowId(null);
                   setAddOpen(true);
                 }}
+                onOpenScenarioPickerForPhrase={openScenarioPickerForPhrase}
+                focusPhraseId={libraryFocusPhraseId}
+                onFocusPhraseHandled={handleLibraryFocusConsumed}
               />
             </div>
 
-            {/* TRAINING */}
-            <div className="h-full overflow-y-auto overscroll-contain">
-              <TrainingView
+            <div className="h-full">
+              <ScenariosView
                 T={T}
-                rows={visibleRows}
-                playText={playTextTracked}
+                onOpenScenario={handleOpenScenario}
+                confirmAction={confirmAction}
                 showToast={showToast}
               />
             </div>
 
-            {/* SETTINGS */}
-            <div className="h-full">
-              <SettingsView
+            <div className="h-full overflow-y-auto overscroll-contain">
+              <TrainingView
                 T={T}
-                appVersion={APP_VERSION}
-                azureVoiceShortName={azureVoiceShortName}
-                setAzureVoiceShortName={setAzureVoiceShortName}
+                rows={visibleRows}
+                setRows={setRows}
                 playText={playTextTracked}
-                fetchStarter={fetchStarter}
-                clearLibrary={clearLibrary}
-                importJsonFile={importJsonFile}
-                rows={rows}
-                onOpenDuplicateScanner={() => goToPage("dupes")}
-                onOpenChangeLog={() => setShowChangeLog(true)}
-                onOpenUserGuide={() => setShowUserGuide(true)}
-                onOpenAnalytics={() => goToPage("analytics")}
-                dailyRecallEnabled={dailyRecall.enabled}
-                setDailyRecallEnabled={dailyRecall.setEnabled}
-                showDailyRecallNow={dailyRecall.showNow}
+                preloadText={preloadTextTracked}
+                stopText={stopTextTracked}
+                showToast={showToast}
               />
+            </div>
+
+            <div className="h-full">
+             <SettingsView
+  T={T}
+  appVersion={APP_VERSION}
+  azureVoiceShortName={azureVoiceShortName}
+  setAzureVoiceShortName={setAzureVoiceShortName}
+  playText={playTextTracked}
+  fetchStarter={fetchStarter}
+  clearLibrary={clearLibrary}
+  importJsonFile={importJsonFile}
+  rows={rows}
+  onOpenDuplicateScanner={() => goToPage("dupes")}
+  onOpenChangeLog={() => setShowChangeLog(true)}
+  onOpenUserGuide={() => {
+    setUserGuideFirstLaunch(false);
+    setShowUserGuide(true);
+  }}
+  onOpenOnboardingProfile={() => setShowOnboardingProfile(true)}
+  onOpenAnalytics={() => goToPage("analytics")}
+  dailyRecallEnabled={dailyRecall.enabled}
+  setDailyRecallEnabled={dailyRecall.setEnabled}
+  showDailyRecallNow={dailyRecall.showNow}
+  showToast={showToast}
+  confirmAction={confirmAction}
+/>
             </div>
           </SwipePager>
         )}
@@ -597,6 +1182,16 @@ const removePhraseById = (id) => {
         />
       )}
 
+      {scenarioPickerOpen ? (
+        <ScenarioPickerModal
+          open={scenarioPickerOpen}
+          scenarios={scenarios}
+          onClose={closeScenarioPicker}
+          onPick={handleScenarioPick}
+          onCreateNew={handleScenarioCreateAndPick}
+        />
+      ) : null}
+
       {addOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
@@ -610,7 +1205,7 @@ const removePhraseById = (id) => {
             style={{ paddingTop: headerHeight + 16 }}
           >
             <div
-              className="w-full max-w-2xl z-card shadow-2xl overflow-y-auto flex flex-col"
+              className="w-full max-w-2xl z-modal-card overflow-y-auto flex flex-col"
               style={{ height: `calc(100dvh - ${headerHeight + 32}px)` }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -654,14 +1249,46 @@ const removePhraseById = (id) => {
         />
       )}
 
-      {showUserGuide && <UserGuideModal onClose={() => setShowUserGuide(false)} />}
+      <OnboardingProfileModal
+        open={showOnboardingProfile}
+        required={needsProfileOnboarding}
+        initialValues={{
+          userName,
+          speakerGender,
+          dateOfBirth,
+          fromCountryCode,
+          livesInCountryCode,
+        }}
+        onSave={saveOnboardingProfile}
+        onClose={() => setShowOnboardingProfile(false)}
+      />
+
+      {showUserGuide && (
+        userGuideFirstLaunch ? <QuickStartModal playText={playTextTracked} stopText={stop} onClose={closeUserGuide} /> :
+        <UserGuideModal onClose={closeUserGuide} onTryAudio={() => setUserGuideFirstLaunch(true)} />
+      )}
 
       {showWhatsNew && (
         <WhatsNewModal
-          appVersion={APP_VERSION}
+          version={APP_VERSION}
           onClose={() => setShowWhatsNew(false)}
+          onViewChangelog={() => {
+            setShowWhatsNew(false);
+            setShowChangeLog(true);
+          }}
         />
       )}
+
+      <ConfirmDialog
+        open={hasConfirmOpen}
+        title={confirmRequest?.title}
+        body={confirmRequest?.body}
+        confirmLabel={confirmRequest?.confirmLabel}
+        cancelLabel={confirmRequest?.cancelLabel}
+        destructive={!!confirmRequest?.destructive}
+        onConfirm={() => closeConfirm(true)}
+        onCancel={() => closeConfirm(false)}
+      />
     </div>
   );
 }

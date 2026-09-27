@@ -1,0 +1,92 @@
+# Learning regression contract
+
+This contract protects established Žodis learning behaviour while lesson wording, vocabulary coverage, and Scenario V2 content are revised.
+
+## Non-negotiable behaviour
+
+1. **Tap-word audio remains available on Lithuanian learning text.**
+   - Lesson teaching content must continue to render Lithuanian through `InteractivePhraseText` where the current experience supports word taps.
+   - Scenario V2 revealed Lithuanian speaker lines, learner history and Lithuanian feedback/better answers retain word audio.
+   - Scenario V2 answer cards deliberately use direct selection (tap, Enter or Space). They do not expose pre-answer word-audio controls or a separate Choose button.
+   - Comprehension choices may be English. They remain silent assessment text; authored Lithuanian `learnerText` is recorded as the learner's dialogue. English help is not sent to Lithuanian TTS.
+   - Whole-line replay remains available where it exists today.
+
+2. **Lesson and scenario progression behaviour is not silently changed by content work.**
+   - Scenario V2 result handling keeps the authored `best`, `acceptable`, `awkward`, `repair`, and `wrong` semantics.
+   - Curriculum edits must not bypass completion, scoring, retry, helper-text, or natural-ending behaviour.
+
+3. **Vocabulary retention remains opt-in.**
+   - Completing a lesson does not directly add phrases to the user's Library.
+   - Module/section completion continues to offer the Save to Library step.
+   - The learner can select only the words/phrases they want and can skip the step.
+
+4. **Already-saved Lithuanian cannot be saved again from the lesson retention screen.**
+   - Duplicate identity is based on normalised Lithuanian text, not the English gloss.
+   - Deleted/tombstoned entries do not count as active duplicates.
+   - Active duplicates are labelled **In library**, disabled, excluded from Select all, and filtered out again at save time.
+   - New curriculum wording must use the existing identity rules rather than inventing alternate duplicate paths.
+
+5. **Content changes must not mutate existing Library data merely because a lesson is opened or completed.**
+
+6. **Assessment follows meaningful teaching, including wrong options.**
+   - Personalised age language comes from the actual runtime profile builder, with correct number/year agreement for ages 1–99; it is taught before production. Numeric recognition must not pass a different age.
+   - An already-known base word may anchor a changed form in a Pattern note without becoming a new Learn card again (`vaistai` → `vaistų`).
+   - 5.3.5 explicitly teaches `ieškoti`, `ieškote` and the hotel question after the familiar `viešbučio` form; a blanket ban on Learn blocks there is obsolete.
+   - Visible support is allowed where deliberately authored to scaffold a weakly introduced phrase. Do not restore a blanket ban or automatically reveal all meanings. Existing 3.3, 3.4.5 and travel-closing support is retained; broader scenario-quality review remains in later chunks.
+
+7. **Build Phrase diagnoses attempted answers instead of blocking them.**
+   - Empty attempts cannot be submitted. Every non-empty incomplete or overfilled attempt can be checked and receives repair feedback; only the correct phrase completes the block.
+   - Every distractor token resolves to a useful learner-facing meaning through the shared authored meaning dictionary. An authored contextual `repairHint` takes precedence when present.
+   - Do not weaken the course-wide metadata integrity test to excuse missing meanings.
+
+8. **Match Pairs preserves meaningful authored grouping.**
+   - The approved 5.3 checkpoint has 24 pairs in six semantic groups; do not trim it to meet an obsolete 18–22 assertion.
+   - Authored groups cover each pair exactly once, have readable labels and fit the existing page capacity. Do not add filler to equalise groups. Ordinary ungrouped recaps remain roughly 20 pairs.
+
+## C1 verification and test intent
+
+The original 16 failing tests are individually accounted for in `BETA3_C1_IMPLEMENTATION.md`. Brittle instruction-label, vocabulary-save and direct-selection assertions are replaced by tests that execute component render/event/state paths with isolated imports. These tests do not claim browser layout, real audio or DOM lifecycle coverage. Build Phrase tests exercise incomplete, overfilled and correct submissions plus all repaired distractor occurrences. Full-course integrity still checks every distractor, Learn uniqueness and grouped recap coverage.
+
+## C2 shared interaction contract
+
+- Choice, Context Gap Select, Choose Correct Form and Conversation Turn Fill accept authored `result: "best"` / `isCorrect: true`; `acceptable` and `awkward` complete without a wrong-answer penalty. Selected soft passes remain amber and the authored best answer is green with **Better here** feedback. Scenario V2 retains the same soft-pass distinction and its existing repair/help/branch rules. No authored wrong option is reclassified by the renderer.
+- Whole-phrase controls on Learn/vocabulary surfaces use the existing TTS owner: ordinary tap/Enter/Space plays normally; a 420ms hold plays slowly once; release/click after a hold cannot also play normally. Shift+Enter/Space provides keyboard slow playback. Movement/cancellation/unmount cancels a pending hold.
+- Word audio has a steady, visible active colour for 1000ms from the tap/play action, independent of playback duration. Repeated taps restart that timer. Both themes preserve the active colour on touch devices.
+- English assessment choices never expose pre-answer word/option audio or go through Lithuanian TTS. Existing authored question-audio controls remain available for listening exercises. After evaluation, shared Choice/completion blocks use authored `learnerText` or `answerAudioText`, then the block's `answerAudioText`, `targetText` or `prompt.audioText`. If none exists, remain silent; do not extract or invent Lithuanian from an English prompt. Explicit `optionsLanguage` (`en`/`lt`) takes precedence for authoring; legacy `noOptionAudio` conservatively protects silent option text.
+- In a progressing Scenario V2 comprehension turn, English remains assessment text only. Record/display authored Lithuanian `learnerText`, play it, await actual completion/error, then begin the next authored speaker/follow-up/final turn. Wrong English answers remain assessment feedback without learner dialogue/audio. Scoped cancellation prevents late playback/advancement after exit. Replay/help controls cannot interrupt a pending learner reply.
+- Scenario V2 opens in a full-screen, scrollable intro using existing title/context/roles. Conversation is not mounted and cannot speak before **Start scenario**. Focus, safe-area padding, theme styling and readable wrapping are retained. Help and follow-up completion also use playback completion, not guessed speech durations.
+- Say It Out Loud uses Speechmatics and the existing speech matcher. Transcript/normalised/matcher diagnostic boxes are absent on normal and dev-preview learner surfaces; no learner-accessible diagnostic switch is retained.
+
+`tests/c2LearnerInteraction.test.mjs` executes component event/state/render paths with deterministic clocks and deferred audio promises; `tests/audioPlayback.test.mjs` covers the real playback owner. These are isolated component/behaviour tests, not a claim of physical PWA, microphone, browser layout or audible TTS verification. See `BETA3_C2_IMPLEMENTATION.md` for the bounded human check set and remaining content metadata work.
+
+## Change gate for curriculum batches
+
+Before a curriculum/content batch is considered complete:
+
+- `npm test` passes.
+- `npm run build` passes.
+- Vercel preview/build is green.
+- The batch does not intentionally alter any invariant above unless that behaviour change is separately agreed first.
+
+The automated contract tests live in `tests/learningRegressionContracts.test.mjs`. They are deliberately structural as well as behavioural: if a future refactor changes an implementation path, update the test only after confirming the protected user behaviour still exists.
+
+## C3 learner-state contract
+
+- Progress is scoped to account and `CURRICULUM_ID`. Structural lesson/block identity changes invalidate interpreted progress automatically; bump `CURRICULUM_EPOCH` when existing IDs acquire different meaning without a structural change. Do not renumber IDs to mean different material while retaining the epoch.
+- The current version lives in `user_game.data.learningCurricula[CURRICULUM_ID]`. Unversioned/older data is retained but grants no current completion, score or resume credit. No historical index migration or bulk data reset is implied.
+- Resume requires a valid authored block ID and completed earlier block IDs, never an array-position fallback. Persist completed/wrong block sets at each interaction. Replay the current block on reopen, preserve earlier mistakes, and retain first-completion metrics / best-lesson XP semantics.
+- Course Continue chooses the latest valid unfinished attempt, with a stable lesson-ID tie-break; otherwise use existing next-course selection. Opening completed Review creates no unfinished attempt and clears no completion.
+- Account hydration is a prerequisite for Training. A failed initial cloud read is not an empty account. A trusted, account/version-scoped local cache supports offline reopen; pending edits are journalled synchronously and retried. Anonymous state is not promoted into an account.
+- Serialize writes, re-read/merge and condition on the existing row timestamp. Conflicts retry rather than overwrite. Completion dominates stale partial state; explicit application resets advance a generation. Late account-A tasks cannot apply to B. Preserve unrelated/legacy JSON when writing.
+- Build freshness reload waits for active lesson exit and a safe save boundary. Never interrupt a running scenario or microphone attempt merely because focus detects a new deployment.
+
+`tests/c3ProgressReliability.test.mjs` executes the real store, auth transitions, lesson handlers, Training hydration gate and PWA focus path with isolated storage/network dependencies. It replaces the old queue/cursor source-string assertions with behavioural coverage. See `BETA3_C3_IMPLEMENTATION.md` for offline limits and the small physical PWA check.
+
+## C4 Match Pairs contract
+
+- Each lesson `word_match` is a recap of earned language, partitioned into authored `pairPages`. Every pair ID appears exactly once, pages refer only to real unique IDs, and no LT or EN label collides visibly on a page. Unequal page lengths are allowed; no filler is required. LT and EN tile orders shuffle independently within each authored page.
+- A correct match becomes unmatchable and counts once immediately while its green pulse remains visible. Other available tiles accept taps during that pulse. Wrong matches count once, preserve red feedback without audio and permit immediate recovery. Same-side reselection and double taps cannot create a match. During page fade, input is gated to the current page; final completion fires once.
+- A wrong attempt still marks the lesson `word_match` block wrong exactly once for C3 persisted accuracy. Correct LT audio plays once per match. Standalone Training remains a Words/Numbers tool and does not add phrase practice.
+- Matching grouping metadata and the removal of one exact duplicate pair do not change lesson/block IDs or types; the C3 structural fingerprint remains stable. Reassess the semantic epoch after C5–C8, before release sign-off.
+
+`tests/c4MatchPairs.test.mjs` runs both actual session paths and their renderers with deterministic interaction/timer checks. The curriculum integrity test checks all 27 current lesson/checkpoint matching blocks.

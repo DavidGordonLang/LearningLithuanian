@@ -1,5 +1,17 @@
 [
   {
+    "version": "3.0.0-beta",
+    "date": "2026-05-19",
+    "changes": [
+      "Added guided Lessons with structured course progression through listening, phrase building, speaking checks, matching, and scenario-style practice.",
+      "Introduced Scenarios for collecting useful phrases around real-life situations such as cafes, travel, small talk, and appointments.",
+      "Added first-run profile setup so lessons and translations can be personalized with name, speaker gender, date of birth, and country context.",
+      "Improved lesson speaking checks with hold-to-speak interaction and simple learner-friendly pass/fail feedback.",
+      "Polished key UI patterns across confirmations, modals, navigation labels, Training back buttons, and phrase audio play buttons.",
+      "Marked Exam Prep as Coming Soon so unfinished exam functionality is no longer exposed as a normal Beta 3.0 feature."
+    ]
+  },
+  {
     "version": "2.0.0-beta",
     "date": "2026-01-24",
     "changes": [

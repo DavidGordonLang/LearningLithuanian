@@ -1,4 +1,17 @@
 // /api/enrich.js
+//
+// Enrichment endpoint — adds Usage, Notes, and Category to an existing translation.
+//
+// Changes from previous version:
+//  - Promise.all: enrichment + category calls now run in PARALLEL (halves latency)
+//  - max_tokens raised to 700 (was 420) — previous budget caused truncation and padding
+//  - Notes prompt restructured with a fixed plain-text template so output is consistent
+//  - Case form guidance added (nominative / accusative / genitive shown via examples)
+//  - Ordinal form added for number words
+//  - Two few-shot examples embedded — one with variants, one without
+//  - Variants rebalanced — model actively looks for alternatives rather than suppressing them
+//  - Category prompt rewritten with ordered dominance rules and English-first classification
+//  - tone, gender (addressee), and speakerGender now passed in and used for contextual accuracy
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -16,8 +29,12 @@ export default async function handler(req, res) {
 
   const lt = typeof body.lt === "string" ? body.lt.trim() : "";
   const phonetics = typeof body.phonetics === "string" ? body.phonetics.trim() : "";
+  const phonetics_ipa = typeof body.phonetics_ipa === "string" ? body.phonetics_ipa.trim() : "";
   const en_natural = typeof body.en_natural === "string" ? body.en_natural.trim() : "";
   const en_literal = typeof body.en_literal === "string" ? body.en_literal.trim() : "";
+  const tone = typeof body.tone === "string" ? body.tone.trim() : "friendly";
+  const gender = typeof body.gender === "string" ? body.gender.trim() : "male";
+  const speakerGender = typeof body.speakerGender === "string" ? body.speakerGender.trim() : "male";
 
   if (!lt) {
     return res.status(400).json({ error: "Missing lt" });
@@ -51,27 +68,23 @@ export default async function handler(req, res) {
   ];
 
   // ---------------------------------------------------------------------------
-  // ENRICHMENT PROMPT (USAGE + NOTES ONLY) — SPOKEN PRIORITY FIX
+  // ENRICHMENT PROMPT
   // ---------------------------------------------------------------------------
   const enrichSystemPrompt = `
 You are a language enrichment engine for English speakers learning Lithuanian.
 
 Your job is NOT to translate.
-Your job is to ENRICH an existing, already-correct translation.
+Your job is to ENRICH an existing, already-correct translation with useful learning context.
 
 You MUST NOT change:
 - The Lithuanian phrase
 - The English meanings
 - The phonetics
 
-You ONLY add learning context.
-
 ────────────────────────────────
 OUTPUT FORMAT (STRICT)
 ────────────────────────────────
-Return ONE valid JSON object, and NOTHING else.
-
-Exact shape required:
+Return ONE valid JSON object, and NOTHING else:
 
 {
   "Usage": "",
@@ -79,96 +92,184 @@ Exact shape required:
 }
 
 Rules:
-- No extra keys.
-- No missing keys.
-- No markdown.
-- Every value must be a non-empty string.
+- No extra keys. No missing keys. No markdown. Every value must be a non-empty string.
+- The Notes value is plain text rendered with whitespace preserved.
+  Use blank lines to separate sections. Do NOT use asterisks, dashes as bullets, or any markdown.
 
 ────────────────────────────────
-USAGE RULES
+USAGE
 ────────────────────────────────
-Usage must be 1–2 sentences:
-- Describe WHEN a Lithuanian speaker would actually use this phrase.
-- Describe realistic situations (not abstract or generic).
-- Avoid filler like “used in everyday conversation”.
-- Do NOT explain grammar here.
-- Do NOT assume gender unless the Lithuanian wording itself encodes it.
+1-2 sentences describing WHEN a Lithuanian speaker would actually say this.
+Be specific — name realistic situations. Avoid generic filler.
+Use the context provided (tone, addressee, speaker gender) to make the Usage accurate.
+For example, if the tone is polite or the addressee is a group, reflect that in the situation described.
 
 ────────────────────────────────
-NOTES RULES (LEARNER-FOCUSED)
+NOTES — FIXED STRUCTURE
 ────────────────────────────────
-Notes must be:
-- Multi-line
-- Clear spacing between ideas (blank lines between blocks)
-- Plain, natural British English
-- Focused on meaning, tone, and real usage
-- Free of formal grammar terminology (no tense names, cases, conjugation talk)
+Write Notes as plain text in this exact section order.
+Only include a section if it adds genuine value. Skip sections that would be empty or obvious.
+Separate every section with a blank line.
 
-Notes should cover, when relevant:
-1) What the phrase is expressing (meaning + tone)
-2) What an English speaker might misunderstand
-3) Register or intensity (neutral, blunt, intimate, vulgar, etc.)
+SECTION 1 — MEANING AND TONE (always include)
+2-3 sentences on what the phrase expresses and how it sounds.
+Cover register: is it neutral, warm, blunt, intimate, vulgar, formal, casual?
+If the phrase has a nuance an English speaker would miss, name it directly.
+If the speaker gender or addressee affects meaning or word choice, mention it naturally here
+(e.g. "The ending shows the speaker is female" or "This uses the plural jūs form").
 
-────────────────────────────────
-VARIANTS (VERY IMPORTANT — STRICT FORMAT)
-────────────────────────────────
-Include variants ONLY when there are genuinely commonly used, idiomatic alternatives that native Lithuanian speakers would realistically say in the same situation.
+SECTION 2 — ENGLISH SPEAKER TRAPS (include when relevant)
+One thing an English speaker is likely to misunderstand or mistranslate.
+Skip if there is genuinely nothing to flag.
 
-Variants should reflect:
-- what people actually say in real life
-- differences in tone, vividness, or casualness
-- natural spoken Lithuanian, not artificial, formal, or clinical constructions
+SECTION 3 — KEY FORMS (include when the phrase contains a content word that changes form)
+Lithuanian words change their endings depending on their role in a sentence.
+Show the most useful forms of the key word(s) using short example sentences.
+Label each form plainly on its own line, then give a Lithuanian example with English meaning.
+Use these labels exactly:
 
-CRITICAL SPOKEN-PRIORITY RULE:
-If the main Lithuanian phrase uses a more formal, clinical, or literary verb, and there exists a more commonly used SPOKEN alternative that native speakers would realistically use in everyday or intimate speech, that spoken alternative SHOULD be included as a variant.
+As subject:
+As object:
+Of / without:
 
-Do NOT include variants simply to meet a quota.
-It is acceptable to include:
-- no variants
-- one strong, commonly used variant
-- two variants if both are genuinely natural
+Example of what this section looks like for the word "duona" (bread):
 
-Rarely include three, and ONLY if all are in common real use.
+As subject: Duona yra sviezi — The bread is fresh
+As object: Noriu duonos — I want some bread
+Of / without: Gabalas duonos — A piece of bread / Be duonos — Without bread
 
-If variants ARE included, they MUST follow this exact structure:
+Only include forms that would genuinely help the learner. Two forms is enough if three are forced.
+Do NOT list every possible form. Do NOT use case names (nominative, accusative, genitive) — use the labels above.
+
+SECTION 4 — ORDINAL FORM (include ONLY when the input is a number word)
+Give the ordinal (first, second, third...) for both genders, then one brief example.
+Format exactly like this:
+
+Ordinal: pirmas (masc.) / pirma (fem.) — first
+Example: pirmas namas — the first house
+
+SECTION 5 — VARIANTS (always include this section)
+Lithuanian has many natural ways to express the same idea. Your job is to surface the ones
+a learner would realistically encounter or want to use.
+
+Ask yourself: is there another Lithuanian word or phrase a native speaker would naturally say
+in the same situation — something with a different tone, register, or vividness?
+
+Common sources of genuine variants:
+- A more casual spoken alternative to a formal phrase (or vice versa)
+- A more vivid or emotional version vs a neutral one
+- A shorter colloquial form vs a fuller phrase
+- A different word that covers the same meaning but feels different
+
+Include 1-2 variants if any exist. The bar is simply: would a real Lithuanian speaker
+say this in the same situation? Different wording, same communicative goal.
+
+The only hard rule: the variant must use different words from the original. Do not list
+a word-order shuffle or the same phrase with one word swapped for an exact synonym.
+
+Format variants exactly like this — no deviations:
 
 Variants:
 - Lithuanian phrase — natural English meaning
-  phonetics
+  en-phonetics||ipa-phonetics
 
 - Lithuanian phrase — natural English meaning
-  phonetics
+  en-phonetics||ipa-phonetics
 
-STRICT RULES FOR VARIANTS:
-- Lithuanian phrase and English meaning MUST be on the SAME line.
-- Phonetics MUST be on the NEXT line directly underneath the Lithuanian phrase.
-- Phonetics apply ONLY to the Lithuanian phrase above them.
-- Do NOT put phonetics in parentheses.
-- Do NOT put explanations inside the variant lines.
-- Do NOT include commentary inside the Variants block.
+The phonetics line MUST always use the format: english-phonetics||ipa-phonetics
+The || is a required delimiter — never omit it, never use a space or slash instead.
+The english-phonetics part is NOT IPA. It must be an English-reader friendly pronunciation hint:
+- Separate syllables with hyphens.
+- Mark the stressed syllable of each Lithuanian word in ALL CAPS.
+- Represent every Lithuanian syllable and ending. Do not drop final vowels.
+- Do not compress a multi-syllable Lithuanian word into one vague English sound.
+- Do not use IPA symbols in english-phonetics.
+- Do not use Lithuanian letters/diacritics in english-phonetics.
+- Use consistent English approximations: š -> sh, č -> ch, ž -> zh, ė -> eh, ie -> yeh / ye, ai -> eye, au -> ow / au.
 
-After the Variants block (if needed), you MAY add 1–2 sentences explaining:
-- Differences in tone
-- Vividness vs neutrality
-- How common each variant is in real speech
+Good examples:
+- Viso gero — Goodbye
+  VEE-soh GEH-roh||viːsoː ɡɛroː
 
-If there are NO useful variants:
-- Include this exact sentence somewhere in Notes:
-  “No useful variants for this phrase.”
+- Šitie tinka — These are fine
+  SHIH-tyeh TIN-kah||ʃɪtʲe tʲɪŋka
+
+After the variants, write 1-2 sentences explaining how the variant(s) differ in tone,
+formality, or frequency from the original.
+
+If you genuinely cannot identify any alternative phrasing a Lithuanian speaker would use,
+end this section with:
+No useful variants for this phrase.
+But this should be rare — most phrases have at least one natural alternative.
 
 ────────────────────────────────
 ABSOLUTE BANS
 ────────────────────────────────
-- No placeholders
-- No boilerplate advice
-- No emojis
-- No markdown formatting
-- No explanations outside the JSON object
-- No re-translation of the phrase
+- No boilerplate ("used in everyday conversation", "just like in English", "similar to English")
+- No filler observations about Lithuanian having case endings or word order in general
+- No fabricated variants — do not invent a phrase you are not sure exists in real use
+- No markdown (no **, no ##, no bullet dashes, no *)
+- No explanations outside the JSON
+
+────────────────────────────────
+FEW-SHOT EXAMPLES
+────────────────────────────────
+
+EXAMPLE 1 — phrase with variants:
+
+Input:
+LITHUANIAN: Sudie
+ENGLISH (NATURAL): Goodbye
+ENGLISH (LITERAL): Goodbye
+
+Good output:
+
+{
+  "Usage": "Said when parting from someone — in person, on the phone, or at the end of a message. Works in both casual and formal settings.",
+  "Notes": "Sudie is the standard, all-purpose goodbye in Lithuanian. It sits in the middle of the register scale — not as warm and lingering as Viso gero, not as breezy as Ate or Iki.
+
+An English speaker might assume one goodbye word covers everything, but Lithuanian speakers choose between these depending on whether they expect to see the person again soon and how formal the setting is.
+
+Variants:
+- Viso gero — All the best / Goodbye
+  vee-soh geh-roh||viːsoː ɡɛroː
+
+- Iki — See you / Bye
+  ee-kee||iːkiː
+
+Viso gero is warmer and slightly more formal — it carries a wish for the other person's wellbeing. Iki is short and casual, common among friends and in everyday spoken goodbyes."
+}
+
+EXAMPLE 2 — phrase without variants:
+
+Input:
+LITHUANIAN: As esu baisiai alkana
+ENGLISH (NATURAL): I am really hungry
+ENGLISH (LITERAL): I am terribly hungry
+SPEAKER GENDER: female
+
+Good output:
+
+{
+  "Usage": "Said when hunger is strong enough to be worth mentioning — before a meal, after a long gap without eating, or when asking to stop somewhere to eat.",
+  "Notes": "The word baisiai literally means terribly or dreadfully, and it makes the hunger sound dramatic rather than polite. It is a common spoken intensifier in Lithuanian, roughly equivalent to saying absolutely starving rather than just hungry in English.
+
+The ending alkana shows the speaker is female. A male speaker would say alkanas instead. The word baisiai stays the same regardless of gender.
+
+As subject: Alkana moteris — A hungry woman
+As object: Maciau alkana vaika — I saw a hungry child
+Of / without: Jausmas alkanos — The feeling of hunger
+
+Variants:
+- As esu labai alkana — I am very hungry
+  ahsh eh-soo lah-bai al-kah-nah||aʃ ɛsuː lɐˈbɐɪ alˈkɐnɐ
+
+Labai is the neutral, everyday word for very. Baisiai is more vivid and informal — it signals that the hunger is being played up slightly for effect, which is natural in spoken Lithuanian."
+}
 `.trim();
 
   // ---------------------------------------------------------------------------
-  // CATEGORY CLASSIFICATION PROMPT (INTENT-BASED, DOMINANT RULES)
+  // CATEGORY CLASSIFICATION PROMPT
   // ---------------------------------------------------------------------------
   const categorySystemPrompt = `
 You are a strict intent classifier.
@@ -176,39 +277,85 @@ You are a strict intent classifier.
 Your task:
 - Read the Lithuanian phrase and its English meanings.
 - Choose EXACTLY ONE category from the allowed list.
+- ALWAYS classify based on the ENGLISH NATURAL meaning, not the Lithuanian wording.
+  The Lithuanian may be ambiguous — the English translation is the ground truth for intent.
 
 Allowed categories:
 ${CATEGORIES.join(", ")}
 
-CRITICAL DOMINANCE RULES (MUST FOLLOW):
-- If the phrase expresses sexual arousal, desire, sexual activity, or being "turned on", the category MUST be "Sexual".
-- Sexual intent OVERRIDES Romantic, Social, and General.
-- Romantic is ONLY for emotional bonding, affection, or love without sexual arousal.
-- Social is for greetings, small talk, arguments, or casual interaction without intimacy.
-- Use General ONLY if no other category clearly applies.
+DOMINANCE RULES — apply in this order, stopping at the first match:
+
+1. NUMBERS: If the English meaning is a number (e.g. "3", "forty-seven", "99") or an ordinal
+   ("first", "third"), the category MUST be "Numbers". This overrides everything else.
+
+2. SEXUAL: If the English meaning expresses sexual desire, arousal, sexual activity, or
+   turning someone on, the category MUST be "Sexual".
+   Examples that are Sexual: "I want you so badly", "You're turning me on", "He really turns me on"
+   Sexual OVERRIDES Romantic, Social, and General.
+
+3. ROMANTIC: Emotional bonding, love, affection, or missing someone — without sexual content.
+   Examples: "I love you", "I missed you", "My love", "You are beautiful"
+
+4. EMERGENCY: Urgent calls for help, ambulance, police, fire.
+
+5. HEALTH: Medical symptoms, illness, pharmacy, feeling unwell.
+
+6. FOOD & DRINK: Ordering, describing, or asking about food or drink.
+
+7. TRAVEL: Transport, directions, airports, hotels, navigation.
+
+8. SHOPPING: Buying things, prices, sizes, markets.
+
+9. WORK: Jobs, professions, workplace, colleagues.
+
+10. SOCIAL: Greetings, small talk, farewells, arguments, casual interaction — nothing intimate.
+
+11. EDUCATION: Learning, studying, schools, language learning.
+
+12. TIME & DATES: Times, days, dates, schedules, durations.
+
+13. HOUSING: Homes, flats, renting, household tasks.
+
+14. BUREAUCRACY: Forms, official processes, registration, documents.
+
+15. PARENTING: Children, parenting, family with children.
+
+16. GENERAL: Use ONLY if none of the above clearly fits.
 
 Return ONLY this JSON:
 { "Category": "<one category from the list>" }
 
 Rules:
 - Category must match one of the allowed values EXACTLY.
-- No explanation.
-- No extra keys.
-- No text outside JSON.
+- No explanation. No extra keys. No text outside JSON.
 `.trim();
+
+  // Build context line for enrichUser so the model knows the translation settings
+  const addresseeLabel =
+    gender === "group" ? "group (plural)" : gender === "female" ? "female" : "male";
+  const toneLabel = tone === "polite" ? "polite (jūs)" : "friendly (tu)";
+  const speakerLabel = speakerGender === "female" ? "female" : "male";
 
   const enrichUser = `
 LITHUANIAN:
 ${lt}
 
-PHONETICS:
+PHONETICS (English):
 ${phonetics || "(not provided)"}
+
+PHONETICS (IPA):
+${phonetics_ipa || "(not provided)"}
 
 ENGLISH (NATURAL):
 ${en_natural || "(not provided)"}
 
 ENGLISH (LITERAL):
 ${en_literal || "(not provided)"}
+
+CONTEXT:
+Speaker gender: ${speakerLabel}
+Addressee: ${addresseeLabel}
+Tone: ${toneLabel}
 `.trim();
 
   const categoryUser = `
@@ -222,26 +369,48 @@ ENGLISH (LITERAL):
 ${en_literal || "(not provided)"}
 `.trim();
 
+  // ---------------------------------------------------------------------------
+  // PARALLEL CALLS — enrichment and category are independent, run simultaneously
+  // ---------------------------------------------------------------------------
   try {
-    // 1) Generate enrichment (Usage + Notes)
-    const enrichResp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: enrichSystemPrompt },
-          { role: "user", content: enrichUser },
-        ],
-        temperature: 0.2,
-        max_tokens: 420,
+    const [enrichResp, catResp] = await Promise.all([
+      fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1-mini",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: enrichSystemPrompt },
+            { role: "user", content: enrichUser },
+          ],
+          temperature: 0.4,
+          max_tokens: 700,
+        }),
       }),
-    });
+      fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1-mini",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: categorySystemPrompt },
+            { role: "user", content: categoryUser },
+          ],
+          temperature: 0.0,
+          max_tokens: 60,
+        }),
+      }),
+    ]);
 
+    // Parse enrichment
     const enrichJson = await enrichResp.json();
     const enrichRaw = enrichJson?.choices?.[0]?.message?.content;
     const enrichPayload = JSON.parse(enrichRaw);
@@ -253,25 +422,7 @@ ${en_literal || "(not provided)"}
       throw new Error("Incomplete enrichment payload");
     }
 
-    // 2) Classify category (translation intent only)
-    const catResp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: categorySystemPrompt },
-          { role: "user", content: categoryUser },
-        ],
-        temperature: 0.0,
-        max_tokens: 60,
-      }),
-    });
-
+    // Parse category
     const catJson = await catResp.json();
     const catRaw = catJson?.choices?.[0]?.message?.content;
     const catPayload = JSON.parse(catRaw);

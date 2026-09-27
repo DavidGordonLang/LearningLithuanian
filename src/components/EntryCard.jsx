@@ -1,5 +1,6 @@
 import React from "react";
 import { usePhraseStore } from "../stores/phraseStore";
+import { useSettingsStore } from "../stores/settingsStore";
 
 export default function EntryCard({
   r,
@@ -23,6 +24,31 @@ export default function EntryCard({
 }) {
   // ---- Pull rows from zustand store ----
   const rows = usePhraseStore((s) => s.phrases);
+
+  // Settings (phonetics mode) — read from top-level mirror, not s.data
+  // s.data.phoneticsMode does not update reactively; s.phoneticsMode does
+  const phoneticsMode = useSettingsStore((s) => s.phoneticsMode || "en");
+
+  const displayedPhonetic =
+    phoneticsMode === "ipa"
+      ? (r.PhoneticIPA || r.Phonetic || "")
+      : (r.Phonetic || "");
+
+  // Resolve phonetics in Notes — GPT writes variant phonetics as "en||ipa".
+  // Process line by line: any line containing || is a phonetics line, take the right half.
+  // Lines without || pass through untouched — old notes are safe.
+  const displayedNotes = typeof r.Notes === "string"
+    ? r.Notes
+        .split("\n")
+        .map((line) => {
+          if (!line.includes("||")) return line;
+          const [en, ipa] = line.split("||");
+          return phoneticsMode === "ipa"
+            ? (ipa ?? en).trim()
+            : (en ?? line).trim();
+        })
+        .join("\n")
+    : "";
 
   // Compute stable row index using _id fallback
   const stableId = r?._id ?? r?.id ?? r?.key ?? null;
@@ -67,7 +93,6 @@ export default function EntryCard({
   return (
     <div
       className={cn(
-        // Surface + border (“felt, not seen”)
         "z-card p-4 sm:p-5 flex flex-col gap-3",
         lastAddedId && r._id === lastAddedId ? "ring-2 ring-emerald-500/60" : ""
       )}
@@ -95,14 +120,13 @@ export default function EntryCard({
             {r.English}
           </div>
 
-          {r.Phonetic ? (
+          {displayedPhonetic ? (
             <div className="text-xs text-zinc-500 mt-0.5 italic break-words">
-              {r.Phonetic}
+              {displayedPhonetic}
             </div>
           ) : null}
         </div>
 
-        {/* Play (keep semantic green, but calmer + consistent shape) */}
         <button
           type="button"
           data-press
@@ -136,9 +160,9 @@ export default function EntryCard({
       )}
 
       {/* NOTES */}
-      {isExpanded && r.Notes && (
+      {isExpanded && displayedNotes && (
         <div className="text-xs text-zinc-200 whitespace-pre-wrap border-t border-white/8 pt-3">
-          {r.Notes}
+          {displayedNotes}
         </div>
       )}
 
@@ -194,6 +218,7 @@ export default function EntryCard({
             ["English", "text"],
             ["Lithuanian", "text"],
             ["Phonetic", "text"],
+            ["PhoneticIPA", "text"],
             ["Category", "text"],
             ["Usage", "textarea"],
             ["Notes", "textarea"],

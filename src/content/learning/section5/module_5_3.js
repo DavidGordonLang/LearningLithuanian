@@ -1,0 +1,879 @@
+// src/content/learning/section5/module_5_3.js
+// Module 5.3 — Going Somewhere
+
+export default function createModule_5_3(profile = {}) {
+  const { userNameSafe = "Davidas" } = profile;
+
+  return {
+    id: "module_5_3",
+    code: "5.3",
+    title: "Going Somewhere",
+    status: "active",
+    lessonCount: 5,
+    lessons: [
+
+      // ── Lesson 1 — I'm Going To… ──────────────────────────────────────────
+      {
+        id: "section_5_module_3_lesson_1",
+        code: "5.3.1",
+        title: "I'm Going To…",
+        purpose: "Teach destination-based movement language.",
+        supportLevel: "high",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Einu į + destination — I'm going to somewhere. You already know eikite (go, command). Einu is the first person form — I go or I'm going. The destination takes a different ending after į.",
+          usage: [
+            "Aš einu į stotį — I'm going to the station",
+            "Aš einu į viešbutį — I'm going to the hotel",
+            "Mes einame į kavinę — We're going to the café",
+          ],
+        },
+        blocks: [
+          {
+            id: "s5m3l1_b1",
+            type: "learn",
+            title: "I'm going to…",
+            items: [
+              { id: "i1", lt: "Aš einu į stotį.",      en: "I'm going to the station.", audioText: "Aš einu į stotį",      saveable: true, core: true },
+              { id: "i2", lt: "Aš einu į viešbutį.",   en: "I'm going to the hotel.",   audioText: "Aš einu į viešbutį",   saveable: true, core: true },
+              { id: "i3", lt: "Mes einame į kavinę.",  en: "We're going to the café.",  audioText: "Mes einame į kavinę",  saveable: true, core: true },
+              { id: "i4", lt: "Aš einu į vaistinę.",   en: "I'm going to the pharmacy.",audioText: "Aš einu į vaistinę",   saveable: true, core: false },
+            ],
+          },
+          {
+            id: "s5m3l1_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Aš einu į stotį.", audioText: "Aš einu į stotį" },
+            options: [
+              { id: "a", text: "I'm going to the hotel.",   isCorrect: false },
+              { id: "b", text: "I'm going to the station.", isCorrect: true  },
+              { id: "c", text: "I'm going to the café.",    isCorrect: false },
+            ],
+          },
+          {
+            id: "s5m3l1_b3",
+            type: "build_phrase",
+            title: "Build the destination",
+            prompt: { text: "You're heading to the station. Build: I'm going to the station." },
+            tokens: [
+              { id: "t1", text: "Aš", correctIndex: 0 },
+              { id: "t2", text: "einu", correctIndex: 1 },
+              { id: "t3", text: "į", correctIndex: 2 },
+              { id: "t4", text: "stotį.", correctIndex: 3 },
+              { id: "t5", text: "viešbutį.", isDistractor: true, repairHint: "Viešbutį means the hotel as a destination. The prompt asks for the station." },
+              { id: "t6", text: "kavinę.", isDistractor: true, repairHint: "Kavinę means the café as a destination. The prompt asks for the station." },
+            ],
+            answerText: "Aš einu į stotį.",
+          },
+          {
+            id: "s5m3l1_b4",
+            type: "context_gap_select",
+            prompt: "Choose the correct phrase",
+            sentence: "___ einame į kavinę.",
+            translation_en: "We're going to the café.",
+            options: [
+              { id: "a", text: "Aš",  isCorrect: false },
+              { id: "b", text: "Mes", isCorrect: true  },
+              { id: "c", text: "Jis", isCorrect: false },
+            ],
+            explanation: "Mes means we. Einame is the we-form of eiti (to go). Aš einu is I'm going.",
+          },
+          {
+            id: "s5m3l1_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: I'm going to the hotel",
+            targetText: "Aš einu į viešbutį",
+            audioText: "Aš einu į viešbutį",
+          },
+          {
+            id: "s5m3l1_b6_v2",
+            type: "scenario_v2",
+            title: "Going to the hotel",
+            description: "A colleague asks where you are going, then points out the hotel and tells you how far it is.",
+            sceneIntro: "A colleague asks where you are going, then points out the hotel. A five-minute walk suits you.",
+            location: "street",
+            userRole: "traveller",
+            register: "informal",
+            goal: "Use Einu į… while retrieving earlier location and distance language.",
+            focus: ["Einu į"],
+            participants: [{ id: "friend", label: "Colleague", name: "Mantas", role: "colleague", gender: "male", relationshipToUser: "colleague", register: "informal" }],
+            steps: [
+              {
+                id: "step_1",
+                speakerId: "friend",
+                speakerLabel: "Colleague",
+                speakerText: "Labas, Davidas! Kur eini?",
+                sceneDirection: "You are going to the hotel.",
+                learnerPrompt: "Tell Mantas where you are going.",
+                options: [
+                  { id: "a", text: "Labas! Aš einu į viešbutį.", result: "best", progresses: true },
+                  { id: "b", text: "Viso gero.", result: "wrong", feedback: "He asked where you are going.", progresses: false },
+                
+        {"id":"z","text":"Aš einu į viešbutį.","result":"acceptable","feedback":"The greeting is optional once the conversation is underway.","progresses":true},
+      ],
+              },
+              {
+                id: "step_2",
+                speakerId: "friend",
+                speakerLabel: "Colleague",
+                speakerText: "Viešbutis yra ten, tiesiai.",
+                sceneDirection: "Mantas points straight ahead.",
+                learnerPrompt: "Thank him and ask if it is far.",
+                options: [
+                  { id: "a", text: "Ačiū! Ar toli?", result: "best", progresses: true },
+                  { id: "b", text: "Kur yra bankas?", result: "wrong", feedback: "You are asking about the hotel route.", progresses: false },
+                
+        {"id":"z","text":"Ar toli?","result":"acceptable","feedback":"The shorter distance question is natural once the destination is clear.","progresses":true},
+      ],
+              },
+              {
+                id: "step_3",
+                speakerId: "friend",
+                speakerLabel: "Colleague",
+                speakerText: "Ne, tai netoli. Penkios minutės.",
+                sceneDirection: "The hotel is only a short walk away.",
+                learnerPrompt: "Acknowledge and thank him.",
+                options: [
+                  { id: "a", text: "Puiku! Ačiū labai.", result: "best", progresses: true },
+                  { id: "b", text: "Per toli.", result: "wrong", feedback: "He just said it is near.", progresses: false },
+                
+        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A shorter thank-you is also natural.","progresses":true},
+      ],
+              },
+            ],
+          },
+        ],
+      },
+
+      // ── Lesson 2 — From… ──────────────────────────────────────────────────
+      {
+        id: "section_5_module_3_lesson_2",
+        code: "5.3.2",
+        title: "From…",
+        purpose: "Teach simple movement starting-point language.",
+        supportLevel: "high",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Iš means from. Like į before it, iš changes the place word that follows it. Viešbutis becomes viešbučio after iš. Home is especially useful: the base word is namai, while iš namų means from home. Notice the useful forms without worrying about grammar labels yet.",
+          usage: [
+            "namai — home",
+            "iš namų — from home",
+            "Aš išeinu iš namų. — I'm leaving home.",
+            "iš čia — from here",
+            "iš viešbučio — from the hotel",
+            "iš stoties — from the station",
+          ],
+        },
+        blocks: [
+          {
+            id: "s5m3l2_b1",
+            type: "learn",
+            title: "From…",
+            items: [
+              { id: "i1", lt: "namai",                  en: "home",             audioText: "namai",                  saveable: true, core: true },
+              { id: "i2", lt: "iš namų",                en: "from home",        audioText: "iš namų",                saveable: true, core: true },
+              { id: "i3", lt: "iš čia",                 en: "from here",        audioText: "iš čia",                 saveable: true, core: true },
+              { id: "i4", lt: "iš viešbučio",           en: "from the hotel",   audioText: "iš viešbučio",           saveable: true, core: true },
+              { id: "i5", lt: "iš stoties",             en: "from the station", audioText: "iš stoties",             saveable: true, core: true },
+              { id: "i6", lt: "Aš išeinu iš namų.",     en: "I'm leaving home.",audioText: "Aš išeinu iš namų",     saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s5m3l2_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "iš namų", audioText: "iš namų" },
+            options: [
+              { id: "a", text: "from home",      isCorrect: true  },
+              { id: "b", text: "at home",        isCorrect: false },
+              { id: "c", text: "from the hotel", isCorrect: false },
+            ],
+          },
+          {
+            id: "s5m3l2_b3",
+            type: "best_response",
+            title: "From here to there",
+            prompt: {
+              text: "You have just left the station and are heading to the hotel. Someone asks: Iš kur eini? What is the clearest answer?",
+            },
+            options: [
+              { id: "a", text: "Iš stoties. Einu į viešbutį.", isCorrect: true },
+              { id: "b", text: "Iš viešbučio. Einu į stotį.", isCorrect: false },
+              { id: "c", text: "Iš čia. Einu į stotį.", isCorrect: false },
+            ],
+            feedback: {
+              correct: "Iš stoties. Einu į viešbutį. — From the station. I'm going to the hotel. This puts the starting point and destination together in one useful answer.",
+            },
+          },
+          {
+            id: "s5m3l2_b4",
+            type: "context_gap_select",
+            prompt: "Choose the correct word",
+            sentence: "Aš einu ___ viešbučio į stotį.",
+            translation_en: "I'm going from the hotel to the station.",
+            options: [
+              { id: "a", text: "į",   isCorrect: false },
+              { id: "b", text: "iš",  isCorrect: true  },
+              { id: "c", text: "čia", isCorrect: false },
+            ],
+            explanation: "Iš means from — the starting point. Į means to — the destination. Both change the form of the noun that follows.",
+          },
+          {
+  id: "s5m3l2_b5_v2",
+  type: "scenario_v2",
+  title: "From the hotel to the station",
+  description: "You have just left your hotel and are walking to the station. Rasa asks where you are coming from.",
+  sceneIntro: "You have just left your hotel and are walking to the station. Rasa asks where you are coming from.",
+  location: "street",
+  userRole: "traveller",
+  register: "informal",
+  goal: "Use iš for the starting point and į for the destination, then show that you understood a short route.",
+  focus: ["iš", "į", "directions"],
+  participants: [
+    { id: "assistant", label: "Local", name: "Rasa", role: "acquaintance", gender: "female", relationshipToUser: "acquaintance", register: "informal" },
+  ],
+  objects: [
+    { id: "station", lt: "stotis", en: "station", gender: "feminine", number: "singular" },
+    { id: "hotel", lt: "viešbutis", en: "hotel", gender: "masculine", number: "singular" },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "assistant",
+      speakerLabel: "Local",
+      speakerText: "Labas! Iš kur eini?",
+      sceneDirection: "You have just left the hotel and are on your way to the station.",
+      learnerPrompt: "Choose the reply that gives the correct starting point and destination.",
+      options: [
+        { id: "a", text: "Labas! Iš viešbučio. Einu į stotį.", result: "best", progresses: true },
+        { id: "b", text: "Labas! Iš stoties. Einu į viešbutį.", result: "wrong", feedback: "That reverses the journey. You have left the hotel and are going to the station.", progresses: false },
+        { id: "c", text: "Labas! Viešbutyje. Einu į stotį.", result: "wrong", feedback: "Viešbutyje means in the hotel. You are coming from the hotel, so use iš viešbučio.", progresses: false },
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "assistant",
+      speakerLabel: "Local",
+      speakerText: "Stotis yra netoli. Tiesiai, paskui kairėn.",
+      sceneDirection: "Rasa says the station is nearby and gives you a two-part route.",
+      learnerPrompt: "Which route did Rasa give you?",
+      interactionMode: "comprehension",
+      options: [
+        { id: "a", text: "Go straight, then turn left.", learnerText: "Suprantu. Ačiū!", result: "best", progresses: true },
+        { id: "b", text: "Go straight, then turn right.", result: "wrong", feedback: "Rasa said kairėn — left — rather than dešinėn — right.", progresses: false },
+        { id: "c", text: "Turn left, then go straight.", result: "wrong", feedback: "That reverses the order: straight first, then left.", progresses: false },
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "assistant",
+      speakerLabel: "Local",
+      speakerText: "Prašom. Geros kelionės!",
+      supportText: "geros kelionės — have a good journey",
+      sceneDirection: "Rasa wishes you a good journey as you leave.",
+      learnerPrompt: "Close the exchange naturally.",
+      options: [
+        { id: "a", text: "Ačiū! Viso gero!", result: "best", progresses: true },
+        { id: "b", text: "Ačiū!", result: "acceptable", feedback: "A simple thank-you is also natural here.", progresses: true },
+        { id: "c", text: "Laba diena!", result: "wrong", feedback: "Laba diena opens a conversation; this exchange is ending.", progresses: false },
+      ],
+    },
+  ],
+},
+        ],
+      },
+
+      // ── Lesson 3 — In… ───────────────────────────────────────────────────
+      {
+        id: "section_5_module_3_lesson_3",
+        code: "5.3.3",
+        title: "In…",
+        purpose: "Teach simple place-presence language.",
+        supportLevel: "high",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Miestas means city; mieste means in the city. Use your familiar Aš esu frame to say where you are: Aš esu mieste. The known places viešbutis and kavinė similarly appear as viešbutyje and kavinėje when you are there. For home, say namuose when you are at home; iš namų means from home.",
+          usage: [
+            "miestas — city",
+            "Aš esu mieste. — I'm in the city.",
+            "viešbutyje — in the hotel",
+            "kavinėje — in the café",
+            "namuose — at home",
+            "Aš esu namuose. — I'm at home.",
+          ],
+        },
+        blocks: [
+          {
+            id: "s5m3l3_b1",
+            type: "learn",
+            title: "In…",
+            items: [
+              { id: "i1", lt: "miestas",             en: "city",          audioText: "miestas",             saveable: true, core: true },
+              { id: "i2", lt: "viešbutyje",          en: "in the hotel",  audioText: "viešbutyje",          saveable: true, core: true },
+              { id: "i3", lt: "kavinėje",            en: "in the café",   audioText: "kavinėje",            saveable: true, core: true },
+              { id: "i4", lt: "namuose",             en: "at home",       audioText: "namuose",             saveable: true, core: true },
+              { id: "i5", lt: "Aš esu mieste.",      en: "I'm in the city.", audioText: "Aš esu mieste",      saveable: true, core: true },
+              { id: "i6", lt: "Aš esu namuose.",     en: "I'm at home.",  audioText: "Aš esu namuose",     saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s5m3l3_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "viešbutyje", audioText: "viešbutyje" },
+            options: [
+              { id: "a", text: "to the hotel",   isCorrect: false },
+              { id: "b", text: "from the hotel", isCorrect: false },
+              { id: "c", text: "in the hotel",   isCorrect: true  },
+            ],
+          },
+          {
+            id: "s5m3l3_b3",
+            type: "build_phrase",
+            title: "Build the location",
+            prompt: { text: "She is in the café. Build the sentence." },
+            tokens: [
+              { id: "t1", text: "Ji", correctIndex: 0 },
+              { id: "t2", text: "yra", correctIndex: 1 },
+              { id: "t3", text: "kavinėje.", correctIndex: 2 },
+              { id: "t4", text: "viešbutyje.", isDistractor: true, repairHint: "Viešbutyje means in the hotel. The prompt says she is in the café." },
+              { id: "t5", text: "mieste.", isDistractor: true, repairHint: "Mieste means in the city. The prompt says she is in the café." },
+            ],
+            answerText: "Ji yra kavinėje.",
+          },
+          {
+            id: "s5m3l3_b4",
+            type: "best_response",
+            title: "Answer where you are",
+            prompt: { text: "Someone asks: Kur jūs esate? You are in the city. What is the clearest answer?" },
+            options: [
+              { id: "a", text: "Aš esu mieste.", isCorrect: true },
+              { id: "b", text: "Aš esu viešbutyje.", isCorrect: false },
+              { id: "c", text: "Aš esu kavinėje.", isCorrect: false },
+            ],
+            feedback: {
+              correct: "Aš esu mieste. — I'm in the city. This practises the location form in a real answer rather than comparing it with unseen endings.",
+            },
+          },
+          {
+            id: "s5m3l3_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: I'm in the city",
+            targetText: "Aš esu mieste",
+            audioText: "Aš esu mieste",
+          },
+          {
+  id: "s5m3l3_b6_v2",
+  type: "scenario_v2",
+  title: "Where are you?",
+  description: "Mantas is already at a café. You are at your hotel now, then you leave to meet him.",
+  sceneIntro: "Mantas is already at a café. You are at your hotel now, then leave to meet him. A short walk is fine.",
+  location: "text conversation",
+  userRole: "friend",
+  register: "informal",
+  goal: "Distinguish being in a place from going to a place.",
+  focus: ["viešbutyje", "kavinėje", "į kavinę"],
+  participants: [{ id: "friend", label: "Friend", name: "Mantas", role: "friend", gender: "male", relationshipToUser: "friend", register: "informal" }],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Labas! Kur tu esi?",
+      sceneDirection: "You are still at the hotel.",
+      learnerPrompt: "Choose the reply that says where you are now.",
+      options: [
+        { id: "a", text: "Labas! Aš esu viešbutyje.", result: "best", progresses: true },
+        { id: "b", text: "Labas! Einu į viešbutį.", result: "wrong", feedback: "That means you are going to the hotel. You are already there.", progresses: false },
+        { id: "c", text: "Labas! Aš esu kavinėje.", result: "wrong", feedback: "Mantas is at the café; you are at the hotel.", progresses: false },
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Aš esu kavinėje.",
+      sceneDirection: "Mantas is already at the café. You have now left the hotel and are heading to meet him.",
+      learnerPrompt: "Choose the reply that says you are going to the café.",
+      options: [
+        { id: "a", text: "Gerai! Einu į kavinę.", result: "best", progresses: true },
+        { id: "b", text: "Gerai! Aš esu kavinėje.", result: "wrong", feedback: "That says you are already in the café. You are still on your way.", progresses: false },
+        { id: "c", text: "Gerai! Einu į viešbutį.", result: "wrong", feedback: "That sends you back to the hotel instead of to the café.", progresses: false },
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "friend",
+      speakerLabel: "Friend",
+      speakerText: "Kavinė yra netoli.",
+      sceneDirection: "Mantas says the café is nearby.",
+      learnerPrompt: "Respond naturally to the fact that it is nearby.",
+      options: [
+        { id: "a", text: "Puiku! Iki!", result: "best", progresses: true },
+        { id: "b", text: "Gerai! Iki!", result: "acceptable", feedback: "That is also a natural casual response.", progresses: true },
+        { id: "c", text: "Per toli. Iki!", result: "wrong", feedback: "He has just told you the café is nearby.", progresses: false },
+      ],
+    },
+  ],
+},
+        ],
+      },
+
+      // ── Lesson 4 — Where Are You Going? ──────────────────────────────────
+      {
+        id: "section_5_module_3_lesson_4",
+        code: "5.3.4",
+        title: "Where Are You Going?",
+        purpose: "Turn movement language into interaction.",
+        supportLevel: "medium",
+        newLanguageLoad: "low",
+        notes: {
+          pattern: "Home has a very common movement form of its own: Einu namo means I'm going home. Unlike ordinary destinations such as į stotį or į viešbutį, normal 'going home' does not use į. Compare the set you have now seen: namai — home, iš namų — from home, namuose — at home, namo — homeward / home.",
+          usage: [
+            "namai — home",
+            "iš namų — from home",
+            "namuose — at home",
+            "Einu namo. — I'm going home.",
+          ],
+        },
+        blocks: [
+          {
+            id: "s5m3l4_b1",
+            type: "learn",
+            title: "Movement questions",
+            items: [
+              { id: "i1", lt: "Kur eini?",          en: "Where are you going? (informal)", audioText: "Kur eini",          saveable: true, core: true },
+              { id: "i2", lt: "Kur einate?",        en: "Where are you going? (formal)",   audioText: "Kur einate",        saveable: true, core: true },
+              { id: "i3", lt: "Kur mes einame?",    en: "Where are we going?",             audioText: "Kur mes einame",    saveable: true, core: true },
+              { id: "i4", lt: "Einu namo.",         en: "I'm going home.",                 audioText: "Einu namo",         saveable: true, core: true },
+              { id: "i5", lt: "Ar einate į stotį?", en: "Are you going to the station?",   audioText: "Ar einate į stotį", saveable: true, core: false },
+            ],
+          },
+          {
+            id: "s5m3l4_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Kur einate?", audioText: "Kur einate" },
+            options: [
+              { id: "a", text: "Where are we going?",        isCorrect: false },
+              { id: "b", text: "Where are you going?",       isCorrect: true  },
+              { id: "c", text: "Are you going to the hotel?",isCorrect: false },
+            ],
+          },
+          {
+            id: "s5m3l4_b3",
+            type: "best_response",
+            title: "Answer where you're going",
+            prompt: { text: "A friend asks: Kur eini? You are going home. What do you say?" },
+            options: [
+              { id: "a", text: "Einu namo.",      isCorrect: true },
+              { id: "b", text: "Einu iš namų.",   isCorrect: false },
+              { id: "c", text: "Aš esu namuose.",    isCorrect: false },
+            ],
+            feedback: {
+              correct: "Einu namo. — I'm going home. Iš namų means from home; namuose means at home.",
+            },
+          },
+          {
+            id: "s5m3l4_b4",
+            type: "context_gap_select",
+            prompt: "Choose the correct form",
+            sentence: "Ar ___ į viešbutį?",
+            translation_en: "You are politely asking a stranger: Are you going to the hotel?",
+            options: [
+              { id: "a", text: "eini",   isCorrect: false },
+              { id: "b", text: "einate", isCorrect: true  },
+              { id: "c", text: "einame", isCorrect: false },
+            ],
+            explanation: "Ar einate — are you going? (formal, addressing one person politely or a group). Eini is informal. Einame is we go.",
+          },
+          {
+            id: "s5m3l4_b5",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: I'm going home",
+            targetText: "Einu namo",
+            audioText: "Einu namo",
+          },
+          {
+  id: "s5m3l4_b6_v2",
+  type: "scenario_v2",
+  title: "Going home",
+  description: "You are leaving the city centre and heading home. Rokas asks where you are going. Later, after you arrive, he asks where you are.",
+  sceneIntro: "You are leaving the city centre and heading home. Rokas asks where you are going. Later, after you arrive, he asks where you are.",
+  location: "street, then text message",
+  userRole: "colleague",
+  register: "polite_friendly",
+  goal: "Distinguish going home from being at home or coming from home.",
+  focus: ["Einu namo", "namuose", "iš namų"],
+  participants: [
+    { id: "colleague", label: "Colleague", name: "Rokas", role: "colleague", gender: "male", relationshipToUser: "colleague", register: "polite_friendly" },
+  ],
+  objects: [{ id: "home", lt: "namai", en: "home", number: "plural_form" }],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "colleague",
+      speakerLabel: "Colleague",
+      speakerText: "Labas! Kur eini?",
+      sceneDirection: "You are on your way home.",
+      learnerPrompt: "Choose the reply that says you are going home.",
+      options: [
+        { id: "a", text: "Labas! Einu namo.", result: "best", progresses: true },
+        { id: "b", text: "Labas! Aš esu namuose.", result: "wrong", feedback: "Namuose means you are already at home. You are still going there.", progresses: false },
+        { id: "c", text: "Labas! Einu iš namų.", result: "wrong", feedback: "Iš namų means from home. You are heading home, not leaving it.", progresses: false },
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "colleague",
+      speakerLabel: "Colleague",
+      speakerText: "Kur tu esi?",
+      sceneDirection: "Later, you have arrived home.",
+      learnerPrompt: "Tell Rokas where you are now.",
+      options: [
+        { id: "a", text: "Aš esu namuose.", result: "best", progresses: true },
+        { id: "b", text: "Einu namo.", result: "wrong", feedback: "Einu namo means you are still going home. You have already arrived.", progresses: false },
+        { id: "c", text: "Einu iš namų.", result: "wrong", feedback: "Iš namų means from home. The scene says you are now at home.", progresses: false },
+      ],
+      finalSystemLine: { speakerId: "colleague", speakerLabel: "Colleague", speakerText: "Gerai. Iki!", sceneDirection: "Rokas says goodbye and the exchange ends." },
+    },
+  ],
+},
+        ],
+      },
+
+      // ── Lesson 5 — Pattern to Notice ─────────────────────────────────────
+      {
+        id: "section_5_module_3_lesson_5",
+        code: "5.3.5",
+        title: "Pattern to Notice",
+        purpose: "Consolidate changing place forms, then introduce a useful 'looking for' question once viešbučio is already familiar.",
+        supportLevel: "high",
+        newLanguageLoad: "low",
+        notes: {
+          pattern: "Lithuanian changes word endings depending on how a place is being used. You already know viešbučio from iš viešbučio — from the hotel. That same familiar form also appears in Ar ieškote viešbučio? — Are you looking for the hotel? For now, learn ieškoti / ieškote as a useful travel pattern rather than another grammar table.",
+          usage: [
+            "ieškoti — to look for / search for",
+            "ieškote — you are looking for (formal / plural)",
+            "Ar ieškote viešbučio? — Are you looking for the hotel?",
+            "į viešbutį — to the hotel",
+            "iš viešbučio — from the hotel",
+            "viešbutyje — in the hotel",
+          ],
+        },
+        blocks: [
+          {
+            id: "s5m3l5_b1",
+            type: "learn",
+            title: "Looking for…",
+            items: [
+              { id: "i1", lt: "ieškoti", en: "to look for / search for", audioText: "ieškoti", saveable: true, core: false },
+              { id: "i2", lt: "ieškote", en: "you are looking for (formal / plural)", audioText: "ieškote", saveable: true, core: true },
+              { id: "i3", lt: "Ar ieškote viešbučio?", en: "Are you looking for the hotel?", audioText: "Ar ieškote viešbučio", saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s5m3l5_b1_listen",
+            type: "listen_mcq",
+            title: "Listen and distinguish",
+            prompt: { text: "Ar ieškote viešbučio?", audioText: "Ar ieškote viešbučio" },
+            options: [
+              { id: "a", text: "Are you looking for the hotel?", isCorrect: true },
+              { id: "b", text: "Are you going to the hotel?", isCorrect: false },
+              { id: "c", text: "Are you coming from the hotel?", isCorrect: false },
+            ],
+          },
+          {
+            id: "s5m3l5_b2",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Ask politely: Are you looking for the hotel?",
+            targetText: "Ar ieškote viešbučio",
+            audioText: "Ar ieškote viešbučio",
+          },
+          {
+            id: "s5m3l5_b3",
+            type: "best_response",
+            title: "Use the new question",
+            prompt: {
+              text: "A traveller is checking a map and looking around for their hotel. What is the most useful question to ask?",
+            },
+            options: [
+              { id: "a", text: "Ar ieškote viešbučio?", isCorrect: true },
+              { id: "b", text: "Ar einate į viešbutį?", isCorrect: false },
+              { id: "c", text: "Iš viešbučio?", isCorrect: false },
+            ],
+            feedback: {
+              correct: "Ar ieškote viešbučio? — Are you looking for the hotel? This practises the useful new travel question in a situation where it actually fits.",
+            },
+          },
+          {
+            id: "s5m3l5_b4",
+            type: "context_gap_select",
+            prompt: "Choose the correct form",
+            sentence: "Mes esame ___.",
+            translation_en: "We are in the hotel.",
+            options: [
+              { id: "a", text: "į viešbutį",   isCorrect: false },
+              { id: "b", text: "iš viešbučio", isCorrect: false },
+              { id: "c", text: "viešbutyje",   isCorrect: true  },
+            ],
+            explanation: "Esame means we are — no movement. Being in a place uses the location form: viešbutyje.",
+          },
+          {
+  id: "s5m3l5_b5_v2",
+  type: "scenario_v2",
+  title: "Finding the hotel",
+  description: "You call Austėja from outside the station while checking your hotel address. You are leaving the station for the hotel. Later she messages to check that you arrived.",
+  sceneIntro: "You call Austėja from outside the station while checking your hotel address. You are leaving the station for the hotel. Later she messages to check that you arrived.",
+  location: "outside the station, then text message",
+  userRole: "traveller",
+  register: "polite_friendly",
+  goal: "Use the new looking-for question in context, then distinguish destination, starting point and current location during one clear journey.",
+  focus: ["Ar ieškote viešbučio?", "į viešbutį", "iš stoties", "viešbutyje"],
+  participants: [
+    { id: "contact", label: "Local contact", name: "Austėja", role: "local contact", gender: "female", relationshipToUser: "new contact", register: "polite_friendly" },
+  ],
+  objects: [
+    { id: "station", lt: "stotis", en: "station", gender: "feminine", number: "singular" },
+    { id: "hotel", lt: "viešbutis", en: "hotel", gender: "masculine", number: "singular" },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "contact",
+      speakerLabel: "Local contact",
+      speakerText: "Ar ieškote viešbučio?",
+      sceneDirection: "You are outside the station, checking the hotel address on your phone and about to walk there.",
+      learnerPrompt: "Confirm and say where you are going.",
+      options: [
+        { id: "a", text: "Taip. Aš einu į viešbutį.", result: "best", progresses: true },
+        { id: "b", text: "Taip. Aš einu iš viešbučio.", result: "wrong", feedback: "Iš viešbučio means from the hotel. You are going to the hotel.", progresses: false },
+        { id: "c", text: "Taip. Aš esu viešbutyje.", result: "wrong", feedback: "Aš esu viešbutyje means you are already in the hotel. You are still outside the station.", progresses: false },
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "contact",
+      speakerLabel: "Local contact",
+      speakerText: "Iš stoties?",
+      sceneDirection: "Austėja checks that the station is your starting point.",
+      learnerPrompt: "Confirm where you are coming from.",
+      options: [
+        { id: "a", text: "Taip, iš stoties.", result: "best", progresses: true },
+        { id: "b", text: "Taip, iš viešbučio.", result: "wrong", feedback: "That would mean you are coming from the hotel, but you have just left the station.", progresses: false },
+        { id: "c", text: "Taip, į stotį.", result: "wrong", feedback: "Į stotį means to the station, but you have just come from it: iš stoties.", progresses: false },
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "contact",
+      speakerLabel: "Local contact",
+      speakerText: "Kur jūs esate?",
+      sceneDirection: "Later, you have arrived at the hotel and Austėja messages to check where you are now.",
+      learnerPrompt: "Tell Austėja where you are now.",
+      options: [
+        { id: "a", text: "Aš esu viešbutyje.", result: "best", progresses: true },
+        { id: "b", text: "Aš einu į viešbutį.", result: "wrong", feedback: "That means you are still going to the hotel. You have already arrived.", progresses: false },
+        { id: "c", text: "Aš einu iš viešbučio.", result: "wrong", feedback: "That means you are leaving the hotel. The scene says you are now there.", progresses: false },
+      ],
+      finalSystemLine: {
+        speakerId: "contact",
+        speakerLabel: "Local contact",
+        speakerText: "Puiku. Iki!",
+        sceneDirection: "Austėja knows you arrived safely and ends the conversation.",
+      },
+    },
+  ],
+},
+        ],
+      },
+
+      // ── Module 5.3 Checkpoint ─────────────────────────────────────────────
+      {
+        id: "section_5_module_3_checkpoint",
+        code: "5.3.C",
+        title: "Going Somewhere Check",
+        purpose: "Confirm movement and location language is working together.",
+        supportLevel: "low",
+        newLanguageLoad: "none",
+        isCheckpoint: true,
+        blocks: [
+          {
+            id: "s5m3c_b1",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Aš einu į stotį.", audioText: "Aš einu į stotį" },
+            options: [
+              { id: "a", text: "I'm coming from the station.", isCorrect: false },
+              { id: "b", text: "I'm at the station.",          isCorrect: false },
+              { id: "c", text: "I'm going to the station.",    isCorrect: true  },
+            ],
+          },
+          {
+            id: "s5m3c_b2",
+            type: "best_response",
+            title: "From movement to location",
+            prompt: {
+              text: "Earlier you said: Mes einame į kavinę. A few minutes later your friend asks: Kur jūs esate? You have arrived. What do you say now?",
+            },
+            options: [
+              { id: "a", text: "Mes esame kavinėje.", isCorrect: true },
+              { id: "b", text: "Mes einame į kavinę.", isCorrect: false },
+              { id: "c", text: "Mes esame viešbutyje.", isCorrect: false },
+            ],
+            feedback: {
+              correct: "Mes esame kavinėje. — We are in the café. The earlier sentence says you were going to the café; now you have arrived, so use the location form.",
+            },
+          },
+          {
+            id: "s5m3c_b3",
+            type: "context_gap_select",
+            prompt: "Choose the correct word",
+            sentence: "Aš einu ___ viešbučio į stotį.",
+            translation_en: "I'm going from the hotel to the station.",
+            options: [
+              { id: "a", text: "į",  isCorrect: false },
+              { id: "b", text: "iš", isCorrect: true  },
+              { id: "c", text: "su", isCorrect: false },
+            ],
+            explanation: "Iš means from — the starting point. Į means to — the destination.",
+          },
+          {
+            id: "s5m3c_b4",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: I'm going from the hotel to the station",
+            targetText: "Aš einu iš viešbučio į stotį",
+            audioText: "Aš einu iš viešbučio į stotį",
+          },
+          {
+            id: "s5m3c_b5",
+            type: "build_phrase",
+            title: "Build the destination",
+            prompt: { text: "Build: I'm going to the café." },
+            tokens: [
+              { id: "t1", text: "Einu", correctIndex: 0 },
+              { id: "t2", text: "į", correctIndex: 1 },
+              { id: "t3", text: "kavinę.", correctIndex: 2 },
+              { id: "t4", text: "iš", isDistractor: true, repairHint: "Iš means from. You are moving towards the café." },
+              { id: "t5", text: "stotį.", isDistractor: true, repairHint: "Stotį means the station as a destination. The prompt asks for the café." },
+            ],
+            answerText: "Einu į kavinę.",
+          },
+          {
+  id: "s5m3c_b6_v2",
+  type: "scenario_v2",
+  title: "From the hotel to the café",
+  description: "You have left your hotel and are walking to a café. Later, after you arrive, Rasa asks where you are.",
+  sceneIntro: "You have left your hotel and are walking to a café. Later, after you arrive, Rasa asks where you are.",
+  location: "street, then café",
+  userRole: "traveller",
+  register: "polite_neutral",
+  goal: "Combine destination, starting-point and current-location language without relying on subjective distance judgements.",
+  focus: ["Einu į", "Iš", "Esu"],
+  participants: [
+    { id: "local", label: "Local", name: "Rasa", role: "local speaker", gender: "female", relationshipToUser: "stranger", register: "polite_neutral" },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Labas! Kur eini?",
+      sceneDirection: "You are walking to the café.",
+      learnerPrompt: "Choose the reply that matches your destination.",
+      options: [
+        { id: "a", text: "Labas! Einu į kavinę.", result: "best", progresses: true },
+        { id: "b", text: "Labas! Einu į stotį.", result: "wrong", feedback: "Your destination is the café, not the station.", progresses: false },
+        { id: "c", text: "Labas! Aš esu kavinėje.", result: "wrong", feedback: "You are still going to the café; you are not there yet.", progresses: false },
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Iš kur eini?",
+      sceneDirection: "You have just left the hotel.",
+      learnerPrompt: "Choose the reply that gives your starting point.",
+      options: [
+        { id: "a", text: "Iš viešbučio.", result: "best", progresses: true },
+        { id: "b", text: "Iš stoties.", result: "wrong", feedback: "You came from the hotel, not the station.", progresses: false },
+        { id: "c", text: "Viešbutyje.", result: "wrong", feedback: "Viešbutyje means in the hotel. The question asks where you came from.", progresses: false },
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Kur tu esi?",
+      sceneDirection: "Later, you have arrived at the café.",
+      learnerPrompt: "Choose the reply that says where you are now.",
+      options: [
+        { id: "a", text: "Aš esu kavinėje.", result: "best", progresses: true },
+        { id: "b", text: "Einu į kavinę.", result: "wrong", feedback: "That means you are still going to the café. You have already arrived.", progresses: false },
+        { id: "c", text: "Aš esu viešbutyje.", result: "wrong", feedback: "You left the hotel earlier and are now at the café.", progresses: false },
+      ],
+      finalSystemLine: { speakerId: "local", speakerLabel: "Local", speakerText: "Gerai! Iki!", sceneDirection: "Rasa says goodbye and the exchange ends." },
+    },
+  ],
+},
+          {
+            id: "s5m3c_b7",
+            type: "word_match",
+            title: "Match by pattern",
+            pairPages: [
+              { id: "going_to",          label: "Going to a place",      pairIds: ["m1", "m2", "m3", "m12"] },
+              { id: "coming_from",       label: "Coming from a place",   pairIds: ["m4", "m5", "m6", "m22"] },
+              { id: "being_somewhere",   label: "Being somewhere",       pairIds: ["m7", "m8", "m9", "m23"] },
+              { id: "location_sentences",label: "Location sentences",    pairIds: ["m18", "m24", "m25", "m26"] },
+              { id: "useful_questions",  label: "Useful questions",      pairIds: ["m10", "m11", "m16", "m20"] },
+              { id: "home_forms",        label: "Home forms",            pairIds: ["m21", "m15", "m17", "m19"] },
+            ],
+            pairs: [
+              // Going to a place
+              { id: "m1",  lt: "Aš einu į stotį.",        en: "I'm going to the station.",       audioText: "Aš einu į stotį" },
+              { id: "m2",  lt: "Aš einu į viešbutį.",     en: "I'm going to the hotel.",         audioText: "Aš einu į viešbutį" },
+              { id: "m3",  lt: "Mes einame į kavinę.",    en: "We're going to the café.",        audioText: "Mes einame į kavinę" },
+              { id: "m12", lt: "Ar einate į stotį?",      en: "Are you going to the station?",   audioText: "Ar einate į stotį" },
+
+              // Coming from a place
+              { id: "m4",  lt: "iš čia",                  en: "from here",                        audioText: "iš čia" },
+              { id: "m5",  lt: "iš viešbučio",            en: "from the hotel",                   audioText: "iš viešbučio" },
+              { id: "m6",  lt: "iš stoties",              en: "from the station",                 audioText: "iš stoties" },
+              { id: "m22", lt: "iš namų",                 en: "from home",                        audioText: "iš namų" },
+
+              // Being somewhere — compact location forms
+              { id: "m7",  lt: "mieste",                  en: "in the city",                      audioText: "mieste" },
+              { id: "m8",  lt: "viešbutyje",              en: "in the hotel",                     audioText: "viešbutyje" },
+              { id: "m9",  lt: "kavinėje",                en: "in the café",                      audioText: "kavinėje" },
+              { id: "m23", lt: "namuose",                 en: "at home",                          audioText: "namuose" },
+
+              // Full location sentences
+              { id: "m18", lt: "Aš esu mieste.",          en: "I'm in the city.",                 audioText: "Aš esu mieste" },
+              { id: "m24", lt: "Aš esu viešbutyje.",      en: "I'm in the hotel.",                audioText: "Aš esu viešbutyje" },
+              { id: "m25", lt: "Aš esu kavinėje.",        en: "I'm in the café.",                 audioText: "Aš esu kavinėje" },
+              { id: "m26", lt: "Mes esame kavinėje.",     en: "We're in the café.",               audioText: "Mes esame kavinėje" },
+
+              // Useful questions
+              { id: "m10", lt: "Kur eini?",               en: "Where are you going? (informal)", audioText: "Kur eini" },
+              { id: "m11", lt: "Kur einate?",             en: "Where are you going? (formal)",   audioText: "Kur einate" },
+              { id: "m16", lt: "Kur mes einame?",         en: "Where are we going?",              audioText: "Kur mes einame" },
+              { id: "m20", lt: "Ar ieškote viešbučio?",   en: "Are you looking for the hotel?",   audioText: "Ar ieškote viešbučio" },
+
+              // Home family
+              { id: "m21", lt: "namai",                   en: "home",                              audioText: "namai" },
+              { id: "m15", lt: "Aš išeinu iš namų.",      en: "I'm leaving home.",                 audioText: "Aš išeinu iš namų" },
+              { id: "m17", lt: "Einu namo.",              en: "I'm going home.",                   audioText: "Einu namo" },
+              { id: "m19", lt: "Aš esu namuose.",         en: "I'm at home.",                      audioText: "Aš esu namuose" },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}

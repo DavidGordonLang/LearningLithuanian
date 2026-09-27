@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 
 export default function UserGuideModal({
   onClose,
+  onTryAudio,
   firstLaunch = false,
   topOffset = 0,
 }) {
@@ -39,7 +40,7 @@ export default function UserGuideModal({
 
   function Icon({ type }) {
     // keep icons semantic + calm (no glow, no oversized colour)
-    const cls = "w-12 h-12 text-emerald-400/90 mx-auto mb-4";
+    const cls = "w-12 h-12 text-emerald-400 mx-auto mb-4";
 
     if (type === "speech") {
       return (
@@ -124,7 +125,7 @@ export default function UserGuideModal({
       <div
         className="
           w-full max-w-2xl
-          z-card overflow-hidden flex flex-col
+          z-modal-card overflow-hidden flex flex-col
         "
         style={{
           maxHeight: `calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${topOffset}px - 24px)`,
@@ -145,6 +146,7 @@ export default function UserGuideModal({
               </div>
             </div>
 
+            {onTryAudio ? <button type="button" className="z-btn z-btn-secondary px-3 py-2 text-[13px]" onClick={onTryAudio}>Quick tour</button> : null}
             {!firstLaunch && (
               <button
                 type="button"

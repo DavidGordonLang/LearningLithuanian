@@ -11,7 +11,11 @@ export async function mergeRows(newRows, { setRows, normalizeRag, genId, nowTs }
     .map((r) => ({
       English: r.English?.trim() || "",
       Lithuanian: r.Lithuanian?.trim() || "",
+
+      // Preserve both phonetic modes.
       Phonetic: r.Phonetic?.trim() || "",
+      PhoneticIPA: r.PhoneticIPA?.trim() || "",
+
       Category: r.Category?.trim() || "",
       Usage: r.Usage?.trim() || "",
       Notes: r.Notes?.trim() || "",
@@ -27,25 +31,37 @@ export async function mergeRows(newRows, { setRows, normalizeRag, genId, nowTs }
           amb: { ok: 0, bad: 0 },
           grn: { ok: 0, bad: 0 },
         },
+      _deleted: typeof r._deleted === "boolean" ? r._deleted : false,
+      _deleted_ts:
+        typeof r._deleted_ts === "number" ? r._deleted_ts : null,
+      contentKey: r.contentKey || "",
+      Source: r.Source || "",
+      Touched: typeof r.Touched === "boolean" ? r.Touched : false,
+      SourceLang: r.SourceLang || "",
+      EnglishLiteral: r.EnglishLiteral || "",
+      EnglishNatural: r.EnglishNatural || "",
+      EnglishOriginal: r.EnglishOriginal || "",
+      LithuanianOriginal: r.LithuanianOriginal || "",
     }))
     .filter((r) => r.English || r.Lithuanian);
 
   setRows((prev) => [...cleaned, ...prev]);
 }
 
-export async function mergeStarterRows(newRows, {
-  setRows,
-  normalizeRag,
-  makeLtKey,
-  genId,
-  nowTs,
-}) {
+export async function mergeStarterRows(
+  newRows,
+  { setRows, normalizeRag, makeLtKey, genId, nowTs }
+) {
   const cleaned = newRows
     .map((r) => {
       const base = {
         English: r.English?.trim() || "",
         Lithuanian: r.Lithuanian?.trim() || "",
+
+        // Preserve both phonetic modes.
         Phonetic: r.Phonetic?.trim() || "",
+        PhoneticIPA: r.PhoneticIPA?.trim() || "",
+
         Category: r.Category?.trim() || "",
         Usage: r.Usage?.trim() || "",
         Notes: r.Notes?.trim() || "",
@@ -63,6 +79,9 @@ export async function mergeStarterRows(newRows, {
           },
         Source: "starter",
         Touched: false,
+        _deleted: typeof r._deleted === "boolean" ? r._deleted : false,
+        _deleted_ts:
+          typeof r._deleted_ts === "number" ? r._deleted_ts : null,
       };
 
       const ck = makeLtKey(base);
@@ -96,33 +115,30 @@ export async function mergeStarterRows(newRows, {
   });
 }
 
-export async function fetchStarter(kind, {
-  STARTERS,
-  mergeStarterRowsImpl,
-}) {
+export async function fetchStarter(kind, { STARTERS, mergeStarterRowsImpl }) {
   const url = STARTERS?.[kind];
-  if (!url) return alert("Starter not found");
+  if (!url) throw new Error("Starter not found");
 
   const res = await fetch(url);
-  if (!res.ok) return alert("Failed to fetch starter");
+  if (!res.ok) throw new Error("Failed to fetch starter");
 
   const data = await res.json();
   await mergeStarterRowsImpl(data);
 
-  alert("Starter pack installed.");
+  return { ok: true, count: Array.isArray(data) ? data.length : 0 };
 }
 
-export function clearLibrary({ T, setRows }) {
-  if (confirm(T.confirm)) setRows([]);
+export function clearLibrary({ setRows }) {
+  setRows([]);
+  return { ok: true };
 }
 
 export async function importJsonFile(file, { mergeRowsImpl }) {
-  try {
-    const data = JSON.parse(await file.text());
-    if (!Array.isArray(data)) throw new Error();
-    await mergeRowsImpl(data);
-    alert("Imported.");
-  } catch {
-    alert("Import failed.");
+  const data = JSON.parse(await file.text());
+  if (!Array.isArray(data)) {
+    throw new Error("Import file must contain a JSON array.");
   }
+
+  await mergeRowsImpl(data);
+  return { ok: true, count: data.length };
 }

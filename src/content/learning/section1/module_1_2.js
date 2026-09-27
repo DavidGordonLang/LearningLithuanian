@@ -1,0 +1,1168 @@
+// src/content/learning/section1/module_1_2.js
+// Module 1.2 — Who I Am
+
+export default function createModule_1_2(profile = {}) {
+  const {
+    userNameSafe = "Davidas",
+    userFromPhrase = "Aš esu iš Škotijos",
+    userFromCountryLtNominative = "Škotija",
+    userFromCountryLtGenitive = "Škotijos",
+    userFromCountryLabelEn = "Scotland",
+  } = profile;
+
+  const introWithName = `Laba diena! Mano vardas ${userNameSafe}.`;
+  const plainNameLine = `Mano vardas ${userNameSafe}.`;
+  const selfFromLine = `${userFromPhrase}.`;
+  const selfFromLineNoPeriod = userFromPhrase;
+  const selfFromEnglish = `I am from ${userFromCountryLabelEn}`;
+  const normaliseCountry = (value) => String(value || "").trim().toLocaleLowerCase("lt-LT");
+  const originEnglishDistractors = ["Lithuania", "Ukraine", "England", "Germany", "France", "America"]
+    .filter((country) => normaliseCountry(country) !== normaliseCountry(userFromCountryLabelEn))
+    .slice(0, 2)
+    .map((country) => `I am from ${country}`);
+  const originGenitiveDistractor = ["Lietuvos", "Ukrainos", "Anglijos", "Vokietijos", "Prancūzijos", "Amerikos"]
+    .find((country) => normaliseCountry(country) !== normaliseCountry(userFromCountryLtGenitive)) || "Lietuvos";
+
+  return {
+    id: "module_1_2",
+    code: "1.2",
+    title: "Who I Am",
+    status: "active",
+    lessonCount: 5,
+    lessons: [
+
+      // ── Lesson 1 ──────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_2_lesson_1",
+        code: "1.2.1",
+        title: "I Am / My Name Is",
+        purpose: "Teach the learner to identify themselves clearly.",
+        supportLevel: "high",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Both Aš esu and Mano vardas work for introducing yourself. Mano vardas is often the cleaner starter — it is direct and natural.",
+          usage: [
+            "Aš esu [vardas] — I am [name]",
+            "Mano vardas [vardas] — My name [is] [name]. The verb is implied in Lithuanian.",
+            "Koks tavo vardas? — What is your name? (informal)",
+            "Koks jūsų vardas? — What is your name? (formal/polite)",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m2l1_b1",
+            type: "learn",
+            title: "Who you are",
+            items: [
+              { id: "wi1", lt: "Aš esu", en: "I am", audioText: "Aš esu", saveable: true, core: true },
+              { id: "wi2", lt: "Mano vardas", en: "My name [is]", audioText: "Mano vardas", saveable: true, core: true },
+              { id: "wi5", lt: "Koks tavo vardas?", en: "What is your name? (informal)", audioText: "Koks tavo vardas", saveable: true, core: true },
+              { id: "wi6", lt: "Koks jūsų vardas?", en: "What is your name? (formal)", audioText: "Koks jūsų vardas", saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s1m2l1_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Mano vardas", audioText: "Mano vardas" },
+            options: [
+              { id: "a", text: "What is your name?", isCorrect: false },
+              { id: "b", text: "I am", isCorrect: false },
+              { id: "c", text: "My name [is]", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m2l1_b3",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Aš esu", audioText: "Aš esu" },
+            options: [
+              { id: "a", text: "My name is", isCorrect: false },
+              { id: "b", text: "I am", isCorrect: true },
+              { id: "c", text: "What is your name?", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2l1_b4",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Koks jūsų vardas?", audioText: "Koks jūsų vardas" },
+            options: [
+              { id: "a", text: "What is your name? (informal)", isCorrect: false },
+              { id: "b", text: "My name is", isCorrect: false },
+              { id: "c", text: "What is your name? (formal)", isCorrect: true },
+            ],
+            feedback: { correct: "Jūsų is the polite/formal form — use it with strangers and people you don't know well." },
+          },
+          {
+            id: "s1m2l1_b5",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "What is your name? (informal)" },
+            tokens: [
+              { id: "t1", text: "Koks", correctIndex: 0 },
+              { id: "t2", text: "tavo", correctIndex: 1 },
+              { id: "t3", text: "vardas?", correctIndex: 2 },
+              { id: "t4", text: "jūsų", isDistractor: true, repairHint: "jūsų means “your” when speaking politely or to more than one person. This prompt is informal, so tavo fits instead." },
+            ],
+            answerText: "Koks tavo vardas?",
+          },
+          {
+            id: "s1m2l1_b6",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say your name in Lithuanian — start with Mano vardas",
+            targetText: "Mano vardas",
+            audioText: "Mano vardas",
+          },
+          {
+  id: "s1m2l1_b7_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
+  sceneIntro: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You're at a language event. A stranger introduces themselves — respond with a greeting and your name.",
+  focus: ["greetings", "introducing yourself"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rokas",
+      "role": "local speaker",
+      "gender": "male",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Laba diena! Koks jūsų vardas?",
+      sceneDirection: "Rokas has asked for your name.",
+      learnerPrompt: "Greet Rokas and tell him your name.",
+      options: [
+        {
+          id: "a",
+          text: `Laba diena! Aš esu ${userNameSafe}.`,
+          result: "acceptable",
+          feedback: "Aš esu with your name works too. Mano vardas is a simple introduction to keep ready.",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: introWithName,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Laba diena! Koks jūsų vardas?",
+          result: "wrong",
+          feedback: "Rokas asked for your name. Answer him before asking his.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Aš esu Rokas. Kaip sekasi?",
+      sceneDirection: "Rokas introduces himself and asks how you are.",
+      learnerPrompt: "Answer how you are; he has not said goodbye yet.",
+      options: [
+        {
+          id: "a",
+          text: "Labas rytas",
+          result: "wrong",
+          feedback: "Labas rytas is a morning greeting, not an answer to Kaip sekasi?",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Atsiprašau",
+          result: "wrong",
+          feedback: "Atsiprašau is an apology; Rokas is asking how you are.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Gerai, ačiū!",
+          result: "best",
+          progresses: true,
+        }
+      ],
+    }
+  ],
+},
+        ],
+      },
+
+      // ── Lesson 2 ──────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_2_lesson_2",
+        code: "1.2.2",
+        title: "I'm From…",
+        purpose: "Add origin and location identity.",
+        supportLevel: "high",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: `Your country is ${userFromCountryLtNominative} (${userFromCountryLabelEn}). After iš ('from'), use ${userFromCountryLtGenitive}: Aš esu iš ${userFromCountryLtGenitive}.`,
+          usage: [
+            `${selfFromLineNoPeriod} — ${selfFromEnglish}`,
+            "Jis yra iš Anglijos — He is from England",
+            "Ji yra iš Lietuvos — She is from Lithuania",
+            "Iš kur jūs esate? — Where are you from? (formal)",
+            "Iš kur tu esi? — Where are you from? (informal)",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m2l2_b1",
+            type: "learn",
+            title: "Where you're from",
+            items: [
+              { id: "frbase", lt: userFromCountryLtNominative, en: userFromCountryLabelEn, audioText: userFromCountryLtNominative, saveable: false, core: false },
+              { id: "fr0", lt: selfFromLineNoPeriod, en: selfFromEnglish, audioText: selfFromLineNoPeriod, saveable: false, core: true },
+              { id: "fr1", lt: "Jis yra iš Anglijos", en: "He is from England", audioText: "Jis yra iš Anglijos", saveable: true, core: true },
+              { id: "fr2", lt: "Ji yra iš Lietuvos", en: "She is from Lithuania", audioText: "Ji yra iš Lietuvos", saveable: true, core: true },
+              { id: "fr3", lt: "Ji yra iš Ukrainos", en: "She is from Ukraine", audioText: "Ji yra iš Ukrainos", saveable: true, core: true },
+              { id: "fr4", lt: "Jis yra iš Amerikos", en: "He is from America", audioText: "Jis yra iš Amerikos", saveable: true, core: true },
+              { id: "fr5", lt: "Jis yra iš Vokietijos", en: "He is from Germany", audioText: "Jis yra iš Vokietijos", saveable: true, core: true },
+              { id: "fr6", lt: "Ji yra iš Prancūzijos", en: "She is from France", audioText: "Ji yra iš Prancūzijos", saveable: true, core: true },
+              { id: "fr7", lt: "Iš kur jūs esate?", en: "Where are you from? (formal)", audioText: "Iš kur jūs esate", saveable: true, core: true },
+              { id: "fr8", lt: "Iš kur tu esi?", en: "Where are you from? (informal)", audioText: "Iš kur tu esi", saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s1m2l2_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: selfFromLineNoPeriod, audioText: selfFromLineNoPeriod },
+            options: [
+              { id: "a", text: selfFromEnglish, isCorrect: true },
+              { id: "b", text: originEnglishDistractors[0], isCorrect: false },
+              { id: "c", text: originEnglishDistractors[1], isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2l2_b3",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Iš kur jūs esate?", audioText: "Iš kur jūs esate" },
+            options: [
+              { id: "a", text: "Where are you from? (informal)", isCorrect: false },
+              { id: "b", text: "What is your name?", isCorrect: false },
+              { id: "c", text: "Where are you from? (formal)", isCorrect: true },
+            ],
+            feedback: { correct: "Jūs esate is the formal/polite form — use it with strangers and older people." },
+          },
+          {
+            id: "s1m2l2_b4",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Iš kur tu esi?", audioText: "Iš kur tu esi" },
+            options: [
+              { id: "a", text: "Where are you from? (formal)", isCorrect: false },
+              { id: "b", text: "Where are you going?", isCorrect: false },
+              { id: "c", text: "Where are you from? (informal)", isCorrect: true },
+            ],
+          },
+          {
+            id: "s1m2l2_b5",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: selfFromEnglish },
+            tokens: [
+              { id: "t1", text: "Aš", correctIndex: 0 },
+              { id: "t2", text: "esu", correctIndex: 1 },
+              { id: "t3", text: "iš", correctIndex: 2 },
+              { id: "t4", text: userFromCountryLtGenitive, correctIndex: 3 },
+              { id: "t5", text: originGenitiveDistractor, isDistractor: true },
+            ],
+            answerText: selfFromLineNoPeriod,
+          },
+          {
+            id: "s1m2l2_b6",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say where you are from in Lithuanian — use your own country",
+            targetText: selfFromLineNoPeriod,
+            audioText: selfFromLineNoPeriod,
+          },
+          {
+  id: "s1m2l2_b7_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You meet someone at a local community event in Vilnius.",
+  sceneIntro: "You meet someone at a local community event in Vilnius.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You meet someone at a local community event in Vilnius.",
+  focus: ["conversation practice"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rasa",
+      "role": "local speaker",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Laba diena! Iš kur jūs esate?",
+      sceneDirection: "Rasa has asked where you are from.",
+      learnerPrompt: "Tell Rasa your home country.",
+      options: [
+        {
+          id: "a",
+          text: selfFromLine,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: plainNameLine,
+          result: "wrong",
+          feedback: "Mano vardas gives your name. Rasa asked where you are from.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: `Aš esu iš ${normaliseCountry(userFromCountryLtGenitive) === "lietuvos" ? "Anglijos" : "Lietuvos"}.`,
+          result: "wrong",
+          feedback: "That names a different country. Use the from-form for your own home country.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Kaip sekasi?",
+      sceneDirection: "Rasa smiles and keeps the conversation going.",
+      learnerPrompt: "Answer the friendly question.",
+      options: [
+        {
+          id: "a",
+          text: "Gerai, ačiū!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "Rasa is asking how you are, not ending the conversation.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: plainNameLine,
+          result: "wrong",
+          feedback: "You already introduced yourself. Rasa is asking how you are.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Viso gero!",
+      sceneDirection: "After a short chat, Rasa gets ready to leave.",
+      learnerPrompt: "Close the exchange naturally.",
+      options: [
+        {
+          id: "a",
+          text: "Iki!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Gerai, ačiū!",
+          result: "wrong",
+          feedback: "That answers Kaip sekasi? Rasa is saying goodbye now.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Atsiprašau.",
+          result: "wrong",
+          feedback: "There is nothing to apologise for. Use a farewell.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
+        ],
+      },
+
+      // ── Lesson 3 ──────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_2_lesson_3",
+        code: "1.2.3",
+        title: "Nice to Meet You",
+        purpose: "Complete the first-meeting exchange.",
+        supportLevel: "medium",
+        newLanguageLoad: "low",
+        notes: {
+          pattern: "Malonu susipažinti is a fixed phrase — learn it as one chunk, not word by word. Man irgi is the natural reply.",
+          usage: [
+            "Malonu susipažinti — Nice to meet you",
+            "Man irgi — Me too / Likewise",
+            "Labai malonu susipažinti — Very pleased to meet you (slightly warmer)",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m2l3_b1",
+            type: "learn",
+            title: "First meeting phrases",
+            items: [
+              { id: "nm1", lt: "Malonu susipažinti", en: "Nice to meet you", audioText: "Malonu susipažinti", saveable: true, core: true },
+              { id: "nm2", lt: "Man irgi", en: "Me too / Likewise", audioText: "Man irgi", saveable: true, core: true },
+              { id: "nm3", lt: "Labai malonu susipažinti", en: "Very pleased to meet you", audioText: "Labai malonu susipažinti", saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s1m2l3_b2",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Malonu susipažinti", audioText: "Malonu susipažinti" },
+            options: [
+              { id: "a", text: "Goodbye", isCorrect: false },
+              { id: "b", text: "Nice to meet you", isCorrect: true },
+              { id: "c", text: "How are you?", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2l3_b3",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "Rokas says: Malonu susipažinti.", audioText: "Malonu susipažinti" },
+            options: [
+              { id: "a", text: "Viso gero", isCorrect: false },
+              { id: "b", text: "Man irgi", isCorrect: true },
+              { id: "c", text: "Atsiprašau", isCorrect: false },
+            ],
+            feedback: { correct: "Man irgi — me too / likewise. The natural response to Malonu susipažinti." },
+          },
+          {
+            id: "s1m2l3_b4",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Labai malonu susipažinti", audioText: "Labai malonu susipažinti" },
+            options: [
+              { id: "a", text: "Nice to meet you", isCorrect: false },
+              { id: "b", text: "Me too", isCorrect: false },
+              { id: "c", text: "Very pleased to meet you", isCorrect: true },
+            ],
+            feedback: { correct: "Labai means 'very' — so Labai malonu susipažinti is a warmer version of nice to meet you." },
+          },
+          {
+            id: "s1m2l3_b5",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "Nice to meet you" },
+            tokens: [
+              { id: "t2", text: "susipažinti", correctIndex: 1 },
+              { id: "t1", text: "Malonu", correctIndex: 0 },
+              { id: "t3", text: "irgi", isDistractor: true },
+            ],
+            answerText: "Malonu susipažinti",
+          },
+          {
+            id: "s1m2l3_b6",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Someone introduces themselves — respond politely",
+            targetText: "Malonu susipažinti",
+            audioText: "Malonu susipažinti",
+          },
+          {
+  id: "s1m2l3_b7_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "A colleague introduces you to Ona. Say hello, give your name, and respond to her greeting.",
+  sceneIntro: "A colleague introduces you to Ona. Say hello, give your name, and respond to her greeting.",
+  location: "work conversation",
+  userRole: "colleague",
+  register: "polite_friendly",
+  goal: "A colleague introduces you to Ona. Say hello, give your name, and respond to her greeting.",
+  focus: ["greetings"],
+  participants: [
+    {
+      "id": "colleague",
+      "label": "Colleague",
+      "name": "Ona",
+      "role": "colleague",
+      "gender": "female",
+      "relationshipToUser": "colleague",
+      "register": "polite_friendly"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "colleague",
+      speakerLabel: "Colleague",
+      speakerText: "Laba diena! Aš esu Ona.",
+      sceneDirection: "Ona greets you and tells you her name.",
+      learnerPrompt: "Greet her and introduce yourself.",
+      options: [
+        {
+          id: "a",
+          text: `Laba diena! Aš esu ${userNameSafe}.`,
+          result: "acceptable",
+          feedback: "Aš esu is a natural introduction too. Mano vardas is the direct name phrase practised here.",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: introWithName,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Laba diena! Koks jūsų vardas?",
+          result: "wrong",
+          feedback: "Ona has just told you her name. Give her yours instead of asking again.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "colleague",
+      speakerLabel: "Colleague",
+      speakerText: `Malonu susipažinti, ${userNameSafe}!`,
+      sceneDirection: "Ona says it is nice to meet you.",
+      learnerPrompt: "Return the friendly greeting.",
+      options: [
+        {
+          id: "a",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "Viso gero is a goodbye. Ona is welcoming you, not leaving.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Man irgi!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Malonu susipažinti!",
+          result: "acceptable",
+          feedback: "That is a natural reply. Man irgi ('me too') responds directly to Ona's greeting.",
+          progresses: true,
+        }
+      ],
+    }
+  ],
+},
+        ],
+      },
+
+      // ── Lesson 4 ──────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_2_lesson_4",
+        code: "1.2.4",
+        title: "This Is…",
+        purpose: "Introduce another person in a simple social setting.",
+        supportLevel: "medium",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Čia yra introduces a person or thing. Jis yra means he is, ji yra means she is. Lithuanian marks gender — draugas is a male friend, draugė is a female friend, kolega is a male colleague, and kolegė is a female colleague.",
+          usage: [
+            "Čia Barbora — This is Barbora (shorter, natural in speech)",
+            "Čia yra Rokas — This is Rokas (slightly fuller form)",
+            "Jis yra mano draugas — He is my friend",
+            "Ji yra mano draugė — She is my friend",
+            "Jis yra mano kolega — He is my colleague",
+            "Ji yra mano kolegė — She is my colleague",
+            "Jis yra iš Lenkijos — He is from Poland",
+            "Ji yra iš Vokietijos — She is from Germany",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m2l4_b1",
+            type: "learn",
+            title: "Introducing others",
+            items: [
+              { id: "ti1", lt: "Čia…", en: "This is…", audioText: "Čia", saveable: false, core: true },
+              { id: "ti2", lt: "Čia yra…", en: "This is… (fuller form)", audioText: "Čia yra", saveable: false, core: true },
+              { id: "ti3", lt: "Jis yra mano draugas", en: "He is my friend", audioText: "Jis yra mano draugas", saveable: true, core: true },
+              { id: "ti4", lt: "Ji yra mano draugė", en: "She is my friend", audioText: "Ji yra mano draugė", saveable: true, core: true },
+              { id: "ti4a", lt: "Jis yra mano kolega", en: "He is my colleague", audioText: "Jis yra mano kolega", saveable: true, core: true },
+              { id: "ti4b", lt: "Ji yra mano kolegė", en: "She is my colleague", audioText: "Ji yra mano kolegė", saveable: true, core: true },
+              { id: "ti5", lt: "Jis yra iš Lenkijos", en: "He is from Poland", audioText: "Jis yra iš Lenkijos", saveable: true, core: true },
+              { id: "ti6", lt: "Ji yra iš Vokietijos", en: "She is from Germany", audioText: "Ji yra iš Vokietijos", saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s1m2l4_b2",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Čia yra Rokas", audioText: "Čia yra Rokas" },
+            options: [
+              { id: "a", text: "He is my friend", isCorrect: false },
+              { id: "b", text: "This is Rokas", isCorrect: true },
+              { id: "c", text: "She is my friend", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2l4_b3",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Ji yra mano draugė", audioText: "Ji yra mano draugė" },
+            options: [
+              { id: "a", text: "He is my friend", isCorrect: false },
+              { id: "b", text: "This is my friend", isCorrect: false },
+              { id: "c", text: "She is my friend", isCorrect: true },
+            ],
+            feedback: { correct: "Ji means she — draugė is the female form of friend. Draugas is the male form." },
+          },
+          {
+            id: "s1m2l4_b4",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You want to introduce Barbora as your female friend." },
+            options: [
+              { id: "a", text: "Jis yra mano draugas", isCorrect: false },
+              { id: "b", text: "Ji yra mano draugė.", isCorrect: true },
+              { id: "c", text: "Jis yra mano kolega", isCorrect: false },
+            ],
+            feedback: { correct: "Ji yra mano draugė — she is my friend. Ji for female, jis for male." },
+          },
+          {
+            id: "s1m2l4_b5",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Jis yra iš Lenkijos", audioText: "Jis yra iš Lenkijos" },
+            options: [
+              { id: "a", text: "She is from Germany", isCorrect: false },
+              { id: "b", text: "He is from Poland", isCorrect: true },
+              { id: "c", text: "This is Rokas", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2l4_b6",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "She is my friend" },
+            tokens: [
+              { id: "t1", text: "Ji", correctIndex: 0 },
+              { id: "t2", text: "yra", correctIndex: 1 },
+              { id: "t5", text: "draugas", isDistractor: true },
+              { id: "t3", text: "mano", correctIndex: 2 },
+              { id: "t4", text: "draugė", correctIndex: 3 },
+            ],
+            answerText: "Ji yra mano draugė",
+          },
+          {
+            id: "s1m2l4_b7",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Introduce a female friend — say 'She is my friend'",
+            targetText: "Ji yra mano draugė",
+            audioText: "Ji yra mano draugė",
+          },
+          {
+  id: "s1m2l4_b8_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You run into an old colleague, Rokas, and introduce your friend Barbora, who is from Lithuania.",
+  sceneIntro: "You run into an old colleague, Rokas, and introduce your friend Barbora, who is from Lithuania.",
+  location: "casual conversation",
+  userRole: "friend",
+  register: "casual",
+  goal: "You run into an old colleague, Rokas, and introduce your friend Barbora.",
+  focus: ["introductions", "jis / ji"],
+  participants: [
+    {
+      "id": "friend",
+      "label": "Colleague",
+      "name": "Rokas",
+      "role": "colleague",
+      "gender": "male",
+      "relationshipToUser": "colleague",
+      "register": "casual"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "friend",
+      speakerLabel: "Colleague",
+      speakerText: "Labas! Kaip sekasi?",
+      sceneDirection: "Rokas greets you and asks how you are. Barbora is standing beside you.",
+      learnerPrompt: "Answer him and introduce Barbora.",
+      options: [
+        {
+          id: "a",
+          text: "Gerai, ačiū! Čia Barbora. Ji yra mano draugė.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Gerai, ačiū! Čia Barbora. Jis yra mano draugas.",
+          result: "wrong",
+          feedback: "Barbora is a woman, so say ji yra mano draugė, not jis yra mano draugas.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "Rokas has just greeted you and asked how you are. Do not end the exchange here.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "friend",
+      speakerLabel: "Colleague",
+      speakerText: "Malonu susipažinti! Iš kur ji yra?",
+      sceneDirection: "Rokas asks about Barbora, whose home country is Lithuania.",
+      learnerPrompt: "Tell Rokas where Barbora is from.",
+      options: [
+        {
+          id: "a",
+          text: "Ji yra iš Anglijos.",
+          result: "wrong",
+          feedback: "Anglijos means from England. Barbora is from Lithuania.",
+          progresses: false,
+        },
+        {
+          id: "b",
+          text: "Ji yra iš Lietuvos.",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Jis yra iš Lietuvos.",
+          result: "wrong",
+          feedback: "Jis means he. Rokas asked about Barbora, so say ji.",
+          progresses: false,
+        }
+      ],
+    }
+  ],
+},
+        ],
+      },
+
+      // ── Lesson 5 ──────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_2_lesson_5",
+        code: "1.2.5",
+        title: "People Around You",
+        purpose: "Seed six common people nouns and reuse language the learner already knows without turning this into a full family lesson.",
+        supportLevel: "medium",
+        newLanguageLoad: "medium",
+        notes: {
+          pattern: "Learn these as useful people nouns first. Brolis and sesuo also fit naturally into the introduction pattern you already know: Čia mano brolis / Čia mano sesuo.",
+          usage: [
+            "Vyras — man",
+            "Moteris — woman",
+            "Berniukas — boy",
+            "Mergaitė — girl",
+            "Brolis — brother",
+            "Sesuo — sister",
+            "Čia mano brolis — This is my brother",
+            "Čia mano sesuo — This is my sister",
+          ],
+        },
+        blocks: [
+          {
+            id: "s1m2l5_b1",
+            type: "learn",
+            title: "People around you",
+            items: [
+              { id: "p1", lt: "Vyras", en: "Man", audioText: "Vyras", saveable: true, core: true },
+              { id: "p2", lt: "Moteris", en: "Woman", audioText: "Moteris", saveable: true, core: true },
+              { id: "p3", lt: "Berniukas", en: "Boy", audioText: "Berniukas", saveable: true, core: true },
+              { id: "p4", lt: "Mergaitė", en: "Girl", audioText: "Mergaitė", saveable: true, core: true },
+              { id: "p5", lt: "Brolis", en: "Brother", audioText: "Brolis", saveable: true, core: true },
+              { id: "p6", lt: "Sesuo", en: "Sister", audioText: "Sesuo", saveable: true, core: true },
+            ],
+          },
+          {
+            id: "s1m2l5_b3",
+            type: "listen_mcq",
+            title: "Listen and choose",
+            prompt: { text: "Moteris", audioText: "Moteris" },
+            options: [
+              { id: "a", text: "Girl", isCorrect: false },
+              { id: "b", text: "Woman", isCorrect: true },
+              { id: "c", text: "Man", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2l5_b4",
+            type: "context_gap_select",
+            prompt: "Choose the word that completes the introduction",
+            sentence: "Čia mano ___.",
+            translation_en: "This is my brother.",
+            options: [
+              { id: "a", text: "sesuo", isCorrect: false },
+              { id: "b", text: "brolis", isCorrect: true },
+              { id: "c", text: "mergaitė", isCorrect: false },
+            ],
+            explanation: "Brolis means brother. Čia mano brolis is a natural short introduction.",
+          },
+          {
+            id: "s1m2l5_b5",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "This is my sister" },
+            tokens: [
+              { id: "t1", text: "Čia", correctIndex: 0 },
+              { id: "t2", text: "mano", correctIndex: 1 },
+              { id: "t3", text: "sesuo", correctIndex: 2 },
+              { id: "t4", text: "brolis", isDistractor: true },
+            ],
+            answerText: "Čia mano sesuo",
+          },
+          {
+            id: "s1m2l5_b6",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say: This is my brother",
+            targetText: "Čia mano brolis",
+            audioText: "Čia mano brolis",
+          },
+          {
+            id: "s1m2l5_b2",
+            type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "People", pairIds: ["m1", "m2", "m3", "m4"] },
+              { id: "group_2", label: "Family and meeting", pairIds: ["m5", "m6", "m11", "m12"] },
+              { id: "group_3", label: "Informal and formal questions", pairIds: ["m7", "m8", "m9", "m10"] },
+              { id: "group_4", label: "Friends and colleagues", pairIds: ["m15", "m16", "m17", "m18"] },
+              { id: "group_5", label: "Introducing someone", pairIds: ["m13", "m14", "m19", "m20"] },
+            ],
+            title: "Match what you know",
+            pairs: [
+              // New people vocabulary
+              { id: "m1", lt: "Vyras", en: "Man", audioText: "Vyras" },
+              { id: "m2", lt: "Moteris", en: "Woman", audioText: "Moteris" },
+              { id: "m3", lt: "Berniukas", en: "Boy", audioText: "Berniukas" },
+              { id: "m4", lt: "Mergaitė", en: "Girl", audioText: "Mergaitė" },
+              { id: "m5", lt: "Brolis", en: "Brother", audioText: "Brolis" },
+              { id: "m6", lt: "Sesuo", en: "Sister", audioText: "Sesuo" },
+              // Spaced retrieval from earlier Module 1.2 lessons
+              { id: "m7", lt: "Koks tavo vardas?", en: "What is your name? (informal)", audioText: "Koks tavo vardas" },
+              { id: "m8", lt: "Koks jūsų vardas?", en: "What is your name? (formal)", audioText: "Koks jūsų vardas" },
+              { id: "m9", lt: "Iš kur tu esi?", en: "Where are you from? (informal)", audioText: "Iš kur tu esi" },
+              { id: "m10", lt: "Iš kur jūs esate?", en: "Where are you from? (formal)", audioText: "Iš kur jūs esate" },
+              { id: "m11", lt: "Malonu susipažinti", en: "Nice to meet you", audioText: "Malonu susipažinti" },
+              { id: "m12", lt: "Man irgi", en: "Me too / Likewise", audioText: "Man irgi" },
+              { id: "m13", lt: "Labai malonu susipažinti", en: "Very pleased to meet you", audioText: "Labai malonu susipažinti" },
+              { id: "m14", lt: "Čia yra…", en: "This is…", audioText: "Čia yra" },
+              { id: "m15", lt: "Jis yra mano draugas", en: "He is my friend", audioText: "Jis yra mano draugas" },
+              { id: "m16", lt: "Ji yra mano draugė", en: "She is my friend", audioText: "Ji yra mano draugė" },
+              { id: "m17", lt: "Jis yra mano kolega", en: "He is my colleague", audioText: "Jis yra mano kolega" },
+              { id: "m18", lt: "Ji yra mano kolegė", en: "She is my colleague", audioText: "Ji yra mano kolegė" },
+              { id: "m19", lt: "Jis yra iš Lenkijos", en: "He is from Poland", audioText: "Jis yra iš Lenkijos" },
+              { id: "m20", lt: "Ji yra iš Vokietijos", en: "She is from Germany", audioText: "Ji yra iš Vokietijos" },
+            ],
+          },
+        ],
+      },
+
+      // ── Checkpoint ────────────────────────────────────────────────────────────
+      {
+        id: "section_1_module_2_checkpoint",
+        code: "1.2.C",
+        title: "Checkpoint",
+        purpose: "Check you can recall and use Module 1.2 language without support.",
+        supportLevel: "none",
+        newLanguageLoad: "none",
+        isCheckpoint: true,
+        blocks: [
+          {
+            id: "s1m2c_b1",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "You meet someone at a formal event. They ask: Koks jūsų vardas?" },
+            options: [
+              { id: "a", text: "Aš esu iš Škotijos", isCorrect: false },
+              { id: "b", text: plainNameLine, isCorrect: true },
+              { id: "c", text: "Malonu susipažinti", isCorrect: false },
+            ],
+            feedback: { correct: "Mano vardas is the direct and natural reply to a name question." },
+          },
+          {
+            id: "s1m2c_b2",
+            type: "listen_mcq",
+            title: "Listen and identify",
+            prompt: { text: "Moteris", audioText: "Moteris" },
+            options: [
+              { id: "a", text: "Man", isCorrect: false },
+              { id: "b", text: "Woman", isCorrect: true },
+              { id: "c", text: "Girl", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2c_b3",
+            type: "context_gap_select",
+            prompt: "Choose the word that completes the introduction",
+            sentence: "Čia mano ___.",
+            translation_en: "This is my brother.",
+            options: [
+              { id: "a", text: "sesuo", isCorrect: false },
+              { id: "b", text: "brolis", isCorrect: true },
+              { id: "c", text: "draugė", isCorrect: false },
+            ],
+            explanation: "Brolis means brother.",
+          },
+          {
+            id: "s1m2c_b4",
+            type: "recognise_mcq",
+            title: "Choose the correct meaning",
+            prompt: { text: "Ji yra mano sesuo", audioText: "Ji yra mano sesuo" },
+            options: [
+              { id: "a", text: "She is my sister", isCorrect: true },
+              { id: "b", text: "She is my friend", isCorrect: false },
+              { id: "c", text: "He is my brother", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2c_b5",
+            type: "build_phrase",
+            title: "Build the phrase",
+            prompt: { text: "Where are you from? (formal)" },
+            tokens: [
+              { id: "t1", text: "Iš", correctIndex: 0 },
+              { id: "t2", text: "kur", correctIndex: 1 },
+              { id: "t3", text: "jūsų", isDistractor: true, repairHint: "jūsų means “your” (polite/plural). Here the phrase is asking about the person, not possession, so “your” doesn’t fit." },
+              { id: "t4", text: "jūs", correctIndex: 2 },
+              { id: "t5", text: "esate?", correctIndex: 3 },
+            ],
+            answerText: "Iš kur jūs esate?",
+          },
+          {
+            id: "s1m2c_b6",
+            type: "listen_mcq",
+            title: "Listen and identify",
+            prompt: { text: "Malonu susipažinti", audioText: "Malonu susipažinti" },
+            options: [
+              { id: "a", text: "How are you?", isCorrect: false },
+              { id: "b", text: "Nice to meet you", isCorrect: true },
+              { id: "c", text: "Me too", isCorrect: false },
+            ],
+          },
+          {
+            id: "s1m2c_b7",
+            type: "speak_self_check",
+            title: "Say it out loud",
+            prompt: "Say where you are from — use your own country",
+            targetText: selfFromLineNoPeriod,
+            audioText: selfFromLineNoPeriod,
+          },
+          {
+            id: "s1m2c_b8",
+            type: "best_response",
+            title: "Choose the best response",
+            prompt: { text: "Ona says Malonu susipažinti. What do you say back?" },
+            options: [
+              { id: "a", text: "Man irgi.", isCorrect: true },
+              { id: "b", text: "Gerai, ačiū", isCorrect: false },
+              { id: "c", text: "Iš kur tu esi?", isCorrect: false },
+            ],
+            feedback: { correct: "Man irgi — me too. The natural reply to Malonu susipažinti." },
+          },
+          {
+  id: "s1m2c_b9_v2",
+  type: "scenario_v2",
+  title: "Conversation",
+  description: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
+  sceneIntro: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
+  location: "real-life exchange",
+  userRole: "learner",
+  register: "polite_neutral",
+  goal: "You're at a welcome event in Vilnius. A local, Rokas, comes over to say hello.",
+  focus: ["greetings"],
+  participants: [
+    {
+      "id": "local",
+      "label": "Local",
+      "name": "Rokas",
+      "role": "local speaker",
+      "gender": "male",
+      "relationshipToUser": "stranger",
+      "register": "polite_neutral"
+    },
+    {
+      "id": "sister",
+      "label": "Sister",
+      "name": "Rasa",
+      "role": "Rokas's sister",
+      "gender": "female",
+      "relationshipToUser": "stranger",
+      "register": "polite_friendly"
+    },
+  ],
+  steps: [
+    {
+      id: "step_1",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Laba diena! Aš esu Rokas. Koks jūsų vardas?",
+      sceneDirection: "Rokas tells you his name and asks for yours.",
+      learnerPrompt: "Introduce yourself.",
+      options: [
+        {
+          id: "a",
+          text: `Laba diena! Aš esu ${userNameSafe}.`,
+          result: "acceptable",
+          feedback: "Aš esu with your name is natural too. Mano vardas is the direct name phrase here.",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: introWithName,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "c",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "Rokas has just asked your name. Do not end the exchange here.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_2",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Iš kur jūs esate?",
+      sceneDirection: "Rokas now asks where you are from.",
+      learnerPrompt: "Tell him your home country.",
+      options: [
+        {
+          id: "a",
+          text: selfFromLine,
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: plainNameLine,
+          result: "wrong",
+          feedback: "That repeats your name. Rokas asks where you are from.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: `Aš esu iš ${normaliseCountry(userFromCountryLtGenitive) === "lietuvos" ? "Anglijos" : "Lietuvos"}.`,
+          result: "wrong",
+          feedback: "That names a different country. Choose your own home country.",
+          progresses: false,
+        }
+      ],
+    },
+    {
+      id: "step_3",
+      speakerId: "local",
+      speakerLabel: "Local",
+      speakerText: "Čia mano sesuo Rasa.",
+      sceneDirection: "Rokas gestures to the woman standing beside him and introduces his sister.",
+      learnerPrompt: "Greet Rasa naturally.",
+      options: [
+        {
+          id: "a",
+          text: "Malonu susipažinti!",
+          result: "best",
+          progresses: true,
+        },
+        {
+          id: "b",
+          text: "Viso gero!",
+          result: "wrong",
+          feedback: "Rokas has just introduced Rasa. Greet her rather than ending the exchange.",
+          progresses: false,
+        },
+        {
+          id: "c",
+          text: "Ne, ačiū.",
+          result: "wrong",
+          feedback: "Nothing is being offered. Respond to the introduction.",
+          progresses: false,
+        }
+      ],
+      finalSystemLine: {
+        speakerId: "sister",
+        speakerLabel: "Sister",
+        speakerText: "Man irgi!",
+        sceneDirection: "Rasa smiles and returns the greeting.",
+      },
+    }
+  ],
+},
+          {
+            id: "s1m2c_b10",
+            type: "word_match",
+            pairPages: [
+              { id: "group_1", label: "Identity and places", pairIds: ["wm1", "wm2", "wm5", "wm20"] },
+              { id: "group_2", label: "Informal and formal questions", pairIds: ["wm3", "wm4", "wm9", "wm10"] },
+              { id: "group_3", label: "People", pairIds: ["wm6", "wm7", "wm8", "wm17"] },
+              { id: "group_4", label: "Family and connections", pairIds: ["wm18", "wm19", "wm14", "wm15", "wm16"] },
+              { id: "group_5", label: "Meeting someone", pairIds: ["wm11", "wm12", "wm13"] },
+            ],
+            title: "Match the pairs",
+            pairs: [
+              { id: "wm1",  lt: "Aš esu",                    en: "I am",                             audioText: "Aš esu" },
+              { id: "wm2",  lt: "Mano vardas",               en: "My name is",                      audioText: "Mano vardas" },
+              { id: "wm3",  lt: "Koks tavo vardas?",         en: "What is your name? (informal)",   audioText: "Koks tavo vardas" },
+              { id: "wm4",  lt: "Koks jūsų vardas?",         en: "What is your name? (formal)",     audioText: "Koks jūsų vardas" },
+              { id: "wm5",  lt: "Aš esu iš Škotijos",        en: "I am from Scotland",              audioText: "Aš esu iš Škotijos" },
+              { id: "wm6",  lt: "Vyras",                     en: "Man",                             audioText: "Vyras" },
+              { id: "wm7",  lt: "Moteris",                   en: "Woman",                           audioText: "Moteris" },
+              { id: "wm8",  lt: "Berniukas",                 en: "Boy",                             audioText: "Berniukas" },
+              { id: "wm9",  lt: "Iš kur jūs esate?",         en: "Where are you from? (formal)",    audioText: "Iš kur jūs esate" },
+              { id: "wm10", lt: "Iš kur tu esi?",            en: "Where are you from? (informal)",  audioText: "Iš kur tu esi" },
+              { id: "wm11", lt: "Malonu susipažinti",        en: "Nice to meet you",                audioText: "Malonu susipažinti" },
+              { id: "wm12", lt: "Man irgi",                  en: "Me too / Likewise",               audioText: "Man irgi" },
+              { id: "wm13", lt: "Labai malonu susipažinti",  en: "Very pleased to meet you",        audioText: "Labai malonu susipažinti" },
+              { id: "wm14", lt: "Jis yra mano kolega",       en: "He is my colleague",              audioText: "Jis yra mano kolega" },
+              { id: "wm15", lt: "Jis yra mano draugas",      en: "He is my friend",                 audioText: "Jis yra mano draugas" },
+              { id: "wm16", lt: "Ji yra mano draugė",        en: "She is my friend",                audioText: "Ji yra mano draugė" },
+              { id: "wm17", lt: "Mergaitė",                  en: "Girl",                            audioText: "Mergaitė" },
+              { id: "wm18", lt: "Brolis",                    en: "Brother",                         audioText: "Brolis" },
+              { id: "wm19", lt: "Sesuo",                     en: "Sister",                          audioText: "Sesuo" },
+              { id: "wm20", lt: "Prancūzija",                en: "France",                          audioText: "Prancūzija" },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}

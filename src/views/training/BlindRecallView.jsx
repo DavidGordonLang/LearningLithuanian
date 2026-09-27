@@ -5,6 +5,8 @@ import { useRecallFlipSession } from "../../hooks/training/useRecallFlipSession"
 import { useRecallFlipAudio } from "../../hooks/training/useRecallFlipAudio";
 import { AudioButtons, SummaryModal } from "./recallFlip/RecallFlipParts";
 import { recallFlipCss } from "./recallFlip/recallFlipStyles";
+import InteractivePhraseText from "../../components/audio/InteractivePhraseText";
+import TrainingBackButton from "./TrainingBackButton";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -156,38 +158,17 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
 
   const isLtVisible = !!a.isLtVisible;
   const canPlayLt = !!a.canPlayLt;
-
   const hasAttempt = !!attempt?.trim();
 
-  const BackCircle = (
-    <button
-      type="button"
-      data-press
-      onClick={hardExit}
-      className={cn(
-        "h-10 w-10 rounded-full border flex items-center justify-center",
-        "bg-white/[0.06] border-white/10",
-        "shadow-[0_10px_30px_rgba(0,0,0,0.45)]",
-        "hover:bg-white/[0.08] active:scale-[0.99] transition"
-      )}
-      aria-label="Back"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M15 18l-6-6 6-6"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.95"
-        />
-      </svg>
-    </button>
-  );
+  const handleWordPlay = (text, opts) => {
+    if (!text) return;
+    return playText?.(text, opts);
+  };
+
+  const BackCircle = <TrainingBackButton onClick={hardExit} />;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-5 rf-root">
-      {/* Header */}
       <div className="grid grid-cols-[44px_1fr_44px] items-center">
         <div className="flex items-center justify-start">{BackCircle}</div>
 
@@ -245,7 +226,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                   <div className="rf-center-zone flex-1 min-h-0">
                     <div className="rf-hero-text">{promptEn || "—"}</div>
 
-                    {/* BIGGER input block: full width, taller textarea */}
                     <div className="mt-6 w-full">
                       <div className="text-xs text-zinc-400 mb-2 text-center">
                         Your Lithuanian
@@ -260,7 +240,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           className={cn(
                             "w-full rounded-2xl border bg-zinc-950/40 text-sm",
                             "border-zinc-800 focus:border-emerald-500/60 focus:outline-none",
-                            // taller + feels “premium”
                             "px-4 py-4",
                             "min-h-[124px]",
                             s.busy ? "opacity-70" : ""
@@ -270,7 +249,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           onFocus={() => a.resetAudio?.()}
                         />
 
-                        {/* ICON-ONLY mic (no circle). pushed into corner */}
                         <button
                           type="button"
                           data-press
@@ -300,7 +278,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           }
                           aria-label="Tap to speak"
                         >
-                          {/* pulse ring */}
                           {micActive && (
                             <span className="absolute inset-0 rounded-full br-mic-pulse-ring" aria-hidden="true" />
                           )}
@@ -336,7 +313,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                     </div>
                   </div>
 
-                  {/* Centred Reveal */}
                   <div className="mt-5 flex justify-center">
                     <button
                       type="button"
@@ -360,7 +336,14 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                 {/* BACK */}
                 <div className="rf-face rf-back p-6 flex flex-col">
                   <div className="text-center">
-                    <div className="rf-hero-text">{answerLt || "—"}</div>
+                    <div className="rf-hero-text">
+                      <InteractivePhraseText
+                        text={answerLt || "—"}
+                        playText={handleWordPlay}
+                        wordClassName="touch-manipulation"
+                      />
+                    </div>
+
                     <div className="rf-sub-text mt-2">{promptEn || ""}</div>
 
                     <div className="mt-3 flex justify-center">
@@ -371,7 +354,9 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
                           onPlay={() => a.playNormal?.()}
                           onPlaySlow={() => a.playSlow?.()}
                           disabledReason={
-                            typeof playText !== "function" ? "Audio unavailable" : "Play Lithuanian"
+                            typeof playText !== "function"
+                              ? "Audio unavailable"
+                              : "Play Lithuanian"
                           }
                         />
                       )}
@@ -452,7 +437,6 @@ export default function BlindRecallView({ rows, focus, onBack, playText, showToa
               </div>
             </div>
 
-            {/* Local pulse CSS */}
             <style>{`
               @keyframes brMicPulse {
                 0%   { transform: scale(1); opacity: 0.55; }
@@ -496,11 +480,11 @@ function filterByFocus(rows, focus) {
   const sheet = (r) => String(r?.Sheet || "Phrases");
   return rows.filter((r) => {
     const s = sheet(r);
-    if (focus === "all") return true;
+    if (focus === "all") return s === "Phrases" || s === "Questions" || s === "Words";
     if (focus === "phrases") return s === "Phrases" || s === "Questions";
     if (focus === "words") return s === "Words";
     if (focus === "numbers") return s === "Numbers";
-    return true;
+    return s === "Phrases" || s === "Questions";
   });
 }
 
