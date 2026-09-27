@@ -8,7 +8,7 @@ import { isScoreableBlock } from './trainingScoring.js';
 // Bump this epoch when the meaning of an existing lesson/block ID changes.
 // Structural changes also invalidate progress automatically. Never renumber IDs
 // to mean different learning without changing this epoch.
-export const CURRICULUM_EPOCH = 'beta3-1';
+export const CURRICULUM_EPOCH = 'beta3-2';
 export const curriculumSections = [createSection1(), createSection2(), createSection3(), createSection4(), createSection5()];
 export const curriculumLessons = Object.fromEntries(curriculumSections.flatMap(s => s.modules.flatMap(m => m.isSectionCheckpoint ? [m] : m.lessons || [])).map(l => [l.id, l]));
 const structure = JSON.stringify(Object.values(curriculumLessons).map(l => [l.id, l.blocks.map(b => [b.id, b.type])]));
