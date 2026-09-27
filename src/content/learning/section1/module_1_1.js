@@ -409,7 +409,7 @@ const module_1_1 =     {
                   speakerId: "barista",
                   speakerLabel: "Barista",
                   speakerText: "Laba diena. Ko norėtumėte?",
-                  speakerTextEn: "Good afternoon. What would you like?",
+                  speakerTextEn: "Good day. What would you like?",
                   supportText: "Ko norėtumėte? means “What would you like?” Norėtumėte is the polite “would you like” form.",
                   sceneDirection: "Ieva smiles and waits for your order.",
                   learnerPrompt: "You want one coffee. What do you say?",
