@@ -21,7 +21,7 @@ export default function createModule_4_1(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "You already know Noriu… from Section 2. This lesson uses that familiar frame to add food: sriuba becomes sriubos, tortas becomes torto, and ledai becomes ledų after Noriu. Learn the useful chunks rather than memorising a grammar label.",
+          pattern: "You already know Noriu… from Section 2. First meet the food names sriuba (soup), tortas (cake), and ledai (ice cream). After Noriu, use sriubos, torto, and ledų. Same food, a different job in the sentence.",
           usage: [
             "Noriu kavos — I want coffee (already known)",
             "Noriu vandens — I want water (already known)",
@@ -36,6 +36,9 @@ export default function createModule_4_1(profile = {}) {
             type: "learn",
             title: "New food with a familiar pattern",
             items: [
+              { id: "ow1", lt: "sriuba", en: "soup", audioText: "sriuba", saveable: true, core: false },
+              { id: "ow2", lt: "tortas", en: "cake", audioText: "tortas", saveable: true, core: false },
+              { id: "ow3", lt: "ledai", en: "ice cream", audioText: "ledai", saveable: true, core: false },
               { id: "ow4", lt: "Noriu sriubos.", en: "I want soup.", audioText: "Noriu sriubos", saveable: true, core: true },
               { id: "ow5", lt: "Noriu torto.", en: "I want cake.", audioText: "Noriu torto", saveable: true, core: true },
               { id: "ow6", lt: "Noriu ledų.", en: "I want ice cream.", audioText: "Noriu ledų", saveable: true, core: true },
@@ -106,7 +109,7 @@ export default function createModule_4_1(profile = {}) {
                   { id: "a", text: "Laba diena! Noriu sriubos, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Laba diena! Noriu torto, prašau.", result: "best", progresses: true },
                   { id: "c", text: "Laba diena! Noriu ledų, prašau.", result: "best", progresses: true },
-                  { id: "d", text: "Viso gero.", result: "wrong", feedback: "That ends the conversation instead of ordering.", progresses: false },
+                  { id: "d", text: "Laba diena! Noriu kavos, prašau.", result: "wrong", feedback: "Coffee is a drink; you are choosing something to eat from soup, cake or ice cream.", progresses: false },
                 ],
               },
               {
@@ -157,6 +160,7 @@ export default function createModule_4_1(profile = {}) {
                 learnerPrompt: "Thank Ieva and say goodbye.",
                 options: [
                   { id: "a", text: "Ačiū labai! Viso gero.", result: "best", progresses: true },
+                  { id: "d", text: "Ačiū!", result: "acceptable", feedback: "A simple thank-you is natural when Ieva hands over your order.", progresses: true },
                   { id: "b", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology; the transaction is complete.", progresses: false },
                   { id: "c", text: "Dar vieną, prašau.", result: "wrong", feedback: "The scene says you are finished and ready to leave.", progresses: false },
                 ],
@@ -213,9 +217,9 @@ export default function createModule_4_1(profile = {}) {
             title: "Choose the best response",
             prompt: { text: "You're ordering at a café. A member of staff is waiting. What sounds most natural?" },
             options: [
-              { id: "a", text: "Noriu kavos.", isCorrect: false },
+              { id: "a", text: "Noriu kavos.", isCorrect: false, result: "awkward", feedback: "Clear and understandable, but Norėčiau sounds more polite when ordering from staff.", betterAnswer: "Norėčiau kavos." },
               { id: "b", text: "Norėčiau kavos.", isCorrect: true },
-              { id: "c", text: "Kavos.", isCorrect: false },
+              { id: "c", text: "Kavos.", isCorrect: false, result: "awkward", feedback: "This is understandable at a café, but adding prašau or using Norėčiau makes the request warmer.", betterAnswer: "Norėčiau kavos." },
             ],
             feedback: { correct: "Norėčiau kavos — I would like coffee. Polite and natural in any café or restaurant setting." },
           },
@@ -250,7 +254,7 @@ export default function createModule_4_1(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Norėčiau kavos, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Laba diena! Noriu kavos.", result: "awkward", feedback: "Understandable, but Norėčiau is the more natural polite service form you are practising.", betterAnswer: "Laba diena! Norėčiau kavos, prašau.", progresses: true },
-                  { id: "c", text: "Viso gero.", result: "wrong", feedback: "That ends the conversation instead of ordering.", progresses: false },
+                  { id: "c", text: "Laba diena! Norėčiau arbatos, prašau.", result: "wrong", feedback: "You want coffee, not tea.", progresses: false },
                 ],
               },
               {
@@ -263,7 +267,7 @@ export default function createModule_4_1(profile = {}) {
                 options: [
                   { id: "a", text: "Norėčiau vandens, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Ne, ačiū.", result: "wrong", feedback: "The scene says you also want water.", progresses: false },
-                  { id: "c", text: "Viso gero.", result: "wrong", feedback: "You are still ordering.", progresses: false },
+                  { id: "c", text: "Norėčiau arbatos, prašau.", result: "wrong", feedback: "You already ordered coffee and now want to add water, not tea.", progresses: false },
                 ],
               },
               {
@@ -301,6 +305,7 @@ export default function createModule_4_1(profile = {}) {
                 learnerPrompt: "Thank her and say goodbye.",
                 options: [
                   { id: "a", text: "Ačiū labai! Viso gero.", result: "best", progresses: true },
+                  { id: "d", text: "Ačiū!", result: "acceptable", feedback: "A simple thank-you works after Ieva hands over your order.", progresses: true },
                   { id: "b", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology.", progresses: false },
                   { id: "c", text: "Dar vieną, prašau.", result: "wrong", feedback: "The transaction is finished.", progresses: false },
                 ],
@@ -319,7 +324,7 @@ export default function createModule_4_1(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "low_to_medium",
         notes: {
-          pattern: "After Noriu/Norėčiau, use Šito/To. When you're simply pointing and saying 'this one/that one, please', use Šitą/Tą. Both patterns work naturally at a counter — learn them as two useful chunks.",
+          pattern: "After Noriu/Norėčiau, use šito/to: Norėčiau šito. At a counter, Šito/To, prašau also works on its own — these are the forms you will practise here. Šitą/Tą, prašau are other short ways to choose an item; keep each whole phrase together.",
           usage: [
             "Šito, prašau — This one, please",
             "To, prašau — That one, please",
@@ -395,7 +400,7 @@ export default function createModule_4_1(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Šito, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Laba diena! To, prašau.", result: "wrong", feedback: "The scene says you want the item nearest you.", progresses: false },
-                  { id: "c", text: "Viso gero.", result: "wrong", feedback: "You have just arrived.", progresses: false },
+                  { id: "c", text: "Laba diena! Dar vieną, prašau.", result: "wrong", feedback: "Dar vieną asks for another; you are choosing your first item, the nearer one.", progresses: false },
                 ],
               },
               {
@@ -444,6 +449,7 @@ export default function createModule_4_1(profile = {}) {
                 learnerPrompt: "Close naturally.",
                 options: [
                   { id: "a", text: "Ačiū! Viso gero.", result: "best", progresses: true },
+                  { id: "c", text: "Ačiū!", result: "acceptable", feedback: "A thank-you is natural as Tomas completes the purchase.", progresses: true },
                   { id: "b", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology.", progresses: false },
                 ],
               },
@@ -461,7 +467,7 @@ export default function createModule_4_1(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "When you order, the drink word changes its ending — and so does the number. Du (two) becomes dvi before feminine nouns like arbata: dvi arbatas. Kava becomes kavą, arbata becomes arbatas, vanduo becomes vandenį. This is Lithuanian showing the role of words through their endings. Just notice it for now — the patterns will become familiar.",
+          pattern: "When you order a counted drink, both the number and the drink can change: du → dvi with arbata, then dvi arbatas; kava → kavą in vieną kavą. For a glass of water, you order the glass: vieną stiklinę vandens. Vandens means 'of water' in that useful phrase. Learn the whole order rather than swapping in the direct-object form from another sentence.",
           usage: [
             "vieną kavą — one coffee (kavą, not kava)",
             "dvi arbatas — two teas (dvi, not du; arbatas, not arbata)",
@@ -547,7 +553,7 @@ export default function createModule_4_1(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Dvi arbatas, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Laba diena! Du arbatos, prašau.", result: "wrong", feedback: "With arbata, use the feminine quantity form dvi and the order form arbatas.", progresses: false },
-                  { id: "c", text: "Viso gero.", result: "wrong", feedback: "You have just arrived.", progresses: false },
+                  { id: "c", text: "Laba diena! Dvi kavas, prašau.", result: "wrong", feedback: "That asks for two coffees; both of you want tea.", progresses: false },
                 ],
               },
               {
@@ -596,6 +602,7 @@ export default function createModule_4_1(profile = {}) {
                 learnerPrompt: "Thank her and close.",
                 options: [
                   { id: "a", text: "Ačiū labai! Viso gero.", result: "best", progresses: true },
+                  { id: "c", text: "Ačiū!", result: "acceptable", feedback: "A brief thank-you is natural when Ieva hands you the drinks.", progresses: true },
                   { id: "b", text: "Dar vieną, prašau.", result: "wrong", feedback: "Your order is complete.", progresses: false },
                 ],
               },
@@ -724,7 +731,7 @@ export default function createModule_4_1(profile = {}) {
                 options: [
                   { id: "a", text: "Laba diena! Vieną kavą ir vieną arbatą, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Laba diena! Dvi arbatas, prašau.", result: "wrong", feedback: "The scene says one coffee and one tea.", progresses: false },
-                  { id: "c", text: "Viso gero.", result: "wrong", feedback: "You have just arrived.", progresses: false },
+                  { id: "c", text: "Laba diena! Dvi kavas, prašau.", result: "wrong", feedback: "You need one coffee and one tea, not two coffees.", progresses: false },
                 ],
               },
               {
@@ -785,6 +792,7 @@ export default function createModule_4_1(profile = {}) {
                 learnerPrompt: "Close naturally.",
                 options: [
                   { id: "a", text: "Ačiū! Viso gero!", result: "best", progresses: true },
+                  { id: "c", text: "Ačiū!", result: "acceptable", feedback: "Thanking Ieva as you leave is natural.", progresses: true },
                   { id: "b", text: "Atsiprašau.", result: "wrong", feedback: "Nothing needs an apology.", progresses: false },
                 ],
               },

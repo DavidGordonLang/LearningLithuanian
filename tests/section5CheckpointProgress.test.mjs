@@ -22,7 +22,7 @@ const attempt = (index = 2) => ({
 
 test('real Section 5 checkpoint is the unique active final catalogue item with stable scoreable blocks', () => {
   assert.equal(CURRICULUM_EPOCH, 'beta3-1');
-  assert.equal(CURRICULUM_ID, 'beta3-1-8cf80a6d');
+  assert.equal(CURRICULUM_ID, 'beta3-1-8c71686f');
   assert.equal(allIds.length, 115);
   assert.equal(allIds.at(-1), id);
   assert.equal(curriculumLessons[id], checkpoint);

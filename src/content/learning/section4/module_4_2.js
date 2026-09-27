@@ -103,7 +103,7 @@ export default function createModule_4_2(profile = {}) {
                   { id: "a", text: "Laba diena! Norėčiau kavos, prašau.", result: "best", progresses: true },
                   { id: "b", text: "Kavos, prašau.", result: "acceptable", feedback: "This is short but natural and polite. Norėčiau kavos, prašau is the fuller polite form.", progresses: true },
                   { id: "c", text: "Laba diena! Noriu kavos.", result: "awkward", feedback: "Understandable, but Noriu is more direct in a service setting. Norėčiau is the more natural polite choice here.", betterAnswer: "Laba diena! Norėčiau kavos, prašau.", progresses: true },
-                  { id: "d", text: "Viso gero.", result: "wrong", feedback: "You are ordering, not leaving.", progresses: false },
+                  { id: "d", text: "Laba diena! Norėčiau arbatos, prašau.", result: "wrong", feedback: "You want coffee, not tea.", progresses: false },
                 ],
               },
               {
@@ -244,7 +244,7 @@ export default function createModule_4_2(profile = {}) {
                 learnerPrompt: "Order coffee politely.",
                 options: [
                   { id: "a", text: "Laba diena! Norėčiau kavos, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Viso gero.", result: "wrong", feedback: "You have just arrived.", progresses: false },
+                  { id: "b", text: "Norėčiau arbatos, prašau.", result: "wrong", feedback: "You came for coffee to take away, not tea.", progresses: false },
                 
         {"id":"z","text":"Norėčiau kavos, prašau.","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
       ],
@@ -278,7 +278,7 @@ export default function createModule_4_2(profile = {}) {
                   { id: "a", text: "Kiek tai kainuoja?", result: "best", progresses: true },
                   { id: "b", text: "Ar toli?", result: "wrong", feedback: "You need the price, not the distance.", progresses: false },
                 
-        {"id":"z","text":"Kur yra bankas?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+        {"id":"z","text":"Kur yra bankas?","result":"wrong","feedback":"A bank location does not tell you the price of your coffee.","progresses":false},
       ],
               },
               {
@@ -323,12 +323,14 @@ export default function createModule_4_2(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Su… (with) and be… (without) are small but powerful chunks. They work with any drink or food item.",
+          pattern: "First name the ingredient: pienas (milk), cukrus (sugar), citrina (lemon). In a drink order, these change: pienas → su pienu (with milk), cukrus → be cukraus (without sugar), citrina → su citrina (with lemon). Notice the whole useful chunks; you do not need an endings table.",
           usage: [
             "su pienu — with milk",
             "be cukraus — without sugar",
             "su citrina — with lemon",
+            "citrina → be citrinos — without lemon",
             "Su pienu ar be pieno? — With milk or without milk?",
+            "Ar su cukrumi? — With sugar? (cukrus → su cukrumi)",
           ],
         },
         blocks: [
@@ -337,15 +339,16 @@ export default function createModule_4_2(profile = {}) {
             type: "learn",
             title: "Customising with su and be",
             items: [
-              { id: "cu1", lt: "su pienu", en: "with milk", audioText: "su pienu", saveable: true, core: true },
-              { id: "cu2", lt: "be cukraus", en: "without sugar", audioText: "be cukraus", saveable: true, core: true },
-              { id: "cu3", lt: "su citrina", en: "with lemon", audioText: "su citrina", saveable: true, core: true },
               { id: "cu4", lt: "pienas", en: "milk", audioText: "pienas", saveable: true, core: true },
               { id: "cu5", lt: "cukrus", en: "sugar", audioText: "cukrus", saveable: true, core: true },
               { id: "cu6", lt: "citrina", en: "lemon", audioText: "citrina", saveable: true, core: true },
+              { id: "cu1", lt: "su pienu", en: "with milk", audioText: "su pienu", saveable: true, core: true },
+              { id: "cu2", lt: "be cukraus", en: "without sugar", audioText: "be cukraus", saveable: true, core: true },
+              { id: "cu3", lt: "su citrina", en: "with lemon", audioText: "su citrina", saveable: true, core: true },
               { id: "cu7", lt: "Norėčiau kavos su pienu.", en: "I would like coffee with milk.", audioText: "Norėčiau kavos su pienu", saveable: true, core: true },
               { id: "cu8", lt: "Arbatos be cukraus, prašau.", en: "Tea without sugar, please.", audioText: "Arbatos be cukraus, prašau", saveable: true, core: true },
               { id: "cu9", lt: "Su pienu ar be pieno?", en: "With milk or without milk?", audioText: "Su pienu ar be pieno", saveable: false, core: false },
+              { id: "cu10", lt: "Ar su cukrumi?", en: "With sugar?", audioText: "Ar su cukrumi", saveable: false, core: false },
             ],
           },
           {
@@ -385,19 +388,18 @@ export default function createModule_4_2(profile = {}) {
             ],
             answerText: "Arbatos be cukraus, prašau",
           },
-          // ── Pattern to Notice ────────────────────────────────────────────────
+          // Retrieve the with/without distinction after building the phrase.
           {
             id: "s4m2l3_b5",
-            type: "learn",
-            title: "Pattern to notice — words change form",
-            items: [
-              { id: "pn1", lt: "pienas → su pienu", en: "milk → with milk", audioText: "pienas. su pienu", saveable: false, core: false },
-              { id: "pn2", lt: "cukrus → be cukraus", en: "sugar → without sugar", audioText: "cukrus. be cukraus", saveable: false, core: false },
-              { id: "pn3", lt: "arbata → arbatos", en: "tea → (of) tea", audioText: "arbata. arbatos", saveable: false, core: false },
+            type: "best_response",
+            title: "Choose the useful chunk",
+            prompt: { text: "Your coffee has milk, but you don't want sugar. The barista asks: Ar su cukrumi?" },
+            options: [
+              { id: "a", text: "Ne, be cukraus, prašau.", isCorrect: true },
+              { id: "b", text: "Taip, su cukrumi.", isCorrect: false },
+              { id: "c", text: "Be pieno, prašau.", isCorrect: false },
             ],
-            notes: {
-              pattern: "You may have noticed that pienas becomes pienu after su, and cukrus becomes cukraus after be. Lithuanian words change their endings depending on how they are used in a sentence — this is completely normal and you will see it throughout the language. You have already seen it with kavos, arbatos, vandens when ordering. For now, just notice it happening. The chunks work as they are — you do not need to know the rules to use them correctly.",
-            },
+            feedback: { correct: "Be cukraus means without sugar. Su pienu still describes the milk in your coffee." },
           },
           {
             id: "s4m2l3_b6_v2",
@@ -421,7 +423,7 @@ export default function createModule_4_2(profile = {}) {
                 learnerPrompt: "Order coffee politely.",
                 options: [
                   { id: "a", text: "Laba diena! Norėčiau kavos, prašau.", result: "best", progresses: true },
-                  { id: "b", text: "Viso gero.", result: "wrong", feedback: "You have just arrived.", progresses: false },
+                  { id: "b", text: "Norėčiau arbatos, prašau.", result: "wrong", feedback: "You want coffee to customise with milk, not tea.", progresses: false },
                 
         {"id":"z","text":"Norėčiau kavos, prašau.","result":"acceptable","feedback":"Natural and polite without repeating the greeting.","progresses":true},
       ],
@@ -465,7 +467,7 @@ export default function createModule_4_2(profile = {}) {
                   { id: "a", text: "Kiek tai kainuoja?", result: "best", progresses: true },
                   { id: "b", text: "Kur yra tualetas?", result: "wrong", feedback: "You are checking the price before paying.", progresses: false },
                 
-        {"id":"z","text":"Kur yra bankas?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+        {"id":"z","text":"Kur yra bankas?","result":"wrong","feedback":"A bank location does not tell you the price of this order.","progresses":false},
       ],
               },
               {
@@ -607,7 +609,7 @@ export default function createModule_4_2(profile = {}) {
           id: "a",
           text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Ieva asked whether you want anything else; you are ready to ask for the bill.",
           progresses: false,
         },
         {
@@ -640,7 +642,7 @@ export default function createModule_4_2(profile = {}) {
           id: "a",
           text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You already asked for the bill. Now answer cash or card.",
           progresses: false,
         },
         {"id":"b","text":"Kortele, prašau.","textEn":"By card, please.","result":"wrong","feedback":"The scene says you want to use cash.","progresses":false}
@@ -660,7 +662,7 @@ export default function createModule_4_2(profile = {}) {
           id: "a",
           text: "Kiek tai kainuoja?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You have finished and paid; a price question belongs before payment.",
           progresses: false,
         },
         {
@@ -674,7 +676,7 @@ export default function createModule_4_2(profile = {}) {
           id: "c",
           text: "Kur yra tualetas?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You are leaving after paying, not asking for the toilet.",
           progresses: false,
         }
       ],
@@ -742,12 +744,12 @@ export default function createModule_4_2(profile = {}) {
   id: "s4m2l5_b5_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "A complete café visit from greeting to goodbye.",
-  sceneIntro: "A complete café visit from greeting to goodbye.",
+  description: "You have time to drink a coffee here, without milk. Afterwards, pay and leave.",
+  sceneIntro: "You have time to drink a coffee at the café. You prefer it without milk. After the coffee, you will pay and leave.",
   location: "real-life exchange",
   userRole: "learner",
   register: "polite_service",
-  goal: "A complete café visit from greeting to goodbye.",
+  goal: "Order coffee for here without milk, request the bill after drinking it, and pay.",
   focus: ["greetings"],
   participants: [
     {
@@ -782,14 +784,14 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Laba diena! Ko norėtumėte?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You want coffee and have just arrived.",
+      learnerPrompt: "Order coffee politely.",
       options: [
         {
           id: "a",
-          text: "Viso gero.",
+          text: "Laba diena! Norėčiau arbatos.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You came for coffee here, not tea.",
           progresses: false,
         },
         {
@@ -808,14 +810,14 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Čia ar išsinešti?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You will sit and drink the coffee here.",
+      learnerPrompt: "Say that it is for here.",
       options: [
         {
           id: "a",
-          text: "Su pienu, prašau.",
+          text: "Išsinešti, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Išsinešti means to take away; you are drinking here.",
           progresses: false,
         },
         {
@@ -834,14 +836,14 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Su pienu ar be pieno?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You prefer coffee without milk.",
+      learnerPrompt: "Say without milk.",
       options: [
         {
           id: "a",
-          text: "Čia, prašau.",
+          text: "Su pienu, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You prefer coffee without milk; su pienu means with milk.",
           progresses: false,
         },
         {
@@ -853,9 +855,9 @@ export default function createModule_4_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Viso gero.",
+          text: "Be cukraus, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Be cukraus is without sugar; the barista asked whether you want milk.",
           progresses: false,
         }
       ],
@@ -864,16 +866,17 @@ export default function createModule_4_2(profile = {}) {
       id: "step_4",
       speakerId: "local",
       speakerLabel: "Barista",
-      speakerText: "Prašom.",
+      speakerText: "Ar dar ko nors?",
       sceneDirection: "Later, after finishing your coffee, you are ready to pay.",
       learnerPrompt: "Thank the server and ask for the bill.",
       options: [
         {
           id: "a",
           text: "Kiek tai kainuoja?",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          result: "awkward",
+          feedback: "That can ask the total, but after drinking at the café, Sąskaitą, prašau asks directly for the bill.",
+          betterAnswer: "Ačiū! Sąskaitą, prašau.",
+          progresses: true,
         },
         {
           id: "b",
@@ -884,9 +887,9 @@ export default function createModule_4_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Atsiprašau.",
+          text: "Dar vieną, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Dar vieną asks for another; you have finished and want the bill.",
           progresses: false,
         }
       ],
@@ -903,7 +906,7 @@ export default function createModule_4_2(profile = {}) {
           id: "a",
           text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You have already asked for the bill. Now choose a payment method.",
           progresses: false,
         },
         {"id":"b","text":"Kortele, prašau.","textEn":"By card, please.","result":"best","progresses":true}
@@ -911,32 +914,6 @@ export default function createModule_4_2(profile = {}) {
         {"id":"cash","text":"Grynaisiais, prašau.","result":"best","progresses":true},
       ],
     },
-    {
-      id: "step_6",
-      speakerId: "local",
-      speakerLabel: "Barista",
-      speakerText: "Ačiū! Viso gero!",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
-      options: [
-        {
-          id: "a",
-          text: "Atsiprašau.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
-        },
-        {
-          id: "b",
-          text: "Ačiū! Viso gero!",
-          textEn: "Thank you! Goodbye!",
-          result: "best",
-          progresses: true,
-        }
-      ,
-        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
-      ],
-    }
   ],
 },
         ],
@@ -1014,12 +991,12 @@ export default function createModule_4_2(profile = {}) {
   id: "s4m2c_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "A complete café visit — order, customise, pay, and close.",
-  sceneIntro: "A complete café visit — order, customise, pay, and close.",
+  description: "Order tea with lemon to take away and pay in cash.",
+  sceneIntro: "You stop for tea to take away. You want lemon in it and have cash ready for the purchase.",
   location: "real-life exchange",
   userRole: "learner",
   register: "polite_service",
-  goal: "A complete café visit — order, customise, pay, and close.",
+  goal: "Order takeaway tea with lemon and pay in cash.",
   focus: ["ordering","payment"],
   participants: [
     {
@@ -1054,8 +1031,8 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Laba diena! Ko norėtumėte?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You want tea to take away.",
+      learnerPrompt: "Order tea politely.",
       options: [
                 {
           id: "b",
@@ -1066,9 +1043,9 @@ export default function createModule_4_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Viso gero.",
+          text: "Laba diena! Norėčiau kavos, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You want tea with lemon, not coffee.",
           progresses: false,
         }
       ,
@@ -1080,14 +1057,14 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Čia ar išsinešti?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You are taking the tea with you.",
+      learnerPrompt: "Say that it is to go.",
       options: [
         {
           id: "a",
-          text: "Su citrina, prašau.",
+          text: "Čia, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Čia means for here; you want the tea to go.",
           progresses: false,
         },
         {
@@ -1106,14 +1083,14 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Su citrina ar be?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You want lemon in your tea.",
+      learnerPrompt: "Choose tea with lemon.",
       options: [
         {
           id: "a",
-          text: "Išsinešti.",
+          text: "Be citrinos, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Be citrinos means without lemon; you want it with lemon.",
           progresses: false,
         },
         {
@@ -1125,9 +1102,9 @@ export default function createModule_4_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Viso gero.",
+          text: "Be cukraus, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That rejects sugar; the question is whether you want lemon.",
           progresses: false,
         }
       ],
@@ -1137,14 +1114,14 @@ export default function createModule_4_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Barista",
       speakerText: "Prašom. Grynaisiais ar kortele?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Your takeaway tea is ready. You want to pay with the cash you brought.",
+      learnerPrompt: "Choose cash.",
       options: [
         {
           id: "a",
           text: "Ar galėčiau gauti sąskaitą, prašau?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The barista has handed you the tea and asked cash or card, not for the bill again.",
           progresses: false,
         },
         {
@@ -1170,7 +1147,7 @@ export default function createModule_4_2(profile = {}) {
           id: "a",
           text: "Kiek tai kainuoja?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The tea has been paid for; the price question belongs earlier.",
           progresses: false,
         },
         {
@@ -1184,7 +1161,7 @@ export default function createModule_4_2(profile = {}) {
           id: "c",
           text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "No problem needs an apology; the barista is saying goodbye.",
           progresses: false,
         }
       ],
@@ -1219,7 +1196,7 @@ export default function createModule_4_2(profile = {}) {
               { id: "m14", lt: "cukrus",                  en: "sugar",                      audioText: "cukrus" },
               { id: "m15", lt: "citrina",                 en: "lemon",                      audioText: "citrina" },
               { id: "m16", lt: "Ar galėčiau gauti sąskaitą, prašau?",       en: "The bill, please.",          audioText: "Ar galėčiau gauti sąskaitą, prašau" },
-              { id: "m17", lt: "Ar galima mokėti kortele?",  en: "Can I pay by card?",         audioText: "Galima mokėti kortele" },
+              { id: "m17", lt: "Ar galima mokėti kortele?",  en: "Can I pay by card?",         audioText: "Ar galima mokėti kortele" },
               { id: "m18", lt: "Grynaisiais ar kortele?", en: "Cash or card?",              audioText: "Grynaisiais ar kortele" },
               { id: "m19", lt: "Su pienu ar be pieno?",   en: "With milk or without milk?", audioText: "Su pienu ar be pieno" },
               { id: "m20", lt: "Norėčiau užsisakyti.",    en: "I would like to order.",     audioText: "Norėčiau užsisakyti" },

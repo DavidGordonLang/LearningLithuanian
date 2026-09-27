@@ -109,7 +109,7 @@ export default function createModule_4_4(profile = {}) {
                   { id: "a", text: "Taip, aš alkanas. O tu?", result: "best", progresses: true },
                   { id: "b", text: "Ne, ačiū.", result: "wrong", feedback: "The scene says you are hungry.", progresses: false },
                 
-        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"Mantas asked whether you are hungry, not the price of anything.","progresses":false},
       ],
               },
               {
@@ -123,7 +123,7 @@ export default function createModule_4_4(profile = {}) {
                   { id: "a", text: "Aš ištroškęs. Noriu vandens.", result: "best", progresses: true },
                   { id: "b", text: "Užtenka.", result: "wrong", feedback: "You are describing what you need, not stopping a pour.", progresses: false },
                 
-        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"Mantas said he wants a drink; you are thirsty too, so say what you want to drink.","progresses":false},
       ],
               },
               {
@@ -189,7 +189,7 @@ export default function createModule_4_4(profile = {}) {
           {
             id: "s4m4l2_b3",
             type: "recognise_mcq",
-            noOptionAudio: true,
+            optionsLanguage: "lt",
             title: "Choose the natural offer",
             prompt: { text: "You're speaking to one friend. Ask if they want a biscuit / cookie." },
             options: [
@@ -277,7 +277,7 @@ export default function createModule_4_4(profile = {}) {
         supportLevel: "medium",
         newLanguageLoad: "low",
         notes: {
-          pattern: "Pavalgykime, Išgerkime, Eikime — these are invitation forms ending in -kime. Learn them as fixed social chunks. You already know kavinė (café) from Section 2.",
+          pattern: "Pavalgykime, Išgerkime, Eikime — these are invitation forms ending in -kime. Learn them as fixed social chunks. You met kavinė (café) through the kavinė → kavinėje bridge in Section 3.",
           usage: [
             "Pavalgykime — Let's eat",
             "Išgerkime sulčių — Let's drink juice",
@@ -598,8 +598,8 @@ export default function createModule_4_4(profile = {}) {
   id: "s4m4l5_b5_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You and a friend are eating together at a café.",
-  sceneIntro: "You and a friend are eating together at a café.",
+  description: "You and a friend are eating together at a café. You enjoy the food, but after this helping you have had enough.",
+  sceneIntro: "You and Mantas try the food at a café. It tastes good and is comfortable to eat. After this helping, you are full and do not want more.",
   location: "casual conversation",
   userRole: "friend",
   register: "casual",
@@ -622,14 +622,14 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Ar skanu?",
-      sceneDirection: "The exchange begins.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "You taste your food, enjoy it, and it is not too hot.",
+      learnerPrompt: "Tell Mantas that it is tasty.",
       options: [
         {
           id: "a",
           text: "Per karšta.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You enjoyed the food; Per karšta would complain about its temperature.",
           progresses: false,
         },
         {
@@ -640,7 +640,7 @@ export default function createModule_4_4(profile = {}) {
           progresses: true,
         }
       ,
-        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer the speaker here.","progresses":false},
+        {"id":"z","text":"Nelabai gerai.","result":"wrong","feedback":"You like this food; Nelabai gerai would tell Mantas it is not very good.","progresses":false},
       ],
     },
     {
@@ -648,8 +648,8 @@ export default function createModule_4_4(profile = {}) {
       speakerId: "friend",
       speakerLabel: "Friend",
       speakerText: "Man irgi! Ar nori dar?",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the natural closing response.",
+      sceneDirection: "You have eaten enough and do not want another helping.",
+      learnerPrompt: "Decline more food and say that is enough.",
       options: [
                 {
           id: "b",
@@ -660,13 +660,13 @@ export default function createModule_4_4(profile = {}) {
         },
         {
           id: "c",
-          text: "Ar galėčiau gauti sąskaitą, prašau?",
+          text: "Dar vieną, prašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Dar vieną asks for another helping, but you have had enough.",
           progresses: false,
         }
       ,
-        {"id":"z","text":"Ačiū!","result":"acceptable","feedback":"A simple thank-you is also natural.","progresses":true},
+        {"id":"z","text":"Ačiū!","result":"awkward","feedback":"A thank-you alone does not clearly say whether you want more. Ne, ačiū. Užtenka says no and explains that you have had enough.","betterAnswer":"Ne, ačiū. Užtenka.","progresses":true},
       ],
     }
   ],
@@ -811,7 +811,7 @@ export default function createModule_4_4(profile = {}) {
                 speakerId: "friend",
                 speakerLabel: "Friend",
                 speakerText: "Ar skanu?",
-                sceneDirection: "You like the food.",
+                sceneDirection: "The food arrives. You taste it and like it.",
                 learnerPrompt: "Say that it is very tasty and you like it.",
                 options: [
                   { id: "a", text: "Taip, labai skanu! Man patinka.", result: "best", progresses: true },

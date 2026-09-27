@@ -540,7 +540,7 @@ export default function createCheckpoint4(profile = {}) {
           { id: "m7",  lt: "su pienu",                    en: "with milk",                        audioText: "su pienu" },
           { id: "m8",  lt: "be cukraus",                  en: "without sugar",                    audioText: "be cukraus" },
           { id: "m9",  lt: "Ar galėčiau gauti sąskaitą, prašau?",           en: "The bill, please.",                audioText: "Ar galėčiau gauti sąskaitą, prašau" },
-          { id: "m10", lt: "Ar galima mokėti kortele?",       en: "Can I pay by card?",               audioText: "Galima mokėti kortele" },
+          { id: "m10", lt: "Ar galima mokėti kortele?",       en: "Can I pay by card?",               audioText: "Ar galima mokėti kortele" },
           { id: "m11", lt: "Nenoriu šito.",               en: "I don't want this.",               audioText: "Nenoriu šito" },
           { id: "m12", lt: "Nevalgau mėsos.",             en: "I don't eat meat.",                audioText: "Nevalgau mėsos" },
           { id: "m13", lt: "Čia ne tai, ką užsisakiau.",    en: "This is not what I ordered.",      audioText: "Čia ne tai, ką užsisakiau" },
