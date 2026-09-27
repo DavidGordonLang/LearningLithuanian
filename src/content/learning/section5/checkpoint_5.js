@@ -83,7 +83,7 @@ export default function createCheckpoint5(profile = {}) {
         options: [
           { id: "a", text: "į",   isCorrect: false },
           { id: "b", text: "iš",  isCorrect: true  },
-          { id: "c", text: "prie",isCorrect: false },
+          { id: "c", text: "su",  isCorrect: false },
         ],
         explanation: "Iš shows the starting point — from. Į shows the destination — to. Both change the form of the noun that follows.",
       },
@@ -93,13 +93,13 @@ export default function createCheckpoint5(profile = {}) {
         id: "s5cp_b6",
         type: "best_response",
         title: "Choose the best response",
-        prompt: { text: "You ask if the airport is far. The answer is: Taip, labai toli. What is the most useful follow-up?", audioText: "" },
+        prompt: { text: "You are the traveller. You ask if the airport is far. The local says: Taip, labai toli. You decide to take the bus. What do you ask next?", audioText: "" },
         options: [
-          { id: "a", text: "Eikite tiesiai.",               isCorrect: false },
-          { id: "b", text: "Galite važiuoti autobusu.",      isCorrect: true  },
-          { id: "c", text: "Tai netoli.",                  isCorrect: false },
+          { id: "a", text: "Kur yra autobusų stotis?",      isCorrect: false },
+          { id: "b", text: "Kur yra autobusų stotelė?",     isCorrect: true  },
+          { id: "c", text: "Galite važiuoti autobusu.",     isCorrect: false },
         ],
-        feedback: { correct: "If it's very far, the practical suggestion is Galite važiuoti autobusu — you can go by bus. Walking is not the answer here." },
+        feedback: { correct: "As the traveller taking the bus, ask Kur yra autobusų stotelė? — where is the bus stop? Autobusų stotis is a bus station; Galite važiuoti autobusu advises someone else." },
       },
 
       // Block 7 — Speak

@@ -92,7 +92,7 @@ export default function createModule_5_3(profile = {}) {
             type: "scenario_v2",
             title: "Going to the hotel",
             description: "A colleague asks where you are going, then points out the hotel and tells you how far it is.",
-            sceneIntro: "A colleague asks where you are going, then points out the hotel and tells you how far it is.",
+            sceneIntro: "A colleague asks where you are going, then points out the hotel. A five-minute walk suits you.",
             location: "street",
             userRole: "traveller",
             register: "informal",
@@ -257,12 +257,13 @@ export default function createModule_5_3(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Local",
       speakerText: "Stotis yra netoli. Tiesiai, paskui kairėn.",
-      sceneDirection: "Rasa says the station is nearby and gives the route: straight, then left.",
-      learnerPrompt: "Confirm the route you heard and thank her.",
+      sceneDirection: "Rasa says the station is nearby and gives you a two-part route.",
+      learnerPrompt: "Which route did Rasa give you?",
+      interactionMode: "comprehension",
       options: [
-        { id: "a", text: "Ačiū! Tiesiai, paskui kairėn.", result: "best", progresses: true },
-        { id: "b", text: "Ačiū! Tiesiai, paskui dešinėn.", result: "wrong", feedback: "Rasa said straight, then left — kairėn, not dešinėn.", progresses: false },
-        { id: "c", text: "Ačiū! Kairėn, paskui tiesiai.", result: "wrong", feedback: "The order is wrong. She said straight first, then left.", progresses: false },
+        { id: "a", text: "Go straight, then turn left.", learnerText: "Suprantu. Ačiū!", result: "best", progresses: true },
+        { id: "b", text: "Go straight, then turn right.", result: "wrong", feedback: "Rasa said kairėn — left — rather than dešinėn — right.", progresses: false },
+        { id: "c", text: "Turn left, then go straight.", result: "wrong", feedback: "That reverses the order: straight first, then left.", progresses: false },
       ],
     },
     {
@@ -293,7 +294,7 @@ export default function createModule_5_3(profile = {}) {
         supportLevel: "high",
         newLanguageLoad: "medium",
         notes: {
-          pattern: "Learn the base place word before learning a changed form. Miestas means city; in Aš esu mieste, miestas changes to mieste to mean in the city. You already know Aš esu = I am from Section 1, so keep using that established form here. Lithuanian can often omit the pronoun, but that shorter Esu… pattern has not been taught yet and should not be tested here. You also know the base words viešbutis, kavinė and namai, so this lesson can build on them with viešbutyje, kavinėje and namuose. Home has its own very common set of forms: iš namų means from home, while namuose means at home.",
+          pattern: "Miestas means city; mieste means in the city. Use your familiar Aš esu frame to say where you are: Aš esu mieste. The known places viešbutis and kavinė similarly appear as viešbutyje and kavinėje when you are there. For home, say namuose when you are at home; iš namų means from home.",
           usage: [
             "miestas — city",
             "Aš esu mieste. — I'm in the city.",
@@ -369,7 +370,7 @@ export default function createModule_5_3(profile = {}) {
   type: "scenario_v2",
   title: "Where are you?",
   description: "Mantas is already at a café. You are at your hotel now, then you leave to meet him.",
-  sceneIntro: "Mantas is already at a café. You are at your hotel now, then you leave to meet him.",
+  sceneIntro: "Mantas is already at a café. You are at your hotel now, then leave to meet him. A short walk is fine.",
   location: "text conversation",
   userRole: "friend",
   register: "informal",
@@ -481,7 +482,7 @@ export default function createModule_5_3(profile = {}) {
             type: "context_gap_select",
             prompt: "Choose the correct form",
             sentence: "Ar ___ į viešbutį?",
-            translation_en: "Are you going to the hotel?",
+            translation_en: "You are politely asking a stranger: Are you going to the hotel?",
             options: [
               { id: "a", text: "eini",   isCorrect: false },
               { id: "b", text: "einate", isCorrect: true  },
@@ -665,7 +666,7 @@ export default function createModule_5_3(profile = {}) {
       options: [
         { id: "a", text: "Taip, iš stoties.", result: "best", progresses: true },
         { id: "b", text: "Taip, iš viešbučio.", result: "wrong", feedback: "That would mean you are coming from the hotel, but you have just left the station.", progresses: false },
-        { id: "c", text: "Taip, stotyje.", result: "wrong", feedback: "Stotyje means at the station. Austėja is asking about your starting point: iš stoties.", progresses: false },
+        { id: "c", text: "Taip, į stotį.", result: "wrong", feedback: "Į stotį means to the station, but you have just come from it: iš stoties.", progresses: false },
       ],
     },
     {
@@ -746,9 +747,9 @@ export default function createModule_5_3(profile = {}) {
             id: "s5m3c_b4",
             type: "speak_self_check",
             title: "Say it out loud",
-            prompt: "Say: I'm going to the hotel",
-            targetText: "Aš einu į viešbutį",
-            audioText: "Aš einu į viešbutį",
+            prompt: "Say: I'm going from the hotel to the station",
+            targetText: "Aš einu iš viešbučio į stotį",
+            audioText: "Aš einu iš viešbučio į stotį",
           },
           {
             id: "s5m3c_b5",

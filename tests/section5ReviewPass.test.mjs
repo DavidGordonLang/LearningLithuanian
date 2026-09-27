@@ -17,7 +17,8 @@ test("Section 5 removes corrupted text and reviewed terminology issues",()=>{
  }
  assert.ok(s.includes("traukinių stotis"));
  assert.ok(s.includes("Ar toli?"));
- assert.ok(s.includes("taksi"));
+ // C8 removed the untaught taxi assessment distractor; preserve the C1 spelling guard.
+ assert.equal(s.includes('"taksi"'),false);
 });
 
 test("Section 5 location scenarios match their physical setting",()=>{
@@ -588,8 +589,8 @@ test("5.3.3 teaches the base noun miestas before using mieste",()=>{
   assert.equal(learn.items[0].en,"city");
   assert.equal(learn.items.some(i=>i.lt==="mieste"),false);
   assert.ok(learn.items.some(i=>i.lt==="Aš esu mieste."));
-  assert.match(lesson.notes.pattern,/base place word before learning a changed form/i);
-  assert.match(lesson.notes.pattern,/Miestas means city/i);
+  assert.match(lesson.notes.pattern,/Miestas means city; mieste means in the city/i);
+  assert.doesNotMatch(lesson.notes.pattern,/should not be tested|has not been taught/i);
   assert.match(lesson.notes.pattern,/Aš esu mieste/i);
 });
 

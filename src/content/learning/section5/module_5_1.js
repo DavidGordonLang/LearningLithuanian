@@ -315,8 +315,8 @@ export default function createModule_5_1(profile = {}) {
             items: [
               { id: "i1", lt: "netoli",        en: "near / not far",  audioText: "netoli",        saveable: true, core: true },
               { id: "i2", lt: "toli",          en: "far",             audioText: "toli",          saveable: true, core: true },
-              { id: "i3", lt: "Ar toli?",  en: "Is it far?",      audioText: "Ar tai toli",   saveable: true, core: true },
-              { id: "i4", lt: "Ar netoli?",en: "Is it near?",     audioText: "Ar tai netoli", saveable: true, core: true },
+              { id: "i3", lt: "Ar toli?",  en: "Is it far?",      audioText: "Ar toli",   saveable: true, core: true },
+              { id: "i4", lt: "Ar netoli?",en: "Is it near?",     audioText: "Ar netoli", saveable: true, core: true },
               { id: "i5", lt: "Tai netoli.",   en: "It's near.",      audioText: "Tai netoli",    saveable: true, core: true },
               { id: "i6", lt: "Tai toli.",     en: "It's far.",       audioText: "Tai toli",      saveable: true, core: true },
             ],
@@ -336,7 +336,7 @@ export default function createModule_5_1(profile = {}) {
             id: "s5m1l3_b3",
             type: "listen_mcq",
             title: "Listen and choose",
-            prompt: { text: "Ar toli?", audioText: "Ar tai toli" },
+            prompt: { text: "Ar toli?", audioText: "Ar toli" },
             options: [
               { id: "a", text: "It's far.",  isCorrect: false },
               { id: "b", text: "Is it far?", isCorrect: true  },
@@ -361,15 +361,15 @@ export default function createModule_5_1(profile = {}) {
             type: "speak_self_check",
             title: "Say it out loud",
             prompt: "Ask: Is it far?",
-            targetText: "Ar tai toli",
-            audioText: "Ar tai toli",
+            targetText: "Ar toli",
+            audioText: "Ar toli",
           },
           {
   id: "s5m1l3_b6_v2",
   type: "scenario_v2",
   title: "Conversation",
   description: "You're looking for the bus stop and need to know if it's far.",
-  sceneIntro: "You're looking for the bus stop and need to know if it's far.",
+  sceneIntro: "At the service desk, you're looking for the bus stop and need to know if it's far. A five-minute walk suits you.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
@@ -413,9 +413,9 @@ export default function createModule_5_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ne, ačiū.",
+          text: "Taip! Kur yra viešbutis?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You need the bus stop — stotelė — rather than the hotel.",
           progresses: false,
         },
         {
@@ -434,15 +434,16 @@ export default function createModule_5_1(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Autobusų stotelė yra ten.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "The local points out the stop, but you still want to know its distance.",
+      learnerPrompt: "Ask about the distance if you still need it.",
       options: [
         {
           id: "a",
           text: "Ačiū labai!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          result: "awkward",
+          feedback: "A polite thank-you, but you still wanted to know whether the bus stop is far. Ask Ar toli? next.",
+          betterAnswer: "Ar toli?",
+          progresses: true,
         },
         {
           id: "b",
@@ -453,10 +454,10 @@ export default function createModule_5_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Viso gero.",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          text: "Ar netoli?",
+          result: "acceptable",
+          feedback: "Asking whether it is near also checks the distance.",
+          progresses: true,
         }
       ],
     },
@@ -464,7 +465,7 @@ export default function createModule_5_1(profile = {}) {
       id: "step_3",
       speakerId: "assistant",
       speakerLabel: "Assistant",
-      speakerText: "Ne, tai netoli. Penkios minutės.",
+      speakerText: "Tai netoli. Penkios minutės.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the most natural response.",
       options: [
@@ -477,9 +478,9 @@ export default function createModule_5_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Per brangu.",
+          text: "Per toli.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You are happy with a five-minute walk to the stop, so this complaint does not match your plan.",
           progresses: false,
         }
       ,
@@ -498,7 +499,7 @@ export default function createModule_5_1(profile = {}) {
           id: "a",
           text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rasa has answered your distance question and said goodbye; there is nothing to apologise for.",
           progresses: false,
         },
         {
@@ -512,7 +513,7 @@ export default function createModule_5_1(profile = {}) {
           id: "c",
           text: "Laba diena.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Laba diena opens the exchange; Rasa has just said Viso gero to close it.",
           progresses: false,
         }
       ],
@@ -606,7 +607,7 @@ export default function createModule_5_1(profile = {}) {
   location: "street",
   userRole: "traveller",
   register: "polite_service",
-  goal: "You ask for directions to the pharmacy. Listen carefully.",
+  goal: "Ask for directions to the bank and understand the two-part route.",
   focus: ["directions"],
   participants: [
     {
@@ -646,9 +647,9 @@ export default function createModule_5_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Viso gero.",
+          text: "Laba diena! Kur yra kavinė?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You are looking for the bank, not the café.",
           progresses: false,
         }
       ,
@@ -660,40 +661,41 @@ export default function createModule_5_1(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Eikite tiesiai, paskui pasukite kairėn.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rasa gives you two directions to the bank.",
+      learnerPrompt: "What route did Rasa give you?",
+      interactionMode: "comprehension",
       options: [
         {
           id: "a",
-          text: "Prašau kalbėkite lėčiau.",
+          text: "Go straight, then turn right.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The first direction is straight, but Rasa said kairėn — left — for the turn.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Suprantu. Tiesiai, paskui kairėn.",
-          textEn: "I understand. Straight, then left.",
+          text: "Go straight, then turn left.",
+          learnerText: "Suprantu. Ar toli?",
           result: "best",
           progresses: true,
         }
       ,
-        {"id":"z","text":"Kiek tai kainuoja?","result":"wrong","feedback":"This does not answer what the speaker is asking here.","progresses":false},
+        {"id":"z","text":"Turn left, then go straight.","result":"wrong","feedback":"Those are the two actions, but in the reverse order: straight first, then left.","progresses":false},
       ],
     },
     {
       id: "step_3",
       speakerId: "local",
       speakerLabel: "Local",
-      speakerText: "Taip. Tai netoli.",
+      speakerText: "Ne, tai netoli.",
       sceneDirection: "The conversation continues.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
           id: "a",
-          text: "Ar toli?",
+          text: "Kur yra bankas?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rasa already gave you the route to the bank and said it is near.",
           progresses: false,
         },
         {
@@ -707,7 +709,7 @@ export default function createModule_5_1(profile = {}) {
           id: "c",
           text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rasa has confirmed the bank is near; an apology does not acknowledge her help.",
           progresses: false,
         }
       ],
@@ -741,7 +743,7 @@ export default function createModule_5_1(profile = {}) {
             id: "s5m1l5_b2",
             type: "recognise_mcq",
             title: "Choose the correct meaning",
-            prompt: { text: "Ar netoli?", audioText: "Ar tai netoli" },
+            prompt: { text: "Ar netoli?", audioText: "Ar netoli" },
             options: [
               { id: "a", text: "Is it far?",   isCorrect: false },
               { id: "b", text: "Is it here?",  isCorrect: false },
@@ -768,6 +770,8 @@ export default function createModule_5_1(profile = {}) {
             title: "Choose the best response",
             prompt: { text: "Someone tells you: Eikite tiesiai, paskui kairėn. What did they say?", audioText: "" },
             noOptionAudio: true,
+            optionsLanguage: "en",
+            answerAudioText: "Eikite tiesiai, paskui kairėn.",
             options: [
               { id: "a", text: "Turn left, then go straight.", isCorrect: false },
               { id: "b", text: "Go straight, then turn left.", isCorrect: true  },
@@ -788,7 +792,7 @@ export default function createModule_5_1(profile = {}) {
   type: "scenario_v2",
   title: "Conversation",
   description: "A full short location exchange — ask, get directions, check distance, close.",
-  sceneIntro: "A full short location exchange — ask, get directions, check distance, close.",
+  sceneIntro: "You need the toilet; a short walk is fine. Ask a local for directions and check the distance.",
   location: "real-life exchange",
   userRole: "learner",
   register: "polite_neutral",
@@ -816,9 +820,9 @@ export default function createModule_5_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viso gero.",
+          text: "Taip! Kur yra bankas?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You need the toilet, not the bank.",
           progresses: false,
         },
         {
@@ -837,28 +841,29 @@ export default function createModule_5_1(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Eikite tiesiai, paskui dešinėn. Tualetas yra ten.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "The local gives you the way to the toilet.",
+      learnerPrompt: "Which route did you hear?",
+      interactionMode: "comprehension",
       options: [
         {
           id: "a",
-          text: "Atsiprašau.",
+          text: "Go straight, then turn left; the toilet is there.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The route starts straight, but the turn was dešinėn — right.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Ar toli?",
-          textEn: "Is it far?",
+          text: "Go straight, then turn right; the toilet is there.",
+          learnerText: "Suprantu. Ar toli?",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Kur yra stotis?",
+          text: "Turn right, then go straight; the toilet is there.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That reverses the route: straight first, then right.",
           progresses: false,
         }
       ],
@@ -880,9 +885,9 @@ export default function createModule_5_1(profile = {}) {
         },
         {
           id: "c",
-          text: "Prašau kalbėkite lėčiau.",
+          text: "Tai toli.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The toilet is a one-minute walk, which the scene says is fine for you.",
           progresses: false,
         }
       ,
@@ -901,7 +906,7 @@ export default function createModule_5_1(profile = {}) {
           id: "a",
           text: "Laba diena.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Laba diena is an opening greeting, but the local is saying goodbye.",
           progresses: false,
         },
         {
@@ -915,7 +920,7 @@ export default function createModule_5_1(profile = {}) {
           id: "c",
           text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "There is nothing to apologise for after this helpful exchange; close politely.",
           progresses: false,
         }
       ],
@@ -995,7 +1000,7 @@ export default function createModule_5_1(profile = {}) {
   type: "scenario_v2",
   title: "Conversation",
   description: "You need the station. Ask a passer-by, check the distance, get one direction.",
-  sceneIntro: "You need the station. Ask a passer-by, check the distance, get one direction.",
+  sceneIntro: "At the service desk, you need the station and are happy with a five-minute walk. Ask for directions and the distance.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
@@ -1032,9 +1037,9 @@ export default function createModule_5_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viso gero.",
+          text: "Taip! Kur yra viešbutis?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You need the station, not the hotel.",
           progresses: false,
         },
         {
@@ -1053,8 +1058,9 @@ export default function createModule_5_1(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Stotis? Eikite tiesiai, paskui dešinėn.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Rasa gives you the way to the station.",
+      learnerPrompt: "What route did Rasa give you?",
+      interactionMode: "comprehension",
       help: {
         levels: [
           { sceneDirection: "She points straight ahead, then gestures to the right.", speakerText: "Tiesiai. Paskui dešinėn." },
@@ -1065,23 +1071,23 @@ export default function createModule_5_1(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ačiū!",
+          text: "Go straight, then turn left.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rasa said dešinėn — right — after going straight.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Suprantu. Ar toli?",
-          textEn: "I understand. Is it far?",
+          text: "Go straight, then turn right.",
+          learnerText: "Suprantu. Ar toli?",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Prašau kalbėkite lėčiau.",
+          text: "Turn right, then go straight.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That reverses the order. Rasa said straight first, then right.",
           progresses: false,
         }
       ],
@@ -1098,7 +1104,7 @@ export default function createModule_5_1(profile = {}) {
           id: "a",
           text: "Per toli.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The station is a five-minute walk, which you said is fine; Per toli would reject it.",
           progresses: false,
         },
         {
@@ -1144,7 +1150,7 @@ export default function createModule_5_1(profile = {}) {
               { id: "m9",  lt: "Tai ten.",            en: "It's there.",           audioText: "Tai ten" },
               { id: "m10", lt: "netoli",              en: "near",                  audioText: "netoli" },
               { id: "m11", lt: "toli",                en: "far",                   audioText: "toli" },
-              { id: "m12", lt: "Ar toli?",        en: "Is it far?",            audioText: "Ar tai toli" },
+              { id: "m12", lt: "Ar toli?",        en: "Is it far?",            audioText: "Ar toli" },
               { id: "m13", lt: "Tai netoli.",         en: "It's near.",            audioText: "Tai netoli" },
               { id: "m14", lt: "tiesiai",             en: "straight ahead",        audioText: "tiesiai" },
               { id: "m15", lt: "kairėn",              en: "to the left",           audioText: "kairėn" },

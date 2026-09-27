@@ -6,6 +6,7 @@ import * as contentKey from "../src/utils/contentKey.js";
 import * as scenarioHelp from "../src/utils/scenarioHelp.js";
 import * as scenarioAudio from "../src/utils/scenarioAudio.js";
 import createModule44 from "../src/content/learning/section4/module_4_4.js";
+import createModule51 from "../src/content/learning/section5/module_5_1.js";
 import createModule52 from "../src/content/learning/section5/module_5_2.js";
 import createModule53 from "../src/content/learning/section5/module_5_3.js";
 import createModule54 from "../src/content/learning/section5/module_5_4.js";
@@ -164,5 +165,7 @@ test("bounded Section 5 fixes retrieve known here/near and vaistai while teachin
   assert.equal(comprehension.noOptionAudio, true);
   assert.doesNotMatch(JSON.stringify([module, createCheckpoint5()]), /čia pat/i);
   assert.ok(module.lessons.find(l => l.isCheckpoint).blocks.at(-1).pairs.some(p => p.lt === "Tualetas yra čia." && p.en === "The toilet is here."));
-  assert.ok(createCheckpoint5().blocks.find(b => b.id === "s5cp_b6").options.some(o => o.text === "Tai netoli." && !o.isCorrect));
+  assert.ok(createModule51().lessons.find(l => l.isCheckpoint).blocks.at(-1).pairs.some(p => p.lt === "Tai netoli." && p.en === "It's near."));
+  // C8 fixed the final checkpoint's traveller/adviser role inversion; it now tests the bus-stop follow-up.
+  assert.equal(createCheckpoint5().blocks.find(b => b.id === "s5cp_b6").options.find(o => o.isCorrect).text, "Kur yra autobusų stotelė?");
 });

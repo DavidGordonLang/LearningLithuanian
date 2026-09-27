@@ -80,7 +80,7 @@ export default function createModule_5_2(profile = {}) {
   type: "scenario_v2",
   title: "Conversation",
   description: "You've just arrived and need to find the train station.",
-  sceneIntro: "You've just arrived and need to find the train station.",
+  sceneIntro: "You've just arrived and need to find the train station. A ten-minute walk suits you.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
@@ -117,9 +117,9 @@ export default function createModule_5_2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viso gero.",
+          text: "Taip! Kur yra autobusų stotis?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "That asks for the bus station, but you need the train station.",
           progresses: false,
         },
         {
@@ -143,9 +143,9 @@ export default function createModule_5_2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Atsiprašau.",
+          text: "Ar autobusų stotis toli?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You asked for the train station; this changes the destination to the bus station.",
           progresses: false,
         },
         {
@@ -171,7 +171,7 @@ export default function createModule_5_2(profile = {}) {
           id: "a",
           text: "Per toli.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Ten minutes is a walk you are comfortable with; Per toli contradicts your stated stance.",
           progresses: false,
         },
         {
@@ -258,17 +258,17 @@ export default function createModule_5_2(profile = {}) {
   title: "Conversation",
   description: "You need to find the pharmacy quickly.",
   sceneIntro: "You need to find the pharmacy quickly.",
-  location: "pharmacy",
-  userRole: "customer",
+  location: "street",
+  userRole: "traveller",
   register: "polite_service",
   goal: "You need to find the pharmacy quickly.",
   focus: ["directions"],
   participants: [
     {
       "id": "pharmacist",
-      "label": "Pharmacist",
+      "label": "Local",
       "name": "Rasa",
-      "role": "pharmacist",
+      "role": "passer-by",
       "gender": "female",
       "relationshipToUser": "stranger",
       "register": "polite_service"
@@ -294,9 +294,9 @@ export default function createModule_5_2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viso gero.",
+          text: "Laba diena! Atsiprašau, kur yra ligoninė?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You need the pharmacy, vaistinė, rather than the hospital, ligoninė.",
           progresses: false,
         },
         {
@@ -320,9 +320,9 @@ export default function createModule_5_2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Prašau kalbėkite lėčiau.",
+          text: "Ačiū! Ar ligoninė toli?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The local pointed out the pharmacy, so ask about that distance rather than the hospital.",
           progresses: false,
         },
         {
@@ -348,7 +348,7 @@ export default function createModule_5_2(profile = {}) {
           id: "a",
           text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The pharmacy is nearby and the local has answered; an apology does not close this exchange.",
           progresses: false,
         },
         {
@@ -423,7 +423,7 @@ export default function createModule_5_2(profile = {}) {
   type: "scenario_v2",
   title: "Conversation",
   description: "You want to find a café near your hotel.",
-  sceneIntro: "You want to find a café near your hotel.",
+  sceneIntro: "You want to find a café near your hotel and are happy to walk a short distance.",
   location: "hotel reception",
   userRole: "guest",
   register: "polite_service",
@@ -474,9 +474,9 @@ export default function createModule_5_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Viso gero.",
+          text: "Laba diena! Kur yra parduotuvė?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You are looking for a café, not the shop.",
           progresses: false,
         }
       ,
@@ -533,9 +533,9 @@ export default function createModule_5_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Per brangu.",
+          text: "Per toli.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You are happy to walk the short distance to the nearby café; Per toli does not match that.",
           progresses: false,
         }
       ,
@@ -607,8 +607,8 @@ export default function createModule_5_2(profile = {}) {
   id: "s5m2l4_b5_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You need cash from the bank before heading to the bus station.",
-  sceneIntro: "You need cash from the bank before heading to the bus station.",
+  description: "At the service desk, you need cash from the bank before heading to the bus station.",
+  sceneIntro: "You told Rasa at the service desk that you need cash from the bank, then the bus station. Ask for the bank first.",
   location: "service desk",
   userRole: "traveller",
   register: "polite_service",
@@ -666,9 +666,9 @@ export default function createModule_5_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Viso gero.",
+          text: "Taip! Kur yra autobusų stotis?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You need cash from the bank first; ask for the bus station after finding it.",
           progresses: false,
         }
       ,
@@ -681,14 +681,15 @@ export default function createModule_5_2(profile = {}) {
       speakerLabel: "Assistant",
       speakerText: "Bankas yra ten, kairėn.",
       sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      learnerPrompt: "You still need the bus station. Ask for it if you want to continue, or thank the local for the bank direction.",
       options: [
         {
           id: "a",
           text: "Ačiū!",
-          result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
-          progresses: false,
+          result: "awkward",
+          feedback: "Thanks is natural for the bank direction, but you still need to find the bus station. Ask for it while Rasa is here.",
+          betterAnswer: "Ačiū! Ir kur yra autobusų stotis?",
+          progresses: true,
         },
         {
           id: "b",
@@ -699,9 +700,9 @@ export default function createModule_5_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Prašau kalbėkite lėčiau.",
+          text: "Ačiū! Ir kur yra traukinių stotis?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Your next stop is the bus station, not the train station.",
           progresses: false,
         }
       ],
@@ -711,14 +712,14 @@ export default function createModule_5_2(profile = {}) {
       speakerId: "assistant",
       speakerLabel: "Assistant",
       speakerText: "Autobusų stotis yra tiesiai, paskui dešinėn. Netoli.",
-      sceneDirection: "The conversation continues.",
+      sceneDirection: "Rasa knows the bus station is your next stop and gives its route, whether you asked for it or only thanked her for the bank direction.",
       learnerPrompt: "Choose the natural closing response.",
       options: [
         {
           id: "a",
           text: "Atsiprašau.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Rasa has given both directions; an apology does not acknowledge the help or end the conversation.",
           progresses: false,
         },
         {
@@ -782,6 +783,8 @@ export default function createModule_5_2(profile = {}) {
             title: "Choose the best response",
             prompt: { text: "Someone says: Tualetas yra čia. What do they mean?", audioText: "" },
             noOptionAudio: true,
+            optionsLanguage: "en",
+            answerAudioText: "Tualetas yra čia.",
             options: [
               { id: "a", text: "The toilet is far from here.", isCorrect: false },
               { id: "b", text: "The toilet is here.",    isCorrect: true  },
@@ -794,7 +797,7 @@ export default function createModule_5_2(profile = {}) {
             type: "best_response",
             title: "Use the new chunk",
             prompt: { text: "You tell a local: Atsiprašau, man reikia vaistų. What is the most useful question to ask next?" },
-            noOptionAudio: true,
+            optionsLanguage: "lt",
             options: [
               { id: "a", text: "Kur yra vaistinė?", isCorrect: true },
               { id: "b", text: "Kur yra ligoninė?", isCorrect: false },
@@ -808,8 +811,8 @@ export default function createModule_5_2(profile = {}) {
   id: "s5m2l5_b5_v2",
   type: "scenario_v2",
   title: "Conversation",
-  description: "You hear a place word in a short exchange. Listen and respond correctly.",
-  sceneIntro: "You hear a place word in a short exchange. Listen and respond correctly.",
+  description: "You need your hotel and ask a passer-by where it is.",
+  sceneIntro: "You are checking your hotel address on your phone. Ask a passer-by where it is, then listen to the answer.",
   location: "real-life exchange",
   userRole: "learner",
   register: "polite_neutral",
@@ -837,9 +840,9 @@ export default function createModule_5_2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Ne, kur yra kavinė?",
+          text: "Laba diena! Kur yra kavinė?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The address on your phone is for the hotel, not a café.",
           progresses: false,
         },
         {
@@ -858,28 +861,30 @@ export default function createModule_5_2(profile = {}) {
       speakerId: "local",
       speakerLabel: "Local",
       speakerText: "Viešbutis yra ten. Eikite tiesiai.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "The passer-by gives the hotel's location and one direction.",
+      learnerPrompt: "What location and direction did you hear?",
+      interactionMode: "comprehension",
       options: [
         {
           id: "a",
-          text: "Atsiprašau.",
+          text: "The hotel is here; go straight.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The passer-by said ten — there — not čia — here.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Suprantu. Ačiū!",
+          text: "The hotel is over there; go straight.",
+          learnerText: "Suprantu. Ačiū!",
           textEn: "I understand. Thank you!",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Kur yra stotis?",
+          text: "The hotel is over there; turn right.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Eikite tiesiai means go straight, not turn right.",
           progresses: false,
         }
       ],
@@ -896,7 +901,7 @@ export default function createModule_5_2(profile = {}) {
           id: "a",
           text: "Taip, labai.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Taip says you need more help, but this hotel question has been answered and you have no further request.",
           progresses: false,
         },
         {
@@ -989,7 +994,7 @@ export default function createModule_5_2(profile = {}) {
   type: "scenario_v2",
   title: "Conversation",
   description: "You need the pharmacy after arriving at the hotel. A full place-finding exchange.",
-  sceneIntro: "You need the pharmacy after arriving at the hotel. A full place-finding exchange.",
+  sceneIntro: "At hotel reception, you need the pharmacy and are comfortable with a short walk.",
   location: "hotel reception",
   userRole: "guest",
   register: "polite_service",
@@ -1033,9 +1038,9 @@ export default function createModule_5_2(profile = {}) {
       options: [
         {
           id: "a",
-          text: "Viso gero.",
+          text: "Taip! Kur yra ligoninė?",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "You need the pharmacy, not the hospital.",
           progresses: false,
         },
         {
@@ -1054,35 +1059,36 @@ export default function createModule_5_2(profile = {}) {
       speakerId: "receptionist",
       speakerLabel: "Receptionist",
       speakerText: "Vaistinė yra ten. Pasukite dešinėn.",
-      sceneDirection: "The conversation continues.",
-      learnerPrompt: "Choose the most natural response.",
+      sceneDirection: "Austėja gives you the pharmacy's location and one turn from the hotel.",
+      learnerPrompt: "What did Austėja say about the pharmacy?",
+      interactionMode: "comprehension",
       help: {
         levels: [
-          { sceneDirection: "Austėja points down the corridor and then to the right.", speakerText: "Ten. Dešinėn." },
-          { sceneDirection: "She traces the short route with her finger and points right." },
+          { sceneDirection: "Austėja gestures toward the street and then to the right.", speakerText: "Ten. Dešinėn." },
+          { sceneDirection: "She traces the short outdoor route with her finger and points right." },
           { speakerText: "There. Turn right.", spokenLanguage: "en", audio: false },
         ],
       },
       options: [
         {
           id: "a",
-          text: "Atsiprašau.",
+          text: "The pharmacy is over there; turn left.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Austėja said dešinėn — right — not left.",
           progresses: false,
         },
         {
           id: "b",
-          text: "Suprantu. Ar toli?",
-          textEn: "I understand. Is it far?",
+          text: "The pharmacy is over there; turn right.",
+          learnerText: "Suprantu. Ar toli?",
           result: "best",
           progresses: true,
         },
         {
           id: "c",
-          text: "Kur yra ligoninė?",
+          text: "The hospital is over there; turn right.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "Austėja named the pharmacy, not the hospital.",
           progresses: false,
         }
       ],
@@ -1104,9 +1110,9 @@ export default function createModule_5_2(profile = {}) {
         },
         {
           id: "c",
-          text: "Per brangu.",
+          text: "Per toli.",
           result: "wrong",
-          feedback: "This does not fit the situation. Choose the response that matches the speaker.",
+          feedback: "The pharmacy is a three-minute walk, which you are comfortable with.",
           progresses: false,
         }
       ,
