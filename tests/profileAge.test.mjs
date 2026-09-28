@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { buildSection1Profile } from "../src/content/learning/section1/profile.js";
 import createModule34 from "../src/content/learning/section3/module_3_4.js";
 import { phraseMatchesSpeech } from "../src/lib/speechMatch.js";
@@ -20,9 +21,30 @@ const fixtures = new Map([
   [17, "septyniolika metų"], [18, "aštuoniolika metų"], [19, "devyniolika metų"],
   [20, "dvidešimt metų"], [21, "dvidešimt vieni metai"], [25, "dvidešimt penkeri metai"],
   [28, "dvidešimt aštuoneri metai"], [30, "trisdešimt metų"], [40, "keturiasdešimt metų"],
-  [45, "keturiasdešimt penkeri metai"], [50, "penkiasdešimt metų"],
+  [45, "keturiasdešimt penkeri metai"], [47, "keturiasdešimt septyneri metai"], [50, "penkiasdešimt metų"],
   [60, "šešiasdešimt metų"], [99, "devyniasdešimt devyneri metai"],
 ]);
+
+test("starter 47 note uses the years numeral while plain 47 remains a cardinal", () => {
+  const starter = JSON.parse(readFileSync(new URL("../public/data/starter_en_to_lt.json", import.meta.url), "utf8"));
+  const fortySeven = starter.find(row => row.English === "47");
+  assert.equal(fortySeven.Lithuanian, "keturiasdešimt septyni");
+  assert.equal(fortySeven.Notes.match(/keturiasdešimt septyneri metai/g)?.length, 2);
+  for (const row of starter) for (const [field, value] of Object.entries(row)) {
+    if (typeof value === "string") {
+      assert.doesNotMatch(value, /\b(?:vienas|du|trys|keturi|penki|šeši|septyni|aštuoni|devyni) metai\b/iu, `${row.English}: ${field}`);
+    }
+  }
+});
+
+test("Settings age preview uses the personalised lesson generator, not ordinary cardinals", () => {
+  const settings = readFileSync(new URL("../src/views/SettingsView.jsx", import.meta.url), "utf8");
+  assert.match(settings, /const phrase = buildSection1Profile\(\{ dateOfBirth \}, today\)\.userAgePhraseLt/);
+  assert.doesNotMatch(settings, /const ones\s*=|"Man " \+ num \+ " metų"/);
+  for (const age of [1, 2, 17, 21, 40, 47]) {
+    assert.equal(profileForAge(age).userAgePhraseLt, `Man ${fixtures.get(age)}`);
+  }
+});
 
 test("actual runtime profile builder produces the attested age families for both speaker genders", () => {
   for (const [age, expected] of fixtures) for (const gender of ["male", "female"]) {
