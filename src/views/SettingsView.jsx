@@ -17,6 +17,7 @@ import LegacyLibraryRecovery from "../components/LegacyLibraryRecovery";
 import applyMergeResolutions from "../utils/applyMergeResolutions";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useGameStore } from "../stores/gameStore";
+import { buildSection1Profile } from "../content/learning/section1/profile";
 
 import {
   getDiagnosticsEnabled,
@@ -795,21 +796,11 @@ export default function SettingsView({
               />
               {dateOfBirth && (() => {
                 const today = new Date();
-                const birth = new Date(dateOfBirth);
-                let age = today.getFullYear() - birth.getFullYear();
-                const m = today.getMonth() - birth.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-                const ones  = ["", "vienas", "du", "trys", "keturi", "penki", "šeši", "septyni", "aštuoni", "devyni"];
-                const teens = ["dešimt", "vienuolika", "dvylika", "trylika", "keturiolika", "penkiolika", "šešiolika", "septyniolika", "aštuoniolika", "devyniolika"];
-                const tens  = ["", "", "dvidešimt", "trisdešimt", "keturiasdešimt", "penkiasdešimt", "šešiasdešimt", "septyniasdešimt", "aštuoniasdešimt", "devyniasdešimt"];
-                let num = null;
-                if (age >= 1 && age <= 99) {
-                  if (age < 10) num = ones[age];
-                  else if (age < 20) num = teens[age - 10];
-                  else { const t = Math.floor(age / 10); const o = age % 10; num = o === 0 ? tens[t] : tens[t] + " " + ones[o]; }
-                }
-                const phrase = num ? "Man " + num + " metų" : null;
-                if (!phrase) return null;
+                const [year, month, day] = dateOfBirth.split("-").map(Number);
+                let age = today.getFullYear() - year;
+                if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) age--;
+                if (age < 1 || age > 99) return null;
+                const phrase = buildSection1Profile({ dateOfBirth }, today).userAgePhraseLt;
                 return (
                   <div className="text-[12px] text-emerald-400 mt-1">
                     Your age phrase: <span className="font-semibold text-emerald-300">{phrase}</span>
