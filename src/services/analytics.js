@@ -10,8 +10,8 @@ const LSK_SESSION_RECORDED = "zodis_session_recorded_v1";
 const LSK_SESSION_OWNER = "zodis_session_owner_v1";
 const sessionStartPending = new Set();
 
-// 30 mins: if the app hasn't logged anything in 30 mins, start a new session id
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+// After 5 minutes without tracked activity, the next event starts a new session.
+const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
 
 function safeNow() {
   try {

@@ -11,28 +11,43 @@ test("one analytics session emits once across navigation and starts anew after i
   const source = await readFile(new URL("../src/services/analytics.js", import.meta.url), "utf8");
   const { code } = await transformWithEsbuild(source, "analytics.js", { format: "cjs" });
   const values = new Map(), writes = []; let user = { id: "A", email: "a@example.test" };
+  const now = Date.now();
   const before = globalThis.localStorage;
   globalThis.localStorage = { getItem: k => values.get(k) ?? null, setItem: (k,v) => values.set(k,String(v)) };
   try {
     const supabase = { from: () => ({ insert: async rows => { writes.push(...rows); return { error: null }; } }) };
     const module = { exports: {} };
-    new Function("require", "module", "exports", code)(id => {
+    new Function("require", "module", "exports", "Date", code)(id => {
       if (id === "../supabaseClient") return { supabase };
       if (id === "../stores/authStore") return { useAuthStore: { getState: () => ({ user }) } };
       if (id === "../lib/productTelemetry") return requireProduct;
       throw Error(id);
-    }, module, module.exports);
+    }, module, module.exports, { now: () => now });
     const analytics = module.exports;
     await analytics.trackSessionStart(); await analytics.trackSessionStart();
     await analytics.trackProductEvent("training_viewed");
     assert.equal(writes.filter(e => e.event_name === "session_start").length, 1);
-    values.set("zodis_session_last_v1", String(Date.now() - 31*60*1000));
+    const firstId = writes.find(e => e.event_name === "session_start").session_id;
+    values.set("zodis_session_last_v1", String(now - 5*60*1000 + 1));
     await analytics.trackProductEvent("training_viewed");
-    assert.equal(writes.filter(e => e.event_name === "session_start").length, 2);
+    await analytics.trackSessionStart();
+    assert.equal(writes.filter(e => e.event_name === "session_start").length, 1);
+    assert.equal(writes.at(-1).session_id, firstId);
+    values.set("zodis_session_last_v1", String(now - 5*60*1000 - 1));
+    await analytics.trackProductEvent("training_viewed");
+    await analytics.trackSessionStart();
+    await analytics.trackProductEvent("training_viewed");
+    const starts = writes.filter(e => e.event_name === "session_start");
+    assert.equal(starts.length, 2);
+    assert.notEqual(starts[1].session_id, firstId);
+    assert.equal(writes.at(-1).session_id, starts[1].session_id);
     user = { id: "B", email: "b@example.test" };
     await analytics.trackSessionStart();
-    assert.equal(writes.filter(e => e.event_name === "session_start").length, 3);
-    assert.notEqual(writes[1].session_id, writes.at(-1).session_id);
+    await analytics.trackSessionStart();
+    const accountStarts = writes.filter(e => e.event_name === "session_start");
+    assert.equal(accountStarts.length, 3);
+    assert.equal(accountStarts[2].user_id, "B");
+    assert.notEqual(accountStarts[1].session_id, accountStarts[2].session_id);
   } finally { globalThis.localStorage = before; }
 });
 const requireProduct = { BETA3_VERSION: "3.0.0-beta", safeProductProps };
