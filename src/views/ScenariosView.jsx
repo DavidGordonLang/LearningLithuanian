@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useScenarioStore } from "../stores/scenarioStore";
+import { trackProductEvent } from "../services/analytics";
 import ModalShell from "../components/ModalShell";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
@@ -287,6 +288,8 @@ export default function ScenariosView({ T, onOpenScenario, confirmAction, showTo
       return false;
     }
 
+    trackProductEvent("personal_scenario_created", { scenario_id: result.scenario?.id });
+
     setCreateOpen(false);
     return true;
   }
@@ -324,6 +327,7 @@ export default function ScenariosView({ T, onOpenScenario, confirmAction, showTo
     if (!ok) return;
 
     deleteScenario(scenario?.id);
+    trackProductEvent("personal_scenario_deleted", { scenario_id: scenario?.id });
   }
 
   return (

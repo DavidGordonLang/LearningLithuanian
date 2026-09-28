@@ -59,7 +59,7 @@ import {
   clearLibrary as clearLibraryIO,
 } from "./services/libraryIO";
 
-import { trackEvent, trackError } from "./services/analytics";
+import { trackError, trackProductEvent, trackSessionStart } from "./services/analytics";
 
 /* ============================================================================ */
 const APP_VERSION = "3.0.0-beta";
@@ -381,6 +381,13 @@ function AccountApp() {
   });
 
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
+  useEffect(() => {
+    if (!user?.id || authLoading || !allowlistChecked || !isAllowlisted) return;
+    trackSessionStart();
+  }, [user?.id, authLoading, allowlistChecked, isAllowlisted, page]);
+  useEffect(() => {
+    if (user?.id && isAllowlisted && page === "training") trackProductEvent("training_viewed");
+  }, [user?.id, isAllowlisted, page]);
   const [selectedScenarioId, setSelectedScenarioId] = useState(null);
   const [libraryFocusPhraseId, setLibraryFocusPhraseId] = useState(null);
 
@@ -484,45 +491,14 @@ function AccountApp() {
   useEffect(() => stop, [stop, page, selectedScenarioId]);
 
   const playTextTracked = useCallback((text, opts) => {
-    const effectiveVoice = opts?.voice || azureVoiceShortName;
-    try {
-      trackEvent(
-        "tts_play",
-        {
-          voice: effectiveVoice,
-          text_len: typeof text === "string" ? text.length : null,
-        },
-        { app_version: APP_VERSION }
-      );
-    } catch {}
     return playText(text, opts);
-  }, [playText, azureVoiceShortName]);
+  }, [playText]);
 
   const preloadTextTracked = useCallback((text, opts) => {
-    const effectiveVoice = opts?.voice || azureVoiceShortName;
-    try {
-      trackEvent(
-        "tts_preload",
-        {
-          voice: effectiveVoice,
-          text_len: typeof text === "string" ? text.length : null,
-        },
-        { app_version: APP_VERSION }
-      );
-    } catch {}
     return preloadText(text, opts);
-  }, [preloadText, azureVoiceShortName]);
+  }, [preloadText]);
 
   const stopTextTracked = () => {
-    try {
-      trackEvent(
-        "tts_stop",
-        {
-          voice: azureVoiceShortName,
-        },
-        { app_version: APP_VERSION }
-      );
-    } catch {}
     return stop();
   };
 
@@ -597,6 +573,7 @@ function AccountApp() {
           })
         : prev
     );
+    trackProductEvent("phrase_deleted", { source: "manual" });
     return true;
   };
 
@@ -616,6 +593,7 @@ function AccountApp() {
 
   function handleOpenScenario(scenarioId) {
     if (!scenarioId) return;
+    trackProductEvent("personal_scenario_opened", { scenario_id: scenarioId });
     setSelectedScenarioId(scenarioId);
     setPage("scenario-detail");
   }
@@ -788,6 +766,7 @@ function AccountApp() {
       return [newRow, ...arr];
     });
 
+    trackProductEvent("phrase_saved", { source: "scenario" });
     return { ok: true, row: newRow, alreadyExisted: false };
   }
 
@@ -820,6 +799,7 @@ function AccountApp() {
       }
 
       closeScenarioPicker();
+      trackProductEvent("phrase_added_to_personal_scenario", { scenario_id: scenarioId, source: "manual" });
       showToast("Added to scenario");
       return;
     }
@@ -860,6 +840,7 @@ function AccountApp() {
       }
 
       closeScenarioPicker();
+      trackProductEvent("phrase_added_to_personal_scenario", { scenario_id: scenarioId, source: "translation" });
       showToast("Saved to library and added to scenario");
     }
   }
@@ -872,6 +853,7 @@ function AccountApp() {
       return;
     }
 
+    trackProductEvent("personal_scenario_created", { scenario_id: created.scenario.id });
     handleScenarioPick(created.scenario.id);
   }
 
@@ -913,23 +895,26 @@ function AccountApp() {
   }, [lastSeenVersion, setLastSeenVersion, settingsLoading, needsProfileOnboarding, showOnboardingProfile, showUserGuide, user?.id, hasSeenUserGuide]);
 
   useEffect(() => {
-    if (!user?.id || settingsLoading) return;
+    if (!user?.id || settingsLoading || !allowlistChecked || !isAllowlisted) return;
     if (!needsProfileOnboarding) return;
+    trackProductEvent("onboarding_started");
     setShowWhatsNew(false);
     setShowUserGuide(false);
     setShowOnboardingProfile(true);
-  }, [needsProfileOnboarding, settingsLoading, user?.id]);
+  }, [needsProfileOnboarding, settingsLoading, user?.id, allowlistChecked, isAllowlisted]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !allowlistChecked || !isAllowlisted) return;
     if (settingsLoading || needsProfileOnboarding || showOnboardingProfile) return;
     if (hasSeenUserGuide) return;
+    trackProductEvent("quickstart_opened");
     setUserGuideFirstLaunch(true);
     setShowUserGuide(true);
-  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide]);
+  }, [user?.id, settingsLoading, needsProfileOnboarding, showOnboardingProfile, hasSeenUserGuide, allowlistChecked, isAllowlisted]);
 
   const saveOnboardingProfile = useCallback(async (values) => {
     await saveProfileOnboarding?.(user?.id, values, PROFILE_ONBOARDING_VERSION);
+    trackProductEvent("onboarding_completed");
     setShowOnboardingProfile(false);
     showToast("Profile setup saved");
   }, [
@@ -937,15 +922,16 @@ function AccountApp() {
     user?.id,
   ]);
 
-  const closeUserGuide = useCallback(() => {
+  const closeUserGuide = useCallback((completed = false) => {
     if (userGuideFirstLaunch) {
+      if (completed && !hasSeenUserGuide) trackProductEvent("quickstart_completed");
       setSeenUserGuide(true);
       setLastSeenVersion(APP_VERSION);
       setShowWhatsNew(false);
       setUserGuideFirstLaunch(false);
     }
     setShowUserGuide(false);
-  }, [setSeenUserGuide, setLastSeenVersion, userGuideFirstLaunch]);
+  }, [setSeenUserGuide, setLastSeenVersion, userGuideFirstLaunch, hasSeenUserGuide]);
 
   const closeConfirm = useCallback((result) => {
     const resolve = confirmResolveRef.current;
@@ -1133,6 +1119,7 @@ function AccountApp() {
             <div className="h-full overflow-y-auto overscroll-contain">
               <TrainingView
                 T={T}
+                isActive={page === "training"}
                 rows={visibleRows}
                 setRows={setRows}
                 playText={playTextTracked}
@@ -1224,8 +1211,8 @@ function AccountApp() {
                   mode={isEditing ? "edit" : "add"}
                   initialRow={editRow}
                   onSubmit={(row) => {
-                    if (isEditing) saveEditedPhrase(row);
-                    else addPhrase(row);
+                    if (isEditing) { saveEditedPhrase(row); trackProductEvent("phrase_edited", { source: "manual" }); }
+                    else { addPhrase(row); trackProductEvent("phrase_saved", { source: "manual" }); }
 
                     setAddOpen(false);
                     setEditRowId(null);

@@ -3,6 +3,7 @@
 // Imports and timers are explicit local doubles: no network, stores or APIs run.
 import { readFile } from "node:fs/promises";
 import { transformWithEsbuild } from "vite";
+import * as productTelemetry from "../../src/lib/productTelemetry.js";
 
 const compiled = new Map();
 export async function componentHarness(path, name, imports = {}) {
@@ -69,7 +70,10 @@ export async function componentHarness(path, name, imports = {}) {
       }
     },
   };
-  const dependencies = { react, "react-dom": { createPortal: node => node }, ...imports };
+  const dependencies = { react, "react-dom": { createPortal: node => node },
+    "../../services/analytics": { trackProductEvent() {} },
+    "../../lib/productTelemetry": productTelemetry,
+    ...imports };
   const require = id => {
     if (!(id in dependencies)) throw new Error(`Undeclared test dependency: ${id}`);
     if (dependencies[id]?.source) dependencies[id] = evaluate(compiled.get(`${dependencies[id].source}:default`));

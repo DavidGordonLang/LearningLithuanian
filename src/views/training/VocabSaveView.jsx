@@ -1,4 +1,5 @@
 import { enrichSavedRow } from "../../services/enrichSavedRow";
+import { trackProductEvent } from "../../services/analytics";
 // src/views/training/VocabSaveView.jsx
 //
 // Shown after the module celebration screen.
@@ -159,6 +160,7 @@ export default function VocabSaveView({
         const arr = Array.isArray(prev) ? prev : [];
         return [...newRows.map((x) => x.row), ...arr];
       });
+      trackProductEvent("phrase_saved", { source: "lesson", count: newRows.length });
 
       showToast?.(`${toSave.length} phrase${toSave.length === 1 ? "" : "s"} saved to library`);
 
