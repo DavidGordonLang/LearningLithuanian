@@ -15,6 +15,7 @@ import { getBuildPhraseDistractorMeaning } from "../../lib/buildPhraseFeedback";
 import { phraseMatchesSpeech } from "../../lib/speechMatch";
 import { trackProductEvent } from "../../services/analytics";
 import { lessonProgressMarker } from "../../lib/productTelemetry";
+import { Companion, useJourneyCompanion } from "./JourneyCompanion";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -1997,7 +1998,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
 
 // ─── Lesson complete card ─────────────────────────────────────────────────────
 
-function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLessonLabel, onBack }) {
+function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLessonLabel, onBack, companion, firstGreeting = false }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
@@ -2030,6 +2031,16 @@ function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLess
         </div>
       </div>
 
+      {firstGreeting ? (
+        <div className="mx-2 mb-6 rounded-3xl border border-emerald-400/35 bg-gradient-to-br from-emerald-800/60 to-teal-950/50 px-4 py-5 text-center">
+          <Companion companion={companion} animated size="text-[66px]" />
+          <div className="mt-2 font-serif text-xl font-semibold text-emerald-100">Your first greeting!</div>
+          <div className="mt-1 text-[13px] leading-relaxed text-emerald-50/80">
+            You have practised how to greet someone and say goodbye in Lithuanian.
+          </div>
+          <div className="mt-3 text-[11px] text-emerald-200">Your companion is ready for the next stop.</div>
+        </div>
+      ) : null}
       {/* Actions */}
       <div className="flex flex-col gap-3 px-2">
         {typeof onContinue === "function" ? (
@@ -2060,6 +2071,8 @@ export default function LearningLessonView({
   preloadText,
 }) {
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
+  const { selected: journeyCompanion } = useJourneyCompanion(userId);
+  const isJourneyFirstGreeting = lesson?.id === "section_1_module_1_lesson_1";
   const completeLesson = useGameStore((s) => s.completeLesson);
   const earnLessonXP = useGameStore((s) => s.earnLessonXP);
   const setLessonProgress = useGameStore((s) => s.setLessonProgress);
@@ -2257,6 +2270,8 @@ export default function LearningLessonView({
       {lessonComplete ? (
         <NailedItCard
           lessonTitle={lesson.title}
+          firstGreeting={isJourneyFirstGreeting}
+          companion={journeyCompanion}
           xpEarned={xpEarned}
           accuracyPct={accuracyPct}
           onContinue={typeof onNailedItContinue === "function"
@@ -2293,6 +2308,22 @@ export default function LearningLessonView({
               <div className="h-full bg-emerald-500/80 rounded-full transition-all duration-300" style={{ width: `${progressPct}%` }}/>
             </div>
           </div>
+
+          {isJourneyFirstGreeting && blockIndex === 0 ? (
+            <div className="relative mb-4 overflow-hidden rounded-3xl border border-emerald-300/35 bg-gradient-to-r from-teal-700 via-emerald-900 to-slate-950 p-4 shadow-lg">
+              <div className="pointer-events-none absolute right-3 top-1 text-6xl opacity-25" aria-hidden="true">🏘️</div>
+              <div className="relative flex items-center gap-4">
+                <div className="flex h-[69px] w-[69px] shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-black/25">
+                  <Companion companion={journeyCompanion} size="text-[43px]" animated />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Your first destination · The town square</div>
+                  <div className="mt-1 font-serif text-[20px] font-semibold text-white">Say your first hello</div>
+                  <div className="mt-1 text-[12px] leading-snug text-zinc-200">Listen, recognise and practise greetings before your first short exchange.</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {/* Block content */}
           <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>

@@ -316,6 +316,27 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
       <LearningHome
         onBack={() => setScreen("home")}
         allSections={allSections}
+        userId={user?.id}
+        onOpenLesson={(lessonId) => {
+          // A Journey tap can open only the earned lessons or actual current lesson.
+          if (!completedLessonIds.includes(lessonId) && nextLesson?.lesson?.id !== lessonId) return;
+          for (const section of allSections) {
+            for (const module of (section.modules || [])) {
+              const found = module.isSectionCheckpoint
+                ? module.id === lessonId
+                : (module.lessons || []).some((item) => item.id === lessonId);
+              if (!found) continue;
+              setSelectedLessonId(lessonId);
+              setSelectedModuleId(module.id);
+              setLessonReturnScreen("learningHome");
+              setModuleWrongAnswers(0);
+              setModuleScoreableBlocks(0);
+              setModuleXpEarned(0);
+              setScreen("learningLesson");
+              return;
+            }
+          }
+        }}
         onOpenSection={(sectionId) => {
           const sec = allSections.find((s) => s.id === sectionId);
           if (!sec) return;
@@ -531,6 +552,15 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
               }
             }
           }
+          // First Journey slice: return to the route after earned completion so
+          // the companion is visibly waiting at the newly unlocked lesson.
+          // This presentation-only transition never awards progress.
+          if (completedLessonId === "section_1_module_1_lesson_1" && completedLessonIds.includes(completedLessonId)) {
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("learningHome");
+            return;
+          }
           const modComplete = mod && isModuleFullyComplete(mod);
           const secComplete = sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id);
           const modAccuracy = moduleScoreableBlocks > 0
@@ -578,7 +608,7 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
             setScreen("home");
           }
         }}
-        nextLessonLabel={nextLessonLabel}
+        nextLessonLabel={learningLesson?.id === "section_1_module_1_lesson_1" ? "Follow your companion along the path" : nextLessonLabel}
       />
     );
   }
