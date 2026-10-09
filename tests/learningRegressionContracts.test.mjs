@@ -252,7 +252,7 @@ test("Journey is the only normal lesson entry and companion choice is one-time",
   assert.match(journey, /Choose your journey companion/);
   assert.match(companion, /hasChosen: choice !== null/);
   assert.match(companion, /localStorage\.setItem\(STORAGE_PREFIX \+ userId, next\)/);
-  assert.doesNotMatch(journey, /onOpenLesson\?\.\(target\.lesson\.id\)/);
+  assert.match(journey, /onClick=\{\(\) => onOpenLesson\?\.\(target\.lesson\.id\)\}/);
   assert.match(training, /nextLessonLabel="Return to your Journey"/);
   assert.match(training, /All ordinary completed lessons return to the Journey/);
   assert.match(training, /setScreen\("learningHome"\)/);
@@ -268,13 +268,32 @@ test("Journey phone refinements keep the learning path primary and celebrate ear
   assert.match(journey, /Tap the highlighted lesson/);
   assert.match(journey, /text-\[17px\].*Every phrase takes you further/);
   assert.doesNotMatch(journey, /disabled=\{status === "locked"\} onClick=\{\(\) => onOpenSection/);
-  assert.match(lesson, /z-journey-mini-cheer/);
-  assert.match(lesson, /journeyCompanion=\{journeyCompanion\}/);
+  assert.match(lesson, /z-journey-companion-strip/);
+  assert.match(lesson, /onCorrect=\{isJourneyFirstGreeting/);
+  assert.doesNotMatch(lesson, /z-journey-mini-cheer/);
   assert.match(lesson, /paddingTop: "16px"/);
   assert.match(lesson, /Return to your Journey/);
   assert.match(css, /z-journey-lesson \.z-journey-vocab-card[\s\S]*?min-height:65px/);
   assert.match(css, /prefers-reduced-motion:reduce/);
   assert.match(css, /html\[data-theme="dark"\] \.z-journey-first-scenario/);
+});
+
+test("Journey correct-answer feedback remains in the top companion area and scenario choices scroll into view", () => {
+  const journey = source("src/views/training/LearningHome.jsx");
+  const lesson = source("src/views/training/LearningLessonView.jsx");
+  const scenario = source("src/views/training/ScenarioV2Block.jsx");
+  const css = source("src/index.css");
+  assert.match(journey, /Go to next lesson:/);
+  assert.match(journey, /Next destination · Tap to begin/);
+  assert.match(lesson, /blockIndex === 0 \? \(/);
+  assert.match(lesson, /celebratedBlockId === currentBlock\?\.id/);
+  assert.match(lesson, /onCorrect\?\.\(\)/);
+  assert.match(lesson, /setCelebratedBlockId\(null\)/);
+  assert.match(css, /\.z-journey-companion-strip/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.match(scenario, /const replyTrayRef = useRef\(null\)/);
+  assert.match(scenario, /ref=\{replyTrayRef\}/);
+  assert.match(scenario, /tray\.scrollIntoView\(\{ behavior: "smooth", block: "start"/);
 });
 
 // C3 tests execute the real lesson/store resume and scoring paths.

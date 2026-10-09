@@ -319,7 +319,7 @@ function ChoiceFeedbackAction({ isCorrect, isSoftPass = false, correctText, corr
   );
 }
 
-function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, journeyCompanion }) {
+function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, onCorrect }) {
   const [selectedId, setSelectedId] = useState(null);
   const [revealState, setRevealState] = useState("idle");
   const options = Array.isArray(block?.options) ? block.options : [];
@@ -347,6 +347,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, jo
     setSelectedId(option.id);
     setRevealState("revealed");
     onComplete?.();
+    if (isCorrectChoiceOption(option)) onCorrect?.();
     const softPass = isSoftPassChoiceOption(option);
     if (!isCorrectChoiceOption(option) && !softPass) onWrongAnswer?.();
     const answerAudio = getChoiceAnswerAudio(block, option, correctOption);
@@ -431,13 +432,6 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, jo
 
       {revealState === "revealed" ? (
         <div ref={feedbackRef}>
-          {journeyCompanion && isCorrectChoiceOption(selected) ? (
-            <div className="z-journey-mini-cheer" role="status" aria-label="Correct answer! Your companion celebrates.">
-              <span className="z-journey-mini-cheer-avatar" aria-hidden="true">{journeyCompanion.symbol}</span>
-              <span className="z-journey-mini-cheer-sparkles" aria-hidden="true">✦</span>
-              <span className="z-journey-mini-cheer-text">Nice one!</span>
-            </div>
-          ) : null}
           <ChoiceFeedbackAction
             isCorrect={isCorrectChoiceOption(selected)}
             isSoftPass={selectedIsSoftPass}
@@ -1987,11 +1981,11 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
 }
 
 
-function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef, onExit, lessonId, journeyCompanion }) {
+function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef, onExit, lessonId, onCorrect }) {
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
     case "recognise_mcq": case "listen_mcq": case "best_response":
-      return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} journeyCompanion={journeyCompanion}/>;
+      return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} onCorrect={onCorrect}/>;
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed} lessonId={lessonId}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
@@ -2084,6 +2078,7 @@ export default function LearningLessonView({
   const blocks = useMemo(() => (Array.isArray(lesson?.blocks) ? lesson.blocks : []), [lesson]);
   const { selected: journeyCompanion } = useJourneyCompanion(userId);
   const isJourneyFirstGreeting = lesson?.id === "section_1_module_1_lesson_1";
+  const [celebratedBlockId, setCelebratedBlockId] = useState(null);
   const completeLesson = useGameStore((s) => s.completeLesson);
   const earnLessonXP = useGameStore((s) => s.earnLessonXP);
   const setLessonProgress = useGameStore((s) => s.setLessonProgress);
@@ -2093,6 +2088,7 @@ export default function LearningLessonView({
   if (!attemptRef.current) attemptRef.current = resumeAttempt(lesson, lessonProgress?.[lesson?.id], completedLessonIds.includes(lesson?.id));
   const [phase, setPhase] = useState("loading");
   const [blockIndex, setBlockIndex] = useState(attemptRef.current.blockIndex);
+  useEffect(() => { setCelebratedBlockId(null); }, [blockIndex]);
   const [completedBlockIds, setCompletedBlockIds] = useState(attemptRef.current.completedBlockIds);
   const [wrongBlockIds, setWrongBlockIds] = useState(attemptRef.current.wrongBlockIds);
   const wrongAnswerCount = Object.keys(wrongBlockIds).length;
@@ -2320,21 +2316,34 @@ export default function LearningLessonView({
             </div>
           </div>
 
-          {isJourneyFirstGreeting ? (
+          {isJourneyFirstGreeting && blockIndex === 0 ? (
             <div className="z-journey-lesson-scene z-journey-dark relative mb-4 overflow-hidden rounded-[27px] p-5">
               <JourneyScene compact companion={journeyCompanion} />
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="z-journey-scene-kicker">FIRST CONTACT · TOWN SQUARE</div>
-                  <div className="mt-2 font-serif text-[23px] font-semibold leading-tight text-white">{blockIndex === 0 ? "Say your first hello" : "Hello and Goodbye"}</div>
-                  <div className="z-journey-scene-caption mt-2">{blockIndex === 0
-                    ? "Learn your first friendly greetings."
-                    : `Step ${blockIndex + 1} of ${totalBlocks} · Keep going, you're making progress.`}</div>
+                  <div className="mt-2 font-serif text-[23px] font-semibold leading-tight text-white">Say your first hello</div>
+                  <div className="z-journey-scene-caption mt-2">Learn your first friendly greetings.</div>
                 </div>
                 <div className="z-journey-scene-companion flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl">
-                  <Companion companion={journeyCompanion} size="text-[30px]" animated={blockIndex === 0} />
+                  <Companion companion={journeyCompanion} size="text-[30px]" />
                 </div>
               </div>
+            </div>
+          ) : isJourneyFirstGreeting ? (
+            <div className="z-journey-companion-strip z-journey-dark relative mb-3 flex h-[61px] items-center justify-end overflow-hidden rounded-[19px] px-4">
+              <span className="sr-only" role="status" aria-live="polite">
+                {celebratedBlockId === currentBlock?.id ? "Great job! Your companion is celebrating." : ""}
+              </span>
+              {celebratedBlockId === currentBlock?.id ? (
+                <div className="z-journey-companion-cheer" key={currentBlock.id} aria-hidden="true">
+                  <span className="z-journey-companion-encouragement">Nice one!</span>
+                  <span className="z-journey-companion-sparkle">✦</span>
+                  <Companion companion={journeyCompanion} size="text-[38px]" label={false} />
+                </div>
+              ) : (
+                <Companion companion={journeyCompanion} size="text-[38px]" label={false} />
+              )}
             </div>
           ) : null}
 
@@ -2345,7 +2354,7 @@ export default function LearningLessonView({
               <BlockRenderer
                 onExit={leaveLesson}
                 lessonId={lesson?.id}
-                journeyCompanion={journeyCompanion}
+                onCorrect={isJourneyFirstGreeting ? () => setCelebratedBlockId(currentBlock.id) : undefined}
                 key={currentBlock.id}
                 block={currentBlock}
                 playText={playText}

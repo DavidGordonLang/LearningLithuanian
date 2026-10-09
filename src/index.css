@@ -1169,3 +1169,48 @@ html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-complete-action {
 @media(prefers-reduced-motion:reduce) {
   .z-journey-mini-cheer-avatar,.z-journey-mini-cheer-sparkles{animation:none}
 }
+
+/* First Contact: compact repeat-block header keeps the companion at the top.
+   Success feedback animates in place without shifting the answer controls. */
+.z-journey-companion-strip {
+  background: linear-gradient(105deg,#174537,#12473b 68%,#0b3028);
+  border: 1px solid rgba(150,220,180,.46);
+  box-shadow: 0 6px 20px rgba(4,33,25,.15);
+}
+.z-journey-companion-cheer {
+  display:flex;align-items:center;gap:8px;
+  color:#dbf7e3;
+  font-weight:800;
+}
+.z-journey-companion-encouragement {
+  font-size:13px;line-height:1;
+  animation:z-journey-success-glow .55s ease-out both;
+}
+.z-journey-companion-sparkle {
+  font-size:17px;color:#ffdc79;
+  animation:z-journey-twinkle .6s ease-out both;
+}
+.z-journey-companion-cheer > span:last-child {
+  animation:z-journey-hop .65s ease-out both;
+}
+@keyframes z-journey-success-glow {
+  0% {opacity:0;transform:translateX(5px)}
+  100% {opacity:1;transform:translateX(0)}
+}
+.z-journey-continue {cursor:pointer}
+.z-journey-continue:active {transform:translateY(1px)}
+.z-journey-continue:focus-visible {outline:2px solid #c6f8d6}
+
+/* Keep the scenery as a contextual strip in a live dialogue rather than
+   consuming a large part of the available mobile viewport. */
+.z-journey-first-scenario .scenario-v2-chat-window > .z-journey-landscape {
+  height:84px;
+}
+.z-journey-first-scenario .scenario-v2-reply-tray {
+  scroll-margin-top:12px;
+}
+@media (prefers-reduced-motion:reduce) {
+  .z-journey-companion-cheer *,
+  .z-journey-companion-encouragement,
+  .z-journey-continue {animation:none;transition:none}
+}

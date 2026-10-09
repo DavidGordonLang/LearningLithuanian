@@ -518,6 +518,7 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
   const revealedTurnKeyRef = useRef(null);
   const playTextRef = useRef(playText);
   const feedRef = useRef(null);
+  const replyTrayRef = useRef(null);
   const headingRef = useRef(null);
   useEffect(() => { headingRef.current?.focus(); }, []);
   const [stepIndex, setStepIndex] = useState(0);
@@ -844,6 +845,28 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
   }
 
   const activeSpeakerReady = (stepSpeakerCommitted || turnPhase === "speaker") && !followUpTurn && !helpTurn && !finalTurn && !complete && !learnerAudioPending;
+  // The dialogue can be taller than the phone. As soon as a reply is available,
+  // bring the response tray into view in the fixed scenario scroll container.
+  // Don't steal the user's scroll position while waiting for a speaker or after
+  // an answer is selected (the feedback sheet owns that interaction).
+  useEffect(() => {
+    if (!activeSpeakerReady || selectedOptionForStep || complete) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const tray = replyTrayRef.current;
+      if (!tray || typeof tray.getBoundingClientRect !== "function") return;
+      const bounds = tray.getBoundingClientRect();
+      const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 0;
+      if (!viewportHeight || (bounds.top < viewportHeight * 0.58 && bounds.bottom <= viewportHeight - 12)) return;
+      try {
+        tray.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      } catch {
+        tray.scrollIntoView?.();
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeSpeakerReady, step?.id, selectedOptionForStep, complete]);
+
+
   const activeTurn = step && !stepSpeakerCommitted
     ? {
       speakerId: step.speakerId,
@@ -901,6 +924,7 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
 
         {!complete && step ? (
           <div
+            ref={replyTrayRef}
             aria-busy={!activeSpeakerReady}
             className={cn(
               "scenario-v2-reply-tray mt-3 rounded-[24px] border px-4 py-3 transition-opacity duration-150",

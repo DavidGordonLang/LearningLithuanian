@@ -164,10 +164,15 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
         </div>
       </div>
       {target ? (
-        <div className="z-journey-dark z-journey-continue mt-3 rounded-2xl border border-emerald-400/45 px-4 py-3">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Next destination · Find your companion on the path ↓</div>
+        <button
+          type="button"
+          onClick={() => onOpenLesson?.(target.lesson.id)}
+          className="z-journey-dark z-journey-continue mt-3 w-full rounded-2xl border border-emerald-400/45 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+          aria-label={`Go to next lesson: ${target.lesson.title}`}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Next destination · Tap to begin <span aria-hidden="true">→</span></div>
           <div className="mt-1 text-[16px] font-bold text-white">{target.lesson.title}</div>
-        </div>
+        </button>
       ) : (
         <div className="z-journey-complete mt-4 rounded-2xl border border-emerald-300/40 bg-emerald-500/15 p-4 text-center text-emerald-50">🏆 Every available lesson is complete. Explore a destination to review what you've learned.</div>
       )}
