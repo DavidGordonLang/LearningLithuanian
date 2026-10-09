@@ -693,3 +693,202 @@ button,
     border: 1px solid rgba(255,255,255,0.10);
   }
 }
+
+
+/* ============================================================================
+   Journey v1 (dev pilot): deliberately scoped colour and activity styling.
+   Light-mode global Tailwind overrides must NOT turn text dark on dark scenes.
+   The palette stays legible in dark and light themes without changing other lessons.
+   ============================================================================ */
+.z-journey-dark {
+  background-color: #0c302a;
+  color: #f4faf6;
+}
+.z-journey-dark .text-white,
+.z-journey-dark .text-zinc-50,
+.z-journey-dark .text-zinc-100 { color: #fffaf1; }
+.z-journey-dark .text-zinc-200,
+.z-journey-dark .text-zinc-300,
+.z-journey-dark .text-zinc-400,
+.z-journey-dark .text-zinc-500 { color: #dceee4; }
+.z-journey-dark .text-emerald-100,
+.z-journey-dark .text-emerald-200,
+.z-journey-dark .text-emerald-300 { color: #bcf4d4; }
+html[data-theme="light"] .z-journey-dark .text-zinc-50,
+html[data-theme="light"] .z-journey-dark .text-zinc-100,
+html[data-theme="light"] .z-journey-dark .text-white { color: #fffaf1; }
+html[data-theme="light"] .z-journey-dark .text-zinc-200,
+html[data-theme="light"] .z-journey-dark .text-zinc-300,
+html[data-theme="light"] .z-journey-dark .text-zinc-400,
+html[data-theme="light"] .z-journey-dark .text-zinc-500 { color: #dceee4; }
+html[data-theme="light"] .z-journey-dark .text-emerald-100,
+html[data-theme="light"] .z-journey-dark .text-emerald-200,
+html[data-theme="light"] .z-journey-dark .text-emerald-300 { color: #bcf4d4; }
+.z-journey-continue {
+  background: linear-gradient(115deg,#175444,#0b3334);
+  border-color: rgba(146,238,187,0.46);
+}
+.z-journey-continue:hover { background: linear-gradient(115deg,#21634f,#164244); }
+.z-journey-complete { color: var(--z-text); }
+
+/* The first teaching lesson uses a consistent visual language for every block,
+   not just its introductory block. The authored question/scoring stays intact. */
+.z-journey-lesson {
+  --journey-card: #122e29;
+  --journey-inset: #1a4035;
+  --journey-option: #224b3d;
+  --journey-border: rgba(170,236,205,0.27);
+  --journey-ink: #f6fcf8;
+  --journey-muted: #cfdfd5;
+}
+html[data-theme="light"] .z-journey-lesson {
+  --journey-card: #fffaf0;
+  --journey-inset: #efe4cc;
+  --journey-option: #fffef9;
+  --journey-border: rgba(60,103,79,0.29);
+  --journey-ink: #21372d;
+  --journey-muted: #4d6255;
+}
+.z-journey-lesson .z-journey-progress-label {
+  color: var(--z-text);
+  opacity: .82;
+  font-size: 12px;
+  font-weight: 600;
+}
+.z-journey-lesson-scene {
+  color: #fffaf1;
+  min-height: 140px;
+  background: linear-gradient(125deg,#1f6d55 0%,#164c46 53%,#113843 100%);
+  border: 1px solid rgba(213,246,224,.33);
+  box-shadow: 0 14px 35px rgba(8,28,25,.16);
+}
+.z-journey-lesson-scene .text-white {color:#fffaf1}
+.z-journey-scene-kicker {
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 800;
+  letter-spacing: .09em;
+  color: #d2f9df;
+}
+.z-journey-scene-caption {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #f0f8f3;
+}
+.z-journey-scene-companion {
+  background:rgba(9,39,37,.59);
+  border:1px solid rgba(219,246,226,.32);
+  box-shadow: 0 12px 25px rgba(0,0,0,.13);
+}
+.z-journey-hill {
+  position: absolute;
+  width: 230px;
+  height: 112px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.z-journey-hill-back {right:-45px;bottom:-60px;background:#408469;opacity:.55}
+.z-journey-hill-front {left:-70px;bottom:-80px;background:#164c3a;opacity:.60}
+.z-journey-skyline {
+  position:absolute;
+  right:17px;
+  top:7px;
+  font-size:29px;
+  opacity:.25;
+  letter-spacing:2px;
+  pointer-events:none;
+}
+.z-journey-lesson .z-journey-exercise {
+  background:var(--journey-card);
+  border:1px solid var(--journey-border);
+  box-shadow:0 13px 35px rgba(30,55,41,.12);
+  border-radius:26px;
+  padding:16px;
+}
+.z-journey-lesson .z-journey-vocab-card {
+  background:var(--journey-inset);
+  border:1px solid var(--journey-border);
+  padding:17px 18px;
+  border-radius:19px;
+  box-shadow:inset 0 1px rgba(255,255,255,.10);
+}
+.z-journey-lesson .z-journey-vocab-card .text-zinc-100 {
+  font-size:20px;
+  line-height:1.35;
+  font-weight:700;
+}
+.z-journey-lesson .z-journey-vocab-card .text-zinc-400 {
+  color:var(--journey-muted);
+  font-size:14px;
+  line-height:1.55;
+  margin-top:4px;
+}
+html[data-theme="light"] .z-journey-lesson .z-journey-vocab-card .text-zinc-100 {
+  color:var(--journey-ink);
+}
+.z-journey-lesson .z-journey-question-layout {
+  min-height:0;
+  gap:12px;
+}
+.z-journey-lesson .z-journey-option-placement {
+  padding-top:0;
+  flex:0 0 auto;
+  justify-content:flex-start;
+}
+.z-journey-lesson .z-journey-choice-panel {
+  background:var(--journey-inset);
+  border:1px solid var(--journey-border);
+  border-radius:18px;
+  box-shadow:none;
+  padding:14px;
+}
+.z-journey-lesson .z-journey-choice-panel .text-zinc-500 {
+  color:var(--journey-muted);
+  font-weight:650;
+  font-size:13px;
+}
+.z-journey-lesson .z-journey-choice-panel .text-zinc-100 {
+  color:var(--journey-ink);
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="idle"] {
+  background:var(--journey-option);
+  color:var(--journey-ink);
+  border:1px solid var(--journey-border);
+  border-radius:16px;
+  font-size:16px;
+  font-weight:600;
+  padding:17px 18px;
+  box-shadow:0 3px 8px rgba(0,0,0,.05);
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="idle"]:hover,
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="idle"]:focus-visible {
+  border-color:#459f74;
+  outline:2px solid rgba(69,159,116,.22);
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="correct"] {
+  background:rgba(16,185,129,.16);
+  color:var(--journey-ink);
+  border-color:#4da87a;
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="soft"] {
+  background:rgba(230,167,46,.15);
+  color:var(--journey-ink);
+  border-color:#b98737;
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="wrong"] {
+  background:rgba(190,65,65,.11);
+  color:var(--journey-ink);
+  border-color:#b96666;
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="muted"] {
+  background:var(--journey-inset);
+  color:var(--journey-muted);
+  border-color:var(--journey-border);
+}
+html[data-theme="light"] .z-journey-lesson .z-journey-answer {
+  color:var(--journey-ink);
+}
+@media (prefers-reduced-motion:reduce) {
+  .z-journey-lesson-scene *,
+  .z-journey-lesson .z-journey-answer {animation:none;transition:none}
+}

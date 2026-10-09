@@ -39,7 +39,7 @@ function SectionJourney({ section, sectionIndex, state, target, completed, compa
   const currentModule = moduleStates.find(m => m.status === "current")?.module;
   const isSectionCheckpointCurrent = focused && !currentModule && sectionCheckpointStatus === "unlocked";
   return (
-    <section className={`relative overflow-hidden rounded-[27px] border ${focused ? "border-emerald-400/60 shadow-[0_12px_42px_rgba(4,120,87,0.24)]" : "border-white/10"} bg-gradient-to-br ${theme.gradient}`}>
+    <section className={`relative overflow-hidden rounded-[27px] border ${focused ? "border-emerald-400/60 shadow-[0_12px_42px_rgba(4,120,87,0.24)]" : "border-white/10"} z-journey-dark bg-gradient-to-br ${theme.gradient}`}>
       <div className="relative px-5 pt-5 pb-4">
         <span className="pointer-events-none absolute right-3 top-3 text-[69px] opacity-25" aria-hidden="true">{theme.icon}</span>
         <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/80">Destination {section.code} of 5 · {theme.place}</div>
@@ -127,7 +127,7 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
         <div className="text-center text-[16px] font-semibold text-zinc-100">Your Journey</div>
         <span className="text-right text-[12px] font-medium text-amber-300" aria-label={`${streakDays || 0} day streak`}>🔥 {streakDays || 0}</span>
       </div>
-      <div className="relative mt-5 overflow-hidden rounded-[27px] border border-emerald-300/30 bg-gradient-to-br from-teal-700 via-emerald-950 to-slate-950 p-5">
+      <div className="z-journey-dark relative mt-5 overflow-hidden rounded-[27px] border border-emerald-300/30 bg-gradient-to-br from-teal-700 via-emerald-950 to-slate-950 p-5">
         <div className="pointer-events-none absolute -right-4 top-0 text-[110px] opacity-20" aria-hidden="true">🌲</div>
         <div className="relative text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200">Žodis · Learn it. Say it. Live it.</div>
         <h1 className="relative mt-2 font-serif text-[28px] font-bold leading-tight text-white">Every phrase takes you further.</h1>
@@ -144,13 +144,13 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
         <div className="mt-2 text-[10px] text-emerald-100/75">Companion selection is saved on this device for your account during the prototype.</div>
       </div>
       {target ? (
-        <button type="button" onClick={() => onOpenLesson?.(target.lesson.id)} className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-emerald-400/45 bg-emerald-500/15 px-4 py-4 text-left shadow-lg">
+        <button type="button" onClick={() => onOpenLesson?.(target.lesson.id)} className="z-journey-dark z-journey-continue mt-4 flex w-full items-center gap-3 rounded-2xl border border-emerald-400/45 bg-emerald-500/15 px-4 py-4 text-left shadow-lg">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-2xl" aria-hidden="true">▶</span>
           <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-widest text-emerald-200">Continue your adventure</span><span className="mt-1 block text-[16px] font-bold text-white">{target.lesson.title}</span><span className="block text-[11px] text-zinc-300">{target.section.title}</span></span>
           <span className="text-xl text-emerald-200" aria-hidden="true">→</span>
         </button>
       ) : (
-        <div className="mt-4 rounded-2xl border border-emerald-300/40 bg-emerald-500/15 p-4 text-center text-emerald-50">🏆 Every available lesson is complete. Explore a destination to review what you've learned.</div>
+        <div className="z-journey-complete mt-4 rounded-2xl border border-emerald-300/40 bg-emerald-500/15 p-4 text-center text-emerald-50">🏆 Every available lesson is complete. Explore a destination to review what you've learned.</div>
       )}
       <div className="mb-3 mt-7 px-1 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Explore your five destinations</div>
       <div className="space-y-4">

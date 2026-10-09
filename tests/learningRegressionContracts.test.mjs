@@ -220,6 +220,25 @@ test("training resume prefers the most recently active unfinished lesson", () =>
   assert.match(homeSrc, /if \(saved\) return saved/);
 });
 
+test("Journey entry is primary and first lesson has actual visual treatment", () => {
+  const trainingHome = source("src/views/training/TrainingHome.jsx");
+  const lesson = source("src/views/training/LearningLessonView.jsx");
+  const journey = source("src/views/training/LearningHome.jsx");
+  const css = source("src/index.css");
+
+  assert.match(trainingHome, /ctaLabel="Explore your Journey"/);
+  assert.match(trainingHome, /onPrimary=\{onBrowseCourse\}/);
+  assert.match(journey, /getCourseBrowseState\(allSections, completedLessonIds\)/);
+  assert.match(journey, /z-journey-dark/);
+  assert.match(lesson, /isJourneyFirstGreeting \? "z-journey-lesson" : ""/);
+  assert.match(lesson, /z-journey-exercise/);
+  assert.match(lesson, /z-journey-question-layout/);
+  assert.match(lesson, /data-journey-answer-state/);
+  assert.match(css, /html\[data-theme="light"\] \.z-journey-dark \.text-zinc-200/);
+  assert.match(css, /\.z-journey-lesson \.z-journey-question-layout[\s\S]*?min-height:0/);
+  assert.match(css, /\.z-journey-lesson \.z-journey-answer\[data-journey-answer-state="idle"\]/);
+});
+
 // C3 tests execute the real lesson/store resume and scoring paths.
 
 test("lesson and admin resets persist the intended account state instead of using logout reset", () => {

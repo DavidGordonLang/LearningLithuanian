@@ -368,7 +368,7 @@ function LessonLauncher({
             className="z-btn z-btn-secondary rounded-2xl px-5 py-3 text-sm justify-center"
             onClick={onBrowseCourse}
           >
-            Browse course
+            Skip map · Start lesson
           </button>
         ) : null}
       </div>
@@ -482,17 +482,11 @@ export default function TrainingHome({
 
       <div className="mt-5">
         <LessonLauncher
-          title={learningCardTitle}
-          meta={learningCardDesc}
-          ctaLabel={
-            learningDisabled
-              ? "Review lessons"
-              : isStartMode
-              ? "Start lesson"
-              : "Continue lesson"
-          }
-          onPrimary={learningDisabled ? onBrowseCourse : onStartLearning}
-          onBrowseCourse={onBrowseCourse}
+          title="Your Lithuanian journey"
+          meta={learningDisabled ? "Revisit your five destinations and practise what you know." : `Meet your companion, explore the path and continue: ${learningCardTitle}.`}
+          ctaLabel="Explore your Journey"
+          onPrimary={onBrowseCourse}
+          onBrowseCourse={learningDisabled ? null : onStartLearning}
         />
       </div>
 

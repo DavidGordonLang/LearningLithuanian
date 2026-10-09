@@ -227,7 +227,7 @@ function LearnBlock({ block, playText, onComplete, completed, navBarRef }) {
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        <div key={item.id} className="z-journey-vocab-card rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[17px] font-semibold text-zinc-100">
@@ -273,7 +273,8 @@ function ChoiceOption({ option, selected, revealState, onClick, playText, playAu
   const Container = revealState === "idle" ? "button" : "div";
   return (
     <Container type={revealState === "idle" ? "button" : undefined} data-press onClick={revealState === "idle" ? handleClick : undefined}
-      className={cn("w-full text-left rounded-2xl border px-4 py-3.5 text-[15px] leading-snug transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
+      data-journey-answer-state={revealState === "idle" ? "idle" : isCorrectChoiceOption(option) ? "correct" : selected && softPass ? "soft" : selected ? "wrong" : "muted"}
+      className={cn("z-journey-answer w-full text-left rounded-2xl border px-4 py-3.5 text-[15px] leading-snug transition", stateClass, revealState !== "idle" ? "cursor-default" : "")}>
       {showWordTap
         ? <InteractivePhraseText text={option.text} playText={playText} wordClassName="hover:text-emerald-300" />
         : option.text}
@@ -338,7 +339,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
     : isBestResponse
     ? "Choose the best response"
     : "Choose the correct answer";
-  const choicePanelClass = "rounded-3xl border border-white/10 bg-black/10 shadow-[0_10px_30px_rgba(0,0,0,0.12)]";
+  const choicePanelClass = "z-journey-choice-panel rounded-3xl border border-white/10 bg-black/10 shadow-[0_10px_30px_rgba(0,0,0,0.12)]";
 
   const handleSelect = (option) => {
     if (revealState !== "idle") return;
@@ -362,7 +363,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
 
   return (
     <div className="space-y-3">
-      <div className="flex min-h-[54dvh] flex-col">
+      <div className="z-journey-question-layout flex min-h-[54dvh] flex-col">
         <div className={cn("shrink-0 p-3", choicePanelClass)}>
           {/* Instruction */}
           <div className="text-[12px] text-zinc-500 tracking-wide mb-3">
@@ -405,7 +406,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
           ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col justify-end pt-8">
+        <div className="z-journey-option-placement flex flex-1 flex-col justify-end pt-8">
           <div className={cn("p-2.5", choicePanelClass)}>
             <div className="grid gap-2">
               {options.map((option) => (
@@ -2264,7 +2265,7 @@ export default function LearningLessonView({
   }
 
   return (
-    <div className="max-w-xl mx-auto px-4 pt-4 pb-6 flex flex-col" data-swipe-block="true">
+    <div className={cn("max-w-xl mx-auto px-4 pt-4 pb-6 flex flex-col", isJourneyFirstGreeting ? "z-journey-lesson" : "")} data-swipe-block="true">
 
       {/* ── Lesson complete — full screen NailedItCard, no header/progress ── */}
       {lessonComplete ? (
@@ -2287,7 +2288,7 @@ export default function LearningLessonView({
             <TrainingBackButton onClick={leaveLesson} />
             <div className="text-center">
                 <div className="text-[11px] text-zinc-500 tracking-wide">{section?.title || ""}</div>
-                <div className="text-[15px] font-semibold text-zinc-100 leading-tight">{lessonDisplayLabel}</div>
+                <div className="text-[15px] font-semibold text-zinc-100 leading-tight">{isJourneyFirstGreeting ? lesson.title : lessonDisplayLabel}</div>
               </div>
             {typeof onBrowseCourse === "function" ? (
               <div className="flex items-center justify-end">
@@ -2301,32 +2302,36 @@ export default function LearningLessonView({
           {/* Progress bar */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
-              <div className="text-[11px] text-zinc-600">Block {Math.min(blockIndex + 1, totalBlocks)} / {totalBlocks}</div>
-              <div className="text-[11px] text-zinc-600">{progressPct}%</div>
+              <div className={cn("text-[11px] text-zinc-600", isJourneyFirstGreeting ? "z-journey-progress-label" : "")}>{isJourneyFirstGreeting ? "Your journey · Step " : "Block "}{Math.min(blockIndex + 1, totalBlocks)} / {totalBlocks}</div>
+              <div className={cn("text-[11px] text-zinc-600", isJourneyFirstGreeting ? "z-journey-progress-label" : "")}>{progressPct}%</div>
             </div>
             <div className="h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
               <div className="h-full bg-emerald-500/80 rounded-full transition-all duration-300" style={{ width: `${progressPct}%` }}/>
             </div>
           </div>
 
-          {isJourneyFirstGreeting && blockIndex === 0 ? (
-            <div className="relative mb-4 overflow-hidden rounded-3xl border border-emerald-300/35 bg-gradient-to-r from-teal-700 via-emerald-900 to-slate-950 p-4 shadow-lg">
-              <div className="pointer-events-none absolute right-3 top-1 text-6xl opacity-25" aria-hidden="true">🏘️</div>
-              <div className="relative flex items-center gap-4">
-                <div className="flex h-[69px] w-[69px] shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-black/25">
-                  <Companion companion={journeyCompanion} size="text-[43px]" animated />
+          {isJourneyFirstGreeting ? (
+            <div className="z-journey-lesson-scene z-journey-dark relative mb-4 overflow-hidden rounded-[27px] p-5">
+              <div className="z-journey-hill z-journey-hill-back" aria-hidden="true" />
+              <div className="z-journey-hill z-journey-hill-front" aria-hidden="true" />
+              <div className="z-journey-skyline" aria-hidden="true">🌲 🏠 🌳</div>
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="z-journey-scene-kicker">FIRST CONTACT · TOWN SQUARE</div>
+                  <div className="mt-2 font-serif text-[23px] font-semibold leading-tight text-white">{blockIndex === 0 ? "Say your first hello" : "Hello and Goodbye"}</div>
+                  <div className="z-journey-scene-caption mt-2">{blockIndex === 0
+                    ? "Learn your first friendly greetings."
+                    : `Step ${blockIndex + 1} of ${totalBlocks} · Keep going, you're making progress.`}</div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Your first destination · The town square</div>
-                  <div className="mt-1 font-serif text-[20px] font-semibold text-white">Say your first hello</div>
-                  <div className="mt-1 text-[12px] leading-snug text-zinc-200">Listen, recognise and practise greetings before your first short exchange.</div>
+                <div className="z-journey-scene-companion flex h-[66px] w-[66px] shrink-0 items-center justify-center rounded-[23px]">
+                  <Companion companion={journeyCompanion} size="text-[40px]" animated={blockIndex === 0} />
                 </div>
               </div>
             </div>
           ) : null}
 
           {/* Block content */}
-          <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4")}>
+          <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4", isJourneyFirstGreeting ? "z-journey-exercise" : "")}>
             {!isScenarioBlock && !isChoiceBlock ? <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">{currentBlock?.title || ""}</div> : null}
             {currentBlock ? (
               <BlockRenderer
