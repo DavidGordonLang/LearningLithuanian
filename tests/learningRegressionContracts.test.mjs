@@ -216,7 +216,8 @@ test("training resume prefers the most recently active unfinished lesson", () =>
   const trainingSrc = source("src/views/TrainingView.jsx");
   const homeSrc = source("src/views/training/LearningHome.jsx");
   assert.match(trainingSrc, /findLatestInProgressLesson\(allSections, completedLessonIds, lessonProgress\) \|\| findNextLesson/);
-  assert.match(homeSrc, /const resumeTarget = findLatestInProgressLesson\(allSections, completedLessonIds, lessonProgress\)/);
+  assert.match(homeSrc, /const saved = findLatestInProgressLesson\(sections, completedLessonIds, lessonProgress\)/);
+  assert.match(homeSrc, /if \(saved\) return saved/);
 });
 
 // C3 tests execute the real lesson/store resume and scoring paths.
@@ -309,8 +310,12 @@ test("learner course browser uses real progress state instead of content active/
   assert.match(moduleSrc, /allLessonsDone[\s\S]*\? "current"[\s\S]*: "locked"/);
 
   assert.match(homeSrc, /getCourseBrowseState\(allSections, completedLessonIds\)/);
-  assert.match(homeSrc, /<SmallMetaPill>Locked<\/SmallMetaPill>/);
-  assert.match(homeSrc, /mod\.isSectionCheckpoint/);
+  assert.match(homeSrc, /getSectionBrowseState\(section, \[\.\.\.completed\]\)/);
+  assert.match(homeSrc, /state\.status === "locked"/);
+  assert.match(homeSrc, /module\.isSectionCheckpoint/);
+  assert.match(homeSrc, /disabled=\{!available\}/);
+  assert.match(trainingSrc, /onOpenLesson=\{\(lessonId\) =>/);
+  assert.match(trainingSrc, /completedLessonIds\.includes\(lessonId\)/);
 
   assert.match(trainingSrc, /onOpenCheckpoint=\{\(checkpointId\) =>/);
 });

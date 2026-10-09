@@ -73,6 +73,8 @@ export async function componentHarness(path, name, imports = {}) {
   const dependencies = { react, "react-dom": { createPortal: node => node },
     "../../services/analytics": { trackProductEvent() {} },
     "../../lib/productTelemetry": productTelemetry,
+    // Journey companion is a real local component; load it with the same React test double.
+    "./JourneyCompanion": { source: "src/views/training/JourneyCompanion.jsx" },
     ...imports };
   const require = id => {
     if (!(id in dependencies)) throw new Error(`Undeclared test dependency: ${id}`);
