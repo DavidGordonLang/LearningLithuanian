@@ -451,7 +451,7 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, on
   );
 }
 
-function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance, completed, lessonId }) {
+function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance, onCorrect, completed, lessonId }) {
   const [attemptState, setAttemptState] = useState("idle");
   const [failedAttempts, setFailedAttempts] = useState(0);
   const attemptCountRef = useRef(0);
@@ -473,6 +473,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
       if (passed) {
         setAttemptState("result_pass");
         onComplete?.();
+        onCorrect?.();
       } else {
         setAttemptState("result_fail");
         setFailedAttempts((n) => n + 1);
@@ -636,7 +637,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
       {attemptState !== "result_pass" ? (
         <div className="flex flex-col items-center gap-3">
           {!supported ? (
-            <ActionButton variant="secondary" onClick={() => onComplete?.()} className="w-full">Mark as spoken</ActionButton>
+            <ActionButton variant="secondary" onClick={() => { onComplete?.(); onCorrect?.(); }} className="w-full">Mark as spoken</ActionButton>
           ) : (
             <>
               <div className={cn("rounded-full border px-3 py-1 text-[12px] font-medium transition-colors",
@@ -1988,7 +1989,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
     case "recognise_mcq": case "listen_mcq": case "best_response":
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} onCorrect={onCorrect}/>;
     case "speak_self_check":
-      return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed} lessonId={lessonId}/>;
+      return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} onCorrect={onCorrect} completed={completed} lessonId={lessonId}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} onCorrect={onCorrect} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
@@ -2049,7 +2050,7 @@ function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLess
       <div className="flex flex-col gap-3 px-2">
         {typeof onContinue === "function" ? (
           <ActionButton onClick={onContinue} className="w-full">
-            {nextLessonLabel === "Return to your Journey" || firstGreeting ? "🗺️ Return to your Journey →" : nextLessonLabel ? `${nextLessonLabel} →` : "Continue →"}
+            {nextLessonLabel === "Continue your journey" || firstGreeting ? "🗺️ Continue your journey →" : nextLessonLabel ? `${nextLessonLabel} →` : "Continue →"}
           </ActionButton>
         ) : null}
         {typeof onContinue !== "function" ? (

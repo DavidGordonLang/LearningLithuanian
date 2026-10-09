@@ -566,7 +566,7 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
             setScreen("learningHome");
           }
         }}
-        nextLessonLabel="Return to your Journey"
+        nextLessonLabel="Continue your journey"
       />
     );
   }

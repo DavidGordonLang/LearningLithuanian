@@ -253,7 +253,7 @@ test("Journey is the only normal lesson entry and companion choice is one-time",
   assert.match(companion, /hasChosen: choice !== null/);
   assert.match(companion, /localStorage\.setItem\(STORAGE_PREFIX \+ userId, next\)/);
   assert.match(journey, /onClick=\{\(\) => onOpenLesson\?\.\(target\.lesson\.id\)\}/);
-  assert.match(training, /nextLessonLabel="Return to your Journey"/);
+  assert.match(training, /nextLessonLabel="Continue your journey"/);
   assert.match(training, /All ordinary completed lessons return to the Journey/);
   assert.match(training, /setScreen\("learningHome"\)/);
   assert.match(scenario, /z-journey-first-scenario/);
@@ -272,7 +272,7 @@ test("Journey phone refinements keep the learning path primary and celebrate ear
   assert.match(lesson, /onCorrect=\{isJourneyFirstGreeting/);
   assert.doesNotMatch(lesson, /z-journey-mini-cheer/);
   assert.match(lesson, /paddingTop: "16px"/);
-  assert.match(lesson, /Return to your Journey/);
+  assert.match(lesson, /Continue your journey/);
   assert.match(css, /z-journey-lesson \.z-journey-vocab-card[\s\S]*?min-height:65px/);
   assert.match(css, /prefers-reduced-motion:reduce/);
   assert.match(css, /html\[data-theme="dark"\] \.z-journey-first-scenario/);
@@ -299,6 +299,28 @@ test("Journey correct-answer feedback remains in the top companion area and scen
   assert.match(scenario, /const replyTrayRef = useRef\(null\)/);
   assert.match(scenario, /ref=\{replyTrayRef\}/);
   assert.match(scenario, /tray\.scrollIntoView\(\{ behavior: "smooth", block: "start"/);
+});
+
+test("Journey speech success and authored scenario feedback keep reward and theme contracts", () => {
+  const training = source("src/views/TrainingView.jsx");
+  const lesson = source("src/views/training/LearningLessonView.jsx");
+  const scenario = source("src/views/training/ScenarioV2Block.jsx");
+  const css = source("src/index.css");
+  assert.match(training, /nextLessonLabel="Continue your journey"/);
+  assert.match(lesson, /🗺️ Continue your journey →/);
+  assert.match(lesson, /function SpeakSelfCheckBlock\(\{[^}]*onCorrect/);
+  assert.match(lesson, /if \(passed\) \{[\s\S]*?setAttemptState\("result_pass"\);[\s\S]*?onComplete\?\.\(\);\s*onCorrect\?\.\(\);/);
+  assert.match(lesson, /Mark as spoken<\/ActionButton>/);
+  assert.match(lesson, /onClick=\{\(\) => \{ onComplete\?\.\(\); onCorrect\?\.\(\); \}\}/);
+  assert.match(lesson, /Skip for now/);
+  assert.match(lesson, /case "speak_self_check":[\s\S]*?onCorrect=\{onCorrect\}/);
+  assert.match(scenario, /journeyTheme=\{lessonId === "section_1_module_1_lesson_1"\}/);
+  assert.match(scenario, /z-journey-feedback-card/);
+  assert.match(scenario, /data-result=\{option\?\.result \|\| "wrong"\}/);
+  assert.match(scenario, /<JourneyScene compact label="Town square" \/>/);
+  assert.match(css, /html\[data-theme="dark"\] \.z-journey-first-scenario/);
+  assert.match(css, /html\[data-theme="light"\] \.z-journey-feedback \.z-journey-feedback-card/);
+  assert.match(css, /\.z-journey-feedback \.z-journey-feedback-card\[data-result="acceptable"\]/);
 });
 
 // C3 tests execute the real lesson/store resume and scoring paths.

@@ -1221,3 +1221,100 @@ html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-complete-action {
   .z-journey-companion-sparkle,
   .z-journey-continue {animation:none;transition:none}
 }
+
+/* First Contact scenario response feedback: same town-square storytelling as
+   lessons, but all correctness/acceptability rules remain owned by ScenarioV2. */
+.z-journey-feedback .scenario-v2-feedback-backdrop {
+  background:rgba(3,26,22,.65);
+}
+.z-journey-feedback .z-journey-feedback-card {
+  background:linear-gradient(165deg,#183e31,#0c2823) !important;
+  border:1px solid #69967c !important;
+  color:#f1faf1 !important;
+  box-shadow:0 24px 65px rgba(0,0,0,.5);
+}
+.z-journey-feedback-scene {
+  overflow:hidden;
+  margin:-16px -16px 14px;
+  border-radius:27px 27px 0 0;
+  border-bottom:2px solid rgba(217,239,206,.3);
+}
+.z-journey-feedback-scene .z-journey-landscape {
+  height:82px;
+}
+.z-journey-feedback .z-journey-feedback-status {
+  display:inline-flex;align-items:center;min-height:30px;
+  border-radius:999px;
+  border:1px solid rgba(166,226,182,.4);
+  padding:5px 11px;
+  background:rgba(69,138,92,.2);
+  color:#b9f0c9;
+  letter-spacing:.02em;
+  font-size:13px;
+}
+.z-journey-feedback .z-journey-feedback-card[data-result="acceptable"] .z-journey-feedback-status,
+.z-journey-feedback .z-journey-feedback-card[data-result="awkward"] .z-journey-feedback-status {
+  border-color:#b6a46d;color:#ffdda2;background:rgba(156,108,37,.20);
+}
+.z-journey-feedback .z-journey-feedback-card[data-result="wrong"] .z-journey-feedback-status,
+.z-journey-feedback .z-journey-feedback-card[data-result="repair"] .z-journey-feedback-status {
+  border-color:#b87f77;color:#ffcfbf;background:rgba(152,67,59,.15);
+}
+.z-journey-feedback .scenario-v2-feedback-inset {
+  background:#204638 !important;
+  border:1px solid #527b64 !important;
+  border-radius:15px;
+}
+.z-journey-feedback .z-journey-feedback-card .text-zinc-200 {
+  color:#e4f0e6 !important;
+}
+.z-journey-feedback .z-journey-feedback-card .text-zinc-500 {
+  color:#c4ddcb !important;
+}
+.z-journey-feedback .z-journey-feedback-card .scenario-v2-soft-answer {
+  color:#f7cf88 !important;
+}
+.z-journey-feedback .z-journey-feedback-card .z-correct-answer {
+  color:#8ce2b3 !important;
+}
+.z-journey-feedback .z-journey-feedback-card button:focus-visible {
+  outline:2px solid #9fe9b2;outline-offset:2px;
+}
+html[data-theme="light"] .z-journey-feedback .scenario-v2-feedback-backdrop {
+  background:rgba(39,51,33,.42);
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card {
+  background:linear-gradient(160deg,#fffaf0,#f1e8d5) !important;
+  border-color:#aabfa6 !important;
+  color:#263a2e !important;
+  box-shadow:0 22px 55px rgba(50,68,47,.25);
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-status {
+  background:#e0f0df;
+  border-color:#9fbd9f;
+  color:#235e3a;
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card[data-result="acceptable"] .z-journey-feedback-status,
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card[data-result="awkward"] .z-journey-feedback-status {
+  background:#f5e8c6;color:#815519;border-color:#c6ab78;
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card[data-result="wrong"] .z-journey-feedback-status,
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card[data-result="repair"] .z-journey-feedback-status {
+  background:#f7e6de;color:#8b493f;border-color:#c9a19a;
+}
+html[data-theme="light"] .z-journey-feedback .scenario-v2-feedback-inset {
+  background:#f8f1e0 !important;
+  border-color:#c8d2b8 !important;
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .text-zinc-200 {
+  color:#354639 !important;
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .text-zinc-500 {
+  color:#526253 !important;
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .scenario-v2-soft-answer {
+  color:#8a5a17 !important;
+}
+html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct-answer {
+  color:#24794b !important;
+}

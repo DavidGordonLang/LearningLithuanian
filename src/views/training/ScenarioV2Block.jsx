@@ -337,7 +337,7 @@ function resultMeta(option) {
   return { label: "Try again", tone: "border-rose-400/25 bg-rose-500/[0.07] text-rose-200" };
 }
 
-function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText, plainText = false }) {
+function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText, plainText = false, journeyTheme = false }) {
   if (!option) return null;
   const meta = resultMeta(option);
   const progresses = optionCanProgress(option);
@@ -345,13 +345,18 @@ function ScenarioV2FeedbackSheet({ option, onRetry, onContinue, playText, plainT
   const softPass = ["acceptable", "awkward"].includes(option.result);
 
   return (
-    <div className="fixed inset-0 z-[12020] flex items-center justify-center px-4 py-6">
+    <div className={cn("fixed inset-0 z-[12020] flex items-center justify-center px-4 py-6", journeyTheme && "z-journey-feedback")}>
       <div className="scenario-v2-feedback-backdrop absolute inset-0 backdrop-blur-[2px]" aria-hidden="true" />
       <div className="scenario-v2-pop relative w-full max-w-sm">
-        <div className={cn("scenario-v2-feedback-card max-h-[calc(100dvh-3rem)] overflow-y-auto rounded-[28px] border px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.48)]", meta.tone)}>
+        <div data-result={option?.result || "wrong"} className={cn("scenario-v2-feedback-card max-h-[calc(100dvh-3rem)] overflow-y-auto rounded-[28px] border px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.48)]", journeyTheme ? "z-journey-feedback-card" : meta.tone)}>
+          {journeyTheme ? (
+            <div className="z-journey-feedback-scene" aria-hidden="true">
+              <JourneyScene compact label="Town square" />
+            </div>
+          ) : null}
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold">{meta.label}</div>
+              <div className={cn("text-[13px] font-semibold", journeyTheme && "z-journey-feedback-status")}>{meta.label}</div>
               <div className="scenario-v2-feedback-inset mt-1 rounded-2xl border px-3 py-2">
                 <div className="text-[10px] uppercase tracking-widest text-zinc-500">Your answer</div>
                 <div className={cn("mt-0.5 text-[14px] font-semibold", softPass ? "scenario-v2-soft-answer" : option.result === "best" ? "z-correct-answer" : "text-rose-300")}>{plainText ? option.text : <InteractivePhraseText text={option.text} playText={playText} />}</div>
@@ -988,6 +993,7 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
           playText={playText}
           option={selectedOptionForStep}
           plainText={isComprehensionStep}
+          journeyTheme={lessonId === "section_1_module_1_lesson_1"}
           onRetry={() => setSelectedOption(null)}
           onContinue={handleFeedbackContinue}
         />
