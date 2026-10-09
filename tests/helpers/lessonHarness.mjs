@@ -15,6 +15,7 @@ export const lessonHarness = (name, overrides = {}) => componentHarness("src/vie
   "../../components/audio/InteractivePhraseText": leaf,
   "./TrainingBackButton": leaf,
   "./ScenarioV2Block": leaf,
+  "./JourneyCompanion": { source: "src/views/training/JourneyCompanion.jsx" },
   "../../components/audio/AudioPlayButton": leaf,
   "../../lib/trainingScoring": scoring,
   "../../lib/buildPhraseFeedback": feedback,
