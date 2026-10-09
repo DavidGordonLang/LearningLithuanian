@@ -406,20 +406,9 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
               setScreen("sectionComplete");
               return;
             }
-            const next = findNextLesson(allSections, completedLessonIds);
-            if (next) {
-              setSelectedLessonId(next.lesson.id);
-              setSelectedModuleId(next.module.id);
-              setModuleWrongAnswers(0);
-              setModuleScoreableBlocks(0);
-              setModuleXpEarned(0);
-              setLessonReturnScreen("home");
-              setScreen("learningLesson");
-            } else {
-              setSelectedLessonId(null);
-              setSelectedModuleId(null);
-              setScreen("home");
-            }
+            setSelectedLessonId(null);
+            setSelectedModuleId(null);
+            setScreen("learningHome");
           }}
         />
       </div>
@@ -442,26 +431,15 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
         accuracyPct={sectionCompletePayload.accuracyPct}
         onContinue={() => {
           setSectionCompletePayload(null);
-          const next = findNextLesson(allSections, completedLessonIds);
-          if (next) {
-            setSelectedLessonId(next.lesson.id);
-            setSelectedModuleId(next.module.id);
-            setModuleWrongAnswers(0);
-            setModuleScoreableBlocks(0);
-            setModuleXpEarned(0);
-            setLessonReturnScreen("home");
-            setScreen("learningLesson");
-          } else {
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("home");
-          }
+          setSelectedLessonId(null);
+          setSelectedModuleId(null);
+          setScreen("learningHome");
         }}
         onHome={() => {
           setSectionCompletePayload(null);
           setSelectedLessonId(null);
           setSelectedModuleId(null);
-          setScreen("home");
+          setScreen("learningHome");
         }}
       />
     );
@@ -482,26 +460,15 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
         }}
         onContinue={() => {
           setModuleCompletePayload(null);
-          const next = findNextLesson(allSections, completedLessonIds);
-          if (next) {
-            setSelectedLessonId(next.lesson.id);
-            setSelectedModuleId(next.module.id);
-            setModuleWrongAnswers(0);
-            setModuleScoreableBlocks(0);
-            setModuleXpEarned(0);
-            setLessonReturnScreen("home");
-            setScreen("learningLesson");
-          } else {
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("home");
-          }
+          setSelectedLessonId(null);
+          setSelectedModuleId(null);
+          setScreen("learningHome");
         }}
         onHome={() => {
           setModuleCompletePayload(null);
           setSelectedLessonId(null);
           setSelectedModuleId(null);
-          setScreen("home");
+          setScreen("learningHome");
         }}
       />
     );
@@ -552,15 +519,6 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
               }
             }
           }
-          // First Journey slice: return to the route after earned completion so
-          // the companion is visibly waiting at the newly unlocked lesson.
-          // This presentation-only transition never awards progress.
-          if (completedLessonId === "section_1_module_1_lesson_1" && completedLessonIds.includes(completedLessonId)) {
-            setSelectedLessonId(null);
-            setSelectedModuleId(null);
-            setScreen("learningHome");
-            return;
-          }
           const modComplete = mod && isModuleFullyComplete(mod);
           const secComplete = sec && isSectionFullyComplete(sec) && !hasSeenSectionComplete(sec.id);
           const modAccuracy = moduleScoreableBlocks > 0
@@ -600,15 +558,15 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
             setSelectedLessonId(null);
             setSelectedModuleId(null);
             setScreen("moduleComplete");
-          } else if (typeof handleNextLesson === "function") {
-            handleNextLesson();
           } else {
+            // All ordinary completed lessons return to the Journey.
+            // Progress and unlock rules remain owned by gameStore.
             setSelectedLessonId(null);
             setSelectedModuleId(null);
-            setScreen("home");
+            setScreen("learningHome");
           }
         }}
-        nextLessonLabel={learningLesson?.id === "section_1_module_1_lesson_1" ? "Follow your companion along the path" : nextLessonLabel}
+        nextLessonLabel="Return to your Journey"
       />
     );
   }

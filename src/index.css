@@ -892,3 +892,172 @@ html[data-theme="light"] .z-journey-lesson .z-journey-answer {
   .z-journey-lesson-scene *,
   .z-journey-lesson .z-journey-answer {animation:none;transition:none}
 }
+
+
+/* Journey v2: shared storybook environment for map, lesson and the first Scenario. */
+.z-journey-landscape {
+  position:relative; overflow:hidden; height:158px; width:100%;
+  background:#498b6d; isolation:isolate;
+}
+.z-journey-landscape-compact {height:128px}
+.z-journey-landscape-art {width:100%;height:100%;display:block}
+.z-journey-landscape-vignette {
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,244,204,.03) 35%,rgba(14,65,49,.19) 100%);
+}
+.z-journey-landscape-avatar {
+  position:absolute;bottom:9px;left:calc(50% - 17px);
+  font-size:36px;line-height:1;filter:drop-shadow(0 4px 3px rgba(0,0,0,.35));
+  animation:z-journey-arrival .6s cubic-bezier(.2,.85,.3,1) both;
+}
+@keyframes z-journey-arrival {
+  from {transform:translate(-36px,12px) scale(.9);opacity:.15}
+  to {transform:translate(0,0) scale(1);opacity:1}
+}
+.z-journey-picker {background:#124636;color:#f5fcf5;box-shadow:0 18px 50px rgba(17,49,36,.14)}
+.z-journey-picker .text-zinc-300 {color:#e5f1e9}
+.z-journey-picker .text-zinc-400 {color:#bcdace}
+.z-journey-picker .text-emerald-200 {color:#c6f4dd}
+.z-journey-picker-option {
+  border-color:rgba(221,242,224,.42);background:rgba(255,255,255,.09);
+  color:#fffdf1;box-shadow:0 5px 12px rgba(0,0,0,.08);
+}
+.z-journey-picker-option:hover,.z-journey-picker-option:focus-visible {
+  border-color:#eddfa7;outline:2px solid #eddfa7;
+  background:rgba(255,255,255,.16);
+}
+.z-journey-lesson-scene > .z-journey-landscape {
+  position:absolute;inset:0;height:100%;opacity:.27;
+}
+.z-journey-lesson-scene > .z-journey-landscape::after {
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(5,42,32,.7),rgba(7,47,36,.3));
+}
+.z-journey-lesson .z-journey-exercise .z-journey-vocab-card {
+  position:relative;overflow:hidden;
+  border-left:5px solid #93bc9e;
+  background:linear-gradient(125deg,var(--journey-inset),var(--journey-card));
+}
+.z-journey-lesson .z-journey-vocab-card::before {
+  content:"✦";display:block;font-size:12px;color:#77af83;margin-bottom:3px;
+}
+.z-journey-lesson .z-journey-choice-panel {
+  background:transparent;border:0;padding:0;box-shadow:none;
+}
+.z-journey-lesson .z-journey-question-layout > .z-journey-choice-panel {
+  background:var(--journey-inset);
+  border:1px solid var(--journey-border);
+  padding:20px 18px;
+  border-radius:22px;
+  box-shadow:inset 0 1px rgba(255,255,255,.15);
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="idle"] {
+  border-radius:20px;border-width:2px;
+  border-color:rgba(100,154,117,.36);
+  background:linear-gradient(125deg,var(--journey-option),var(--journey-card));
+  min-height:62px;
+  box-shadow:0 4px 0 rgba(45,100,69,.17);
+}
+html[data-theme="light"] .z-journey-lesson .z-journey-answer[data-journey-answer-state="idle"] {
+  background:linear-gradient(125deg,#fffefa,#f0e7d4);color:#203e30;
+  border-color:#a9c0ab;
+}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state="idle"]:active {
+  box-shadow:0 1px 0 rgba(45,100,69,.17);transform:translateY(2px);
+}
+.z-journey-lesson .z-journey-question-layout {
+  gap:18px;
+}
+.z-journey-lesson .z-journey-option-placement {
+  padding-top:0;
+}
+.z-journey-lesson .z-journey-vocab-card .text-zinc-100 {
+  color:var(--journey-ink);
+}
+.z-journey-lesson .z-journey-vocab-card .text-zinc-400 {color:var(--journey-muted)}
+
+/* Scoped authored greeting Scenario: matching illustrated venue, dialogue and choices. */
+.z-journey-first-scenario {
+  background:linear-gradient(180deg,#f2e5c8,#faf4e7) !important;
+  color:#273a30 !important;
+}
+.z-journey-first-scenario .scenario-v2-intro-card {
+  background:#fff9e9 !important;border:1px solid #c6d4b5 !important;
+  border-radius:26px;overflow:hidden;
+  box-shadow:0 12px 35px rgba(52,90,60,.13);
+}
+.z-journey-first-scenario .scenario-v2-intro-card > .z-journey-landscape {
+  margin:-24px -20px 23px;width:calc(100% + 40px);height:200px;
+}
+.z-journey-first-scenario .scenario-v2-intro-meta-card {
+  background:#f1ead6;border:1px solid #c6d4b5;
+  border-radius:18px;
+}
+.z-journey-first-scenario .scenario-v2-intro-badge {
+  background:#dcebdc;border:1px solid #9fbda8;color:#27563d;
+}
+.z-journey-first-scenario .scenario-v2-intro-card h1 {font-family:Georgia,serif;color:#203e30}
+.z-journey-first-scenario .scenario-v2-intro-card .text-zinc-300,
+.z-journey-first-scenario .scenario-v2-intro-card .text-zinc-200,
+.z-journey-first-scenario .scenario-v2-intro-card .text-zinc-500 {color:#394a3f}
+.z-journey-first-scenario .scenario-v2-chat-window {
+  background:#f9f1df;border:1px solid #b8c9b2;
+  flex:0 0 auto !important;min-height:0 !important;
+  border-radius:23px;
+  box-shadow:0 9px 30px rgba(65,99,68,.12);
+}
+.z-journey-first-scenario .scenario-v2-chat-window > .z-journey-landscape {
+  height:140px;
+}
+.z-journey-first-scenario .scenario-v2-chat-window > div:not(.z-journey-landscape) {
+  max-height:38dvh;
+}
+.z-journey-first-scenario .scenario-v2-reply-tray {
+  background:#fffaf0;border:1px solid #b8c9b2;
+  box-shadow:0 7px 20px rgba(65,99,68,.08);
+  border-radius:24px;
+}
+.z-journey-first-scenario .scenario-v2-option {
+  background:linear-gradient(130deg,#fffefa,#f2ead8);
+  color:#23382d;
+  border:2px solid #bdcbb8;
+  border-radius:17px;
+  font-size:16px;
+  box-shadow:0 3px 0 rgba(56,97,69,.12);
+}
+.z-journey-first-scenario .scenario-v2-option:hover {
+  background:#e4f1e5;border-color:#6c9776;
+}
+.z-journey-first-scenario .scenario-v2-option:focus-visible {
+  outline:3px solid #5c9e75;outline-offset:2px;
+}
+.z-journey-first-scenario .scenario-v2-speaker-bubble {
+  --scenario-v2-bubble-bg:#fffaf0;
+  --scenario-v2-bubble-border:#abc0ab;
+}
+.z-journey-first-scenario .scenario-v2-user-bubble {
+  --scenario-v2-bubble-bg:#35795a;
+  --scenario-v2-bubble-border:#6caf80;
+}
+.z-journey-first-scenario .scenario-v2-screen,
+.z-journey-first-scenario .text-zinc-100,
+.z-journey-first-scenario .text-zinc-300,
+.z-journey-first-scenario .text-zinc-400,
+.z-journey-first-scenario .text-zinc-500 {
+  color:#35443a;
+}
+.z-journey-first-scenario .scenario-v2-user-bubble .text-zinc-100,
+.z-journey-first-scenario .scenario-v2-user-bubble .scenario-v2-user-text,
+.z-journey-first-scenario .scenario-v2-user-bubble .scenario-v2-user-label {
+  color:#fffaf1;
+}
+.z-journey-first-scenario .scenario-v2-chat-window .scenario-v2-speaker-bubble .text-zinc-100 {
+  color:#243a2e;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-card,
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-reply-tray {
+  color:#243a2e;
+}
+@media (prefers-reduced-motion:reduce) {
+  .z-journey-landscape-avatar {animation:none}
+}

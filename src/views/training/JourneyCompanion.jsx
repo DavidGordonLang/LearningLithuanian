@@ -12,25 +12,26 @@ export const JOURNEY_COMPANIONS = [
 
 const STORAGE_PREFIX = "zodis:journey-companion:v1:";
 
-function readChoice(userId) {
-  if (!userId) return "fox";
+function readSavedChoice(userId) {
   try {
     const value = window.localStorage.getItem(STORAGE_PREFIX + userId);
-    return JOURNEY_COMPANIONS.some((item) => item.id === value) ? value : "fox";
+    return JOURNEY_COMPANIONS.some((item) => item.id === value) ? value : null;
   } catch {
-    return "fox";
+    return null;
   }
 }
 
 export function useJourneyCompanion(userId) {
-  const [choice, setChoice] = useState(() => readChoice(userId));
+  // Null means the learner has not made a choice yet; the fox is display-only
+  // until explicitly chosen. Choices are per-account and device-local for now.
+  const [choice, setChoice] = useState(() => userId ? readSavedChoice(userId) : null);
   const selected = JOURNEY_COMPANIONS.find((item) => item.id === choice) || JOURNEY_COMPANIONS[0];
   const choose = (next) => {
     if (!userId || !JOURNEY_COMPANIONS.some((item) => item.id === next)) return;
     setChoice(next);
     try { window.localStorage.setItem(STORAGE_PREFIX + userId, next); } catch {}
   };
-  return { selected, choose };
+  return { selected, choose, hasChosen: choice !== null };
 }
 
 export function Companion({ companion, animated = false, size = "text-4xl", label = true }) {

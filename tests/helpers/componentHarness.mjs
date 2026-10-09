@@ -73,6 +73,7 @@ export async function componentHarness(path, name, imports = {}) {
   const dependencies = { react, "react-dom": { createPortal: node => node },
     "../../services/analytics": { trackProductEvent() {} },
     "../../lib/productTelemetry": productTelemetry,
+    "./JourneyScene": () => null,
     ...imports };
   const require = id => {
     if (!(id in dependencies)) throw new Error(`Undeclared test dependency: ${id}`);

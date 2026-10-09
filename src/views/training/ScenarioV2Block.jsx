@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { trackProductEvent } from "../../services/analytics";
 import { scenarioSummary } from "../../lib/productTelemetry";
+import JourneyScene from "./JourneyScene";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -856,7 +857,7 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
     : null;
 
   const content = (
-    <div className="scenario-v2-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100">
+    <div className={cn("scenario-v2-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100", lessonId === "section_1_module_1_lesson_1" && "z-journey-first-scenario")}>
       <div className="scenario-v2-frame mx-auto flex min-h-[100dvh] max-w-xl flex-col px-4 py-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -874,6 +875,7 @@ function ScenarioV2FocusedMode({ block, playText: suppliedPlayText, onWrongAnswe
         </div>
 
         <div className="scenario-v2-chat-window min-h-[12rem] flex-1 overflow-hidden rounded-[28px] border shadow-[0_18px_50px_rgba(0,0,0,0.32)]">
+          {lessonId === "section_1_module_1_lesson_1" ? <JourneyScene compact label="The greeting scene outside a language class" /> : null}
           <div ref={feedRef} className={cn("max-h-[45dvh] overflow-y-auto px-4 py-4 space-y-4", selectedOptionForStep ? "pb-44" : "")}>
             {history.map((item) => (
               <ScenarioV2HistoryItem key={item.id} block={block} item={item} playText={playText} />
@@ -985,11 +987,12 @@ export default function ScenarioV2Block({ block, playText, onComplete, onWrongAn
     onComplete?.(); onAdvance?.();
   }
   const intro = (
-    <section className="scenario-v2-screen scenario-v2-intro-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100" aria-labelledby="scenario-intro-title">
+    <section className={cn("scenario-v2-screen scenario-v2-intro-screen fixed inset-0 z-[12000] overflow-y-auto bg-zinc-950 text-zinc-100", lessonId === "section_1_module_1_lesson_1" && "z-journey-first-scenario")} aria-labelledby="scenario-intro-title">
       <div className="scenario-v2-frame mx-auto flex min-h-[100dvh] max-w-xl flex-col px-5 py-5">
         {onExit ? <button type="button" onClick={onExit} className="self-start rounded-full border border-white/15 bg-white/[0.035] px-4 py-2 text-sm text-zinc-400 transition hover:bg-white/[0.07] hover:text-zinc-200">Back</button> : null}
         <div className="flex flex-1 items-center py-8 sm:py-10">
           <div className="scenario-v2-intro-card w-full rounded-[32px] border px-5 py-6 sm:px-7 sm:py-8">
+            {lessonId === "section_1_module_1_lesson_1" ? <JourneyScene compact label="A meeting outside the language class" /> : null}
             <div className="scenario-v2-intro-badge inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em]">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M7 17.5L4.5 19V7.75A2.75 2.75 0 0 1 7.25 5h9.5a2.75 2.75 0 0 1 2.75 2.75v6.5A2.75 2.75 0 0 1 16.75 17H8.1L7 17.5Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />

@@ -486,7 +486,7 @@ export default function TrainingHome({
           meta={learningDisabled ? "Revisit your five destinations and practise what you know." : `Meet your companion, explore the path and continue: ${learningCardTitle}.`}
           ctaLabel="Explore your Journey"
           onPrimary={onBrowseCourse}
-          onBrowseCourse={learningDisabled ? null : onStartLearning}
+          onBrowseCourse={null}
         />
       </div>
 

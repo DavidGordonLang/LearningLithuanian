@@ -16,6 +16,7 @@ import { phraseMatchesSpeech } from "../../lib/speechMatch";
 import { trackProductEvent } from "../../services/analytics";
 import { lessonProgressMarker } from "../../lib/productTelemetry";
 import { Companion, useJourneyCompanion } from "./JourneyCompanion";
+import JourneyScene from "./JourneyScene";
 
 const cn = (...xs) => xs.filter(Boolean).join(" ");
 
@@ -2312,9 +2313,7 @@ export default function LearningLessonView({
 
           {isJourneyFirstGreeting ? (
             <div className="z-journey-lesson-scene z-journey-dark relative mb-4 overflow-hidden rounded-[27px] p-5">
-              <div className="z-journey-hill z-journey-hill-back" aria-hidden="true" />
-              <div className="z-journey-hill z-journey-hill-front" aria-hidden="true" />
-              <div className="z-journey-skyline" aria-hidden="true">🌲 🏠 🌳</div>
+              <JourneyScene compact companion={journeyCompanion} />
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="z-journey-scene-kicker">FIRST CONTACT · TOWN SQUARE</div>
@@ -2323,8 +2322,8 @@ export default function LearningLessonView({
                     ? "Learn your first friendly greetings."
                     : `Step ${blockIndex + 1} of ${totalBlocks} · Keep going, you're making progress.`}</div>
                 </div>
-                <div className="z-journey-scene-companion flex h-[66px] w-[66px] shrink-0 items-center justify-center rounded-[23px]">
-                  <Companion companion={journeyCompanion} size="text-[40px]" animated={blockIndex === 0} />
+                <div className="z-journey-scene-companion flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl">
+                  <Companion companion={journeyCompanion} size="text-[30px]" animated={blockIndex === 0} />
                 </div>
               </div>
             </div>

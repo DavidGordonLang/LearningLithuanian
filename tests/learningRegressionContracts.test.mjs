@@ -239,6 +239,27 @@ test("Journey entry is primary and first lesson has actual visual treatment", ()
   assert.match(css, /\.z-journey-lesson \.z-journey-answer\[data-journey-answer-state="idle"\]/);
 });
 
+test("Journey is the only normal lesson entry and companion choice is one-time", () => {
+  const trainingHome = source("src/views/training/TrainingHome.jsx");
+  const training = source("src/views/TrainingView.jsx");
+  const journey = source("src/views/training/LearningHome.jsx");
+  const companion = source("src/views/training/JourneyCompanion.jsx");
+  const scenario = source("src/views/training/ScenarioV2Block.jsx");
+
+  assert.match(trainingHome, /onBrowseCourse=\{null\}/);
+  assert.doesNotMatch(trainingHome, /onBrowseCourse=\{learningDisabled \? null : onStartLearning\}/);
+  assert.match(journey, /if \(!hasChosen\)/);
+  assert.match(journey, /Choose your journey companion/);
+  assert.match(companion, /hasChosen: choice !== null/);
+  assert.match(companion, /localStorage\.setItem\(STORAGE_PREFIX \+ userId, next\)/);
+  assert.doesNotMatch(journey, /onOpenLesson\?\.\(target\.lesson\.id\)/);
+  assert.match(training, /nextLessonLabel="Return to your Journey"/);
+  assert.match(training, /All ordinary completed lessons return to the Journey/);
+  assert.match(training, /setScreen\("learningHome"\)/);
+  assert.match(scenario, /z-journey-first-scenario/);
+  assert.match(scenario, /<JourneyScene compact/);
+});
+
 // C3 tests execute the real lesson/store resume and scoring paths.
 
 test("lesson and admin resets persist the intended account state instead of using logout reset", () => {
