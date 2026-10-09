@@ -69,10 +69,13 @@ function SectionJourney({ section, sectionIndex, state, target, completed, compa
               return (
                 <div key={module.id} className="relative mb-3">
                   <div className={`absolute -left-[29px] top-3 h-4 w-4 rounded-full border-[3px] ${status === "completed" ? "border-emerald-300 bg-emerald-500" : open ? "border-emerald-200 bg-emerald-300" : "border-zinc-600 bg-zinc-800"}`} />
-                  <button type="button" disabled={status === "locked"} onClick={() => onOpenSection?.(section.id)} className={`w-full rounded-xl border p-3 text-left ${open ? "border-emerald-400/45 bg-emerald-500/15" : "border-white/10 bg-black/20"} ${status === "locked" ? "opacity-60" : ""}`}>
-                    <div className="flex justify-between gap-2"><span className="text-sm font-semibold text-zinc-50">{module.title}</span><span className="shrink-0 text-xs text-emerald-200">{status === "completed" ? "✓" : open ? "Now" : "🔒"}</span></div>
+                  <div className={`w-full rounded-xl border p-3 ${open ? "border-emerald-400/45 bg-emerald-500/15" : "border-white/10 bg-black/20"} ${status === "locked" ? "opacity-60" : ""}`}>
+                    <div className="flex justify-between gap-2"><span className="text-sm font-semibold text-zinc-50">{module.title}</span><span className="shrink-0 text-xs text-emerald-200">{status === "completed" ? "✓" : open ? "Current stop" : "🔒"}</span></div>
                     <div className="mt-1 text-[11px] text-zinc-300">{progress.teachingCompleted}/{progress.teachingTotal} lessons · checkpoint {progress.checkpointCompleted ? "complete" : "ahead"}</div>
-                  </button>
+                    {status === "completed" ? (
+                      <button type="button" onClick={() => onOpenSection?.(section.id)} className="mt-2 rounded-lg border border-emerald-200/40 bg-black/20 px-3 py-2 text-xs font-semibold text-emerald-100">Review completed lessons →</button>
+                    ) : null}
+                  </div>
                   {open ? (
                     <div className="ml-2 mt-2 space-y-2">
                       {(module.lessons || []).map((lesson) => {
@@ -106,7 +109,7 @@ function SectionJourney({ section, sectionIndex, state, target, completed, compa
           </div>
         </div>
       ) : state.status === "completed" ? (
-        <button type="button" onClick={() => onOpenSection?.(section.id)} className="w-full border-t border-white/10 bg-black/20 px-5 py-3 text-left text-xs font-semibold text-emerald-200">Revisit this destination →</button>
+        <button type="button" onClick={() => onOpenSection?.(section.id)} className="w-full border-t border-white/10 bg-black/20 px-5 py-3 text-left text-xs font-semibold text-emerald-200">Review this completed destination →</button>
       ) : null}
     </section>
   );
@@ -153,27 +156,22 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
         <span className="text-right text-[12px] font-medium text-amber-300" aria-label={`${streakDays || 0} day streak`}>🔥 {streakDays || 0}</span>
       </div>
       <div className="z-journey-dark relative mt-5 overflow-hidden rounded-[27px] border border-emerald-300/30 bg-gradient-to-br from-teal-700 via-emerald-950 to-slate-950">
-        <JourneyScene compact companion={selected} />
-        <div className="relative p-5">
+        <JourneyScene companion={selected} />
+        <div className="relative px-4 py-3">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200">Žodis · First Contact</div>
-          <h1 className="mt-2 font-serif text-[28px] font-bold leading-tight text-white">Every phrase takes you further.</h1>
-          <p className="mt-2 text-[13px] leading-relaxed text-emerald-50">Follow the path. Your companion is ready at the next destination.</p>
-          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-white/20 bg-black/25 px-3 py-3">
-            <Companion companion={selected} size="text-3xl" animated />
-            <div className="text-sm font-semibold text-white">{selected.name} is travelling with you</div>
-          </div>
+          <h1 className="mt-1 font-serif text-[17px] font-bold leading-tight text-white">Every phrase takes you further.</h1>
+          <p className="mt-1 text-[12px] leading-snug text-emerald-50">Follow the path with {selected.name}. Your next stop is waiting below.</p>
         </div>
       </div>
       {target ? (
-        <div className="z-journey-dark z-journey-continue mt-4 rounded-2xl border border-emerald-400/45 px-4 py-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Your next step</div>
-          <div className="mt-1 text-base font-bold text-white">{target.lesson.title}</div>
-          <div className="mt-1 text-xs text-zinc-200">Find your companion on the highlighted path below and tap the lesson to begin.</div>
+        <div className="z-journey-dark z-journey-continue mt-3 rounded-2xl border border-emerald-400/45 px-4 py-3">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Next destination · Find your companion on the path ↓</div>
+          <div className="mt-1 text-[16px] font-bold text-white">{target.lesson.title}</div>
         </div>
       ) : (
         <div className="z-journey-complete mt-4 rounded-2xl border border-emerald-300/40 bg-emerald-500/15 p-4 text-center text-emerald-50">🏆 Every available lesson is complete. Explore a destination to review what you've learned.</div>
       )}
-      <div className="mb-3 mt-7 px-1 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Explore your five destinations</div>
+      <div className="mb-3 mt-5 px-1 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Your learning path · Tap the highlighted lesson</div>
       <div className="space-y-4">
         {sectionStates.map((state, index) => (
           <SectionJourney key={state.section.id} section={state.section} sectionIndex={index} state={state} target={target} completed={completed} companion={selected} onOpenSection={onOpenSection} onOpenLesson={onOpenLesson}/>

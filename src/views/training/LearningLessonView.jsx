@@ -319,7 +319,7 @@ function ChoiceFeedbackAction({ isCorrect, isSoftPass = false, correctText, corr
   );
 }
 
-function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) {
+function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, journeyCompanion }) {
   const [selectedId, setSelectedId] = useState(null);
   const [revealState, setRevealState] = useState("idle");
   const options = Array.isArray(block?.options) ? block.options : [];
@@ -431,6 +431,13 @@ function ChoiceBlock({ block, playText, onComplete, onWrongAnswer, onAdvance }) 
 
       {revealState === "revealed" ? (
         <div ref={feedbackRef}>
+          {journeyCompanion && isCorrectChoiceOption(selected) ? (
+            <div className="z-journey-mini-cheer" role="status" aria-label="Correct answer! Your companion celebrates.">
+              <span className="z-journey-mini-cheer-avatar" aria-hidden="true">{journeyCompanion.symbol}</span>
+              <span className="z-journey-mini-cheer-sparkles" aria-hidden="true">✦</span>
+              <span className="z-journey-mini-cheer-text">Nice one!</span>
+            </div>
+          ) : null}
           <ChoiceFeedbackAction
             isCorrect={isCorrectChoiceOption(selected)}
             isSoftPass={selectedIsSoftPass}
@@ -1980,11 +1987,11 @@ function ConversationTurnFill({ block, playText, onComplete, onWrongAnswer, onAd
 }
 
 
-function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef, onExit, lessonId }) {
+function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, completed, onAdvance, navBarRef, onExit, lessonId, journeyCompanion }) {
   switch (block?.type) {
     case "learn": return <LearnBlock block={block} playText={playText} onComplete={onComplete} completed={completed} navBarRef={navBarRef}/>;
     case "recognise_mcq": case "listen_mcq": case "best_response":
-      return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
+      return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} journeyCompanion={journeyCompanion}/>;
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed} lessonId={lessonId}/>;
     case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
@@ -2010,17 +2017,17 @@ function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLess
   return (
     <div
       className={cn("flex flex-col transition-all duration-400", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}
-      style={{ paddingTop: "12vh" }}
+      style={{ paddingTop: "16px" }}
     >
       {/* Icon */}
-      <div className="flex justify-center mb-6">
-        <div className="h-16 w-16 rounded-full border border-emerald-400/30 bg-emerald-500/[0.12] flex items-center justify-center text-[28px]">
+      <div className={cn("flex justify-center", firstGreeting ? "mb-3" : "mb-6")}>
+        <div className={cn(firstGreeting ? "h-12 w-12" : "h-16 w-16", "rounded-full border border-emerald-400/30 bg-emerald-500/[0.12] flex items-center justify-center text-[28px]")}>
           ✓
         </div>
       </div>
 
       {/* Title */}
-      <div className="text-center mb-6">
+      <div className={cn("text-center", firstGreeting ? "mb-3" : "mb-6")}>
         <div className="text-[26px] font-semibold text-emerald-200 leading-tight">
           {accuracyPct === null || accuracyPct === undefined || accuracyPct >= 90 ? "Nailed it!" : "Well done!"}
         </div>
@@ -2034,8 +2041,8 @@ function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLess
       </div>
 
       {firstGreeting ? (
-        <div className="mx-2 mb-6 rounded-3xl border border-emerald-400/35 bg-gradient-to-br from-emerald-800/60 to-teal-950/50 px-4 py-5 text-center">
-          <Companion companion={companion} animated size="text-[66px]" />
+        <div className="mx-2 mb-4 rounded-3xl border border-emerald-400/35 bg-gradient-to-br from-emerald-800/60 to-teal-950/50 px-4 py-3 text-center">
+          <Companion companion={companion} animated size="text-[47px]" />
           <div className="mt-2 font-serif text-xl font-semibold text-emerald-100">Your first greeting!</div>
           <div className="mt-1 text-[13px] leading-relaxed text-emerald-50/80">
             You have practised how to greet someone and say goodbye in Lithuanian.
@@ -2047,16 +2054,18 @@ function NailedItCard({ lessonTitle, xpEarned, accuracyPct, onContinue, nextLess
       <div className="flex flex-col gap-3 px-2">
         {typeof onContinue === "function" ? (
           <ActionButton onClick={onContinue} className="w-full">
-            {nextLessonLabel ? `${nextLessonLabel} →` : "Continue →"}
+            {nextLessonLabel === "Return to your Journey" || firstGreeting ? "🗺️ Return to your Journey →" : nextLessonLabel ? `${nextLessonLabel} →` : "Continue →"}
           </ActionButton>
         ) : null}
-        <ActionButton
-          variant={typeof onContinue === "function" ? "ghost" : "primary"}
-          onClick={onBack}
-          className="w-full"
-        >
-          Learning home
-        </ActionButton>
+        {typeof onContinue !== "function" ? (
+          <ActionButton
+            variant={typeof onContinue === "function" ? "ghost" : "primary"}
+            onClick={onBack}
+            className="w-full"
+          >
+            Learning home
+          </ActionButton>
+        ) : null}
       </div>
     </div>
   );
@@ -2336,6 +2345,7 @@ export default function LearningLessonView({
               <BlockRenderer
                 onExit={leaveLesson}
                 lessonId={lesson?.id}
+                journeyCompanion={journeyCompanion}
                 key={currentBlock.id}
                 block={currentBlock}
                 playText={playText}

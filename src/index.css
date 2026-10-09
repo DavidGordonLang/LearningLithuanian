@@ -1061,3 +1061,111 @@ html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-reply-tray {
 @media (prefers-reduced-motion:reduce) {
   .z-journey-landscape-avatar {animation:none}
 }
+
+/* Journey phone pass: compact activity cards without losing tap targets. */
+.z-journey-lesson .z-journey-exercise {padding:12px;border-radius:22px}
+.z-journey-lesson .z-journey-vocab-card {
+  padding:9px 13px !important;border-radius:16px;min-height:65px;
+  border-left-width:4px;display:flex;align-items:center;
+}
+.z-journey-lesson .z-journey-vocab-card .text-zinc-100 {
+  font-size:17px;line-height:1.2;
+}
+.z-journey-lesson .z-journey-vocab-card .text-zinc-400 {
+  font-size:12px;line-height:1.35;margin-top:3px;
+}
+.z-journey-lesson .z-journey-vocab-card::before {margin:0 10px 0 0}
+.z-journey-lesson .z-journey-vocab-card > div {width:100%}
+.z-journey-lesson .z-journey-answer[data-journey-answer-state] {
+  min-height:52px;padding:12px 14px !important;
+  font-size:15px;border-radius:15px;
+}
+.z-journey-lesson .z-journey-question-layout > .z-journey-choice-panel {
+  padding:12px 14px;border-radius:18px;
+}
+.z-journey-lesson .z-journey-question-layout {gap:12px}
+
+/* A restrained correct-answer hop, not a separate XP event. */
+.z-journey-mini-cheer {
+  display:flex;gap:9px;align-items:center;
+  width:max-content;max-width:100%;
+  border-radius:999px;
+  background:rgba(41,134,91,.17);
+  border:1px solid rgba(107,216,147,.44);
+  padding:4px 13px;margin:0 0 8px auto;color:#a5f4c9;
+  font-size:12px;font-weight:800;
+}
+.z-journey-mini-cheer-avatar {font-size:25px;animation:z-journey-hop .65s ease-out both}
+.z-journey-mini-cheer-sparkles {color:#ebce72;animation:z-journey-twinkle .7s ease-out both}
+@keyframes z-journey-hop {
+  0%{transform:scale(.85) translateY(5px)}
+  45%{transform:scale(1.15) translateY(-9px)}
+  100%{transform:scale(1) translateY(0)}
+}
+@keyframes z-journey-twinkle {
+  0%{transform:scale(.5);opacity:0}
+  40%{transform:scale(1.3);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+html[data-theme="light"] .z-journey-mini-cheer {
+  color:#175236;background:#e5f6e7;border-color:#7fbf8a;
+}
+
+/* Respect the learner's selected theme in the authored First Contact scenario. */
+html[data-theme="dark"] .z-journey-first-scenario {
+  background:linear-gradient(180deg,#071f1a,#0b2e28) !important;
+  color:#edf9f0 !important;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-card,
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-reply-tray {
+  background:#102c25 !important;
+  color:#edf9f0 !important;
+  border-color:#476b56 !important;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-meta-card {
+  background:#1a3b32;border-color:#537563;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-badge {
+  background:#174b3a;border-color:#4c8c6c;color:#cdf4dc;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-card h1,
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-card .text-zinc-300,
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-card .text-zinc-200,
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-intro-card .text-zinc-500,
+html[data-theme="dark"] .z-journey-first-scenario .text-zinc-100,
+html[data-theme="dark"] .z-journey-first-scenario .text-zinc-300,
+html[data-theme="dark"] .z-journey-first-scenario .text-zinc-400,
+html[data-theme="dark"] .z-journey-first-scenario .text-zinc-500 {
+  color:#dfede2 !important;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-chat-window {
+  background:#0b2922 !important;border-color:#496b56;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-speaker-bubble {
+  --scenario-v2-bubble-bg:#1c4636;
+  --scenario-v2-bubble-border:#648e71;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-chat-window .scenario-v2-speaker-bubble .text-zinc-100 {
+  color:#f2fbf2 !important;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-user-bubble {
+  --scenario-v2-bubble-bg:#237753;
+  --scenario-v2-bubble-border:#6cba8b;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-option {
+  color:#f2faf3;
+  background:linear-gradient(120deg,#1a4836,#1b3c31);
+  border-color:#5c886a;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-option:hover {
+  background:#24533f;border-color:#8bcea3;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-support-panel {
+  background:#193d34;color:#d8f1e1;border-color:#568578;
+}
+html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-complete-action {
+  background:#173b30;color:#f1f8f3;border-color:#59816a;
+}
+@media(prefers-reduced-motion:reduce) {
+  .z-journey-mini-cheer-avatar,.z-journey-mini-cheer-sparkles{animation:none}
+}

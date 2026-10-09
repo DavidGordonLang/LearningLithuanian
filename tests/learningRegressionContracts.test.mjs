@@ -260,6 +260,23 @@ test("Journey is the only normal lesson entry and companion choice is one-time",
   assert.match(scenario, /<JourneyScene compact/);
 });
 
+test("Journey phone refinements keep the learning path primary and celebrate earned answers", () => {
+  const journey = source("src/views/training/LearningHome.jsx");
+  const lesson = source("src/views/training/LearningLessonView.jsx");
+  const css = source("src/index.css");
+  assert.match(journey, /Review completed lessons/);
+  assert.match(journey, /Tap the highlighted lesson/);
+  assert.match(journey, /text-\[17px\].*Every phrase takes you further/);
+  assert.doesNotMatch(journey, /disabled=\{status === "locked"\} onClick=\{\(\) => onOpenSection/);
+  assert.match(lesson, /z-journey-mini-cheer/);
+  assert.match(lesson, /journeyCompanion=\{journeyCompanion\}/);
+  assert.match(lesson, /paddingTop: "16px"/);
+  assert.match(lesson, /Return to your Journey/);
+  assert.match(css, /z-journey-lesson \.z-journey-vocab-card[\s\S]*?min-height:65px/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.match(css, /html\[data-theme="dark"\] \.z-journey-first-scenario/);
+});
+
 // C3 tests execute the real lesson/store resume and scoring paths.
 
 test("lesson and admin resets persist the intended account state instead of using logout reset", () => {
