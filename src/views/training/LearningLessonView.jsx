@@ -704,7 +704,7 @@ function SpeakSelfCheckBlock({ block, playText, showToast, onComplete, onAdvance
 //   Wrong   → guided repair; missing words are called out without revealing them.
 // Tapping a built token removes it back to the source row (ghost stays).
 
-function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, completed }) {
+function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvance, onCorrect, completed }) {
   const rawTokens = Array.isArray(block?.tokens) ? block.tokens : [];
   const tokens = React.useMemo(() => {
     const arr = [...rawTokens];
@@ -990,6 +990,7 @@ function BuildPhraseBlock({ block, playText, onComplete, onWrongAnswer, onAdvanc
       // Play the phrase audio on correct answer
       if (playText) { try { playText(correctAnswer.trim()); } catch {} }
       onComplete?.();
+      onCorrect?.();
     } else {
       setCheckState("wrong");
       onWrongAnswer?.();
@@ -1988,7 +1989,7 @@ function BlockRenderer({ block, playText, showToast, onComplete, onWrongAnswer, 
       return <ChoiceBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} onCorrect={onCorrect}/>;
     case "speak_self_check":
       return <SpeakSelfCheckBlock block={block} playText={playText} showToast={showToast} onComplete={onComplete} onAdvance={onAdvance} completed={completed} lessonId={lessonId}/>;
-    case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
+    case "build_phrase": return <BuildPhraseBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} onCorrect={onCorrect} completed={completed}/>;
     case "word_match": return <WordMatchBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance} completed={completed}/>;
     case "scenario_chain": return <ScenarioChainBlock block={block} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
     case "scenario_v2": return <ScenarioV2Block onExit={onExit} block={block} lessonId={lessonId} playText={playText} onComplete={onComplete} onWrongAnswer={onWrongAnswer} onAdvance={onAdvance}/>;
@@ -2331,19 +2332,23 @@ export default function LearningLessonView({
               </div>
             </div>
           ) : isJourneyFirstGreeting ? (
-            <div className="z-journey-companion-strip z-journey-dark relative mb-3 flex h-[61px] items-center justify-end overflow-hidden rounded-[19px] px-4">
+            <div className="z-journey-companion-top relative mb-2 flex h-[54px] items-center justify-center">
               <span className="sr-only" role="status" aria-live="polite">
-                {celebratedBlockId === currentBlock?.id ? "Great job! Your companion is celebrating." : ""}
+                {celebratedBlockId === currentBlock?.id ? "Nice one! Your companion is celebrating." : ""}
               </span>
-              {celebratedBlockId === currentBlock?.id ? (
-                <div className="z-journey-companion-cheer" key={currentBlock.id} aria-hidden="true">
-                  <span className="z-journey-companion-encouragement">Nice one!</span>
-                  <span className="z-journey-companion-sparkle">✦</span>
-                  <Companion companion={journeyCompanion} size="text-[38px]" label={false} />
-                </div>
-              ) : (
+              <div
+                key={`${currentBlock?.id}:${celebratedBlockId === currentBlock?.id ? "success" : "rest"}`}
+                className={celebratedBlockId === currentBlock?.id ? "z-journey-companion-active" : ""}
+                aria-hidden="true"
+              >
                 <Companion companion={journeyCompanion} size="text-[38px]" label={false} />
-              )}
+              </div>
+              {celebratedBlockId === currentBlock?.id ? (
+                <div className="z-journey-companion-caption" aria-hidden="true">
+                  <span className="z-journey-companion-sparkle">✦</span>
+                  <span>Nice one!</span>
+                </div>
+              ) : null}
             </div>
           ) : null}
 

@@ -268,7 +268,7 @@ test("Journey phone refinements keep the learning path primary and celebrate ear
   assert.match(journey, /Tap the highlighted lesson/);
   assert.match(journey, /text-\[17px\].*Every phrase takes you further/);
   assert.doesNotMatch(journey, /disabled=\{status === "locked"\} onClick=\{\(\) => onOpenSection/);
-  assert.match(lesson, /z-journey-companion-strip/);
+  assert.match(lesson, /z-journey-companion-top/);
   assert.match(lesson, /onCorrect=\{isJourneyFirstGreeting/);
   assert.doesNotMatch(lesson, /z-journey-mini-cheer/);
   assert.match(lesson, /paddingTop: "16px"/);
@@ -287,9 +287,14 @@ test("Journey correct-answer feedback remains in the top companion area and scen
   assert.match(journey, /Next destination · Tap to begin/);
   assert.match(lesson, /blockIndex === 0 \? \(/);
   assert.match(lesson, /celebratedBlockId === currentBlock\?\.id/);
+  assert.match(lesson, /z-journey-companion-caption/);
+  assert.match(lesson, /onCorrect=\{onCorrect\} completed=\{completed\}/);
+  assert.match(lesson, /if \(builtText === correctAnswer\.trim\(\)\)[\s\S]*?onComplete\?\.\(\);\s*onCorrect\?\.\(\);/);
   assert.match(lesson, /onCorrect\?\.\(\)/);
   assert.match(lesson, /setCelebratedBlockId\(null\)/);
-  assert.match(css, /\.z-journey-companion-strip/);
+  assert.match(css, /\.z-journey-companion-top/);
+  assert.match(css, /\.z-journey-companion-caption/);
+  assert.doesNotMatch(lesson, /z-journey-companion-strip/);
   assert.match(css, /prefers-reduced-motion:reduce/);
   assert.match(scenario, /const replyTrayRef = useRef\(null\)/);
   assert.match(scenario, /ref=\{replyTrayRef\}/);

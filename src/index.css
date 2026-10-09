@@ -1170,32 +1170,38 @@ html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-complete-action {
   .z-journey-mini-cheer-avatar,.z-journey-mini-cheer-sparkles{animation:none}
 }
 
-/* First Contact: compact repeat-block header keeps the companion at the top.
-   Success feedback animates in place without shifting the answer controls. */
-.z-journey-companion-strip {
-  background: linear-gradient(105deg,#174537,#12473b 68%,#0b3028);
-  border: 1px solid rgba(150,220,180,.46);
-  box-shadow: 0 6px 20px rgba(4,33,25,.15);
+/* A centred companion over the exercise, without a full-width banner.
+   The encouragement appears beside it and doesn't move the lesson controls. */
+.z-journey-companion-top {
+  color: #ecf8ed;
+  background: transparent;
 }
-.z-journey-companion-cheer {
-  display:flex;align-items:center;gap:8px;
-  color:#dbf7e3;
+.z-journey-companion-active {
+  animation: z-journey-hop .65s ease-out both;
+}
+.z-journey-companion-caption {
+  position:absolute;
+  top:50%;
+  left:calc(50% + 30px);
+  display:flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+  transform:translateY(-50%);
+  color:#b4f3d2;
+  font-size:13px;
+  line-height:1.2;
   font-weight:800;
-}
-.z-journey-companion-encouragement {
-  font-size:13px;line-height:1;
   animation:z-journey-success-glow .55s ease-out both;
 }
 .z-journey-companion-sparkle {
-  font-size:17px;color:#ffdc79;
-  animation:z-journey-twinkle .6s ease-out both;
-}
-.z-journey-companion-cheer > span:last-child {
-  animation:z-journey-hop .65s ease-out both;
+  color:#ffdc79;
+  font-size:16px;
+  animation:z-journey-twinkle .7s ease-out both;
 }
 @keyframes z-journey-success-glow {
-  0% {opacity:0;transform:translateX(5px)}
-  100% {opacity:1;transform:translateX(0)}
+  from {opacity:0;transform:translate(5px,-50%)}
+  to {opacity:1;transform:translate(0,-50%)}
 }
 .z-journey-continue {cursor:pointer}
 .z-journey-continue:active {transform:translateY(1px)}
@@ -1210,7 +1216,8 @@ html[data-theme="dark"] .z-journey-first-scenario .scenario-v2-complete-action {
   scroll-margin-top:12px;
 }
 @media (prefers-reduced-motion:reduce) {
-  .z-journey-companion-cheer *,
-  .z-journey-companion-encouragement,
+  .z-journey-companion-active,
+  .z-journey-companion-caption,
+  .z-journey-companion-sparkle,
   .z-journey-continue {animation:none;transition:none}
 }
