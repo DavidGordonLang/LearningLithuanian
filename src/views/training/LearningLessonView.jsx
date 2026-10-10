@@ -2328,21 +2328,21 @@ export default function LearningLessonView({
                   <div className="z-journey-scene-caption mt-2">Learn your first friendly greetings.</div>
                 </div>
                 <div className="z-journey-scene-companion flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl">
-                  <Companion companion={journeyCompanion} size="text-[30px]" />
+                  <Companion companion={journeyCompanion} celebrating={celebratedBlockId === currentBlock?.id} size="text-[30px]" />
                 </div>
               </div>
             </div>
-          ) : isJourneyFirstGreeting ? (
+          ) : (
             <div className="z-journey-companion-top relative mb-2 flex h-[54px] items-center justify-center">
               <span className="sr-only" role="status" aria-live="polite">
                 {celebratedBlockId === currentBlock?.id ? "Nice one! Your companion is celebrating." : ""}
               </span>
               <div
                 key={`${currentBlock?.id}:${celebratedBlockId === currentBlock?.id ? "success" : "rest"}`}
-                className={celebratedBlockId === currentBlock?.id ? "z-journey-companion-active" : ""}
+                className="z-journey-companion-expression"
                 aria-hidden="true"
               >
-                <Companion companion={journeyCompanion} size="text-[38px]" label={false} />
+                <Companion companion={journeyCompanion} celebrating={celebratedBlockId === currentBlock?.id} size="text-[38px]" label={false} />
               </div>
               {celebratedBlockId === currentBlock?.id ? (
                 <div className="z-journey-companion-caption" aria-hidden="true">
@@ -2351,7 +2351,7 @@ export default function LearningLessonView({
                 </div>
               ) : null}
             </div>
-          ) : null}
+          )}
 
           {/* Block content */}
           <SurfaceCard className={cn(isScenarioBlock ? "p-3" : "p-4", isJourneyFirstGreeting ? "z-journey-exercise" : "")}>
@@ -2360,7 +2360,7 @@ export default function LearningLessonView({
               <BlockRenderer
                 onExit={leaveLesson}
                 lessonId={lesson?.id}
-                onCorrect={isJourneyFirstGreeting ? () => setCelebratedBlockId(currentBlock.id) : undefined}
+                onCorrect={() => setCelebratedBlockId(currentBlock.id)}
                 key={currentBlock.id}
                 block={currentBlock}
                 playText={playText}
