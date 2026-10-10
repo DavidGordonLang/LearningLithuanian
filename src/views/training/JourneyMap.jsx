@@ -128,7 +128,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   };
   const current = stops[focusIndex];
   return <div className="z-local-map-shell z-journey-dark">
-    <div className="z-local-map-viewport" ref={viewport} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={()=>{drag.current=null}} onPointerCancel={()=>{drag.current=null}} aria-label="Illustrated village lesson route">
+    <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={()=>{drag.current=null}} onPointerCancel={()=>{drag.current=null}} aria-label="Illustrated village lesson route">
       <div className="z-local-map-world" style={{width:WIDTH,height:HEIGHT,transform:"translate("+camera.x+"px,"+camera.y+"px) scale("+SCALE+")"}}>
         <Scene points={points}/>
         {stops.map((stop,i)=>{
