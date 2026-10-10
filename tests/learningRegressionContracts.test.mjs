@@ -618,3 +618,17 @@ test("Journey uses only approved companion masters and jump-to-stop map state", 
   assert.match(lesson, /onCorrect=\{\(\) => setCelebratedBlockId\(currentBlock\.id\)\}/);
   assert.doesNotMatch(lesson, /className=\{celebratedBlockId === currentBlock\?\.id \? "z-journey-companion-active"/);
 });
+
+test("Journey map drags do not swipe app tabs while map controls remain interactive", () => {
+  const map = source("src/views/training/JourneyMap.jsx");
+  const pager = source("src/components/SwipePager.jsx");
+  const css = source("src/index.css");
+  assert.match(map, /<div data-swipe-block="true" className="z-local-map-viewport"/);
+  assert.match(pager, /el\.closest\?\.\('\[data-swipe-block="true"\]'\)/);
+  assert.match(pager, /if \(isTextFieldEl\(target\)\) return/);
+  assert.match(map, /onPointerDown=\{onPointerDown\} onPointerMove=\{onPointerMove\}/);
+  assert.match(map, /setPointerCapture\(e\.pointerId\)/);
+  assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
+  assert.match(map, /⌖ Find me/);
+  assert.match(css, /\.z-local-map-viewport\{[\s\S]*?touch-action:none/);
+});
