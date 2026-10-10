@@ -10,6 +10,26 @@ const POINTS = [
 const WIDTH = 850;
 const HEIGHT = 1120;
 const SCALE = 0.72;
+// First Contact 1.1 is a distinct illustrated local route; all other
+// modules retain their existing scene and coordinate contract.
+const FIRST_CONTACT_GREETING = "module_1_1";
+const FIRST_CONTACT_TILES = [
+  "/assets/journey/first-contact-greeting-tile-1.avif",
+  "/assets/journey/first-contact-greeting-tile-2.avif",
+  "/assets/journey/first-contact-greeting-tile-3.avif",
+  "/assets/journey/first-contact-greeting-tile-4.avif",
+];
+const FIRST_CONTACT_POINTS = [
+  { x: 183, y: 925 }, // Village Gate: Hello and Goodbye
+  { x: 617, y: 638 }, // Fountain: Yes, No, Please, Thank You
+  { x: 254, y: 526 }, // Bakery: Sorry and Excuse Me
+  { x: 654, y: 325 }, // Lantern Corner: Polite Mini Exchanges
+  { x: 310, y: 204 }, // Town Hall: module checkpoint
+];
+const FIRST_CONTACT_LANDMARKS = [
+  "Village Gate", "Village Fountain", "The Bakery",
+  "Lantern Corner", "Town Hall",
+];
 const TREES = [
   [50,100,1.2],[125,140,.8],[740,82,1.3],[785,244,1.1],[80,390,1.1],
   [145,480,.75],[740,575,1.4],[805,760,.85],[60,755,1.25],[740,1035,1.3],
@@ -90,13 +110,16 @@ function Scene({ points }) {
     </svg>
   );
 }
-function clampCamera(x, y, width, height) {
-  const scaledW = WIDTH * SCALE, scaledH = HEIGHT * SCALE;
+function clampCamera(x, y, width, height, scale = SCALE) {
+  const scaledW = WIDTH * scale, scaledH = HEIGHT * scale;
   return { x: Math.min(0, Math.max(width - scaledW, x)), y: Math.min(0, Math.max(height - scaledH, y)) };
 }
 export default function JourneyMap({ module, completed, targetId, companion, onOpenLesson }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
-  const points = stops.map((_, i) => POINTS[i] || POINTS[POINTS.length-1]);
+  const illustrated = module?.id === FIRST_CONTACT_GREETING;
+  const scale = illustrated ? 0.87 : SCALE;
+  const pathPoints = illustrated ? FIRST_CONTACT_POINTS : POINTS;
+  const points = stops.map((_, i) => pathPoints[i] || pathPoints[pathPoints.length-1]);
   const active = Math.max(0, stops.findIndex(s => s.id === targetId));
   const lastDone = stops.reduce((index, stop, i) => completed.has(stop.id) ? i : index, 0);
   const focusIndex = targetId && stops.some(s => s.id === targetId) ? active : lastDone;
@@ -109,13 +132,13 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     const recenter = () => {
       const bounds = element.getBoundingClientRect();
       const point = points[focusIndex] || POINTS[0];
-      setCamera(clampCamera(bounds.width / 2 - point.x * SCALE, bounds.height / 2 - point.y * SCALE, bounds.width, bounds.height));
+      setCamera(clampCamera(bounds.width / 2 - point.x * scale, bounds.height / 2 - point.y * scale, bounds.width, bounds.height, scale));
     };
     recenter();
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(recenter) : null;
     observer?.observe(element);
     return () => observer?.disconnect();
-  }, [module?.id, focusIndex]);
+  }, [module?.id, focusIndex, scale]);
   const onPointerDown = (e) => {
     if (e.target.closest("button")) return;
     drag.current = {id:e.pointerId,x:e.clientX,y:e.clientY,camera};
@@ -124,13 +147,17 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const onPointerMove = (e) => {
     if (!drag.current || drag.current.id !== e.pointerId) return;
     const {width,height} = viewport.current.getBoundingClientRect();
-    setCamera(clampCamera(drag.current.camera.x + e.clientX - drag.current.x, drag.current.camera.y + e.clientY - drag.current.y, width, height));
+    setCamera(clampCamera(drag.current.camera.x + e.clientX - drag.current.x, drag.current.camera.y + e.clientY - drag.current.y, width, height, scale));
   };
   const current = stops[focusIndex];
   return <div className="z-local-map-shell z-journey-dark">
     <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={()=>{drag.current=null}} onPointerCancel={()=>{drag.current=null}} aria-label="Illustrated village lesson route">
-      <div className="z-local-map-world" style={{width:WIDTH,height:HEIGHT,transform:"translate("+camera.x+"px,"+camera.y+"px) scale("+SCALE+")"}}>
-        <Scene points={points}/>
+      <div className="z-local-map-world" style={{width:WIDTH,height:HEIGHT,transform:"translate("+camera.x+"px,"+camera.y+"px) scale("+scale+")"}}>
+        {illustrated
+          ? FIRST_CONTACT_TILES.map((src,i) => <img key={src} className="z-local-map-art z-local-map-illustrated"
+              src={src} style={{top:i*280}} width={WIDTH} height={280}
+              alt="" aria-hidden="true" draggable={false} decoding="async"/>)
+          : <Scene points={points}/>}
         {stops.map((stop,i)=>{
           const point=points[i];
           const done=completed.has(stop.id), here=stop.id===targetId;
@@ -140,7 +167,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             style={{left:point.x,top:point.y}}
             aria-label={(done?"Review ":here?"Start ":"Locked ") + stop.title}>
             <span className="z-local-map-stop-circle" aria-hidden="true">{done?"✓":here?(stop.isCheckpoint?"★":i+1):"🔒"}</span>
-            <span className="z-local-map-stop-name">{stop.title}</span>
+            <span className="z-local-map-stop-name">
+              {illustrated && <span className="z-local-map-stop-landmark">{FIRST_CONTACT_LANDMARKS[i]}</span>}
+              {stop.title}
+            </span>
           </button>;
         })}
         {current && <span className="z-local-map-character" style={{left:points[focusIndex].x,top:points[focusIndex].y-112}} aria-label={"Your "+companion.name+" at "+current.title}>
@@ -149,7 +179,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       </div>
       <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Follow your companion</div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
-        const b=viewport.current.getBoundingClientRect();const p=points[focusIndex];setCamera(clampCamera(b.width/2-p.x*SCALE,b.height/2-p.y*SCALE,b.width,b.height));
+        const b=viewport.current.getBoundingClientRect();const p=points[focusIndex];setCamera(clampCamera(b.width/2-p.x*scale,b.height/2-p.y*scale,b.width,b.height,scale));
       }}>⌖ Find me</button>
     </div>
     <div className="z-local-map-footer">

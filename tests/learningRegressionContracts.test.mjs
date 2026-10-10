@@ -647,3 +647,28 @@ test("Journey companion map cutouts stay separate from approved lesson head reac
   assert.match(css, /\.z-companion-fullbody\{[\s\S]*?object-fit:contain/);
   assert.match(css, /\.z-companion-fullbody\{[\s\S]*?pointer-events:none/);
 });
+
+
+test("First Contact illustration keeps all lesson nodes and saved progression independent", () => {
+  const map = source("src/views/training/JourneyMap.jsx");
+  const home = source("src/views/training/LearningHome.jsx");
+  const css = source("src/index.css");
+
+  assert.match(map, /FIRST_CONTACT_GREETING = "module_1_1"/);
+  assert.match(map, /first-contact-greeting-tile-1\.avif[\s\S]*?first-contact-greeting-tile-4\.avif/);
+  assert.match(map, /const illustrated = module\?\.id === FIRST_CONTACT_GREETING/);
+  assert.match(map, /FIRST_CONTACT_TILES\.map\(\(src,i\) => <img/);
+  assert.match(map, /style=\{\{top:i\*280\}\}/);
+  assert.match(map, /: <Scene points=\{points\}\/\>/);
+  assert.match(map, /const pathPoints = illustrated \? FIRST_CONTACT_POINTS : POINTS/);
+  assert.match(map, /stops\.map\(\(stop,i\)=>/);
+  assert.match(map, /key=\{stop\.id\}/);
+  assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
+  assert.match(map, /completed\.has\(stop\.id\)/);
+  assert.match(map, /const scale = illustrated \? 0\.87 : SCALE/);
+  assert.match(map, /onPointerDown=\{onPointerDown\} onPointerMove=\{onPointerMove\}/);
+  assert.match(map, /⌖ Find me/);
+  assert.match(home, /completedLessonIds/);
+  assert.match(home, /targetId=\{onCurrentRoute\?target\?\.lesson\?\.id:null\}/);
+  assert.match(css, /\.z-local-map-illustrated\{/);
+});

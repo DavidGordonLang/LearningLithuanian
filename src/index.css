@@ -1352,6 +1352,10 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
 .z-local-map-viewport:active{cursor:grabbing}
 .z-local-map-world{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .z-local-map-art{position:absolute;inset:0;pointer-events:none}
+.z-local-map-illustrated{
+  display:block;width:850px;height:280px;max-width:none;object-fit:fill;
+  user-select:none;-webkit-user-drag:none;
+}
 .z-local-map-top-label{
   position:absolute;top:10px;left:10px;padding:6px 10px;border-radius:18px;
   background:rgba(13,58,43,.82);color:#f6f3df;font-size:11px;font-weight:650;pointer-events:none;
@@ -1376,6 +1380,10 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
 .z-local-map-stop-name{
   display:block;width:155px;padding:6px 8px;border-radius:10px;background:rgba(18,55,43,.91);
   color:white;font-size:13px;font-weight:800;line-height:1.2;text-align:center;box-shadow:0 2px 7px rgba(20,50,33,.22);
+}
+.z-local-map-stop-landmark{
+  display:block;margin-bottom:2px;color:#f7da9c;text-transform:uppercase;
+  letter-spacing:.045em;font-size:10px;line-height:1.1;
 }
 .z-local-map-character{position:absolute;z-index:5;transform:translate(-50%,-10%);pointer-events:none}
 .z-local-map-recenter{
