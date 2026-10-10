@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
+import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 
 // Each module uses the same five-stop coordinate contract. New illustrated
 // regions can supply different scenery without changing curriculum IDs.
@@ -110,14 +111,10 @@ function Scene({ points }) {
     </svg>
   );
 }
-function clampCamera(x, y, width, height, scale = SCALE) {
-  const scaledW = WIDTH * scale, scaledH = HEIGHT * scale;
-  return { x: Math.min(0, Math.max(width - scaledW, x)), y: Math.min(0, Math.max(height - scaledH, y)) };
-}
 export default function JourneyMap({ module, completed, targetId, companion, onOpenLesson }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
-  const scale = illustrated ? 0.87 : SCALE;
+  const defaultScale = illustrated ? 0.87 : SCALE;
   const pathPoints = illustrated ? FIRST_CONTACT_POINTS : POINTS;
   const points = stops.map((_, i) => pathPoints[i] || pathPoints[pathPoints.length-1]);
   const active = Math.max(0, stops.findIndex(s => s.id === targetId));
@@ -125,33 +122,118 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const focusIndex = targetId && stops.some(s => s.id === targetId) ? active : lastDone;
   const viewport = useRef(null);
   const drag = useRef(null);
+  const pointers = useRef(new Map());
+  const pinch = useRef(null);
+  const suppressPinchClick = useRef(false);
   const [camera, setCamera] = useState({x: -160, y: -420});
+  const cameraRef = useRef(camera);
+  const [scale, setScale] = useState(defaultScale);
+  const scaleRef = useRef(defaultScale);
+
+  const updateView = (nextCamera, nextScale = scaleRef.current) => {
+    cameraRef.current = nextCamera;
+    scaleRef.current = nextScale;
+    setCamera(nextCamera);
+    setScale(nextScale);
+  };
+
   useEffect(() => {
     const element = viewport.current;
     if (!element) return;
     const recenter = () => {
       const bounds = element.getBoundingClientRect();
       const point = points[focusIndex] || POINTS[0];
-      setCamera(clampCamera(bounds.width / 2 - point.x * scale, bounds.height / 2 - point.y * scale, bounds.width, bounds.height, scale));
+      const zoom = scaleRef.current;
+      updateView(clampCamera(bounds.width/2 - point.x*zoom, bounds.height/2 - point.y*zoom,
+        bounds.width, bounds.height, zoom), zoom);
     };
     recenter();
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(recenter) : null;
     observer?.observe(element);
     return () => observer?.disconnect();
-  }, [module?.id, focusIndex, scale]);
+  }, [module?.id, focusIndex, defaultScale]);
+
   const onPointerDown = (e) => {
+    // Native buttons still receive ordinary single-finger taps.
+    if (e.target.closest(".z-local-map-recenter")) return;
+    if (e.pointerType === "touch") {
+      if (!pointers.current.size) suppressPinchClick.current = false;
+      pointers.current.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if (pointers.current.size >= 2 && !pinch.current) {
+        const [a,b] = [...pointers.current.values()];
+        const bounds = viewport.current.getBoundingClientRect();
+        const midX = (a.x+b.x)/2 - bounds.left;
+        const midY = (a.y+b.y)/2 - bounds.top;
+        pinch.current = {
+          distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
+          startScale:scaleRef.current,
+          anchor:{x:(midX-cameraRef.current.x)/scaleRef.current,
+            y:(midY-cameraRef.current.y)/scaleRef.current},
+        };
+        drag.current = null;
+        suppressPinchClick.current = true;
+        for (const id of pointers.current.keys()) {
+          try { e.currentTarget.setPointerCapture(id); } catch { /* pointer already released */ }
+        }
+        return;
+      }
+    }
     if (e.target.closest("button")) return;
-    drag.current = {id:e.pointerId,x:e.clientX,y:e.clientY,camera};
+    drag.current = {id:e.pointerId,x:e.clientX,y:e.clientY,camera:cameraRef.current};
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e) => {
+    if (e.pointerType === "touch" && pointers.current.has(e.pointerId)) {
+      pointers.current.set(e.pointerId, {x:e.clientX,y:e.clientY});
+      if (pinch.current && pointers.current.size >= 2) {
+        const [a,b] = [...pointers.current.values()];
+        const bounds = viewport.current.getBoundingClientRect();
+        const next = pinchView({
+          startScale:pinch.current.startScale,
+          startDistance:pinch.current.distance,
+          distance:Math.hypot(a.x-b.x,a.y-b.y),
+          anchor:pinch.current.anchor,
+          midpoint:{x:(a.x+b.x)/2-bounds.left,y:(a.y+b.y)/2-bounds.top},
+          width:bounds.width,height:bounds.height,
+          minScale:fitMapScale(bounds.width,bounds.height,defaultScale),
+        });
+        updateView(next.camera,next.scale);
+        return;
+      }
+    }
     if (!drag.current || drag.current.id !== e.pointerId) return;
-    const {width,height} = viewport.current.getBoundingClientRect();
-    setCamera(clampCamera(drag.current.camera.x + e.clientX - drag.current.x, drag.current.camera.y + e.clientY - drag.current.y, width, height, scale));
+    const bounds = viewport.current.getBoundingClientRect();
+    const zoom = scaleRef.current;
+    updateView(clampCamera(drag.current.camera.x+e.clientX-drag.current.x,
+      drag.current.camera.y+e.clientY-drag.current.y,bounds.width,bounds.height,zoom),zoom);
   };
+  const onPointerEnd = (e) => {
+    if (e.pointerType === "touch") {
+      pointers.current.delete(e.pointerId);
+      if (pinch.current) {
+        if (pointers.current.size < 2) {
+          pinch.current = null;
+          const remaining = pointers.current.entries().next().value;
+          drag.current = remaining
+            ? {id:remaining[0],x:remaining[1].x,y:remaining[1].y,camera:cameraRef.current}
+            : null;
+        }
+        return;
+      }
+    }
+    if (drag.current?.id === e.pointerId) drag.current = null;
+  };
+
   const current = stops[focusIndex];
   return <div className="z-local-map-shell z-journey-dark">
-    <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={()=>{drag.current=null}} onPointerCancel={()=>{drag.current=null}} aria-label="Illustrated village lesson route">
+    <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport}
+      onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd}
+      onClickCapture={(e)=>{
+        if (suppressPinchClick.current && e.target.closest(".z-local-map-stop")) {
+          e.preventDefault();e.stopPropagation();suppressPinchClick.current = false;
+        }
+      }} aria-label="Illustrated village lesson route. Drag to explore and pinch with two fingers to zoom.">
       <div className="z-local-map-world" style={{width:WIDTH,height:HEIGHT,transform:"translate("+camera.x+"px,"+camera.y+"px) scale("+scale+")"}}>
         {illustrated
           ? FIRST_CONTACT_TILES.map((src,i) => <img key={src} className="z-local-map-art z-local-map-illustrated"
@@ -164,7 +246,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           const available=done||here;
           return <button type="button" key={stop.id} disabled={!available} onClick={()=>onOpenLesson?.(stop.id)}
             className={"z-local-map-stop "+(done?"is-done ":"")+(here?"is-current ":"")+(available?"":"is-locked")}
-            style={{left:point.x,top:point.y}}
+            style={{left:point.x,top:point.y,minHeight:Math.max(70,48/scale),minWidth:Math.max(80,48/scale)}}
             aria-label={(done?"Review ":here?"Start ":"Locked ") + stop.title}>
             <span className="z-local-map-stop-circle" aria-hidden="true">{done?"✓":here?(stop.isCheckpoint?"★":i+1):"🔒"}</span>
             <span className="z-local-map-stop-name">
@@ -177,9 +259,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           <FullBodyCompanion companion={companion}/>
         </span>}
       </div>
-      <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Follow your companion</div>
+      <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
-        const b=viewport.current.getBoundingClientRect();const p=points[focusIndex];setCamera(clampCamera(b.width/2-p.x*scale,b.height/2-p.y*scale,b.width,b.height,scale));
+        const b=viewport.current.getBoundingClientRect(),p=points[focusIndex];
+        const zoom=scaleRef.current;
+        updateView(clampCamera(b.width/2-p.x*zoom,b.height/2-p.y*zoom,b.width,b.height,zoom),zoom);
       }}>⌖ Find me</button>
     </div>
     <div className="z-local-map-footer">

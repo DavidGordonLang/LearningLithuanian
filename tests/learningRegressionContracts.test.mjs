@@ -665,10 +665,28 @@ test("First Contact illustration keeps all lesson nodes and saved progression in
   assert.match(map, /key=\{stop\.id\}/);
   assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
   assert.match(map, /completed\.has\(stop\.id\)/);
-  assert.match(map, /const scale = illustrated \? 0\.87 : SCALE/);
+  assert.match(map, /const defaultScale = illustrated \? 0\.87 : SCALE/);
   assert.match(map, /onPointerDown=\{onPointerDown\} onPointerMove=\{onPointerMove\}/);
   assert.match(map, /⌖ Find me/);
   assert.match(home, /completedLessonIds/);
   assert.match(home, /targetId=\{onCurrentRoute\?target\?\.lesson\?\.id:null\}/);
   assert.match(css, /\.z-local-map-illustrated\{/);
+});
+
+
+test("Journey supports two-finger zoom without changing progress, navigation or map interaction", () => {
+  const map = source("src/views/training/JourneyMap.jsx");
+  const gesture = source("src/views/training/journeyMapGestures.js");
+  assert.match(map, /pointers = useRef\(new Map\(\)\)/);
+  assert.match(map, /pinch = useRef\(null\)/);
+  assert.match(map, /pinchView\(\{/);
+  assert.match(map, /fitMapScale\(bounds.width,bounds.height,defaultScale\)/);
+  assert.match(map, /onPointerUp=\{onPointerEnd\} onPointerCancel=\{onPointerEnd\}/);
+  assert.match(map, /onClickCapture=/);
+  assert.match(map, /48\/scale/);
+  assert.match(map, /⌖ Find me/);
+  assert.match(map, /onOpenLesson\?\.\(stop.id\)/);
+  assert.match(map, /data-swipe-block="true"/);
+  assert.match(gesture, /sceneWidth <= width \? \(width - sceneWidth\) \/ 2/);
+  assert.match(gesture, /Math.min\(MAP_MAX_ZOOM, Math.max\(minScale/);
 });
