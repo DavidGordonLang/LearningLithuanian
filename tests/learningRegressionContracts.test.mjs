@@ -265,11 +265,11 @@ test("Journey phone refinements keep the learning path primary and celebrate ear
   const lesson = source("src/views/training/LearningLessonView.jsx");
   const css = source("src/index.css");
   assert.match(journey, /Review completed lessons/);
-  assert.match(journey, /Tap the highlighted lesson/);
-  assert.match(journey, /text-\[17px\].*Every phrase takes you further/);
+  assert.match(journey, /Tap the highlighted lesson or use your next destination above/);
+  assert.match(journey, /<JourneyMap/);
   assert.doesNotMatch(journey, /disabled=\{status === "locked"\} onClick=\{\(\) => onOpenSection/);
   assert.match(lesson, /z-journey-companion-top/);
-  assert.match(lesson, /onCorrect=\{isJourneyFirstGreeting/);
+  assert.match(lesson, /onCorrect=\{\(\) => setCelebratedBlockId\(currentBlock\.id\)\}/);
   assert.doesNotMatch(lesson, /z-journey-mini-cheer/);
   assert.match(lesson, /paddingTop: "16px"/);
   assert.match(lesson, /Continue your journey/);
@@ -580,4 +580,26 @@ test("admin Sequence Walker can reopen completed lessons without clearing comple
   assert.match(src, /if \(!done\) \{[\s\S]*?sequence\.slice\(0, idx\)/);
   assert.match(src, /setTimeout\(\(\) => onJumpTo\(item\), 50\)/);
   assert.match(src, /Review completed lesson/);
+});
+
+
+test("Journey uses only approved companion masters and jump-to-stop map state", () => {
+  const companion = source("src/views/training/JourneyCompanion.jsx");
+  const map = source("src/views/training/JourneyMap.jsx");
+  const home = source("src/views/training/LearningHome.jsx");
+  const lesson = source("src/views/training/LearningLessonView.jsx");
+  assert.match(companion, /id: "fox"/);
+  assert.match(companion, /id: "wolf"/);
+  assert.match(companion, /id: "forest-fairy-male"/);
+  assert.match(companion, /id: "forest-fairy-female"/);
+  assert.match(companion, /approved-heads\.webp/);
+  assert.match(companion, /approved-fullbody\.webp/);
+  assert.doesNotMatch(companion, /id: "owl"|id: "deer"|id: "traveller"/);
+  assert.match(map, /targetId/);
+  assert.match(map, /focusIndex/);
+  assert.match(home, /completedLessonIds/);
+  assert.match(home, /getSectionBrowseState/);
+  assert.match(lesson, /celebrating=\{celebratedBlockId === currentBlock\?\.id\}/);
+  assert.match(lesson, /onCorrect=\{\(\) => setCelebratedBlockId\(currentBlock\.id\)\}/);
+  assert.doesNotMatch(lesson, /className=\{celebratedBlockId === currentBlock\?\.id \? "z-journey-companion-active"/);
 });
