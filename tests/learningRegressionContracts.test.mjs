@@ -228,7 +228,7 @@ test("Journey takes full screen and keeps an explicit return to main", () => {
   assert.match(app, /!immersiveJourney && <Header/);
   assert.match(app, /height: immersiveJourney \? "100dvh"/);
   assert.match(app, /onJourneyVisibilityChange=\{setJourneyVisible\}/);
-  assert.match(training, /onJourneyVisibilityChange\?\.\(isActive && screen === "learningHome"\)/);
+  assert.match(training, /onJourneyVisibilityChange\?\.\(isActive && IMMERSIVE_LEARNING_SCREENS\.has\(screen\)\)/);
   assert.match(journey, /aria-label="Back to main"/);
   assert.match(journey, /onClick=\{onBack\}/);
   assert.doesNotMatch(journey, /TrainingBackButton/);

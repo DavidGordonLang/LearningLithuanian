@@ -1391,3 +1391,18 @@ html[data-theme="light"] .z-map-region-link{background:#fffaf0;border-color:#b0c
 html[data-theme="light"] .z-journey-picker{color:#123d32;background:#e5eee2}
 html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 @media(max-height:700px){.z-local-map-viewport{height:56dvh;min-height:300px}}
+
+/* Guided-learning pages use the immersive canvas without duplicate navigation.
+   The back action is the existing lesson exit route, not a new progress action. */
+[data-guided-learning="true"] [data-swipe-block="true"] button[aria-label="Browse course"]{
+  display:none;
+}
+[data-guided-learning="true"] [data-swipe-block="true"] .grid:has(>button[aria-label="Back"]){
+  grid-template-columns:96px minmax(0,1fr) 44px;
+}
+[data-guided-learning="true"] [data-swipe-block="true"] button[aria-label="Back"]{
+  width:96px;min-height:44px;padding:0 8px;border-radius:13px;
+}
+[data-guided-learning="true"] [data-swipe-block="true"] button[aria-label="Back"]::after{
+  content:"Journey";margin-left:3px;font-size:12px;font-weight:700;
+}

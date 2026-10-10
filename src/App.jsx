@@ -1004,7 +1004,7 @@ function AccountApp() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden" style={{ backgroundColor: "var(--z-bg)" }}>
+    <div data-guided-learning={immersiveJourney ? "true" : undefined} className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden" style={{ backgroundColor: "var(--z-bg)" }}>
       <AppBackground isLight={isLight} />
 
       {!immersiveJourney && <Header

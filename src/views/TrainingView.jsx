@@ -32,6 +32,13 @@ import { findLatestInProgressLesson } from "./training/learningProgress";
 
 const ADMIN_EMAILS = ["davidgordonlang@gmail.com", "rokas.zemaitis@proton.me", "barbora.gaulyte@gmail.com"];
 
+// Guided lessons, milestones and the Journey use an immersive mobile canvas.
+// General Training tools and other app tabs retain the normal global header.
+const IMMERSIVE_LEARNING_SCREENS = new Set([
+  "learningHome", "learningSection", "learningModule", "learningLesson",
+  "moduleComplete", "sectionComplete", "vocabSave",
+]);
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // Builds a synthetic module for VocabSaveView that aggregates word_match pairs
@@ -131,7 +138,7 @@ function findLessonAfter(sections, lessonId) {
 function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, showToast, isActive = true, onJourneyVisibilityChange }) {
   const [screen, setScreen] = useState("home");
   useEffect(() => {
-    onJourneyVisibilityChange?.(isActive && screen === "learningHome");
+    onJourneyVisibilityChange?.(isActive && IMMERSIVE_LEARNING_SCREENS.has(screen));
     return () => onJourneyVisibilityChange?.(false);
   }, [isActive, screen, onJourneyVisibilityChange]);
   const [showSequenceDebug, setShowSequenceDebug] = useState(false);
