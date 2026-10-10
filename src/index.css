@@ -1327,8 +1327,8 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
   box-shadow:0 2px 8px rgba(19,54,40,.18);
 }
 .z-companion-fullbody{
-  display:block;width:112px;height:152px;background-repeat:no-repeat;
-  background-size:400% 100%;filter:drop-shadow(0 4px 6px rgba(26,60,39,.28));
+  display:block;width:112px;height:152px;object-fit:contain;object-position:center bottom;
+  pointer-events:none;user-select:none;filter:drop-shadow(0 4px 6px rgba(26,60,39,.28));
 }
 .z-journey-companion-active,.z-journey-companion-active *{animation:none!important;transform:none!important}
 .z-journey-companion-active .z-companion-face{background-position-x:100%!important}

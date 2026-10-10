@@ -608,7 +608,11 @@ test("Journey uses only approved companion masters and jump-to-stop map state", 
   assert.match(companion, /id: "forest-fairy-male"/);
   assert.match(companion, /id: "forest-fairy-female"/);
   assert.match(companion, /approved-heads\.webp/);
-  assert.match(companion, /approved-fullbody\.webp/);
+  assert.match(companion, /fox-idle\.webp/);
+  assert.match(companion, /wolf-idle\.webp/);
+  assert.match(companion, /forest-fairy-male-idle\.webp/);
+  assert.match(companion, /forest-fairy-female-idle\.webp/);
+  assert.doesNotMatch(companion, /approved-fullbody\.webp/);
   assert.doesNotMatch(companion, /id: "owl"|id: "deer"|id: "traveller"/);
   assert.match(map, /targetId/);
   assert.match(map, /focusIndex/);
@@ -631,4 +635,15 @@ test("Journey map drags do not swipe app tabs while map controls remain interact
   assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
   assert.match(map, /⌖ Find me/);
   assert.match(css, /\.z-local-map-viewport\{[\s\S]*?touch-action:none/);
+});
+
+test("Journey companion map cutouts stay separate from approved lesson head reactions", () => {
+  const companion = source("src/views/training/JourneyCompanion.jsx");
+  const css = source("src/index.css");
+  assert.match(companion, /const src = BODY_IMAGES\[companion\?\.id\] \|\| BODY_IMAGES\.fox/);
+  assert.match(companion, /<img src=\{src\} alt=\{"Your " \+ name \+ " companion"\}/);
+  assert.match(companion, /const HEADS = "\/assets\/journey\/approved-heads\.webp"/);
+  assert.match(companion, /data-face=\{celebrating \? "smile" : "normal"\}/);
+  assert.match(css, /\.z-companion-fullbody\{[\s\S]*?object-fit:contain/);
+  assert.match(css, /\.z-companion-fullbody\{[\s\S]*?pointer-events:none/);
 });
