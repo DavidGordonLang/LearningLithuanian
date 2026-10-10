@@ -1386,6 +1386,9 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
   letter-spacing:.045em;font-size:10px;line-height:1.1;
 }
 .z-local-map-character{position:absolute;z-index:5;transform:translate(-50%,-10%);pointer-events:none}
+/* Only the approved illustrated village uses feet-on-path positioning for now. */
+.z-local-map-character.is-approaching{transform:translate(-50%,-100%);z-index:2}
+.z-local-map-character.is-approaching .z-companion-fullbody{width:82px;height:112px}
 .z-local-map-recenter{
   position:absolute;right:12px;bottom:13px;border-radius:13px;border:1px solid #a5d7b9;
   background:#144f3f;color:white;padding:10px 14px;min-height:44px;font-size:13px;font-weight:800;

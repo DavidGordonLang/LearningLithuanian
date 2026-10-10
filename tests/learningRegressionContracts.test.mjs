@@ -690,3 +690,18 @@ test("Journey supports two-finger zoom without changing progress, navigation or 
   assert.match(gesture, /sceneWidth <= width \? \(width - sceneWidth\) \/ 2/);
   assert.match(gesture, /Math.min\(MAP_MAX_ZOOM, Math.max\(minScale/);
 });
+
+
+test("First Contact companion waits on the path before the highlighted marker", () => {
+  const map = source("src/views/training/JourneyMap.jsx");
+  const css = source("src/index.css");
+  assert.match(map, /const FIRST_CONTACT_APPROACH_POINTS = \[/);
+  assert.match(map, /const companionPoint = illustrated/);
+  assert.match(map, /FIRST_CONTACT_APPROACH_POINTS\[focusIndex\]/);
+  assert.match(map, /style=\{\{left:companionPoint\.x,top:companionPoint\.y\}\}/);
+  assert.match(map, /illustrated\?" is-approaching":""/);
+  assert.match(css, /\.z-local-map-character\.is-approaching\{transform:translate\(-50%,-100%\);z-index:2\}/);
+  assert.match(css, /\.z-local-map-character\.is-approaching \.z-companion-fullbody\{width:82px;height:112px\}/);
+  assert.match(map, /style=\{\{left:point\.x,top:point\.y,/);
+  assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
+});

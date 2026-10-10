@@ -31,6 +31,16 @@ const FIRST_CONTACT_LANDMARKS = [
   "Village Gate", "Village Fountain", "The Bakery",
   "Lantern Corner", "Town Hall",
 ];
+// Companion waits on the approaching cobbled path, *behind* the next stop.
+// Coordinates anchor the sprite's feet and do not alter lesson marker geometry.
+// Directional idle / rear-view animation will be handled as a separate asset pass.
+const FIRST_CONTACT_APPROACH_POINTS = [
+  { x: 145, y: 1090 }, // Before the village gate, on the entry path
+  { x: 520, y: 807 },  // Approaching the fountain from the lower-left
+  { x: 380, y: 701 },  // Leaving the fountain towards the bakery
+  { x: 545, y: 501 },  // On the winding path beneath the lantern terrace
+  { x: 420, y: 378 },  // Ahead lies the town hall plaza
+];
 const TREES = [
   [50,100,1.2],[125,140,.8],[740,82,1.3],[785,244,1.1],[80,390,1.1],
   [145,480,.75],[740,575,1.4],[805,760,.85],[60,755,1.25],[740,1035,1.3],
@@ -225,6 +235,9 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   };
 
   const current = stops[focusIndex];
+  const companionPoint = illustrated
+    ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
+    : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
   return <div className="z-local-map-shell z-journey-dark">
     <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove}
@@ -255,7 +268,9 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             </span>
           </button>;
         })}
-        {current && <span className="z-local-map-character" style={{left:points[focusIndex].x,top:points[focusIndex].y-112}} aria-label={"Your "+companion.name+" at "+current.title}>
+        {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")}
+          style={{left:companionPoint.x,top:companionPoint.y}}
+          aria-label={"Your "+companion.name+" approaching "+current.title}>
           <FullBodyCompanion companion={companion}/>
         </span>}
       </div>
