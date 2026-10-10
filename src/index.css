@@ -1318,3 +1318,76 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .scenario-
 html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct-answer {
   color:#24794b !important;
 }
+
+
+/* Journey map-first beta: sourced exclusively from the approved character sheets. */
+.z-companion-face{
+  display:block;width:1.34em;height:1.34em;flex-shrink:0;border-radius:50%;
+  background-size:200% 400%;background-repeat:no-repeat;
+  box-shadow:0 2px 8px rgba(19,54,40,.18);
+}
+.z-companion-fullbody{
+  display:block;width:112px;height:152px;background-repeat:no-repeat;
+  background-size:400% 100%;filter:drop-shadow(0 4px 6px rgba(26,60,39,.28));
+}
+.z-journey-companion-active,.z-journey-companion-active *{animation:none!important;transform:none!important}
+.z-journey-companion-active .z-companion-face{background-position-x:100%!important}
+.z-journey-companion-expression{transition:none}
+.z-map-home{color:var(--text-primary,inherit)}
+.z-map-tab{
+  flex:1;min-height:42px;padding:9px 12px;border-radius:13px;
+  border:1px solid rgba(103,156,132,.32);
+  background:rgba(42,97,78,.11);color:inherit;
+  font-size:12px;font-weight:700;
+}
+.z-map-tab.is-active{background:#226c50;border-color:#71b68d;color:#fff}
+.z-map-region-card{background:linear-gradient(130deg,#163e34,#1b3935);color:#f5f4e8;border-color:rgba(161,216,180,.24)}
+.z-map-region-link{background:rgba(0,0,0,.19);border-color:rgba(230,241,222,.19)}
+.z-map-region-link:not(:disabled):focus-visible,.z-local-map-stop:focus-visible,.z-local-map-recenter:focus-visible{outline:3px solid #f2d77b;outline-offset:4px}
+.z-local-map-shell{border-radius:23px;overflow:hidden;border:1px solid #7eab8b;background:#1f5546;box-shadow:0 10px 30px rgba(7,60,43,.16)}
+.z-local-map-viewport{
+  position:relative;width:100%;height:min(65dvh,610px);min-height:360px;overflow:hidden;
+  touch-action:none;cursor:grab;background:#89b99a;overscroll-behavior:contain;
+}
+.z-local-map-viewport:active{cursor:grabbing}
+.z-local-map-world{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+.z-local-map-art{position:absolute;inset:0;pointer-events:none}
+.z-local-map-top-label{
+  position:absolute;top:10px;left:10px;padding:6px 10px;border-radius:18px;
+  background:rgba(13,58,43,.82);color:#f6f3df;font-size:11px;font-weight:650;pointer-events:none;
+}
+.z-local-map-stop{
+  position:absolute;transform:translate(-50%,-50%);border:0;background:transparent;
+  display:flex;flex-direction:column;align-items:center;gap:5px;z-index:3;
+  min-width:80px;min-height:70px;cursor:pointer;
+}
+.z-local-map-stop:disabled{cursor:default}
+.z-local-map-stop-circle{
+  display:grid;place-items:center;width:64px;height:64px;border-radius:50%;
+  color:#fff8df;background:#355d50;border:5px solid #c9d4b6;
+  font-weight:900;font-size:27px;box-shadow:0 5px 9px rgba(31,49,31,.3);
+}
+.z-local-map-stop.is-current .z-local-map-stop-circle{
+  background:#a87519;color:#fff;border-color:#f8e7ae;
+  box-shadow:0 0 0 6px rgba(255,226,144,.38),0 5px 14px rgba(29,48,29,.4)
+}
+.z-local-map-stop.is-done .z-local-map-stop-circle{background:#216b51;border-color:#afddbb}
+.z-local-map-stop.is-locked{opacity:.7}
+.z-local-map-stop-name{
+  display:block;width:155px;padding:6px 8px;border-radius:10px;background:rgba(18,55,43,.91);
+  color:white;font-size:13px;font-weight:800;line-height:1.2;text-align:center;box-shadow:0 2px 7px rgba(20,50,33,.22);
+}
+.z-local-map-character{position:absolute;z-index:5;transform:translate(-50%,-10%);pointer-events:none}
+.z-local-map-recenter{
+  position:absolute;right:12px;bottom:13px;border-radius:13px;border:1px solid #a5d7b9;
+  background:#144f3f;color:white;padding:10px 14px;min-height:44px;font-size:13px;font-weight:800;
+}
+.z-local-map-footer{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:9px 13px;background:#164e3f;color:#f5f2dd;font-size:11px;font-weight:700;
+}
+html[data-theme="light"] .z-map-region-card{background:linear-gradient(130deg,#edf4e8,#e2ede4);color:#1b4f40;border-color:#b7d3be}
+html[data-theme="light"] .z-map-region-link{background:#fffaf0;border-color:#b0cab9;color:#254d3c}
+html[data-theme="light"] .z-journey-picker{color:#123d32;background:#e5eee2}
+html[data-theme="light"] .z-journey-picker p{color:#476f5c}
+@media(max-height:700px){.z-local-map-viewport{height:56dvh;min-height:300px}}

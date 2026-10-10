@@ -1,4 +1,5 @@
 import React from "react";
+import { Companion } from "./JourneyCompanion";
 
 // Reusable lightweight 2D scenery for the First Contact learning experience.
 // Decorative SVG only: no network requests, text, lesson state or audio changes.
@@ -41,7 +42,7 @@ export default function JourneyScene({ compact = false, companion = null, label 
       </svg>
       <div className="z-journey-landscape-vignette" aria-hidden="true" />
       {companion ? (
-        <span className="z-journey-landscape-avatar" aria-hidden="true">{companion.symbol}</span>
+        <span className="z-journey-landscape-avatar" aria-hidden="true"><Companion companion={companion} size="text-[40px]" label={false}/></span>
       ) : null}
     </div>
   );
