@@ -41,6 +41,12 @@ const FIRST_CONTACT_APPROACH_POINTS = [
   { x: 545, y: 501 },  // On the winding path beneath the lantern terrace
   { x: 420, y: 378 },  // Ahead lies the town hall plaza
 ];
+// Two independently drawn fox idle candidates. Other companions and all
+// non-illustrated modules retain their previously approved idle artwork.
+const FOX_DIRECTIONAL_PREVIEW = {
+  "up-left": "/assets/journey/fox-idle-up-left-candidate.avif",
+  "up-right": "/assets/journey/fox-idle-up-right-candidate.avif",
+};
 const TREES = [
   [50,100,1.2],[125,140,.8],[740,82,1.3],[785,244,1.1],[80,390,1.1],
   [145,480,.75],[740,575,1.4],[805,760,.85],[60,755,1.25],[740,1035,1.3],
@@ -139,6 +145,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const cameraRef = useRef(camera);
   const [scale, setScale] = useState(defaultScale);
   const scaleRef = useRef(defaultScale);
+  // Temporary dev preview switch; "route" restores automatic direction.
+  const [foxPosePreview, setFoxPosePreview] = useState("route");
 
   const updateView = (nextCamera, nextScale = scaleRef.current) => {
     cameraRef.current = nextCamera;
@@ -238,6 +246,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const companionPoint = illustrated
     ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
     : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
+  const foxPreviewEnabled = illustrated && companion?.id === "fox";
+  const routeDirection = points[focusIndex]?.x < companionPoint.x ? "up-left" : "up-right";
+  const foxDirection = foxPosePreview === "route" ? routeDirection : foxPosePreview;
+  const foxPreviewSrc = foxPreviewEnabled ? FOX_DIRECTIONAL_PREVIEW[foxDirection] : null;
   return <div className="z-local-map-shell z-journey-dark">
     <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove}
@@ -271,7 +283,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")}
           style={{left:companionPoint.x,top:companionPoint.y}}
           aria-label={"Your "+companion.name+" approaching "+current.title}>
-          <FullBodyCompanion companion={companion}/>
+          {foxPreviewSrc
+            ? <img src={foxPreviewSrc} alt={"Your Fox companion facing "+foxDirection}
+                className="z-companion-fullbody" draggable={false} decoding="async"/>
+            : <FullBodyCompanion companion={companion}/>}
         </span>}
       </div>
       <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
@@ -281,6 +296,15 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         updateView(clampCamera(b.width/2-p.x*zoom,b.height/2-p.y*zoom,b.width,b.height,zoom),zoom);
       }}>⌖ Find me</button>
     </div>
+    {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group" aria-label="Preview fox idle direction">
+      <span>Fox pose test</span>
+      <button type="button" aria-pressed={foxPosePreview === "up-left"}
+        onClick={()=>setFoxPosePreview("up-left")}>↖ Up-left</button>
+      <button type="button" aria-pressed={foxPosePreview === "up-right"}
+        onClick={()=>setFoxPosePreview("up-right")}>↗ Up-right</button>
+      <button type="button" aria-pressed={foxPosePreview === "route"}
+        onClick={()=>setFoxPosePreview("route")}>Follow route</button>
+    </div>}
     <div className="z-local-map-footer">
       <span>{stops.filter(s=>completed.has(s.id)).length} of {stops.length} stops completed</span>
       <span>{stops.length === 5 ? "Five-stop village trail" : "Your lesson route"}</span>

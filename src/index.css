@@ -1389,6 +1389,18 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
 /* Only the approved illustrated village uses feet-on-path positioning for now. */
 .z-local-map-character.is-approaching{transform:translate(-50%,-100%);z-index:2}
 .z-local-map-character.is-approaching .z-companion-fullbody{width:82px;height:112px}
+.z-fox-pose-preview{
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;
+  padding:9px 10px;background:#164e3f;color:#f5f2dd;border-top:1px solid rgba(255,255,255,.16);
+  font-size:12px;font-weight:700;
+}
+.z-fox-pose-preview button{
+  border:1px solid #94c5aa;color:#f6f3e2;background:#215d4d;
+  border-radius:9px;padding:7px 9px;min-height:34px;font-weight:700;font-size:12px;
+}
+.z-fox-pose-preview button[aria-pressed="true"]{background:#e9d9a7;color:#173f32;border-color:#f7e6ba}
+.z-fox-pose-preview button:focus-visible{outline:3px solid #f2d77b;outline-offset:2px}
+
 .z-local-map-recenter{
   position:absolute;right:12px;bottom:13px;border-radius:13px;border:1px solid #a5d7b9;
   background:#144f3f;color:white;padding:10px 14px;min-height:44px;font-size:13px;font-weight:800;

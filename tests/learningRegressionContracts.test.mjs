@@ -705,3 +705,21 @@ test("First Contact companion waits on the path before the highlighted marker", 
   assert.match(map, /style=\{\{left:point\.x,top:point\.y,/);
   assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
 });
+
+
+test("Fox two-direction idle candidate test is isolated to first village module", () => {
+  const map = source("src/views/training/JourneyMap.jsx");
+  const css = source("src/index.css");
+  assert.match(map, /const FOX_DIRECTIONAL_PREVIEW = \{/);
+  assert.match(map, /fox-idle-up-left-candidate\.avif/);
+  assert.match(map, /fox-idle-up-right-candidate\.avif/);
+  assert.match(map, /const foxPreviewEnabled = illustrated && companion\?\.id === "fox"/);
+  assert.match(map, /const routeDirection = points\[focusIndex\]\?\.x < companionPoint\.x/);
+  assert.match(map, /const foxDirection = foxPosePreview === "route" \? routeDirection : foxPosePreview/);
+  assert.match(map, /\? <img src=\{foxPreviewSrc\}/);
+  assert.match(map, /: <FullBodyCompanion companion=\{companion\}\/>/);
+  assert.match(map, /aria-label="Preview fox idle direction"/);
+  assert.match(map, /onClick=\{\(\)=>setFoxPosePreview\("route"\)\}/);
+  assert.match(css, /\.z-fox-pose-preview button\[aria-pressed="true"\]/);
+  assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
+});
