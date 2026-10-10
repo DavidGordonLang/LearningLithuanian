@@ -413,10 +413,11 @@ test("learner course browser uses real progress state instead of content active/
   assert.match(moduleSrc, /allLessonsDone[\s\S]*\? "current"[\s\S]*: "locked"/);
 
   assert.match(homeSrc, /getCourseBrowseState\(allSections, completedLessonIds\)/);
-  assert.match(homeSrc, /getSectionBrowseState\(section, \[\.\.\.completed\]\)/);
-  assert.match(homeSrc, /state\.status === "locked"/);
+  assert.match(homeSrc, /getSectionBrowseState\(s, completedLessonIds\)/);
+  assert.match(homeSrc, /status==="locked"/);
   assert.match(homeSrc, /module\.isSectionCheckpoint/);
-  assert.match(homeSrc, /disabled=\{!available\}/);
+  const mapSrc = source("src/views/training/JourneyMap.jsx");
+  assert.match(mapSrc, /disabled=\{!available\}/);
   assert.match(trainingSrc, /onOpenLesson=\{\(lessonId\) =>/);
   assert.match(trainingSrc, /completedLessonIds\.includes\(lessonId\)/);
 
