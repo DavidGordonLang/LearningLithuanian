@@ -381,6 +381,8 @@ function AccountApp() {
   });
 
   const [page, setPage] = useLocalStorageState(LSK_PAGE, "home");
+  const [journeyVisible, setJourneyVisible] = useState(false);
+  const immersiveJourney = page === "training" && journeyVisible;
   useEffect(() => {
     if (!user?.id || authLoading || !allowlistChecked || !isAllowlisted) return;
     trackSessionStart();
@@ -418,6 +420,7 @@ function AccountApp() {
   const [headerHeight, setHeaderHeight] = useState(0);
 
   useEffect(() => {
+    if (immersiveJourney) { setHeaderHeight(0); return; }
     if (!headerRef.current) return;
     const measure = () =>
       setHeaderHeight(headerRef.current.getBoundingClientRect().height || 0);
@@ -428,7 +431,7 @@ function AccountApp() {
       window.removeEventListener("resize", measure);
       window.removeEventListener("orientationchange", measure);
     };
-  }, []);
+  }, [immersiveJourney]);
 
   const rows = usePhraseStore((s) => s.phrases);
   const setRows = usePhraseStore((s) => s.setPhrases);
@@ -1004,7 +1007,7 @@ function AccountApp() {
     <div className="relative min-h-[100dvh] h-[100dvh] text-zinc-100 flex flex-col overflow-hidden" style={{ backgroundColor: "var(--z-bg)" }}>
       <AppBackground isLight={isLight} />
 
-      <Header
+      {!immersiveJourney && <Header
         ref={headerRef}
         T={T}
         page={headerPage}
@@ -1016,11 +1019,11 @@ function AccountApp() {
         onLogoClick={handleLogoClick}
         swipeProgress={swipeProgress}
         isSwiping={isSwiping}
-      />
+      />}
 
       <main
         className="flex-1 overflow-hidden relative"
-        style={{ height: `calc(100dvh - ${headerHeight}px)` }}
+        style={{ height: immersiveJourney ? "100dvh" : `calc(100dvh - ${headerHeight}px)` }}
       >
         {page === "dupes" ? (
           <div className="h-full overflow-y-auto overscroll-contain">
@@ -1119,6 +1122,7 @@ function AccountApp() {
             <div className="h-full overflow-y-auto overscroll-contain">
               <TrainingView
                 T={T}
+                onJourneyVisibilityChange={setJourneyVisible}
                 isActive={page === "training"}
                 rows={visibleRows}
                 setRows={setRows}

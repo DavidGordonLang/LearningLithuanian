@@ -2,7 +2,6 @@
 // single authority for lessons, XP, checkpoints and resume.
 import React, { useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import TrainingBackButton from "./TrainingBackButton";
 import { findLatestInProgressLesson, getCourseBrowseState, getSectionBrowseState } from "./learningProgress";
 import { Companion, JOURNEY_COMPANIONS, useJourneyCompanion } from "./JourneyCompanion";
 import JourneyMap from "./JourneyMap";
@@ -46,7 +45,7 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
   const moduleStops = activeModule?.isSectionCheckpoint ? [activeModule] : (activeModule?.lessons || []);
   const routeComplete = moduleStops.length && moduleStops.every(item => completed.has(item.id));
   if (!hasChosen) return <div className="mx-auto max-w-xl px-4 pb-12 pt-5">
-    <div className="flex items-center gap-3"><TrainingBackButton onClick={onBack}/><div className="text-lg font-semibold">Choose your journey companion</div></div>
+    <div className="flex items-center gap-3"><button type="button" onClick={onBack} className="min-h-[44px] rounded-xl border border-emerald-400/30 px-3 text-sm font-semibold" aria-label="Back to main">← Back to main</button><div className="text-lg font-semibold">Choose your journey companion</div></div>
     <div className="z-journey-picker mt-5 rounded-[27px] border border-emerald-400/30 px-4 py-6">
       <h1 className="font-serif text-[25px] font-semibold">Who will explore Lithuania with you?</h1>
       <p className="mt-2 text-sm text-zinc-300">Choose one of our four original companions. Your existing lessons and progress stay exactly where they are.</p>
@@ -63,7 +62,7 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
   </div>;
   return <div className="z-map-home mx-auto max-w-xl px-3 pb-8 pt-3">
     <header className="flex items-center gap-3">
-      <TrainingBackButton onClick={onBack}/>
+      <button type="button" onClick={onBack} className="min-h-[44px] shrink-0 rounded-xl border border-emerald-400/35 px-3 text-xs font-bold" aria-label="Back to main">← Back to main</button>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Your Journey · {activeSection?.title || "Žodis"}</div>
         <h1 className="truncate font-serif text-[19px] font-semibold">{showRegionMap ? "Explore Lithuania" : activeModule?.title || "Your learning trail"}</h1>

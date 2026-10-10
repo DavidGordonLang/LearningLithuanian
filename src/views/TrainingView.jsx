@@ -1,5 +1,5 @@
 // src/views/TrainingView.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import TrainingHome from "./training/TrainingHome";
 import LearningHome from "./training/LearningHome";
 import LearningSectionView from "./training/LearningSectionView";
@@ -128,8 +128,12 @@ function findLessonAfter(sections, lessonId) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, showToast, isActive = true }) {
+function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, showToast, isActive = true, onJourneyVisibilityChange }) {
   const [screen, setScreen] = useState("home");
+  useEffect(() => {
+    onJourneyVisibilityChange?.(isActive && screen === "learningHome");
+    return () => onJourneyVisibilityChange?.(false);
+  }, [isActive, screen, onJourneyVisibilityChange]);
   const [showSequenceDebug, setShowSequenceDebug] = useState(false);
   const [showScenarioReview, setShowScenarioReview] = useState(false);
   const [moduleCompletePayload, setModuleCompletePayload] = useState(null);

@@ -220,6 +220,20 @@ test("training resume prefers the most recently active unfinished lesson", () =>
   assert.match(homeSrc, /if \(saved\) return saved/);
 });
 
+test("Journey takes full screen and keeps an explicit return to main", () => {
+  const app = source("src/App.jsx");
+  const training = source("src/views/TrainingView.jsx");
+  const journey = source("src/views/training/LearningHome.jsx");
+  assert.match(app, /const immersiveJourney = page === "training" && journeyVisible/);
+  assert.match(app, /!immersiveJourney && <Header/);
+  assert.match(app, /height: immersiveJourney \? "100dvh"/);
+  assert.match(app, /onJourneyVisibilityChange=\{setJourneyVisible\}/);
+  assert.match(training, /onJourneyVisibilityChange\?\.\(isActive && screen === "learningHome"\)/);
+  assert.match(journey, /aria-label="Back to main"/);
+  assert.match(journey, /onClick=\{onBack\}/);
+  assert.doesNotMatch(journey, /TrainingBackButton/);
+});
+
 test("Journey entry is primary and first lesson has actual visual treatment", () => {
   const trainingHome = source("src/views/training/TrainingHome.jsx");
   const lesson = source("src/views/training/LearningLessonView.jsx");
