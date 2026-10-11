@@ -1389,6 +1389,11 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
 /* Only the approved illustrated village uses feet-on-path positioning for now. */
 .z-local-map-character.is-approaching{transform:translate(-50%,-100%);z-index:2}
 .z-local-map-character.is-approaching .z-companion-fullbody{width:82px;height:112px}
+/* Gate proof adjusts character perspective with depth. Other maps unchanged. */
+.z-local-map-character.is-approaching.is-gate-test .z-companion-fullbody{
+  width:var(--gate-sprite-width);height:var(--gate-sprite-height)}
+.z-local-map-stop.is-gate-marker-hidden{visibility:hidden;pointer-events:none}
+
 /* Gate occlusion samples the same village tile pixels through SVG clipping.
    The arch and right pier overlay the fox; the left pier stays below it. */
 .z-gate-foot-shadow{position:absolute;z-index:1;pointer-events:none;

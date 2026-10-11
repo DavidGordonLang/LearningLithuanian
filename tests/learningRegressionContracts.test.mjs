@@ -698,7 +698,7 @@ test("First Contact companion waits on the path before the highlighted marker", 
   assert.match(map, /const FIRST_CONTACT_APPROACH_POINTS = \[/);
   assert.match(map, /const companionPoint = illustrated/);
   assert.match(map, /FIRST_CONTACT_APPROACH_POINTS\[focusIndex\]/);
-  assert.match(map, /style=\{\{left:visibleCompanionPoint\.x,top:visibleCompanionPoint\.y\}\}/);
+  assert.match(map, /style=\{\{left:visibleCompanionPoint\.x,top:visibleCompanionPoint\.y,/);
   assert.match(map, /illustrated\?" is-approaching":""/);
   assert.match(css, /\.z-local-map-character\.is-approaching\{transform:translate\(-50%,-100%\);z-index:2\}/);
   assert.match(css, /\.z-local-map-character\.is-approaching \.z-companion-fullbody\{width:82px;height:112px\}/);
@@ -729,8 +729,8 @@ test("Gate preview is static and preserves learning progress and map navigation"
   const map=source("src/views/training/JourneyMap.jsx");
   const css=source("src/index.css");
   assert.match(map, /const GATE_TEST_POSITIONS = \{/);
-  assert.match(map, /approach: \{ x: 199, y: 1047 \}/);
-  assert.match(map, /passage: \{ x: 234, y: 951 \}/);
+  assert.match(map, /approach: \{ x: 170, y: 1100 \}/);
+  assert.match(map, /passage: \{ x: 240, y: 1022 \}/);
   assert.match(map, /emerge: \{ x: 392, y: 817 \}/);
   assert.match(map, /const GATE_OCCLUSION_POLYGONS = \[/);
   assert.match(map, /className="z-gate-foreground-mask"/);

@@ -44,9 +44,17 @@ const FIRST_CONTACT_APPROACH_POINTS = [
 ];
 // Gate-only depth proof. Position is the location of the fox's feet.
 const GATE_TEST_POSITIONS = {
-  approach: { x: 199, y: 1047 },
-  passage: { x: 234, y: 951 },
+  // All coordinates are PAW/ground contact points, not head/roof positions.
+  approach: { x: 170, y: 1100 },
+  passage: { x: 240, y: 1022 },
   emerge: { x: 392, y: 817 },
+};
+// The illustrated lane narrows sharply with distance. Full-size fox inside
+// the gate previously rose through the arch even when paws were anchored.
+const GATE_TEST_DIMENSIONS = {
+  approach: { width: 82, height: 112 },
+  passage: { width: 59, height: 80 },
+  emerge: { width: 50, height: 68 },
 };
 // Clip polygons select the arch crown and RIGHT pillar from the exact scene.
 // The LEFT pillar stays in the base painting, behind the fox.
@@ -160,6 +168,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const scaleRef = useRef(defaultScale);
   // Static gate-stage review only; no completion, XP, or movement state.
   const [gateStage, setGateStage] = useState("approach");
+  const [gateShowMarker, setGateShowMarker] = useState(false);
 
   const updateView = (nextCamera, nextScale = scaleRef.current) => {
     cameraRef.current = nextCamera;
@@ -185,7 +194,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     return () => observer?.disconnect();
   }, [module?.id, focusIndex, defaultScale, companion?.id, gateStage]);
 
-  useEffect(() => { setGateStage("approach"); }, [module?.id, companion?.id]);
+  useEffect(() => {
+    setGateStage("approach");
+    setGateShowMarker(false);
+  }, [module?.id, companion?.id]);
 
   const recenterOnWorldPoint = (point) => {
     const el=viewport.current;
@@ -293,8 +305,12 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           const point=points[i];
           const done=completed.has(stop.id), here=stop.id===targetId;
           const available=done||here;
-          return <button type="button" key={stop.id} disabled={!available} onClick={()=>onOpenLesson?.(stop.id)}
-            className={"z-local-map-stop "+(done?"is-done ":"")+(here?"is-current ":"")+(available?"":"is-locked")}
+          const hideForGateProof=foxPreviewEnabled && i===0 && !gateShowMarker;
+          return <button type="button" key={stop.id} disabled={!available}
+            aria-hidden={hideForGateProof ? true : undefined}
+            onClick={()=>onOpenLesson?.(stop.id)}
+            className={"z-local-map-stop "+(done?"is-done ":"")+(here?"is-current ":"")+
+              (available?"":"is-locked")+(hideForGateProof?" is-gate-marker-hidden":"")}
             style={{left:point.x,top:point.y,minHeight:Math.max(70,48/scale),minWidth:Math.max(80,48/scale)}}
             aria-label={(done?"Review ":here?"Start ":"Locked ") + stop.title}>
             <span className="z-local-map-stop-circle" aria-hidden="true">{done?"✓":here?(stop.isCheckpoint?"★":i+1):"🔒"}</span>
@@ -305,9 +321,13 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           </button>;
         })}
         {foxPreviewEnabled && <span className="z-gate-foot-shadow" aria-hidden="true"
-          style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y}}/>}
-        {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")}
-          style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y}}
+          style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
+            width:gateStage==="approach"?"36px":"25px"}}/>}
+        {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
+          (foxPreviewEnabled?" is-gate-test":"")}
+          style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
+            "--gate-sprite-width":foxPreviewEnabled ? GATE_TEST_DIMENSIONS[gateStage].width+"px" : undefined,
+            "--gate-sprite-height":foxPreviewEnabled ? GATE_TEST_DIMENSIONS[gateStage].height+"px" : undefined}}
           aria-label={"Your "+companion.name+" approaching "+current.title}>
           {foxPreviewSrc
             ? <img src={foxPreviewSrc} alt={"Your Fox companion facing "+foxDirection}
@@ -341,6 +361,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         <button type="button" key={stage} aria-pressed={gateStage===stage}
           onClick={()=>setGateStage(stage)}>{label}</button>
       )}
+      <button type="button" aria-pressed={gateShowMarker}
+        onClick={()=>setGateShowMarker(v=>!v)}>
+        {gateShowMarker?"Hide gate marker":"Show gate marker"}
+      </button>
     </div>}
     <div className="z-local-map-footer">
       <span>{stops.filter(s=>completed.has(s.id)).length} of {stops.length} stops completed</span>
