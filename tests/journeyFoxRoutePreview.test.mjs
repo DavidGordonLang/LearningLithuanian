@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {nextFoxPreviewPath,foxRouteAt,foxRouteLength} from "../src/views/training/journeyFoxRoutePreview.js";
+import {nextFoxPreviewPath,fullFoxPreviewPath,foxRouteAt,foxRouteLength} from "../src/views/training/journeyFoxRoutePreview.js";
 
-const stops=[{x:145,y:1090},{x:520,y:807},{x:380,y:701},{x:545,y:501},{x:420,y:378}];
+const stops=[{x:145,y:1090},{x:450,y:610},{x:350,y:605},{x:568,y:468},{x:425,y:333}];
 test("four visual-only next-stop legs, no path beyond checkpoint",()=>{
   for(let i=0;i<4;i++){
     const path=nextFoxPreviewPath(stops,i);
@@ -31,4 +31,28 @@ test("bad input and out of range progress are safe",()=>{
   const path=nextFoxPreviewPath(stops,2);
   assert.deepEqual(foxRouteAt(path,-10).point,path[0]);
   assert.deepEqual(foxRouteAt(path,10).point,path.at(-1));
+});
+
+
+test("one Follow route action visits all five path positions",()=>{
+  const route=fullFoxPreviewPath(stops,0);
+  assert.deepEqual(route[0],stops[0]);
+  assert.deepEqual(route.at(-1),stops[4]);
+  for(const point of stops){
+    assert.ok(route.some(p=>p.x===point.x&&p.y===point.y),
+      "each lesson approach is visited");
+  }
+  assert.ok(route.length>20);
+  assert.deepEqual(fullFoxPreviewPath(stops,2)?.at(-1),stops[4]);
+  assert.equal(fullFoxPreviewPath(stops,4),null);
+});
+
+test("no route segment crosses the fountain stream hazard",()=>{
+  // The stream is east of the western main lane at low elevations.
+  const path=fullFoxPreviewPath(stops,0);
+  for(let i=0;i<=250;i++){
+    const {point:p}=foxRouteAt(path,i/250);
+    assert.ok(!(p.y>=650&&p.y<=900&&p.x>475&&p.x<650),
+      "fox stays out of the stream before the fountain");
+  }
 });

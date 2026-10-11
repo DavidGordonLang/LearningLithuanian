@@ -1,16 +1,40 @@
 // Temporary illustrated-village movement test. Path points are world pixels,
 // separate from lesson-completion state, XP and the saved learner route.
+// Hand-traced against the 850 x 1120 painted scene. Routes stay on the
+// visible cobbled carriageway, not the stream by the fountain.
 const COBBLESTONE_BENDS = [
-  [{x:171,y:1005},{x:264,y:915},{x:379,y:838}],
-  [{x:464,y:788},{x:402,y:760},{x:357,y:725}],
-  [{x:406,y:656},{x:461,y:590},{x:520,y:538}],
-  [{x:523,y:469},{x:491,y:422},{x:447,y:397}],
+  [
+    {x:154,y:1035},{x:174,y:984},{x:196,y:940},{x:195,y:888},
+    {x:226,y:833},{x:274,y:792},{x:317,y:751},{x:341,y:704},
+    {x:352,y:662},{x:394,y:624},
+  ],
+  [{x:403,y:607},{x:372,y:602}],
+  [
+    {x:355,y:567},{x:385,y:542},{x:429,y:522},
+    {x:482,y:510},{x:528,y:492},
+  ],
+  [{x:555,y:435},{x:522,y:408},{x:479,y:374},{x:443,y:351}],
 ];
 
 export function nextFoxPreviewPath(approachPoints, stopIndex) {
   if (!Array.isArray(approachPoints) || stopIndex < 0 ||
       stopIndex >= COBBLESTONE_BENDS.length || !approachPoints[stopIndex+1]) return null;
   return [approachPoints[stopIndex],...COBBLESTONE_BENDS[stopIndex],approachPoints[stopIndex+1]];
+}
+
+// A single Follow route action previews all remaining stops, rather than
+// repeating only the first unfinished leg (which never changes in a demo).
+export function fullFoxPreviewPath(approachPoints, startIndex=0) {
+  if (!Array.isArray(approachPoints) ||
+      !Number.isInteger(startIndex) || startIndex < 0 ||
+      startIndex >= Math.min(COBBLESTONE_BENDS.length,approachPoints.length-1)) return null;
+  const route=[approachPoints[startIndex]];
+  for(let i=startIndex;i<approachPoints.length-1;i++){
+    const leg=nextFoxPreviewPath(approachPoints,i);
+    if (!leg) break;
+    route.push(...leg.slice(1));
+  }
+  return route.length>=2 ? route : null;
 }
 
 export function foxRouteLength(path) {

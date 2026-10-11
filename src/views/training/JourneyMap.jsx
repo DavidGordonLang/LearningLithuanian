@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
-import { nextFoxPreviewPath, foxRouteLength, foxRouteAt } from "./journeyFoxRoutePreview";
+import { fullFoxPreviewPath, foxRouteLength, foxRouteAt } from "./journeyFoxRoutePreview";
 
 // Each module uses the same five-stop coordinate contract. New illustrated
 // regions can supply different scenery without changing curriculum IDs.
@@ -36,11 +36,11 @@ const FIRST_CONTACT_LANDMARKS = [
 // Coordinates anchor the sprite's feet and do not alter lesson marker geometry.
 // Directional idle / rear-view animation will be handled as a separate asset pass.
 const FIRST_CONTACT_APPROACH_POINTS = [
-  { x: 145, y: 1090 }, // Before the village gate, on the entry path
-  { x: 520, y: 807 },  // Approaching the fountain from the lower-left
-  { x: 380, y: 701 },  // Leaving the fountain towards the bakery
-  { x: 545, y: 501 },  // On the winding path beneath the lantern terrace
-  { x: 420, y: 378 },  // Ahead lies the town hall plaza
+  { x: 145, y: 1090 }, // Village gate: cobbles outside the arch
+  { x: 450, y: 610 },  // Fountain: dry paved lane WEST of the stream
+  { x: 350, y: 605 },  // Bakery: cobbled lane beside the front steps
+  { x: 568, y: 468 },  // Lantern corner: paved lane below terrace steps
+  { x: 425, y: 333 },  // Town hall: cobblestone plaza approach
 ];
 // Two independently drawn fox idle candidates. Other companions and all
 // non-illustrated modules retain their previously approved idle artwork.
@@ -216,10 +216,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
 
   const followFoxRoute = () => {
     if (!illustrated || companion?.id !== "fox") return;
-    const path=nextFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex);
+    const path=fullFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex);
     if (!path || foxIsTravelling) return;
     if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current);
-    const duration=Math.min(4400,Math.max(2200,foxRouteLength(path)*6));
+    // Travel at a consistent gentle pace through every stop on this demo route.
+    const duration=Math.min(24000,Math.max(10000,foxRouteLength(path)*12));
     setFoxPosePreview("route");
     setFoxTravelPoint(path[0]);
     setFoxIsTravelling(true);
@@ -317,7 +318,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
     : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
   const foxPreviewEnabled = illustrated && companion?.id === "fox";
-  const nextFoxLeg = foxPreviewEnabled ? nextFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex) : null;
+  const nextFoxLeg = foxPreviewEnabled ? fullFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex) : null;
   const visibleCompanionPoint = foxPreviewEnabled && foxTravelPoint ? foxTravelPoint : companionPoint;
   const routeDirection = foxTravelDirection ||
     (points[focusIndex]?.x < companionPoint.x ? "up-left" : "up-right");
@@ -369,7 +370,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       }}>⌖ Find me</button>
     </div>
     {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group" aria-label="Preview fox direction and route">
-      <span>Fox test · visual only</span>
+      <span>Fox test · full village route (visual only)</span>
       <button type="button" aria-pressed={foxPosePreview === "up-left"}
         onClick={()=>setFoxPosePreview("up-left")} disabled={foxIsTravelling}>↖ Up-left</button>
       <button type="button" aria-pressed={foxPosePreview === "up-right"}

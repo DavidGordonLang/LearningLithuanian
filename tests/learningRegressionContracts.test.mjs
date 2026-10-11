@@ -729,7 +729,7 @@ test("Fox Follow route animates only a visual preview without learner mutations"
   const map=source("src/views/training/JourneyMap.jsx");
   const helper=source("src/views/training/journeyFoxRoutePreview.js");
   assert.match(map, /const followFoxRoute = \(\) => \{/);
-  assert.match(map, /nextFoxPreviewPath\(FIRST_CONTACT_APPROACH_POINTS,focusIndex\)/);
+  assert.match(map, /fullFoxPreviewPath\(FIRST_CONTACT_APPROACH_POINTS,focusIndex\)/);
   assert.match(map, /foxFrame\.current=requestAnimationFrame\(frame\)/);
   assert.match(map, /setFoxTravelPoint\(travel\.point\)/);
   assert.match(map, /setFoxTravelDirection\(travel\.direction\)/);
