@@ -732,13 +732,14 @@ test("Gate preview is static and preserves learning progress and map navigation"
   assert.match(map, /approach: \{ x: 170, y: 1100 \}/);
   assert.match(map, /passage: \{ x: 240, y: 1022 \}/);
   assert.match(map, /emerge: \{ x: 450, y: 832 \}/);
-  assert.match(map, /const GATE_OCCLUSION_POLYGONS = \[/);
-  assert.match(map, /className="z-gate-foreground-mask"/);
-  assert.match(map, /GATE_OCCLUSION_POLYGONS\.map/);
+  assert.match(map, /const GATE_FOREGROUND_CUTOUT = \{/);
+  assert.match(map, /className="z-gate-foreground-cutout"/);
+  assert.match(map, /gate-foreground-cutout\.webp/);
+  assert.doesNotMatch(map, /GATE_OCCLUSION_POLYGONS/);
   assert.match(map, /className="z-gate-foot-shadow"/);
   assert.match(map, /onClick=\{\(\)=>setGateStage\(stage\)\}/);
   assert.match(map, /onOpenLesson\?\.\(stop.id\)/);
-  assert.match(css, /\.z-gate-foreground-mask\{position:absolute/);
+  assert.match(css, /\.z-gate-foreground-cutout\{position:absolute/);
   assert.match(css, /\.z-local-map-world \.z-local-map-stop\{z-index:6\}/);
   assert.doesNotMatch(map, /requestAnimationFrame|followFoxRoute|setFoxTravelPoint|foxFrame/);
   assert.doesNotMatch(map, /awardXp|saveLesson|markComplete|localStorage\.setItem/);

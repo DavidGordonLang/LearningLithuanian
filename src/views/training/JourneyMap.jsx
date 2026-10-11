@@ -56,12 +56,13 @@ const GATE_TEST_DIMENSIONS = {
   passage: { width: 82, height: 112 },
   emerge: { width: 78, height: 106 },
 };
-// Clip polygons select the arch crown and RIGHT pillar from the exact scene.
-// The LEFT pillar stays in the base painting, behind the fox.
-const GATE_OCCLUSION_POLYGONS = [
-  "108,790 118,768 134,741 162,737 187,757 204,758 222,745 239,760 270,782 299,797 315,823 311,845 303,868 287,856 271,842 263,831 247,821 223,812 207,817 187,825 174,841 164,860 144,854 127,838 109,815",
-  "265,842 282,841 300,857 313,902 315,991 309,1009 272,1009 260,990 260,898",
-];
+// Cropped transparent pixel artwork from the original village scene:
+// arch crown and full RIGHT pier, including the lower base to the paving.
+// The LEFT pier remains entirely in the base illustration behind the fox.
+const GATE_FOREGROUND_CUTOUT = {
+  src: "/assets/journey/gate-foreground-cutout.webp",
+  left: 104, top: 731, width: 226, height: 329,
+};
 // Two independently drawn fox idle candidates. Other companions and all
 // non-illustrated modules retain their previously approved idle artwork.
 const FOX_DIRECTIONAL_PREVIEW = {
@@ -334,19 +335,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
                 className="z-companion-fullbody" draggable={false} decoding="async"/>
             : <FullBodyCompanion companion={companion}/>}
         </span>}
-        {foxPreviewEnabled && <svg className="z-gate-foreground-mask"
-          width={WIDTH} height={HEIGHT} viewBox="0 0 850 1120" aria-hidden="true">
-          <defs>
-            <clipPath id="z-gate-foreground-cutout">
-              {GATE_OCCLUSION_POLYGONS.map((shape,i)=>
-                <polygon key={i} points={shape}/>)}
-            </clipPath>
-          </defs>
-          <g clipPath="url(#z-gate-foreground-cutout)">
-            <image href={FIRST_CONTACT_TILES[2]} x="0" y="560" width={WIDTH} height="280"/>
-            <image href={FIRST_CONTACT_TILES[3]} x="0" y="840" width={WIDTH} height="280"/>
-          </g>
-        </svg>}
+        {foxPreviewEnabled && <img className="z-gate-foreground-cutout"
+          src={GATE_FOREGROUND_CUTOUT.src} alt="" aria-hidden="true"
+          draggable={false} decoding="async"
+          style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top,
+            width:GATE_FOREGROUND_CUTOUT.width,height:GATE_FOREGROUND_CUTOUT.height}}/>}
       </div>
       <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{

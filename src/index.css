@@ -1394,12 +1394,12 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
   width:var(--gate-sprite-width);height:var(--gate-sprite-height)}
 .z-local-map-stop.is-gate-marker-hidden{visibility:hidden;pointer-events:none}
 
-/* Gate occlusion samples the same village tile pixels through SVG clipping.
-   The arch and right pier overlay the fox; the left pier stays below it. */
+/* The native-pixel foreground artwork contains the arch + complete right pier.
+   Only this fox gate depth proof uses it; the left pier remains behind the fox. */
 .z-gate-foot-shadow{position:absolute;z-index:1;pointer-events:none;
   width:36px;height:10px;border-radius:50%;background:rgba(19,28,22,.28);
   transform:translate(-50%,-42%);filter:blur(3px)}
-.z-gate-foreground-mask{position:absolute;inset:0;z-index:4;pointer-events:none;
+.z-gate-foreground-cutout{position:absolute;z-index:4;pointer-events:none;
   display:block;max-width:none;user-select:none}
 .z-local-map-world .z-local-map-stop{z-index:6}
 
