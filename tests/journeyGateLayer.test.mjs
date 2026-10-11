@@ -16,21 +16,21 @@ test("the gate proof provides three grounded static positions",()=>{
   assert.doesNotMatch(map,/requestAnimationFrame|followFoxRoute/);
 });
 
-test("the original-art arch and FULL right pier overlay the fox; left pier stays in base",()=>{
-  const cutout=readFileSync(new URL("../public/assets/journey/gate-foreground-cutout.webp",import.meta.url));
-  assert.equal(cutout.subarray(0,4).toString("ascii"),"RIFF");
-  assert.equal(cutout.subarray(8,12).toString("ascii"),"WEBP");
-  assert.ok(cutout.length>5000,"cutout contains detailed original art pixels");
+test("cleaned Canva arch overlays fox using full right pier with transparent PNG",()=>{
+  const cutout=readFileSync(new URL("../public/assets/journey/gate-foreground-cleaned.png",import.meta.url));
+  assert.deepEqual([...cutout.subarray(0,8)],[137,80,78,71,13,10,26,10],"valid PNG signature");
+  assert.equal(cutout.readUInt32BE(16),370);
+  assert.equal(cutout.readUInt32BE(20),538);
+  assert.equal(cutout[25],6,"RGBA image supports alpha");
+  assert.ok(cutout.length>10000,"asset has detailed masonry artwork");
   assert.match(map,/const GATE_FOREGROUND_CUTOUT = \{/);
-  assert.match(map,/gate-foreground-cutout\.webp/);
+  assert.match(map,/gate-foreground-cleaned\.png/);
   for(const token of ["left: 104","top: 731","width: 226","height: 329"]){
     assert.ok(map.includes(token),token);
   }
-  assert.match(map,/foxPreviewEnabled && <svg className="z-gate-foreground-cutout"/);
-  assert.match(map,/clipPath id="z-gate-masonry-refinement"/);
-  assert.match(map,/clipPath="url\(#z-gate-masonry-refinement\)"/);
-  assert.match(map,/href=\{GATE_FOREGROUND_CUTOUT\.src\}/);
-  assert.doesNotMatch(map,/GATE_OCCLUSION_POLYGONS|clipPath id="z-gate-foreground-cutout"/);
+  assert.match(map,/foxPreviewEnabled && <img className="z-gate-foreground-cutout"/);
+  assert.match(map,/src=\{GATE_FOREGROUND_CUTOUT\.src\}/);
+  assert.doesNotMatch(map,/z-gate-masonry-refinement|clipPath=|<svg className="z-gate-foreground-cutout"/);
   assert.match(css,/\.z-gate-foreground-cutout\{position:absolute;z-index:4;pointer-events:none/);
   assert.match(css,/\.z-local-map-character\.is-approaching\{transform:translate\(-50%,-100%\);z-index:2/);
 });

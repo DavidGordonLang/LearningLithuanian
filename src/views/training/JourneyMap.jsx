@@ -56,11 +56,10 @@ const GATE_TEST_DIMENSIONS = {
   passage: { width: 82, height: 112 },
   emerge: { width: 78, height: 106 },
 };
-// Cropped transparent pixel artwork from the original village scene:
-// arch crown and full RIGHT pier, including the lower base to the paving.
-// The LEFT pier remains entirely in the base illustration behind the fox.
+// Cleaned Canva arch with alpha transparency over the background scene.
+// The crown and full RIGHT pier occlude fox; LEFT pier stays in base art.
 const GATE_FOREGROUND_CUTOUT = {
-  src: "/assets/journey/gate-foreground-cutout.webp",
+  src: "/assets/journey/gate-foreground-cleaned.png",
   left: 104, top: 731, width: 226, height: 329,
 };
 // Two independently drawn fox idle candidates. Other companions and all
@@ -335,18 +334,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
                 className="z-companion-fullbody" draggable={false} decoding="async"/>
             : <FullBodyCompanion companion={companion}/>}
         </span>}
-        {foxPreviewEnabled && <svg className="z-gate-foreground-cutout"
+        {foxPreviewEnabled && <img className="z-gate-foreground-cutout"
+          src={GATE_FOREGROUND_CUTOUT.src}
           width={GATE_FOREGROUND_CUTOUT.width} height={GATE_FOREGROUND_CUTOUT.height}
-          viewBox="0 0 226 329" aria-hidden="true" focusable="false"
-          style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top}}>
-          <defs><clipPath id="z-gate-masonry-refinement" clipPathUnits="userSpaceOnUse">
-            <path d="M4,59 L14,37 L30,10 L58,6 L83,26 L100,27 L118,14 L135,29 L166,51 L195,66 L211,92 L207,114 L199,137 L183,125 L167,111 L159,100 L143,90 L119,81 L103,86 L83,94 L70,110 L60,129 L40,123 L23,107 L5,84 Z"/>
-            <path d="M156,98 L170,103 L178,109 L196,123 L205,141 L211,168 L213,201 L214,231 L216,261 L218,290 L220,314 L213,319 L200,319 L195,312 L193,307 L176,303 L165,296 L164,285 L165,267 L164,247 L164,222 L165,200 L163,181 L161,167 L162,147 L166,134 L168,123 L163,111 Z"/>
-          </clipPath></defs>
-          <image href={GATE_FOREGROUND_CUTOUT.src}
-            width="226" height="329" preserveAspectRatio="none"
-            clipPath="url(#z-gate-masonry-refinement)"/>
-        </svg>}
+          style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top}}
+          alt="" aria-hidden="true" draggable={false} decoding="async"/>}
       </div>
       <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
