@@ -1399,6 +1399,7 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
   border-radius:9px;padding:7px 9px;min-height:34px;font-weight:700;font-size:12px;
 }
 .z-fox-pose-preview button[aria-pressed="true"]{background:#e9d9a7;color:#173f32;border-color:#f7e6ba}
+.z-fox-pose-preview button:disabled{opacity:.5;cursor:default}
 .z-fox-pose-preview button:focus-visible{outline:3px solid #f2d77b;outline-offset:2px}
 
 .z-local-map-recenter{

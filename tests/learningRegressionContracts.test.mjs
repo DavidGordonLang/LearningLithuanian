@@ -698,7 +698,7 @@ test("First Contact companion waits on the path before the highlighted marker", 
   assert.match(map, /const FIRST_CONTACT_APPROACH_POINTS = \[/);
   assert.match(map, /const companionPoint = illustrated/);
   assert.match(map, /FIRST_CONTACT_APPROACH_POINTS\[focusIndex\]/);
-  assert.match(map, /style=\{\{left:companionPoint\.x,top:companionPoint\.y\}\}/);
+  assert.match(map, /style=\{\{left:visibleCompanionPoint\.x,top:visibleCompanionPoint\.y\}\}/);
   assert.match(map, /illustrated\?" is-approaching":""/);
   assert.match(css, /\.z-local-map-character\.is-approaching\{transform:translate\(-50%,-100%\);z-index:2\}/);
   assert.match(css, /\.z-local-map-character\.is-approaching \.z-companion-fullbody\{width:82px;height:112px\}/);
@@ -714,12 +714,29 @@ test("Fox two-direction idle candidate test is isolated to first village module"
   assert.match(map, /fox-idle-up-left-candidate\.avif/);
   assert.match(map, /fox-idle-up-right-candidate\.avif/);
   assert.match(map, /const foxPreviewEnabled = illustrated && companion\?\.id === "fox"/);
-  assert.match(map, /const routeDirection = points\[focusIndex\]\?\.x < companionPoint\.x/);
+  assert.match(map, /const routeDirection = foxTravelDirection/);
   assert.match(map, /const foxDirection = foxPosePreview === "route" \? routeDirection : foxPosePreview/);
   assert.match(map, /\? <img src=\{foxPreviewSrc\}/);
   assert.match(map, /: <FullBodyCompanion companion=\{companion\}\/>/);
-  assert.match(map, /aria-label="Preview fox idle direction"/);
-  assert.match(map, /onClick=\{\(\)=>setFoxPosePreview\("route"\)\}/);
+  assert.match(map, /aria-label="Preview fox direction and route"/);
+  assert.match(map, /onClick=\{followFoxRoute\}/);
   assert.match(css, /\.z-fox-pose-preview button\[aria-pressed="true"\]/);
   assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
+});
+
+
+test("Fox Follow route animates only a visual preview without learner mutations", () => {
+  const map=source("src/views/training/JourneyMap.jsx");
+  const helper=source("src/views/training/journeyFoxRoutePreview.js");
+  assert.match(map, /const followFoxRoute = \(\) => \{/);
+  assert.match(map, /nextFoxPreviewPath\(FIRST_CONTACT_APPROACH_POINTS,focusIndex\)/);
+  assert.match(map, /foxFrame\.current=requestAnimationFrame\(frame\)/);
+  assert.match(map, /setFoxTravelPoint\(travel\.point\)/);
+  assert.match(map, /setFoxTravelDirection\(travel\.direction\)/);
+  assert.match(map, /recenterOnWorldPoint\(travel\.point,true\)/);
+  assert.match(map, /const visibleCompanionPoint = foxPreviewEnabled && foxTravelPoint/);
+  assert.match(map, /onClick=\{resetFoxRoutePreview\}/);
+  assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
+  assert.doesNotMatch(map, /awardXp|saveLesson|markComplete|localStorage\.setItem/);
+  assert.match(helper, /export function foxRouteAt/);
 });

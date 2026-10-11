@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
+import { nextFoxPreviewPath, foxRouteLength, foxRouteAt } from "./journeyFoxRoutePreview";
 
 // Each module uses the same five-stop coordinate contract. New illustrated
 // regions can supply different scenery without changing curriculum IDs.
@@ -145,8 +146,12 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const cameraRef = useRef(camera);
   const [scale, setScale] = useState(defaultScale);
   const scaleRef = useRef(defaultScale);
-  // Temporary dev preview switch; "route" restores automatic direction.
+  // Temporary dev pose / movement controls: no lesson state is modified.
   const [foxPosePreview, setFoxPosePreview] = useState("route");
+  const [foxTravelPoint, setFoxTravelPoint] = useState(null);
+  const [foxTravelDirection, setFoxTravelDirection] = useState(null);
+  const [foxIsTravelling, setFoxIsTravelling] = useState(false);
+  const foxFrame = useRef(null);
 
   const updateView = (nextCamera, nextScale = scaleRef.current) => {
     cameraRef.current = nextCamera;
@@ -170,6 +175,71 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     observer?.observe(element);
     return () => observer?.disconnect();
   }, [module?.id, focusIndex, defaultScale]);
+
+  useEffect(() => {
+    // Progress changes and map unmounts cancel a temporary demo animation.
+    return () => { if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current); };
+  }, []);
+  useEffect(() => {
+    if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current);
+    foxFrame.current = null;
+    setFoxTravelPoint(null);
+    setFoxTravelDirection(null);
+    setFoxIsTravelling(false);
+  }, [module?.id, focusIndex, companion?.id]);
+
+  const recenterOnWorldPoint = (point, gentle = false) => {
+    const el=viewport.current;
+    if (!el || !point) return;
+    const bounds=el.getBoundingClientRect(), zoom=scaleRef.current;
+    const desired=clampCamera(bounds.width/2-point.x*zoom,bounds.height/2-point.y*zoom,
+      bounds.width,bounds.height,zoom);
+    const prior=cameraRef.current;
+    const next=gentle
+      ? clampCamera(prior.x+(desired.x-prior.x)*.15,prior.y+(desired.y-prior.y)*.15,
+          bounds.width,bounds.height,zoom)
+      : desired;
+    cameraRef.current=next;
+    setCamera(next);
+  };
+
+  const resetFoxRoutePreview = () => {
+    if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current);
+    foxFrame.current=null;
+    setFoxIsTravelling(false);
+    setFoxTravelPoint(null);
+    setFoxTravelDirection(null);
+    setFoxPosePreview("route");
+    const actual=FIRST_CONTACT_APPROACH_POINTS[focusIndex];
+    recenterOnWorldPoint(actual);
+  };
+
+  const followFoxRoute = () => {
+    if (!illustrated || companion?.id !== "fox") return;
+    const path=nextFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex);
+    if (!path || foxIsTravelling) return;
+    if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current);
+    const duration=Math.min(4400,Math.max(2200,foxRouteLength(path)*6));
+    setFoxPosePreview("route");
+    setFoxTravelPoint(path[0]);
+    setFoxIsTravelling(true);
+    const start=performance.now();
+    const frame=(now)=>{
+      const fraction=Math.min(1,(now-start)/duration);
+      const travel=foxRouteAt(path,fraction);
+      setFoxTravelPoint(travel.point);
+      setFoxTravelDirection(travel.direction);
+      recenterOnWorldPoint(travel.point,true);
+      if (fraction < 1) {
+        foxFrame.current=requestAnimationFrame(frame);
+      } else {
+        foxFrame.current=null;
+        setFoxIsTravelling(false);
+        recenterOnWorldPoint(path[path.length-1]);
+      }
+    };
+    foxFrame.current=requestAnimationFrame(frame);
+  };
 
   const onPointerDown = (e) => {
     // Native buttons still receive ordinary single-finger taps.
@@ -247,7 +317,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
     : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
   const foxPreviewEnabled = illustrated && companion?.id === "fox";
-  const routeDirection = points[focusIndex]?.x < companionPoint.x ? "up-left" : "up-right";
+  const nextFoxLeg = foxPreviewEnabled ? nextFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex) : null;
+  const visibleCompanionPoint = foxPreviewEnabled && foxTravelPoint ? foxTravelPoint : companionPoint;
+  const routeDirection = foxTravelDirection ||
+    (points[focusIndex]?.x < companionPoint.x ? "up-left" : "up-right");
   const foxDirection = foxPosePreview === "route" ? routeDirection : foxPosePreview;
   const foxPreviewSrc = foxPreviewEnabled ? FOX_DIRECTIONAL_PREVIEW[foxDirection] : null;
   return <div className="z-local-map-shell z-journey-dark">
@@ -281,7 +354,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           </button>;
         })}
         {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")}
-          style={{left:companionPoint.x,top:companionPoint.y}}
+          style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y}}
           aria-label={"Your "+companion.name+" approaching "+current.title}>
           {foxPreviewSrc
             ? <img src={foxPreviewSrc} alt={"Your Fox companion facing "+foxDirection}
@@ -291,19 +364,20 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       </div>
       <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
-        const b=viewport.current.getBoundingClientRect(),p=points[focusIndex];
-        const zoom=scaleRef.current;
-        updateView(clampCamera(b.width/2-p.x*zoom,b.height/2-p.y*zoom,b.width,b.height,zoom),zoom);
+        recenterOnWorldPoint(foxPreviewEnabled && foxTravelPoint
+          ? foxTravelPoint : points[focusIndex]);
       }}>⌖ Find me</button>
     </div>
-    {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group" aria-label="Preview fox idle direction">
-      <span>Fox pose test</span>
+    {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group" aria-label="Preview fox direction and route">
+      <span>Fox test · visual only</span>
       <button type="button" aria-pressed={foxPosePreview === "up-left"}
-        onClick={()=>setFoxPosePreview("up-left")}>↖ Up-left</button>
+        onClick={()=>setFoxPosePreview("up-left")} disabled={foxIsTravelling}>↖ Up-left</button>
       <button type="button" aria-pressed={foxPosePreview === "up-right"}
-        onClick={()=>setFoxPosePreview("up-right")}>↗ Up-right</button>
-      <button type="button" aria-pressed={foxPosePreview === "route"}
-        onClick={()=>setFoxPosePreview("route")}>Follow route</button>
+        onClick={()=>setFoxPosePreview("up-right")} disabled={foxIsTravelling}>↗ Up-right</button>
+      <button type="button" onClick={followFoxRoute} disabled={!nextFoxLeg || foxIsTravelling}>
+        {foxIsTravelling ? "Following…" : nextFoxLeg ? "▶ Follow route" : "Route complete"}
+      </button>
+      {foxTravelPoint && <button type="button" onClick={resetFoxRoutePreview}>↺ Reset position</button>}
     </div>}
     <div className="z-local-map-footer">
       <span>{stops.filter(s=>completed.has(s.id)).length} of {stops.length} stops completed</span>
