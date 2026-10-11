@@ -1389,6 +1389,15 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
 /* Only the approved illustrated village uses feet-on-path positioning for now. */
 .z-local-map-character.is-approaching{transform:translate(-50%,-100%);z-index:2}
 .z-local-map-character.is-approaching .z-companion-fullbody{width:82px;height:112px}
+/* Gate occlusion samples the same village tile pixels through SVG clipping.
+   The arch and right pier overlay the fox; the left pier stays below it. */
+.z-gate-foot-shadow{position:absolute;z-index:1;pointer-events:none;
+  width:36px;height:10px;border-radius:50%;background:rgba(19,28,22,.28);
+  transform:translate(-50%,-42%);filter:blur(3px)}
+.z-gate-foreground-mask{position:absolute;inset:0;z-index:4;pointer-events:none;
+  display:block;max-width:none;user-select:none}
+.z-local-map-world .z-local-map-stop{z-index:6}
+
 .z-fox-pose-preview{
   display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;
   padding:9px 10px;background:#164e3f;color:#f5f2dd;border-top:1px solid rgba(255,255,255,.16);

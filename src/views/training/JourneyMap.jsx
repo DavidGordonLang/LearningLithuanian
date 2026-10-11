@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
-import { fullFoxPreviewPath, foxRouteLength, foxRouteAt } from "./journeyFoxRoutePreview";
+
 
 // Each module uses the same five-stop coordinate contract. New illustrated
 // regions can supply different scenery without changing curriculum IDs.
@@ -41,6 +41,18 @@ const FIRST_CONTACT_APPROACH_POINTS = [
   { x: 350, y: 605 },  // Bakery: cobbled lane beside the front steps
   { x: 568, y: 468 },  // Lantern corner: paved lane below terrace steps
   { x: 425, y: 333 },  // Town hall: cobblestone plaza approach
+];
+// Gate-only depth proof. Position is the location of the fox's feet.
+const GATE_TEST_POSITIONS = {
+  approach: { x: 199, y: 1047 },
+  passage: { x: 234, y: 951 },
+  emerge: { x: 392, y: 817 },
+};
+// Clip polygons select the arch crown and RIGHT pillar from the exact scene.
+// The LEFT pillar stays in the base painting, behind the fox.
+const GATE_OCCLUSION_POLYGONS = [
+  "108,790 118,768 134,741 162,737 187,757 204,758 222,745 239,760 270,782 299,797 315,823 311,845 303,868 287,856 271,842 263,831 247,821 223,812 207,817 187,825 174,841 164,860 144,854 127,838 109,815",
+  "265,842 282,841 300,857 313,902 315,991 309,1009 272,1009 260,990 260,898",
 ];
 // Two independently drawn fox idle candidates. Other companions and all
 // non-illustrated modules retain their previously approved idle artwork.
@@ -146,12 +158,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const cameraRef = useRef(camera);
   const [scale, setScale] = useState(defaultScale);
   const scaleRef = useRef(defaultScale);
-  // Temporary dev pose / movement controls: no lesson state is modified.
-  const [foxPosePreview, setFoxPosePreview] = useState("route");
-  const [foxTravelPoint, setFoxTravelPoint] = useState(null);
-  const [foxTravelDirection, setFoxTravelDirection] = useState(null);
-  const [foxIsTravelling, setFoxIsTravelling] = useState(false);
-  const foxFrame = useRef(null);
+  // Static gate-stage review only; no completion, XP, or movement state.
+  const [gateStage, setGateStage] = useState("approach");
 
   const updateView = (nextCamera, nextScale = scaleRef.current) => {
     cameraRef.current = nextCamera;
@@ -165,7 +173,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     if (!element) return;
     const recenter = () => {
       const bounds = element.getBoundingClientRect();
-      const point = points[focusIndex] || POINTS[0];
+      const point = illustrated && companion?.id === "fox"
+        ? GATE_TEST_POSITIONS[gateStage] : (points[focusIndex] || POINTS[0]);
       const zoom = scaleRef.current;
       updateView(clampCamera(bounds.width/2 - point.x*zoom, bounds.height/2 - point.y*zoom,
         bounds.width, bounds.height, zoom), zoom);
@@ -174,72 +183,16 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(recenter) : null;
     observer?.observe(element);
     return () => observer?.disconnect();
-  }, [module?.id, focusIndex, defaultScale]);
+  }, [module?.id, focusIndex, defaultScale, companion?.id, gateStage]);
 
-  useEffect(() => {
-    // Progress changes and map unmounts cancel a temporary demo animation.
-    return () => { if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current); };
-  }, []);
-  useEffect(() => {
-    if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current);
-    foxFrame.current = null;
-    setFoxTravelPoint(null);
-    setFoxTravelDirection(null);
-    setFoxIsTravelling(false);
-  }, [module?.id, focusIndex, companion?.id]);
+  useEffect(() => { setGateStage("approach"); }, [module?.id, companion?.id]);
 
-  const recenterOnWorldPoint = (point, gentle = false) => {
+  const recenterOnWorldPoint = (point) => {
     const el=viewport.current;
     if (!el || !point) return;
     const bounds=el.getBoundingClientRect(), zoom=scaleRef.current;
-    const desired=clampCamera(bounds.width/2-point.x*zoom,bounds.height/2-point.y*zoom,
-      bounds.width,bounds.height,zoom);
-    const prior=cameraRef.current;
-    const next=gentle
-      ? clampCamera(prior.x+(desired.x-prior.x)*.15,prior.y+(desired.y-prior.y)*.15,
-          bounds.width,bounds.height,zoom)
-      : desired;
-    cameraRef.current=next;
-    setCamera(next);
-  };
-
-  const resetFoxRoutePreview = () => {
-    if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current);
-    foxFrame.current=null;
-    setFoxIsTravelling(false);
-    setFoxTravelPoint(null);
-    setFoxTravelDirection(null);
-    setFoxPosePreview("route");
-    const actual=FIRST_CONTACT_APPROACH_POINTS[focusIndex];
-    recenterOnWorldPoint(actual);
-  };
-
-  const followFoxRoute = () => {
-    if (!illustrated || companion?.id !== "fox") return;
-    const path=fullFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex);
-    if (!path || foxIsTravelling) return;
-    if (foxFrame.current !== null) cancelAnimationFrame(foxFrame.current);
-    // Travel at a consistent gentle pace through every stop on this demo route.
-    const duration=Math.min(24000,Math.max(10000,foxRouteLength(path)*12));
-    setFoxPosePreview("route");
-    setFoxTravelPoint(path[0]);
-    setFoxIsTravelling(true);
-    const start=performance.now();
-    const frame=(now)=>{
-      const fraction=Math.min(1,(now-start)/duration);
-      const travel=foxRouteAt(path,fraction);
-      setFoxTravelPoint(travel.point);
-      setFoxTravelDirection(travel.direction);
-      recenterOnWorldPoint(travel.point,true);
-      if (fraction < 1) {
-        foxFrame.current=requestAnimationFrame(frame);
-      } else {
-        foxFrame.current=null;
-        setFoxIsTravelling(false);
-        recenterOnWorldPoint(path[path.length-1]);
-      }
-    };
-    foxFrame.current=requestAnimationFrame(frame);
+    updateView(clampCamera(bounds.width/2-point.x*zoom,bounds.height/2-point.y*zoom,
+      bounds.width,bounds.height,zoom),zoom);
   };
 
   const onPointerDown = (e) => {
@@ -318,11 +271,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
     : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
   const foxPreviewEnabled = illustrated && companion?.id === "fox";
-  const nextFoxLeg = foxPreviewEnabled ? fullFoxPreviewPath(FIRST_CONTACT_APPROACH_POINTS,focusIndex) : null;
-  const visibleCompanionPoint = foxPreviewEnabled && foxTravelPoint ? foxTravelPoint : companionPoint;
-  const routeDirection = foxTravelDirection ||
-    (points[focusIndex]?.x < companionPoint.x ? "up-left" : "up-right");
-  const foxDirection = foxPosePreview === "route" ? routeDirection : foxPosePreview;
+  const visibleCompanionPoint = foxPreviewEnabled ? GATE_TEST_POSITIONS[gateStage] : companionPoint;
+  const foxDirection = "up-right"; // Standing poses only until gate depth is accepted.
   const foxPreviewSrc = foxPreviewEnabled ? FOX_DIRECTIONAL_PREVIEW[foxDirection] : null;
   return <div className="z-local-map-shell z-journey-dark">
     <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport}
@@ -354,6 +304,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             </span>
           </button>;
         })}
+        {foxPreviewEnabled && <span className="z-gate-foot-shadow" aria-hidden="true"
+          style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y}}/>}
         {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")}
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y}}
           aria-label={"Your "+companion.name+" approaching "+current.title}>
@@ -362,23 +314,33 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
                 className="z-companion-fullbody" draggable={false} decoding="async"/>
             : <FullBodyCompanion companion={companion}/>}
         </span>}
+        {foxPreviewEnabled && <svg className="z-gate-foreground-mask"
+          width={WIDTH} height={HEIGHT} viewBox="0 0 850 1120" aria-hidden="true">
+          <defs>
+            <clipPath id="z-gate-foreground-cutout">
+              {GATE_OCCLUSION_POLYGONS.map((shape,i)=>
+                <polygon key={i} points={shape}/>)}
+            </clipPath>
+          </defs>
+          <g clipPath="url(#z-gate-foreground-cutout)">
+            <image href={FIRST_CONTACT_TILES[2]} x="0" y="560" width={WIDTH} height="280"/>
+            <image href={FIRST_CONTACT_TILES[3]} x="0" y="840" width={WIDTH} height="280"/>
+          </g>
+        </svg>}
       </div>
       <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
-        recenterOnWorldPoint(foxPreviewEnabled && foxTravelPoint
-          ? foxTravelPoint : points[focusIndex]);
+        recenterOnWorldPoint(foxPreviewEnabled
+          ? GATE_TEST_POSITIONS[gateStage] : points[focusIndex]);
       }}>⌖ Find me</button>
     </div>
-    {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group" aria-label="Preview fox direction and route">
-      <span>Fox test · full village route (visual only)</span>
-      <button type="button" aria-pressed={foxPosePreview === "up-left"}
-        onClick={()=>setFoxPosePreview("up-left")} disabled={foxIsTravelling}>↖ Up-left</button>
-      <button type="button" aria-pressed={foxPosePreview === "up-right"}
-        onClick={()=>setFoxPosePreview("up-right")} disabled={foxIsTravelling}>↗ Up-right</button>
-      <button type="button" onClick={followFoxRoute} disabled={!nextFoxLeg || foxIsTravelling}>
-        {foxIsTravelling ? "Following…" : nextFoxLeg ? "▶ Follow route" : "Route complete"}
-      </button>
-      {foxTravelPoint && <button type="button" onClick={resetFoxRoutePreview}>↺ Reset position</button>}
+    {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group"
+      aria-label="Gate depth proof: three static positions">
+      <span>Gate layer test · static positions only</span>
+      {[["approach","A · Approach"],["passage","B · Under arch"],["emerge","C · Emerge"]].map(([stage,label])=>
+        <button type="button" key={stage} aria-pressed={gateStage===stage}
+          onClick={()=>setGateStage(stage)}>{label}</button>
+      )}
     </div>}
     <div className="z-local-map-footer">
       <span>{stops.filter(s=>completed.has(s.id)).length} of {stops.length} stops completed</span>

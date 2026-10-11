@@ -714,29 +714,32 @@ test("Fox two-direction idle candidate test is isolated to first village module"
   assert.match(map, /fox-idle-up-left-candidate\.avif/);
   assert.match(map, /fox-idle-up-right-candidate\.avif/);
   assert.match(map, /const foxPreviewEnabled = illustrated && companion\?\.id === "fox"/);
-  assert.match(map, /const routeDirection = foxTravelDirection/);
-  assert.match(map, /const foxDirection = foxPosePreview === "route" \? routeDirection : foxPosePreview/);
+  assert.match(map, /const foxDirection = "up-right"/);
+  assert.match(map, /const visibleCompanionPoint = foxPreviewEnabled \? GATE_TEST_POSITIONS\[gateStage\]/);
   assert.match(map, /\? <img src=\{foxPreviewSrc\}/);
   assert.match(map, /: <FullBodyCompanion companion=\{companion\}\/>/);
-  assert.match(map, /aria-label="Preview fox direction and route"/);
-  assert.match(map, /onClick=\{followFoxRoute\}/);
+  assert.match(map, /aria-label="Gate depth proof: three static positions"/);
+  assert.match(map, /onClick=\{\(\)=>setGateStage\(stage\)\}/);
   assert.match(css, /\.z-fox-pose-preview button\[aria-pressed="true"\]/);
   assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
 });
 
 
-test("Fox Follow route animates only a visual preview without learner mutations", () => {
+test("Gate preview is static and preserves learning progress and map navigation", () => {
   const map=source("src/views/training/JourneyMap.jsx");
-  const helper=source("src/views/training/journeyFoxRoutePreview.js");
-  assert.match(map, /const followFoxRoute = \(\) => \{/);
-  assert.match(map, /fullFoxPreviewPath\(FIRST_CONTACT_APPROACH_POINTS,focusIndex\)/);
-  assert.match(map, /foxFrame\.current=requestAnimationFrame\(frame\)/);
-  assert.match(map, /setFoxTravelPoint\(travel\.point\)/);
-  assert.match(map, /setFoxTravelDirection\(travel\.direction\)/);
-  assert.match(map, /recenterOnWorldPoint\(travel\.point,true\)/);
-  assert.match(map, /const visibleCompanionPoint = foxPreviewEnabled && foxTravelPoint/);
-  assert.match(map, /onClick=\{resetFoxRoutePreview\}/);
-  assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
+  const css=source("src/index.css");
+  assert.match(map, /const GATE_TEST_POSITIONS = \{/);
+  assert.match(map, /approach: \{ x: 199, y: 1047 \}/);
+  assert.match(map, /passage: \{ x: 234, y: 951 \}/);
+  assert.match(map, /emerge: \{ x: 392, y: 817 \}/);
+  assert.match(map, /const GATE_OCCLUSION_POLYGONS = \[/);
+  assert.match(map, /className="z-gate-foreground-mask"/);
+  assert.match(map, /GATE_OCCLUSION_POLYGONS\.map/);
+  assert.match(map, /className="z-gate-foot-shadow"/);
+  assert.match(map, /onClick=\{\(\)=>setGateStage\(stage\)\}/);
+  assert.match(map, /onOpenLesson\?\.\(stop.id\)/);
+  assert.match(css, /\.z-gate-foreground-mask\{position:absolute/);
+  assert.match(css, /\.z-local-map-world \.z-local-map-stop\{z-index:6\}/);
+  assert.doesNotMatch(map, /requestAnimationFrame|followFoxRoute|setFoxTravelPoint|foxFrame/);
   assert.doesNotMatch(map, /awardXp|saveLesson|markComplete|localStorage\.setItem/);
-  assert.match(helper, /export function foxRouteAt/);
 });
