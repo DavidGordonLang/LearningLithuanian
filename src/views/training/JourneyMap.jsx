@@ -47,14 +47,14 @@ const GATE_TEST_POSITIONS = {
   // All coordinates are PAW/ground contact points, not head/roof positions.
   approach: { x: 170, y: 1100 },
   passage: { x: 240, y: 1022 },
-  emerge: { x: 392, y: 817 },
+  emerge: { x: 450, y: 832 }, // Center of the curving cobblestone lane, clear of the bank
 };
-// The illustrated lane narrows sharply with distance. Full-size fox inside
-// the gate previously rose through the arch even when paws were anchored.
+// Keep the same apparent size from A to B (short physical distance).
+// Reduce only slightly as the fox follows the lane farther into the village.
 const GATE_TEST_DIMENSIONS = {
   approach: { width: 82, height: 112 },
-  passage: { width: 59, height: 80 },
-  emerge: { width: 50, height: 68 },
+  passage: { width: 82, height: 112 },
+  emerge: { width: 78, height: 106 },
 };
 // Clip polygons select the arch crown and RIGHT pillar from the exact scene.
 // The LEFT pillar stays in the base painting, behind the fox.

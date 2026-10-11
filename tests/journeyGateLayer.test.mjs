@@ -9,7 +9,7 @@ test("the gate proof provides three grounded static positions",()=>{
   for(const text of [
     'approach: { x: 170, y: 1100 }',
     'passage: { x: 240, y: 1022 }',
-    'emerge: { x: 392, y: 817 }',
+    'emerge: { x: 450, y: 832 }',
     'A · Approach','B · Under arch','C · Emerge'
   ]) assert.ok(map.includes(text),text);
   assert.match(map,/setGateStage\(stage\)/);
@@ -41,9 +41,9 @@ test("zoom, lessons and other companions remain connected",()=>{
 
 test("gate depth proof anchors fox on the paved ground and scales into the arch",()=>{
   assert.match(map,/passage: \{ x: 240, y: 1022 \}/);
-  assert.match(map,/passage: \{ width: 59, height: 80 \}/);
+  assert.match(map,/passage: \{ width: 82, height: 112 \}/);
   assert.match(map,/approach: \{ width: 82, height: 112 \}/);
-  assert.match(map,/emerge: \{ width: 50, height: 68 \}/);
+  assert.match(map,/emerge: \{ width: 78, height: 106 \}/);
   assert.match(map,/is-gate-test/);
   assert.match(css,/\.z-local-map-character\.is-approaching\.is-gate-test \.z-companion-fullbody/);
 });
