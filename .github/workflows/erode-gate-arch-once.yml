@@ -1,0 +1,49 @@
+name: One-time cleaned gate alpha correction
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/erode-gate-arch-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  correct-gate-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Install exact image tooling
+        run: python3 -m pip install --user Pillow==11.3.0
+      - name: Erode existing cleaned arch alpha by exactly one source pixel
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=public/assets/journey/gate-foreground-cleaned.png
+          test "$(git hash-object "$p")" = "e2c9e46a6a4eab1d52031d7335342fad72ac16de"
+          python3 - <<'PY'
+          from PIL import Image, ImageFilter, ImageChops
+          from pathlib import Path
+          p = Path("public/assets/journey/gate-foreground-cleaned.png")
+          image = Image.open(p).convert("RGBA")
+          original = image.copy()
+          a = image.getchannel("A")
+          narrowed = a.filter(ImageFilter.MinFilter(3))
+          assert ImageChops.subtract(narrowed, a).getbbox() is None
+          assert ImageChops.difference(narrowed, a).getbbox() is not None
+          image.putalpha(narrowed)
+          assert image.convert("RGB").tobytes() == original.convert("RGB").tobytes()
+          assert image.size == (370, 538)
+          image.save(p, optimize=True)
+          print("Alpha edge eroded 1px; RGB and dimensions preserved")
+          PY
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$p"
+          git commit -m "fix(journey): contract cleaned gate alpha by one pixel"
+          git push origin HEAD:dev
