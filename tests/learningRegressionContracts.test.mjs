@@ -714,12 +714,12 @@ test("Fox two-direction idle candidate test is isolated to first village module"
   assert.match(map, /fox-idle-up-left-candidate\.avif/);
   assert.match(map, /fox-idle-up-right-candidate\.avif/);
   assert.match(map, /const foxPreviewEnabled = illustrated && companion\?\.id === "fox"/);
-  assert.match(map, /const foxDirection = "up-right"/);
-  assert.match(map, /const visibleCompanionPoint = foxPreviewEnabled \? GATE_TEST_POSITIONS\[gateStage\]/);
+  assert.match(map, /const foxDirection = gateFrame\?\.direction \|\| "up-right"/);
+  assert.match(map, /const visibleCompanionPoint = gateFrame \? gateFrame.point : companionPoint/);
   assert.match(map, /\? <img src=\{foxPreviewSrc\}/);
   assert.match(map, /: <FullBodyCompanion companion=\{companion\}\/>/);
-  assert.match(map, /aria-label="Gate depth proof: three static positions"/);
-  assert.match(map, /onClick=\{\(\)=>setGateStage\(stage\)\}/);
+  assert.match(map, /aria-label="Gate traversal frame proof"/);
+  assert.match(map, /setGateProgress\(GATE_STAGE_PROGRESS\[stage\]\)/);
   assert.match(css, /\.z-fox-pose-preview button\[aria-pressed="true"\]/);
   assert.match(map, /onClick=\{\(\)=>onOpenLesson\?\.\(stop\.id\)\}/);
 });
@@ -737,7 +737,7 @@ test("Gate preview is static and preserves learning progress and map navigation"
   assert.match(map, /gate-foreground-cleaned\.png/);
   assert.doesNotMatch(map, /GATE_OCCLUSION_POLYGONS/);
   assert.match(map, /className="z-gate-foot-shadow"/);
-  assert.match(map, /onClick=\{\(\)=>setGateStage\(stage\)\}/);
+  assert.match(map, /setGateProgress\(GATE_STAGE_PROGRESS\[stage\]\)/);
   assert.match(map, /onOpenLesson\?\.\(stop.id\)/);
   assert.match(css, /\.z-gate-foreground-cutout\{position:absolute/);
   assert.match(css, /\.z-local-map-world \.z-local-map-stop\{z-index:6\}/);

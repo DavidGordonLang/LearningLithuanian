@@ -1402,6 +1402,16 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
 .z-gate-foreground-cutout{position:absolute;z-index:4;pointer-events:none;
   display:block;max-width:none;user-select:none}
 .z-local-map-world .z-local-map-stop{z-index:6}
+/* A jaunty WALK indication without changing the paw anchor or artwork.
+   Tilt and tiny squash pivot at the ground; final animated cycle is separate. */
+.z-local-map-character.is-gate-test .z-companion-fullbody{
+  transform-origin:center bottom;
+  transform:rotate(var(--fox-jaunt-tilt,0deg)) scaleY(var(--fox-jaunt-squash,1));
+}
+.z-gate-route-guide{position:absolute;left:0;top:0;z-index:1;pointer-events:none}
+.z-gate-frame-scrubber{width:min(250px,70vw);min-width:120px;accent-color:#e9d9a7;
+  height:32px;touch-action:auto}
+
 
 .z-fox-pose-preview{
   display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;

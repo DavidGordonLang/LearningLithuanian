@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
+import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 
 
 // Each module uses the same five-stop coordinate contract. New illustrated
@@ -166,8 +167,9 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const cameraRef = useRef(camera);
   const [scale, setScale] = useState(defaultScale);
   const scaleRef = useRef(defaultScale);
-  // Static gate-stage review only; no completion, XP, or movement state.
-  const [gateStage, setGateStage] = useState("approach");
+  // Gate-only visual frame review: no learner progress or persistence changes.
+  const [gateProgress, setGateProgress] = useState(0);
+  const [gateShowPath, setGateShowPath] = useState(false);
   const [gateShowMarker, setGateShowMarker] = useState(false);
 
   const updateView = (nextCamera, nextScale = scaleRef.current) => {
@@ -183,7 +185,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     const recenter = () => {
       const bounds = element.getBoundingClientRect();
       const point = illustrated && companion?.id === "fox"
-        ? GATE_TEST_POSITIONS[gateStage] : (points[focusIndex] || POINTS[0]);
+        ? GATE_TEST_POSITIONS.approach : (points[focusIndex] || POINTS[0]);
       const zoom = scaleRef.current;
       updateView(clampCamera(bounds.width/2 - point.x*zoom, bounds.height/2 - point.y*zoom,
         bounds.width, bounds.height, zoom), zoom);
@@ -192,10 +194,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(recenter) : null;
     observer?.observe(element);
     return () => observer?.disconnect();
-  }, [module?.id, focusIndex, defaultScale, companion?.id, gateStage]);
+  }, [module?.id, focusIndex, defaultScale, companion?.id]);
 
   useEffect(() => {
-    setGateStage("approach");
+    setGateProgress(0);
+    setGateShowPath(false);
     setGateShowMarker(false);
   }, [module?.id, companion?.id]);
 
@@ -283,8 +286,9 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
     : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
   const foxPreviewEnabled = illustrated && companion?.id === "fox";
-  const visibleCompanionPoint = foxPreviewEnabled ? GATE_TEST_POSITIONS[gateStage] : companionPoint;
-  const foxDirection = "up-right"; // Standing poses only until gate depth is accepted.
+  const gateFrame = foxPreviewEnabled ? gateTraverseAt(gateProgress) : null;
+  const visibleCompanionPoint = gateFrame ? gateFrame.point : companionPoint;
+  const foxDirection = gateFrame?.direction || "up-right";
   const foxPreviewSrc = foxPreviewEnabled ? FOX_DIRECTIONAL_PREVIEW[foxDirection] : null;
   return <div className="z-local-map-shell z-journey-dark">
     <div data-swipe-block="true" className="z-local-map-viewport" ref={viewport}
@@ -301,6 +305,15 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
               src={src} style={{top:i*280}} width={WIDTH} height={280}
               alt="" aria-hidden="true" draggable={false} decoding="async"/>)
           : <Scene points={points}/>}
+        {foxPreviewEnabled && gateShowPath && <svg className="z-gate-route-guide" viewBox="0 0 850 1120"
+          width={WIDTH} height={HEIGHT} aria-hidden="true">
+          <polyline points={GATE_ROUTE_POINTS.map(p=>p.x+","+p.y).join(" ")}
+            fill="none" stroke="#ffe7a2" strokeWidth="3" strokeDasharray="6 8"
+            strokeLinecap="round" strokeLinejoin="round"/>
+          {GATE_ROUTE_POINTS.map((p,i)=><circle key={i} cx={p.x} cy={p.y}
+            r={i===0||i===4||i===10 ? 7 : 3} fill="#ffe7a2"
+            stroke="#375c4b" strokeWidth="1.5"/>)}
+        </svg>}
         {stops.map((stop,i)=>{
           const point=points[i];
           const done=completed.has(stop.id), here=stop.id===targetId;
@@ -322,16 +335,19 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         })}
         {foxPreviewEnabled && <span className="z-gate-foot-shadow" aria-hidden="true"
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
-            width:gateStage==="approach"?"36px":"25px"}}/>}
+            width:(gateProgress<GATE_STAGE_PROGRESS.passage
+              ? 36-11*gateProgress/GATE_STAGE_PROGRESS.passage : 25)+"px"}}/>}
         {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
           (foxPreviewEnabled?" is-gate-test":"")}
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
-            "--gate-sprite-width":foxPreviewEnabled ? GATE_TEST_DIMENSIONS[gateStage].width+"px" : undefined,
-            "--gate-sprite-height":foxPreviewEnabled ? GATE_TEST_DIMENSIONS[gateStage].height+"px" : undefined}}
+            "--gate-sprite-width":gateFrame ? gateFrame.dimensions.width+"px" : undefined,
+            "--gate-sprite-height":gateFrame ? gateFrame.dimensions.height+"px" : undefined}}
           aria-label={"Your "+companion.name+" approaching "+current.title}>
           {foxPreviewSrc
             ? <img src={foxPreviewSrc} alt={"Your Fox companion facing "+foxDirection}
-                className="z-companion-fullbody" draggable={false} decoding="async"/>
+                className="z-companion-fullbody" draggable={false} decoding="async"
+                style={{"--fox-jaunt-tilt":gateFrame?.tilt+"deg",
+                  "--fox-jaunt-squash":gateFrame?.squash}}/>
             : <FullBodyCompanion companion={companion}/>}
         </span>}
         {foxPreviewEnabled && <img className="z-gate-foreground-cutout"
@@ -343,16 +359,30 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
         recenterOnWorldPoint(foxPreviewEnabled
-          ? GATE_TEST_POSITIONS[gateStage] : points[focusIndex]);
+          ? visibleCompanionPoint : points[focusIndex]);
       }}>⌖ Find me</button>
     </div>
     {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group"
-      aria-label="Gate depth proof: three static positions">
-      <span>Gate layer test · static positions only</span>
+      aria-label="Gate traversal frame proof">
+      <span>Gate walk · frame {Math.round(gateProgress*24)+1}/25</span>
       {[["approach","A · Approach"],["passage","B · Under arch"],["emerge","C · Emerge"]].map(([stage,label])=>
-        <button type="button" key={stage} aria-pressed={gateStage===stage}
-          onClick={()=>setGateStage(stage)}>{label}</button>
+        <button type="button" key={stage}
+          aria-pressed={Math.abs(gateProgress-GATE_STAGE_PROGRESS[stage])<1e-8}
+          onClick={()=>{setGateProgress(GATE_STAGE_PROGRESS[stage]);
+            recenterOnWorldPoint(GATE_TEST_POSITIONS[stage]);}}>{label}</button>
       )}
+      <button type="button" aria-label="Previous gate frame"
+        onClick={()=>setGateProgress(p=>Math.max(0,(Math.ceil(p*24-1e-7)-1)/24))}>◀</button>
+      <input className="z-gate-frame-scrubber" type="range" min="0" max="1000" step="1"
+        value={Math.round(gateProgress*1000)}
+        onChange={e=>setGateProgress(Number(e.target.value)/1000)}
+        aria-label="Scrub fox through gate"/>
+      <button type="button" aria-label="Next gate frame"
+        onClick={()=>setGateProgress(p=>Math.min(1,(Math.floor(p*24+1e-7)+1)/24))}>▶</button>
+      <button type="button" aria-pressed={gateShowPath}
+        onClick={()=>setGateShowPath(v=>!v)}>
+        {gateShowPath?"Hide cobble guide":"Show cobble guide"}
+      </button>
       <button type="button" aria-pressed={gateShowMarker}
         onClick={()=>setGateShowMarker(v=>!v)}>
         {gateShowMarker?"Hide gate marker":"Show gate marker"}

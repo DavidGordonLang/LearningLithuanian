@@ -5,15 +5,17 @@ import { readFileSync } from "node:fs";
 const map=readFileSync(new URL("../src/views/training/JourneyMap.jsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../src/index.css",import.meta.url),"utf8");
 
-test("the gate proof provides three grounded static positions",()=>{
+test("the gate frame proof preserves the same three grounded anchor positions",()=>{
   for(const text of [
     'approach: { x: 170, y: 1100 }',
     'passage: { x: 240, y: 1022 }',
     'emerge: { x: 450, y: 832 }',
     'A · Approach','B · Under arch','C · Emerge'
   ]) assert.ok(map.includes(text),text);
-  assert.match(map,/setGateStage\(stage\)/);
+  assert.match(map,/setGateProgress\(GATE_STAGE_PROGRESS\[stage\]\)/);
   assert.doesNotMatch(map,/requestAnimationFrame|followFoxRoute/);
+  assert.match(map,/aria-label="Scrub fox through gate"/);
+  assert.match(map,/GATE_ROUTE_POINTS.map/);
 });
 
 test("cleaned Canva arch overlays fox using full right pier with transparent PNG",()=>{
