@@ -26,8 +26,10 @@ test("the original-art arch and FULL right pier overlay the fox; left pier stays
   for(const token of ["left: 104","top: 731","width: 226","height: 329"]){
     assert.ok(map.includes(token),token);
   }
-  assert.match(map,/foxPreviewEnabled && <img className="z-gate-foreground-cutout"/);
-  assert.match(map,/src=\{GATE_FOREGROUND_CUTOUT\.src\}/);
+  assert.match(map,/foxPreviewEnabled && <svg className="z-gate-foreground-cutout"/);
+  assert.match(map,/clipPath id="z-gate-masonry-refinement"/);
+  assert.match(map,/clipPath="url\(#z-gate-masonry-refinement\)"/);
+  assert.match(map,/href=\{GATE_FOREGROUND_CUTOUT\.src\}/);
   assert.doesNotMatch(map,/GATE_OCCLUSION_POLYGONS|clipPath id="z-gate-foreground-cutout"/);
   assert.match(css,/\.z-gate-foreground-cutout\{position:absolute;z-index:4;pointer-events:none/);
   assert.match(css,/\.z-local-map-character\.is-approaching\{transform:translate\(-50%,-100%\);z-index:2/);
