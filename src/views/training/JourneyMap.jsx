@@ -162,7 +162,7 @@ function Scene({ points }) {
     </svg>
   );
 }
-export default function JourneyMap({ module, completed, targetId, companion, onOpenLesson }) {
+export default function JourneyMap({ module, completed, targetId, companion, onOpenLesson, userId }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
   const defaultScale = illustrated ? 0.87 : SCALE;
@@ -186,7 +186,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateShowMarker, setGateShowMarker] = useState(false);
   // A temporary visual path authoring mode, isolated to the fox's first illustrated map.
   // Draft lives only in component state. Nothing is written to learner persistence.
-  const [gateEditorEnabled, setGateEditorEnabled] = useState(true);
+  // Keep tools intact at ?journeyDev=1. Default preview is the learner view.
+  const showMapDevTools = typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("journeyDev")==="1";
+  const [gateEditorEnabled, setGateEditorEnabled] = useState(showMapDevTools);
   const [gateEditMode, setGateEditMode] = useState("preview");
   const [gateRoutePoints, setGateRoutePoints] = useState(
     ()=>USER_TRACED_VILLAGE_ROUTE.map(p=>({...p})));
@@ -222,6 +225,49 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const gateRouteProgressRef = useRef(0);
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
+  const isLearnerFox = illustrated && companion?.id==="fox";
+  const journeyStopIndex = stops.findIndex(stop=>stop.id===targetId);
+  const journeyStop = journeyStopIndex>=0
+    ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===targetId)
+    : FOX_APPROVED_LESSON_STOPS.at(-1);
+  const journeyPreviousStop = journeyStopIndex>0
+    ? FOX_APPROVED_LESSON_STOPS[journeyStopIndex-1] : null;
+  const journeySessionKey = "zodis:journey-fox:last-target:module_1_1:"+(userId||"anonymous");
+  const [journeyInitial] = useState(()=>{
+    let lastTarget=null;
+    try {lastTarget=window.sessionStorage.getItem(journeySessionKey);} catch {}
+    const shouldTravel = !showMapDevTools && isLearnerFox && journeyStopIndex>0 &&
+      completed.has(journeyPreviousStop?.lessonId) &&
+      lastTarget===journeyPreviousStop?.lessonId;
+    return {
+      start:shouldTravel ? journeyPreviousStop.at/1000 : (journeyStop?.at??0)/1000,
+      moving:shouldTravel,
+    };
+  });
+  const [journeyProgress,setJourneyProgress] = useState(journeyInitial.start);
+  const [journeyMoving,setJourneyMoving] = useState(journeyInitial.moving);
+  const journeyProgressRef=useRef(journeyInitial.start);
+  useEffect(()=>{
+    if(!isLearnerFox || showMapDevTools || !targetId) return;
+    try {window.sessionStorage.setItem(journeySessionKey,targetId);} catch {}
+  },[isLearnerFox,showMapDevTools,targetId,journeySessionKey]);
+  useEffect(()=>{
+    if(!isLearnerFox || editingGate || !journeyMoving || !journeyStop) return;
+    let raf=0,last=null;
+    const tick=now=>{
+      if(last===null)last=now;
+      const seconds=Math.min(Math.max((now-last)/1000,0),.08);
+      last=now;
+      const result=foxLessonRouteAdvance(USER_TRACED_VILLAGE_ROUTE,
+        journeyProgressRef.current,seconds,journeyStop.at,FOX_ROUTE_WORLD_PX_PER_SECOND);
+      journeyProgressRef.current=result.progress;
+      setJourneyProgress(result.progress);
+      if(result.arrived){setJourneyMoving(false);return;}
+      raf=window.requestAnimationFrame(tick);
+    };
+    raf=window.requestAnimationFrame(tick);
+    return ()=>window.cancelAnimationFrame(raf);
+  },[isLearnerFox,editingGate,journeyMoving,journeyStop?.at]);
   useEffect(() => {
     if (!editingGate || gateEditMode !== "preview" ||
         !gateDepthShowFox || !gateDepthAnimateFox || !gateWalkPlaying ||
@@ -344,6 +390,18 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setCamera(nextCamera);
     setScale(nextScale);
   };
+  // End-user-only camera follow. Route-editor camera and manual QA are unchanged.
+  useEffect(()=>{
+    if(!isLearnerFox || editingGate || !journeyMoving) return;
+    const el=viewport.current;
+    if(!el)return;
+    const point=gateRouteAt(USER_TRACED_VILLAGE_ROUTE,journeyProgress);
+    if(!point)return;
+    const bounds=el.getBoundingClientRect(), zoom=scaleRef.current;
+    const next=clampCamera(bounds.width/2-point.x*zoom,
+      bounds.height/2-point.y*zoom,bounds.width,bounds.height,zoom);
+    updateView(next,zoom);
+  },[isLearnerFox,editingGate,journeyMoving,journeyProgress]);
 
   useEffect(() => {
     const element = viewport.current;
@@ -351,7 +409,9 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     const recenter = () => {
       const bounds = element.getBoundingClientRect();
       const point = illustrated && companion?.id === "fox"
-        ? GATE_TEST_POSITIONS.approach : (points[focusIndex] || POINTS[0]);
+        ? (editingGate ? GATE_TEST_POSITIONS.approach :
+          gateRouteAt(USER_TRACED_VILLAGE_ROUTE,journeyProgressRef.current))
+        : (points[focusIndex] || POINTS[0]);
       const zoom = scaleRef.current;
       updateView(clampCamera(bounds.width/2 - point.x*zoom, bounds.height/2 - point.y*zoom,
         bounds.width, bounds.height, zoom), zoom);
@@ -360,13 +420,13 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(recenter) : null;
     observer?.observe(element);
     return () => observer?.disconnect();
-  }, [module?.id, focusIndex, defaultScale, companion?.id]);
+  }, [module?.id, focusIndex, defaultScale, companion?.id, editingGate]);
 
   useEffect(() => {
     setGateProgress(0);
     setGateShowPath(false);
     setGateShowMarker(false);
-    setGateEditorEnabled(true);
+    setGateEditorEnabled(showMapDevTools);
     setGateEditMode("preview");
     setGateRoutePoints(USER_TRACED_VILLAGE_ROUTE.map(p=>({...p})));
     setGateMarkerProgress(0);
@@ -511,6 +571,15 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
     : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
   const foxPreviewEnabled = illustrated && companion?.id === "fox";
+  const journeyPoint = isLearnerFox && !editingGate
+    ? gateRouteAt(USER_TRACED_VILLAGE_ROUTE,journeyProgress) : null;
+  const journeyFacing = !journeyMoving;
+  const journeyDirection = journeyPoint
+    ? (gateDirectionPlan(USER_TRACED_VILLAGE_ROUTE)[journeyPoint.segmentIndex]?.direction||"up")
+    : "up";
+  const journeyFrame = foxRouteFrame(USER_TRACED_VILLAGE_ROUTE,journeyProgress);
+  const journeyScale = gateFoxScaleWithStops(USER_TRACED_VILLAGE_ROUTE,
+    journeyProgress,FOX_APPROVED_FAR_SIZE/100,FOX_APPROVED_SIZE_STOPS);
   const gateFrame = foxPreviewEnabled ? gateTraverseAt(gateProgress) : null;
   const visibleCompanionPoint = gateFrame ? gateFrame.point : companionPoint;
   const foxDirection = gateFrame?.direction || "up-right";
@@ -543,7 +612,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           const point=points[i];
           const done=completed.has(stop.id), here=stop.id===targetId;
           const available=done||here;
-          const hideForGateProof=foxPreviewEnabled && (editingGate || (i===0 && !gateShowMarker));
+          const hideForGateProof=foxPreviewEnabled && showMapDevTools && (editingGate || (i===0 && !gateShowMarker));
           return <button type="button" key={stop.id} disabled={!available}
             aria-hidden={hideForGateProof ? true : undefined}
             onClick={()=>onOpenLesson?.(stop.id)}
@@ -558,11 +627,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             </span>
           </button>;
         })}
-        {foxPreviewEnabled && !editingGate && <span className="z-gate-foot-shadow" aria-hidden="true"
+        {foxPreviewEnabled && showMapDevTools && !editingGate && <span className="z-gate-foot-shadow" aria-hidden="true"
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
             width:(gateProgress<GATE_STAGE_PROGRESS.passage
               ? 36-11*gateProgress/GATE_STAGE_PROGRESS.passage : 25)+"px"}}/>}
-        {current && !editingGate && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
+        {current && !editingGate && !foxPreviewEnabled && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
           (foxPreviewEnabled?" is-gate-test":"")}
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
             "--gate-sprite-width":gateFrame ? gateFrame.dimensions.width+"px" : undefined,
@@ -574,6 +643,16 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
                 style={{"--fox-jaunt-tilt":gateFrame?.tilt+"deg",
                   "--fox-jaunt-squash":gateFrame?.squash}}/>
             : <FullBodyCompanion companion={companion}/>}
+        </span>}
+        {journeyPoint && <span className="z-gate-depth-reference z-journey-learner-fox"
+          aria-label={journeyFacing?"Fox facing you at the lesson":"Fox walking to the next lesson"}
+          style={{left:journeyPoint.x,top:journeyPoint.y}}>
+          {journeyFacing
+            ? <img src="/assets/journey/fox-idle.webp" alt="Fox facing you"
+                className="z-gate-depth-reference-fox z-fox-lesson-facing-still"
+                draggable={false} decoding="async"
+                style={{transform:"scale("+journeyScale+")"}}/>
+            : <FoxWalkSprite frame={journeyFrame} facing={journeyDirection} scale={journeyScale}/>}
         </span>}
         {gateMarkerPoint && <span className="z-gate-depth-reference"
           style={{left:gateMarkerPoint.x,top:gateMarkerPoint.y}}
@@ -630,7 +709,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       </div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
         recenterOnWorldPoint(foxPreviewEnabled
-          ? (editingGate ? (gateMarkerPoint||gateRoutePoints.at(-1)||GATE_TEST_POSITIONS.approach) : visibleCompanionPoint)
+          ? (editingGate ? (gateMarkerPoint||gateRoutePoints.at(-1)||GATE_TEST_POSITIONS.approach) :
+              (journeyPoint||visibleCompanionPoint))
           : points[focusIndex]);
       }}>⌖ Find me</button>
     </div>
@@ -978,7 +1058,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       {gateCopyStatus && <span role="status">{gateCopyStatus}</span>}
       <span>Path is a visual candidate only. Changes are temporary and do not affect lesson progress. Copy any refinements before refreshing.</span>
     </div>}
-    {foxPreviewEnabled && !editingGate && <div className="z-fox-pose-preview" role="group"
+    {foxPreviewEnabled && showMapDevTools && !editingGate && <div className="z-fox-pose-preview" role="group"
       aria-label="Gate traversal frame proof">
       <button type="button" onClick={()=>setGateEditorEnabled(true)}>Edit path</button>
       <span>Gate walk · frame {Math.round(gateProgress*24)+1}/25</span>
