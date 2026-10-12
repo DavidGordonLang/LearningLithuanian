@@ -1454,3 +1454,20 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 [data-guided-learning="true"] [data-swipe-block="true"] button[aria-label="Back"]::after{
   content:"Journey";margin-left:3px;font-size:12px;font-weight:700;
 }
+
+/* Visual-only route editor: path handles live in world coordinates,
+   pointer capture is on the existing viewport for reliable Android drag. */
+.z-gate-route-editor-art{position:absolute;inset:0;z-index:7;
+  pointer-events:none;max-width:none;overflow:visible}
+.z-gate-route-handle{pointer-events:visiblePainted;cursor:grab;touch-action:none}
+.z-gate-editor-controls{display:flex;flex-direction:column;align-items:stretch;gap:9px;
+  padding:12px;background:#164e3f;color:#f5f2dd;font-size:13px}
+.z-gate-editor-controls>span{font-size:12px;line-height:1.35}
+.z-gate-editor-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.z-gate-editor-buttons button{border:1px solid #94c5aa;color:#f6f3e2;background:#215d4d;
+  border-radius:9px;padding:9px 12px;min-height:42px;font-size:12px;font-weight:750}
+.z-gate-editor-buttons button[aria-pressed="true"]{background:#e9d9a7;color:#173f32;border-color:#f7e6ba}
+.z-gate-editor-buttons button:disabled{opacity:.4;cursor:default}
+.z-gate-editor-controls textarea{width:100%;border-radius:8px;padding:8px;
+  background:#eff9eb;color:#173f32;font:11px/1.35 monospace;resize:vertical}
+.z-gate-editor-buttons button:focus-visible{outline:2px solid #ffdf80;outline-offset:2px}

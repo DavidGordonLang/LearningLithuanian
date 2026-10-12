@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
+import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson } from "./journeyGateRouteEditor";
 
 
 // Each module uses the same five-stop coordinate contract. New illustrated
@@ -171,6 +172,22 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateProgress, setGateProgress] = useState(0);
   const [gateShowPath, setGateShowPath] = useState(false);
   const [gateShowMarker, setGateShowMarker] = useState(false);
+  // A temporary visual path authoring mode, isolated to the fox's first illustrated map.
+  // Draft lives only in component state. Nothing is written to learner persistence.
+  const [gateEditorEnabled, setGateEditorEnabled] = useState(true);
+  const [gateEditMode, setGateEditMode] = useState("pan");
+  const [gateRoutePoints, setGateRoutePoints] = useState([]);
+  const [gateRouteHistory, setGateRouteHistory] = useState([]);
+  const [gateSelectedPoint, setGateSelectedPoint] = useState(null);
+  const [gateCopyStatus, setGateCopyStatus] = useState("");
+  const routeGesture = useRef(null);
+  const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
+  const checkpointRoute = () => {
+    setGateRouteHistory(h=>[...h.slice(-29),gateRoutePoints.map(p=>({...p}))]);
+    setGateCopyStatus("");
+  };
+  const editorWorldPoint = (e) => gateWorldPoint(e.clientX,e.clientY,
+    viewport.current?.getBoundingClientRect(),cameraRef.current,scaleRef.current);
 
   const updateView = (nextCamera, nextScale = scaleRef.current) => {
     cameraRef.current = nextCamera;
@@ -200,6 +217,13 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateProgress(0);
     setGateShowPath(false);
     setGateShowMarker(false);
+    setGateEditorEnabled(true);
+    setGateEditMode("pan");
+    setGateRoutePoints([]);
+    setGateRouteHistory([]);
+    setGateSelectedPoint(null);
+    setGateCopyStatus("");
+    routeGesture.current=null;
   }, [module?.id, companion?.id]);
 
   const recenterOnWorldPoint = (point) => {
@@ -228,6 +252,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             y:(midY-cameraRef.current.y)/scaleRef.current},
         };
         drag.current = null;
+        routeGesture.current = null;
         suppressPinchClick.current = true;
         for (const id of pointers.current.keys()) {
           try { e.currentTarget.setPointerCapture(id); } catch { /* pointer already released */ }
@@ -236,6 +261,19 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       }
     }
     if (e.target.closest("button")) return;
+    if (editingGate && gateEditMode !== "pan") {
+      const target=e.target.closest?.("[data-gate-point-index]");
+      const index=target ? Number(target.getAttribute("data-gate-point-index")) : null;
+      if(gateEditMode==="move" && index===null) return;
+      if(gateEditMode==="move") {
+        checkpointRoute();
+        setGateSelectedPoint(index);
+      }
+      routeGesture.current={id:e.pointerId,mode:gateEditMode,index,
+        startX:e.clientX,startY:e.clientY,moved:false};
+      e.currentTarget.setPointerCapture(e.pointerId);
+      return;
+    }
     drag.current = {id:e.pointerId,x:e.clientX,y:e.clientY,camera:cameraRef.current};
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -258,6 +296,16 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         return;
       }
     }
+    const edit=routeGesture.current;
+    if(edit && edit.id===e.pointerId) {
+      const distance=Math.hypot(e.clientX-edit.startX,e.clientY-edit.startY);
+      if(distance>7) edit.moved=true;
+      if(edit.mode==="move" && edit.moved) {
+        const world=editorWorldPoint(e);
+        if(world)setGateRoutePoints(points=>gateMovePoint(points,edit.index,world));
+      }
+      return;
+    }
     if (!drag.current || drag.current.id !== e.pointerId) return;
     const bounds = viewport.current.getBoundingClientRect();
     const zoom = scaleRef.current;
@@ -277,6 +325,19 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         }
         return;
       }
+    }
+    const edit=routeGesture.current;
+    if(edit?.id===e.pointerId) {
+      routeGesture.current=null;
+      if(e.type!=="pointercancel" && edit.mode!=="move" && !edit.moved) {
+        const world=editorWorldPoint(e);
+        if(world) {
+          checkpointRoute();
+          setGateRoutePoints(points=>gateInsertPoint(points,world,edit.mode));
+          setGateSelectedPoint(null);
+        }
+      }
+      return;
     }
     if (drag.current?.id === e.pointerId) drag.current = null;
   };
@@ -305,7 +366,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
               src={src} style={{top:i*280}} width={WIDTH} height={280}
               alt="" aria-hidden="true" draggable={false} decoding="async"/>)
           : <Scene points={points}/>}
-        {foxPreviewEnabled && gateShowPath && <svg className="z-gate-route-guide" viewBox="0 0 850 1120"
+        {foxPreviewEnabled && !editingGate && gateShowPath && <svg className="z-gate-route-guide" viewBox="0 0 850 1120"
           width={WIDTH} height={HEIGHT} aria-hidden="true">
           <polyline points={GATE_ROUTE_POINTS.map(p=>p.x+","+p.y).join(" ")}
             fill="none" stroke="#ffe7a2" strokeWidth="3" strokeDasharray="6 8"
@@ -318,7 +379,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           const point=points[i];
           const done=completed.has(stop.id), here=stop.id===targetId;
           const available=done||here;
-          const hideForGateProof=foxPreviewEnabled && i===0 && !gateShowMarker;
+          const hideForGateProof=foxPreviewEnabled && (editingGate || (i===0 && !gateShowMarker));
           return <button type="button" key={stop.id} disabled={!available}
             aria-hidden={hideForGateProof ? true : undefined}
             onClick={()=>onOpenLesson?.(stop.id)}
@@ -333,11 +394,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             </span>
           </button>;
         })}
-        {foxPreviewEnabled && <span className="z-gate-foot-shadow" aria-hidden="true"
+        {foxPreviewEnabled && !editingGate && <span className="z-gate-foot-shadow" aria-hidden="true"
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
             width:(gateProgress<GATE_STAGE_PROGRESS.passage
               ? 36-11*gateProgress/GATE_STAGE_PROGRESS.passage : 25)+"px"}}/>}
-        {current && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
+        {current && !editingGate && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
           (foxPreviewEnabled?" is-gate-test":"")}
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
             "--gate-sprite-width":gateFrame ? gateFrame.dimensions.width+"px" : undefined,
@@ -350,20 +411,84 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
                   "--fox-jaunt-squash":gateFrame?.squash}}/>
             : <FullBodyCompanion companion={companion}/>}
         </span>}
-        {foxPreviewEnabled && <img className="z-gate-foreground-cutout"
+        {foxPreviewEnabled && !editingGate && <img className="z-gate-foreground-cutout"
           src={GATE_FOREGROUND_CUTOUT.src}
           width={GATE_FOREGROUND_CUTOUT.width} height={GATE_FOREGROUND_CUTOUT.height}
           style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top}}
           alt="" aria-hidden="true" draggable={false} decoding="async"/>}
+        {editingGate && <svg className="z-gate-route-editor-art" viewBox="0 0 850 1120"
+          width={WIDTH} height={HEIGHT} aria-label="Editable gate walking route">
+          <polyline points={gateRoutePoints.map(p=>p.x+","+p.y).join(" ")}
+            fill="none" stroke="#fde68a" strokeWidth={Math.max(3,3/scale)}
+            strokeLinejoin="round" strokeLinecap="round"/>
+          {gateRoutePoints.map((p,i)=><g key={i} data-gate-point-index={i}
+            className="z-gate-route-handle" aria-label={"Route point "+(i+1)}>
+            <circle cx={p.x} cy={p.y} r={Math.max(19,21/scale)}
+              fill={gateSelectedPoint===i?"#facc15":"#0f5949"} fillOpacity=".83"
+              stroke="#fff2bb" strokeWidth={Math.max(2,2/scale)}/>
+            <text x={p.x} y={p.y+5/scale} fill={gateSelectedPoint===i?"#17382f":"white"}
+              fontSize={Math.max(13,14/scale)} fontWeight="bold" textAnchor="middle"
+              pointerEvents="none">{i+1}</text>
+          </g>)}
+        </svg>}
       </div>
-      <div className="z-local-map-top-label" aria-hidden="true">Drag to explore · Pinch to zoom</div>
+      <div className="z-local-map-top-label" aria-hidden="true">
+        {editingGate ? "Route editor · "+gateEditMode+" · pinch to zoom" : "Drag to explore · Pinch to zoom"}
+      </div>
       <button type="button" className="z-local-map-recenter" onClick={()=>{
         recenterOnWorldPoint(foxPreviewEnabled
-          ? visibleCompanionPoint : points[focusIndex]);
+          ? (editingGate ? (gateRoutePoints.at(-1)||GATE_TEST_POSITIONS.approach) : visibleCompanionPoint)
+          : points[focusIndex]);
       }}>⌖ Find me</button>
     </div>
-    {foxPreviewEnabled && <div className="z-fox-pose-preview" role="group"
+    {editingGate && <div className="z-gate-editor-controls" role="group"
+      aria-label="Gate visual path editor">
+      <strong>Trace the walkable cobblestones · {gateRoutePoints.length} points</strong>
+      <span>Pan to position the map; Add to tap points in walking order. Move drags a numbered point; Insert taps between two points. Pinch zoom works in every mode.</span>
+      <div className="z-gate-editor-buttons">
+        {["pan","add","move","insert"].map(mode=><button type="button" key={mode}
+          aria-pressed={gateEditMode===mode} onClick={()=>setGateEditMode(mode)}>
+          {mode[0].toUpperCase()+mode.slice(1)}</button>)}
+      </div>
+      <div className="z-gate-editor-buttons">
+        <button type="button" disabled={!gateRouteHistory.length} onClick={()=>{
+          const previous=gateRouteHistory.at(-1);
+          setGateRouteHistory(h=>h.slice(0,-1));
+          setGateRoutePoints(previous);
+          setGateSelectedPoint(null);setGateCopyStatus("");
+        }}>Undo</button>
+        <button type="button" disabled={gateSelectedPoint===null} onClick={()=>{
+          checkpointRoute();setGateRoutePoints(points=>points.filter((_,i)=>i!==gateSelectedPoint));
+          setGateSelectedPoint(null);
+        }}>Delete selected</button>
+        <button type="button" disabled={!gateRoutePoints.length} onClick={()=>{
+          checkpointRoute();setGateRoutePoints([]);setGateSelectedPoint(null);
+        }}>Clear draft</button>
+        <button type="button" onClick={()=>{
+          checkpointRoute();setGateRoutePoints(GATE_ROUTE_POINTS.map(p=>({...p})));
+          setGateSelectedPoint(null);
+        }}>Load old rejected route</button>
+      </div>
+      <div className="z-gate-editor-buttons">
+        <button type="button" disabled={!gateRoutePoints.length} onClick={async()=>{
+          try {
+            await navigator.clipboard.writeText(gateRouteJson(gateRoutePoints));
+            setGateCopyStatus("Coordinates copied");
+          } catch {
+            setGateCopyStatus("Copy from the field below instead");
+          }
+        }}>Copy coordinates</button>
+        <button type="button" onClick={()=>setGateEditorEnabled(false)}>
+          View previous fox proof</button>
+      </div>
+      <textarea readOnly aria-label="Route coordinates" rows="2"
+        onFocus={e=>e.target.select()} value={gateRouteJson(gateRoutePoints)}/>
+      {gateCopyStatus && <span role="status">{gateCopyStatus}</span>}
+      <span>No route edits are saved to lessons or learner progress. Copy the final coordinates for review.</span>
+    </div>}
+    {foxPreviewEnabled && !editingGate && <div className="z-fox-pose-preview" role="group"
       aria-label="Gate traversal frame proof">
+      <button type="button" onClick={()=>setGateEditorEnabled(true)}>Edit path</button>
       <span>Gate walk · frame {Math.round(gateProgress*24)+1}/25</span>
       {[["approach","A · Approach"],["passage","B · Under arch"],["emerge","C · Emerge"]].map(([stage,label])=>
         <button type="button" key={stage}

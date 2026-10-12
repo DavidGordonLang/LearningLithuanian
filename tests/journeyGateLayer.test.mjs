@@ -30,7 +30,7 @@ test("cleaned Canva arch overlays fox using full right pier with transparent PNG
   for(const token of ["left: 104","top: 731","width: 226","height: 329"]){
     assert.ok(map.includes(token),token);
   }
-  assert.match(map,/foxPreviewEnabled && <img className="z-gate-foreground-cutout"/);
+  assert.match(map,/foxPreviewEnabled && !editingGate && <img className="z-gate-foreground-cutout"/);
   assert.match(map,/src=\{GATE_FOREGROUND_CUTOUT\.src\}/);
   assert.doesNotMatch(map,/z-gate-masonry-refinement|clipPath=|<svg className="z-gate-foreground-cutout"/);
   assert.match(css,/\.z-gate-foreground-cutout\{position:absolute;z-index:4;pointer-events:none/);
@@ -57,9 +57,23 @@ test("gate depth proof anchors fox on the paved ground and scales into the arch"
 });
 test("hideable gate marker reveals occlusion without altering learner progress",()=>{
   assert.match(map,/const \[gateShowMarker, setGateShowMarker\] = useState\(false\)/);
-  assert.match(map,/const hideForGateProof=foxPreviewEnabled && i===0 && !gateShowMarker/);
+  assert.match(map,/const hideForGateProof=foxPreviewEnabled && \(editingGate \|\| \(i===0 && !gateShowMarker\)\)/);
   assert.match(map,/setGateShowMarker\(v=>!v\)/);
   assert.match(css,/\.z-local-map-stop\.is-gate-marker-hidden\{visibility:hidden;pointer-events:none\}/);
   assert.match(map,/onOpenLesson\?\.\(stop.id\)/);
   assert.doesNotMatch(map,/localStorage\.setItem/);
+});
+
+
+test("route editor stays isolated to the illustrated fox proof and does not save learning progress",()=>{
+  assert.match(map,/const editingGate = illustrated && companion\?\.id === "fox" && gateEditorEnabled/);
+  assert.match(map,/const \[gateRoutePoints, setGateRoutePoints\] = useState\(\[\]\)/);
+  assert.match(map,/aria-label="Gate visual path editor"/);
+  assert.match(map,/aria-label="Route coordinates"/);
+  assert.match(map,/gateInsertPoint\(points,world,edit.mode\)/);
+  assert.match(map,/gateMovePoint\(points,edit.index,world\)/);
+  assert.match(map,/!editingGate && <span className="z-gate-foot-shadow"/);
+  assert.match(map,/setGateRoutePoints\(\[\]\)/);
+  assert.match(map,/onOpenLesson\?\.\(stop.id\)/);
+  assert.doesNotMatch(map,/localStorage\.setItem|awardXp|markComplete/);
 });
