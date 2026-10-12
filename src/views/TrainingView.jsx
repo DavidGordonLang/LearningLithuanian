@@ -166,6 +166,9 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [lessonReturnScreen, setLessonReturnScreen] = useState("home");
+  // Module 1.1 must show its final fox departure before advancing to the
+  // next (as-yet-unillustrated) map; does not change completion/XP.
+  const [journeyExitModuleId,setJourneyExitModuleId] = useState(null);
 
   const user = useAuthStore((s) => s.user);
   const userEmail = String(user?.email || "").toLowerCase();
@@ -325,9 +328,11 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
   if (screen === "learningHome") {
     return (
       <LearningHome
-        onBack={() => setScreen("home")}
+        onBack={() => {setJourneyExitModuleId(null);setScreen("home");}}
         allSections={allSections}
         userId={user?.id}
+        journeyExitModuleId={journeyExitModuleId}
+        onJourneyExitComplete={()=>setJourneyExitModuleId(null)}
         onOpenLesson={(lessonId) => {
           // A Journey tap can open only the earned lessons or actual current lesson.
           if (!completedLessonIds.includes(lessonId) && nextLesson?.lesson?.id !== lessonId) return;
@@ -465,17 +470,21 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
         accuracyPct={moduleCompletePayload.accuracyPct}
         onSaveVocab={() => {
           const mod = moduleCompletePayload?.module;
+          setJourneyExitModuleId(mod?.id==="module_1_1" ? mod.id : null);
           setModuleCompletePayload(null);
           setVocabSaveModule(mod);
           setScreen("vocabSave");
         }}
         onContinue={() => {
+          setJourneyExitModuleId(moduleCompletePayload?.module?.id==="module_1_1"
+            ? "module_1_1" : null);
           setModuleCompletePayload(null);
           setSelectedLessonId(null);
           setSelectedModuleId(null);
           setScreen("learningHome");
         }}
         onHome={() => {
+          setJourneyExitModuleId(null);
           setModuleCompletePayload(null);
           setSelectedLessonId(null);
           setSelectedModuleId(null);
@@ -571,6 +580,10 @@ function TrainingContent({ T, rows, setRows, playText, preloadText, stopText, sh
             setScreen("moduleComplete");
           } else {
             // All ordinary completed lessons return to the Journey.
+            // For a previously seen Module 1.1 checkpoint, still show its
+            // departure (normally the one-time celebration handles this).
+            if(mod?.id==="module_1_1" && modComplete)
+              setJourneyExitModuleId("module_1_1");
             // Progress and unlock rules remain owned by gameStore.
             setSelectedLessonId(null);
             setSelectedModuleId(null);
