@@ -62,7 +62,38 @@ test("only the first completed pin disappears; landmark pins move independently 
  const coords=map.match(/const FIRST_CONTACT_POINTS = \[([\s\S]*?)\];/)?.[1]||"";
  assert.ok(coords.includes("{ x: 183, y: 880 }"));
  assert.ok(coords.includes("{ x: 575, y: 725 }"));
- assert.ok(map.includes("i===0 && done"));
- assert.ok(map.includes("return hideCompletedFirst ? null : <button"));
+ assert.ok(!map.includes("hideCompletedFirst"));
+ assert.ok(map.includes("return <button type=\"button\" key={stop.id} disabled={!available}"));
+ assert.ok(map.includes("{ x: 183, y: 880 }"));
+ assert.ok(map.includes("{ x: 575, y: 725 }"));
  assert.deepEqual(FOX_APPROVED_LESSON_STOPS.map(x=>x.at),[0,263,395,673,848]);
+});
+
+
+test("gate-only foreground mask no longer hides the fox on the fountain-to-bakery road",()=>{
+ const map=read("src/views/training/JourneyMap.jsx");
+ assert.ok(map.includes('(editingGate || journeyProgress<0.25)'));
+ assert.ok(map.includes('className="z-gate-foreground-cutout"'));
+ assert.ok(map.includes('className="z-journey-learner-fox"') ||
+   map.includes('z-gate-depth-reference z-journey-learner-fox'));
+ // Real lesson 2 begins at 26.3%, safely beyond the gate-mask threshold.
+ assert.ok(FOX_APPROVED_LESSON_STOPS[1].at/1000>.25);
+});
+
+test("next module card fades in while the fox is still walking, never waits at path end",()=>{
+ const map=read("src/views/training/JourneyMap.jsx");
+ const home=read("src/views/training/LearningHome.jsx");
+ const css=read("src/index.css");
+ assert.ok(map.includes('Math.min(1,(journeyProgress-0.885)/0.103)'));
+ assert.ok(map.includes('onExitProgress?.(departureBlend)'));
+ assert.ok(map.includes('if(isExitingVillage) onExitComplete?.()'));
+ assert.ok(home.includes('nextMapDuringExit'));
+ assert.ok(home.includes('onExitProgress={setExitBlend}'));
+ assert.ok(home.includes('className="z-journey-next-map-preview"'));
+ assert.ok(home.includes('style={{opacity:exitBlend,pointerEvents:"none"}}'));
+ assert.ok(home.includes('inert=""'));
+ assert.ok(css.includes('.z-journey-exit-stage{position:relative}'));
+ assert.ok(css.includes('position:absolute;inset:0;z-index:10'));
+ const start=.885,end=.988;
+ assert.ok(start>.848 && end<1);
 });
