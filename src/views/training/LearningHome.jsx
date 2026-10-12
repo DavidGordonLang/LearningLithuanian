@@ -1,6 +1,6 @@
 // Map-first Journey: read-only curriculum navigation; gameStore stays the
 // single authority for lessons, XP, checkpoints and resume.
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { findLatestInProgressLesson, getCourseBrowseState, getSectionBrowseState } from "./learningProgress";
 import { Companion, JOURNEY_COMPANIONS, useJourneyCompanion } from "./JourneyCompanion";
@@ -23,7 +23,10 @@ function findCurrent(sections, completedLessonIds, lessonProgress) {
   }
   return null;
 }
-export default function LearningHome({ onBack, allSections = [], onOpenSection, onOpenLesson, userId }) {
+export default function LearningHome({
+  onBack, allSections = [], onOpenSection, onOpenLesson, userId,
+  journeyExitModuleId=null, onJourneyExitComplete
+}) {
   const completedLessonIds = useGameStore(s => s.completedLessonIds);
   const lessonProgress = useGameStore(s => s.lessonProgress);
   const streakDays = useGameStore(s => s.streakDays);
@@ -39,8 +42,20 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
       ...(state.sectionCheckpointStatus === "completed" ? [{section:s,module:state.sectionCheckpoint}] : [])];
   });
   const reviewRoute = unlockedReview.find(item => item.module.id === reviewModuleId);
-  const activeSection = reviewRoute?.section || target?.section || allSections[allSections.length-1] || null;
-  const activeModule = reviewRoute?.module || target?.module || activeSection?.modules?.find(m=>!m.isSectionCheckpoint) || null;
+  const departureRoute = journeyExitModuleId==="module_1_1"
+    ? allSections.flatMap(section=>(section.modules||[]).map(module=>({section,module})))
+      .find(item=>item.module.id===journeyExitModuleId &&
+        (item.module.lessons||[]).every(lesson=>completed.has(lesson.id)))
+    : null;
+  const isLeavingVillage=!!departureRoute;
+  // Other companions do not yet have walking atlases. Let their normal
+  // next-map navigation proceed, without holding them at the fox gate.
+  useEffect(()=>{
+    if(journeyExitModuleId && (!departureRoute || selected.id!=="fox" || !hasChosen))
+      onJourneyExitComplete?.();
+  },[journeyExitModuleId,departureRoute?.module.id,selected.id,hasChosen,onJourneyExitComplete]);
+  const activeSection = departureRoute?.section || reviewRoute?.section || target?.section || allSections[allSections.length-1] || null;
+  const activeModule = departureRoute?.module || reviewRoute?.module || target?.module || activeSection?.modules?.find(m=>!m.isSectionCheckpoint) || null;
   const onCurrentRoute = activeModule?.id === target?.module?.id;
   const moduleStops = activeModule?.isSectionCheckpoint ? [activeModule] : (activeModule?.lessons || []);
   const routeComplete = moduleStops.length && moduleStops.every(item => completed.has(item.id));
@@ -100,16 +115,25 @@ export default function LearningHome({ onBack, allSections = [], onOpenSection, 
     </div> : <>
       <div className="mt-3">
         {activeModule ? <JourneyMap key={activeModule.id} module={activeModule} completed={completed}
-          targetId={onCurrentRoute?target?.lesson?.id:null} companion={selected} onOpenLesson={onOpenLesson}/> : null}
+          targetId={onCurrentRoute?target?.lesson?.id:null} companion={selected}
+          userId={userId} exitToNextMap={isLeavingVillage}
+          onExitComplete={onJourneyExitComplete} onOpenLesson={onOpenLesson}/> : null}
       </div>
       {reviewRoute && <p className="mt-2 text-center text-xs opacity-75">Reviewing {activeModule?.title}. <button type="button" onClick={()=>setReviewModuleId(null)} className="underline">Return to current route</button></p>}
-      {target ? <button type="button" onClick={() => onOpenLesson?.(target.lesson.id)}
+      {isLeavingVillage
+        ? <div role="status" className="mt-3 rounded-xl border border-emerald-400/30 p-4 text-center text-sm">
+            Following the fox towards the next map…
+          </div>
+        : target ? <button type="button" onClick={() => onOpenLesson?.(target.lesson.id)}
         className="z-journey-dark z-journey-continue mt-3 w-full rounded-2xl border border-emerald-400/45 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
         aria-label={"Go to next lesson: "+target.lesson.title}>
         <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">Next destination · Tap to begin →</div>
         <div className="mt-1 text-[16px] font-bold text-white">{target.lesson.title}</div>
       </button> : <div className="mt-3 rounded-xl border border-emerald-400/30 p-4 text-sm">All available lessons completed. Open Regions & review to revisit your path.</div>}
-      <p className="mt-2 text-center text-[11px] opacity-65">{routeComplete?"Route complete · Explore another region":"Tap the highlighted lesson or use your next destination above."}</p>
+      <p className="mt-2 text-center text-[11px] opacity-65">{isLeavingVillage
+        ? "Finishing the village trail before the next module"
+        : routeComplete?"Route complete · Explore another region"
+        : "Tap the highlighted lesson or use your next destination above."}</p>
     </>}
   </div>;
 }
