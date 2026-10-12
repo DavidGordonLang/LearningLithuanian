@@ -63,7 +63,7 @@ test("gate depth proof anchors fox on the paved ground and scales into the arch"
 });
 test("hideable gate marker reveals occlusion without altering learner progress",()=>{
   assert.match(map,/const \[gateShowMarker, setGateShowMarker\] = useState\(false\)/);
-  assert.match(map,/const hideForGateProof=foxPreviewEnabled && \(editingGate \|\| \(i===0 && !gateShowMarker\)\)/);
+  assert.match(map,/const hideForGateProof=foxPreviewEnabled && showMapDevTools && \(editingGate \|\| \(i===0 && !gateShowMarker\)\)/);
   assert.match(map,/setGateShowMarker\(v=>!v\)/);
   assert.match(css,/\.z-local-map-stop\.is-gate-marker-hidden\{visibility:hidden;pointer-events:none\}/);
   assert.match(map,/onOpenLesson\?\.\(stop.id\)/);
