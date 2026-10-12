@@ -2,7 +2,18 @@
 // This stores editor drafts, never learner progress or lesson completion.
 import {gateRouteAt,gateRouteJson} from "./journeyGateRouteEditor.js";
 
-export const FOX_LESSON_STOPS_DRAFT_KEY="zodis:fox-lesson-stops:module-1-1:v1";
+// User-submitted exact lesson anchors, 12 October 2026.
+// Marker values are thousandths of cumulative world distance along the
+// unchanged 27-point route. Source has priority over stale browser drafts.
+export const FOX_APPROVED_LESSON_STOPS=Object.freeze([
+  {lessonId:"section_1_module_1_lesson_1",at:0},
+  {lessonId:"section_1_module_1_lesson_2",at:263},
+  {lessonId:"section_1_module_1_lesson_3",at:395},
+  {lessonId:"section_1_module_1_lesson_4",at:673},
+  {lessonId:"section_1_module_1_checkpoint",at:848},
+].map(item=>Object.freeze(item)));
+
+export const FOX_LESSON_STOPS_DRAFT_KEY="zodis:fox-lesson-stops:module-1-1:v2";
 
 export function normaliseFoxLessonStops(value,lessonIds) {
   if(!Array.isArray(value) || !Array.isArray(lessonIds))return [];
@@ -79,3 +90,21 @@ export function saveFoxLessonStopDraft(route,lessonIds,positions) {
     }));
   } catch { /* The visual editor must work even if storage is unavailable. */ }
 }
+
+// Stop travel on exactly the selected lesson marker. This is animation-only;
+// it never touches gameStore or treats arrival as lesson completion.
+export function foxLessonRouteAdvance(routePoints,progress,elapsedSeconds,
+  destinationMarker,speed=95) {
+  const from=Math.max(0,Math.min(1,Number(progress)||0));
+  if(!Number.isInteger(destinationMarker)||destinationMarker<0||destinationMarker>1000)
+    return {progress:from,arrived:false};
+  const target=destinationMarker/1000;
+  const length=routePoints.slice(1).reduce((sum,p,i)=>
+    sum+Math.hypot(p.x-routePoints[i].x,p.y-routePoints[i].y),0);
+  if(!length || !Number.isFinite(elapsedSeconds) || elapsedSeconds<=0 ||
+     !Number.isFinite(speed) || speed<=0)
+    return {progress:from,arrived:from>=target-1e-9};
+  const next=Math.min(1,from+speed*elapsedSeconds/length);
+  return {progress:Math.min(next,target),arrived:next>=target-1e-9};
+}
+
