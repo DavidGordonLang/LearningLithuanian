@@ -1400,7 +1400,11 @@ html[data-theme="light"] .z-journey-feedback .z-journey-feedback-card .z-correct
   width:36px;height:10px;border-radius:50%;background:rgba(19,28,22,.28);
   transform:translate(-50%,-42%);filter:blur(3px)}
 .z-gate-foreground-cutout{position:absolute;z-index:4;pointer-events:none;
-  display:block;max-width:none;user-select:none}
+  display:block;max-width:none;user-select:none;overflow:hidden;
+  -webkit-mask-size:100% 100%;mask-size:100% 100%;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.z-gate-foreground-tile{position:absolute;display:block;width:850px;height:280px;
+  max-width:none;object-fit:fill;pointer-events:none;user-select:none}
 .z-local-map-world .z-local-map-stop{z-index:6}
 /* A jaunty WALK indication without changing the paw anchor or artwork.
    Tilt and tiny squash pivot at the ground; final animated cycle is separate. */

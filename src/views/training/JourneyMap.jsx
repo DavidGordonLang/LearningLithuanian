@@ -59,12 +59,12 @@ const GATE_TEST_DIMENSIONS = {
   passage: { width: 82, height: 112 },
   emerge: { width: 78, height: 106 },
 };
-// Fixed arch 2: transparent Canva overlay aligned to the full painted map.
-// World-canvas alignment retains the roof/right pier occlusion without
-// moving any route waypoint or changing fox depth layering.
+// Fixed arch 2 supplies the *occlusion shape* only. Reuse the exact original
+// native-resolution illustrated tiles for masonry pixels; scaling a small Canva
+// thumbnail here produced blurred, doubled stonework on Android.
 const GATE_FOREGROUND_CUTOUT = {
-  src: "/assets/journey/gate-foreground-fixed-arch-2.png",
-  left: 0, top: 0, width: WIDTH, height: HEIGHT,
+  mask: "/assets/journey/gate-foreground-fixed-arch-2-mask.png",
+  left: 121, top: 721, width: 377, height: 399,
 };
 // Two independently drawn fox idle candidates. Other companions and all
 // non-illustrated modules retain their previously approved idle artwork.
@@ -431,11 +431,18 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
         </span>}
         {foxPreviewEnabled && (!editingGate || gateEditMode==="preview") &&
-          <img className="z-gate-foreground-cutout"
-          src={GATE_FOREGROUND_CUTOUT.src}
-          width={GATE_FOREGROUND_CUTOUT.width} height={GATE_FOREGROUND_CUTOUT.height}
-          style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top}}
-          alt="" aria-hidden="true" draggable={false} decoding="async"/>}
+          <div className="z-gate-foreground-cutout" aria-hidden="true"
+            style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top,
+              width:GATE_FOREGROUND_CUTOUT.width,height:GATE_FOREGROUND_CUTOUT.height,
+              maskImage:`url(${GATE_FOREGROUND_CUTOUT.mask})`,
+              WebkitMaskImage:`url(${GATE_FOREGROUND_CUTOUT.mask})`}}>
+            {FIRST_CONTACT_TILES.slice(2).map((src,i)=>
+              <img key={src} src={src} className="z-gate-foreground-tile"
+                width={WIDTH} height={280} style={{
+                  left:-GATE_FOREGROUND_CUTOUT.left,
+                  top:(i+2)*280-GATE_FOREGROUND_CUTOUT.top}}
+                alt="" aria-hidden="true" draggable={false} decoding="async"/>)}
+          </div>}
         {editingGate && <svg className="z-gate-route-editor-art" viewBox="0 0 850 1120"
           width={WIDTH} height={HEIGHT} aria-label="Editable gate walking route">
           {(gateEditMode!=="preview" || gateDepthShowGuide) &&

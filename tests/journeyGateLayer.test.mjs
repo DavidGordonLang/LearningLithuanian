@@ -18,22 +18,25 @@ test("the gate frame proof preserves the same three grounded anchor positions",(
   assert.match(map,/GATE_ROUTE_POINTS.map/);
 });
 
-test("Fixed arch 2 transparently overlays fox at unchanged full-scene coordinates",()=>{
-  const cutout=readFileSync(new URL("../public/assets/journey/gate-foreground-fixed-arch-2.png",import.meta.url));
+test("Fixed arch 2 alpha mask reuses native painted gate tiles without scaling",()=>{
+  const cutout=readFileSync(new URL("../public/assets/journey/gate-foreground-fixed-arch-2-mask.png",import.meta.url));
   assert.deepEqual([...cutout.subarray(0,8)],[137,80,78,71,13,10,26,10],"valid PNG signature");
-  assert.equal(cutout.readUInt32BE(16),448);
-  assert.equal(cutout.readUInt32BE(20),600);
-  assert.equal(cutout[25],3,"indexed PNG with transparency");
-  assert.ok(cutout.includes(Buffer.from("tRNS")),"transparent palette is embedded");
-  assert.ok(cutout.length>10000,"asset has detailed masonry artwork");
+  assert.equal(cutout.readUInt32BE(16),377);
+  assert.equal(cutout.readUInt32BE(20),399);
+  assert.equal(cutout[25],6,"RGBA PNG mask supports alpha");
+  assert.ok(cutout.length>4000,"mask preserves corrected arch silhouette");
   assert.match(map,/const GATE_FOREGROUND_CUTOUT = \{/);
-  assert.match(map,/gate-foreground-fixed-arch-2\.png/);
-  for(const token of ["left: 0","top: 0","width: WIDTH","height: HEIGHT"]){
+  assert.match(map,/gate-foreground-fixed-arch-2-mask\.png/);
+  for(const token of ["left: 121","top: 721","width: 377","height: 399"]){
     assert.ok(map.includes(token),token);
   }
   assert.match(map,/foxPreviewEnabled && \(!editingGate \|\| gateEditMode==="preview"\)/);
   assert.match(map,/className="z-gate-foreground-cutout"/);
-  assert.match(map,/src=\{GATE_FOREGROUND_CUTOUT\.src\}/);
+  assert.match(map,/maskImage:/);
+  assert.match(map,/WebkitMaskImage:/);
+  assert.match(map,/FIRST_CONTACT_TILES\.slice\(2\)\.map/);
+  assert.match(map,/className="z-gate-foreground-tile"/);
+  assert.match(css,/\.z-gate-foreground-tile\{position:absolute;display:block;width:850px;height:280px/);
   assert.doesNotMatch(map,/z-gate-masonry-refinement|clipPath=|<svg className="z-gate-foreground-cutout"/);
   assert.match(css,/\.z-gate-foreground-cutout\{position:absolute;z-index:4;pointer-events:none/);
   assert.match(css,/\.z-local-map-character\.is-approaching\{transform:translate\(-50%,-100%\);z-index:2/);
@@ -96,6 +99,6 @@ test("traced village preview shows feet marker, keeps fox off, and preserves acc
   assert.match(map,/setGateMarkerProgress\(Number\(e.target.value\)\/1000\)/);
   assert.match(map,/gateMarkerPoint\|\|gateRoutePoints.at\(-1\)/);
   assert.match(map,/gateEditorEnabled/);
-  assert.match(map,/gate-foreground-fixed-arch-2\.png/);
+  assert.match(map,/gate-foreground-fixed-arch-2-mask\.png/);
   assert.doesNotMatch(map,/requestAnimationFrame/);
 });
