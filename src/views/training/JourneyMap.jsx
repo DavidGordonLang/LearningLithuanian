@@ -640,7 +640,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       <span>Your updated 27-point route is loaded. Preview checks the existing STATIC fox and foot marker behind the approved gate foreground; this is not a walk animation. Pan/Preview allow dragging, pinch to zoom, and Move/Insert adjust the route.</span>
       <div className="z-gate-editor-buttons">
         {["preview","pan","add","move","insert"].map(mode=><button type="button" key={mode}
-          aria-pressed={gateEditMode===mode} onClick={()=>{setGateRoutePlaying(false);setGateEditMode(mode)}}>
+          aria-pressed={gateEditMode===mode} onClick={()=>{setGateRoutePlaying(false);setGateGuidedMode(false);setGateGuidedArrived(false);setGateEditMode(mode)}}>
           {mode[0].toUpperCase()+mode.slice(1)}</button>)}
       </div>
       {gateEditMode==="preview" && <div className="z-gate-editor-preview">
@@ -701,6 +701,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           role="group" aria-label="Automated fox route playback">
           <button type="button" disabled={gateRoutePlaying || gateRoutePoints.length<2}
             onClick={()=>{
+              setGateGuidedMode(false);
+              setGateGuidedArrived(false);
               const start=gateMarkerProgress>=1?0:gateMarkerProgress;
               gateRouteProgressRef.current=start;
               setGateMarkerProgress(start);
@@ -713,6 +715,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             onClick={()=>setGateRoutePlaying(false)}>Pause route</button>
           <button type="button" onClick={()=>{
             setGateRoutePlaying(false);
+            setGateGuidedMode(false);
+            setGateGuidedArrived(false);
             setGateRoutePlaybackEnabled(true);
             setGateWalkPlaying(false);
             gateRouteProgressRef.current=0;
@@ -803,7 +807,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         <input id="gate-route-marker" type="range" min="0" max="1000" step="1"
           aria-label="Scrub ground marker on traced route"
           value={Math.round(gateMarkerProgress*1000)}
-          onChange={e=>{setGateRoutePlaying(false);setGateRoutePlaybackEnabled(true);gateRouteProgressRef.current=Number(e.target.value)/1000;setGateMarkerProgress(gateRouteProgressRef.current);
+          onChange={e=>{setGateRoutePlaying(false);setGateGuidedMode(false);setGateGuidedArrived(false);setGateRoutePlaybackEnabled(true);gateRouteProgressRef.current=Number(e.target.value)/1000;setGateMarkerProgress(gateRouteProgressRef.current);
             setGateFoxSizeDraft(null);setGateFoxSizeCopyStatus("");}}/>
         {gateDepthAnimateFox && <div className="z-gate-size-workbench">
           <label htmlFor="gate-fox-size-here">
@@ -880,6 +884,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           <button type="button" aria-pressed={gateDepthAnimateFox}
             onClick={() => {
               setGateRoutePlaying(false);
+              setGateGuidedMode(false);
+              setGateGuidedArrived(false);
               setGateRoutePlaybackEnabled(false);
               setGateDepthAnimateFox(v=>!v);
               setGateWalkPlaying(true);
@@ -931,7 +937,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           {gateDirectionCopyStatus && <span role="status">{gateDirectionCopyStatus}</span>}
         </div>}
         <span>{gateDepthAnimateFox
-          ? "Route proof: Play route walks all 27 points at a steady world-space speed, changes heading and perspective and stops at the final point. The camera stays fixed. Lesson-landmark stops are the next stage and are not activated here."
+          ? "Dev-only guided proof stops at each approved lesson. The fox faces the learner at arrival and the existing lesson UI opens via the normal progress gate. The route beyond Town Hall leads towards the next map, not yet built. Free walking still runs all 27 points."
           : "Fox and paw marker are below the arch foreground. Route guide, when shown, stays above it for editing."}</span>
       </div>}
       <div className="z-gate-editor-buttons">
