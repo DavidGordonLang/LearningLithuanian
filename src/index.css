@@ -1546,3 +1546,16 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 @media (prefers-reduced-motion:reduce){
   .z-fox-lesson-facing-still{animation:none}
 }
+
+/* Handoff between existing module maps: both cards occupy the same stage.
+   The incoming map is pre-mounted, inert and fades in while the outgoing
+   fox keeps walking. Geometry, learner progress and authoring tools untouched. */
+.z-journey-exit-stage{position:relative}
+.z-journey-next-map-preview{
+  position:absolute;inset:0;z-index:10;
+  pointer-events:none;will-change:opacity;
+}
+.z-journey-next-map-preview .z-local-map-shell{
+  height:100%;
+  box-shadow:none;
+}
