@@ -1532,3 +1532,17 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 .z-gate-size-saved button{min-height:32px;white-space:normal}
 .z-gate-size-baseline{display:flex;flex-direction:column}
 .z-gate-size-baseline label,.z-gate-size-baseline input{display:block;margin-top:7px}
+
+/* Dev-only front-facing fox still at an approved lesson stop. Paw anchor
+   shares the walking sprite's bottom centre and retains the arch z-order. */
+.z-fox-lesson-facing-still{
+  transform-origin:50% 100%;
+  animation:z-fox-face-arrival .24s ease-out both;
+}
+@keyframes z-fox-face-arrival{
+  from{opacity:.25}
+  to{opacity:1}
+}
+@media (prefers-reduced-motion:reduce){
+  .z-fox-lesson-facing-still{animation:none}
+}
