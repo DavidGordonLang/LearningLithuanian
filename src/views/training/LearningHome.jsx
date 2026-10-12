@@ -36,6 +36,7 @@ export default function LearningHome({
   const completed = new Set(completedLessonIds || []);
   const [showRegionMap, setShowRegionMap] = useState(false);
   const [reviewModuleId, setReviewModuleId] = useState(null);
+  const [exitBlend,setExitBlend]=useState(0);
   const unlockedReview = allSections.flatMap(s => {
     const state = getSectionBrowseState(s, completedLessonIds);
     return [...state.moduleStates.filter(item => item.status === "completed").map(item => ({ section:s, module:item.module })),
@@ -48,6 +49,8 @@ export default function LearningHome({
         (item.module.lessons||[]).every(lesson=>completed.has(lesson.id)))
     : null;
   const isLeavingVillage=!!departureRoute;
+  const nextMapDuringExit=isLeavingVillage && target?.module?.id!==departureRoute.module.id
+    ? target : null;
   // Other companions do not yet have walking atlases. Let their normal
   // next-map navigation proceed, without holding them at the fox gate.
   useEffect(()=>{
@@ -114,10 +117,21 @@ export default function LearningHome({
       })}
     </div> : <>
       <div className="mt-3">
-        {activeModule ? <JourneyMap key={activeModule.id} module={activeModule} completed={completed}
-          targetId={onCurrentRoute?target?.lesson?.id:null} companion={selected}
-          userId={userId} exitToNextMap={isLeavingVillage}
-          onExitComplete={onJourneyExitComplete} onOpenLesson={onOpenLesson}/> : null}
+        <div className="z-journey-exit-stage">
+          {activeModule ? <JourneyMap key={activeModule.id} module={activeModule} completed={completed}
+            targetId={onCurrentRoute?target?.lesson?.id:null} companion={selected}
+            userId={userId} exitToNextMap={isLeavingVillage}
+            onExitProgress={setExitBlend}
+            onExitComplete={onJourneyExitComplete} onOpenLesson={onOpenLesson}/> : null}
+          {nextMapDuringExit && <div className="z-journey-next-map-preview"
+              aria-hidden="true" inert=""
+              style={{opacity:exitBlend,pointerEvents:"none"}}>
+            <JourneyMap key={nextMapDuringExit.module.id} module={nextMapDuringExit.module}
+              targetId={nextMapDuringExit.lesson?.id||null}
+              completed={completed} companion={selected} userId={userId}
+              onOpenLesson={null}/>
+          </div>}
+        </div>
       </div>
       {reviewRoute && <p className="mt-2 text-center text-xs opacity-75">Reviewing {activeModule?.title}. <button type="button" onClick={()=>setReviewModuleId(null)} className="underline">Return to current route</button></p>}
       {isLeavingVillage
