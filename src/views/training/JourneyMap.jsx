@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {useAuthStore} from "../../stores/authStore";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
+import {preloadFoxWalkAtlases} from "./foxWalkAtlasPreload";
 import {FOX_ROUTE_WORLD_PX_PER_SECOND,foxRouteAdvance,foxRouteFrame,
   foxRouteTotalDistance} from "./journeyFoxRoutePlayback";
 import {readFoxSizeDraft,saveFoxSizeDraft,
@@ -165,7 +166,7 @@ function Scene({ points }) {
 }
 export default function JourneyMap({
   module, completed, targetId, companion, onOpenLesson, userId,
-  exitToNextMap=false, onExitComplete, onExitProgress
+  exitToNextMap=false, onExitComplete, onExitProgress, replayFoxGap=false
 }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
@@ -231,9 +232,20 @@ export default function JourneyMap({
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
   const isLearnerFox = illustrated && companion?.id==="fox";
+  const [foxAtlasState,setFoxAtlasState]=useState({complete:false,ready:[]});
+  useEffect(()=>{
+    if(!isLearnerFox)return;
+    let active=true;
+    preloadFoxWalkAtlases().then(results=>{
+      if(active)setFoxAtlasState({complete:true,
+        ready:results.filter(item=>item.ready).map(item=>item.name)});
+    });
+    return ()=>{active=false;};
+  },[isLearnerFox]);
   const isExitingVillage = isLearnerFox && exitToNextMap && !showMapDevTools;
   const journeyStopIndex = stops.findIndex(stop=>stop.id===targetId);
-  const journeyStop = isExitingVillage ? {at:1000}
+  const journeyStop = replayFoxGap ? {at:455}
+    : isExitingVillage ? {at:1000}
     : journeyStopIndex>=0
       ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===targetId)
       : FOX_APPROVED_LESSON_STOPS.at(-1);
@@ -246,9 +258,11 @@ export default function JourneyMap({
     const shouldTravel = !showMapDevTools && isLearnerFox && journeyStopIndex>0 &&
       completed.has(journeyPreviousStop?.lessonId) &&
       lastTarget===journeyPreviousStop?.lessonId;
-    return isExitingVillage
-      ? {start:FOX_APPROVED_LESSON_STOPS.at(-1).at/1000,moving:true}
-      : {
+    return replayFoxGap
+      ? {start:0.255,moving:true}
+      : isExitingVillage
+        ? {start:FOX_APPROVED_LESSON_STOPS.at(-1).at/1000,moving:true}
+        : {
           start:shouldTravel ? journeyPreviousStop.at/1000 : (journeyStop?.at??0)/1000,
           moving:shouldTravel,
         };
@@ -266,11 +280,12 @@ export default function JourneyMap({
     if(isExitingVillage)onExitProgress?.(departureBlend);
   },[isExitingVillage,departureBlend]);
   useEffect(()=>{
-    if(!isLearnerFox || showMapDevTools || !targetId) return;
+    if(!isLearnerFox || showMapDevTools || replayFoxGap || !targetId) return;
     try {window.sessionStorage.setItem(journeySessionKey,targetId);} catch {}
   },[isLearnerFox,showMapDevTools,targetId,journeySessionKey]);
   useEffect(()=>{
-    if(!isLearnerFox || editingGate || !journeyMoving || !journeyStop) return;
+    if(!isLearnerFox || editingGate || !foxAtlasState.complete ||
+       !journeyMoving || !journeyStop) return;
     let raf=0,last=null;
     const tick=now=>{
       if(last===null)last=now;
@@ -291,7 +306,8 @@ export default function JourneyMap({
     };
     raf=window.requestAnimationFrame(tick);
     return ()=>window.cancelAnimationFrame(raf);
-  },[isLearnerFox,editingGate,journeyMoving,journeyStop?.at,isExitingVillage]);
+  },[isLearnerFox,editingGate,journeyMoving,journeyStop?.at,isExitingVillage,
+     foxAtlasState.complete]);
   useEffect(() => {
     if (!editingGate || gateEditMode !== "preview" ||
         !gateDepthShowFox || !gateDepthAnimateFox || !gateWalkPlaying ||
@@ -597,10 +613,15 @@ export default function JourneyMap({
   const foxPreviewEnabled = illustrated && companion?.id === "fox";
   const journeyPoint = isLearnerFox && !editingGate
     ? gateRouteAt(USER_TRACED_VILLAGE_ROUTE,journeyProgress) : null;
-  const journeyFacing = !journeyMoving;
   const journeyDirection = journeyPoint
     ? (gateDirectionPlan(USER_TRACED_VILLAGE_ROUTE)[journeyPoint.segmentIndex]?.direction||"up")
     : "up";
+  const journeyAtlas = FOX_WALK_DIRECTIONS.find(d=>d.value===journeyDirection)?.atlas;
+  const journeyAtlasLoaded = foxAtlasState.ready.includes(journeyAtlas);
+  // Never draw an empty background at a direction switch, including on
+  // Android's first AVIF decode. Use the existing facing still if unavailable.
+  const journeyFacing = !journeyMoving || !foxAtlasState.complete ||
+    !journeyAtlasLoaded;
   const journeyFrame = foxRouteFrame(USER_TRACED_VILLAGE_ROUTE,journeyProgress);
   const journeyScale = gateFoxScaleWithStops(USER_TRACED_VILLAGE_ROUTE,
     journeyProgress,FOX_APPROVED_FAR_SIZE/100,FOX_APPROVED_SIZE_STOPS);
@@ -1110,6 +1131,18 @@ export default function JourneyMap({
         onClick={()=>setGateShowMarker(v=>!v)}>
         {gateShowMarker?"Hide gate marker":"Show gate marker"}
       </button>
+    </div>}
+    {replayFoxGap && <div className="z-fox-route-gap-qa" role="group"
+      aria-label="Replay fox disappearance location without resetting lessons">
+      <button type="button" onClick={()=>{
+        journeyProgressRef.current=.255;
+        setJourneyProgress(.255);
+        setJourneyMoving(true);
+      }}>Replay Fountain → Bakery</button>
+      <span role="status">Route {(journeyProgress*100).toFixed(1)}% ·
+        segment {(journeyPoint?.segmentIndex??0)+1} · {journeyDirection} ·
+        sheet {journeyAtlas} {journeyAtlasLoaded?"decoded":"loading / fallback"} ·
+        frame {journeyFrame}</span>
     </div>}
     <div className="z-local-map-footer">
       <span>{stops.filter(s=>completed.has(s.id)).length} of {stops.length} stops completed</span>
