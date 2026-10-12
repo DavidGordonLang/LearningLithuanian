@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
-import {readFoxSizeDraft,saveFoxSizeDraft} from "./foxSizeDraftStorage";
+import {readFoxSizeDraft,saveFoxSizeDraft,
+  FOX_APPROVED_FAR_SIZE,FOX_APPROVED_SIZE_STOPS} from "./foxSizeDraftStorage";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
@@ -190,9 +191,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateMarkerProgress, setGateMarkerProgress] = useState(0);
   // Editor-only artistic far-end perspective: 65% of near-path sprite size.
   const [gateFoxFarScale, setGateFoxFarScale] = useState(
-    ()=>readFoxSizeDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE))?.far ?? 65);
+    ()=>readFoxSizeDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE))?.far ?? FOX_APPROVED_FAR_SIZE);
   const [gateFoxSizeStops, setGateFoxSizeStops] = useState(
-    ()=>readFoxSizeDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE))?.stops ?? []);
+    ()=>readFoxSizeDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE))?.stops ??
+      FOX_APPROVED_SIZE_STOPS.map(stop=>({...stop})));
   const [gateFoxSizeDraft, setGateFoxSizeDraft] = useState(null);
   const [gateFoxSizeCopyStatus, setGateFoxSizeCopyStatus] = useState("");
   const [gateDepthShowFox, setGateDepthShowFox] = useState(true);
