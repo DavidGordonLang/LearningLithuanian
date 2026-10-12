@@ -1,0 +1,10 @@
+.z-fox-route-gap-qa {
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:8px;padding:10px;background:#164e3f;color:#f5f2dd;
+  font-size:12px;line-height:1.5;
+}
+.z-fox-route-gap-qa button {
+  min-height:44px;padding:9px 12px;background:#256b52;color:#fff8df;
+  border:1px solid #e2c777;border-radius:10px;font-weight:750;
+}
+.z-fox-route-gap-qa span{min-width:0;overflow-wrap:anywhere}
