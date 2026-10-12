@@ -170,6 +170,8 @@ export default function JourneyMap({
 }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
+  const foxGapReplay = replayFoxGap || (illustrated && typeof window!=="undefined" &&
+    new URLSearchParams(window.location.search).get("journeyQA")==="fox-gap");
   const defaultScale = illustrated ? 0.87 : SCALE;
   const pathPoints = illustrated ? FIRST_CONTACT_POINTS : POINTS;
   const points = stops.map((_, i) => pathPoints[i] || pathPoints[pathPoints.length-1]);
@@ -244,7 +246,7 @@ export default function JourneyMap({
   },[isLearnerFox]);
   const isExitingVillage = isLearnerFox && exitToNextMap && !showMapDevTools;
   const journeyStopIndex = stops.findIndex(stop=>stop.id===targetId);
-  const journeyStop = replayFoxGap ? {at:455}
+  const journeyStop = foxGapReplay ? {at:455}
     : isExitingVillage ? {at:1000}
     : journeyStopIndex>=0
       ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===targetId)
@@ -258,7 +260,7 @@ export default function JourneyMap({
     const shouldTravel = !showMapDevTools && isLearnerFox && journeyStopIndex>0 &&
       completed.has(journeyPreviousStop?.lessonId) &&
       lastTarget===journeyPreviousStop?.lessonId;
-    return replayFoxGap
+    return foxGapReplay
       ? {start:0.255,moving:true}
       : isExitingVillage
         ? {start:FOX_APPROVED_LESSON_STOPS.at(-1).at/1000,moving:true}
@@ -280,7 +282,7 @@ export default function JourneyMap({
     if(isExitingVillage)onExitProgress?.(departureBlend);
   },[isExitingVillage,departureBlend]);
   useEffect(()=>{
-    if(!isLearnerFox || showMapDevTools || replayFoxGap || !targetId) return;
+    if(!isLearnerFox || showMapDevTools || foxGapReplay || !targetId) return;
     try {window.sessionStorage.setItem(journeySessionKey,targetId);} catch {}
   },[isLearnerFox,showMapDevTools,targetId,journeySessionKey]);
   useEffect(()=>{
@@ -1132,7 +1134,7 @@ export default function JourneyMap({
         {gateShowMarker?"Hide gate marker":"Show gate marker"}
       </button>
     </div>}
-    {replayFoxGap && <div className="z-fox-route-gap-qa" role="group"
+    {foxGapReplay && <div className="z-fox-route-gap-qa" role="group"
       aria-label="Replay fox disappearance location without resetting lessons">
       <button type="button" onClick={()=>{
         journeyProgressRef.current=.255;
