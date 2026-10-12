@@ -165,7 +165,7 @@ function Scene({ points }) {
 }
 export default function JourneyMap({
   module, completed, targetId, companion, onOpenLesson, userId,
-  exitToNextMap=false, onExitComplete
+  exitToNextMap=false, onExitComplete, onExitProgress
 }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
@@ -256,6 +256,15 @@ export default function JourneyMap({
   const [journeyProgress,setJourneyProgress] = useState(journeyInitial.start);
   const [journeyMoving,setJourneyMoving] = useState(journeyInitial.moving);
   const journeyProgressRef=useRef(journeyInitial.start);
+  // Transition is deliberately blended while the fox is still moving. The
+  // new module map reaches full opacity slightly before the path endpoint.
+  // Quantise callbacks so the parent only redraws ~25 times, not every frame.
+  const departureBlend= isExitingVillage
+    ? Math.round(25*Math.max(0,Math.min(1,(journeyProgress-0.885)/0.103)))/25
+    : 0;
+  useEffect(()=>{
+    if(isExitingVillage)onExitProgress?.(departureBlend);
+  },[isExitingVillage,departureBlend]);
   useEffect(()=>{
     if(!isLearnerFox || showMapDevTools || !targetId) return;
     try {window.sessionStorage.setItem(journeySessionKey,targetId);} catch {}
@@ -628,9 +637,8 @@ export default function JourneyMap({
           const done=completed.has(stop.id), here=stop.id===targetId;
           const available=done||here;
           const hideForGateProof=foxPreviewEnabled && showMapDevTools && (editingGate || (i===0 && !gateShowMarker));
-          // Once greeted, the first lesson pin should not cover the fox.
-          const hideCompletedFirst=foxPreviewEnabled && !showMapDevTools && i===0 && done;
-          return hideCompletedFirst ? null : <button type="button" key={stop.id} disabled={!available}
+          // Keep completed markers visible to show the full learning journey.
+          return <button type="button" key={stop.id} disabled={!available}
             aria-hidden={hideForGateProof ? true : undefined}
             onClick={()=>onOpenLesson?.(stop.id)}
             className={"z-local-map-stop "+(done?"is-done ":"")+(here?"is-current ":"")+
@@ -691,6 +699,7 @@ export default function JourneyMap({
           <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
         </span>}
         {foxPreviewEnabled && (!editingGate || gateEditMode==="preview") &&
+          (editingGate || journeyProgress<0.25) &&
           <div className="z-gate-foreground-cutout" aria-hidden="true"
             style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top,
               width:GATE_FOREGROUND_CUTOUT.width,height:GATE_FOREGROUND_CUTOUT.height,
