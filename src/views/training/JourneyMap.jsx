@@ -163,7 +163,10 @@ function Scene({ points }) {
     </svg>
   );
 }
-export default function JourneyMap({ module, completed, targetId, companion, onOpenLesson, userId }) {
+export default function JourneyMap({
+  module, completed, targetId, companion, onOpenLesson, userId,
+  exitToNextMap=false, onExitComplete
+}) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
   const defaultScale = illustrated ? 0.87 : SCALE;
@@ -228,10 +231,12 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
   const isLearnerFox = illustrated && companion?.id==="fox";
+  const isExitingVillage = isLearnerFox && exitToNextMap && !showMapDevTools;
   const journeyStopIndex = stops.findIndex(stop=>stop.id===targetId);
-  const journeyStop = journeyStopIndex>=0
-    ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===targetId)
-    : FOX_APPROVED_LESSON_STOPS.at(-1);
+  const journeyStop = isExitingVillage ? {at:1000}
+    : journeyStopIndex>=0
+      ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===targetId)
+      : FOX_APPROVED_LESSON_STOPS.at(-1);
   const journeyPreviousStop = journeyStopIndex>0
     ? FOX_APPROVED_LESSON_STOPS[journeyStopIndex-1] : null;
   const journeySessionKey = "zodis:journey-fox:last-target:module_1_1:"+(accountId||userId||"anonymous");
@@ -241,10 +246,12 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     const shouldTravel = !showMapDevTools && isLearnerFox && journeyStopIndex>0 &&
       completed.has(journeyPreviousStop?.lessonId) &&
       lastTarget===journeyPreviousStop?.lessonId;
-    return {
-      start:shouldTravel ? journeyPreviousStop.at/1000 : (journeyStop?.at??0)/1000,
-      moving:shouldTravel,
-    };
+    return isExitingVillage
+      ? {start:FOX_APPROVED_LESSON_STOPS.at(-1).at/1000,moving:true}
+      : {
+          start:shouldTravel ? journeyPreviousStop.at/1000 : (journeyStop?.at??0)/1000,
+          moving:shouldTravel,
+        };
   });
   const [journeyProgress,setJourneyProgress] = useState(journeyInitial.start);
   const [journeyMoving,setJourneyMoving] = useState(journeyInitial.moving);
@@ -264,12 +271,18 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         journeyProgressRef.current,seconds,journeyStop.at,FOX_ROUTE_WORLD_PX_PER_SECOND);
       journeyProgressRef.current=result.progress;
       setJourneyProgress(result.progress);
-      if(result.arrived){setJourneyMoving(false);return;}
+      if(result.arrived){
+        setJourneyMoving(false);
+        // Trigger normal next-module navigation only AFTER the fox has
+        // physically finished the approved final 15.2% of the village path.
+        if(isExitingVillage) onExitComplete?.();
+        return;
+      }
       raf=window.requestAnimationFrame(tick);
     };
     raf=window.requestAnimationFrame(tick);
     return ()=>window.cancelAnimationFrame(raf);
-  },[isLearnerFox,editingGate,journeyMoving,journeyStop?.at]);
+  },[isLearnerFox,editingGate,journeyMoving,journeyStop?.at,isExitingVillage]);
   useEffect(() => {
     if (!editingGate || gateEditMode !== "preview" ||
         !gateDepthShowFox || !gateDepthAnimateFox || !gateWalkPlaying ||
