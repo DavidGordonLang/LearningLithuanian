@@ -5,6 +5,8 @@ import {FOX_ROUTE_WORLD_PX_PER_SECOND,foxRouteAdvance,foxRouteFrame,
   foxRouteTotalDistance} from "./journeyFoxRoutePlayback";
 import {readFoxSizeDraft,saveFoxSizeDraft,
   FOX_APPROVED_FAR_SIZE,FOX_APPROVED_SIZE_STOPS} from "./foxSizeDraftStorage";
+import {readFoxLessonStopDraft,saveFoxLessonStopDraft,
+  foxLessonStopPlan,foxLessonStopOrderProblem} from "./foxLessonStopDraft";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
@@ -199,6 +201,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       FOX_APPROVED_SIZE_STOPS.map(stop=>({...stop})));
   const [gateFoxSizeDraft, setGateFoxSizeDraft] = useState(null);
   const [gateFoxSizeCopyStatus, setGateFoxSizeCopyStatus] = useState("");
+  const [gateLessonStops,setGateLessonStops] = useState(()=>
+    readFoxLessonStopDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE),
+      stops.map(stop=>stop.id)) ?? []);
+  const [gateSelectedLessonId,setGateSelectedLessonId] = useState(stops[0]?.id||"");
+  const [gateLessonCopyStatus,setGateLessonCopyStatus] = useState("");
   const [gateDepthShowFox, setGateDepthShowFox] = useState(true);
   const [gateDepthShowGuide, setGateDepthShowGuide] = useState(false);
   // Isolated eight-frame sprite QA at the editor's existing stationary paw marker.
@@ -254,6 +261,17 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const gateFoxSizeExport = JSON.stringify(gateFoxSizePlan(gateRoutePoints,
     gateFoxFarScale,gateFoxSizeStops),null,2);
   const gateSizeStop = gateFoxSizeStops.find(stop=>stop.at===gateSizeMarker);
+  const gateLessonIds = stops.map(stop=>stop.id);
+  const gateSelectedLesson = stops.find(stop=>stop.id===gateSelectedLessonId);
+  const gateSelectedLessonSaved = gateLessonStops.find(stop=>stop.lessonId===gateSelectedLessonId);
+  const gateLessonIssue = foxLessonStopOrderProblem(gateLessonStops,gateLessonIds);
+  const gateLessonExport = JSON.stringify(foxLessonStopPlan(gateRoutePoints,
+    stops,gateLessonStops,FIRST_CONTACT_LANDMARKS),null,2);
+  const saveLessonPositions = (positions) => {
+    setGateLessonStops(positions);
+    saveFoxLessonStopDraft(gateRouteJson(gateRoutePoints),gateLessonIds,positions);
+    setGateLessonCopyStatus("");
+  };
   useEffect(()=>{
     saveFoxSizeDraft(gateRouteJson(gateRoutePoints),gateFoxFarScale,gateFoxSizeStops);
   },[gateRoutePoints,gateFoxFarScale,gateFoxSizeStops]);
@@ -280,6 +298,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateRoutePlaybackEnabled(false);
     setGateFoxSizeStops([]);
     setGateFoxSizeDraft(null);
+    setGateLessonStops([]);
+    setGateLessonCopyStatus("");
     setGateDirectionCopyStatus("");
     setGateCopyStatus("");
   };
@@ -323,6 +343,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateDepthAnimateFox(false);
     setGateSegmentDirections({});
     setGateDirectionCopyStatus("");
+    setGateLessonStops(readFoxLessonStopDraft(
+      gateRouteJson(USER_TRACED_VILLAGE_ROUTE),stops.map(stop=>stop.id)) ?? []);
+    setGateSelectedLessonId(stops[0]?.id||"");
+    setGateLessonCopyStatus("");
     setGateWalkFrame(0);
     setGateWalkPlaying(true);
     setGateRouteHistory([]);
@@ -606,6 +630,80 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
               ? (gateMarkerProgress>=1 ? "Route finished" : "Route paused")
               : "Route ready"}</span>
         </div>}
+        <div className="z-gate-size-workbench" role="group"
+          aria-label="Place lesson stops on the fox route">
+          <strong>Lesson stop placement · {gateLessonStops.length} of {stops.length} saved</strong>
+          <span>Select a lesson below, then scrub the Ground marker to where the fox
+            should stop. Save that position. This is authoring only: it does not
+            open or complete lessons.</span>
+          <div className="z-gate-editor-buttons" role="group"
+            aria-label="Choose a lesson landmark">
+            {stops.map((stop,i)=>{
+              const saved=gateLessonStops.find(item=>item.lessonId===stop.id);
+              return <button key={stop.id} type="button"
+                aria-pressed={gateSelectedLessonId===stop.id}
+                onClick={()=>{
+                  setGateSelectedLessonId(stop.id);
+                  setGateLessonCopyStatus("");
+                  if(saved) {
+                    setGateRoutePlaying(false);
+                    setGateRoutePlaybackEnabled(true);
+                    gateRouteProgressRef.current=saved.at/1000;
+                    setGateMarkerProgress(saved.at/1000);
+                    setGateFoxSizeDraft(null);
+                  }
+                }}>
+                {i+1}. {FIRST_CONTACT_LANDMARKS[i]||stop.title}{saved?" ✓":""}
+              </button>;
+            })}
+          </div>
+          <span>Selected: {gateSelectedLesson?.title||"Choose a lesson"}.
+            Current marker: {(gateMarkerProgress*100).toFixed(1)}%.</span>
+          <div className="z-gate-editor-buttons">
+            <button type="button" disabled={!gateSelectedLesson||!gateMarkerPoint}
+              onClick={()=>{
+                const marker=Math.round(gateMarkerProgress*1000);
+                saveLessonPositions([...gateLessonStops.filter(
+                  stop=>stop.lessonId!==gateSelectedLessonId),
+                  {lessonId:gateSelectedLessonId,at:marker}]);
+              }}>{gateSelectedLessonSaved?"Update lesson stop here":"Save lesson stop here"}</button>
+            <button type="button" disabled={!gateSelectedLessonSaved}
+              onClick={()=>saveLessonPositions(gateLessonStops.filter(
+                stop=>stop.lessonId!==gateSelectedLessonId))}>Remove this stop</button>
+          </div>
+          {gateLessonStops.length>0 && <div className="z-gate-size-saved">
+            {stops.map((lesson,i)=>{
+              const saved=gateLessonStops.find(stop=>stop.lessonId===lesson.id);
+              if(!saved)return null;
+              return <button key={lesson.id} type="button"
+                aria-pressed={gateSelectedLessonId===lesson.id && gateSizeMarker===saved.at}
+                onClick={()=>{
+                  setGateSelectedLessonId(lesson.id);
+                  setGateRoutePlaying(false);
+                  setGateRoutePlaybackEnabled(true);
+                  gateRouteProgressRef.current=saved.at/1000;
+                  setGateMarkerProgress(saved.at/1000);
+                  setGateFoxSizeDraft(null);
+                }}>{i+1}. {FIRST_CONTACT_LANDMARKS[i]} · {(saved.at/10).toFixed(1)}%</button>;
+            })}
+          </div>}
+          <span role="status">{gateLessonCopyStatus||
+            (gateLessonIssue||"All five stops are ordered and ready to copy for approval.")}</span>
+          <button type="button" disabled={!gateLessonStops.length}
+            onClick={async()=>{
+              try {
+                await navigator.clipboard.writeText(gateLessonExport);
+                setGateLessonCopyStatus("Lesson stop plan copied. Paste it into the development chat.");
+              } catch {
+                setGateLessonCopyStatus("Select and copy the text below instead.");
+              }
+            }}>Copy lesson stop plan ({gateLessonStops.length}/{stops.length})</button>
+          <details>
+            <summary>Review or manually copy the lesson stop JSON</summary>
+            <textarea readOnly aria-label="Lesson stop plan export" rows="5"
+              onFocus={e=>e.target.select()} value={gateLessonExport}/>
+          </details>
+        </div>
         <label htmlFor="gate-route-marker">Ground marker · {Math.round(gateMarkerProgress*100)}%</label>
         <input id="gate-route-marker" type="range" min="0" max="1000" step="1"
           aria-label="Scrub ground marker on traced route"
