@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
+import FoxWalkSprite from "./FoxWalkSprite";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
@@ -186,8 +187,20 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateMarkerProgress, setGateMarkerProgress] = useState(0);
   const [gateDepthShowFox, setGateDepthShowFox] = useState(true);
   const [gateDepthShowGuide, setGateDepthShowGuide] = useState(false);
+  // Isolated eight-frame sprite QA at the editor's existing stationary paw marker.
+  const [gateDepthAnimateFox, setGateDepthAnimateFox] = useState(false);
+  const [gateWalkFacing, setGateWalkFacing] = useState("up-left");
+  const [gateWalkFrame, setGateWalkFrame] = useState(0);
+  const [gateWalkPlaying, setGateWalkPlaying] = useState(true);
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
+  useEffect(() => {
+    if (!editingGate || gateEditMode !== "preview" ||
+        !gateDepthShowFox || !gateDepthAnimateFox || !gateWalkPlaying ||
+        window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+    const timer = window.setInterval(() => setGateWalkFrame(f => (f + 1) % 8), 140);
+    return () => window.clearInterval(timer);
+  }, [editingGate, gateEditMode, gateDepthShowFox, gateDepthAnimateFox, gateWalkPlaying]);
   const gateMarkerPoint = editingGate && gateEditMode==="preview"
     ? gateRoutePreviewPoint(gateRoutePoints,gateMarkerProgress) : null;
   const checkpointRoute = () => {
@@ -231,6 +244,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateMarkerProgress(0);
     setGateDepthShowFox(true);
     setGateDepthShowGuide(false);
+    setGateDepthAnimateFox(false);
+    setGateWalkFacing("up-left");
+    setGateWalkFrame(0);
+    setGateWalkPlaying(true);
     setGateRouteHistory([]);
     setGateSelectedPoint(null);
     setGateCopyStatus("");
@@ -427,7 +444,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           aria-label="Static fox reference and paws at ground marker">
           {gateDepthShowFox && <img src={FOX_DIRECTIONAL_PREVIEW["up-right"]}
             className="z-gate-depth-reference-fox" alt=""
-            draggable={false} decoding="async"/>}
+            draggable={false} decoding="async"
+            style={{opacity:gateDepthAnimateFox ? 0 : 1}}/>}
+          {gateDepthShowFox && gateDepthAnimateFox &&
+            <FoxWalkSprite frame={gateWalkFrame} facing={gateWalkFacing}/>}
+
           <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
         </span>}
         {foxPreviewEnabled && (!editingGate || gateEditMode==="preview") &&
@@ -498,7 +519,28 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             {gateDepthShowGuide?"Hide route guide":"Show route guide"}
           </button>
         </div>
-        <span>Fox and paw marker are below the arch foreground. Route guide, when shown, stays above it for editing.</span>
+        <div className="z-gate-editor-buttons" role="group" aria-label="Fixed-position fox animation proof">
+          <button type="button" aria-pressed={gateDepthAnimateFox}
+            onClick={() => {
+              setGateDepthAnimateFox(v=>!v);
+              setGateWalkPlaying(true);
+              setGateWalkFrame(0);
+            }}>{gateDepthAnimateFox ? "Return to static fox" : "Preview walking fox"}</button>
+          {gateDepthAnimateFox && <>
+            <button type="button" aria-label="Change fox walking direction"
+              onClick={()=>setGateWalkFacing(f=>f==="up-left"?"up-right":"up-left")}>
+              Facing {gateWalkFacing}</button>
+            <button type="button" aria-label={gateWalkPlaying?"Pause fox walk":"Play fox walk"}
+              onClick={()=>setGateWalkPlaying(p=>!p)}>{gateWalkPlaying?"Pause":"Play"}</button>
+            <button type="button" aria-label="Next fox walk pose" onClick={()=>{
+              setGateWalkPlaying(false);
+              setGateWalkFrame(f=>(f+1)%8);
+            }}>Next pose</button>
+          </>}
+        </div>
+        <span>{gateDepthAnimateFox
+          ? "Sprite-cycle proof only: the fox stays at the ground marker. Slide the marker to test gate depth; no route playback or camera tracking."
+          : "Fox and paw marker are below the arch foreground. Route guide, when shown, stays above it for editing."}</span>
       </div>}
       <div className="z-gate-editor-buttons">
         <button type="button" disabled={!gateRouteHistory.length} onClick={()=>{

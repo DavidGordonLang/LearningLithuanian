@@ -1496,3 +1496,12 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
   width:17px;height:10px;transform:translate(-50%,50%);
   border:2px solid #fff2b8;border-radius:50%;background:#c95e24;
   box-shadow:0 1px 3px rgba(0,0,0,.5)}
+
+/* Dev-only fixed-position animation proof at the original route marker.
+   Keep z=2 under Fixed arch 2 foreground (z=4); do not affect map gestures. */
+.z-gate-fox-walk-probe{
+  position:absolute;left:-11px;top:0;width:112px;height:112px;
+  background-image:url("/assets/journey/fox-walk-up-left-fixed-probe.avif");
+  background-repeat:no-repeat;background-size:400% 200%;
+  pointer-events:none;user-select:none;
+}
