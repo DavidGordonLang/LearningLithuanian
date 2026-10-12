@@ -19,7 +19,7 @@ test("the next real unlocked lesson automatically starts the route walk",()=>{
    "completed.has(journeyPreviousStop?.lessonId)",
    "lastTarget===journeyPreviousStop?.lessonId",
    "foxLessonRouteAdvance(USER_TRACED_VILLAGE_ROUTE",
-   "if(result.arrived){setJourneyMoving(false);return;}",
+   "if(isExitingVillage) onExitComplete?.();",
    "updateView(next,zoom)"])assert.ok(src.includes(snippet),snippet);
  const s=FOX_APPROVED_LESSON_STOPS;
  assert.deepEqual(foxLessonRouteAdvance(USER_TRACED_VILLAGE_ROUTE,s[0].at/1000,90,s[1].at),
@@ -35,4 +35,34 @@ test("learner mode hides editor and keeps all authoring features opt-in",()=>{
     "Play route","Restart route","Copy lesson stop plan"])
    assert.ok(src.includes(feature),feature);
  assert.ok(!src.includes("completeLesson("));
+});
+
+
+test("Module 1.1 exit waits for fox to finish the final 15.2% before next map",()=>{
+ const map=read("src/views/training/JourneyMap.jsx");
+ const learning=read("src/views/training/LearningHome.jsx");
+ const training=read("src/views/TrainingView.jsx");
+ assert.ok(map.includes("start:FOX_APPROVED_LESSON_STOPS.at(-1).at/1000,moving:true"));
+ assert.ok(map.includes("const journeyStop = isExitingVillage ? {at:1000}"));
+ assert.ok(map.includes("if(isExitingVillage) onExitComplete?.();"));
+ assert.ok(learning.includes('journeyExitModuleId==="module_1_1"'));
+ assert.ok(learning.includes("departureRoute?.module || reviewRoute?.module || target?.module"));
+ assert.ok(learning.includes("exitToNextMap={isLeavingVillage}"));
+ assert.ok(learning.includes("Following the fox towards the next map"));
+ assert.ok(training.includes('setJourneyExitModuleId(moduleCompletePayload?.module?.id==="module_1_1"'));
+ assert.ok(training.includes('setJourneyExitModuleId(mod?.id==="module_1_1"'));
+ assert.ok(training.includes("onJourneyExitComplete={()=>setJourneyExitModuleId(null)}"));
+ const points=FOX_APPROVED_LESSON_STOPS;
+ assert.equal(points.at(-1).at,848);
+ assert.deepEqual(foxLessonRouteAdvance(USER_TRACED_VILLAGE_ROUTE,.848,10,1000),
+   {progress:1,arrived:true});
+});
+test("only the first completed pin disappears; landmark pins move independently of fox route",()=>{
+ const map=read("src/views/training/JourneyMap.jsx");
+ const coords=map.match(/const FIRST_CONTACT_POINTS = \[([\s\S]*?)\];/)?.[1]||"";
+ assert.ok(coords.includes("{ x: 183, y: 880 }"));
+ assert.ok(coords.includes("{ x: 575, y: 725 }"));
+ assert.ok(map.includes("i===0 && done"));
+ assert.ok(map.includes("return hideCompletedFirst ? null : <button"));
+ assert.deepEqual(FOX_APPROVED_LESSON_STOPS.map(x=>x.at),[0,263,395,673,848]);
 });
