@@ -3,6 +3,7 @@ import {useAuthStore} from "../../stores/authStore";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
 import {preloadFoxWalkAtlases} from "./foxWalkAtlasPreload";
+import "./foxGapReplay.css";
 import {FOX_ROUTE_WORLD_PX_PER_SECOND,foxRouteAdvance,foxRouteFrame,
   foxRouteTotalDistance} from "./journeyFoxRoutePlayback";
 import {readFoxSizeDraft,saveFoxSizeDraft,
