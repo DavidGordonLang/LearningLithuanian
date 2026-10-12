@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
-import FoxWalkSprite from "./FoxWalkSprite";
+import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
@@ -527,9 +527,13 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
               setGateWalkFrame(0);
             }}>{gateDepthAnimateFox ? "Return to static fox" : "Preview walking fox"}</button>
           {gateDepthAnimateFox && <>
-            <button type="button" aria-label="Change fox walking direction"
-              onClick={()=>setGateWalkFacing(f=>f==="up-left"?"up-right":"up-left")}>
-              Facing {gateWalkFacing}</button>
+            <div className="z-gate-editor-buttons z-gate-walk-direction-grid"
+              role="group" aria-label="Change fox walking direction">
+              {FOX_WALK_DIRECTIONS.map(({value,label})=>
+                <button type="button" key={value}
+                  aria-pressed={gateWalkFacing===value}
+                  onClick={()=>setGateWalkFacing(value)}>{label}</button>)}
+            </div>
             <button type="button" aria-label={gateWalkPlaying?"Pause fox walk":"Play fox walk"}
               onClick={()=>setGateWalkPlaying(p=>!p)}>{gateWalkPlaying?"Pause":"Play"}</button>
             <button type="button" aria-label="Next fox walk pose" onClick={()=>{
@@ -539,7 +543,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           </>}
         </div>
         <span>{gateDepthAnimateFox
-          ? "Sprite-cycle proof only: the fox stays at the ground marker. Slide the marker to test gate depth; no route playback or camera tracking."
+          ? "Eight-direction sprite proof only: choose a heading, pause or step any pose. The fox stays at the marker; no route playback or camera tracking."
           : "Fox and paw marker are below the arch foreground. Route guide, when shown, stays above it for editing."}</span>
       </div>}
       <div className="z-gate-editor-buttons">

@@ -1505,3 +1505,11 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
   background-repeat:no-repeat;background-size:400% 200%;
   pointer-events:none;user-select:none;
 }
+
+/* Eight headings, one paw-anchored atlas viewport; route and gesture untouched. */
+.z-gate-editor-buttons.z-gate-walk-direction-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;
+}
+.z-gate-walk-direction-grid button{
+  min-width:0;padding:9px 4px;white-space:normal;text-align:center;
+}

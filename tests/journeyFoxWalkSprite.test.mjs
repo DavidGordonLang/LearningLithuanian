@@ -25,3 +25,22 @@ test("walking proof uses compact real AVIF sprite atlas, not GIF preview",()=>{
   assert.match(css,/fox-walk-up-left-fixed-probe\.avif/);
   assert.doesNotMatch(map,/localStorage\.setItem|awardXp|markComplete/);
 });
+
+
+test("all eight headings use valid AVIF atlases at fixed paw anchor",()=>{
+  const atlases=["up-left","up","left","down","down-left"];
+  for(const name of atlases){
+    const buffer=readFileSync(new URL(`../public/assets/journey/fox-walk-${name}-fixed-probe.avif`,import.meta.url));
+    assert.equal(buffer.toString("ascii",4,12),"ftypavif",name);
+    assert.ok(buffer.length>10000&&buffer.length<80000,name+" mobile budget");
+  }
+  for(const heading of ["up-left","up","up-right","left","right","down-left","down","down-right"]){
+    assert.ok(sprite.includes(`value: "${heading}"`),heading);
+  }
+  assert.equal((sprite.match(/mirror: true/g)||[]).length,3);
+  assert.match(sprite,/backgroundImage:/);
+  assert.match(sprite,/transform: direction.mirror/);
+  assert.match(map,/role="group" aria-label="Change fox walking direction"/);
+  assert.match(map,/aria-pressed=\{gateWalkFacing===value\}/);
+  assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+});
