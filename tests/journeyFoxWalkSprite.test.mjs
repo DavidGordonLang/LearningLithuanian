@@ -67,7 +67,7 @@ test("animated fox perspective scales at the foot anchor, retaining flips and si
   assert.match(sprite,/scale\(.+sizeScale/);
   assert.match(sprite,/scaleX\(-1\)/);
   assert.match(sprite,/Number.isFinite\(scale\)/);
-  assert.match(map,/gateFoxDepthScale\(gateRoutePoints,gateMarkerPoint,gateFoxFarScale\/100\)/);
+  assert.match(map,/gateFoxScaleWithStops/);
   assert.match(map,/scale=\{gateFoxScale\}/);
   assert.match(map,/aria-label="Set fox size at far end of route"/);
   assert.match(map,/min="40" max="100"/);

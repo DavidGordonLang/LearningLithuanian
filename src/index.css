@@ -1521,3 +1521,14 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 .z-gate-section-author textarea{font:11px/1.4 monospace;
   width:100%;border-radius:6px;padding:7px;
   background:#eff9eb;color:#173f32;resize:vertical}
+
+/* Map fox size authoring: positioned immediately below the ground marker. */
+.z-gate-size-workbench{display:flex;flex-direction:column;gap:6px;
+  padding:9px;border:1px solid rgba(244,207,120,.48);border-radius:10px}
+.z-gate-size-workbench label{font-weight:800}
+.z-gate-size-workbench textarea{font:11px/1.4 monospace;width:100%;
+  border-radius:6px;padding:7px;background:#eff9eb;color:#173f32;resize:vertical}
+.z-gate-size-saved{display:flex;gap:5px;flex-wrap:wrap;max-height:112px;overflow:auto}
+.z-gate-size-saved button{min-height:32px;white-space:normal}
+.z-gate-size-baseline{display:flex;flex-direction:column}
+.z-gate-size-baseline label,.z-gate-size-baseline input{display:block;margin-top:7px}

@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
+import {readFoxSizeDraft,saveFoxSizeDraft} from "./foxSizeDraftStorage";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
   USER_TRACED_VILLAGE_ROUTE, gateRouteAt, gateDirectionPlan,
-  gateSegmentMidpointProgress, gateFoxDepthScale } from "./journeyGateRouteEditor";
+  gateSegmentMidpointProgress, gateFoxDepthScale,
+  gateFoxScaleWithStops, gateFoxSizePlan } from "./journeyGateRouteEditor";
 
 
 // Each module uses the same five-stop coordinate contract. New illustrated
@@ -187,7 +189,12 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateCopyStatus, setGateCopyStatus] = useState("");
   const [gateMarkerProgress, setGateMarkerProgress] = useState(0);
   // Editor-only artistic far-end perspective: 65% of near-path sprite size.
-  const [gateFoxFarScale, setGateFoxFarScale] = useState(65);
+  const [gateFoxFarScale, setGateFoxFarScale] = useState(
+    ()=>readFoxSizeDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE))?.far ?? 65);
+  const [gateFoxSizeStops, setGateFoxSizeStops] = useState(
+    ()=>readFoxSizeDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE))?.stops ?? []);
+  const [gateFoxSizeDraft, setGateFoxSizeDraft] = useState(null);
+  const [gateFoxSizeCopyStatus, setGateFoxSizeCopyStatus] = useState("");
   const [gateDepthShowFox, setGateDepthShowFox] = useState(true);
   const [gateDepthShowGuide, setGateDepthShowGuide] = useState(false);
   // Isolated eight-frame sprite QA at the editor's existing stationary paw marker.
@@ -207,7 +214,17 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   }, [editingGate, gateEditMode, gateDepthShowFox, gateDepthAnimateFox, gateWalkPlaying]);
   const gateMarkerPoint = editingGate && gateEditMode==="preview"
     ? gateRouteAt(gateRoutePoints,gateMarkerProgress) : null;
-  const gateFoxScale = gateFoxDepthScale(gateRoutePoints,gateMarkerPoint,gateFoxFarScale/100);
+  const gateSizeMarker = Math.round(gateMarkerProgress*1000);
+  const gateFoxSavedScale = gateFoxScaleWithStops(gateRoutePoints,gateMarkerProgress,
+    gateFoxFarScale/100,gateFoxSizeStops);
+  const gateFoxScale = gateFoxSizeDraft?.at===gateSizeMarker
+    ? gateFoxSizeDraft.size/100 : gateFoxSavedScale;
+  const gateFoxSizeExport = JSON.stringify(gateFoxSizePlan(gateRoutePoints,
+    gateFoxFarScale,gateFoxSizeStops),null,2);
+  const gateSizeStop = gateFoxSizeStops.find(stop=>stop.at===gateSizeMarker);
+  useEffect(()=>{
+    saveFoxSizeDraft(gateRouteJson(gateRoutePoints),gateFoxFarScale,gateFoxSizeStops);
+  },[gateRoutePoints,gateFoxFarScale,gateFoxSizeStops]);
   const gateSectionIndex = gateMarkerPoint?.segmentIndex ?? 0;
   const gateDirectionAssignments = gateDirectionPlan(gateRoutePoints,gateSegmentDirections);
   const gateSection = gateDirectionAssignments[gateSectionIndex];
@@ -215,11 +232,14 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const gateDirectionExport = JSON.stringify(gateDirectionAssignments);
   const seekGateSection = (index) => {
     setGateMarkerProgress(gateSegmentMidpointProgress(gateRoutePoints,index));
+    setGateFoxSizeDraft(null);
     setGateDirectionCopyStatus("");
   };
   const checkpointRoute = () => {
     setGateRouteHistory(h=>[...h.slice(-29),gateRoutePoints.map(p=>({...p}))]);
     setGateSegmentDirections({});
+    setGateFoxSizeStops([]);
+    setGateFoxSizeDraft(null);
     setGateDirectionCopyStatus("");
     setGateCopyStatus("");
   };
@@ -522,7 +542,53 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         <input id="gate-route-marker" type="range" min="0" max="1000" step="1"
           aria-label="Scrub ground marker on traced route"
           value={Math.round(gateMarkerProgress*1000)}
-          onChange={e=>setGateMarkerProgress(Number(e.target.value)/1000)}/>
+          onChange={e=>{setGateMarkerProgress(Number(e.target.value)/1000);
+            setGateFoxSizeDraft(null);setGateFoxSizeCopyStatus("");}}/>
+        {gateDepthAnimateFox && <div className="z-gate-size-workbench">
+          <label htmlFor="gate-fox-size-here">
+            Fox size here · {Math.round(gateFoxScale*100)}% {gateSizeStop?"(saved)":
+              gateFoxSizeDraft?"(unsaved)":"(automatic)"}
+          </label>
+          <input id="gate-fox-size-here" type="range" min="40" max="100" step="1"
+            aria-label="Adjust fox size at current route position"
+            value={Math.round(gateFoxScale*100)}
+            onChange={e=>{setGateFoxSizeDraft({at:gateSizeMarker,size:Number(e.target.value)});
+              setGateFoxSizeCopyStatus("");}}/>
+          <div className="z-gate-editor-buttons">
+            <button type="button" onClick={()=>{
+              const size=Math.round(gateFoxScale*100);
+              setGateFoxSizeStops(xs=>[...xs.filter(x=>x.at!==gateSizeMarker),
+                {at:gateSizeMarker,size}].sort((a,b)=>a.at-b.at));
+              setGateFoxSizeDraft(null);
+            }}>{gateSizeStop?"Update saved size":"Save size here"}</button>
+            <button type="button" disabled={!gateSizeStop} onClick={()=>{
+              setGateFoxSizeStops(xs=>xs.filter(x=>x.at!==gateSizeMarker));
+              setGateFoxSizeDraft(null);
+            }}>Remove saved size</button>
+          </div>
+          <button type="button" disabled={!gateFoxSizeStops.length} onClick={async()=>{
+            try {await navigator.clipboard.writeText(gateFoxSizeExport);
+              setGateFoxSizeCopyStatus("Size adjustments copied");}
+            catch {setGateFoxSizeCopyStatus("Select and copy the text below");}
+          }}>Copy size adjustments ({gateFoxSizeStops.length})</button>
+          {gateFoxSizeStops.length>0 && <div className="z-gate-size-saved">
+            {gateFoxSizeStops.map(({at,size})=>
+              <button type="button" key={at} aria-pressed={gateSizeMarker===at}
+                onClick={()=>{setGateMarkerProgress(at/1000);setGateFoxSizeDraft(null);}}>
+                {(at/10).toFixed(1)}% route · {size}% fox
+              </button>)}
+          </div>}
+          <textarea readOnly aria-label="Saved fox size adjustments" rows="2"
+            onFocus={e=>e.target.select()} value={gateFoxSizeExport}/>
+          {gateFoxSizeCopyStatus && <span role="status">{gateFoxSizeCopyStatus}</span>}
+          <details className="z-gate-size-baseline">
+            <summary>Adjust default perspective</summary>
+            <label htmlFor="gate-fox-far-size">Far-end default · {gateFoxFarScale}%</label>
+            <input id="gate-fox-far-size" aria-label="Set fox size at far end of route"
+              type="range" min="40" max="100" step="1" value={gateFoxFarScale}
+              onChange={e=>setGateFoxFarScale(Number(e.target.value))}/>
+          </details>
+        </div>}
         <span>{gateMarkerPoint
           ? "Paws at "+Math.round(gateMarkerPoint.x)+", "+Math.round(gateMarkerPoint.y)
           : "Add points to preview"} · Tap Find me to centre the marker</span>
@@ -584,15 +650,6 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           </>}
         </div>
         {gateDepthAnimateFox && <div className="z-gate-section-author">
-          <label htmlFor="gate-fox-far-size">
-            Far-end fox size · {gateFoxFarScale}% (current point: {Math.round(gateFoxScale*100)}%)
-          </label>
-          <input id="gate-fox-far-size" aria-label="Set fox size at far end of route"
-            type="range" min="40" max="100" step="1"
-            value={gateFoxFarScale}
-            onChange={e=>setGateFoxFarScale(Number(e.target.value))}/>
-          <span>Near end stays 100%; fox shrinks smoothly as its paws move into the scene.
-            Shrinking keeps its feet on the cobblestones. This value is a preview setting.</span>
           <div className="z-gate-editor-buttons">
             <button type="button" disabled={!gateDirectionAssignments.length}
               onClick={async()=>{

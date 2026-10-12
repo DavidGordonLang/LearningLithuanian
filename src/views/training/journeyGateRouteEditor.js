@@ -138,3 +138,38 @@ export function gateFoxDepthScale(points,groundPoint,farScale=0.65) {
   const far=Number.isFinite(farScale)?clamp(farScale,0.4,1):0.65;
   return 1-(1-far)*eased;
 }
+
+
+// Saved fox sizes are keyed by arc-length marker (0..1000). Blend each saved
+// offset from the existing smooth depth curve to avoid any jump on the path.
+export function gateFoxScaleWithStops(points, progress, farScale=0.65, stops=[]) {
+  if(!points?.length)return 1;
+  const at=Math.round(clamp(Number(progress)||0,0,1)*1000);
+  const baseline=(marker)=>gateFoxDepthScale(points,gateRouteAt(points,marker/1000),farScale);
+  const base=baseline(at);
+  const keys=new Map();
+  for(const stop of Array.isArray(stops)?stops:[]){
+    if(Number.isInteger(stop?.at)&&stop.at>=0&&stop.at<=1000 &&
+       Number.isInteger(stop?.size)&&stop.size>=40&&stop.size<=100){
+      keys.set(stop.at,{at:stop.at,offset:stop.size/100-baseline(stop.at)});
+    }
+  }
+  if(!keys.has(0))keys.set(0,{at:0,offset:0});
+  if(!keys.has(1000))keys.set(1000,{at:1000,offset:0});
+  const sequence=[...keys.values()].sort((a,b)=>a.at-b.at);
+  const right=sequence.findIndex(item=>item.at>=at);
+  const after=sequence[Math.max(0,right)];
+  const before=sequence[Math.max(0,right-1)];
+  const t=after.at===before.at?0:(at-before.at)/(after.at-before.at);
+  return clamp(base+before.offset+(after.offset-before.offset)*t,0.4,1);
+}
+export function gateFoxSizePlan(points,farSize=65,stops=[]) {
+  return {farSizePercent:farSize,
+    adjustments:(Array.isArray(stops)?stops:[]).slice().sort((a,b)=>a.at-b.at)
+      .map(({at,size})=>{
+        const point=gateRouteAt(points,at/1000);
+        return {marker:at,progressPercent:at/10,
+          x:Math.round(point?.x||0),y:Math.round(point?.y||0),
+          section:(point?.segmentIndex??0)+1,sizePercent:size};
+      })};
+}
