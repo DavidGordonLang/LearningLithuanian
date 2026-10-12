@@ -6,7 +6,8 @@ import {FOX_ROUTE_WORLD_PX_PER_SECOND,foxRouteAdvance,foxRouteFrame,
 import {readFoxSizeDraft,saveFoxSizeDraft,
   FOX_APPROVED_FAR_SIZE,FOX_APPROVED_SIZE_STOPS} from "./foxSizeDraftStorage";
 import {readFoxLessonStopDraft,saveFoxLessonStopDraft,
-  foxLessonStopPlan,foxLessonStopOrderProblem} from "./foxLessonStopDraft";
+  foxLessonStopPlan,foxLessonStopOrderProblem,
+  foxLessonRouteAdvance,FOX_APPROVED_LESSON_STOPS} from "./foxLessonStopDraft";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
@@ -203,7 +204,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateFoxSizeCopyStatus, setGateFoxSizeCopyStatus] = useState("");
   const [gateLessonStops,setGateLessonStops] = useState(()=>
     readFoxLessonStopDraft(gateRouteJson(USER_TRACED_VILLAGE_ROUTE),
-      stops.map(stop=>stop.id)) ?? []);
+      stops.map(stop=>stop.id)) ?? FOX_APPROVED_LESSON_STOPS.map(stop=>({...stop})));
   const [gateSelectedLessonId,setGateSelectedLessonId] = useState(stops[0]?.id||"");
   const [gateLessonCopyStatus,setGateLessonCopyStatus] = useState("");
   const [gateDepthShowFox, setGateDepthShowFox] = useState(true);
@@ -216,6 +217,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateWalkPlaying, setGateWalkPlaying] = useState(true);
   const [gateRoutePlaying, setGateRoutePlaying] = useState(false);
   const [gateRoutePlaybackEnabled, setGateRoutePlaybackEnabled] = useState(false);
+  const [gateGuidedMode,setGateGuidedMode] = useState(false);
+  const [gateGuidedArrived,setGateGuidedArrived] = useState(false);
   const gateRouteProgressRef = useRef(0);
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
@@ -231,6 +234,16 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   useEffect(()=>{
     gateRouteProgressRef.current=gateMarkerProgress;
   },[gateMarkerProgress]);
+  const guidedNextIndex = stops.findIndex(stop=>!completed.has(stop.id));
+  const guidedNextLesson = guidedNextIndex<0 ? null : stops[guidedNextIndex];
+  const guidedNextStop = guidedNextLesson
+    ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===guidedNextLesson.id) : null;
+  const guidedDestination = guidedNextStop?.at ?? 1000;
+  const guidedDeparture = guidedNextIndex<0
+    ? FOX_APPROVED_LESSON_STOPS.at(-1)?.at ?? 0
+    : guidedNextIndex===0 ? 0 : FOX_APPROVED_LESSON_STOPS[guidedNextIndex-1]?.at ?? 0;
+  const guidedRouteMatches = gateRouteJson(gateRoutePoints)===
+    gateRouteJson(USER_TRACED_VILLAGE_ROUTE);
   useEffect(()=>{
     if(!editingGate || gateEditMode!=="preview" || !gateDepthShowFox ||
        !gateDepthAnimateFox || !gateRoutePlaying || gateRoutePoints.length<2 ||
@@ -240,17 +253,26 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       if(last===null)last=now;
       const seconds=Math.min(Math.max((now-last)/1000,0),.08);
       last=now;
-      const next=foxRouteAdvance(gateRoutePoints,gateRouteProgressRef.current,
-        seconds,FOX_ROUTE_WORLD_PX_PER_SECOND);
+      const result=gateGuidedMode
+        ? foxLessonRouteAdvance(gateRoutePoints,gateRouteProgressRef.current,
+            seconds,guidedDestination,FOX_ROUTE_WORLD_PX_PER_SECOND)
+        : {progress:foxRouteAdvance(gateRoutePoints,gateRouteProgressRef.current,
+            seconds,FOX_ROUTE_WORLD_PX_PER_SECOND),arrived:false};
+      const next=result.progress;
       gateRouteProgressRef.current=next;
       setGateMarkerProgress(next);
+      if(result.arrived && gateGuidedMode){
+        setGateGuidedArrived(true);
+        setGateRoutePlaying(false);
+        return;
+      }
       if(next>=1){setGateRoutePlaying(false);return;}
       raf=window.requestAnimationFrame(tick);
     };
     raf=window.requestAnimationFrame(tick);
     return ()=>window.cancelAnimationFrame(raf);
   },[editingGate,gateEditMode,gateDepthShowFox,gateDepthAnimateFox,
-     gateRoutePlaying,gateRoutePoints]);
+     gateRoutePlaying,gateRoutePoints,gateGuidedMode,guidedDestination]);
   const gateMarkerPoint = editingGate && gateEditMode==="preview"
     ? gateRouteAt(gateRoutePoints,gateMarkerProgress) : null;
   const gateSizeMarker = Math.round(gateMarkerProgress*1000);
@@ -268,6 +290,9 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const gateLessonExport = JSON.stringify(foxLessonStopPlan(gateRoutePoints,
     stops,gateLessonStops,FIRST_CONTACT_LANDMARKS),null,2);
   const saveLessonPositions = (positions) => {
+    setGateGuidedMode(false);
+    setGateGuidedArrived(false);
+    setGateRoutePlaying(false);
     setGateLessonStops(positions);
     saveFoxLessonStopDraft(gateRouteJson(gateRoutePoints),gateLessonIds,positions);
     setGateLessonCopyStatus("");
@@ -296,6 +321,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateSegmentDirections({});
     setGateRoutePlaying(false);
     setGateRoutePlaybackEnabled(false);
+    setGateGuidedMode(false);
+    setGateGuidedArrived(false);
     setGateFoxSizeStops([]);
     setGateFoxSizeDraft(null);
     setGateLessonStops([]);
@@ -344,7 +371,10 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateSegmentDirections({});
     setGateDirectionCopyStatus("");
     setGateLessonStops(readFoxLessonStopDraft(
-      gateRouteJson(USER_TRACED_VILLAGE_ROUTE),stops.map(stop=>stop.id)) ?? []);
+      gateRouteJson(USER_TRACED_VILLAGE_ROUTE),stops.map(stop=>stop.id)) ??
+        FOX_APPROVED_LESSON_STOPS.map(stop=>({...stop})));
+    setGateGuidedMode(false);
+    setGateGuidedArrived(false);
     setGateSelectedLessonId(stops[0]?.id||"");
     setGateLessonCopyStatus("");
     setGateWalkFrame(0);
@@ -547,7 +577,14 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             className="z-gate-depth-reference-fox" alt=""
             draggable={false} decoding="async"
             style={{opacity:gateDepthAnimateFox ? 0 : 1}}/>}
+          {gateDepthShowFox && gateDepthAnimateFox && gateGuidedMode &&
+            gateGuidedArrived && guidedNextLesson &&
+            <img src="/assets/journey/fox-idle.webp" alt="Fox stopped and facing you"
+              className="z-gate-depth-reference-fox z-fox-lesson-facing-still"
+              draggable={false} decoding="async"
+              style={{transform:"scale("+gateFoxScale+")"}}/>}
           {gateDepthShowFox && gateDepthAnimateFox &&
+            !(gateGuidedMode && gateGuidedArrived && guidedNextLesson) &&
             <FoxWalkSprite frame={gateRenderedFrame} facing={gateWalkFacing} scale={gateFoxScale}/>}
 
           <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
