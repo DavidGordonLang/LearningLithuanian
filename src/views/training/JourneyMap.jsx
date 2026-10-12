@@ -244,6 +244,11 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     : guidedNextIndex===0 ? 0 : FOX_APPROVED_LESSON_STOPS[guidedNextIndex-1]?.at ?? 0;
   const guidedRouteMatches = gateRouteJson(gateRoutePoints)===
     gateRouteJson(USER_TRACED_VILLAGE_ROUTE);
+  const guidedStopsMatch = !foxLessonStopOrderProblem(gateLessonStops,
+      stops.map(stop=>stop.id)) &&
+    FOX_APPROVED_LESSON_STOPS.length===gateLessonStops.length &&
+    FOX_APPROVED_LESSON_STOPS.every(approved=>
+      gateLessonStops.some(item=>item.lessonId===approved.lessonId && item.at===approved.at));
   useEffect(()=>{
     if(!editingGate || gateEditMode!=="preview" || !gateDepthShowFox ||
        !gateDepthAnimateFox || !gateRoutePlaying || gateRoutePoints.length<2 ||
@@ -639,6 +644,59 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           {mode[0].toUpperCase()+mode.slice(1)}</button>)}
       </div>
       {gateEditMode==="preview" && <div className="z-gate-editor-preview">
+        <div className="z-gate-size-workbench" role="group"
+          aria-label="Guided lesson fox walk preview">
+          <strong>Guided lesson walk · approved lesson stops</strong>
+          <span>After completing a lesson and returning to this map, restart this proof.
+            The fox starts from the previous completed stop. Arrival alone never awards progress.
+            The path after Town Hall leads towards a future map.</span>
+          <div className="z-gate-editor-buttons">
+            <button type="button"
+              disabled={!guidedRouteMatches || !guidedStopsMatch || gateRoutePlaying}
+              onClick={()=>{
+                const start=guidedDeparture/1000;
+                setGateRoutePlaying(false);
+                setGateGuidedMode(true);
+                setGateGuidedArrived(false);
+                setGateDepthShowFox(true);
+                setGateDepthAnimateFox(true);
+                setGateRoutePlaybackEnabled(true);
+                setGateWalkPlaying(false);
+                setGateFoxSizeDraft(null);
+                gateRouteProgressRef.current=start;
+                setGateMarkerProgress(start);
+              }}>Start guided lesson walk</button>
+            <button type="button" disabled={!gateGuidedMode || gateRoutePlaying ||
+                gateGuidedArrived || !guidedRouteMatches || !guidedStopsMatch}
+              onClick={()=>{
+                setGateWalkPlaying(false);
+                setGateRoutePlaybackEnabled(true);
+                setGateRoutePlaying(true);
+              }}>{guidedNextLesson?"Walk to lesson":"Walk towards next map"}</button>
+            <button type="button" disabled={!gateGuidedMode || !gateRoutePlaying}
+              onClick={()=>setGateRoutePlaying(false)}>Pause guided walk</button>
+            {gateGuidedMode && gateGuidedArrived && guidedNextLesson &&
+              <button type="button" onClick={()=>onOpenLesson?.(guidedNextLesson.id)}>
+                Open {guidedNextLesson.title}
+              </button>}
+            <button type="button" disabled={!gateGuidedMode} onClick={()=>{
+              setGateRoutePlaying(false);
+              setGateGuidedMode(false);
+              setGateGuidedArrived(false);
+            }}>Return to free walk</button>
+          </div>
+          <span role="status">{!guidedRouteMatches || !guidedStopsMatch
+            ? "Restore the approved 27-point route and all five approved stop markers to try guided walking."
+            : gateGuidedMode && gateRoutePlaying
+              ? "Fox walking to "+(guidedNextLesson?.title||"future map boundary")
+              : gateGuidedMode && gateGuidedArrived
+                ? (guidedNextLesson
+                  ? "Fox facing the learner at "+guidedNextLesson.title+". Open the lesson to continue."
+                  : "End of first village route. Next map not built yet.")
+                : gateGuidedMode
+                  ? "Ready at previous stop. Press Walk to continue."
+                  : "Guided walking preview ready."}</span>
+        </div>
         {gateDepthAnimateFox && <div className="z-gate-editor-buttons"
           role="group" aria-label="Automated fox route playback">
           <button type="button" disabled={gateRoutePlaying || gateRoutePoints.length<2}
