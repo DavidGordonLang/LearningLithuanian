@@ -36,8 +36,8 @@ const FIRST_CONTACT_TILES = [
   "/assets/journey/first-contact-greeting-tile-4.avif",
 ];
 const FIRST_CONTACT_POINTS = [
-  { x: 183, y: 925 }, // Village Gate: Hello and Goodbye
-  { x: 617, y: 638 }, // Fountain: Yes, No, Please, Thank You
+  { x: 183, y: 880 }, // Village Gate: marker lifted above first-stop fox
+  { x: 575, y: 725 }, // Fountain: lower, at foot of fountain near dry cobbles
   { x: 254, y: 526 }, // Bakery: Sorry and Excuse Me
   { x: 654, y: 325 }, // Lantern Corner: Polite Mini Exchanges
   { x: 310, y: 204 }, // Town Hall: module checkpoint
@@ -615,7 +615,9 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           const done=completed.has(stop.id), here=stop.id===targetId;
           const available=done||here;
           const hideForGateProof=foxPreviewEnabled && showMapDevTools && (editingGate || (i===0 && !gateShowMarker));
-          return <button type="button" key={stop.id} disabled={!available}
+          // Once greeted, the first lesson pin should not cover the fox.
+          const hideCompletedFirst=foxPreviewEnabled && !showMapDevTools && i===0 && done;
+          return hideCompletedFirst ? null : <button type="button" key={stop.id} disabled={!available}
             aria-hidden={hideForGateProof ? true : undefined}
             onClick={()=>onOpenLesson?.(stop.id)}
             className={"z-local-map-stop "+(done?"is-done ":"")+(here?"is-current ":"")+
