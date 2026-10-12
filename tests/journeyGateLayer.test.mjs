@@ -18,16 +18,17 @@ test("the gate frame proof preserves the same three grounded anchor positions",(
   assert.match(map,/GATE_ROUTE_POINTS.map/);
 });
 
-test("cleaned Canva arch overlays fox using full right pier with transparent PNG",()=>{
-  const cutout=readFileSync(new URL("../public/assets/journey/gate-foreground-cleaned.png",import.meta.url));
+test("Fixed arch 2 transparently overlays fox at unchanged full-scene coordinates",()=>{
+  const cutout=readFileSync(new URL("../public/assets/journey/gate-foreground-fixed-arch-2.png",import.meta.url));
   assert.deepEqual([...cutout.subarray(0,8)],[137,80,78,71,13,10,26,10],"valid PNG signature");
-  assert.equal(cutout.readUInt32BE(16),370);
-  assert.equal(cutout.readUInt32BE(20),538);
-  assert.equal(cutout[25],6,"RGBA image supports alpha");
+  assert.equal(cutout.readUInt32BE(16),448);
+  assert.equal(cutout.readUInt32BE(20),600);
+  assert.equal(cutout[25],3,"indexed PNG with transparency");
+  assert.ok(cutout.includes(Buffer.from("tRNS")),"transparent palette is embedded");
   assert.ok(cutout.length>10000,"asset has detailed masonry artwork");
   assert.match(map,/const GATE_FOREGROUND_CUTOUT = \{/);
-  assert.match(map,/gate-foreground-cleaned\.png/);
-  for(const token of ["left: 104","top: 731","width: 226","height: 329"]){
+  assert.match(map,/gate-foreground-fixed-arch-2\.png/);
+  for(const token of ["left: 0","top: 0","width: WIDTH","height: HEIGHT"]){
     assert.ok(map.includes(token),token);
   }
   assert.match(map,/foxPreviewEnabled && \(!editingGate \|\| gateEditMode==="preview"\)/);
@@ -95,6 +96,6 @@ test("traced village preview shows feet marker, keeps fox off, and preserves acc
   assert.match(map,/setGateMarkerProgress\(Number\(e.target.value\)\/1000\)/);
   assert.match(map,/gateMarkerPoint\|\|gateRoutePoints.at\(-1\)/);
   assert.match(map,/gateEditorEnabled/);
-  assert.match(map,/gate-foreground-cleaned\.png/);
+  assert.match(map,/gate-foreground-fixed-arch-2\.png/);
   assert.doesNotMatch(map,/requestAnimationFrame/);
 });

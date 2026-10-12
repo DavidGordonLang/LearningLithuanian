@@ -59,11 +59,12 @@ const GATE_TEST_DIMENSIONS = {
   passage: { width: 82, height: 112 },
   emerge: { width: 78, height: 106 },
 };
-// Cleaned Canva arch with alpha transparency over the background scene.
-// The crown and full RIGHT pier occlude fox; LEFT pier stays in base art.
+// Fixed arch 2: transparent Canva overlay aligned to the full painted map.
+// World-canvas alignment retains the roof/right pier occlusion without
+// moving any route waypoint or changing fox depth layering.
 const GATE_FOREGROUND_CUTOUT = {
-  src: "/assets/journey/gate-foreground-cleaned.png",
-  left: 104, top: 731, width: 226, height: 329,
+  src: "/assets/journey/gate-foreground-fixed-arch-2.png",
+  left: 0, top: 0, width: WIDTH, height: HEIGHT,
 };
 // Two independently drawn fox idle candidates. Other companions and all
 // non-illustrated modules retain their previously approved idle artwork.

@@ -734,7 +734,7 @@ test("Gate preview is static and preserves learning progress and map navigation"
   assert.match(map, /emerge: \{ x: 450, y: 832 \}/);
   assert.match(map, /const GATE_FOREGROUND_CUTOUT = \{/);
   assert.match(map, /className="z-gate-foreground-cutout"/);
-  assert.match(map, /gate-foreground-cleaned\.png/);
+  assert.match(map, /gate-foreground-fixed-arch-2\.png/);
   assert.doesNotMatch(map, /GATE_OCCLUSION_POLYGONS/);
   assert.match(map, /className="z-gate-foot-shadow"/);
   assert.match(map, /setGateProgress\(GATE_STAGE_PROGRESS\[stage\]\)/);
