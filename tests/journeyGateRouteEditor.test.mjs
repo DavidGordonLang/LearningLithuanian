@@ -29,15 +29,17 @@ test("add, insert, move and copy preserve order without affecting learning data"
 
 test("Android-authored full village path is retained verbatim as a draft",()=>{
   const points=USER_TRACED_VILLAGE_ROUTE;
-  assert.equal(points.length,26);
+  assert.equal(points.length,27);
   assert.deepEqual(points[0],{x:143,y:1070});
   assert.deepEqual(points[10],{x:375,y:636});
-  assert.deepEqual(points[25],{x:455,y:182});
+  assert.deepEqual(points[14],{x:632,y:513});
+  assert.deepEqual(points[15],{x:588,y:486});
+  assert.deepEqual(points[26],{x:455,y:182});
   points.forEach(p=>{
     assert.ok(Number.isInteger(p.x)&&p.x>=0&&p.x<=850);
     assert.ok(Number.isInteger(p.y)&&p.y>=0&&p.y<=1120);
   });
-  assert.equal(new Set(points.map(p=>p.x+","+p.y)).size,26);
+  assert.equal(new Set(points.map(p=>p.x+","+p.y)).size,27);
 });
 test("ground marker stays on the path and moves by cumulative distance",()=>{
   const path=USER_TRACED_VILLAGE_ROUTE;

@@ -1480,3 +1480,15 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 .z-gate-editor-preview label{font-weight:800}
 .z-gate-editor-preview span{font-size:12px}
 .z-gate-preview-marker{filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+
+
+/* Gate depth-only QA: original static fox at paw anchor, behind accepted cutout z=4.
+   No new assets, animation, camera tracking or changes to the foreground PNG. */
+.z-gate-depth-reference{position:absolute;z-index:2;pointer-events:none;
+  width:82px;height:112px;transform:translate(-50%,-100%)}
+.z-gate-depth-reference-fox{position:absolute;inset:0;width:82px;height:112px;
+  object-fit:contain;pointer-events:none}
+.z-gate-depth-paw-dot{position:absolute;left:50%;bottom:0;
+  width:17px;height:10px;transform:translate(-50%,50%);
+  border:2px solid #fff2b8;border-radius:50%;background:#c95e24;
+  box-shadow:0 1px 3px rgba(0,0,0,.5)}

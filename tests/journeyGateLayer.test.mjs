@@ -30,7 +30,8 @@ test("cleaned Canva arch overlays fox using full right pier with transparent PNG
   for(const token of ["left: 104","top: 731","width: 226","height: 329"]){
     assert.ok(map.includes(token),token);
   }
-  assert.match(map,/foxPreviewEnabled && !editingGate && <img className="z-gate-foreground-cutout"/);
+  assert.match(map,/foxPreviewEnabled && \(!editingGate \|\| gateEditMode==="preview"\)/);
+  assert.match(map,/className="z-gate-foreground-cutout"/);
   assert.match(map,/src=\{GATE_FOREGROUND_CUTOUT\.src\}/);
   assert.doesNotMatch(map,/z-gate-masonry-refinement|clipPath=|<svg className="z-gate-foreground-cutout"/);
   assert.match(css,/\.z-gate-foreground-cutout\{position:absolute;z-index:4;pointer-events:none/);
@@ -81,7 +82,14 @@ test("route editor stays isolated to the illustrated fox proof and does not save
 test("traced village preview shows feet marker, keeps fox off, and preserves accepted gate art",()=>{
   assert.match(map,/USER_TRACED_VILLAGE_ROUTE/);
   assert.match(map,/gateRoutePreviewPoint\(gateRoutePoints,gateMarkerProgress\)/);
-  assert.match(map,/gateMarkerPoint && <g className="z-gate-preview-marker"/);
+  assert.match(map,/gateMarkerPoint && <span className="z-gate-depth-reference"/);
+  assert.match(map,/className="z-gate-depth-reference-fox"/);
+  assert.match(map,/className="z-gate-depth-paw-dot"/);
+  assert.match(map,/gateDepthShowFox && <img src=\{FOX_DIRECTIONAL_PREVIEW\["up-right"\]\}/);
+  assert.match(map,/gateDepthShowGuide/);
+  assert.match(css,/\.z-gate-depth-reference\{position:absolute;z-index:2/);
+  assert.match(css,/\.z-gate-foreground-cutout\{position:absolute;z-index:4/);
+  assert.match(css,/\.z-gate-route-editor-art\{position:absolute;inset:0;z-index:7/);
   assert.match(map,/aria-label="Scrub ground marker on traced route"/);
   assert.match(map,/gateEditMode!=="preview" && gateRoutePoints.map/);
   assert.match(map,/setGateMarkerProgress\(Number\(e.target.value\)\/1000\)/);

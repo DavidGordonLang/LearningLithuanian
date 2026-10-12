@@ -183,6 +183,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateSelectedPoint, setGateSelectedPoint] = useState(null);
   const [gateCopyStatus, setGateCopyStatus] = useState("");
   const [gateMarkerProgress, setGateMarkerProgress] = useState(0);
+  const [gateDepthShowFox, setGateDepthShowFox] = useState(true);
+  const [gateDepthShowGuide, setGateDepthShowGuide] = useState(false);
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
   const gateMarkerPoint = editingGate && gateEditMode==="preview"
@@ -226,6 +228,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateEditMode("preview");
     setGateRoutePoints(USER_TRACED_VILLAGE_ROUTE.map(p=>({...p})));
     setGateMarkerProgress(0);
+    setGateDepthShowFox(true);
+    setGateDepthShowGuide(false);
     setGateRouteHistory([]);
     setGateSelectedPoint(null);
     setGateCopyStatus("");
@@ -417,16 +421,26 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
                   "--fox-jaunt-squash":gateFrame?.squash}}/>
             : <FullBodyCompanion companion={companion}/>}
         </span>}
-        {foxPreviewEnabled && !editingGate && <img className="z-gate-foreground-cutout"
+        {gateMarkerPoint && <span className="z-gate-depth-reference"
+          style={{left:gateMarkerPoint.x,top:gateMarkerPoint.y}}
+          aria-label="Static fox reference and paws at ground marker">
+          {gateDepthShowFox && <img src={FOX_DIRECTIONAL_PREVIEW["up-right"]}
+            className="z-gate-depth-reference-fox" alt=""
+            draggable={false} decoding="async"/>}
+          <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
+        </span>}
+        {foxPreviewEnabled && (!editingGate || gateEditMode==="preview") &&
+          <img className="z-gate-foreground-cutout"
           src={GATE_FOREGROUND_CUTOUT.src}
           width={GATE_FOREGROUND_CUTOUT.width} height={GATE_FOREGROUND_CUTOUT.height}
           style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top}}
           alt="" aria-hidden="true" draggable={false} decoding="async"/>}
         {editingGate && <svg className="z-gate-route-editor-art" viewBox="0 0 850 1120"
           width={WIDTH} height={HEIGHT} aria-label="Editable gate walking route">
-          <polyline points={gateRoutePoints.map(p=>p.x+","+p.y).join(" ")}
-            fill="none" stroke="#fde68a" strokeWidth={Math.max(3,3/scale)}
-            strokeLinejoin="round" strokeLinecap="round"/>
+          {(gateEditMode!=="preview" || gateDepthShowGuide) &&
+            <polyline points={gateRoutePoints.map(p=>p.x+","+p.y).join(" ")}
+              fill="none" stroke="#fde68a" strokeWidth={Math.max(3,3/scale)}
+              strokeLinejoin="round" strokeLinecap="round"/>}
           {gateEditMode!=="preview" && gateRoutePoints.map((p,i)=><g key={i}
             data-gate-point-index={i} className="z-gate-route-handle"
             aria-label={"Route point "+(i+1)}>
@@ -437,13 +451,6 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
               fontSize={Math.max(13,14/scale)} fontWeight="bold" textAnchor="middle"
               pointerEvents="none">{i+1}</text>
           </g>)}
-          {gateMarkerPoint && <g className="z-gate-preview-marker"
-            pointerEvents="none" aria-label="Foot-contact test marker">
-            <circle cx={gateMarkerPoint.x} cy={gateMarkerPoint.y} r={15}
-              fill="#163f35" stroke="#fff8c8" strokeWidth="3"/>
-            <circle cx={gateMarkerPoint.x} cy={gateMarkerPoint.y} r={6}
-              fill="#ffc94c"/>
-          </g>}
         </svg>}
       </div>
       <div className="z-local-map-top-label" aria-hidden="true">
@@ -458,7 +465,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     {editingGate && <div className="z-gate-editor-controls" role="group"
       aria-label="Gate visual path editor">
       <strong>Village route draft · {gateRoutePoints.length} points</strong>
-      <span>Your 26-point route is loaded as a candidate. Preview moves a ground marker (not the fox) along the line. Pan/Preview let you drag the map; Move drags points; Insert adds a bend. Pinch to zoom.</span>
+      <span>Your updated 27-point route is loaded. Preview checks the existing STATIC fox and foot marker behind the approved gate foreground; this is not a walk animation. Pan/Preview allow dragging, pinch to zoom, and Move/Insert adjust the route.</span>
       <div className="z-gate-editor-buttons">
         {["preview","pan","add","move","insert"].map(mode=><button type="button" key={mode}
           aria-pressed={gateEditMode===mode} onClick={()=>setGateEditMode(mode)}>
@@ -473,6 +480,17 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         <span>{gateMarkerPoint
           ? "Paws at "+Math.round(gateMarkerPoint.x)+", "+Math.round(gateMarkerPoint.y)
           : "Add points to preview"} · Tap Find me to centre the marker</span>
+        <div className="z-gate-editor-buttons">
+          <button type="button" aria-pressed={gateDepthShowFox}
+            onClick={()=>setGateDepthShowFox(v=>!v)}>
+            {gateDepthShowFox?"Hide static fox":"Show static fox"}
+          </button>
+          <button type="button" aria-pressed={gateDepthShowGuide}
+            onClick={()=>setGateDepthShowGuide(v=>!v)}>
+            {gateDepthShowGuide?"Hide route guide":"Show route guide"}
+          </button>
+        </div>
+        <span>Fox and paw marker are below the arch foreground. Route guide, when shown, stays above it for editing.</span>
       </div>}
       <div className="z-gate-editor-buttons">
         <button type="button" disabled={!gateRouteHistory.length} onClick={()=>{
