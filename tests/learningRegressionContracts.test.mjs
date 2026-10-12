@@ -741,6 +741,7 @@ test("Gate preview is static and preserves learning progress and map navigation"
   assert.match(map, /onOpenLesson\?\.\(stop.id\)/);
   assert.match(css, /\.z-gate-foreground-cutout\{position:absolute/);
   assert.match(css, /\.z-local-map-world \.z-local-map-stop\{z-index:6\}/);
-  assert.doesNotMatch(map, /requestAnimationFrame|followFoxRoute|setFoxTravelPoint|foxFrame/);
+  assert.match(map, /requestAnimationFrame/);
+  assert.doesNotMatch(map, /followFoxRoute|setFoxTravelPoint/);
   assert.doesNotMatch(map, /awardXp|saveLesson|markComplete|localStorage\.setItem/);
 });

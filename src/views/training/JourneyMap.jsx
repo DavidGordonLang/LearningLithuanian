@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
+import {FOX_ROUTE_WORLD_PX_PER_SECOND,foxRouteAdvance,foxRouteFrame,
+  foxRouteTotalDistance} from "./journeyFoxRoutePlayback";
 import {readFoxSizeDraft,saveFoxSizeDraft,
   FOX_APPROVED_FAR_SIZE,FOX_APPROVED_SIZE_STOPS} from "./foxSizeDraftStorage";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
@@ -205,15 +207,43 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateDirectionCopyStatus, setGateDirectionCopyStatus] = useState("");
   const [gateWalkFrame, setGateWalkFrame] = useState(0);
   const [gateWalkPlaying, setGateWalkPlaying] = useState(true);
+  const [gateRoutePlaying, setGateRoutePlaying] = useState(false);
+  const [gateRoutePlaybackEnabled, setGateRoutePlaybackEnabled] = useState(false);
+  const gateRouteProgressRef = useRef(0);
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
   useEffect(() => {
     if (!editingGate || gateEditMode !== "preview" ||
         !gateDepthShowFox || !gateDepthAnimateFox || !gateWalkPlaying ||
+        gateRoutePlaybackEnabled ||
         window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
     const timer = window.setInterval(() => setGateWalkFrame(f => (f + 1) % 8), 140);
     return () => window.clearInterval(timer);
-  }, [editingGate, gateEditMode, gateDepthShowFox, gateDepthAnimateFox, gateWalkPlaying]);
+  }, [editingGate, gateEditMode, gateDepthShowFox, gateDepthAnimateFox,
+      gateWalkPlaying, gateRoutePlaybackEnabled]);
+  useEffect(()=>{
+    gateRouteProgressRef.current=gateMarkerProgress;
+  },[gateMarkerProgress]);
+  useEffect(()=>{
+    if(!editingGate || gateEditMode!=="preview" || !gateDepthShowFox ||
+       !gateDepthAnimateFox || !gateRoutePlaying || gateRoutePoints.length<2 ||
+       !foxRouteTotalDistance(gateRoutePoints)) return;
+    let raf=0,last=null;
+    const tick=(now)=>{
+      if(last===null)last=now;
+      const seconds=Math.min(Math.max((now-last)/1000,0),.08);
+      last=now;
+      const next=foxRouteAdvance(gateRoutePoints,gateRouteProgressRef.current,
+        seconds,FOX_ROUTE_WORLD_PX_PER_SECOND);
+      gateRouteProgressRef.current=next;
+      setGateMarkerProgress(next);
+      if(next>=1){setGateRoutePlaying(false);return;}
+      raf=window.requestAnimationFrame(tick);
+    };
+    raf=window.requestAnimationFrame(tick);
+    return ()=>window.cancelAnimationFrame(raf);
+  },[editingGate,gateEditMode,gateDepthShowFox,gateDepthAnimateFox,
+     gateRoutePlaying,gateRoutePoints]);
   const gateMarkerPoint = editingGate && gateEditMode==="preview"
     ? gateRouteAt(gateRoutePoints,gateMarkerProgress) : null;
   const gateSizeMarker = Math.round(gateMarkerProgress*1000);
@@ -231,15 +261,23 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const gateDirectionAssignments = gateDirectionPlan(gateRoutePoints,gateSegmentDirections);
   const gateSection = gateDirectionAssignments[gateSectionIndex];
   const gateWalkFacing = gateSection?.direction || "up-left";
+  const gateRenderedFrame = gateRoutePlaybackEnabled
+    ? foxRouteFrame(gateRoutePoints,gateMarkerProgress) : gateWalkFrame;
   const gateDirectionExport = JSON.stringify(gateDirectionAssignments);
   const seekGateSection = (index) => {
-    setGateMarkerProgress(gateSegmentMidpointProgress(gateRoutePoints,index));
+    setGateRoutePlaying(false);
+    setGateRoutePlaybackEnabled(true);
+    const next=gateSegmentMidpointProgress(gateRoutePoints,index);
+    gateRouteProgressRef.current=next;
+    setGateMarkerProgress(next);
     setGateFoxSizeDraft(null);
     setGateDirectionCopyStatus("");
   };
   const checkpointRoute = () => {
     setGateRouteHistory(h=>[...h.slice(-29),gateRoutePoints.map(p=>({...p}))]);
     setGateSegmentDirections({});
+    setGateRoutePlaying(false);
+    setGateRoutePlaybackEnabled(false);
     setGateFoxSizeStops([]);
     setGateFoxSizeDraft(null);
     setGateDirectionCopyStatus("");
@@ -486,7 +524,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             draggable={false} decoding="async"
             style={{opacity:gateDepthAnimateFox ? 0 : 1}}/>}
           {gateDepthShowFox && gateDepthAnimateFox &&
-            <FoxWalkSprite frame={gateWalkFrame} facing={gateWalkFacing} scale={gateFoxScale}/>}
+            <FoxWalkSprite frame={gateRenderedFrame} facing={gateWalkFacing} scale={gateFoxScale}/>}
 
           <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
         </span>}
@@ -536,15 +574,43 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
       <span>Your updated 27-point route is loaded. Preview checks the existing STATIC fox and foot marker behind the approved gate foreground; this is not a walk animation. Pan/Preview allow dragging, pinch to zoom, and Move/Insert adjust the route.</span>
       <div className="z-gate-editor-buttons">
         {["preview","pan","add","move","insert"].map(mode=><button type="button" key={mode}
-          aria-pressed={gateEditMode===mode} onClick={()=>setGateEditMode(mode)}>
+          aria-pressed={gateEditMode===mode} onClick={()=>{setGateRoutePlaying(false);setGateEditMode(mode)}}>
           {mode[0].toUpperCase()+mode.slice(1)}</button>)}
       </div>
       {gateEditMode==="preview" && <div className="z-gate-editor-preview">
+        {gateDepthAnimateFox && <div className="z-gate-editor-buttons"
+          role="group" aria-label="Automated fox route playback">
+          <button type="button" disabled={gateRoutePlaying || gateRoutePoints.length<2}
+            onClick={()=>{
+              const start=gateMarkerProgress>=1?0:gateMarkerProgress;
+              gateRouteProgressRef.current=start;
+              setGateMarkerProgress(start);
+              setGateWalkPlaying(false);
+              setGateRoutePlaybackEnabled(true);
+              setGateFoxSizeDraft(null);
+              setGateRoutePlaying(true);
+            }}>Play route</button>
+          <button type="button" disabled={!gateRoutePlaying}
+            onClick={()=>setGateRoutePlaying(false)}>Pause route</button>
+          <button type="button" onClick={()=>{
+            setGateRoutePlaying(false);
+            setGateRoutePlaybackEnabled(true);
+            setGateWalkPlaying(false);
+            gateRouteProgressRef.current=0;
+            setGateMarkerProgress(0);
+            setGateFoxSizeDraft(null);
+          }}>Restart route</button>
+          <span role="status">{gateRoutePlaying
+            ? "Walking the route"
+            : gateRoutePlaybackEnabled
+              ? (gateMarkerProgress>=1 ? "Route finished" : "Route paused")
+              : "Route ready"}</span>
+        </div>}
         <label htmlFor="gate-route-marker">Ground marker · {Math.round(gateMarkerProgress*100)}%</label>
         <input id="gate-route-marker" type="range" min="0" max="1000" step="1"
           aria-label="Scrub ground marker on traced route"
           value={Math.round(gateMarkerProgress*1000)}
-          onChange={e=>{setGateMarkerProgress(Number(e.target.value)/1000);
+          onChange={e=>{setGateRoutePlaying(false);setGateRoutePlaybackEnabled(true);gateRouteProgressRef.current=Number(e.target.value)/1000;setGateMarkerProgress(gateRouteProgressRef.current);
             setGateFoxSizeDraft(null);setGateFoxSizeCopyStatus("");}}/>
         {gateDepthAnimateFox && <div className="z-gate-size-workbench">
           <label htmlFor="gate-fox-size-here">
@@ -609,7 +675,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         </div>}
         <div className="z-gate-editor-buttons">
           <button type="button" aria-pressed={gateDepthShowFox}
-            onClick={()=>setGateDepthShowFox(v=>!v)}>
+            onClick={()=>{setGateRoutePlaying(false);setGateDepthShowFox(v=>!v);}}>
             {gateDepthShowFox?"Hide static fox":"Show static fox"}
           </button>
           <button type="button" aria-pressed={gateDepthShowGuide}
@@ -620,6 +686,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         <div className="z-gate-editor-buttons" role="group" aria-label="Fixed-position fox animation proof">
           <button type="button" aria-pressed={gateDepthAnimateFox}
             onClick={() => {
+              setGateRoutePlaying(false);
+              setGateRoutePlaybackEnabled(false);
               setGateDepthAnimateFox(v=>!v);
               setGateWalkPlaying(true);
               setGateWalkFrame(0);
@@ -646,6 +714,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             <button type="button" aria-label={gateWalkPlaying?"Pause fox walk":"Play fox walk"}
               onClick={()=>setGateWalkPlaying(p=>!p)}>{gateWalkPlaying?"Pause":"Play"}</button>
             <button type="button" aria-label="Next fox walk pose" onClick={()=>{
+              setGateRoutePlaying(false);
+              setGateRoutePlaybackEnabled(false);
               setGateWalkPlaying(false);
               setGateWalkFrame(f=>(f+1)%8);
             }}>Next pose</button>
@@ -668,7 +738,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           {gateDirectionCopyStatus && <span role="status">{gateDirectionCopyStatus}</span>}
         </div>}
         <span>{gateDepthAnimateFox
-          ? "Assign each section, then copy the direction plan for review. Fox stays at the marker; no timed route playback. Manual overrides are cleared if you edit route geometry."
+          ? "Route proof: Play route walks all 27 points at a steady world-space speed, changes heading and perspective and stops at the final point. The camera stays fixed. Lesson-landmark stops are the next stage and are not activated here."
           : "Fox and paw marker are below the arch foreground. Route guide, when shown, stays above it for editing."}</span>
       </div>}
       <div className="z-gate-editor-buttons">

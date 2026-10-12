@@ -13,7 +13,8 @@ test("the gate frame proof preserves the same three grounded anchor positions",(
     'A · Approach','B · Under arch','C · Emerge'
   ]) assert.ok(map.includes(text),text);
   assert.match(map,/setGateProgress\(GATE_STAGE_PROGRESS\[stage\]\)/);
-  assert.doesNotMatch(map,/requestAnimationFrame|followFoxRoute/);
+  assert.match(map,/requestAnimationFrame/);
+  assert.doesNotMatch(map,/followFoxRoute/);
   assert.match(map,/aria-label="Scrub fox through gate"/);
   assert.match(map,/GATE_ROUTE_POINTS.map/);
 });
@@ -96,9 +97,9 @@ test("traced village preview shows feet marker, keeps fox off, and preserves acc
   assert.match(css,/\.z-gate-route-editor-art\{position:absolute;inset:0;z-index:7/);
   assert.match(map,/aria-label="Scrub ground marker on traced route"/);
   assert.match(map,/gateEditMode!=="preview" && gateRoutePoints.map/);
-  assert.match(map,/setGateMarkerProgress\(Number\(e.target.value\)\/1000\)/);
+  assert.match(map,/setGateMarkerProgress\(gateRouteProgressRef.current\)/);
   assert.match(map,/gateMarkerPoint\|\|gateRoutePoints.at\(-1\)/);
   assert.match(map,/gateEditorEnabled/);
   assert.match(map,/gate-foreground-fixed-arch-2-mask\.png/);
-  assert.doesNotMatch(map,/requestAnimationFrame/);
+  assert.match(map,/requestAnimationFrame/);
 });
