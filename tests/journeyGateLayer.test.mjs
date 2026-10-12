@@ -67,7 +67,7 @@ test("hideable gate marker reveals occlusion without altering learner progress",
 
 test("route editor stays isolated to the illustrated fox proof and does not save learning progress",()=>{
   assert.match(map,/const editingGate = illustrated && companion\?\.id === "fox" && gateEditorEnabled/);
-  assert.match(map,/const \[gateRoutePoints, setGateRoutePoints\] = useState\(\[\]\)/);
+  assert.match(map,/const \[gateRoutePoints, setGateRoutePoints\] = useState\(/);
   assert.match(map,/aria-label="Gate visual path editor"/);
   assert.match(map,/aria-label="Route coordinates"/);
   assert.match(map,/gateInsertPoint\(points,world,edit.mode\)/);
@@ -76,4 +76,17 @@ test("route editor stays isolated to the illustrated fox proof and does not save
   assert.match(map,/setGateRoutePoints\(\[\]\)/);
   assert.match(map,/onOpenLesson\?\.\(stop.id\)/);
   assert.doesNotMatch(map,/localStorage\.setItem|awardXp|markComplete/);
+});
+
+test("traced village preview shows feet marker, keeps fox off, and preserves accepted gate art",()=>{
+  assert.match(map,/USER_TRACED_VILLAGE_ROUTE/);
+  assert.match(map,/gateRoutePreviewPoint\(gateRoutePoints,gateMarkerProgress\)/);
+  assert.match(map,/gateMarkerPoint && <g className="z-gate-preview-marker"/);
+  assert.match(map,/aria-label="Scrub ground marker on traced route"/);
+  assert.match(map,/gateEditMode!=="preview" && gateRoutePoints.map/);
+  assert.match(map,/setGateMarkerProgress\(Number\(e.target.value\)\/1000\)/);
+  assert.match(map,/gateMarkerPoint\|\|gateRoutePoints.at\(-1\)/);
+  assert.match(map,/gateEditorEnabled/);
+  assert.match(map,/gate-foreground-cleaned\.png/);
+  assert.doesNotMatch(map,/requestAnimationFrame/);
 });

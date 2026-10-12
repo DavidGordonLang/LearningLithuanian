@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  gateWorldPoint,gateClosestSegment,gateInsertPoint,gateMovePoint,gateRouteJson
+  gateWorldPoint,gateClosestSegment,gateInsertPoint,gateMovePoint,gateRouteJson,
+  USER_TRACED_VILLAGE_ROUTE,gateRoutePreviewPoint
 } from "../src/views/training/journeyGateRouteEditor.js";
 
 test("pointer translation respects pan, zoom and bounds on mobile",()=>{
@@ -23,4 +24,42 @@ test("add, insert, move and copy preserve order without affecting learning data"
   assert.deepEqual(draft,[a,c],"draft is immutable");
   assert.deepEqual(JSON.parse(gateRouteJson(inserted)),inserted);
   assert.equal(gateClosestSegment([],b),0);
+});
+
+
+test("Android-authored full village path is retained verbatim as a draft",()=>{
+  const points=USER_TRACED_VILLAGE_ROUTE;
+  assert.equal(points.length,26);
+  assert.deepEqual(points[0],{x:143,y:1070});
+  assert.deepEqual(points[10],{x:375,y:636});
+  assert.deepEqual(points[25],{x:455,y:182});
+  points.forEach(p=>{
+    assert.ok(Number.isInteger(p.x)&&p.x>=0&&p.x<=850);
+    assert.ok(Number.isInteger(p.y)&&p.y>=0&&p.y<=1120);
+  });
+  assert.equal(new Set(points.map(p=>p.x+","+p.y)).size,26);
+});
+test("ground marker stays on the path and moves by cumulative distance",()=>{
+  const path=USER_TRACED_VILLAGE_ROUTE;
+  assert.deepEqual(gateRoutePreviewPoint(path,0),path[0]);
+  assert.deepEqual(gateRoutePreviewPoint(path,1),path.at(-1));
+  assert.deepEqual(gateRoutePreviewPoint(path,-1),path[0]);
+  assert.deepEqual(gateRoutePreviewPoint(path,9),path.at(-1));
+  assert.equal(gateRoutePreviewPoint([],0),null);
+  assert.deepEqual(gateRoutePreviewPoint([{x:1,y:2}],.5),{x:1,y:2});
+  const segLen=path.slice(1).map((p,i)=>Math.hypot(p.x-path[i].x,p.y-path[i].y));
+  const total=segLen.reduce((a,b)=>a+b,0);
+  let walked=0;
+  path.forEach((node,i)=>{
+    if(i)walked+=segLen[i-1];
+    const at=gateRoutePreviewPoint(path,walked/total);
+    assert.ok(Math.hypot(node.x-at.x,node.y-at.y)<1e-8,
+      "authored node "+i+" must be exactly reachable");
+  });
+  let previous=path[0];
+  for(let i=1;i<=200;i++){
+    const p=gateRoutePreviewPoint(path,i/200);
+    assert.ok(Math.hypot(previous.x-p.x,previous.y-p.y)<=total/200+1e-6);
+    previous=p;
+  }
 });

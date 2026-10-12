@@ -1471,3 +1471,12 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 .z-gate-editor-controls textarea{width:100%;border-radius:8px;padding:8px;
   background:#eff9eb;color:#173f32;font:11px/1.35 monospace;resize:vertical}
 .z-gate-editor-buttons button:focus-visible{outline:2px solid #ffdf80;outline-offset:2px}
+
+
+/* Mobile-friendly path marker verification; no walking sprite is loaded. */
+.z-gate-editor-preview{display:flex;flex-direction:column;gap:6px;
+  border-top:1px solid rgba(255,255,255,.18);padding-top:10px}
+.z-gate-editor-preview input{width:100%;accent-color:#f4cf78;touch-action:pan-y}
+.z-gate-editor-preview label{font-weight:800}
+.z-gate-editor-preview span{font-size:12px}
+.z-gate-preview-marker{filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
