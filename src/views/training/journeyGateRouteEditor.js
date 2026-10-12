@@ -124,3 +124,17 @@ export function gateDirectionPlan(points,overrides={}) {
       direction:manual?requested:auto,mode:manual?"manual":"auto"};
   });
 }
+
+
+// Perspective is keyed to the fox's world-space ground contact, NOT animation
+// frame or route section. Smoothstep avoids sudden size changes at either end.
+export function gateFoxDepthScale(points,groundPoint,farScale=0.65) {
+  if(!points?.length || !groundPoint) return 1;
+  const startY=points[0].y;
+  const endY=points[points.length-1].y;
+  const depth=endY!==startY
+    ? clamp((startY-groundPoint.y)/(startY-endY),0,1) : 0;
+  const eased=depth*depth*(3-2*depth);
+  const far=Number.isFinite(farScale)?clamp(farScale,0.4,1):0.65;
+  return 1-(1-far)*eased;
+}

@@ -5,7 +5,7 @@ import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
   USER_TRACED_VILLAGE_ROUTE, gateRouteAt, gateDirectionPlan,
-  gateSegmentMidpointProgress } from "./journeyGateRouteEditor";
+  gateSegmentMidpointProgress, gateFoxDepthScale } from "./journeyGateRouteEditor";
 
 
 // Each module uses the same five-stop coordinate contract. New illustrated
@@ -186,6 +186,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateSelectedPoint, setGateSelectedPoint] = useState(null);
   const [gateCopyStatus, setGateCopyStatus] = useState("");
   const [gateMarkerProgress, setGateMarkerProgress] = useState(0);
+  // Editor-only artistic far-end perspective: 65% of near-path sprite size.
+  const [gateFoxFarScale, setGateFoxFarScale] = useState(65);
   const [gateDepthShowFox, setGateDepthShowFox] = useState(true);
   const [gateDepthShowGuide, setGateDepthShowGuide] = useState(false);
   // Isolated eight-frame sprite QA at the editor's existing stationary paw marker.
@@ -205,6 +207,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   }, [editingGate, gateEditMode, gateDepthShowFox, gateDepthAnimateFox, gateWalkPlaying]);
   const gateMarkerPoint = editingGate && gateEditMode==="preview"
     ? gateRouteAt(gateRoutePoints,gateMarkerProgress) : null;
+  const gateFoxScale = gateFoxDepthScale(gateRoutePoints,gateMarkerPoint,gateFoxFarScale/100);
   const gateSectionIndex = gateMarkerPoint?.segmentIndex ?? 0;
   const gateDirectionAssignments = gateDirectionPlan(gateRoutePoints,gateSegmentDirections);
   const gateSection = gateDirectionAssignments[gateSectionIndex];
@@ -461,7 +464,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             draggable={false} decoding="async"
             style={{opacity:gateDepthAnimateFox ? 0 : 1}}/>}
           {gateDepthShowFox && gateDepthAnimateFox &&
-            <FoxWalkSprite frame={gateWalkFrame} facing={gateWalkFacing}/>}
+            <FoxWalkSprite frame={gateWalkFrame} facing={gateWalkFacing} scale={gateFoxScale}/>}
 
           <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
         </span>}
@@ -581,6 +584,15 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           </>}
         </div>
         {gateDepthAnimateFox && <div className="z-gate-section-author">
+          <label htmlFor="gate-fox-far-size">
+            Far-end fox size · {gateFoxFarScale}% (current point: {Math.round(gateFoxScale*100)}%)
+          </label>
+          <input id="gate-fox-far-size" aria-label="Set fox size at far end of route"
+            type="range" min="40" max="100" step="1"
+            value={gateFoxFarScale}
+            onChange={e=>setGateFoxFarScale(Number(e.target.value))}/>
+          <span>Near end stays 100%; fox shrinks smoothly as its paws move into the scene.
+            Shrinking keeps its feet on the cobblestones. This value is a preview setting.</span>
           <div className="z-gate-editor-buttons">
             <button type="button" disabled={!gateDirectionAssignments.length}
               onClick={async()=>{

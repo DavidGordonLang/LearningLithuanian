@@ -59,3 +59,17 @@ test("each authored route section has automated tangent and independent manual c
   assert.match(map,/gateRouteAt\(gateRoutePoints,gateMarkerProgress\)/);
   assert.doesNotMatch(map,/awardXp|markComplete/);
 });
+
+
+test("animated fox perspective scales at the foot anchor, retaining flips and size controls",()=>{
+  const helper=readFileSync(new URL("../src/views/training/journeyGateRouteEditor.js",import.meta.url),"utf8");
+  assert.match(sprite,/transformOrigin: "50% 100%"/);
+  assert.match(sprite,/scale\(.+sizeScale/);
+  assert.match(sprite,/scaleX\(-1\)/);
+  assert.match(sprite,/Number.isFinite\(scale\)/);
+  assert.match(map,/gateFoxDepthScale\(gateRoutePoints,gateMarkerPoint,gateFoxFarScale\/100\)/);
+  assert.match(map,/scale=\{gateFoxScale\}/);
+  assert.match(map,/aria-label="Set fox size at far end of route"/);
+  assert.match(map,/min="40" max="100"/);
+  assert.match(helper,/export function gateFoxDepthScale/);
+});

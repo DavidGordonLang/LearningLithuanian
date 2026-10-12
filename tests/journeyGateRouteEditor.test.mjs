@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   gateWorldPoint,gateClosestSegment,gateInsertPoint,gateMovePoint,gateRouteJson,
   USER_TRACED_VILLAGE_ROUTE,gateRoutePreviewPoint,
-  gateAutomaticDirection,gateRouteAt,gateSegmentMidpointProgress,gateDirectionPlan
+  gateAutomaticDirection,gateRouteAt,gateSegmentMidpointProgress,gateDirectionPlan,gateFoxDepthScale
 } from "../src/views/training/journeyGateRouteEditor.js";
 
 test("pointer translation respects pan, zoom and bounds on mobile",()=>{
@@ -101,4 +101,32 @@ test("section locator, jumping and individual overrides preserve the route",()=>
   assert.deepEqual(p,USER_TRACED_VILLAGE_ROUTE);
   assert.deepEqual(gateDirectionPlan([],{}),[]);
   assert.equal(gateRouteAt([],0),null);
+});
+
+
+test("fox depth scale is gradual and derived from paw world Y, not route heading",()=>{
+  const route=USER_TRACED_VILLAGE_ROUTE;
+  const start=route[0], end=route.at(-1);
+  assert.equal(gateFoxDepthScale(route,start),1);
+  assert.equal(gateFoxDepthScale(route,end),0.65);
+  assert.equal(gateFoxDepthScale(route,{x:300,y:(start.y+end.y)/2}),0.825);
+  assert.equal(gateFoxDepthScale(route,{x:1000,y:start.y}),1);
+  assert.equal(gateFoxDepthScale(route,{x:1000,y:end.y}),0.65);
+  assert.equal(gateFoxDepthScale(route,end,1),1);
+  assert.equal(gateFoxDepthScale(route,end,0),0.4); // lower-bound clamp 40%
+  assert.equal(gateFoxDepthScale(route,null),1);
+  assert.equal(gateFoxDepthScale([],end),1);
+  assert.ok(gateFoxDepthScale(route,{x:500,y:850})>gateFoxDepthScale(route,{x:500,y:800}));
+  let previous=1;
+  for(let i=0;i<=100;i++){
+    const pos=gateRouteAt(route,i/100);
+    const scale=gateFoxDepthScale(route,pos,0.65);
+    assert.ok(scale<=previous+0.003,"no abrupt increases across route");
+    assert.ok(scale>=0.65 && scale<=1);
+    previous=scale;
+  }
+  // Gate vicinity cannot exhibit the old abrupt A-to-B scaling jump.
+  const atA=gateFoxDepthScale(route,{x:375,y:636});
+  const atB=gateFoxDepthScale(route,{x:440,y:603});
+  assert.ok(Math.abs(atA-atB)<0.02);
 });
