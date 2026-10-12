@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import {useAuthStore} from "../../stores/authStore";
 import { FullBodyCompanion } from "./JourneyCompanion";
 import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
 import {FOX_ROUTE_WORLD_PX_PER_SECOND,foxRouteAdvance,foxRouteFrame,
@@ -223,6 +224,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateGuidedMode,setGateGuidedMode] = useState(false);
   const [gateGuidedArrived,setGateGuidedArrived] = useState(false);
   const gateRouteProgressRef = useRef(0);
+  const accountId = useAuthStore(state=>state.user?.id);
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
   const isLearnerFox = illustrated && companion?.id==="fox";
@@ -232,7 +234,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     : FOX_APPROVED_LESSON_STOPS.at(-1);
   const journeyPreviousStop = journeyStopIndex>0
     ? FOX_APPROVED_LESSON_STOPS[journeyStopIndex-1] : null;
-  const journeySessionKey = "zodis:journey-fox:last-target:module_1_1:"+(userId||"anonymous");
+  const journeySessionKey = "zodis:journey-fox:last-target:module_1_1:"+(accountId||userId||"anonymous");
   const [journeyInitial] = useState(()=>{
     let lastTarget=null;
     try {lastTarget=window.sessionStorage.getItem(journeySessionKey);} catch {}
