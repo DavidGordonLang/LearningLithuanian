@@ -4,7 +4,8 @@ import FoxWalkSprite, { FOX_WALK_DIRECTIONS } from "./FoxWalkSprite";
 import { clampCamera, fitMapScale, pinchView } from "./journeyMapGestures";
 import { GATE_ROUTE_POINTS, GATE_STAGE_PROGRESS, gateTraverseAt } from "./journeyGateTraverse";
 import { gateWorldPoint, gateInsertPoint, gateMovePoint, gateRouteJson,
-  USER_TRACED_VILLAGE_ROUTE, gateRoutePreviewPoint } from "./journeyGateRouteEditor";
+  USER_TRACED_VILLAGE_ROUTE, gateRouteAt, gateDirectionPlan,
+  gateSegmentMidpointProgress } from "./journeyGateRouteEditor";
 
 
 // Each module uses the same five-stop coordinate contract. New illustrated
@@ -189,7 +190,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
   const [gateDepthShowGuide, setGateDepthShowGuide] = useState(false);
   // Isolated eight-frame sprite QA at the editor's existing stationary paw marker.
   const [gateDepthAnimateFox, setGateDepthAnimateFox] = useState(false);
-  const [gateWalkFacing, setGateWalkFacing] = useState("up-left");
+  const [gateSegmentDirections, setGateSegmentDirections] = useState({});
+  const [gateDirectionCopyStatus, setGateDirectionCopyStatus] = useState("");
   const [gateWalkFrame, setGateWalkFrame] = useState(0);
   const [gateWalkPlaying, setGateWalkPlaying] = useState(true);
   const routeGesture = useRef(null);
@@ -202,9 +204,20 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     return () => window.clearInterval(timer);
   }, [editingGate, gateEditMode, gateDepthShowFox, gateDepthAnimateFox, gateWalkPlaying]);
   const gateMarkerPoint = editingGate && gateEditMode==="preview"
-    ? gateRoutePreviewPoint(gateRoutePoints,gateMarkerProgress) : null;
+    ? gateRouteAt(gateRoutePoints,gateMarkerProgress) : null;
+  const gateSectionIndex = gateMarkerPoint?.segmentIndex ?? 0;
+  const gateDirectionAssignments = gateDirectionPlan(gateRoutePoints,gateSegmentDirections);
+  const gateSection = gateDirectionAssignments[gateSectionIndex];
+  const gateWalkFacing = gateSection?.direction || "up-left";
+  const gateDirectionExport = JSON.stringify(gateDirectionAssignments);
+  const seekGateSection = (index) => {
+    setGateMarkerProgress(gateSegmentMidpointProgress(gateRoutePoints,index));
+    setGateDirectionCopyStatus("");
+  };
   const checkpointRoute = () => {
     setGateRouteHistory(h=>[...h.slice(-29),gateRoutePoints.map(p=>({...p}))]);
+    setGateSegmentDirections({});
+    setGateDirectionCopyStatus("");
     setGateCopyStatus("");
   };
   const editorWorldPoint = (e) => gateWorldPoint(e.clientX,e.clientY,
@@ -245,7 +258,8 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
     setGateDepthShowFox(true);
     setGateDepthShowGuide(false);
     setGateDepthAnimateFox(false);
-    setGateWalkFacing("up-left");
+    setGateSegmentDirections({});
+    setGateDirectionCopyStatus("");
     setGateWalkFrame(0);
     setGateWalkPlaying(true);
     setGateRouteHistory([]);
@@ -509,6 +523,19 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
         <span>{gateMarkerPoint
           ? "Paws at "+Math.round(gateMarkerPoint.x)+", "+Math.round(gateMarkerPoint.y)
           : "Add points to preview"} · Tap Find me to centre the marker</span>
+        {gateSection && <div className="z-gate-section-author">
+          <strong>Section {gateSection.segment} of {gateDirectionAssignments.length}
+            {" · "} Point {gateSection.from} → {gateSection.to}</strong>
+          <div className="z-gate-editor-buttons">
+            <button type="button" disabled={gateSectionIndex===0}
+              onClick={()=>seekGateSection(gateSectionIndex-1)}>← Previous section</button>
+            <button type="button"
+              disabled={gateSectionIndex===gateDirectionAssignments.length-1}
+              onClick={()=>seekGateSection(gateSectionIndex+1)}>Next section →</button>
+          </div>
+          <span>Facing: {gateWalkFacing} ({gateSection.mode}).
+            Choose a heading below to override this section, or use Auto to follow the drawn path.</span>
+        </div>}
         <div className="z-gate-editor-buttons">
           <button type="button" aria-pressed={gateDepthShowFox}
             onClick={()=>setGateDepthShowFox(v=>!v)}>
@@ -532,8 +559,19 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
               {FOX_WALK_DIRECTIONS.map(({value,label})=>
                 <button type="button" key={value}
                   aria-pressed={gateWalkFacing===value}
-                  onClick={()=>setGateWalkFacing(value)}>{label}</button>)}
+                  onClick={()=>{
+                    setGateSegmentDirections(d=>({...d,[gateSectionIndex]:value}));
+                    setGateDirectionCopyStatus("");
+                  }}>{label}</button>)}
             </div>
+            <button type="button" aria-label="Use automatic direction for selected section"
+              disabled={!gateSection || gateSection.mode==="auto"}
+              onClick={()=>{
+                setGateSegmentDirections(d=>{
+                  const next={...d};delete next[gateSectionIndex];return next;
+                });
+                setGateDirectionCopyStatus("");
+              }}>Auto direction</button>
             <button type="button" aria-label={gateWalkPlaying?"Pause fox walk":"Play fox walk"}
               onClick={()=>setGateWalkPlaying(p=>!p)}>{gateWalkPlaying?"Pause":"Play"}</button>
             <button type="button" aria-label="Next fox walk pose" onClick={()=>{
@@ -542,8 +580,24 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
             }}>Next pose</button>
           </>}
         </div>
+        {gateDepthAnimateFox && <div className="z-gate-section-author">
+          <div className="z-gate-editor-buttons">
+            <button type="button" disabled={!gateDirectionAssignments.length}
+              onClick={async()=>{
+                try {
+                  await navigator.clipboard.writeText(gateDirectionExport);
+                  setGateDirectionCopyStatus("Section direction plan copied");
+                } catch {
+                  setGateDirectionCopyStatus("Select and copy the field below");
+                }
+              }}>Copy all section directions</button>
+          </div>
+          <textarea readOnly aria-label="All route section directions" rows="3"
+            onFocus={e=>e.target.select()} value={gateDirectionExport}/>
+          {gateDirectionCopyStatus && <span role="status">{gateDirectionCopyStatus}</span>}
+        </div>}
         <span>{gateDepthAnimateFox
-          ? "Eight-direction sprite proof only: choose a heading, pause or step any pose. The fox stays at the marker; no route playback or camera tracking."
+          ? "Assign each section, then copy the direction plan for review. Fox stays at the marker; no timed route playback. Manual overrides are cleared if you edit route geometry."
           : "Fox and paw marker are below the arch foreground. Route guide, when shown, stays above it for editing."}</span>
       </div>}
       <div className="z-gate-editor-buttons">
@@ -551,6 +605,7 @@ export default function JourneyMap({ module, completed, targetId, companion, onO
           const previous=gateRouteHistory.at(-1);
           setGateRouteHistory(h=>h.slice(0,-1));
           setGateRoutePoints(previous);
+          setGateSegmentDirections({});
           setGateSelectedPoint(null);setGateCopyStatus("");
         }}>Undo</button>
         <button type="button" disabled={gateSelectedPoint===null} onClick={()=>{

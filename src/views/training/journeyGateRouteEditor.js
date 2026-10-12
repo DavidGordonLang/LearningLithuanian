@@ -70,3 +70,57 @@ export function gateRoutePreviewPoint(points,progress) {
   }
   return {...points.at(-1)};
 }
+
+
+// One direction per drawn route segment. The map is screen-up for away/up.
+export const GATE_DIRECTIONS = [
+  "up", "up-right", "right", "down-right",
+  "down", "down-left", "left", "up-left",
+];
+export function gateAutomaticDirection(a,b) {
+  if(!a||!b) return "up";
+  const dx=b.x-a.x, dy=b.y-a.y;
+  if(dx===0&&dy===0) return "up";
+  const octant=Math.round(Math.atan2(dx,-dy)/(Math.PI/4));
+  return GATE_DIRECTIONS[(octant+8)%8];
+}
+export function gateRouteAt(points,progress) {
+  if(!points?.length)return null;
+  if(points.length===1)return {...points[0],segmentIndex:0};
+  const lengths=points.slice(1).map((p,i)=>
+    Math.hypot(p.x-points[i].x,p.y-points[i].y));
+  const total=lengths.reduce((sum,n)=>sum+n,0);
+  if(!total)return {...points[0],segmentIndex:0};
+  let remaining=clamp(Number.isFinite(progress)?progress:0,0,1)*total;
+  for(let i=0;i<lengths.length;i++){
+    const distance=lengths[i];
+    if(remaining<=distance || i===lengths.length-1){
+      const t=distance?clamp(remaining/distance,0,1):0;
+      return {
+        x:points[i].x+(points[i+1].x-points[i].x)*t,
+        y:points[i].y+(points[i+1].y-points[i].y)*t,
+        segmentIndex:i,
+      };
+    }
+    remaining-=distance;
+  }
+}
+export function gateSegmentMidpointProgress(points,index) {
+  if(!points||points.length<2)return 0;
+  const lengths=points.slice(1).map((p,i)=>
+    Math.hypot(p.x-points[i].x,p.y-points[i].y));
+  const total=lengths.reduce((a,b)=>a+b,0);
+  if(!total)return 0;
+  const i=Math.floor(clamp(index,0,lengths.length-1));
+  return (lengths.slice(0,i).reduce((a,b)=>a+b,0)+lengths[i]/2)/total;
+}
+export function gateDirectionPlan(points,overrides={}) {
+  if(!points?.length)return [];
+  return points.slice(1).map((p,i)=>{
+    const auto=gateAutomaticDirection(points[i],p);
+    const requested=overrides[i];
+    const manual=GATE_DIRECTIONS.includes(requested);
+    return {segment:i+1,from:i+1,to:i+2,
+      direction:manual?requested:auto,mode:manual?"manual":"auto"};
+  });
+}

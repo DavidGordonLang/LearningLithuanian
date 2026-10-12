@@ -44,3 +44,18 @@ test("all eight headings use valid AVIF atlases at fixed paw anchor",()=>{
   assert.match(map,/aria-pressed=\{gateWalkFacing===value\}/);
   assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
+
+test("each authored route section has automated tangent and independent manual choice",()=>{
+  const source=readFileSync(new URL("../src/views/training/journeyGateRouteEditor.js",import.meta.url),"utf8");
+  assert.match(source,/gateAutomaticDirection/);
+  assert.match(source,/gateSegmentMidpointProgress/);
+  assert.match(map,/gateSectionIndex/);
+  assert.match(map,/Previous section/);
+  assert.match(map,/Next section/);
+  assert.match(map,/Copy all section directions/);
+  assert.match(map,/gateDirectionExport/);
+  assert.match(map,/setGateSegmentDirections/);
+  assert.match(map,/Auto direction/);
+  assert.match(map,/gateRouteAt\(gateRoutePoints,gateMarkerProgress\)/);
+  assert.doesNotMatch(map,/awardXp|markComplete/);
+});

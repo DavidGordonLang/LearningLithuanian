@@ -85,7 +85,7 @@ test("route editor stays isolated to the illustrated fox proof and does not save
 
 test("traced village preview shows feet marker, keeps fox off, and preserves accepted gate art",()=>{
   assert.match(map,/USER_TRACED_VILLAGE_ROUTE/);
-  assert.match(map,/gateRoutePreviewPoint\(gateRoutePoints,gateMarkerProgress\)/);
+  assert.match(map,/gateRouteAt\(gateRoutePoints,gateMarkerProgress\)/);
   assert.match(map,/gateMarkerPoint && <span className="z-gate-depth-reference"/);
   assert.match(map,/className="z-gate-depth-reference-fox"/);
   assert.match(map,/className="z-gate-depth-paw-dot"/);

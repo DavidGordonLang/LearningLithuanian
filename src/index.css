@@ -1513,3 +1513,11 @@ html[data-theme="light"] .z-journey-picker p{color:#476f5c}
 .z-gate-walk-direction-grid button{
   min-width:0;padding:9px 4px;white-space:normal;text-align:center;
 }
+
+/* Manual section-heading authoring: controls stay outside map viewport. */
+.z-gate-section-author{display:flex;flex-direction:column;gap:7px;
+  border-top:1px solid rgba(255,255,255,.22);padding-top:9px}
+.z-gate-section-author span{font-size:12px;line-height:1.4}
+.z-gate-section-author textarea{font:11px/1.4 monospace;
+  width:100%;border-radius:6px;padding:7px;
+  background:#eff9eb;color:#173f32;resize:vertical}

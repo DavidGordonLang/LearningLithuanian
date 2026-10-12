@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   gateWorldPoint,gateClosestSegment,gateInsertPoint,gateMovePoint,gateRouteJson,
-  USER_TRACED_VILLAGE_ROUTE,gateRoutePreviewPoint
+  USER_TRACED_VILLAGE_ROUTE,gateRoutePreviewPoint,
+  gateAutomaticDirection,gateRouteAt,gateSegmentMidpointProgress,gateDirectionPlan
 } from "../src/views/training/journeyGateRouteEditor.js";
 
 test("pointer translation respects pan, zoom and bounds on mobile",()=>{
@@ -64,4 +65,40 @@ test("ground marker stays on the path and moves by cumulative distance",()=>{
     assert.ok(Math.hypot(previous.x-p.x,previous.y-p.y)<=total/200+1e-6);
     previous=p;
   }
+});
+
+
+test("automatic fox direction includes all eight headings",()=>{
+  const base={x:100,y:100};
+  const directions=[
+    [{x:100,y:60},"up"],[{x:140,y:60},"up-right"],
+    [{x:140,y:100},"right"],[{x:140,y:140},"down-right"],
+    [{x:100,y:140},"down"],[{x:60,y:140},"down-left"],
+    [{x:60,y:100},"left"],[{x:60,y:60},"up-left"],
+  ];
+  directions.forEach(([p,d])=>assert.equal(gateAutomaticDirection(base,p),d));
+  assert.equal(gateAutomaticDirection(base,base),"up");
+});
+test("section locator, jumping and individual overrides preserve the route",()=>{
+  const p=USER_TRACED_VILLAGE_ROUTE;
+  const sections=gateDirectionPlan(p,{});
+  assert.equal(sections.length,26);
+  assert.equal(sections[0].segment,1);
+  assert.equal(sections[25].to,27);
+  for(let i=0;i<26;i++){
+    const progress=gateSegmentMidpointProgress(p,i);
+    const found=gateRouteAt(p,progress);
+    assert.equal(found.segmentIndex,i);
+    assert.equal(sections[i].direction,gateAutomaticDirection(p[i],p[i+1]));
+    assert.equal(sections[i].mode,"auto");
+  }
+  assert.equal(gateRouteAt(p,1).segmentIndex,25);
+  const overwritten=gateDirectionPlan(p,{2:"down-right",25:"up",4:"nonsense"});
+  assert.equal(overwritten[2].direction,"down-right");
+  assert.equal(overwritten[2].mode,"manual");
+  assert.equal(overwritten[25].mode,"manual");
+  assert.equal(overwritten[4].mode,"auto");
+  assert.deepEqual(p,USER_TRACED_VILLAGE_ROUTE);
+  assert.deepEqual(gateDirectionPlan([],{}),[]);
+  assert.equal(gateRouteAt([],0),null);
 });
