@@ -235,13 +235,14 @@ export default function JourneyMap({
   const routeGesture = useRef(null);
   const editingGate = illustrated && companion?.id === "fox" && gateEditorEnabled;
   const isLearnerFox = illustrated && companion?.id==="fox";
-  const [foxAtlasState,setFoxAtlasState]=useState({complete:false,ready:[]});
+  const [foxAtlasState,setFoxAtlasState]=useState({complete:false,ready:[],frames:{}});
   useEffect(()=>{
     if(!isLearnerFox)return;
     let active=true;
     preloadFoxWalkAtlases().then(results=>{
       if(active)setFoxAtlasState({complete:true,
-        ready:results.filter(item=>item.ready).map(item=>item.name)});
+        ready:results.filter(item=>item.ready).map(item=>item.name),
+        frames:Object.fromEntries(results.map(item=>[item.name,item.frames]))});
     });
     return ()=>{active=false;};
   },[isLearnerFox]);
@@ -626,6 +627,9 @@ export default function JourneyMap({
   const journeyFacing = !journeyMoving || !foxAtlasState.complete ||
     !journeyAtlasLoaded;
   const journeyFrame = foxRouteFrame(USER_TRACED_VILLAGE_ROUTE,journeyProgress);
+  const healthyFrames=foxAtlasState.frames[journeyAtlas]||[];
+  const journeyVisibleFrame=healthyFrames.includes(journeyFrame)
+    ? journeyFrame : (healthyFrames.find(i=>i>=journeyFrame) ?? healthyFrames.at(-1) ?? journeyFrame);
   const journeyScale = gateFoxScaleWithStops(USER_TRACED_VILLAGE_ROUTE,
     journeyProgress,FOX_APPROVED_FAR_SIZE/100,FOX_APPROVED_SIZE_STOPS);
   const gateFrame = foxPreviewEnabled ? gateTraverseAt(gateProgress) : null;
@@ -701,7 +705,7 @@ export default function JourneyMap({
                 className="z-gate-depth-reference-fox z-fox-lesson-facing-still"
                 draggable={false} decoding="async"
                 style={{transform:"scale("+journeyScale+")"}}/>
-            : <FoxWalkSprite frame={journeyFrame} facing={journeyDirection} scale={journeyScale}/>}
+            : <FoxWalkSprite frame={journeyVisibleFrame} facing={journeyDirection} scale={journeyScale}/>}
         </span>}
         {gateMarkerPoint && <span className="z-gate-depth-reference"
           style={{left:gateMarkerPoint.x,top:gateMarkerPoint.y}}
@@ -1145,7 +1149,7 @@ export default function JourneyMap({
       <span role="status">Route {(journeyProgress*100).toFixed(1)}% ·
         segment {(journeyPoint?.segmentIndex??0)+1} · {journeyDirection} ·
         sheet {journeyAtlas} {journeyAtlasLoaded?"decoded":"loading / fallback"} ·
-        frame {journeyFrame}</span>
+        frame {journeyVisibleFrame}{healthyFrames.length<8 ? " · "+healthyFrames.length+"/8 frames visible" : ""}</span>
     </div>}
     <div className="z-local-map-footer">
       <span>{stops.filter(s=>completed.has(s.id)).length} of {stops.length} stops completed</span>
