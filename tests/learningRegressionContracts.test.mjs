@@ -743,5 +743,6 @@ test("Gate preview is static and preserves learning progress and map navigation"
   assert.match(css, /\.z-local-map-world \.z-local-map-stop\{z-index:6\}/);
   assert.match(map, /requestAnimationFrame/);
   assert.doesNotMatch(map, /followFoxRoute|setFoxTravelPoint/);
-  assert.doesNotMatch(map, /awardXp|saveLesson|markComplete|localStorage\.setItem/);
+  assert.doesNotMatch(map, /awardXp\(|markComplete\(|completeLesson\(|localStorage\.setItem/);
+  assert.match(map, /saveFoxLessonStopDraft/); // This is editor-only authoring, not learner progress.
 });

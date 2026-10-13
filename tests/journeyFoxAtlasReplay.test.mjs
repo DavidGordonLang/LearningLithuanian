@@ -20,11 +20,14 @@ test("direction atlases predecode and failures are explicit",async()=>{
 test("fox gap route replay does not alter lesson progress",()=>{
  const map=read("src/views/training/JourneyMap.jsx");
  for(const term of ['get("journeyQA")==="fox-gap"',"{start:0.395,moving:true}",
-   "Replay Bakery","!journeyAtlasLoaded","!foxAtlasState.complete",
+   "Replay Bakery","!journeyAtlasLoaded","!walkAtlasState.complete",
    'src="/assets/journey/fox-idle.webp"'])
    assert.ok(map.includes(term),term);
  assert.ok(!map.includes("awardXp("));
  assert.ok(!map.includes("completeLesson("));
+ assert.ok(map.includes("wolfRouteReplay"));
+ assert.ok(map.includes("Replay complete wolf village walk"));
+ assert.ok(map.includes("/assets/journey/wolf-idle.webp"));
 });
 
 test("completed village review exposes a replay button without query parameters",()=>{

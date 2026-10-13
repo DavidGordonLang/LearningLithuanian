@@ -31,7 +31,7 @@ test("Fixed arch 2 alpha mask reuses native painted gate tiles without scaling",
   for(const token of ["left: 121","top: 721","width: 377","height: 399"]){
     assert.ok(map.includes(token),token);
   }
-  assert.match(map,/foxPreviewEnabled && \(!editingGate \|\| gateEditMode==="preview"\)/);
+  assert.match(map,/illustratedWalkEnabled && \(!editingGate \|\| gateEditMode==="preview"\)/);
   assert.match(map,/className="z-gate-foreground-cutout"/);
   assert.match(map,/maskImage:/);
   assert.match(map,/WebkitMaskImage:/);

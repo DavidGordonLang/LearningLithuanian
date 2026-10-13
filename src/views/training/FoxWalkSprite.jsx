@@ -15,12 +15,14 @@ export const FOX_WALK_DIRECTIONS = [
 
 export default function FoxWalkSprite({ frame = 0, facing = "up-left", scale = 1, companionId = "fox" }) {
   const index = Math.max(0, Math.floor(Number(frame) || 0)) % 8;
-  const direction = FOX_WALK_DIRECTIONS.find(x => x.value === facing)
-    || FOX_WALK_DIRECTIONS[0];
   const isWolf = companionId === "wolf";
-  // Wolf down-right has its own approved sheet; fox down-right remains mirrored.
-  const atlas = isWolf && facing === "down-right" ? "down-right" : direction.atlas;
-  const mirror = isWolf && facing === "down-right" ? false : direction.mirror;
+  const foxDirection = FOX_WALK_DIRECTIONS.find(x => x.value === facing)
+    || FOX_WALK_DIRECTIONS[0];
+  // Wolf down-right is separately approved; do not mirror down-left for it.
+  // The fox retains its original mapping and visual frame positions.
+  const direction = isWolf && facing === "down-right"
+    ? {...foxDirection,atlas:"down-right",mirror:false} : foxDirection;
+  const atlas = direction.atlas;
   const url = isWolf
     ? `/assets/journey/wolf-walk-${atlas}-fixed.avif`
     : `/assets/journey/fox-walk-${atlas}-fixed-probe.avif`;
@@ -33,7 +35,7 @@ export default function FoxWalkSprite({ frame = 0, facing = "up-left", scale = 1
       backgroundPosition: `${column * 100 / 3}% ${row * 100}%`,
       // Anchor the bottom-centre paws on the same world-space ground marker.
       transformOrigin: "50% 100%",
-      transform: mirror
+      transform: direction.mirror
         ? "scale(" + sizeScale + ") scaleX(-1)"
         : "scale(" + sizeScale + ")",
     }}/>;

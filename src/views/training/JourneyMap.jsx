@@ -253,9 +253,9 @@ export default function JourneyMap({
   },[isWalkingCompanion,companion?.id]);
   const isExitingVillage = isWalkingCompanion && exitToNextMap && !showMapDevTools;
   const journeyStopIndex = stops.findIndex(stop=>stop.id===targetId);
-  const journeyStop = wolfRouteReplay ? {at:1000}
+  const journeyStop = isExitingVillage ? {at:1000}
+    : wolfRouteReplay ? {at:1000}
     : foxGapReplay ? {at:673}
-    : isExitingVillage ? {at:1000}
     : journeyStopIndex>=0
       ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===targetId)
       : FOX_APPROVED_LESSON_STOPS.at(-1);
@@ -623,7 +623,8 @@ export default function JourneyMap({
   const companionPoint = illustrated
     ? (FIRST_CONTACT_APPROACH_POINTS[focusIndex] || points[focusIndex])
     : {x: points[focusIndex]?.x, y: points[focusIndex]?.y - 112};
-  const foxPreviewEnabled = isWalkingCompanion;
+  const foxPreviewEnabled = illustrated && companion?.id === "fox";
+  const illustratedWalkEnabled = isWalkingCompanion;
   const journeyPoint = isWalkingCompanion && !editingGate
     ? gateRouteAt(USER_TRACED_VILLAGE_ROUTE,journeyProgress) : null;
   const journeyDirection = journeyPoint
@@ -695,7 +696,7 @@ export default function JourneyMap({
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
             width:(gateProgress<GATE_STAGE_PROGRESS.passage
               ? 36-11*gateProgress/GATE_STAGE_PROGRESS.passage : 25)+"px"}}/>}
-        {current && !editingGate && !foxPreviewEnabled && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
+        {current && !editingGate && !illustratedWalkEnabled && <span className={"z-local-map-character"+(illustrated?" is-approaching":"")+
           (foxPreviewEnabled?" is-gate-test":"")}
           style={{left:visibleCompanionPoint.x,top:visibleCompanionPoint.y,
             "--gate-sprite-width":gateFrame ? gateFrame.dimensions.width+"px" : undefined,
@@ -741,7 +742,7 @@ export default function JourneyMap({
 
           <span className="z-gate-depth-paw-dot" aria-hidden="true"/>
         </span>}
-        {foxPreviewEnabled && (!editingGate || gateEditMode==="preview") &&
+        {illustratedWalkEnabled && (!editingGate || gateEditMode==="preview") &&
           (editingGate || journeyProgress<0.25) &&
           <div className="z-gate-foreground-cutout" aria-hidden="true"
             style={{left:GATE_FOREGROUND_CUTOUT.left,top:GATE_FOREGROUND_CUTOUT.top,
