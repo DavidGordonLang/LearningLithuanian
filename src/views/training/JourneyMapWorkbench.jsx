@@ -39,13 +39,13 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
   const ids = stops.map(s => s.id);
   const [placed,setPlaced] = useState({});
   const [selectedId,setSelectedId] = useState(null);
-  const [tool,setTool] = useState('place');
   const [zoom,setZoom] = useState(.5);
   const [pan,setPan] = useState({x:0,y:0});
   const [message,setMessage] = useState('');
   const [exportVisible,setExportVisible] = useState(false);
   const [imageFailed,setImageFailed] = useState(false);
-  const viewport=useRef(null), pointer=useRef(null), view=useRef({zoom:.5,pan:{x:0,y:0}});
+  const viewport=useRef(null), pointers=useRef(new Map()), gesture=useRef(null),
+    view=useRef({zoom:.5,pan:{x:0,y:0}});
   const updateView=(z,p)=>{view.current={zoom:z,pan:p};setZoom(z);setPan(p);};
   const fit=()=>{
     if(!viewport.current)return;
@@ -60,7 +60,8 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
       .filter((_,i)=>!!map.approved[i]).map((id,i)=>[id,{x:map.approved[i][0],y:map.approved[i][1]}])) : {};
     setPlaced(saved || approved);
     setSelectedId(ids[0] || null);
-    setTool('place');setExportVisible(false);setMessage('');setImageFailed(false);
+    pointers.current.clear();gesture.current=null;
+    setExportVisible(false);setMessage('');setImageFailed(false);
     const raf=requestAnimationFrame(fit);
     return ()=>cancelAnimationFrame(raf);
     // Reset only on map/account change; changing marker values must not recenter the canvas.
@@ -78,35 +79,62 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
     const axis=(origin,world,screen)=>world*z<=screen?(screen-world*z)/2:clamp(origin,screen-world*z,0);
     return {x:axis(p.x,map.w,b.width),y:axis(p.y,map.h,b.height)};
   };
-  const changeZoom=(factor)=>{
-    if(!viewport.current)return;
-    const b=viewport.current.getBoundingClientRect(),old=view.current;
-    const min=Math.min(b.width/map.w,b.height/map.h);
-    const z=clamp(old.zoom*factor,min,2.6);
-    const worldCentre={x:(b.width/2-old.pan.x)/old.zoom,
-      y:(b.height/2-old.pan.y)/old.zoom};
-    const p=bounded({x:b.width/2-worldCentre.x*z,y:b.height/2-worldCentre.y*z},z);
-    updateView(z,p);
-  };
+  // The map owns all pointer gestures. One finger drags (or taps to place);
+  // two fingers zoom around the midpoint. Neither gesture reaches SwipePager.
   const start=(e)=>{
-    if(e.target.closest('button'))return;
-    const v=view.current;
-    pointer.current={id:e.pointerId,x:e.clientX,y:e.clientY,pan:v.pan,moved:false};
-    try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    const active=pointers.current;
+    active.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try {e.currentTarget.setPointerCapture(e.pointerId);}catch {}
+    if(active.size===1){
+      gesture.current={kind:'single',id:e.pointerId,x:e.clientX,y:e.clientY,
+        pan:view.current.pan,moved:false,canPlace:true};
+    } else if(active.size===2){
+      const [a,b]=[...active.values()],bounds=viewport.current.getBoundingClientRect(),
+        mid={x:(a.x+b.x)/2-bounds.left,y:(a.y+b.y)/2-bounds.top};
+      gesture.current={kind:'pinch',startDistance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
+        startZoom:view.current.zoom,
+        world:{x:(mid.x-view.current.pan.x)/view.current.zoom,
+          y:(mid.y-view.current.pan.y)/view.current.zoom}};
+    } else gesture.current=null;
   };
   const move=(e)=>{
-    const p=pointer.current;
-    if(!p||p.id!==e.pointerId)return;
-    const dx=e.clientX-p.x,dy=e.clientY-p.y;
-    if(Math.hypot(dx,dy)>7)p.moved=true;
-    if(tool==='pan' && p.moved)
-      updateView(view.current.zoom,bounded({x:p.pan.x+dx,y:p.pan.y+dy},view.current.zoom));
+    const active=pointers.current;
+    if(!active.has(e.pointerId))return;
+    active.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const g=gesture.current;
+    if(!g)return;
+    if(g.kind==='pinch' && active.size===2){
+      const [a,b]=[...active.values()],bounds=viewport.current.getBoundingClientRect();
+      const fitZoom=Math.min(bounds.width/map.w,bounds.height/map.h);
+      const distance=Math.hypot(a.x-b.x,a.y-b.y);
+      const z=clamp(g.startZoom*(distance/g.startDistance),fitZoom,2.6);
+      const midpoint={x:(a.x+b.x)/2-bounds.left,y:(a.y+b.y)/2-bounds.top};
+      updateView(z,bounded({x:midpoint.x-g.world.x*z,
+        y:midpoint.y-g.world.y*z},z));
+    } else if(g.kind==='single' && g.id===e.pointerId){
+      const dx=e.clientX-g.x,dy=e.clientY-g.y;
+      if(Math.hypot(dx,dy)>7)g.moved=true;
+      if(g.moved)updateView(view.current.zoom,
+        bounded({x:g.pan.x+dx,y:g.pan.y+dy},view.current.zoom));
+    }
   };
   const end=(e)=>{
-    const p=pointer.current;
-    if(!p||p.id!==e.pointerId)return;
-    pointer.current=null;
-    if(tool!=='place'||p.moved||!selectedId||e.type==='pointercancel')return;
+    const active=pointers.current,g=gesture.current;
+    if(!active.has(e.pointerId))return;
+    active.delete(e.pointerId);
+    if(g?.kind==='pinch'){
+      // A lift during a pinch must never accidentally drop a lesson marker.
+      const remaining=[...active.entries()][0];
+      gesture.current=remaining
+        ? {kind:'single',id:remaining[0],x:remaining[1].x,y:remaining[1].y,
+            pan:view.current.pan,moved:true,canPlace:false}
+        : null;
+      return;
+    }
+    gesture.current=null;
+    if(g?.kind!=='single'||g.id!==e.pointerId||g.moved||
+       !g.canPlace||!selectedId||e.type==='pointercancel')return;
     const b=viewport.current.getBoundingClientRect(),v=view.current;
     const x=Math.round(clamp((e.clientX-b.left-v.pan.x)/v.zoom,0,map.w));
     const y=Math.round(clamp((e.clientY-b.top-v.pan.y)/v.zoom,0,map.h));
@@ -127,7 +155,7 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
     if(!selectedId)return;
     const next={...placed};delete next[selectedId];record(next);
   };
-  return <div className="z-marker-workbench mx-auto max-w-2xl px-3 pb-10 pt-3">
+  return <div data-swipe-block="true" className="z-marker-workbench mx-auto w-full min-w-0 max-w-2xl px-3 pb-10 pt-3">
     <header className="flex items-center gap-3">
       <button type="button" className="z-marker-tool" onClick={onBack}>← Back</button>
       <div className="min-w-0"><div className="text-xs font-bold tracking-wider">DEV · SECTION 1</div>
@@ -142,17 +170,10 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
       <span><b>{count}/{ids.length}</b> placed {mapId==='module_1_4'?'· Section checkpoint included':''}</span>
       <span>Original art preserved</span>
     </div>
-    <div className="mt-3 flex gap-2" role="group" aria-label="Active map tool">
-      <button type="button" className={'z-marker-tool '+(tool==='place'?'active':'')}
-        aria-pressed={tool==='place'} onClick={()=>setTool('place')}>📍 Place</button>
-      <button type="button" className={'z-marker-tool '+(tool==='pan'?'active':'')}
-        aria-pressed={tool==='pan'} onClick={()=>setTool('pan')}>✋ Pan</button>
-    </div>
-    <p className="mt-2 text-xs">{tool==='place'
-      ? 'Choose a lesson below and tap its position on the road. The next lesson selects automatically.'
-      : 'Drag to move the map; use + and − to zoom.'}</p>
-    <div className="z-marker-viewport mt-2" ref={viewport}
-      style={{cursor:tool==='place'?'crosshair':'grab'}}
+    <p className="mt-3 text-xs">Drag the map with one finger; pinch with two fingers to zoom.
+      Choose a lesson below and tap its position to place the marker. The next lesson selects automatically.</p>
+    <div className="z-marker-viewport mt-2" ref={viewport} data-swipe-block="true"
+      style={{cursor:'grab'}}
       onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end}
       aria-label={'Map marker editor for '+map.title}>
       <div className="z-marker-world" style={{width:map.w,height:map.h,
@@ -169,19 +190,13 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
       </div>
       {imageFailed&&<p className="z-marker-error">Map image did not load. Please refresh; saved markers are intact.</p>}
     </div>
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      <button type="button" className="z-marker-tool" onClick={()=>changeZoom(1.4)}>＋ Zoom</button>
-      <button type="button" className="z-marker-tool" onClick={()=>changeZoom(1/1.4)}>－ Zoom</button>
-      <button type="button" className="z-marker-tool" onClick={fit}>Fit whole map</button>
-      <span className="ml-auto text-xs">{Math.round(zoom*100)}%</span>
-    </div>
     <section className="z-marker-lessons mt-4 rounded-xl border p-3">
       <h2 className="mb-2 text-sm font-bold">Lesson destinations, in order</h2>
       <div className="grid gap-2">
         {stops.map((s,i)=><button type="button" key={s.id}
           className={'z-marker-lesson '+(selectedId===s.id?'active':'')}
           aria-pressed={selectedId===s.id}
-          onClick={()=>{setSelectedId(s.id);setTool('place');}}>
+          onClick={()=>setSelectedId(s.id)}>
           <span className="z-marker-lesson-number">{i+1}</span>
           <span className="min-w-0 flex-1 text-left"><b className="block text-sm">{s.title}</b>
             <small className="block break-all">{s.id}</small></span>
