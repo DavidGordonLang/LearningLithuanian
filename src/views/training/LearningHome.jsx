@@ -5,6 +5,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { findLatestInProgressLesson, getCourseBrowseState, getSectionBrowseState } from "./learningProgress";
 import { Companion, JOURNEY_COMPANIONS, useJourneyCompanion } from "./JourneyCompanion";
 import JourneyMap from "./JourneyMap";
+import JourneyMapWorkbench from "./JourneyMapWorkbench";
 
 function findCurrent(sections, completedLessonIds, lessonProgress) {
   const saved = findLatestInProgressLesson(sections, completedLessonIds, lessonProgress);
@@ -37,6 +38,12 @@ export default function LearningHome({
   const [showRegionMap, setShowRegionMap] = useState(false);
   const [reviewModuleId, setReviewModuleId] = useState(null);
   const [exitBlend,setExitBlend]=useState(0);
+  // Authoring is restricted to non-production DEV hosts and explicitly enabled
+  // by the developer URL flag. Preserve the old JourneyMap gate/route editor.
+  const workbenchActive = typeof window !== "undefined" &&
+    /(^|\\.)vercel\\.app$|^localhost$|^127\\.0\\.0\\.1$/.test(window.location.hostname) &&
+    new URLSearchParams(window.location.search).get("journeyDev")==="1" &&
+    new URLSearchParams(window.location.search).get("legacyEditor")!=="1";
   const unlockedReview = allSections.flatMap(s => {
     const state = getSectionBrowseState(s, completedLessonIds);
     return [...state.moduleStates.filter(item => item.status === "completed").map(item => ({ section:s, module:item.module })),
@@ -62,6 +69,11 @@ export default function LearningHome({
   const onCurrentRoute = activeModule?.id === target?.module?.id;
   const moduleStops = activeModule?.isSectionCheckpoint ? [activeModule] : (activeModule?.lessons || []);
   const routeComplete = moduleStops.length && moduleStops.every(item => completed.has(item.id));
+  // Only the marker-placement panel is mounted in Stage 1: map switcher,
+  // stop coordinates and export. Route tracing/sizing remain hidden for now.
+  if(workbenchActive && allSections.some(s=>s.id==="section_1"))
+    return <JourneyMapWorkbench allSections={allSections} userId={userId}
+      onBack={onBack}/>;
   if (!hasChosen) return <div className="mx-auto max-w-xl px-4 pb-12 pt-5">
     <div className="flex items-center gap-3"><button type="button" onClick={onBack} className="min-h-[44px] rounded-xl border border-emerald-400/30 px-3 text-sm font-semibold" aria-label="Back to main">← Back to main</button><div className="text-lg font-semibold">Choose your journey companion</div></div>
     <div className="z-journey-picker mt-5 rounded-[27px] border border-emerald-400/30 px-4 py-6">
