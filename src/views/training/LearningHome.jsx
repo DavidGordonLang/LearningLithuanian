@@ -40,6 +40,7 @@ export default function LearningHome({
   // Preview-only QA, visible when reviewing the completed illustrated module.
   // This never changes lesson progression or the current course.
   const [foxReplayCount,setFoxReplayCount]=useState(0);
+  const [wolfReplayCount,setWolfReplayCount]=useState(0);
   const unlockedReview = allSections.flatMap(s => {
     const state = getSectionBrowseState(s, completedLessonIds);
     return [...state.moduleStates.filter(item => item.status === "completed").map(item => ({ section:s, module:item.module })),
@@ -67,6 +68,10 @@ export default function LearningHome({
   },[journeyExitModuleId,departureRoute?.module.id,selected.id,hasChosen,onJourneyExitComplete]);
   const activeSection = departureRoute?.section || reviewRoute?.section || target?.section || allSections[allSections.length-1] || null;
   const activeModule = departureRoute?.module || reviewRoute?.module || target?.module || activeSection?.modules?.find(m=>!m.isSectionCheckpoint) || null;
+  // Keep wolf full-route QA discoverable after sign-in/navigation drops URL query parameters.
+  // Preview/development only; never expose this on the zodis.app production host.
+  const wolfReplayAvailable=foxReplayPreview && selected.id==="wolf" &&
+    activeModule?.id==="module_1_1";
   const onCurrentRoute = activeModule?.id === target?.module?.id;
   const moduleStops = activeModule?.isSectionCheckpoint ? [activeModule] : (activeModule?.lessons || []);
   const routeComplete = moduleStops.length && moduleStops.every(item => completed.has(item.id));
@@ -124,13 +129,23 @@ export default function LearningHome({
         </section>;
       })}
     </div> : <>
+      {wolfReplayAvailable && <div className="mt-3 rounded-xl border border-amber-300/40 p-3 text-center">
+        <button type="button" onClick={()=>setWolfReplayCount(n=>n+1)}
+          className="min-h-[44px] w-full rounded-lg border border-amber-200/60 bg-emerald-800 px-4 py-2 text-sm font-bold text-white">
+          ▶ Replay complete wolf village walk
+        </button>
+        <p className="mt-2 text-xs opacity-80">
+          Development preview only · no lessons, XP or progress changed
+        </p>
+      </div>}
       <div className="mt-3">
         <div className="z-journey-exit-stage">
-          {activeModule ? <JourneyMap key={activeModule.id+"-replay-"+(foxReplayActive?foxReplayCount:0)}
+          {activeModule ? <JourneyMap key={activeModule.id+"-replay-"+(foxReplayActive?foxReplayCount:0)+"-wolf-"+(wolfReplayAvailable?wolfReplayCount:0)}
             module={activeModule} completed={completed}
             targetId={onCurrentRoute?target?.lesson?.id:null} companion={selected}
             userId={userId} exitToNextMap={isLeavingVillage}
             replayFoxGap={foxReplayActive}
+            replayWolfRoute={wolfReplayAvailable && wolfReplayCount>0}
             onExitProgress={setExitBlend}
             onExitComplete={onJourneyExitComplete}
             onOpenLesson={foxReplayActive?null:onOpenLesson}/> : null}
