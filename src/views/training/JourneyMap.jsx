@@ -248,7 +248,7 @@ export default function JourneyMap({
   },[isLearnerFox]);
   const isExitingVillage = isLearnerFox && exitToNextMap && !showMapDevTools;
   const journeyStopIndex = stops.findIndex(stop=>stop.id===targetId);
-  const journeyStop = foxGapReplay ? {at:455}
+  const journeyStop = foxGapReplay ? {at:673}
     : isExitingVillage ? {at:1000}
     : journeyStopIndex>=0
       ? FOX_APPROVED_LESSON_STOPS.find(stop=>stop.lessonId===targetId)
@@ -263,7 +263,7 @@ export default function JourneyMap({
       completed.has(journeyPreviousStop?.lessonId) &&
       lastTarget===journeyPreviousStop?.lessonId;
     return foxGapReplay
-      ? {start:0.255,moving:true}
+      ? {start:0.395,moving:true}
       : isExitingVillage
         ? {start:FOX_APPROVED_LESSON_STOPS.at(-1).at/1000,moving:true}
         : {
@@ -1140,12 +1140,12 @@ export default function JourneyMap({
       </button>
     </div>}
     {foxGapReplay && <div className="z-fox-route-gap-qa" role="group"
-      aria-label="Replay fox disappearance location without resetting lessons">
+      aria-label="Replay Bakery to Lantern Corner without resetting lessons">
       <button type="button" onClick={()=>{
-        journeyProgressRef.current=.255;
-        setJourneyProgress(.255);
+        journeyProgressRef.current=.395;
+        setJourneyProgress(.395);
         setJourneyMoving(true);
-      }}>Replay Fountain → Bakery</button>
+      }}>Replay Bakery → Lantern Corner</button>
       <span role="status">Route {(journeyProgress*100).toFixed(1)}% ·
         segment {(journeyPoint?.segmentIndex??0)+1} · {journeyDirection} ·
         sheet {journeyAtlas} {journeyAtlasLoaded?"decoded":"loading / fallback"} ·
