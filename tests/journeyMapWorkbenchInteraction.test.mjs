@@ -48,7 +48,7 @@ test("all four DEV Section 1 maps use approved portrait assets and isolated mark
     assert.match(map,new RegExp("section-1-map-"+module.replace(".","\\.")+"-portrait\\.avif"));
   assert.match(map,/stage1:portrait-v2:/);
   assert.match(map,/saved\?\.version!==2/);
-  assert.match(map,/setPlaced\(saved \|\| \{\}\)/);
+  assert.match(map,/setPlaced\(saved \|\| approvedPortraitMarkerPositions\(mapId,ids\)\)/);
   assert.doesNotMatch(map,/w: 1536, h: 1024|first-contact-greeting-tile|map\.approved/);
   assert.match(map,/data-swipe-block="true"/);
   assert.match(map,/kind:'pinch'/);
