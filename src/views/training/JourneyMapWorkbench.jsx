@@ -3,6 +3,7 @@
 // Stage 1: marker positions. Stage 2: route. Stage 3: sprite size (later builds).
 import React, { useEffect, useRef, useState } from 'react';
 import './JourneyMapWorkbench.css';
+import { approvedPortraitMarkerPositions } from './section1PortraitMarkers';
 
 // All approved Section 1 art uses the SAME 1024 x 1536 portrait world.
 // Keep legacy Module 1.1 running elsewhere until its route/sprite remap is approved.
@@ -59,7 +60,8 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
     const saved=restore(storageKey(userId,mapId),ids,map);
     // Old landscape/legacy drafts remain untouched under their v1 key.
     // Never project old marker coordinates onto this newly approved portrait art.
-    setPlaced(saved || {});
+    // Confirmed project defaults display on any device, but locally edited drafts win.
+    setPlaced(saved || approvedPortraitMarkerPositions(mapId,ids));
     setSelectedId(ids[0] || null);
     pointers.current.clear();gesture.current=null;
     setExportVisible(false);setMessage('');setImageFailed(false);
@@ -216,7 +218,8 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
       onClick={()=>setExportVisible(v=>!v)}>{exportVisible?'Hide':'Show'} coordinates</button>
     {exportVisible&&<textarea readOnly value={markerJson} rows={Math.max(7,stops.length+4)}
       className="z-marker-json w-full rounded-lg p-2" aria-label="Lesson coordinates JSON"/>}
-    <p className="mt-2 text-xs opacity-75">Drafts save locally per account and map; they do not change lessons.
+    <p className="mt-2 text-xs opacity-75">These 23 stop coordinates are banked in DEV. Any new edits save locally per account and map;
+      they do not change lessons.
       Only marker controls appear at this stage. Route tracing and then sprite-size controls will replace this panel later.
       The prior landscape drafts remain saved separately. The approved legacy Module 1.1 route
       and all learner completion rules remain unchanged.</p>
