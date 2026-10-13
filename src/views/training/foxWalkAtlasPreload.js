@@ -1,10 +1,15 @@
 // Decode each directional atlas before an animated heading change on Android.
 // Examine the eight atlas cells as well: transparent frames cannot be used.
 export const FOX_WALK_ATLAS_NAMES=["up-left","up","left","down-left","down"];
-export async function preloadFoxWalkAtlases(){
-  return Promise.all(FOX_WALK_ATLAS_NAMES.map(async name=>{
+export const WOLF_WALK_ATLAS_NAMES=["up-left","up","left","down-left","down","down-right"];
+export async function preloadJourneyWalkAtlases(companionId="fox"){
+  const isWolf=companionId==="wolf";
+  const names=isWolf?WOLF_WALK_ATLAS_NAMES:FOX_WALK_ATLAS_NAMES;
+  return Promise.all(names.map(async name=>{
     const img=new Image();
-    img.src="/assets/journey/fox-walk-"+name+"-fixed-probe.avif";
+    img.src=isWolf
+      ? "/assets/journey/wolf-walk-"+name+"-fixed.avif"
+      : "/assets/journey/fox-walk-"+name+"-fixed-probe.avif";
     try {
       await img.decode();
       let frames=[0,1,2,3,4,5,6,7];
@@ -35,3 +40,6 @@ export async function preloadFoxWalkAtlases(){
     }
   }));
 }
+
+// Retained for existing fox-only callers and tests.
+export function preloadFoxWalkAtlases(){return preloadJourneyWalkAtlases("fox");}
