@@ -1,21 +1,17 @@
-// Žodis companions preserve the four approved character identities.
-// Normal/smiling lesson heads use the original head atlas; Journey maps use
-// separate transparent full-body idle art. Walking is intentionally deferred.
+// Journey offers only the two fully approved, Android-tested walking companions.
+// The original four-row head atlas remains intact; Fox and Wolf use rows 0 and 1.
+// Journey maps continue to use their existing full-body idle and walking art.
 import React, { useEffect, useState } from "react";
 
 export const JOURNEY_COMPANIONS = [
   { id: "fox", name: "Fox", row: 0 },
   { id: "wolf", name: "Wolf", row: 1 },
-  { id: "forest-fairy-male", name: "Male Forest Fairy", row: 2 },
-  { id: "forest-fairy-female", name: "Female Forest Fairy", row: 3 },
 ];
 const STORAGE_PREFIX = "zodis:journey-companion:v1:";
 const HEADS = "/assets/journey/approved-heads.webp";
 const BODY_IMAGES = {
   fox: "/assets/journey/fox-idle.webp",
   wolf: "/assets/journey/wolf-idle.webp",
-  "forest-fairy-male": "/assets/journey/forest-fairy-male-idle.webp",
-  "forest-fairy-female": "/assets/journey/forest-fairy-female-idle.webp",
 };
 function readSavedChoice(userId) {
   try {

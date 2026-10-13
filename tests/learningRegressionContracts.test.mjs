@@ -598,20 +598,25 @@ test("admin Sequence Walker can reopen completed lessons without clearing comple
 });
 
 
-test("Journey uses only approved companion masters and jump-to-stop map state", () => {
+test("Journey offers only the approved fox and wolf while preserving map progress", () => {
   const companion = source("src/views/training/JourneyCompanion.jsx");
   const map = source("src/views/training/JourneyMap.jsx");
   const home = source("src/views/training/LearningHome.jsx");
   const lesson = source("src/views/training/LearningLessonView.jsx");
   assert.match(companion, /id: "fox"/);
   assert.match(companion, /id: "wolf"/);
-  assert.match(companion, /id: "forest-fairy-male"/);
-  assert.match(companion, /id: "forest-fairy-female"/);
+  const options=companion.match(/export const JOURNEY_COMPANIONS = \[([\s\S]*?)\];/);
+  assert.ok(options, "journey companion options exist");
+  assert.deepEqual([...options[1].matchAll(/id: "([^"]+)"/g)].map(match=>match[1]),["fox","wolf"]);
+  assert.doesNotMatch(companion, /id: "forest-fairy-(male|female)"/);
+  assert.match(companion, /JOURNEY_COMPANIONS.some\(item => item.id === value\) \? value : null/);
+  assert.match(companion, /JOURNEY_COMPANIONS.some\(item => item.id === next\)/);
+  assert.match(home, /Choose Fox or Wolf to explore with/);
+  assert.doesNotMatch(home, /four original companions/);
   assert.match(companion, /approved-heads\.webp/);
   assert.match(companion, /fox-idle\.webp/);
   assert.match(companion, /wolf-idle\.webp/);
-  assert.match(companion, /forest-fairy-male-idle\.webp/);
-  assert.match(companion, /forest-fairy-female-idle\.webp/);
+  assert.doesNotMatch(companion, /forest-fairy-(male|female)-idle\.webp/);
   assert.doesNotMatch(companion, /approved-fullbody\.webp/);
   assert.doesNotMatch(companion, /id: "owl"|id: "deer"|id: "traveller"/);
   assert.match(map, /targetId/);

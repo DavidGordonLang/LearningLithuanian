@@ -60,8 +60,8 @@ export default function LearningHome({
   const isLeavingVillage=!!departureRoute;
   const nextMapDuringExit=isLeavingVillage && target?.module?.id!==departureRoute.module.id
     ? target : null;
-  // Other companions do not yet have walking atlases. Let their normal
-  // next-map navigation proceed, without holding them at the fox gate.
+  // Wolf already has its own walking atlas; the fox-specific gate-exit
+  // transition must not block the wolf's normal next-map navigation.
   useEffect(()=>{
     if(journeyExitModuleId && (!departureRoute || selected.id!=="fox" || !hasChosen))
       onJourneyExitComplete?.();
@@ -79,7 +79,7 @@ export default function LearningHome({
     <div className="flex items-center gap-3"><button type="button" onClick={onBack} className="min-h-[44px] rounded-xl border border-emerald-400/30 px-3 text-sm font-semibold" aria-label="Back to main">← Back to main</button><div className="text-lg font-semibold">Choose your journey companion</div></div>
     <div className="z-journey-picker mt-5 rounded-[27px] border border-emerald-400/30 px-4 py-6">
       <h1 className="font-serif text-[25px] font-semibold">Who will explore Lithuania with you?</h1>
-      <p className="mt-2 text-sm text-zinc-300">Choose one of our four original companions. Your existing lessons and progress stay exactly where they are.</p>
+      <p className="mt-2 text-sm text-zinc-300">Choose Fox or Wolf to explore with. Your existing lessons and progress stay exactly where they are.</p>
       <div className="mt-5 grid grid-cols-2 gap-3" role="group" aria-label="Choose your journey companion">
         {JOURNEY_COMPANIONS.map(item=><button key={item.id} type="button" onClick={()=>choose(item.id)}
           className="z-journey-picker-option flex min-h-[142px] flex-col items-center justify-center gap-2 rounded-2xl border p-3"
