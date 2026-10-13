@@ -167,7 +167,8 @@ function Scene({ points }) {
 }
 export default function JourneyMap({
   module, completed, targetId, companion, onOpenLesson, userId,
-  exitToNextMap=false, onExitComplete, onExitProgress, replayFoxGap=false
+  exitToNextMap=false, onExitComplete, onExitProgress, replayFoxGap=false,
+  replayWolfRoute=false
 }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
@@ -175,8 +176,8 @@ export default function JourneyMap({
     new URLSearchParams(window.location.search).get("journeyQA")==="fox-gap");
   // Developer-only wolf full-route preview: no learner lessons or resets needed.
   const wolfRouteReplay=illustrated && companion?.id==="wolf" &&
-    typeof window!=="undefined" &&
-    new URLSearchParams(window.location.search).get("journeyQA")==="wolf-route";
+    (replayWolfRoute || (typeof window!=="undefined" &&
+      new URLSearchParams(window.location.search).get("journeyQA")==="wolf-route"));
   const defaultScale = illustrated ? 0.87 : SCALE;
   const pathPoints = illustrated ? FIRST_CONTACT_POINTS : POINTS;
   const points = stops.map((_, i) => pathPoints[i] || pathPoints[pathPoints.length-1]);
