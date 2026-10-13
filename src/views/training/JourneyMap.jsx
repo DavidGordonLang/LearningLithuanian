@@ -167,17 +167,16 @@ function Scene({ points }) {
 }
 export default function JourneyMap({
   module, completed, targetId, companion, onOpenLesson, userId,
-  exitToNextMap=false, onExitComplete, onExitProgress, replayFoxGap=false,
-  replayWolfRoute=false
+  exitToNextMap=false, onExitComplete, onExitProgress
 }) {
   const stops = module?.isSectionCheckpoint ? [module] : (module?.lessons || []);
   const illustrated = module?.id === FIRST_CONTACT_GREETING;
-  const foxGapReplay = replayFoxGap || (illustrated && typeof window!=="undefined" &&
-    new URLSearchParams(window.location.search).get("journeyQA")==="fox-gap");
-  // Developer-only wolf full-route preview: no learner lessons or resets needed.
+  // Manual QA remains available by URL, but never exposes replay buttons in the Journey UI.
+  const foxGapReplay = illustrated && typeof window!=="undefined" &&
+    new URLSearchParams(window.location.search).get("journeyQA")==="fox-gap";
   const wolfRouteReplay=illustrated && companion?.id==="wolf" &&
-    (replayWolfRoute || (typeof window!=="undefined" &&
-      new URLSearchParams(window.location.search).get("journeyQA")==="wolf-route"));
+    typeof window!=="undefined" &&
+    new URLSearchParams(window.location.search).get("journeyQA")==="wolf-route";
   const defaultScale = illustrated ? 0.87 : SCALE;
   const pathPoints = illustrated ? FIRST_CONTACT_POINTS : POINTS;
   const points = stops.map((_, i) => pathPoints[i] || pathPoints[pathPoints.length-1]);
@@ -1156,29 +1155,19 @@ export default function JourneyMap({
         {gateShowMarker?"Hide gate marker":"Show gate marker"}
       </button>
     </div>}
-    {wolfRouteReplay && <div className="z-fox-route-gap-qa" role="group"
-      aria-label="Developer-only wolf route test without resetting lessons">
-      <button type="button" onClick={()=>{
-        journeyProgressRef.current=0;
-        setJourneyProgress(0);
-        setJourneyMoving(true);
-      }}>Replay complete wolf village walk</button>
-      <span role="status">Wolf route {(journeyProgress*100).toFixed(1)}% ·
+    {wolfRouteReplay && <div className="z-fox-route-gap-qa" role="status"
+      aria-label="Developer-only wolf route diagnostics">
+      Wolf route {(journeyProgress*100).toFixed(1)}% ·
         segment {(journeyPoint?.segmentIndex??0)+1} · {journeyDirection} ·
         sheet {journeyAtlas} {journeyAtlasLoaded?"decoded":"loading / fallback"} ·
-        frame {journeyVisibleFrame}</span>
+        frame {journeyVisibleFrame}
     </div>}
-    {foxGapReplay && <div className="z-fox-route-gap-qa" role="group"
-      aria-label="Replay Bakery to Lantern Corner without resetting lessons">
-      <button type="button" onClick={()=>{
-        journeyProgressRef.current=.395;
-        setJourneyProgress(.395);
-        setJourneyMoving(true);
-      }}>Replay Bakery → Lantern Corner</button>
-      <span role="status">Route {(journeyProgress*100).toFixed(1)}% ·
+    {foxGapReplay && <div className="z-fox-route-gap-qa" role="status"
+      aria-label="Developer-only fox route diagnostics">
+      Route {(journeyProgress*100).toFixed(1)}% ·
         segment {(journeyPoint?.segmentIndex??0)+1} · {journeyDirection} ·
         sheet {journeyAtlas} {journeyAtlasLoaded?"decoded":"loading / fallback"} ·
-        frame {journeyVisibleFrame}{healthyFrames.length<8 ? " · "+healthyFrames.length+"/8 frames visible" : ""}</span>
+        frame {journeyVisibleFrame}{healthyFrames.length<8 ? " · "+healthyFrames.length+"/8 frames visible" : ""}
     </div>}
     <div className="z-local-map-footer">
       <span>{stops.filter(s=>completed.has(s.id)).length} of {stops.length} stops completed</span>
