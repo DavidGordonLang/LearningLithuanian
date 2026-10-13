@@ -12,7 +12,7 @@ Status: Art/layout design working specification. Section 1 map concepts and wayp
 - Map art must contain ONLY scenery. Do not bake lesson badges, numbers, characters, buttons, text labels, speech bubbles or checkpoints into pixels.
 - Keep lesson/score/completion/ID/persistence rules in the existing React/gameStore layer. Preserve scene overlay, developer editors and production gating.
 - Author/export a sharp portrait illustrated master, fit to existing 850×1120 virtual scene with its own landmark-specific point coordinates and high-resolution tile exports; preserve the original full-resolution file.
-- If artwork has archways/bridges that pass in front of a character, provide an isolated clean foreground occlusion cut-out/mask separately; do not force walk route to break perspective.
+- **No foreground crossings on any NEW map.** Fox/Wolf must remain on unobstructed, fully visible, open paths at every walking frame and lesson stop. Buildings, arches, fences, bridges, canopies, vegetation and props must sit entirely BESIDE or BEHIND the walking corridor, never above it or across it; no new foreground occlusion masks or custom z-order/pillar tricks. Bridge/water landmarks may be visible nearby, but do not route a companion under arches, behind pillars, behind trees or through buildings. The existing approved 1.1 gate mask is a grandfathered exception and remains unchanged.
 
 ## Road readability — acceptance criterion
 
@@ -23,11 +23,29 @@ Compared with the first village's busy cobblestones, the main navigable path nee
 4. Avoid disguising paths under bushes, awnings, props, shadow bands or doorsteps. Mobile visual QA should identify walkable course at a glance with markers temporarily hidden.
 5. Ensure world/spawn/ground and stop anchors are designed BEFORE final imagery, not retrofitted into decorative pictures.
 
+## Approved walking-route contract — 13 October 2026
+
+David's additional confirmed acceptance criteria:
+
+1. **Always forwards, in curriculum order.** Layout the landmarks from the ENTRY edge towards the EXIT edge, in order 1 → 2 → ... → module checkpoint, then the separately unlocked SECTION checkpoint on map 1.4. No doubling back to get to a later lesson, no loops, U-turns, crossings or jumping to the far side of the map. Stop marker progression along route distance must be strictly increasing. Any intermediate walking bend should be gentle and should not send the character towards a previously completed landmark. Avoid visual zig-zags even if mathematical progress increases.
+2. **Keep the entire quadruped unobstructed.** Before artwork acceptance, imagine a corridor of sufficient width for the whole Fox/Wolf sprite including ears, tails, front/back legs and its ground-contact anchor. Nothing may overlap that corridor at any stop or along any path segment. NO tunnels, arch crossings, walking behind fences, stepping through building fronts or foliage masks. Objects can be detailed right beside the road, never across it.
+3. **Stitch adjacent maps into a continuous journey.** Author **exit location + outgoing compass facing** from map N *before* authoring map N+1. Map N+1 must place the **entry at the matching lateral position on the opposite near edge** and preserve the companion's travel heading (allowing a very slight perspective correction). Example: leaving one map via its upper-left path heading up-left should lead into the lower-left near path of the next, still heading up-left — NOT reappear to the right, turn around or start walking towards the previous screen. Both Fox and Wolf use the same seam contracts.
+4. **Transition is an overlay, not disappearance.** Keep old scene fully opaque and its existing companion travelling; fade incoming scenery only into view with matching road/ground palette and seam alignment. Switch to new active map and its companion at entry without visible reverse walk, double sprite, screen blank, out-of-order checkpoint, or major apparent size snap.
+5. **Design-time acceptance check.** In each draft verify 1) all stop IDs map to strictly increasing distances on one easy-to-follow route; 2) open corridor clearance for BOTH sprites at ALL frames and lesson stops; 3) route is directionally monotonic with no backtrack; 4) the neighboring map seam makes spatial sense; and 5) the road is readable with markers hidden on an Android-width view. Rework composition BEFORE generating final textures or integrating.
+
+### Section 1 directional seams (provisional, must be matched to final accepted imagery)
+
+- **Existing 1.1 village:** approved world route endpoint is `(455,182)` in the 850×1120 scene; last authored segment runs `(487,194) → (455,182)`, heading approximately LEFT/slightly UP. This is a confirmed code constraint, not a request to alter the route. Plan 1.2's entrance and first short walking segment to honour that *actual* terminal facing/position, not the arbitrary infographic concept.
+- **1.2 → 1.3 and 1.3 → 1.4:** decide each downstream map's first anchor/entry before illustrating the previous map's last 15% path. Keep the lateral lane, direction, scale progression, material and ground alignment compatible at every seam. Proposed single broad continuous village journey travels generally AWAY (towards the top of portraits) while meandering a little; we avoid prescribed diagonal shifts that would conflict with real route artwork.
+- **At Section 1 end:** checkpoint 1.C is the seventh and last landmark on 1.4 and uses a significantly larger community hall; the 1.4 module checkpoint is point six. Both must remain in progression order. The section-to-section handoff can have a new look, but must still preserve outgoing/incoming position and direction.
+
+**Concept-image caveat:** The generated four-panel image was an *art direction illustration*, not a mathematically laid-out playable map. Its illustrated circles/numbers may be wrong or out of route order and its landmark captions may not match the actual curriculum. **Never copy those numbers, pin coordinates, road crossings, or labels into production.** Use the real curriculum IDs/titles below and overlay verified ordered pins in code.
+
 ## Section 1 — connected world geography
 
 A single welcoming storybook Lithuanian village:
 **1.1 village entrance and civic square → 1.2 residential lane and meeting courtyards → 1.3 central services lane → 1.4 bridge/outskirts, final civic landmark.**
-Architecture, roof colour, perspective, daylight and landscaping should match between neighbouring screens. Each map must be a recognisable distinct scene, not a recolour of the same street. Path enters from bottom of each portrait and leaves towards top at a plausible location relative to previous map, establishing a seamless journey.
+Architecture, roof colour, perspective, daylight and landscaping should match between neighbouring screens. Each map must be a recognisable distinct scene, not a recolour of the same street. The main route generally progresses from the near edge towards the far edge, BUT actual entry/exit lane and compass facing must be matched to neighboring route endpoints. Do not overwrite the approved 1.1 route to force a generic top/bottom formula.
 
 ### 1.1 — Greeting and Politeness | 5 points | APPROVED base
 
