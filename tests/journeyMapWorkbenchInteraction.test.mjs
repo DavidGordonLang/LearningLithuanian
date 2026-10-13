@@ -39,3 +39,17 @@ test("map switching and lesson coordinate drafts remain separate from learning p
   assert.match(map,/markers:ids\.filter\(id=>placed\[id\]\)/);
   assert.doesNotMatch(map,/useGameStore|setCompleted|saveLessonProgress/);
 });
+
+
+test("all four DEV Section 1 maps use approved portrait assets and isolated marker drafts",()=>{
+  const map=read("src/views/training/JourneyMapWorkbench.jsx");
+  assert.equal((map.match(/w: 1024, h: 1536/g)||[]).length,4);
+  for(const module of ["1.1","1.2","1.3","1.4"])
+    assert.match(map,new RegExp("section-1-map-"+module.replace(".","\\.")+"-portrait\\.avif"));
+  assert.match(map,/stage1:portrait-v2:/);
+  assert.match(map,/saved\?\.version!==2/);
+  assert.match(map,/setPlaced\(saved \|\| \{\}\)/);
+  assert.doesNotMatch(map,/w: 1536, h: 1024|first-contact-greeting-tile|map\.approved/);
+  assert.match(map,/data-swipe-block="true"/);
+  assert.match(map,/kind:'pinch'/);
+});
