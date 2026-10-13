@@ -48,6 +48,12 @@ test("wolf reuses approved village route, lesson stops and perspective without m
   const map=source("src/views/training/JourneyMap.jsx");
   assert.ok(map.includes('companion?.id==="fox" || companion?.id==="wolf"'));
   assert.ok(map.includes('get("journeyQA")==="wolf-route"'));
+  assert.ok(map.includes("replayWolfRoute ||"));
+  const home=source("src/views/training/LearningHome.jsx");
+  assert.ok(home.includes("wolfReplayAvailable=foxReplayPreview"));
+  assert.ok(home.includes("replayWolfRoute={wolfReplayAvailable && wolfReplayCount>0}"));
+  assert.ok(home.includes("setWolfReplayCount(n=>n+1)"));
+  assert.ok(home.includes("▶ Replay complete wolf village walk"));
   assert.ok(map.includes("Replay complete wolf village walk"));
   assert.ok(map.includes("wolfRouteReplay ? {at:1000}"));
   assert.ok(map.includes('wolfRouteReplay || foxGapReplay || !targetId) return'));
