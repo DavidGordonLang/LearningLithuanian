@@ -19,10 +19,25 @@ test("direction atlases predecode and failures are explicit",async()=>{
 });
 test("fox gap route replay does not alter lesson progress",()=>{
  const map=read("src/views/training/JourneyMap.jsx");
- for(const term of ['get("journeyQA")==="fox-gap"',"{start:0.255,moving:true}",
-   "Replay Fountain","!journeyAtlasLoaded","!foxAtlasState.complete",
+ for(const term of ['get("journeyQA")==="fox-gap"',"{start:0.395,moving:true}",
+   "Replay Bakery","!journeyAtlasLoaded","!foxAtlasState.complete",
    'src="/assets/journey/fox-idle.webp"'])
    assert.ok(map.includes(term),term);
  assert.ok(!map.includes("awardXp("));
  assert.ok(!map.includes("completeLesson("));
+});
+
+test("completed village review exposes a replay button without query parameters",()=>{
+ const home=read("src/views/training/LearningHome.jsx");
+ const map=read("src/views/training/JourneyMap.jsx");
+ assert.ok(home.includes('reviewRoute?.module?.id==="module_1_1"'));
+ assert.ok(home.includes("window.location.hostname.endsWith"));
+ assert.ok(home.includes("▶ Replay Bakery → Lantern Corner"));
+ assert.ok(home.includes("setFoxReplayCount(n=>n+1)"));
+ assert.ok(home.includes("replayFoxGap={foxReplayActive}"));
+ assert.ok(home.includes('key={activeModule.id+"-replay-"+'));
+ assert.ok(map.includes("foxGapReplay ? {at:673}"));
+ assert.ok(map.includes("{start:0.395,moving:true}"));
+ assert.ok(map.includes("journeyProgressRef.current=.395;"));
+ assert.ok(map.includes("setJourneyProgress(.395);"));
 });
