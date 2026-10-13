@@ -41,7 +41,7 @@ export default function LearningHome({
   // Authoring is restricted to non-production DEV hosts and explicitly enabled
   // by the developer URL flag. Preserve the old JourneyMap gate/route editor.
   const workbenchActive = typeof window !== "undefined" &&
-    /(^|\\.)vercel\\.app$|^localhost$|^127\\.0\\.0\\.1$/.test(window.location.hostname) &&
+    (window.location.hostname.endsWith(".vercel.app") || ["localhost","127.0.0.1"].includes(window.location.hostname)) &&
     new URLSearchParams(window.location.search).get("journeyDev")==="1" &&
     new URLSearchParams(window.location.search).get("legacyEditor")!=="1";
   const unlockedReview = allSections.flatMap(s => {
