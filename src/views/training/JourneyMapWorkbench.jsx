@@ -4,23 +4,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './JourneyMapWorkbench.css';
 
+// All approved Section 1 art uses the SAME 1024 x 1536 portrait world.
+// Keep legacy Module 1.1 running elsewhere until its route/sprite remap is approved.
 const MAPS = [
-  { id: 'module_1_1', title: '1.1 · Greeting and Politeness', w: 850, h: 1120,
-    approved: [ [183,880], [575,725], [254,526], [654,325], [310,204] ],
-    tiles: [1,2,3,4].map(n => `/assets/journey/first-contact-greeting-tile-${n}.avif`) },
-  { id: 'module_1_2', title: '1.2 · Who I Am', w: 1536, h: 1024,
-    url: '/assets/journey/section-1-map-1.2.avif' },
-  { id: 'module_1_3', title: "1.3 · I Don't Understand", w: 1536, h: 1024,
-    url: '/assets/journey/section-1-map-1.3.avif' },
-  { id: 'module_1_4', title: '1.4 · Help and Contact', w: 1536, h: 1024,
-    url: '/assets/journey/section-1-map-1.4.avif' },
+  { id: 'module_1_1', title: '1.1 · Greeting and Politeness', w: 1024, h: 1536,
+    url: '/assets/journey/section-1-map-1.1-portrait.avif' },
+  { id: 'module_1_2', title: '1.2 · Who I Am', w: 1024, h: 1536,
+    url: '/assets/journey/section-1-map-1.2-portrait.avif' },
+  { id: 'module_1_3', title: "1.3 · I Don't Understand", w: 1024, h: 1536,
+    url: '/assets/journey/section-1-map-1.3-portrait.avif' },
+  { id: 'module_1_4', title: '1.4 · Help and Contact', w: 1024, h: 1536,
+    url: '/assets/journey/section-1-map-1.4-portrait.avif' },
 ];
 const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
-const storageKey = (userId,id) => `zodis:journey:markers:stage1:v1:${userId || 'local'}:${id}`;
+const storageKey = (userId,id) => `zodis:journey:markers:stage1:portrait-v2:${userId || 'local'}:${id}`;
 function restore(key, ids, map) {
   try {
     const saved=JSON.parse(localStorage.getItem(key) || 'null');
-    if(saved?.version!==1 || saved.mapId!==map.id || !Array.isArray(saved.markers)) return null;
+    if(saved?.version!==2 || saved.mapId!==map.id || !Array.isArray(saved.markers)) return null;
     const allowed=new Set(ids);
     return Object.fromEntries(saved.markers.filter(p => allowed.has(p.id) &&
       Number.isFinite(p.x) && Number.isFinite(p.y)).map(p =>
@@ -56,9 +57,9 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
   };
   useEffect(()=>{
     const saved=restore(storageKey(userId,mapId),ids,map);
-    const approved=map.approved ? Object.fromEntries(ids
-      .filter((_,i)=>!!map.approved[i]).map((id,i)=>[id,{x:map.approved[i][0],y:map.approved[i][1]}])) : {};
-    setPlaced(saved || approved);
+    // Old landscape/legacy drafts remain untouched under their v1 key.
+    // Never project old marker coordinates onto this newly approved portrait art.
+    setPlaced(saved || {});
     setSelectedId(ids[0] || null);
     pointers.current.clear();gesture.current=null;
     setExportVisible(false);setMessage('');setImageFailed(false);
@@ -69,7 +70,7 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
   const record=(next)=>{
     setPlaced(next);
     try {
-      localStorage.setItem(storageKey(userId,mapId),JSON.stringify({version:1,mapId,
+      localStorage.setItem(storageKey(userId,mapId),JSON.stringify({version:2,mapId,
         markers:ids.filter(id=>next[id]).map(id=>({id,...next[id]}))}));
       setMessage('Marker draft saved locally. Copy the JSON when you finish positioning.');
     } catch {setMessage('Browser storage unavailable. Copy the JSON before leaving.');}
@@ -144,7 +145,7 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
   };
   const selected=stops.find(s=>s.id===selectedId);
   const count=ids.filter(id=>placed[id]).length;
-  const markerJson=JSON.stringify({version:1,mapId,
+  const markerJson=JSON.stringify({version:2,mapId,
     dimensions:{width:map.w,height:map.h},
     markers:ids.filter(id=>placed[id]).map(id=>({id,...placed[id]}))},null,2);
   const copy=async()=>{
@@ -168,7 +169,7 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
     </select>
     <div className="mt-2 flex justify-between gap-2 text-xs">
       <span><b>{count}/{ids.length}</b> placed {mapId==='module_1_4'?'· Section checkpoint included':''}</span>
-      <span>Original art preserved</span>
+      <span>1024 × 1536 portrait</span>
     </div>
     <p className="mt-3 text-xs">Drag the map with one finger; pinch with two fingers to zoom.
       Choose a lesson below and tap its position to place the marker. The next lesson selects automatically.</p>
@@ -178,10 +179,8 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
       aria-label={'Map marker editor for '+map.title}>
       <div className="z-marker-world" style={{width:map.w,height:map.h,
         transform:`translate(${pan.x}px,${pan.y}px) scale(${zoom})`}}>
-        {map.tiles?map.tiles.map((url,i)=><img key={url} src={url} alt=""
-          draggable={false} className="z-marker-art" style={{top:i*280,width:850,height:280}}/>) :
-          <img src={map.url} alt="" draggable={false} className="z-marker-art"
-            style={{top:0,width:map.w,height:map.h}} onError={()=>setImageFailed(true)}/>}
+        <img src={map.url} alt="" draggable={false} className="z-marker-art"
+          style={{top:0,width:map.w,height:map.h}} onError={()=>setImageFailed(true)}/>
         {ids.filter(id=>placed[id]).map(id=><span key={id}
           className={'z-marker-pin '+(id===selectedId?'active':'')}
           style={{left:placed[id].x,top:placed[id].y,
@@ -219,6 +218,7 @@ export default function JourneyMapWorkbench({ allSections=[], userId, onBack }) 
       className="z-marker-json w-full rounded-lg p-2" aria-label="Lesson coordinates JSON"/>}
     <p className="mt-2 text-xs opacity-75">Drafts save locally per account and map; they do not change lessons.
       Only marker controls appear at this stage. Route tracing and then sprite-size controls will replace this panel later.
-      The approved Module 1.1 route and all lesson completion rules remain unchanged.</p>
+      The prior landscape drafts remain saved separately. The approved legacy Module 1.1 route
+      and all learner completion rules remain unchanged.</p>
   </div>;
 }
