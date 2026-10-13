@@ -628,6 +628,33 @@ test("Journey offers only the approved fox and wolf while preserving map progres
   assert.doesNotMatch(lesson, /className=\{celebratedBlockId === currentBlock\?\.id \? "z-journey-companion-active"/);
 });
 
+test("Journey light-mode picker labels and lesson encouragement keep readable ink", () => {
+  const css = source("src/index.css");
+  const lesson = source("src/views/training/LearningLessonView.jsx");
+  const home = source("src/views/training/LearningHome.jsx");
+  assert.match(home, /z-journey-picker-option/);
+  assert.match(home, /\{item\.name\}/);
+  assert.match(lesson, /z-journey-companion-caption/);
+  assert.match(lesson, /Nice one!/);
+  assert.match(css, /html\[data-theme="light"\] \.z-journey-picker \.z-journey-picker-option\{color:#1b4f40\}/);
+  assert.match(css, /html\[data-theme="light"\] \.z-journey-companion-caption\{color:#235e3a\}/);
+  // Dark-mode defaults must remain as designed, not be globally recoloured.
+  assert.match(css, /\.z-journey-picker-option \{[\s\S]*?color:#fffdf1/);
+  assert.match(css, /\.z-journey-companion-caption \{[\s\S]*?color:#b4f3d2/);
+  const luminance = hex => {
+    const rgb = [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255)
+      .map(v=>v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4);
+    return rgb[0]*0.2126+rgb[1]*0.7152+rgb[2]*0.0722;
+  };
+  const contrast = (a,b) => {
+    const hi=Math.max(luminance(a),luminance(b));
+    const lo=Math.min(luminance(a),luminance(b));
+    return (hi+0.05)/(lo+0.05);
+  };
+  assert.ok(contrast("#1b4f40","#e5eee2")>=4.5);
+  assert.ok(contrast("#235e3a","#fffaf0")>=4.5);
+});
+
 test("Journey map drags do not swipe app tabs while map controls remain interactive", () => {
   const map = source("src/views/training/JourneyMap.jsx");
   const pager = source("src/components/SwipePager.jsx");

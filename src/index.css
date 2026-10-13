@@ -1442,6 +1442,10 @@ html[data-theme="light"] .z-map-region-card{background:linear-gradient(130deg,#e
 html[data-theme="light"] .z-map-region-link{background:#fffaf0;border-color:#b0cab9;color:#254d3c}
 html[data-theme="light"] .z-journey-picker{color:#123d32;background:#e5eee2}
 html[data-theme="light"] .z-journey-picker p{color:#476f5c}
+/* Light cards need dark ink, not the cream inherited from the dark picker. */
+html[data-theme="light"] .z-journey-picker .z-journey-picker-option{color:#1b4f40}
+/* Match the existing dark-green success feedback used in light-mode scenarios. */
+html[data-theme="light"] .z-journey-companion-caption{color:#235e3a}
 @media(max-height:700px){.z-local-map-viewport{height:56dvh;min-height:300px}}
 
 /* Guided-learning pages use the immersive canvas without duplicate navigation.
