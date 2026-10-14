@@ -6,7 +6,7 @@ import {dirname,resolve} from 'node:path';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const read=path=>readFileSync(resolve(root,path),'utf8');
 
-test('route editor blocks horizontal page swipe and preserves touch-action none for pinch',()=>{
+test('sizing editor blocks horizontal page swipe and preserves touch-action none for pinch',()=>{
  const src=read('src/views/training/JourneyMapWorkbench.jsx');
  const css=read('src/views/training/JourneyMapWorkbench.css');
  assert.match(src,/data-swipe-block="true"/);
