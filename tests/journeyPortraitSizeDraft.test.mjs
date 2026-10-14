@@ -1,50 +1,45 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
- SIZE_MIN_PERCENT,SIZE_MAX_PERCENT,DEFAULT_SIZE_ANCHORS,
- defaultSizeAnchors,sizeAtProgress,validateSizeAnchors,
- setSizeAnchor,removeSizeAnchor,buildSizeDraft,restoreSizeDraft,
- sizeStorageKey,sizeRouteSignature,
+import {SIZE_MIN_PERCENT,SIZE_MAX_PERCENT,DEFAULT_SIZE_ANCHORS,
+  defaultSizeAnchors,sizeAtProgress,validateSizeAnchors,setSizeAnchor,
+  removeSizeAnchor,buildSizeDraft,restoreSizeDraft,sizeStorageKey,
 } from '../src/views/training/journeyPortraitSizeDraft.js';
 import {approvedPortraitRoutePoints} from '../src/views/training/section1PortraitRoutes.js';
 
-test('new portrait perspective spans extremely near to far without the old 40–100% clamp',()=>{
- assert.equal(SIZE_MIN_PERCENT,12);
- assert.equal(SIZE_MAX_PERCENT,240);
- assert.deepEqual(defaultSizeAnchors(),[{at:0,size:145},{at:1000,size:22}]);
- assert.equal(sizeAtProgress(defaultSizeAnchors(),0),145);
- assert.equal(sizeAtProgress(defaultSizeAnchors(),1000),22);
- assert.equal(sizeAtProgress(defaultSizeAnchors(),500),83.5);
- assert.equal(sizeAtProgress(defaultSizeAnchors(),250)>sizeAtProgress(defaultSizeAnchors(),750),true);
+test('size starts with one key and holds until another saved change',()=>{
+  assert.equal(SIZE_MIN_PERCENT,12);
+  assert.equal(SIZE_MAX_PERCENT,240);
+  const initial=defaultSizeAnchors();
+  assert.deepEqual(initial,[{at:0,size:145}]);
+  for(const at of [0,1,200,500,999,1000])assert.equal(sizeAtProgress(initial,at),145);
+  const next=setSizeAnchor(initial,500,32);
+  assert.equal(sizeAtProgress(next,499),145);
+  assert.equal(sizeAtProgress(next,500),32);
+  assert.equal(sizeAtProgress(next,700),32);
+  assert.equal(sizeAtProgress(next,1000),32);
+  assert.equal(sizeAtProgress(setSizeAnchor(next,810,12),800),32);
+  assert.equal(sizeAtProgress(setSizeAnchor(next,810,12),810),12);
+  assert.deepEqual(removeSizeAnchor(next,500),initial);
 });
 
-test('authored size points are sorted, bounded, interpolated and removable',()=>{
- const base=defaultSizeAnchors();
- const keys=setSizeAnchor(base,500,200);
- assert.deepEqual(keys,[{at:0,size:145},{at:500,size:200},{at:1000,size:22}]);
- assert.equal(sizeAtProgress(keys,500),200);
- assert.equal(sizeAtProgress(keys,250),172.5);
- assert.deepEqual(removeSizeAnchor(keys,500),base);
- assert.deepEqual(removeSizeAnchor(base,0),base);
- assert.deepEqual(setSizeAnchor(base,750,400),[
-   {at:0,size:145},{at:750,size:240},{at:1000,size:22}]);
- assert.deepEqual(base,[{at:0,size:145},{at:1000,size:22}]);
- assert.equal(validateSizeAnchors([{at:0,size:12},{at:0,size:20},{at:1000,size:30}]),null);
- assert.equal(validateSizeAnchors([{at:0,size:10},{at:1000,size:20}]),null);
+test('size keys are bounded, sorted and cannot delete initial size',()=>{
+  const base=defaultSizeAnchors();
+  assert.deepEqual(removeSizeAnchor(base,0),base);
+  assert.deepEqual(setSizeAnchor(base,750,400),[{at:0,size:145},{at:750,size:240}]);
+  assert.equal(validateSizeAnchors([{at:0,size:20},{at:0,size:30}]),null);
+  assert.equal(validateSizeAnchors([{at:0,size:10}]),null);
+  assert.deepEqual(base,[{at:0,size:145}]);
+  assert.ok(Object.isFrozen(DEFAULT_SIZE_ANCHORS));
 });
 
-test('stage-3 local drafts are map-bound and tied to the exact route',()=>{
- const first=approvedPortraitRoutePoints('module_1_1');
- const second=approvedPortraitRoutePoints('module_1_2');
- const anchors=setSizeAnchor(defaultSizeAnchors(),480,42);
- const draft=buildSizeDraft('module_1_1',first,anchors);
- assert.deepEqual(restoreSizeDraft(JSON.stringify(draft),'module_1_1',first),anchors);
- assert.equal(restoreSizeDraft(JSON.stringify(draft),'module_1_2',first),null);
- assert.equal(restoreSizeDraft(JSON.stringify(draft),'module_1_1',second),null);
- assert.equal(restoreSizeDraft('invalid','module_1_1',first),null);
- assert.ok(sizeStorageKey('u','module_1_1').includes(':u:module_1_1'));
- assert.notEqual(sizeRouteSignature(first),sizeRouteSignature(second));
- const modified=first.map(p=>({...p}));modified[2].x+=1;
- assert.equal(restoreSizeDraft(JSON.stringify(draft),'module_1_1',modified),null);
- assert.ok(Object.isFrozen(DEFAULT_SIZE_ANCHORS));
+test('v2 drafts require exact map, route, and optionally direction plan',()=>{
+  const a=approvedPortraitRoutePoints('module_1_1');
+  const b=approvedPortraitRoutePoints('module_1_2');
+  const sizes=setSizeAnchor(defaultSizeAnchors(),600,22);
+  const json=JSON.stringify(buildSizeDraft('module_1_1',a,sizes,'direction-hash'));
+  assert.deepEqual(restoreSizeDraft(json,'module_1_1',a,'direction-hash'),sizes);
+  assert.equal(restoreSizeDraft(json,'module_1_1',a,'changed'),null);
+  assert.equal(restoreSizeDraft(json,'module_1_2',a,'direction-hash'),null);
+  assert.equal(restoreSizeDraft(json,'module_1_1',b,'direction-hash'),null);
+  assert.ok(sizeStorageKey('user','module_1_1').includes('stage3:v2'));
 });
