@@ -186,8 +186,11 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
     points.set(e.pointerId,{x:e.clientX,y:e.clientY});
     try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}
     if(points.size===1){
-      gesture.current={mode:'pan',id:e.pointerId,start:{x:e.clientX,y:e.clientY},
-        pan:view.current.pan};
+      const pin=hitStop(e);
+      if(pin)selectStop(pin);
+      gesture.current={mode:pin?'stop':'pan',id:e.pointerId,stopId:pin,
+        start:{x:e.clientX,y:e.clientY},pan:view.current.pan,
+        moved:false,canPlace:!pin};
     }else if(points.size===2){
       const [a,b]=[...points.values()];
       const bounds=viewport.current.getBoundingClientRect();
