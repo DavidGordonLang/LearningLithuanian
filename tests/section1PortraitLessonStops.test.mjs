@@ -41,3 +41,16 @@ test('wrong map, route, or reordered lesson identifiers do not apply',()=>{
   SECTION1_PORTRAIT_MARKERS.module_1_2.markers.map(x=>x.id),
   approvedPortraitRoutePoints('module_1_1')),null);
 });
+
+test('authoring editor loads saved drafts before approved baselines',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const {fileURLToPath}=await import('node:url');
+ const {dirname,resolve}=await import('node:path');
+ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+ const code=readFileSync(resolve(root,'src/views/training/JourneyMapWorkbench.jsx'),'utf8');
+ assert.ok(code.includes('draft||banked||seed(route,stopIds,markerPositions)'));
+ assert.ok(code.includes('approvedPortraitLessonStops(mapId,stopIds,route)'));
+ assert.ok(code.includes('restore(localStorage.getItem(draftKey),mapId,route,stopIds)'));
+ assert.ok(code.includes('localStorage.setItem(draftKey'));
+ assert.ok(!code.includes('useGameStore'));
+});
