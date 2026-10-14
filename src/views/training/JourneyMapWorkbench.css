@@ -52,3 +52,7 @@ html[data-theme="dark"] .z-marker-select,
 html[data-theme="dark"] .z-marker-tool{
   color:#f5f6e7;background:#1d4136;border-color:#568674}
 html[data-theme="dark"] .z-size-anchor-chip{border-color:#609b81}
+
+.z-size-idle-sprite{position:absolute;left:0;bottom:0;width:82px;height:112px;object-fit:contain;pointer-events:none;user-select:none}
+.z-size-checkpoint-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.z-size-checkpoint-actions>*{flex:1 1 140px;white-space:normal}
