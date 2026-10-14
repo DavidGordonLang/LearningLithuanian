@@ -99,6 +99,15 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
     clock.current=0;
   },[mapId,companion]);
   useEffect(()=>{
+    let draft=null;
+    try{draft=restore(localStorage.getItem(draftKey),mapId,route,stopIds);}catch{}
+    const next=draft||seed(route,stopIds,markerPositions);
+    setAuthored(next);setSelectedId(next[0]?.id||'');
+    dragAtRef.current=null;setDragAt(null);setShowJson(false);
+    setNote(draft?'Saved positions restored.':'Estimated stops loaded. Adjust each gold pin.');
+    setProgress(0);setIdle(true);setPlaying(false);
+  },[mapId,userId]);
+  useEffect(()=>{
     setImageFailed(false);touches.current.clear();gesture.current=null;
     const id=requestAnimationFrame(fit);
     return()=>cancelAnimationFrame(id);
