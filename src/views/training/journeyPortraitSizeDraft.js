@@ -3,7 +3,7 @@
 export const SIZE_MIN_PERCENT=12;
 export const SIZE_MAX_PERCENT=240;
 export const SIZE_MAX_ANCHORS=40;
-export const SIZE_DRAFT_VERSION=1;
+export const SIZE_DRAFT_VERSION=2;
 export const DEFAULT_SIZE_ANCHORS=Object.freeze([
   Object.freeze({at:0,size:145}),
   Object.freeze({at:1000,size:22}),
