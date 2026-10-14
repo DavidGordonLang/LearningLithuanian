@@ -6,10 +6,9 @@ import FoxWalkSprite from './FoxWalkSprite';
 import {approvedPortraitMarkerPositions} from './section1PortraitMarkers';
 import {approvedPortraitRoutePoints} from './section1PortraitRoutes';
 import {gateRouteAt} from './journeyGateRouteEditor';
-import {nearestRouteProgress} from './journeyRouteTraceDraft';
-import {foxRouteTotalDistance,foxRouteFrame} from './journeyFoxRoutePlayback';
+import {foxRouteFrame} from './journeyFoxRoutePlayback';
 import {automaticPreviewScale,automaticJourneyFrame,
-  automaticJourneyFacing} from './journeyAutoPreview';
+  automaticJourneyFacing,previewCheckpointStops} from './journeyAutoPreview';
 
 const MAPS=[
   {id:'module_1_1',title:'1.1 · Greeting and Politeness',w:1024,h:1536,
@@ -28,7 +27,6 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
   const [companion,setCompanion]=useState('fox');
   const map=MAPS.find(item=>item.id===mapId)||MAPS[0];
   const route=approvedPortraitRoutePoints(mapId);
-  const routeLength=foxRouteTotalDistance(route);
   const section=allSections.find(item=>item.id==='section_1');
   const module=section?.modules?.find(item=>item.id===mapId);
   const sectionCheckpoint=section?.modules?.find(item=>item.isSectionCheckpoint);
@@ -36,12 +34,10 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
     ...(mapId==='module_1_4'&&sectionCheckpoint?[sectionCheckpoint]:[])];
   const markerPositions=approvedPortraitMarkerPositions(mapId,stops.map(s=>s.id));
   const markers=stops.map(s=>markerPositions[s.id]).filter(Boolean);
-  // Provisional checkpoint projections on the road, not lesson stop anchors.
-  const checkpointProgress=stops.filter(s=>s.id?.endsWith('checkpoint')&&markerPositions[s.id])
-    .map(s=>nearestRouteProgress(route,markerPositions[s.id]))
-    .filter(Boolean)
-    .map(p=>clamp(p.progress/(routeLength||1),0,1));
-  const holdSignature=checkpointProgress.join(',');
+  // Gold pause pins use exactly the same projected road coordinates and
+  // percentages that the playback uses. Blue lesson icons are kept unchanged.
+  const checkpointStops=previewCheckpointStops(route,stops,markerPositions);
+  const holdSignature=checkpointStops.map(stop=>stop.progress).join(',');
   const [progress,setProgress]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [idle,setIdle]=useState(true);
@@ -62,6 +58,8 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
   const frame=foxRouteFrame(route,progress);
   const scale=automaticPreviewScale(companion,progress);
   const facingCamera=(progress===0&&!playing)||idle;
+  const activeStop=idle&&playing?checkpointStops.find(stop=>
+    Math.abs(stop.progress-progress)<0.00001):null;
   const image=companion==='wolf'?'/assets/journey/wolf-idle.webp':
     '/assets/journey/fox-idle.webp';
 
@@ -184,10 +182,10 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
       <button className={'z-marker-tool '+(companion==='wolf'?'z-size-active':'')}
         type="button" aria-pressed={companion==='wolf'} onClick={()=>setCompanion('wolf')}>Wolf</button>
     </div>
-    <p className="mt-2 text-xs">Beta preview: characters follow the approved route,
-      automatically turn, and gradually shrink as they travel away. Drag the
-      scenery to pan or pinch to zoom. The original artwork faces you at the start
-      and checkpoint pauses.</p>
+    <p className="mt-2 text-xs">Beta preview: Fox and Wolf start larger and
+      shrink more gently as they walk away. Gold CP pins show the exact
+      provisional road positions where they pause and face you. Drag empty
+      scenery to pan or pinch to zoom.</p>
     <div ref={viewport} data-swipe-block="true" className="z-marker-viewport mt-2"
       onPointerDown={pointerDown} onPointerMove={pointerMove}
       onPointerUp={pointerEnd} onPointerCancel={pointerEnd}
@@ -201,6 +199,15 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
           className="z-marker-pin z-size-locked-marker" aria-hidden="true"
           style={{left:point.x,top:point.y,
             transform:`translate(-50%,-100%) scale(${1/zoom})`}}>{i+1}</span>)}
+        {checkpointStops.map(stop=><span key={stop.id}
+          className={'z-preview-checkpoint '+(activeStop?.id===stop.id?'z-preview-checkpoint-active':'')}
+          style={{left:stop.x,top:stop.y,
+            transform:`scale(${1/zoom})`}}
+          aria-label={stop.label+' pause at map '+stop.x+', '+stop.y}
+          title={stop.label+' — sprite paws at '+stop.x+', '+stop.y}>
+          <span className="z-preview-checkpoint-dot"/>
+          <span className="z-preview-checkpoint-label">{stop.kind==='section'?'S CP':'M CP'}</span>
+        </span>)}
         {characterPoint&&<span className="z-size-avatar-anchor"
           aria-label={companion+(facingCamera?' facing you':' walking '+facing)}
           style={{left:characterPoint.x,top:characterPoint.y}}>
@@ -217,11 +224,21 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
       {imageFailed&&<p className="z-marker-error" role="alert">
         Map image unavailable. Please refresh the DEV preview.</p>}
     </div>
+    <p className="z-preview-checkpoint-legend mt-2 text-xs">
+      <strong>Gold M CP / S CP</strong> = where the sprite actually pauses on
+      the road (module / section checkpoint). Blue numbers = approved lesson icons.
+      These checkpoint road positions are provisional.
+    </p>
+    {checkpointStops.length>0&&<div className="z-preview-checkpoint-coordinates mt-1">
+      {checkpointStops.map(stop=><span key={stop.id}>
+        {stop.label}: ({stop.x}, {stop.y}) · {(stop.progress*100).toFixed(1)}% of journey
+      </span>)}
+    </div>}
     <button type="button" className="z-marker-export-button mt-3 w-full"
       onClick={play}>▶ Play Journey</button>
     <p className="mt-2 text-center text-xs" role="status">
       {finished?'Journey complete — press Play Journey to watch again'
-        :playing?(idle?'Facing you at the start or checkpoint':'Journey playing…')
+        :playing?(idle?(activeStop?'Paused at '+activeStop.label+' — facing you':'Facing you at the start'):'Journey playing…')
           :'Ready to play'}
     </p>
     <p className="mt-2 text-xs opacity-75">
