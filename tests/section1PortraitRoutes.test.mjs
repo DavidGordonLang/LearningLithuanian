@@ -46,7 +46,7 @@ test('stage-3 sizing reads the banked routes without changing them',()=>{
   const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
   const editor=readFileSync(resolve(root,'src/views/training/JourneyMapWorkbench.jsx'),'utf8');
   assert.match(editor,/approvedPortraitRoutePoints\(mapId\)/);
-  assert.match(editor,/gateRouteAt\(route,position\/1000\)/);
+  assert.match(editor,/previewPlacement\(route,placements,position\)/);
   assert.doesNotMatch(editor,/restoreRouteDraft|buildRouteDraft|setPoints\(|Clear route|Remove bend/);
   const stage2=readFileSync(resolve(root,'src/views/training/journeyRouteTraceDraft.js'),'utf8');
   assert.match(stage2,/routeStorageKey/);
