@@ -4,6 +4,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import './JourneyMapWorkbench.css';
 import {approvedPortraitMarkerPositions} from './section1PortraitMarkers';
+import {approvedPortraitRoutePoints} from './section1PortraitRoutes';
 import {buildRouteDraft,restoreRouteDraft,routeStorageKey,routeStopReview,
   MAX_ROUTE_POINTS} from './journeyRouteTraceDraft';
 
@@ -72,7 +73,12 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}) {
 
   useEffect(()=>{
     let saved=[];
-    try{saved=restoreRouteDraft(localStorage.getItem(key),mapId);}catch{}
+    try{
+      const raw=localStorage.getItem(key);
+      // A deliberate locally saved empty route is still a draft and must win.
+      saved=raw===null ? approvedPortraitRoutePoints(mapId)
+        : restoreRouteDraft(raw,mapId);
+    }catch{saved=approvedPortraitRoutePoints(mapId);}
     pointsRef.current=saved;setPoints(saved);setSelectedPoint(null);
     pointers.current.clear();gesture.current=null;
     setMessage('');setShowJson(false);setImageFailed(false);
@@ -257,9 +263,9 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}) {
       onClick={()=>setShowJson(v=>!v)}>{showJson?'Hide':'Show'} route coordinates</button>
     {showJson&&<textarea readOnly value={exportData} rows={10}
       className="z-marker-json w-full rounded-lg p-2" aria-label="Route JSON"/>}
-    <p className="mt-2 text-xs opacity-75">Each route draft saves locally on this device.
-      Copy the JSON when the route is complete so it can be banked in DEV.
-      The approved 23 marker coordinates and earlier drafts are preserved.
-      Sprite sizing will be a separate editing stage.</p>
+    <p className="mt-2 text-xs opacity-75">All four traced routes are banked in DEV as the default paths.
+      Your local edits remain separate and always take priority. Copy the route JSON
+      if you revise a path so it can be reviewed and banked again.
+      The 23 marker coordinates remain locked. Sprite sizing is the next separate stage.</p>
   </div>;
 }
