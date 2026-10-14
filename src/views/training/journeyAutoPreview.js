@@ -70,7 +70,8 @@ export function previewCheckpointStops(route,stops,markerPositions){
         if(off<distance){distance=off;along=walked+t*lengths[i];}
         walked+=lengths[i];
       }
-      const progress=clamp(along/length,0,1);
+      // Match the playback hold's 4-decimal progress exactly.
+      const progress=Math.round(clamp(along/length,0,1)*10000)/10000;
       const road=gateRouteAt(route,progress);
       const section=stop.id==='section_1_checkpoint';
       return {id:stop.id,kind:section?'section':'module',
