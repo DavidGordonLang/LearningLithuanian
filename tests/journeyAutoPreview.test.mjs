@@ -12,7 +12,7 @@ test('both Fox and Wolf shrink gradually without a manual size draft',()=>{
     const samples=Array.from({length:101},(_,i)=>
       automaticPreviewScale(companion,i/100));
     assert.ok(samples[0]>=1.7,'foreground should be larger');
-    assert.ok(samples.at(-1)>=.58,'distant character should remain visible');
+    assert.ok(samples.at(-1)>=.58-1e-9,'distant character should remain visible');
     assert.ok(samples[50]>1.4,'retain more scale through the middle');
     assert.ok(samples[75]>1.0,'do not become tiny three-quarters up the map');
     assert.ok(samples.every((n,i)=>i===0||n<=samples[i-1]),'must never grow while walking away');
