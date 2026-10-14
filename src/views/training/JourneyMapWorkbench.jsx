@@ -39,6 +39,7 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
   const markerPositions=approvedPortraitMarkerPositions(mapId,stops.map(s=>s.id));
   const markers=stops.map(s=>markerPositions[s.id]).filter(Boolean);
   const stopIds=stops.map(s=>s.id);
+  const stopIdsSignature=stopIds.join('|');
   const [authored,setAuthored]=useState([]);
   const [selectedId,setSelectedId]=useState('');
   const [dragAt,setDragAt]=useState(null);
@@ -106,7 +107,7 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
     dragAtRef.current=null;setDragAt(null);setShowJson(false);
     setNote(draft?'Saved positions restored.':'Estimated stops loaded. Adjust each gold pin.');
     setProgress(0);setIdle(true);setPlaying(false);
-  },[mapId,userId]);
+  },[mapId,userId,stopIdsSignature]);
   useEffect(()=>{
     setImageFailed(false);touches.current.clear();gesture.current=null;
     const id=requestAnimationFrame(fit);
