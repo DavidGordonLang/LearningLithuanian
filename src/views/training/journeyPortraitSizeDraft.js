@@ -6,10 +6,9 @@ export const SIZE_MAX_ANCHORS=40;
 export const SIZE_DRAFT_VERSION=2;
 export const DEFAULT_SIZE_ANCHORS=Object.freeze([
   Object.freeze({at:0,size:145}),
-  Object.freeze({at:1000,size:22}),
 ]);
 export const sizeStorageKey=(user,map)=>
-  `zodis:journey:portrait-size:stage3:v1:${user||'local'}:${map}`;
+  `zodis:journey:portrait-size:stage3:v2:${user||'local'}:${map}`;
 export function sizeRouteSignature(points){
   // All points, not just ends, must match: edits to the walked path invalidate sizes.
   let h=2166136261;
@@ -24,10 +23,10 @@ export const defaultSizeAnchors=()=>DEFAULT_SIZE_ANCHORS.map(({at,size})=>({at,s
 const validAnchor=p=>Number.isInteger(p?.at)&&p.at>=0&&p.at<=1000&&
   Number.isInteger(p?.size)&&p.size>=SIZE_MIN_PERCENT&&p.size<=SIZE_MAX_PERCENT;
 export function validateSizeAnchors(points){
-  if(!Array.isArray(points)||points.length<2||points.length>SIZE_MAX_ANCHORS||
+  if(!Array.isArray(points)||points.length<1||points.length>SIZE_MAX_ANCHORS||
     !points.every(validAnchor))return null;
   const sorted=points.slice().sort((a,b)=>a.at-b.at);
-  if(sorted[0].at!==0||sorted[sorted.length-1].at!==1000 ||
+  if(sorted[0].at!==0 ||
     sorted.some((p,i)=>i>0&&p.at===sorted[i-1].at))return null;
   return sorted.map(({at,size})=>({at,size}));
 }
