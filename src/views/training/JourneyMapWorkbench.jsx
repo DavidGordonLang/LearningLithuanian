@@ -232,12 +232,26 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
     }
   };
   const pointerEnd=e=>{
-    const pointers=touches.current;
+    const pointers=touches.current,g=gesture.current;
     pointers.delete(e.pointerId);
-    if(gesture.current?.mode==='pinch'&&pointers.size===1){
+    if(g?.mode==='pinch'&&pointers.size===1){
       const [id,p]=[...pointers.entries()][0];
-      gesture.current={mode:'pan',id,start:{x:p.x,y:p.y},pan:view.current.pan};
-    }else gesture.current=null;
+      gesture.current={mode:'pan',id,start:{x:p.x,y:p.y},pan:view.current.pan,
+        moved:true,canPlace:false};
+      return;
+    }
+    gesture.current=null;
+    if(g?.mode==='stop'){
+      if(g.moved&&e.type!=='pointercancel'&&dragAtRef.current!==null)
+        saveStop(g.stopId,dragAtRef.current);
+      dragAtRef.current=null;setDragAt(null);
+      return;
+    }
+    if(g?.mode==='pan'&&!g.moved&&g.canPlace&&e.type!=='pointercancel'&&selectedId){
+      const point=roadCandidate(e);
+      if(point?.distance<=43)saveStop(selectedId,point.at);
+      else setNote('Tap the road or drag the selected gold stop pin.');
+    }
   };
 
   return <div data-swipe-block="true"
