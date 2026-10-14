@@ -9,6 +9,7 @@ import {gateRouteAt} from './journeyGateRouteEditor';
 import {nearestRouteProgress} from './journeyRouteTraceDraft';
 import {foxRouteTotalDistance} from './journeyFoxRoutePlayback';
 import {storageKey,seed,move,locations,exportDraft,restore} from './journeyLessonStops';
+import {approvedPortraitLessonStops} from './section1PortraitLessonStops';
 import {foxRouteFrame} from './journeyFoxRoutePlayback';
 import {automaticPreviewScale,automaticJourneyFrame,
   automaticJourneyFacing} from './journeyAutoPreview';
@@ -102,10 +103,14 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
   useEffect(()=>{
     let draft=null;
     try{draft=restore(localStorage.getItem(draftKey),mapId,route,stopIds);}catch{}
-    const next=draft||seed(route,stopIds,markerPositions);
+    const banked=approvedPortraitLessonStops(mapId,stopIds,route);
+    // Existing device-local edits always win over the banked approved defaults.
+    const next=draft||banked||seed(route,stopIds,markerPositions);
     setAuthored(next);setSelectedId(next[0]?.id||'');
     dragAtRef.current=null;setDragAt(null);setShowJson(false);
-    setNote(draft?'Saved positions restored.':'Estimated stops loaded. Adjust each gold pin.');
+    setNote(draft?'Your saved local stop edits are loaded.':
+      banked?'All approved lesson stops loaded from DEV.':
+        'Estimated stops loaded. Adjust each gold pin.');
     setProgress(0);setIdle(true);setPlaying(false);
   },[mapId,userId,stopIdsSignature]);
   useEffect(()=>{
