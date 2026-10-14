@@ -274,10 +274,19 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
       <button className={'z-marker-tool '+(companion==='wolf'?'z-size-active':'')}
         type="button" aria-pressed={companion==='wolf'} onClick={()=>setCompanion('wolf')}>Wolf</button>
     </div>
-    <p className="mt-2 text-xs">Beta preview: Fox and Wolf start larger and
-      shrink more gently as they walk away. Gold CP pins show the exact
-      provisional road positions where they pause and face you. Drag empty
-      scenery to pan or pinch to zoom.</p>
+    <label htmlFor="z-lesson-stop" className="mt-3 block text-sm font-semibold">
+      Choose the lesson or checkpoint to position
+    </label>
+    <select id="z-lesson-stop" className="z-marker-select mt-1 w-full"
+      value={selectedId} onChange={e=>selectStop(e.target.value)}>
+      {stopLocations.map(stop=><option value={stop.id} key={stop.id}>
+        {stop.label} · {(stop.progress*100).toFixed(1)}% of journey
+      </option>)}
+    </select>
+    <p className="mt-2 text-xs">Gold pins are the Fox/Wolf stopping positions,
+      independent of the blue lesson markers. Select a lesson and tap its new
+      stopping place on the road, or drag that gold pin along the road.
+      The companion faces you at every saved stop. Pan empty space and pinch to zoom.</p>
     <div ref={viewport} data-swipe-block="true" className="z-marker-viewport mt-2"
       onPointerDown={pointerDown} onPointerMove={pointerMove}
       onPointerUp={pointerEnd} onPointerCancel={pointerEnd}
