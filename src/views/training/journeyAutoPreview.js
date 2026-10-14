@@ -1,3 +1,4 @@
+import {gateAutomaticDirection,gateRouteAt} from './journeyGateRouteEditor.js';
 // DEV-only automated journey preview. No learner progress changes.
 export const PREVIEW_WALK_MS=23000;
 export const PREVIEW_HOLD_MS=1050;
@@ -38,3 +39,10 @@ export function automaticJourneyFrame(elapsedMs,checkpoints=[],
 }
 export const journeyTotalMs=(checkpoints=[],walkMs=PREVIEW_WALK_MS,
   holdMs=PREVIEW_HOLD_MS)=>walkMs+previewHolds(checkpoints).length*holdMs;
+
+export function automaticJourneyFacing(route,progress){
+  if(!Array.isArray(route)||route.length<2)return 'up';
+  const point=gateRouteAt(route,clamp(Number(progress)||0,0,1));
+  const segment=Math.min(point?.segmentIndex??0,route.length-2);
+  return gateAutomaticDirection(route[segment],route[segment+1]);
+}
