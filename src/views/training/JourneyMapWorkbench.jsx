@@ -216,9 +216,18 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
       const middle={x:(a.x+b.x)/2-rect.left,y:(a.y+b.y)/2-rect.top};
       setCamera(nextZoom,clampCamera({x:middle.x-g.anchor.x*nextZoom,
         y:middle.y-g.anchor.y*nextZoom},nextZoom));
+    }else if(g.mode==='stop'&&g.id===e.pointerId){
+      if(Math.hypot(e.clientX-g.start.x,e.clientY-g.start.y)>6)g.moved=true;
+      if(!g.moved)return;
+      const point=roadCandidate(e);
+      if(!point||!move(authored,stopIds,g.stopId,point.at))return;
+      dragAtRef.current=point.at;setDragAt(point.at);
+      setPlaying(false);setFinished(false);setIdle(true);
+      setProgress(point.at/10000);
     }else if(g.mode==='pan'&&g.id===e.pointerId){
       const x=e.clientX-g.start.x,y=e.clientY-g.start.y;
-      setCamera(view.current.zoom,clampCamera({
+      if(Math.hypot(x,y)>8)g.moved=true;
+      if(g.moved)setCamera(view.current.zoom,clampCamera({
         x:g.pan.x+x,y:g.pan.y+y},view.current.zoom));
     }
   };
