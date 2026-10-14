@@ -2,15 +2,17 @@ import {gateAutomaticDirection,gateRouteAt} from './journeyGateRouteEditor.js';
 // DEV-only automated journey preview. No learner progress changes.
 export const PREVIEW_WALK_MS=23000;
 export const PREVIEW_HOLD_MS=1050;
+// Larger at the foreground and still readable at the distant exit.
+// Keep most of the size for the first half, then ease out gradually.
 export const PREVIEW_SCALE={
-  fox:Object.freeze({near:1.42,far:.25}),
-  wolf:Object.freeze({near:1.5,far:.28}),
+  fox:Object.freeze({near:1.7,far:.58}),
+  wolf:Object.freeze({near:1.8,far:.62}),
 };
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function automaticPreviewScale(companion,progress){
   const p=clamp(Number(progress)||0,0,1);
   const {near,far}=PREVIEW_SCALE[companion]||PREVIEW_SCALE.fox;
-  const eased=p*p*(3-2*p);
+  const eased=Math.pow(p,2.2);
   return near+(far-near)*eased;
 }
 export function previewHolds(checkpoints){
