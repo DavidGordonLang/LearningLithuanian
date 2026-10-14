@@ -1,12 +1,12 @@
-/* DEV-only single-stage marker placement controls. No production Journey styles changed. */
+/* DEV-only route tracer. All controls belong to the single route stage. */
 .z-marker-workbench{color:var(--text-primary,inherit)}
-.z-marker-select,.z-marker-tool,.z-marker-lesson,.z-marker-export-button{
+.z-marker-select,.z-marker-tool,.z-marker-export-button{
   border:1px solid #639d7d;border-radius:10px;background:var(--card-bg,#f4f7ee);
   color:var(--text-primary,#174330);min-height:44px;padding:8px 12px;
 }
 .z-marker-select{font-size:16px}
 .z-marker-tool{font-size:13px;font-weight:700;white-space:nowrap}
-.z-marker-tool.active,.z-marker-export-button{background:#235d43;color:#fff;border-color:#235d43}
+.z-marker-export-button{background:#235d43;color:#fff;border-color:#235d43}
 .z-marker-tool:disabled{opacity:.45}
 .z-marker-viewport{position:relative;width:100%;height:min(63dvh,620px);min-height:320px;
   overflow:hidden;border:2px solid #598973;border-radius:14px;background:#c3d5b9;
@@ -17,18 +17,18 @@
   height:38px;width:38px;border-radius:50%;color:#fff;font:700 18px/1 sans-serif;
   background:#1665b2;border:3px solid #fff;box-shadow:0 2px 8px #0007;
   transform-origin:50% 100%;pointer-events:none}
-.z-marker-pin.active{background:#9d5323;box-shadow:0 0 0 3px #f5cd65,0 2px 8px #0006}
-.z-marker-lesson{width:100%;display:flex;align-items:center;gap:10px;text-align:left}
-.z-marker-lesson.active{border-color:#b9781e;background:#fff2d2;color:#3d3017}
-.z-marker-lesson-number{flex:0 0 30px;display:grid;place-items:center;border-radius:50%;
-  width:30px;height:30px;background:#1763a3;color:white;font-weight:800}
-.z-marker-lesson small{opacity:.65;font-size:10px}
 .z-marker-json{background:#f8f9f7;color:#183829;border:1px solid #9cb7a8;
   font:12px/1.45 monospace;resize:vertical}
 .z-marker-error{position:absolute;bottom:0;left:0;right:0;padding:12px;
   color:white;background:#892e27;font-weight:700}
+.z-route-lines{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.z-route-point{position:absolute;z-index:9;height:22px;min-width:22px;padding:0 3px;
+  display:flex;align-items:center;justify-content:center;border-radius:12px;
+  border:2px solid #fff8e8;background:#e78b25;box-shadow:0 1px 5px #0008;
+  font:700 9px/1 sans-serif;color:#30230c;pointer-events:none}
+.z-route-point.selected{box-shadow:0 0 0 3px #e69d34,0 1px 6px #0008;background:#ffda67}
+.z-route-locked-marker{opacity:.96}
+.z-route-action-row{display:flex;flex-wrap:wrap;gap:8px}
+.z-route-action-row>*{flex:1 1 90px}
 html[data-theme="dark"] .z-marker-select,
-html[data-theme="dark"] .z-marker-tool:not(.active),
-html[data-theme="dark"] .z-marker-lesson:not(.active){
-  color:#f5f6e7;background:#1d4136;border-color:#568674}
-@media(prefers-reduced-motion:reduce){.z-marker-pin{transition:none}}
+html[data-theme="dark"] .z-marker-tool{color:#f5f6e7;background:#1d4136;border-color:#568674}
