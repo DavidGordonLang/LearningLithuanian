@@ -42,10 +42,13 @@ test('seed returns editable copies, committed baselines stay unchanged',()=>{
   }
   assert.deepEqual(approvedPortraitRoutePoints('module_2_1'),[]);
 });
-test('route workbench prefers local saved drafts, even deliberately empty ones',()=>{
+test('stage-3 sizing reads the banked routes without changing them',()=>{
   const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
   const editor=readFileSync(resolve(root,'src/views/training/JourneyMapWorkbench.jsx'),'utf8');
-  assert.match(editor,/raw===null \? approvedPortraitRoutePoints\(mapId\)/);
-  assert.match(editor,/: restoreRouteDraft\(raw,mapId\)/);
-  assert.doesNotMatch(editor,/Place lesson markers|Clear selected|setPlaced/);
+  assert.match(editor,/approvedPortraitRoutePoints\(mapId\)/);
+  assert.match(editor,/gateRouteAt\(route,position\/1000\)/);
+  assert.doesNotMatch(editor,/restoreRouteDraft|buildRouteDraft|setPoints\(|Clear route|Remove bend/);
+  const stage2=readFileSync(resolve(root,'src/views/training/journeyRouteTraceDraft.js'),'utf8');
+  assert.match(stage2,/routeStorageKey/);
+  assert.match(stage2,/restoreRouteDraft/);
 });
