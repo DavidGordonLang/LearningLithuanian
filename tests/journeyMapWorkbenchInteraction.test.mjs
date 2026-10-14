@@ -7,12 +7,12 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const src=readFileSync(resolve(root,'src/views/training/JourneyMapWorkbench.jsx'),'utf8');
 const css=readFileSync(resolve(root,'src/views/training/JourneyMapWorkbench.css'),'utf8');
 
-test('beta workbench shows a single Play Journey action, no sliders or manual controls',()=>{
+test('lesson stop editor keeps Play Journey and removes size and route controls',()=>{
   assert.match(src,/Automatic journey preview/);
   assert.match(src,/▶ Play Journey/);
   assert.match(src,/z-lesson-stop/);
   assert.match(src,/Copy all \{stopIds.length\} stop positions as JSON/);
-  assert.doesNotMatch(src,/type="range"|Save size point|Copy sizing JSON|Copy .*JSON/);
+  assert.doesNotMatch(src,/type="range"|Save size point|Copy sizing JSON|Copy {companion}/);
   assert.doesNotMatch(src,/onPointerDown=\{touchStart\}|kind:'sprite'|savePlacement\(/);
   assert.doesNotMatch(src,/setSizeAnchor\(|buildCompanionDraft\(|setPlacements\(/);
   assert.match(src,/MAPS\.map\(/);
