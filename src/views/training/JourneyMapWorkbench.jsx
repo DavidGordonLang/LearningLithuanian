@@ -6,9 +6,12 @@ import FoxWalkSprite from './FoxWalkSprite';
 import {approvedPortraitMarkerPositions} from './section1PortraitMarkers';
 import {approvedPortraitRoutePoints} from './section1PortraitRoutes';
 import {gateRouteAt} from './journeyGateRouteEditor';
+import {nearestRouteProgress} from './journeyRouteTraceDraft';
+import {foxRouteTotalDistance} from './journeyFoxRoutePlayback';
+import {storageKey,seed,move,locations,exportDraft,restore} from './journeyLessonStops';
 import {foxRouteFrame} from './journeyFoxRoutePlayback';
 import {automaticPreviewScale,automaticJourneyFrame,
-  automaticJourneyFacing,previewCheckpointStops} from './journeyAutoPreview';
+  automaticJourneyFacing} from './journeyAutoPreview';
 
 const MAPS=[
   {id:'module_1_1',title:'1.1 · Greeting and Politeness',w:1024,h:1536,
@@ -22,11 +25,12 @@ const MAPS=[
 ];
 const clamp=(n,minimum,maximum)=>Math.max(minimum,Math.min(maximum,n));
 
-export default function JourneyMapWorkbench({allSections=[],onBack}){
+export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
   const [mapId,setMapId]=useState('module_1_1');
   const [companion,setCompanion]=useState('fox');
   const map=MAPS.find(item=>item.id===mapId)||MAPS[0];
   const route=approvedPortraitRoutePoints(mapId);
+  const routeLength=foxRouteTotalDistance(route);
   const section=allSections.find(item=>item.id==='section_1');
   const module=section?.modules?.find(item=>item.id===mapId);
   const sectionCheckpoint=section?.modules?.find(item=>item.isSectionCheckpoint);
@@ -34,10 +38,19 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
     ...(mapId==='module_1_4'&&sectionCheckpoint?[sectionCheckpoint]:[])];
   const markerPositions=approvedPortraitMarkerPositions(mapId,stops.map(s=>s.id));
   const markers=stops.map(s=>markerPositions[s.id]).filter(Boolean);
-  // Gold pause pins use exactly the same projected road coordinates and
-  // percentages that the playback uses. Blue lesson icons are kept unchanged.
-  const checkpointStops=previewCheckpointStops(route,stops,markerPositions);
-  const holdSignature=checkpointStops.map(stop=>stop.progress).join(',');
+  const stopIds=stops.map(s=>s.id);
+  const [authored,setAuthored]=useState([]);
+  const [selectedId,setSelectedId]=useState('');
+  const [dragAt,setDragAt]=useState(null);
+  const dragAtRef=useRef(null);
+  const [note,setNote]=useState('');
+  const [showJson,setShowJson]=useState(false);
+  const stopLocations=locations(route,authored,stopIds);
+  const selectedStop=stopLocations.find(stop=>stop.id===selectedId);
+  const displayedStops=dragAt===null?stopLocations:locations(route,
+    authored.map(s=>s.id===selectedId?{...s,at:dragAt}:s),stopIds);
+  const holdSignature=stopLocations.map(stop=>stop.progress).join(',');
+  const draftKey=storageKey(userId,mapId);
   const [progress,setProgress]=useState(0);
   const [playing,setPlaying]=useState(false);
   const [idle,setIdle]=useState(true);
@@ -58,7 +71,7 @@ export default function JourneyMapWorkbench({allSections=[],onBack}){
   const frame=foxRouteFrame(route,progress);
   const scale=automaticPreviewScale(companion,progress);
   const facingCamera=(progress===0&&!playing)||idle;
-  const activeStop=idle&&playing?checkpointStops.find(stop=>
+  const activeStop=idle&&playing?stopLocations.find(stop=>
     Math.abs(stop.progress-progress)<0.00001):null;
   const image=companion==='wolf'?'/assets/journey/wolf-idle.webp':
     '/assets/journey/fox-idle.webp';
