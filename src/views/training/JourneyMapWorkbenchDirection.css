@@ -1,1 +1,7 @@
-.z-direction-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+/* Append to existing JourneyMapWorkbench.css; shared map styles stay intact. */
+.z-direction-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.z-direction-grid .z-marker-tool{font-size:11px;padding:7px 3px;white-space:normal;line-height:1.25}
+.z-direction-step-row{display:flex;gap:6px;align-items:center;justify-content:space-between}
+.z-direction-step-row>button{flex:1;min-width:0;white-space:normal}
+.z-direction-step-row>span{padding:0 5px;white-space:nowrap;font-size:12px}
+@media(max-width:380px){.z-direction-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
