@@ -136,6 +136,50 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
     clock.current=0;
     setProgress(0);setIdle(true);setFinished(false);setPlaying(true);
   };
+  const selectStop=id=>{
+    setSelectedId(id);
+    const stop=stopLocations.find(item=>item.id===id);
+    if(stop){setPlaying(false);setFinished(false);setIdle(true);setProgress(stop.progress);}
+    dragAtRef.current=null;setDragAt(null);
+  };
+  const saveStop=(id,at)=>{
+    const updated=move(authored,stopIds,id,at);
+    if(!updated){
+      setNote('Stops must stay in lesson order. Move the adjacent stop first.');
+      return false;
+    }
+    setPlaying(false);setFinished(false);setIdle(true);
+    setAuthored(updated);setSelectedId(id);
+    setProgress(updated.find(item=>item.id===id).at/10000);
+    try{
+      localStorage.setItem(draftKey,JSON.stringify(exportDraft(mapId,route,updated,stopIds)));
+      setNote('Stop saved. Copy the JSON when you approve all '+stopIds.length+' stops.');
+    }catch{setNote('Browser storage unavailable. Copy the JSON before leaving.');}
+    return true;
+  };
+  const toWorld=e=>{
+    const b=viewport.current.getBoundingClientRect(),v=view.current;
+    return {x:(e.clientX-b.left-v.pan.x)/v.zoom,
+      y:(e.clientY-b.top-v.pan.y)/v.zoom};
+  };
+  const roadCandidate=e=>{
+    const closest=nearestRouteProgress(route,toWorld(e));
+    return closest&&routeLength?{at:Math.round(closest.progress/routeLength*10000),
+      distance:closest.distance*view.current.zoom}:null;
+  };
+  const hitStop=e=>{
+    const b=viewport.current.getBoundingClientRect(),v=view.current;
+    const hits=displayedStops.map(stop=>({id:stop.id,
+      distance:Math.hypot(e.clientX-b.left-v.pan.x-stop.x*v.zoom,
+        e.clientY-b.top-v.pan.y-stop.y*v.zoom)}));
+    hits.sort((a,b)=>a.distance-b.distance);
+    return hits[0]?.distance<=30?hits[0].id:null;
+  };
+  const copy=async()=>{
+    const json=JSON.stringify(exportDraft(mapId,route,authored,stopIds),null,2);
+    try{await navigator.clipboard.writeText(json);setNote('All stop positions copied.');}
+    catch{setShowJson(true);setNote('Select and copy the JSON shown below.');}
+  };
   const pointerDown=e=>{
     if(e.pointerType==='mouse'&&e.button!==0)return;
     const points=touches.current;
