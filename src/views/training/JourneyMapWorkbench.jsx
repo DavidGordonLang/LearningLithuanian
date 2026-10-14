@@ -300,14 +300,14 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
           className="z-marker-pin z-size-locked-marker" aria-hidden="true"
           style={{left:point.x,top:point.y,
             transform:`translate(-50%,-100%) scale(${1/zoom})`}}>{i+1}</span>)}
-        {checkpointStops.map(stop=><span key={stop.id}
-          className={'z-preview-checkpoint '+(activeStop?.id===stop.id?'z-preview-checkpoint-active':'')}
-          style={{left:stop.x,top:stop.y,
-            transform:`scale(${1/zoom})`}}
-          aria-label={stop.label+' pause at map '+stop.x+', '+stop.y}
-          title={stop.label+' — sprite paws at '+stop.x+', '+stop.y}>
+        {displayedStops.map(stop=><span key={stop.id}
+          className={'z-preview-checkpoint '+((activeStop?.id===stop.id||selectedId===stop.id)
+            ?'z-preview-checkpoint-active':'')}
+          style={{left:stop.x,top:stop.y,transform:`scale(${1/zoom})`}}
+          aria-label={stop.label+' paw stop at '+stop.x+', '+stop.y}
+          title={stop.label+' — drag or select and tap the road'}>
           <span className="z-preview-checkpoint-dot"/>
-          <span className="z-preview-checkpoint-label">{stop.kind==='section'?'S CP':'M CP'}</span>
+          <span className="z-preview-checkpoint-label">{stop.shortLabel}</span>
         </span>)}
         {characterPoint&&<span className="z-size-avatar-anchor"
           aria-label={companion+(facingCamera?' facing you':' walking '+facing)}
