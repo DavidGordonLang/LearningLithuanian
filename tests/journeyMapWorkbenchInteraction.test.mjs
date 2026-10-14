@@ -15,6 +15,14 @@ test('beta workbench shows a single Play Journey action, no sliders or manual co
   assert.doesNotMatch(src,/onPointerDown=\{touchStart\}|kind:'sprite'|savePlacement\(/);
   assert.doesNotMatch(src,/setSizeAnchor\(|buildCompanionDraft\(|setPlacements\(/);
   assert.match(src,/MAPS\.map\(/);
+  assert.match(src,/checkpointStops=previewCheckpointStops\(route,stops,markerPositions\)/);
+  assert.match(src,/checkpointStops\.map\(stop=><span/);
+  assert.match(src,/z-preview-checkpoint-label/);
+  assert.match(src,/stop\.x,top:stop\.y/);
+  assert.match(src,/holdSignature=checkpointStops\.map\(stop=>stop\.progress\)/);
+  assert.match(src,/Gold M CP \/ S CP/);
+  assert.match(css,/z-preview-checkpoint-dot/);
+  assert.match(css,/z-preview-checkpoint-active/);
 });
 test('automatic direction uses the traced route, never the detached sprite position',()=>{
   assert.match(src,/automaticJourneyFacing\(route,progress\)/);
