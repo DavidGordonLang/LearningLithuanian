@@ -326,15 +326,20 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
         Map image unavailable. Please refresh the DEV preview.</p>}
     </div>
     <p className="z-preview-checkpoint-legend mt-2 text-xs">
-      <strong>Gold M CP / S CP</strong> = where the sprite actually pauses on
-      the road (module / section checkpoint). Blue numbers = approved lesson icons.
-      These checkpoint road positions are provisional.
+      Gold lesson and checkpoint pins show where the companion faces the camera.
+      The blue approved lesson markers are unchanged.
     </p>
-    {checkpointStops.length>0&&<div className="z-preview-checkpoint-coordinates mt-1">
-      {checkpointStops.map(stop=><span key={stop.id}>
-        {stop.label}: ({stop.x}, {stop.y}) · {(stop.progress*100).toFixed(1)}% of journey
-      </span>)}
-    </div>}
+    {selectedStop&&<p className="mt-1 text-xs">Selected {selectedStop.label}:
+      ({selectedStop.x}, {selectedStop.y}) ·
+      {(selectedStop.progress*100).toFixed(1)}% of the journey</p>}
+    <p className="mt-1 text-xs" role="status">{note}</p>
+    <button type="button" className="z-marker-tool mt-2 w-full"
+      onClick={copy}>Copy all {stopIds.length} stop positions as JSON</button>
+    <button type="button" className="mt-2 w-full min-h-[44px] text-xs underline"
+      onClick={()=>setShowJson(v=>!v)}>{showJson?'Hide':'Show'} stop JSON</button>
+    {showJson&&<textarea className="z-marker-json w-full rounded-lg p-2"
+      aria-label="Lesson stop JSON" readOnly rows={9}
+      value={JSON.stringify(exportDraft(mapId,route,authored,stopIds),null,2)}/>}
     <button type="button" className="z-marker-export-button mt-3 w-full"
       onClick={play}>▶ Play Journey</button>
     <p className="mt-2 text-center text-xs" role="status">
