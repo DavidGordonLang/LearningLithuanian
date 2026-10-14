@@ -10,17 +10,20 @@ const css=readFileSync(resolve(root,'src/views/training/JourneyMapWorkbench.css'
 test('beta workbench shows a single Play Journey action, no sliders or manual controls',()=>{
   assert.match(src,/Automatic journey preview/);
   assert.match(src,/▶ Play Journey/);
-  assert.equal((src.match(/<button /g)||[]).length,4); // Back, Fox, Wolf, Play
+  assert.match(src,/z-lesson-stop/);
+  assert.match(src,/Copy all \{stopIds.length\} stop positions as JSON/);
   assert.doesNotMatch(src,/type="range"|Save size point|Copy sizing JSON|Copy .*JSON/);
   assert.doesNotMatch(src,/onPointerDown=\{touchStart\}|kind:'sprite'|savePlacement\(/);
   assert.doesNotMatch(src,/setSizeAnchor\(|buildCompanionDraft\(|setPlacements\(/);
   assert.match(src,/MAPS\.map\(/);
-  assert.match(src,/checkpointStops=previewCheckpointStops\(route,stops,markerPositions\)/);
-  assert.match(src,/checkpointStops\.map\(stop=><span/);
+  assert.match(src,/holdSignature=stopLocations.map\(stop=>stop.progress\)/);
+  assert.match(src,/displayedStops.map\(stop=><span/);
   assert.match(src,/z-preview-checkpoint-label/);
   assert.match(src,/stop\.x,top:stop\.y/);
-  assert.match(src,/holdSignature=checkpointStops\.map\(stop=>stop\.progress\)/);
-  assert.match(src,/Gold M CP \/ S CP/);
+
+  assert.match(src,/selectedStop.label/);
+  assert.match(src,/const saveStop=/);
+  assert.match(src,/g.mode==='stop'/);
   assert.match(css,/z-preview-checkpoint-dot/);
   assert.match(css,/z-preview-checkpoint-active/);
 });
