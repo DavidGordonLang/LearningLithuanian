@@ -48,3 +48,34 @@ export function automaticJourneyFacing(route,progress){
   const segment=Math.min(point?.segmentIndex??0,route.length-2);
   return gateAutomaticDirection(route[segment],route[segment+1]);
 }
+
+// Mark the exact *preview* paw pause coordinates, not the original icon location.
+// These are nearest-road projections and do not change the user's saved maps.
+export function previewCheckpointStops(route,stops,markerPositions){
+  if(!Array.isArray(route)||route.length<2)return [];
+  const lengths=route.slice(1).map((p,i)=>
+    Math.hypot(p.x-route[i].x,p.y-route[i].y));
+  const length=lengths.reduce((sum,n)=>sum+n,0);
+  if(!length)return [];
+  return (stops||[]).filter(stop=>
+    stop?.id?.endsWith('checkpoint')&&markerPositions?.[stop.id])
+    .map(stop=>{
+      const marker=markerPositions[stop.id];
+      let distance=Infinity,along=0,walked=0;
+      for(let i=0;i<lengths.length;i++){
+        const a=route[i],b=route[i+1],dx=b.x-a.x,dy=b.y-a.y;
+        const t=lengths[i]?clamp(((marker.x-a.x)*dx+(marker.y-a.y)*dy)/
+          (lengths[i]*lengths[i]),0,1):0;
+        const off=Math.hypot(marker.x-a.x-t*dx,marker.y-a.y-t*dy);
+        if(off<distance){distance=off;along=walked+t*lengths[i];}
+        walked+=lengths[i];
+      }
+      const progress=clamp(along/length,0,1);
+      const road=gateRouteAt(route,progress);
+      const section=stop.id==='section_1_checkpoint';
+      return {id:stop.id,kind:section?'section':'module',
+        label:section?'Section checkpoint':'Module checkpoint',
+        progress,x:Math.round(road.x),y:Math.round(road.y),
+        markerDistance:Math.round(distance)};
+    }).sort((a,b)=>a.progress-b.progress);
+}
