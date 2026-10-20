@@ -1,6 +1,7 @@
 // DEV preview only: approved portrait routes, automatic facing & perspective.
 // Not wired to learner navigation, lessons or production journey state.
 import React,{useEffect,useRef,useState} from 'react';
+import Section2ArtworkWorkbench from './Section2ArtworkWorkbench';
 import './JourneyMapWorkbench.css';
 import FoxWalkSprite from './FoxWalkSprite';
 import {approvedPortraitMarkerPositions} from './section1PortraitMarkers';
@@ -26,7 +27,7 @@ const MAPS=[
 ];
 const clamp=(n,minimum,maximum)=>Math.max(minimum,Math.min(maximum,n));
 
-export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
+function Section1MapWorkbench({allSections=[],userId,onBack}){
   const [mapId,setMapId]=useState('module_1_1');
   const [companion,setCompanion]=useState('fox');
   const map=MAPS.find(item=>item.id===mapId)||MAPS[0];
@@ -358,5 +359,26 @@ export default function JourneyMapWorkbench({allSections=[],userId,onBack}){
       but are not applied. The approved maps, markers, walking routes and real
       lesson progression are unchanged.
     </p>
+  </div>;
+}
+
+
+// Section 2 is deliberately a separate DEV-only authoring surface.
+export default function JourneyMapWorkbench(props){
+  const [section,setSection]=useState('1');
+  return <div>
+    <nav className="z-size-companion-row mx-auto w-full max-w-2xl px-3 pt-3"
+      aria-label="Choose map authoring section">
+      <button type="button" className={'z-marker-tool '+(section==='1'?'z-size-active':'')}
+        aria-pressed={section==='1'} onClick={()=>setSection('1')}>
+        Section 1 · approved
+      </button>
+      <button type="button" className={'z-marker-tool '+(section==='2'?'z-size-active':'')}
+        aria-pressed={section==='2'} onClick={()=>setSection('2')}>
+        Section 2 · Amber Coast
+      </button>
+    </nav>
+    {section==='1'?<Section1MapWorkbench {...props}/>:
+      <Section2ArtworkWorkbench {...props}/>}
   </div>;
 }
