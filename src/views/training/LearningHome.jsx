@@ -6,6 +6,7 @@ import { findLatestInProgressLesson, getCourseBrowseState, getSectionBrowseState
 import { Companion, JOURNEY_COMPANIONS, useJourneyCompanion } from "./JourneyCompanion";
 import JourneyMap from "./JourneyMap";
 import JourneyMapWorkbench from "./JourneyMapWorkbench";
+import {canShowDevJourneyEntry,wantsDevJourneyFromUrl} from "./journeyDevEntry";
 
 function findCurrent(sections, completedLessonIds, lessonProgress) {
   const saved = findLatestInProgressLesson(sections, completedLessonIds, lessonProgress);
@@ -38,12 +39,14 @@ export default function LearningHome({
   const [showRegionMap, setShowRegionMap] = useState(false);
   const [reviewModuleId, setReviewModuleId] = useState(null);
   const [exitBlend,setExitBlend]=useState(0);
-  // Authoring is restricted to non-production DEV hosts and explicitly enabled
-  // by the developer URL flag. Preserve the old JourneyMap gate/route editor.
-  const workbenchActive = typeof window !== "undefined" &&
-    (window.location.hostname.endsWith(".vercel.app") || ["localhost","127.0.0.1"].includes(window.location.hostname)) &&
-    new URLSearchParams(window.location.search).get("journeyDev")==="1" &&
-    new URLSearchParams(window.location.search).get("legacyEditor")!=="1";
+  // Google OAuth returns to window.location.origin, dropping ?journeyDev=1.
+  // Keep URL opt-in for direct links, but also provide an explicit entry control
+  // on unique DEV preview hosts. Never expose it on the production domain.
+  const [devWorkbenchOpen,setDevWorkbenchOpen] = useState(()=>
+    typeof window!=="undefined" && wantsDevJourneyFromUrl(window.location.search));
+  const devHost = typeof window!=="undefined" &&
+    canShowDevJourneyEntry(window.location.hostname);
+  const workbenchActive = devHost && devWorkbenchOpen;
   const unlockedReview = allSections.flatMap(s => {
     const state = getSectionBrowseState(s, completedLessonIds);
     return [...state.moduleStates.filter(item => item.status === "completed").map(item => ({ section:s, module:item.module })),
@@ -73,7 +76,7 @@ export default function LearningHome({
   // stop coordinates and export. Route tracing/sizing remain hidden for now.
   if(workbenchActive && allSections.some(s=>s.id==="section_1"))
     return <JourneyMapWorkbench allSections={allSections} userId={userId}
-      onBack={onBack}/>;
+      onBack={()=>setDevWorkbenchOpen(false)}/>;
   if (!hasChosen) return <div className="mx-auto max-w-xl px-4 pb-12 pt-5">
     <div className="flex items-center gap-3"><button type="button" onClick={onBack} className="min-h-[44px] rounded-xl border border-emerald-400/30 px-3 text-sm font-semibold" aria-label="Back to main">← Back to main</button><div className="text-lg font-semibold">Choose your journey companion</div></div>
     <div className="z-journey-picker mt-5 rounded-[27px] border border-emerald-400/30 px-4 py-6">
@@ -99,6 +102,12 @@ export default function LearningHome({
       </div>
       <span className="text-xs font-medium text-amber-400" aria-label={(streakDays||0)+" day streak"}>🔥 {streakDays||0}</span>
     </header>
+    {devHost && <button type="button" data-testid="open-dev-journey-editor"
+      className="z-marker-tool mt-3 w-full border-amber-400/60 font-bold"
+      onClick={()=>setDevWorkbenchOpen(true)}
+      aria-label="Open DEV Map Editor for Section 1 and Section 2">
+      🛠 Open DEV Map Editor · Section 2
+    </button>}
     <div className="mt-3 flex gap-2">
       <button type="button" onClick={()=>setShowRegionMap(false)} className={"z-map-tab "+(!showRegionMap?"is-active":"")}>🗺️ Current route</button>
       <button type="button" onClick={()=>setShowRegionMap(true)} className={"z-map-tab "+(showRegionMap?"is-active":"")}>Regions & review</button>
