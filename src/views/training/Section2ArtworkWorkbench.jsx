@@ -1,6 +1,7 @@
 // DEV-only placement studio: image, blue landmarks and draft road vertices.
 // Does not change learner progression, approved Section 1 data or production.
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
+import {section2FitScale,section2StageLayout} from './section2MapViewport';
 import {routeStopReview} from './journeyRouteTraceDraft';
 import {SECTION2_ARTWORK_MAPS,SECTION2_ARTWORK_DIMENSIONS,
   validateSection2ArtworkDraft,emptySection2ArtworkDraft,
@@ -22,7 +23,10 @@ export default function Section2ArtworkWorkbench({allSections=[],userId,onBack})
   const [draft,setDraft]=useState(()=>localDraft(userId,'module_2_1'));
   const [mode,setMode]=useState('marker');
   const [selected,setSelected]=useState(0);
-  const [zoom,setZoom]=useState(0.55);
+  const [zoom,setZoom]=useState(0.25);
+  const [viewportSize,setViewportSize]=useState({width:0,height:0});
+  const [zoomAdjusted,setZoomAdjusted]=useState(false);
+  const viewportRef=useRef(null);
   const [message,setMessage]=useState('Artwork loaded. Select a blue marker and tap its landmark.');
   const [showJson,setShowJson]=useState(false);
   const map=SECTION2_ARTWORK_MAPS.find(m=>m.id===mapId)||SECTION2_ARTWORK_MAPS[0];
@@ -35,6 +39,30 @@ export default function Section2ArtworkWorkbench({allSections=[],userId,onBack})
   const markers=map.stopIds.map(id=>draft.markers.find(p=>p.id===id)).filter(Boolean);
   const review=routeStopReview(draft.route,markers);
   const dimensions=SECTION2_ARTWORK_DIMENSIONS;
+  const fitZoom=section2FitScale(viewportSize.width,viewportSize.height,
+    dimensions.width,dimensions.height);
+  const layout=section2StageLayout(viewportSize.width,viewportSize.height,zoom,
+    dimensions.width,dimensions.height);
+  // Match Section 1's initial portrait fit, including orientation changes.
+  useEffect(()=>{
+    const element=viewportRef.current;
+    if(!element)return undefined;
+    const measure=()=>setViewportSize(size=>size.width===element.clientWidth&&
+      size.height===element.clientHeight?size:
+      {width:element.clientWidth,height:element.clientHeight});
+    measure();
+    const observer=new ResizeObserver(measure);
+    observer.observe(element);
+    return ()=>observer.disconnect();
+  },[]);
+  useEffect(()=>{
+    if(!viewportSize.width||!viewportSize.height)return;
+    setZoom(previous=>zoomAdjusted?Math.max(previous,fitZoom):fitZoom);
+  },[fitZoom,viewportSize.width,viewportSize.height,zoomAdjusted]);
+  const fitMap=()=>{
+    setZoomAdjusted(false);setZoom(fitZoom);
+    viewportRef.current?.scrollTo(0,0);
+  };
   useEffect(()=>{
     try{localStorage.setItem(section2ArtworkStorageKey(userId,mapId),JSON.stringify(draft));}
     catch { /* The draft remains on screen and can still be exported. */ }
@@ -42,6 +70,7 @@ export default function Section2ArtworkWorkbench({allSections=[],userId,onBack})
   const changeMap=id=>{
     setMapId(id);setDraft(localDraft(userId,id));setMode('marker');
     setSelected(0);setShowJson(false);
+    fitMap();
     setMessage('Map changed. Draft points are stored separately on this device.');
   };
   const tap=e=>{
@@ -114,17 +143,19 @@ export default function Section2ArtworkWorkbench({allSections=[],userId,onBack})
         </div>}
     <div className="flex items-center gap-2 mt-3">
       <label htmlFor="z-s2-zoom" className="text-xs font-semibold">Image zoom</label>
-      <input id="z-s2-zoom" type="range" min="0.32" max="1.6" step="0.02"
-        value={zoom} onChange={e=>setZoom(Number(e.target.value))}
+      <input id="z-s2-zoom" type="range" min={fitZoom} max="1.6" step="any"
+        value={zoom} onChange={e=>{setZoomAdjusted(true);setZoom(Number(e.target.value));}}
         style={{flex:1}}/>
       <span className="text-xs">{Math.round(zoom*100)}%</span>
+      <button type="button" className="z-marker-tool" onClick={fitMap}>Fit map</button>
     </div>
     <p className="mt-1 text-xs">Tap a landmark to place its blue pin, or switch to Trace road and tap the
       centre of the walkable path from entry to exit. Scroll/pan to inspect the full portrait.</p>
-    <div className="z-marker-viewport mt-2" style={{overflow:'auto',touchAction:'pan-x pan-y',
+    <div ref={viewportRef} className="z-marker-viewport mt-2" style={{overflow:'auto',touchAction:'pan-x pan-y',
       height:'min(67dvh,700px)'}} aria-label={map.title+' map drafting surface'}>
-      <div onClick={tap} style={{width:dimensions.width*zoom,height:dimensions.height*zoom,
-        position:'relative',cursor:'crosshair'}}>
+      <div style={{position:'relative',width:layout.stageWidth,height:layout.stageHeight}}>
+      <div onClick={tap} style={{width:layout.imageWidth,height:layout.imageHeight,
+        position:'absolute',left:layout.left,top:layout.top,cursor:'crosshair'}}>
         <img src={map.asset} alt={map.title+' approved scenery'} draggable={false}
           style={{display:'block',width:'100%',height:'100%',userSelect:'none'}}/>
         <svg viewBox="0 0 1024 1536" width={dimensions.width*zoom} height={dimensions.height*zoom}
@@ -142,6 +173,7 @@ export default function Section2ArtworkWorkbench({allSections=[],userId,onBack})
               outline:i===selected&&mode==='marker'?'3px solid #ffcc48':undefined}}>
             {i+1}</span>:null;
         })}
+      </div>
       </div>
     </div>
     {draft.route.length>=2&&markers.length>0&&<p className="mt-2 text-xs">
